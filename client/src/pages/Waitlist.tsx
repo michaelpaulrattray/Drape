@@ -443,14 +443,13 @@ export default function Waitlist() {
               </div>
             </div>
 
-            <div className="flex gap-12 mt-auto text-xs font-medium tracking-wide text-zinc-600">
-              <a href="#studios" className="flex items-center gap-2 transition-colors hover:text-black">
-                View Studios
-                <ChevronRight className="w-3 h-3" />
-              </a>
-              <a href="#waitlist" className="flex items-center gap-2 transition-colors hover:text-black">
-                Get Access
-                <ChevronRight className="w-3 h-3" />
+            <div className="mt-auto">
+              <a 
+                href="#waitlist" 
+                className="inline-flex items-center gap-3 px-8 py-4 bg-sky-500 text-white font-semibold text-sm uppercase tracking-wider rounded-full hover:bg-sky-600 transition-all duration-300 shadow-lg shadow-sky-500/25 hover:shadow-xl hover:shadow-sky-500/30 hover:-translate-y-0.5"
+              >
+                Get Early Access
+                <ArrowRight className="w-4 h-4" />
               </a>
             </div>
           </div>

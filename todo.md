@@ -155,3 +155,7 @@
 - [x] Remove hamburger menu and dropdown
 - [x] Keep only "Join Waitlist" link with pill button style
 - [x] Use mix-blend-difference for text visibility on any background
+
+## Hero Section Button Update
+- [x] Remove "View Studios" button from hero
+- [x] Make "Get Access" button more prominent and visible
