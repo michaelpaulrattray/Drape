@@ -98,16 +98,6 @@ export default function Waitlist() {
     }
   ];
 
-  // Placeholder images for the gallery (using gradient placeholders)
-  const galleryImages = [
-    { gradient: "from-zinc-800 to-zinc-900", label: "Fashion Model" },
-    { gradient: "from-zinc-700 to-zinc-800", label: "Product Shot" },
-    { gradient: "from-zinc-800 to-zinc-700", label: "Lifestyle" },
-    { gradient: "from-zinc-900 to-zinc-800", label: "Portrait" },
-    { gradient: "from-zinc-700 to-zinc-900", label: "Campaign" },
-    { gradient: "from-zinc-800 to-zinc-700", label: "Editorial" },
-  ];
-
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Navigation */}
@@ -150,7 +140,7 @@ export default function Waitlist() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col justify-center pt-20 pb-8">
+      <section className="relative h-screen flex flex-col justify-center pt-20">
         <div className="container relative z-10">
           {/* Badge */}
           <div className="flex justify-center mb-8 animate-fade-in-up">
@@ -183,9 +173,25 @@ export default function Waitlist() {
             </Button>
           </div>
 
-          {/* Image Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-5xl mx-auto animate-fade-in-up animation-delay-400">
-            {galleryImages.map((img, i) => (
+          {/* Scroll indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+            <ChevronDown className="w-6 h-6 text-white/40" />
+          </div>
+        </div>
+      </section>
+
+      {/* Gallery Section */}
+      <section className="py-16 md:py-24 border-t border-white/5">
+        <div className="container">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-5xl mx-auto">
+            {[
+              { gradient: "from-zinc-800 to-zinc-900", label: "Fashion Model" },
+              { gradient: "from-zinc-700 to-zinc-800", label: "Product Shot" },
+              { gradient: "from-zinc-800 to-zinc-700", label: "Lifestyle" },
+              { gradient: "from-zinc-900 to-zinc-800", label: "Portrait" },
+              { gradient: "from-zinc-700 to-zinc-900", label: "Campaign" },
+              { gradient: "from-zinc-800 to-zinc-700", label: "Editorial" },
+            ].map((img, i) => (
               <div 
                 key={i}
                 className={`aspect-[4/5] rounded-2xl bg-gradient-to-br ${img.gradient} overflow-hidden group cursor-pointer relative`}

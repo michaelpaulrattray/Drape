@@ -118,3 +118,10 @@
 - [x] Update Coming Soon page
 - [x] Update NotFound page
 - [x] Consistent navigation elements
+
+
+## Phase 1.9: Waitlist Hero Full Viewport
+
+- [x] Make hero section full viewport height (100vh)
+- [x] Ensure content is vertically centered
+- [x] Maintain mobile responsiveness
