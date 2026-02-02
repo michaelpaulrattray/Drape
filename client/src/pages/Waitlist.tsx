@@ -509,7 +509,7 @@ export default function Waitlist() {
             {/* Main Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-16 gap-y-12 items-start pt-8 md:pt-12">
               {/* Left Content - 7 columns */}
-              <div className="lg:col-span-7 flex flex-col gap-8">
+              <div className="lg:col-span-7 flex flex-col gap-6">
                 {/* Tagline */}
                 <div className="flex items-center gap-4 animate-fade-in-up">
                   <div className="h-px w-12 bg-zinc-400" />
@@ -528,6 +528,31 @@ export default function Waitlist() {
                   <br />
                   Photoshoot
                 </h1>
+
+                {/* Subtitle + CTA - Moved here to reduce spacing */}
+                <div className="max-w-xl mt-4 animate-fade-in-up animation-delay-200">
+                  <p className="text-base md:text-lg leading-relaxed font-normal text-zinc-600 tracking-tight font-space mb-6">
+                    Generate AI models, style outfits, and create campaign-ready photoshoots in minutes—all without a single real photoshoot.
+                  </p>
+
+                  <div className="flex flex-wrap gap-4">
+                    <a 
+                      href="#contact" 
+                      className="group relative px-8 py-4 bg-zinc-900 text-white rounded-lg overflow-hidden transition-all hover:shadow-xl hover:shadow-zinc-500/20"
+                    >
+                      <span className="relative z-10 flex items-center gap-2 uppercase text-sm font-semibold tracking-widest">
+                        Get Early Access
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                    </a>
+                    <a 
+                      href="#studios" 
+                      className="px-8 py-4 border-2 border-zinc-200 text-zinc-700 font-semibold rounded-lg hover:border-zinc-900 hover:bg-zinc-900 hover:text-white transition-all duration-300 flex items-center gap-2 text-sm uppercase tracking-widest"
+                    >
+                      View Studios
+                    </a>
+                  </div>
+                </div>
               </div>
 
               {/* Right Visual - 5 columns */}
@@ -560,35 +585,7 @@ export default function Waitlist() {
               </div>
             </div>
 
-            {/* Bottom Row - Subtitle + Stats */}
-            <div className="flex flex-col lg:flex-row mt-8 lg:mt-12 gap-12 items-start animate-fade-in-up animation-delay-300">
-              {/* Left: Subtitle + CTA */}
-              <div className="max-w-2xl">
-                <p className="text-base md:text-lg leading-relaxed font-normal text-zinc-600 tracking-tight font-space mb-6">
-                  Generate AI models, style outfits, and create campaign-ready photoshoots in minutes—all without a single real photoshoot.
-                </p>
 
-                <div className="flex flex-wrap gap-4">
-                  <a 
-                    href="#contact" 
-                    className="group relative px-8 py-4 bg-zinc-900 text-white rounded-lg overflow-hidden transition-all hover:shadow-xl hover:shadow-zinc-500/20"
-                  >
-                    <span className="relative z-10 flex items-center gap-2 uppercase text-sm font-semibold tracking-widest">
-                      Get Early Access
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  </a>
-                  <a 
-                    href="#studios" 
-                    className="px-8 py-4 border-2 border-zinc-200 text-zinc-700 font-semibold rounded-lg hover:border-zinc-900 hover:bg-zinc-900 hover:text-white transition-all duration-300 flex items-center gap-2 text-sm uppercase tracking-widest"
-                  >
-                    View Studios
-                  </a>
-                </div>
-              </div>
-
-
-            </div>
           </div>
 
           {/* Scroll Indicator */}

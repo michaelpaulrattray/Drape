@@ -180,3 +180,6 @@
 
 ## Remove Studio Status Card
 - [x] Remove studio status card from hero section
+
+## Hero Spacing Fix
+- [x] Reduce empty space between hero headline and subheading/buttons
