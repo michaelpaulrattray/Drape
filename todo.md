@@ -149,3 +149,9 @@
 - [x] Change video section from dark (zinc-950) to white background
 - [x] Update text colors for visibility on white background
 - [x] Maintain visual hierarchy and video emphasis
+
+## Header Menu Redesign
+- [x] Redesign header to be inline like Spark Labs reference
+- [x] Remove hamburger menu and dropdown
+- [x] Keep only "Join Waitlist" link with pill button style
+- [x] Use mix-blend-difference for text visibility on any background
