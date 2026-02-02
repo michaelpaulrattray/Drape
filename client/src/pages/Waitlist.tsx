@@ -77,27 +77,31 @@ const explorationProjects = [
   },
 ];
 
-// Recognition/Awards data
-const awards = [
+// Draggable service cards data
+const serviceCards = [
   {
-    category: "AI Innovation",
-    title: "Best AI Creative Tool 2024",
-    link: "View Gallery",
+    number: "01",
+    title: "AI Model Casting",
+    description: "Generate unique, consistent AI model identities for your brand with photorealistic quality.",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg",
   },
   {
-    category: "Fashion Tech",
-    title: "Top 10 Fashion AI Startups",
-    link: "Read more",
+    number: "02",
+    title: "Outfit Generation",
+    description: "Create any outfit on your AI models. From streetwear to haute couture, no physical samples needed.",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/04ff5a45-5b01-4b68-a092-f3ec2da28b5e_1600w.jpg",
   },
   {
-    category: "Creative AI",
-    title: "Excellence in AI Photography",
-    link: "Read more",
+    number: "03",
+    title: "Campaign Production",
+    description: "Full photoshoot generation with complete lighting and environment control for campaign-ready assets.",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f365bf31-c2fb-44c2-a24a-c78fedc640ba_1600w.jpg",
   },
   {
-    category: "Industry",
-    title: "Fashion Forward Award",
-    link: "View List",
+    number: "04",
+    title: "Brand Consistency",
+    description: "Maintain perfect visual consistency across all channels with AI-powered brand asset generation.",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2532&auto=format&fit=crop",
   },
 ];
 
@@ -582,36 +586,81 @@ export default function Waitlist() {
           </div>
         </section>
 
-        {/* Recognition Section */}
-        <section className="border-b border-black/10">
-          <div className="px-6 md:px-12 py-16 flex items-end justify-between border-b border-black/10">
-            <h2 className="text-6xl md:text-7xl font-bold tracking-tighter uppercase text-zinc-900 font-geist">
-              Recognition
-            </h2>
-            <a href="#" className="px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 mb-2 border-black/20 hover:bg-black hover:text-white">
-              Press Kit
-              <ArrowRight className="w-4 h-4" />
-            </a>
+        {/* Services Draggable Cards Section */}
+        <section className="border-b border-black/10 bg-zinc-950 py-24 overflow-hidden">
+          <div className="px-6 md:px-12 mb-16 md:mb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
+              <h2 className="text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight font-geist text-white">
+                Solving Problems With <br/><span className="text-zinc-600">Intelligent AI</span>
+              </h2>
+              <div className="lg:pl-12">
+                <p className="text-lg md:text-xl font-light text-zinc-400 leading-relaxed">
+                  Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-black/10">
-            {awards.map((award, index) => (
-              <div key={index} className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
-                <div className="flex h-40 border-b mb-6 items-center justify-center border-black/10">
-                  <Sparkles className="text-6xl group-hover:scale-110 transition-transform duration-300 text-zinc-800 w-16 h-16" />
+          {/* Draggable Cards Container */}
+          <div 
+            className="flex w-full overflow-x-auto select-none cursor-grab active:cursor-grabbing touch-pan-y no-scrollbar"
+            style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }}
+            onMouseDown={(e) => {
+              const container = e.currentTarget;
+              const startX = e.pageX - container.offsetLeft;
+              const scrollLeft = container.scrollLeft;
+              
+              const onMouseMove = (e: MouseEvent) => {
+                const x = e.pageX - container.offsetLeft;
+                const walk = (x - startX) * 2;
+                container.scrollLeft = scrollLeft - walk;
+              };
+              
+              const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+              };
+              
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener('mouseup', onMouseUp);
+            }}
+          >
+            <div className="flex gap-6 md:gap-8 min-w-max px-6 md:px-12 items-stretch">
+              {[...serviceCards, ...serviceCards].map((card, index) => (
+                <div 
+                  key={index} 
+                  className="group relative w-[85vw] md:w-[500px] h-[600px] rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900/40 hover:border-zinc-600 transition-colors duration-500 shrink-0"
+                >
+                  <div className="absolute inset-0 w-full h-full">
+                    <img 
+                      src={card.image} 
+                      className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 ease-out" 
+                      draggable="false" 
+                      alt={card.title}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/20 to-zinc-950" />
+                  </div>
+                  <div className="absolute inset-0 p-8 md:p-10 flex flex-col justify-between">
+                    <div className="flex justify-between items-start">
+                      <span className="font-geist text-5xl md:text-6xl text-white/90 font-light">{card.number}</span>
+                      <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-white/20">
+                        <ArrowUpRight className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-3xl md:text-4xl font-geist tracking-tight text-white mb-3 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                        {card.title}
+                      </h3>
+                      <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-500">
+                        <p className="text-zinc-300 text-sm leading-relaxed max-w-[90%] pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">
+                          {card.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-[10px] font-bold uppercase mb-2 text-sky-600">
-                  {award.category}
-                </p>
-                <h3 className="leading-tight transition-colors text-xl font-semibold mb-6 text-zinc-900">
-                  {award.title}
-                </h3>
-                <div className="flex items-center text-xs font-medium group-hover:text-black transition-colors text-black/50">
-                  {award.link}
-                  <ChevronRight className="w-3 h-3 ml-1" />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
 
