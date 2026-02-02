@@ -48,42 +48,39 @@
   /* Orange accent color */
   --color-orange: oklch(0.7 0.18 45);
   --color-orange-foreground: oklch(0 0 0);
-  /* Lime/Green accent color for dashboard */
-  --color-lime: oklch(0.85 0.2 130);
-  --color-lime-foreground: oklch(0 0 0);
 }
 
-/* FormaStudio Bold Dark Theme - Pure Black with Orange Accent */
+/* FormaStudio Dark Theme - Zinc-based like reference */
 :root {
   --radius: 0.75rem;
-  /* Pure black background */
-  --background: oklch(0 0 0);
+  /* Zinc-950 background */
+  --background: oklch(0.09 0 0);
   --foreground: oklch(0.98 0 0);
-  /* Card - very subtle gray */
-  --card: oklch(0.1 0 0);
+  /* Card - zinc-900/40 */
+  --card: oklch(0.14 0 0 / 40%);
   --card-foreground: oklch(0.98 0 0);
   /* Popover */
-  --popover: oklch(0.1 0 0);
+  --popover: oklch(0.14 0 0);
   --popover-foreground: oklch(0.98 0 0);
-  /* Primary - Orange/Coral accent */
-  --primary: oklch(0.7 0.18 45);
+  /* Primary - White for buttons */
+  --primary: oklch(1 0 0);
   --primary-foreground: oklch(0 0 0);
-  /* Secondary */
-  --secondary: oklch(0.15 0 0);
-  --secondary-foreground: oklch(0.9 0 0);
-  /* Muted */
-  --muted: oklch(0.2 0 0);
+  /* Secondary - zinc-800 */
+  --secondary: oklch(0.27 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  /* Muted - zinc-400/500 */
+  --muted: oklch(0.27 0 0);
   --muted-foreground: oklch(0.55 0 0);
-  /* Accent - Orange */
-  --accent: oklch(0.7 0.18 45);
+  /* Accent - White */
+  --accent: oklch(1 0 0);
   --accent-foreground: oklch(0 0 0);
   /* Destructive */
   --destructive: oklch(0.65 0.2 25);
   --destructive-foreground: oklch(0.98 0 0);
-  /* Borders and inputs */
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 8%);
-  --ring: oklch(0.7 0.18 45 / 50%);
+  /* Borders - zinc-800 */
+  --border: oklch(0.27 0 0);
+  --input: oklch(0.27 0 0);
+  --ring: oklch(1 0 0 / 50%);
   /* Chart colors */
   --chart-1: oklch(0.7 0.18 45);
   --chart-2: oklch(0.65 0.15 60);
@@ -91,14 +88,14 @@
   --chart-4: oklch(0.55 0.1 90);
   --chart-5: oklch(0.75 0.08 30);
   /* Sidebar */
-  --sidebar: oklch(0.05 0 0);
+  --sidebar: oklch(0.09 0 0);
   --sidebar-foreground: oklch(0.9 0 0);
-  --sidebar-primary: oklch(0.7 0.18 45);
+  --sidebar-primary: oklch(1 0 0);
   --sidebar-primary-foreground: oklch(0 0 0);
-  --sidebar-accent: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
   --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.18 45 / 50%);
+  --sidebar-border: oklch(0.27 0 0);
+  --sidebar-ring: oklch(1 0 0 / 50%);
 }
 
 @layer base {
@@ -127,7 +124,7 @@
   
   /* Selection highlight */
   ::selection {
-    background: oklch(0.7 0.18 45 / 30%);
+    background: oklch(1 0 0 / 20%);
     color: white;
   }
 }
@@ -157,62 +154,65 @@
     .container {
       padding-left: 3rem;
       padding-right: 3rem;
-      max-width: 1400px;
+      max-width: 1800px;
     }
   }
 
-  /* Solid card styles (replacing glassmorphism) */
+  /* Glass panel from reference */
+  .glass-panel {
+    background: oklch(0.14 0 0 / 50%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid oklch(0.27 0 0);
+  }
+
+  /* Solid card styles */
   .solid-card {
-    background: oklch(0.1 0 0);
-    border: 1px solid oklch(1 0 0 / 10%);
+    background: oklch(0.14 0 0 / 40%);
+    border: 1px solid oklch(0.27 0 0);
   }
 
   .solid-card-hover {
-    background: oklch(0.1 0 0);
-    border: 1px solid oklch(1 0 0 / 10%);
-    transition: all 0.3s ease;
+    background: oklch(0.14 0 0 / 40%);
+    border: 1px solid oklch(0.27 0 0);
+    transition: all 0.5s ease;
   }
 
   .solid-card-hover:hover {
-    border-color: oklch(0.7 0.18 45 / 50%);
+    border-color: oklch(0.4 0 0);
   }
 
-  /* Orange accent button */
-  .btn-orange {
-    background: oklch(0.7 0.18 45);
+  /* White button (primary CTA) */
+  .btn-white {
+    background: oklch(1 0 0);
     color: oklch(0 0 0);
     font-weight: 500;
     transition: all 0.3s ease;
   }
 
-  .btn-orange:hover {
-    background: oklch(0.75 0.2 45);
-    transform: translateY(-1px);
+  .btn-white:hover {
+    background: oklch(0.9 0 0);
+  }
+
+  /* Outline button */
+  .btn-outline {
+    background: transparent;
+    border: 1px solid oklch(0.27 0 0);
+    color: oklch(0.98 0 0);
+    transition: all 0.3s ease;
+  }
+
+  .btn-outline:hover {
+    background: oklch(1 0 0);
+    color: oklch(0 0 0);
+    border-color: oklch(1 0 0);
   }
 
   /* Pill badge */
   .pill-badge {
-    background: oklch(0.7 0.18 45 / 15%);
-    border: 1px solid oklch(0.7 0.18 45 / 30%);
-    color: oklch(0.7 0.18 45);
-  }
-
-  /* Legacy glass utilities (kept for compatibility) */
-  .glass {
-    background: oklch(1 0 0 / 3%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid oklch(1 0 0 / 8%);
-  }
-
-  .glass-card {
-    background: oklch(0.1 0 0);
-    border: 1px solid oklch(1 0 0 / 10%);
-  }
-
-  .glass-button {
-    background: oklch(1 0 0 / 8%);
-    border: 1px solid oklch(1 0 0 / 15%);
+    background: oklch(0.14 0 0 / 50%);
+    border: 1px solid oklch(0.27 0 0);
+    color: oklch(0.7 0 0);
   }
 
   /* Hide scrollbar utility */
@@ -233,29 +233,92 @@
     font-family: "Inter", sans-serif;
   }
 
-  /* Image grid for hero */
-  .image-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-  }
-
-  .image-grid-item {
-    aspect-ratio: 4/5;
+  /* Service card from reference - large rounded cards with image */
+  .service-card {
+    position: relative;
+    width: 85vw;
+    height: 600px;
+    border-radius: 2rem;
     overflow: hidden;
-    border-radius: 1rem;
-    background: oklch(0.1 0 0);
+    border: 1px solid oklch(0.27 0 0);
+    background: oklch(0.14 0 0 / 40%);
+    flex-shrink: 0;
+    transition: border-color 0.5s ease;
   }
 
-  .image-grid-item img {
+  @media (min-width: 768px) {
+    .service-card {
+      width: 500px;
+    }
+  }
+
+  .service-card:hover {
+    border-color: oklch(0.4 0 0);
+  }
+
+  .service-card img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s ease;
+    opacity: 0.6;
+    transition: all 0.7s ease-out;
   }
 
-  .image-grid-item:hover img {
+  .service-card:hover img {
+    opacity: 0.8;
     transform: scale(1.05);
+  }
+
+  /* Marquee container for horizontal scroll */
+  .marquee-container {
+    display: flex;
+    gap: 1.5rem;
+    cursor: grab;
+    user-select: none;
+  }
+
+  .marquee-container:active {
+    cursor: grabbing;
+  }
+
+  /* Marquee text animation for footer */
+  .marquee-container-text {
+    display: flex;
+    animation: marquee-scroll 30s linear infinite;
+  }
+
+  @keyframes marquee-scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Process step styling */
+  .process-step {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* Process image transitions */
+  .process-image {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .process-image.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .process-image.inactive {
+    opacity: 0;
+    transform: scale(0.95);
   }
 }
 
@@ -292,12 +355,12 @@
     }
   }
 
-  @keyframes pulse-glow {
+  @keyframes bounce-slow {
     0%, 100% {
-      opacity: 0.5;
+      transform: translateY(0);
     }
     50% {
-      opacity: 1;
+      transform: translateY(-10px);
     }
   }
 
@@ -313,111 +376,61 @@
     animation: slide-up 0.5s ease-out forwards;
   }
 
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
+  .animate-bounce-slow {
+    animation: bounce-slow 2s ease-in-out infinite;
   }
 
   /* Stagger animation delays */
-  .animation-delay-100 {
-    animation-delay: 100ms;
-  }
-  .animation-delay-200 {
-    animation-delay: 200ms;
-  }
-  .animation-delay-300 {
-    animation-delay: 300ms;
-  }
-  .animation-delay-400 {
-    animation-delay: 400ms;
-  }
-  .animation-delay-500 {
-    animation-delay: 500ms;
-  }
-  .animation-delay-600 {
-    animation-delay: 600ms;
-  }
-  .animation-delay-700 {
-    animation-delay: 700ms;
-  }
-  .animation-delay-800 {
-    animation-delay: 800ms;
-  }
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+  .animation-delay-600 { animation-delay: 600ms; }
+  .animation-delay-700 { animation-delay: 700ms; }
+  .animation-delay-800 { animation-delay: 800ms; }
 
-  /* Text gradient with orange */
-  .text-gradient-orange {
-    background: linear-gradient(135deg, oklch(0.7 0.18 45), oklch(0.8 0.15 60));
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, oklch(1 0 0), oklch(0.7 0 0));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Orange text utility */
-  .text-orange {
-    color: oklch(0.7 0.18 45);
-  }
+  /* Zinc color utilities matching reference */
+  .bg-zinc-950 { background-color: oklch(0.09 0 0); }
+  .bg-zinc-900 { background-color: oklch(0.14 0 0); }
+  .bg-zinc-900\/40 { background-color: oklch(0.14 0 0 / 40%); }
+  .bg-zinc-900\/50 { background-color: oklch(0.14 0 0 / 50%); }
+  .bg-zinc-900\/20 { background-color: oklch(0.14 0 0 / 20%); }
+  .bg-zinc-800 { background-color: oklch(0.27 0 0); }
+  .bg-zinc-800\/50 { background-color: oklch(0.27 0 0 / 50%); }
+  .text-zinc-300 { color: oklch(0.7 0 0); }
+  .text-zinc-400 { color: oklch(0.55 0 0); }
+  .text-zinc-500 { color: oklch(0.45 0 0); }
+  .text-zinc-700 { color: oklch(0.35 0 0); }
+  .text-zinc-800 { color: oklch(0.27 0 0); }
+  .border-zinc-700 { border-color: oklch(0.35 0 0); }
+  .border-zinc-700\/50 { border-color: oklch(0.35 0 0 / 50%); }
+  .border-zinc-800 { border-color: oklch(0.27 0 0); }
+  .border-zinc-900 { border-color: oklch(0.14 0 0); }
 
-  /* Orange background utility */
-  .bg-orange {
-    background: oklch(0.7 0.18 45);
-  }
+  /* White utilities */
+  .text-white\/90 { color: oklch(1 0 0 / 90%); }
+  .text-white\/80 { color: oklch(1 0 0 / 80%); }
+  .text-white\/70 { color: oklch(1 0 0 / 70%); }
+  .text-white\/60 { color: oklch(1 0 0 / 60%); }
+  .text-white\/50 { color: oklch(1 0 0 / 50%); }
+  .text-white\/40 { color: oklch(1 0 0 / 40%); }
+  .text-white\/20 { color: oklch(1 0 0 / 20%); }
+  .text-white\/10 { color: oklch(1 0 0 / 10%); }
+  .bg-white\/10 { background-color: oklch(1 0 0 / 10%); }
+  .bg-white\/5 { background-color: oklch(1 0 0 / 5%); }
+  .border-white\/20 { border-color: oklch(1 0 0 / 20%); }
+  .border-white\/10 { border-color: oklch(1 0 0 / 10%); }
 
-  /* Orange border utility */
-  .border-orange {
-    border-color: oklch(0.7 0.18 45);
-  }
-
-  /* Hover orange */
-  .hover\:text-orange:hover {
-    color: oklch(0.7 0.18 45);
-  }
-
-  .hover\:bg-orange:hover {
-    background: oklch(0.7 0.18 45);
-  }
-
-  .hover\:border-orange:hover {
-    border-color: oklch(0.7 0.18 45);
-  }
-
-  /* Lime/Green utilities for dashboard */
-  .text-lime {
-    color: oklch(0.85 0.2 130);
-  }
-
-  .bg-lime {
-    background: oklch(0.85 0.2 130);
-  }
-
-  .border-lime {
-    border-color: oklch(0.85 0.2 130);
-  }
-
-  .hover\:text-lime:hover {
-    color: oklch(0.85 0.2 130);
-  }
-
-  .hover\:bg-lime:hover {
-    background: oklch(0.85 0.2 130);
-  }
-
-  .hover\:border-lime:hover {
-    border-color: oklch(0.85 0.2 130);
-  }
-
-  .btn-lime {
-    background: oklch(0.85 0.2 130);
-    color: oklch(0 0 0);
-    font-weight: 500;
-    transition: all 0.3s ease;
-  }
-
-  .btn-lime:hover {
-    background: oklch(0.9 0.22 130);
-  }
-
-  .pill-badge-lime {
-    background: oklch(0.85 0.2 130 / 15%);
-    border: 1px solid oklch(0.85 0.2 130 / 30%);
-    color: oklch(0.85 0.2 130);
-  }
+  /* Indigo glow for decorative elements */
+  .bg-indigo-900\/10 { background-color: oklch(0.35 0.15 270 / 10%); }
+  .bg-indigo-900\/20 { background-color: oklch(0.35 0.15 270 / 20%); }
 }
