@@ -115,3 +115,4 @@
 - [x] Update dashboard background to #0a0a0a (bg-studio-950)
 - [x] Fix nested anchor tag error on dashboard (<a> cannot contain nested <a>)
 - [x] Fix dark mode not applying to main content area (sidebar dark, content white)
+- [x] Update dark mode background to #18181b (zinc-900) for softer dark theme
