@@ -147,3 +147,7 @@
 ## Restore Original Sticky Scroll Design
 - [x] Restore original dark theme sticky scroll process section from reference HTML
 - [x] Apply overflow-hidden fix to prevent sticky breaking
+
+## Section Removal
+- [x] Remove "AI Model Casting" section from landing page
+- [x] Remove "Cast, Style & Generate" section from landing page

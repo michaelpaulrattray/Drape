@@ -310,7 +310,7 @@ export default function Waitlist() {
   const [submitted, setSubmitted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
-  const [galleryIndex, setGalleryIndex] = useState(0);
+
 
   const joinWaitlist = trpc.waitlist.join.useMutation({
     onSuccess: () => setSubmitted(true),
@@ -382,32 +382,7 @@ export default function Waitlist() {
     },
   ];
 
-  // Gallery projects data
-  const galleryProjects = [
-    {
-      title: "Series",
-      subtitle: "AI Model Casting",
-      description: "Create unique, consistent AI model identities for your brand. Define characteristics, ethnicity, and aesthetic to generate photorealistic models.",
-      img1: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&auto=format&fit=crop",
-      img2: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&auto=format&fit=crop",
-    },
-    {
-      title: "Fashion",
-      subtitle: "Virtual Outfit Studio",
-      description: "Dress your AI models in any outfit. Upload product images or describe the look you want for e-commerce and lookbooks.",
-      img1: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop",
-      img2: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop",
-    },
-    {
-      title: "Campaign",
-      subtitle: "Photo Generation",
-      description: "Generate campaign-ready photoshoots in any environment. Studio, outdoor, lifestyle—all without a single real photoshoot.",
-      img1: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&auto=format&fit=crop",
-      img2: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop",
-    },
-  ];
 
-  const currentProject = galleryProjects[galleryIndex];
 
   return (
     <div className="min-h-screen relative bg-zinc-100">
@@ -652,162 +627,9 @@ export default function Waitlist() {
         {/* Sticky Scroll Process Section */}
         <StickyScrollProcessSection />
 
-        {/* Exploration Section - Gallery */}
-        <section id="studios" className="grid grid-cols-1 md:grid-cols-2 border-b border-black/10">
-          {/* Left: Gallery */}
-          <div className="md:p-12 overflow-hidden group border-black/10 md:border-r pt-6 pr-6 pb-6 pl-6 relative">
-            <div className="grid grid-cols-2 gap-4 h-full">
-              <div className="bg-zinc-200 w-full h-64 md:h-80 relative overflow-hidden">
-                <img 
-                  src={currentProject.img1} 
-                  alt="Gallery 1" 
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                />
-              </div>
-              <div className="bg-zinc-200 w-full h-64 md:h-80 relative overflow-hidden mt-8">
-                <img 
-                  src={currentProject.img2} 
-                  alt="Gallery 2" 
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Right: Content */}
-          <div className="md:p-12 flex flex-col pt-6 pr-6 pb-6 pl-6 relative justify-center">
-            <div className="flex items-center justify-between mb-8">
-              <p className="text-[10px] uppercase font-bold text-orange tracking-[0.2em]">
-                {currentProject.title}
-              </p>
-              <div className="flex items-center gap-2 text-xs font-space text-zinc-400">
-                <span>{String(galleryIndex + 1).padStart(2, '0')}</span>
-                <span>/</span>
-                <span>{String(galleryProjects.length).padStart(2, '0')}</span>
-              </div>
-            </div>
 
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 font-geist">
-              {currentProject.subtitle}
-            </h2>
-            <p className="leading-relaxed text-sm text-zinc-500 max-w-md mb-8">
-              {currentProject.description}
-            </p>
 
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setGalleryIndex((prev) => (prev - 1 + galleryProjects.length) % galleryProjects.length)}
-                className="w-12 h-12 rounded-full border flex items-center justify-center transition-all border-black/10 hover:border-orange hover:bg-orange/10"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={() => setGalleryIndex((prev) => (prev + 1) % galleryProjects.length)}
-                className="w-12 h-12 rounded-full border flex items-center justify-center transition-all border-black/10 hover:border-orange hover:bg-orange/10"
-              >
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <a href="#contact" className="ml-auto px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 border-black/20 hover:bg-black hover:text-white">
-                Get Started
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* Process / Methodology Section */}
-        <section id="process" className="grid grid-cols-1 lg:grid-cols-2 border-b relative group border-black/10 bg-zinc-50">
-          {/* Left: Visual Content */}
-          <div className="relative min-h-[500px] lg:min-h-[700px] lg:border-r overflow-hidden border-black/10">
-            <img 
-              src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1200&auto=format&fit=crop" 
-              alt="Camera Lens" 
-              className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000 ease-out"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t to-transparent from-zinc-50 via-zinc-50/20" />
-
-            {/* Floating Data Card */}
-            <div className="absolute bottom-8 left-8 right-8 md:left-12 md:right-auto md:w-80 backdrop-blur-xl border p-6 z-10 transition-colors duration-300 bg-white/80 border-black/10 hover:bg-white">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-black/10">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-orange">AI Powered</span>
-                <Sparkles className="w-4 h-4 text-zinc-500" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wider font-semibold text-black/50">Engine: Nano Banana Pro</p>
-                <p className="text-lg font-medium tracking-tight">Photorealistic Generation</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Philosophy & Interactive List */}
-          <div className="flex flex-col">
-            {/* Header */}
-            <div className="p-8 md:p-16 flex-1 flex flex-col justify-center relative">
-              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-6">
-                <span className="w-2 h-2 rounded-full bg-orange" />
-                Process
-              </p>
-              <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter leading-none mb-6 text-zinc-900 font-geist">
-                Cast, Style &amp;
-                <span className="text-black/30"> Generate</span>
-              </h2>
-              <p className="leading-relaxed md:text-base text-sm text-zinc-500 max-w-md">
-                FormaStudio streamlines your creative workflow. From AI model casting to final campaign assets, we handle the entire production pipeline.
-              </p>
-            </div>
-
-            {/* Accordion / List Items */}
-            <div className="border-t divide-y border-black/10 divide-black/10 bg-white">
-              {/* Item 1 */}
-              <a href="#contact" className="group block md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5 pt-6 pr-6 pb-6 pl-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <span className="font-space text-xs transition-colors text-orange/50 group-hover:text-orange">01</span>
-                    <div className="flex flex-col">
-                      <h3 className="group-hover:text-black transition-colors text-lg font-medium text-black/80 tracking-tight">Casting Studio</h3>
-                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-black/40">Define model characteristics and generate unique identities</span>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange/50 group-hover:bg-orange/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange" />
-                  </div>
-                </div>
-              </a>
-
-              {/* Item 2 */}
-              <a href="#contact" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <span className="font-space text-xs transition-colors text-orange/50 group-hover:text-orange">02</span>
-                    <div className="flex flex-col">
-                      <h3 className="group-hover:text-black transition-colors text-lg font-medium text-black/80 tracking-tight">Outfit Studio</h3>
-                      <span className="group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform group-hover:translate-y-0 text-xs text-black/40 opacity-0 h-0 mt-1 translate-y-2">Virtual wardrobe styling and product placement</span>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange/50 group-hover:bg-orange/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange" />
-                  </div>
-                </div>
-              </a>
-
-              {/* Item 3 */}
-              <a href="#contact" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <span className="font-space text-xs transition-colors text-orange/50 group-hover:text-orange">03</span>
-                    <div className="flex flex-col">
-                      <h3 className="text-lg font-medium tracking-tight group-hover:text-black transition-colors text-black/80">Photo Studio</h3>
-                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-black/40">Generate campaign-ready photoshoots in any environment</span>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange/50 group-hover:bg-orange/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange" />
-                  </div>
-                </div>
-              </a>
-            </div>
-          </div>
-        </section>
 
         {/* From Idea to Launch Section */}
         <section className="py-16 md:py-24 border-b border-black/10 bg-white">
