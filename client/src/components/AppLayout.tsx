@@ -1,5 +1,5 @@
 import Navigation from "./Navigation";
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -12,16 +12,8 @@ export default function AppLayout({
   navVariant = "default",
   showNav = true,
 }: AppLayoutProps) {
-  // Apply dark theme when AppLayout is mounted (for dashboard/app pages)
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-    return () => {
-      document.documentElement.classList.remove("dark");
-    };
-  }, []);
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background">
       {showNav && <Navigation variant={navVariant} />}
       <main className={showNav ? "pt-16 md:pt-20" : ""}>
         {children}

@@ -8,10 +8,8 @@ export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
-  displayName: text("displayName"), // User-customizable display name
   email: varchar("email", { length: 320 }),
   avatarUrl: text("avatarUrl"),
-  customAvatarUrl: text("customAvatarUrl"), // User-uploaded custom avatar
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

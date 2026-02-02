@@ -1,7 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
-import { Redirect, Link } from "wouter";
+import AppLayout from "@/components/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Redirect } from "wouter";
 import {
   Sparkles,
   TrendingUp,
@@ -13,9 +15,8 @@ import {
   Image,
   Shirt,
   Camera,
-  ChevronRight,
-  ArrowRight,
 } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -33,7 +34,13 @@ export default function Dashboard() {
   );
 
   if (loading) {
-    return <DashboardLayout><div /></DashboardLayout>;
+    return (
+      <AppLayout>
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
+      </AppLayout>
+    );
   }
 
   if (!isAuthenticated) {
@@ -56,207 +63,183 @@ export default function Dashboard() {
       case "purchase":
         return <ArrowUpRight className="w-4 h-4 text-green-400" />;
       case "bonus":
-        return <Sparkles className="w-4 h-4 text-orange" />;
+        return <Sparkles className="w-4 h-4 text-yellow-400" />;
       case "signup":
         return <Crown className="w-4 h-4 text-purple-400" />;
       case "refund":
         return <ArrowUpRight className="w-4 h-4 text-blue-400" />;
       default:
-        return <Zap className="w-4 h-4 text-white/40" />;
+        return <Zap className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
   const studios = [
     {
       title: "Casting Studio",
-      description: "Create and cast AI models for your campaigns",
+      description: "Create and cast AI models",
       icon: Image,
       href: "/casting-studio",
-      status: "Coming Soon",
+      color: "from-purple-500/20 to-pink-500/20",
     },
     {
       title: "Outfit Studio",
-      description: "Style your models with virtual outfits",
+      description: "Style your models with outfits",
       icon: Shirt,
       href: "/outfit-studio",
-      status: "Coming Soon",
+      color: "from-blue-500/20 to-cyan-500/20",
     },
     {
       title: "Photo Studio",
-      description: "Generate campaign-ready photoshoots",
+      description: "Generate campaign visuals",
       icon: Camera,
       href: "/photo-studio",
-      status: "Coming Soon",
+      color: "from-orange-500/20 to-yellow-500/20",
     },
   ];
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen relative">
-        {/* Background Grid Lines */}
-        <div className="fixed inset-0 grid-lines-dark pointer-events-none z-0" />
+    <AppLayout>
+      <div className="container py-8 md:py-12">
+        {/* Header */}
+        <div className="mb-8 md:mb-12">
+          <h1 className="text-3xl md:text-4xl font-instrument tracking-tight mb-2">
+            Welcome back, <span className="text-muted-foreground">{user?.name?.split(" ")[0] || "Creator"}</span>
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your account and track your creative journey
+          </p>
+        </div>
 
-        {/* Content */}
-        <div className="relative z-10 p-6 md:p-8 lg:p-12 space-y-8">
-          {/* Header Section */}
-          <section className="border-b border-white/5 pb-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <div>
-                <p className="text-[10px] uppercase font-semibold tracking-widest mb-2 text-orange">
-                  Dashboard
-                </p>
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter leading-none font-geist text-white">
-                  Welcome back
-                  <span className="text-orange">.</span>
-                </h1>
-                <p className="text-sm text-white/50 mt-3 max-w-md">
-                  {user?.name?.split(" ")[0] || "Creator"}, ready to create something amazing today?
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Link href="/settings" className="px-5 py-2.5 text-sm font-medium border transition-colors border-white/10 text-white/70 hover:text-white hover:bg-white/5">
-                  Edit Profile
-                </Link>
-                <button className="px-5 py-2.5 text-sm font-semibold bg-orange text-zinc-900 hover:bg-orange/90 transition-colors">
-                  Upgrade Plan
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {/* Stats Grid */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
-            {/* Points Balance */}
-            <div className="bg-background p-6 md:p-8">
-              <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
-                <Sparkles className="w-3.5 h-3.5 text-orange" />
-                <span>Points Balance</span>
-              </div>
-              <div className="flex items-baseline gap-2 mb-6">
-                <span className="text-5xl font-bold tracking-tighter font-geist text-white">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
+          {/* Points Balance Card */}
+          <Card className="glass-card border-white/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-400" />
+                Points Balance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-instrument">
                   {pointsLoading ? "..." : pointsData?.balance ?? 0}
                 </span>
-                <span className="text-white/40 text-sm font-medium">points</span>
+                <span className="text-muted-foreground text-sm">points</span>
               </div>
-              <button className="flex items-center gap-2 text-sm font-medium text-orange hover:text-orange/80 transition-colors group">
-                <span>Get more points</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 glass-button hover:bg-white hover:text-zinc-900"
+              >
+                Get more points
+              </Button>
+            </CardContent>
+          </Card>
 
-            {/* Current Plan */}
-            <div className="bg-background p-6 md:p-8">
-              <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
-                <Crown className="w-3.5 h-3.5 text-purple-400" />
-                <span>Current Plan</span>
-              </div>
-              <div className="flex items-baseline gap-2 mb-6">
-                <span className="text-5xl font-bold tracking-tighter font-geist text-white capitalize">
+          {/* Plan Card */}
+          <Card className="glass-card border-white/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Crown className="w-4 h-4 text-purple-400" />
+                Current Plan
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-instrument capitalize">
                   {pointsLoading ? "..." : pointsData?.planTier ?? "Free"}
                 </span>
               </div>
-              <button className="flex items-center gap-2 text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors group">
-                <span>View plans</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 glass-button hover:bg-white hover:text-zinc-900"
+              >
+                Upgrade plan
+              </Button>
+            </CardContent>
+          </Card>
 
-            {/* This Month */}
-            <div className="bg-background p-6 md:p-8">
-              <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
-                <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-                <span>This Month</span>
-              </div>
-              <div className="flex items-baseline gap-2 mb-6">
-                <span className="text-5xl font-bold tracking-tighter font-geist text-white">
+          {/* Quick Stats Card */}
+          <Card className="glass-card border-white/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-green-400" />
+                This Month
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-instrument">
                   {transactionsLoading
                     ? "..."
                     : transactions?.filter((t) => t.amount < 0).length ?? 0}
                 </span>
-                <span className="text-white/40 text-sm font-medium">generations</span>
+                <span className="text-muted-foreground text-sm">generations</span>
               </div>
-              <p className="text-sm text-white/40">
+              <p className="text-xs text-muted-foreground mt-4">
                 Keep creating amazing content
               </p>
-            </div>
-          </section>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Studios Section */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-[10px] uppercase font-semibold tracking-widest text-orange mb-1">
-                  Your Studios
-                </p>
-                <h2 className="text-xl font-bold tracking-tight font-geist text-white">
-                  Start Creating
-                </h2>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
-              {studios.map((studio) => (
-                <Link key={studio.href} href={studio.href} className="group block bg-background p-6 md:p-8 hover:bg-secondary/50 transition-colors">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="w-12 h-12 rounded flex items-center justify-center bg-white/5 border border-white/10 group-hover:border-orange/50 transition-colors">
-                      <studio.icon className="w-5 h-5 text-white/60 group-hover:text-orange transition-colors" />
+        {/* Studios Section */}
+        <div className="mb-8 md:mb-12">
+          <h2 className="text-xl font-instrument mb-4">Your Studios</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {studios.map((studio) => (
+              <Link key={studio.href} href={studio.href}>
+                <Card className="glass-card border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group h-full">
+                  <CardContent className="p-6">
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${studio.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
+                    >
+                      <studio.icon className="w-6 h-6" />
                     </div>
-                    <span className="px-2 py-1 text-[9px] font-semibold uppercase tracking-widest bg-white/5 text-white/40 border border-white/10">
-                      {studio.status}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-orange transition-colors font-geist">
-                    {studio.title}
-                  </h3>
-                  <p className="text-sm text-white/50 leading-relaxed mb-4">
-                    {studio.description}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs font-medium text-white/40 group-hover:text-orange transition-colors">
-                    <span>Open studio</span>
-                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
+                    <h3 className="font-instrument text-lg mb-1">{studio.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {studio.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
 
-          {/* Recent Activity */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-[10px] uppercase font-semibold tracking-widest text-orange mb-1">
-                  Activity
-                </p>
-                <h2 className="text-xl font-bold tracking-tight font-geist text-white">
-                  Recent Transactions
-                </h2>
-              </div>
-              <button className="text-xs font-medium text-white/40 hover:text-white transition-colors">
-                View all
-              </button>
-            </div>
+        {/* Transaction History */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-instrument">Recent Activity</h2>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              View all
+            </Button>
+          </div>
 
-            <div className="border border-border bg-background/50">
+          <Card className="glass-card border-white/10">
+            <CardContent className="p-0">
               {transactionsLoading ? (
-                <div className="p-8 text-center text-white/40">
+                <div className="p-6 text-center text-muted-foreground">
                   Loading transactions...
                 </div>
               ) : transactions && transactions.length > 0 ? (
                 <div className="divide-y divide-white/5">
-                  {transactions.slice(0, 5).map((transaction) => (
+                  {transactions.map((transaction) => (
                     <div
                       key={transaction.id}
-                      className="flex items-center justify-between p-4 md:p-5 hover:bg-white/[0.02] transition-colors"
+                      className="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded flex items-center justify-center bg-white/5 border border-white/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full glass-button flex items-center justify-center">
                           {getTransactionIcon(transaction.type)}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-white">
+                          <p className="text-sm font-medium">
                             {transaction.description || transaction.type}
                           </p>
-                          <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatDate(transaction.createdAt)}
                           </p>
@@ -264,14 +247,14 @@ export default function Dashboard() {
                       </div>
                       <div className="text-right">
                         <p
-                          className={`text-sm font-semibold ${
+                          className={`text-sm font-medium ${
                             transaction.amount > 0 ? "text-green-400" : "text-red-400"
                           }`}
                         >
                           {transaction.amount > 0 ? "+" : ""}
                           {transaction.amount}
                         </p>
-                        <p className="text-xs text-white/40 mt-0.5">
+                        <p className="text-xs text-muted-foreground">
                           Balance: {transaction.balanceAfter}
                         </p>
                       </div>
@@ -279,18 +262,18 @@ export default function Dashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="p-12 text-center">
-                  <Sparkles className="w-10 h-10 mx-auto mb-4 text-white/20" />
-                  <p className="text-white/60 font-medium">No transactions yet</p>
-                  <p className="text-sm text-white/40 mt-1">
+                <div className="p-8 text-center">
+                  <Sparkles className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">No transactions yet</p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">
                     Start creating to see your activity here
                   </p>
                 </div>
               )}
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

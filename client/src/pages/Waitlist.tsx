@@ -1,935 +1,691 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "wouter";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, ArrowLeft, ChevronRight, Menu, X, Check, Camera, Palette, Sparkles, ArrowUpRight, Zap, Clock, Infinity } from "lucide-react";
-
-// Sticky Scroll Process Section Data
-const stickyProcessSteps = [
-  {
-    id: 1,
-    number: "01",
-    title: "Share Your Vision + Guidelines",
-    description: "A simple brief or a 15-minute sync is all we need. We digest your brand guidelines, goals, and aesthetic preferences to build a custom model that understands your visual language.",
-    cta: "Start a project",
-    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f36259a7-cc94-4846-8290-2df52026731d_original.gif",
-  },
-  {
-    id: 2,
-    number: "02",
-    title: "(Intelligent) Model Generation",
-    description: "We configure our AI models to your style. Instead of generic outputs, you get high-fidelity options tailored to your specific campaign needs in hours, not weeks.",
-    cta: "See examples",
-    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ebfeb48e-4108-49c6-86a2-a1491f93b564_original.gif",
-  },
-  {
-    id: 3,
-    number: "03",
-    title: "Launch & Automated Scaling",
-    description: "Receive production-ready assets for every platform. We can even set up automated pipelines so your content scales effortlessly as your audience grows.",
-    cta: "Scale now",
-    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg",
-  },
-];
-
-// Sticky Scroll Process Section Component - Dark Theme (Original Design)
-function StickyScrollProcessSection() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const [activeStep, setActiveStep] = useState(0);
-
-  useEffect(() => {
-    const processSteps = document.querySelectorAll('.sticky-process-step');
-    
-    const observerOptions = {
-      root: null,
-      rootMargin: '-40% 0px -40% 0px',
-      threshold: 0,
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const step = entry.target.getAttribute('data-step');
-          if (step) {
-            setActiveStep(parseInt(step) - 1);
-          }
-        }
-      });
-    }, observerOptions);
-
-    processSteps.forEach((step) => observer.observe(step));
-
-    return () => {
-      processSteps.forEach((step) => observer.unobserve(step));
-    };
-  }, []);
-
-  return (
-    <section ref={sectionRef} className="relative bg-zinc-950" id="sticky-process">
-      {/* Gradient Transition from Light to Dark */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-zinc-50 to-zinc-950 pointer-events-none" />
-      <div className="max-w-[1600px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2">
-          
-          {/* Left Column: Sticky Image Wrapper */}
-          <div className="hidden lg:block relative h-full min-h-screen border-r border-zinc-900/50">
-            <div className="sticky top-0 h-screen w-full flex items-center justify-center p-12 lg:p-16">
-              <div className="relative w-full h-[85vh] max-h-[800px] flex items-start">
-                
-                {/* Dynamic Image Container */}
-                <div className="relative w-3/4 h-full overflow-hidden">
-                  {stickyProcessSteps.map((step, index) => (
-                    <img
-                      key={step.id}
-                      src={step.image}
-                      alt={`Process Step ${step.number}`}
-                      className={`process-img w-full h-full object-cover grayscale opacity-90 transition-all duration-500 ease-in-out ${
-                        index === activeStep 
-                          ? 'active relative' 
-                          : 'inactive'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                {/* Large Sticky Number */}
-                <div className="absolute -right-4 top-8 z-20">
-                  <span className="font-geist font-bold text-7xl lg:text-8xl text-zinc-100/90 tracking-tight transition-all duration-500">
-                    {stickyProcessSteps[activeStep]?.number || '01'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Scrolling Text */}
-          <div className="md:px-12 md:py-32 flex flex-col lg:gap-64 pt-24 pr-6 pb-24 pl-6 relative gap-x-32 gap-y-32">
-            
-            {/* Mobile Header */}
-            <div className="lg:hidden mb-8">
-              <div className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 border border-zinc-800 bg-zinc-900/80 backdrop-blur-sm rounded-full px-3 py-1 mb-6 tracking-wider uppercase">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange" />
-                Process
-              </div>
-              <h2 className="text-4xl md:text-5xl font-geist font-semibold text-white tracking-tight">How it works</h2>
-            </div>
-
-            {/* Steps */}
-            {stickyProcessSteps.map((step) => (
-              <div
-                key={step.id}
-                className="sticky-process-step group flex flex-col justify-center min-h-[40vh]"
-                data-step={step.id}
-              >
-                <span className="lg:hidden text-6xl font-geist font-bold text-zinc-700 mb-6 block">
-                  {step.number}
-                </span>
-                <h3 className="text-4xl md:text-5xl lg:text-6xl font-geist font-semibold text-zinc-100 tracking-tight mb-8 group-hover:text-white transition-colors">
-                  {step.title}
-                </h3>
-                <p className="text-lg md:text-xl text-zinc-400 font-light leading-relaxed max-w-lg mb-10">
-                  {step.description}
-                </p>
-                <a
-                  href="#contact"
-                  className="inline-flex items-center gap-2 px-6 py-3 border border-zinc-700 text-sm font-medium text-white uppercase tracking-widest hover:bg-white hover:text-zinc-900 hover:border-white transition-all duration-300"
-                >
-                  {step.cta}
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {/* Gradient Transition from Dark to Light */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-zinc-950 pointer-events-none" />
-    </section>
-  );
-}
-
-// Draggable Cards Data
-const draggableCards = [
-  {
-    id: 1,
-    number: "01",
-    title: "Ad Creatives",
-    description: "Platform-perfect ads that match your brand identity and boost performance metrics without the manual grind.",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop",
-  },
-  {
-    id: 2,
-    number: "02",
-    title: "Product Visuals",
-    description: "Generate unlimited angles, lighting scenarios, and environments for your products without a single reshoot.",
-    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    number: "03",
-    title: "Social Content",
-    description: "Never run dry on content. Deploy daily on-brand social posts that engage your audience and grow your reach.",
-    image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&auto=format&fit=crop",
-  },
-  {
-    id: 4,
-    number: "04",
-    title: "Campaign Shots",
-    description: "Full photoshoots in any environment—studio, outdoor, lifestyle. Export high-resolution assets ready for print.",
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop",
-  },
-];
-
-// Draggable Cards Section Component with Auto-Scroll Marquee
-function DraggableCardsSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const positionRef = useRef(0);
-  const prevTranslateRef = useRef(0);
-  const animationRef = useRef<number | null>(null);
-  const speed = 0.5;
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    const animate = () => {
-      if (!isDragging) {
-        positionRef.current += speed;
-      }
-      
-      const trackWidth = track.scrollWidth;
-      const setWidth = trackWidth / 3; // We have 3 sets of cards
-
-      if (positionRef.current >= setWidth) {
-        positionRef.current = 0;
-      }
-      if (positionRef.current < 0) {
-        positionRef.current = setWidth - 1;
-      }
-
-      track.style.transform = `translateX(${-positionRef.current}px)`;
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isDragging]);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setStartX(e.pageX);
-    prevTranslateRef.current = positionRef.current;
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const diff = startX - e.pageX;
-    positionRef.current = prevTranslateRef.current + diff;
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
-    setStartX(e.touches[0].clientX);
-    prevTranslateRef.current = positionRef.current;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const diff = startX - e.touches[0].clientX;
-    positionRef.current = prevTranslateRef.current + diff;
-  };
-
-  return (
-    <section className="overflow-hidden z-10 bg-zinc-50 border-b border-black/10 pt-20 pb-20 md:pt-28 md:pb-28 relative">
-      {/* Header */}
-      <div className="px-6 md:px-12 mb-12 md:mb-16">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-          <div>
-            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-4">
-              <span className="w-2 h-2 rounded-full bg-orange" />
-              Our Capabilities
-            </p>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-tighter font-semibold font-geist text-zinc-900">
-              What We Create
-            </h2>
-          </div>
-          <p className="text-sm md:text-base text-zinc-500 max-w-md leading-relaxed">
-            From AI model casting to campaign-ready photoshoots, we handle the entire creative production pipeline.
-          </p>
-        </div>
-      </div>
-
-      {/* Draggable Container with Auto-Scroll */}
-      <div
-        ref={containerRef}
-        className={`flex w-full overflow-hidden select-none touch-pan-y ${
-          isDragging ? "cursor-grabbing" : "cursor-grab"
-        }`}
-        style={{
-          maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-          WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onMouseMove={handleMouseMove}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleMouseUp}
-        onTouchMove={handleTouchMove}
-      >
-        <div
-          ref={trackRef}
-          className="flex gap-4 md:gap-6 min-w-max px-6 md:px-12 items-stretch will-change-transform"
-        >
-          {/* Triple cards for infinite scroll effect */}
-          {[...draggableCards, ...draggableCards, ...draggableCards].map((card, index) => (
-            <div
-              key={`${card.id}-${index}`}
-              className="group relative w-[75vw] md:w-[380px] h-[420px] md:h-[480px] overflow-hidden border border-black/10 bg-white hover:border-orange/50 transition-all duration-500 shrink-0 hover:shadow-xl"
-            >
-              {/* Background Image */}
-              <div className="absolute inset-0 w-full h-full">
-                <img
-                  src={card.image}
-                  alt={card.title}
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out"
-                  draggable="false"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/60 to-transparent" />
-              </div>
-
-              {/* Content */}
-              <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] uppercase font-semibold tracking-[0.15em] px-2 py-1 bg-orange text-white">
-                    {card.number}
-                  </span>
-                  <div className="w-9 h-9 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 bg-white text-zinc-900 group-hover:translate-x-0 translate-x-2">
-                    <ArrowUpRight className="w-4 h-4" />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-2xl md:text-3xl font-geist tracking-tight text-white mb-2 group-hover:text-orange transition-colors duration-300">
-                    {card.title}
-                  </h3>
-                  <p className="text-zinc-300 text-sm leading-relaxed max-w-[95%] opacity-80 group-hover:opacity-100 transition-opacity duration-500">
-                    {card.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  ArrowRight,
+  Sparkles,
+  Check,
+  Zap,
+  Shield,
+  Globe,
+  Clock,
+  DollarSign,
+  Users,
+  Image,
+  Shirt,
+  Camera,
+  ChevronDown,
+  Star,
+  TrendingUp,
+} from "lucide-react";
+import { Link } from "wouter";
 
 export default function Waitlist() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    interest: "All Studios",
-    company: "",
-  });
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [heroSlide, setHeroSlide] = useState(0);
+  const [position, setPosition] = useState<number | null>(null);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
-
-  const joinWaitlist = trpc.waitlist.join.useMutation({
-    onSuccess: () => setSubmitted(true),
+  const { data: stats } = trpc.waitlist.getStats.useQuery();
+  const joinMutation = trpc.waitlist.join.useMutation({
+    onSuccess: (data) => {
+      setSubmitted(true);
+      setPosition(data.position ?? null);
+      setAlreadyRegistered(data.alreadyRegistered);
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email) return;
-    joinWaitlist.mutate(formData);
+    if (!email) return;
+    joinMutation.mutate({ email, name: name || undefined, source: "landing_page" });
   };
 
-  // Hero gallery auto-advance
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHeroSlide((prev) => (prev + 1) % 3);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Dynamic Time/Location for footer
-  useEffect(() => {
-    const timeElement = document.getElementById('dynamic-time');
-    const locationElement = document.getElementById('dynamic-location');
-    
-    const updateClock = () => {
-      if (timeElement) {
-        const now = new Date();
-        timeElement.textContent = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-      }
-    };
-    
-    const updateLocation = () => {
-      if (locationElement) {
-        try {
-          const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-          const locationName = timeZone ? timeZone.split('/').pop()?.replace(/_/g, ' ') || 'Global' : 'Global';
-          locationElement.textContent = locationName;
-        } catch {
-          locationElement.textContent = 'Earth';
-        }
-      }
-    };
-    
-    updateClock();
-    updateLocation();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Hero slides data
-  const heroSlides = [
-    {
-      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop",
-      tag: "Portraiture",
-      title: "Digital Casting",
-      subtitle: "Generate unique AI model identities",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200&auto=format&fit=crop",
-      tag: "Fashion",
-      title: "Virtual Styling",
-      subtitle: "Outfit any model instantly",
-    },
-    {
-      image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1200&auto=format&fit=crop",
-      tag: "Campaigns",
-      title: "Photo Studio",
-      subtitle: "Full photoshoots on demand",
-    },
-  ];
-
-
+  const scrollToWaitlist = () => {
+    document.getElementById("waitlist-form")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <div className="min-h-screen relative bg-zinc-100">
-      {/* Subtle Noise Texture */}
-      <div className="fixed inset-0 pointer-events-none opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-0" />
-
-      {/* Animated Neon Grid Lines */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="neonGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style={{ stopColor: "rgba(249, 115, 22, 0)", stopOpacity: 0 }} />
-              <stop offset="50%" style={{ stopColor: "rgba(249, 115, 22, 0.5)", stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: "rgba(249, 115, 22, 0)", stopOpacity: 0 }} />
-            </linearGradient>
-            <linearGradient id="neonGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: "rgba(249, 115, 22, 0)", stopOpacity: 0 }} />
-              <stop offset="50%" style={{ stopColor: "rgba(249, 115, 22, 0.5)", stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: "rgba(249, 115, 22, 0)", stopOpacity: 0 }} />
-            </linearGradient>
-            <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <line x1="-200" y1="25%" x2="0" y2="25%" stroke="url(#neonGradient1)" strokeWidth="1" filter="url(#neonGlow)">
-            <animate attributeName="x1" values="-200;100%" dur="15s" repeatCount="indefinite" />
-            <animate attributeName="x2" values="0;120%" dur="15s" repeatCount="indefinite" />
-          </line>
-          <line x1="75%" y1="-200" x2="75%" y2="0" stroke="url(#neonGradient2)" strokeWidth="1" filter="url(#neonGlow)">
-            <animate attributeName="y1" values="-200;100%" dur="12s" repeatCount="indefinite" />
-            <animate attributeName="y2" values="0;120%" dur="12s" repeatCount="indefinite" />
-          </line>
-        </svg>
-      </div>
-
-      {/* Navigation - Inline Style */}
-      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-5 md:px-12 md:py-6 flex justify-between items-center mix-blend-difference text-white pointer-events-none">
-        <Link href="/" className="group flex items-center gap-2 text-xl md:text-2xl tracking-tight font-normal pointer-events-auto">
-          <span className="w-6 h-6 rounded flex items-center justify-center text-sm bg-white text-black">F</span>
-          <span className="font-geist font-bold">FORMA</span>
-        </Link>
-
-        {/* Desktop Menu - Inline Links */}
-        <div className="hidden md:flex items-center gap-8 lg:gap-10 pointer-events-auto">
-          <a href="#studios" className="text-xs font-medium uppercase tracking-widest hover:text-zinc-300 transition-colors">Studios</a>
-          <a href="#process" className="text-xs font-medium uppercase tracking-widest hover:text-zinc-300 transition-colors">Process</a>
-          <a href="#benefits" className="text-xs font-medium uppercase tracking-widest hover:text-zinc-300 transition-colors">Benefits</a>
-          <a href="#contact" className="px-5 py-2 rounded-full border border-white/30 hover:bg-white hover:text-black transition-all duration-300 text-xs font-medium uppercase tracking-widest backdrop-blur-sm">Get Early Access</a>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-white/5">
+        <div className="container">
+          <div className="flex items-center justify-between h-16 md:h-20">
+            <Link href="/">
+              <span className="text-xl md:text-2xl font-instrument tracking-tight cursor-pointer">
+                Forma<span className="opacity-60">Studio</span>
+              </span>
+            </Link>
+            <Button
+              onClick={scrollToWaitlist}
+              className="h-9 px-4 rounded-full bg-white text-zinc-900 hover:bg-white/90 font-medium"
+            >
+              Join Waitlist
+            </Button>
+          </div>
         </div>
-
-        {/* Mobile Menu Button */}
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 pointer-events-auto"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
       </nav>
 
-      {/* Dropdown Menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-zinc-50/95 backdrop-blur-xl pt-24 px-6">
-          <div className="flex flex-col gap-0 max-w-md mx-auto">
-            <a href="#studios" onClick={() => setMobileMenuOpen(false)} className="block px-6 py-4 text-lg font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-orange">Studios</a>
-            <a href="#process" onClick={() => setMobileMenuOpen(false)} className="block px-6 py-4 text-lg font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-orange">Process</a>
-            <a href="#benefits" onClick={() => setMobileMenuOpen(false)} className="block px-6 py-4 text-lg font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-orange">Benefits</a>
-            <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="block px-6 py-4 text-lg font-medium transition-colors tracking-wide text-black/70 hover:bg-black/5 hover:text-orange">Contact</a>
-            <Link href="/login" className="mt-6 px-6 py-3 text-center font-medium bg-zinc-900 text-white hover:bg-zinc-800 transition-colors">Sign In</Link>
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 via-background to-background" />
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/3 left-1/4 w-[800px] h-[800px] bg-purple-500/10 rounded-full blur-[150px] animate-pulse-glow" />
+          <div className="absolute bottom-1/3 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] animate-pulse-glow animation-delay-500" />
+        </div>
+
+        <div className="container relative z-10 text-center px-4 py-16 md:py-24">
+          {/* Social proof badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-button mb-8 animate-fade-in-up">
+            <div className="flex -space-x-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 border-2 border-background"
+                />
+              ))}
+            </div>
+            <span className="text-sm">
+              <span className="font-semibold">{stats?.displayCount || 847}+</span> creators on the waitlist
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-instrument tracking-tight leading-[0.95] mb-6 animate-fade-in-up animation-delay-100">
+            Stop paying $10,000
+            <br />
+            <span className="text-muted-foreground">per photoshoot</span>
+          </h1>
+
+          {/* Subheadline */}
+          <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8 animate-fade-in-up animation-delay-200 leading-relaxed">
+            FormaStudio creates <span className="text-foreground">photorealistic AI models</span> for your brand.
+            Cast them once, use them forever. No agencies, no scheduling, no limits.
+          </p>
+
+          {/* Value props */}
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-10 animate-fade-in-up animation-delay-300">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Check className="w-4 h-4 text-green-400" />
+              <span>Unlimited generations</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Check className="w-4 h-4 text-green-400" />
+              <span>Full commercial rights</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Check className="w-4 h-4 text-green-400" />
+              <span>Campaign-ready in minutes</span>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="animate-fade-in-up animation-delay-400">
+            <Button
+              onClick={scrollToWaitlist}
+              size="lg"
+              className="h-14 px-8 rounded-full bg-white text-zinc-900 hover:bg-white/90 font-medium group text-base"
+            >
+              Get Early Access
+              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+            <p className="text-xs text-muted-foreground mt-4">
+              Join the waitlist for exclusive early access pricing
+            </p>
           </div>
         </div>
-      )}
 
-      {/* Main Content */}
-      <main className="z-10 relative">
-        {/* Hero Section - Split Layout */}
-        <section className="min-h-screen relative overflow-hidden pt-24 pb-16 px-6 md:px-12 bg-zinc-100">
-          {/* Background Elements */}
-          <div className="absolute inset-0 z-0 overflow-hidden">
-            <div className="absolute top-0 right-0 w-[50rem] h-[50rem] bg-gradient-to-b from-white/60 to-transparent opacity-50 blur-3xl pointer-events-none rounded-full translate-x-1/3 -translate-y-1/3" />
+        {/* Scroll indicator */}
+        <button
+          onClick={() => document.getElementById("problem")?.scrollIntoView({ behavior: "smooth" })}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer"
+        >
+          <ChevronDown className="w-8 h-8 text-muted-foreground" />
+        </button>
+      </section>
+
+      {/* Problem Section */}
+      <section id="problem" className="py-24 md:py-32 border-t border-white/5">
+        <div className="container">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+              The Problem
+            </p>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-instrument tracking-tight mb-6">
+              Traditional photoshoots are
+              <br />
+              <span className="text-muted-foreground">broken for modern brands</span>
+            </h2>
           </div>
 
-          <div className="max-w-[90rem] mx-auto relative z-10">
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-16 gap-y-12 items-start pt-8 md:pt-12">
-              {/* Left Content - 7 columns */}
-              <div className="lg:col-span-7 flex flex-col gap-6">
-                {/* Tagline */}
-                <div className="flex items-center gap-4 animate-fade-in-up">
-                  <div className="h-px w-12 bg-zinc-400" />
-                  <span className="uppercase text-xs md:text-sm font-medium text-zinc-500 tracking-widest">
-                    AI-First Creative Studio
-                  </span>
-                </div>
-
-                {/* Main Headline */}
-                <h1 className="text-5xl md:text-7xl lg:text-8xl xl:text-9xl leading-[0.85] uppercase font-medium text-zinc-900 tracking-tight font-geist animate-fade-in-up animation-delay-100">
-                  Stop Paying
-                  <br />
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-zinc-500 to-zinc-900">
-                    $10,000 Per
-                  </span>
-                  <br />
-                  Photoshoot
-                </h1>
-
-                {/* Subtitle + CTA - Moved here to reduce spacing */}
-                <div className="max-w-xl mt-4 animate-fade-in-up animation-delay-200">
-                  <p className="text-base md:text-lg leading-relaxed font-normal text-zinc-600 tracking-tight font-space mb-6">
-                    Generate AI models, style outfits, and create campaign-ready photoshoots in minutes—all without a single real photoshoot.
-                  </p>
-
-                  <div className="flex flex-wrap gap-4">
-                    <a 
-                      href="#contact" 
-                      className="group relative px-8 py-4 bg-zinc-900 text-white rounded-lg overflow-hidden transition-all hover:shadow-xl hover:shadow-zinc-500/20"
-                    >
-                      <span className="relative z-10 flex items-center gap-2 uppercase text-sm font-semibold tracking-widest">
-                        Get Early Access
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </span>
-                    </a>
-                    <a 
-                      href="#studios" 
-                      className="px-8 py-4 border-2 border-zinc-200 text-zinc-700 font-semibold rounded-lg hover:border-zinc-900 hover:bg-zinc-900 hover:text-white transition-all duration-300 flex items-center gap-2 text-sm uppercase tracking-widest"
-                    >
-                      View Studios
-                    </a>
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="glass-card rounded-2xl p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-6">
+                <DollarSign className="w-8 h-8 text-red-400" />
               </div>
+              <h3 className="text-xl font-instrument mb-3">Expensive</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                A single campaign shoot costs $10,000-$50,000. Models, photographers, studios, stylists—it adds up fast.
+              </p>
+            </div>
 
-              {/* Right Visual - 5 columns */}
-              <div className="lg:col-span-5 group h-full relative animate-fade-in-up animation-delay-200">
-                {/* Tilted Background Shape */}
-                <div className="absolute inset-0 bg-zinc-900 rounded-2xl rotate-3 opacity-10 group-hover:rotate-6 transition-transform duration-500" />
-                
-                {/* Main Image - Increased Size */}
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl h-[480px] lg:h-[600px] xl:h-[700px] w-full">
-                  <img 
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop" 
-                    alt="AI Fashion Model" 
-                    className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/40 to-transparent" />
-                  
-                  {/* Overlay Card */}
-                  <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-white">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[0.65rem] uppercase tracking-widest font-space">
-                        Model Generation
-                      </span>
-                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    </div>
-                    <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-white w-2/3 animate-[pulse_2s_infinite]" />
-                    </div>
+            <div className="glass-card rounded-2xl p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-8 h-8 text-orange-400" />
+              </div>
+              <h3 className="text-xl font-instrument mb-3">Slow</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Weeks of planning, booking, shooting, editing. By the time you launch, trends have moved on.
+              </p>
+            </div>
+
+            <div className="glass-card rounded-2xl p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-6">
+                <Users className="w-8 h-8 text-yellow-400" />
+              </div>
+              <h3 className="text-xl font-instrument mb-3">Limited</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                One model, one look, one day. Need different demographics or styles? Start over from scratch.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Solution Section */}
+      <section className="py-24 md:py-32 border-t border-white/5">
+        <div className="container">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <p className="text-sm font-medium text-purple-400 uppercase tracking-wider mb-4">
+              The Solution
+            </p>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-instrument tracking-tight mb-6">
+              Your AI creative studio
+              <br />
+              <span className="text-muted-foreground">that never sleeps</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              FormaStudio gives you a complete AI-powered production pipeline. Cast models, style outfits, generate campaigns—all from one platform.
+            </p>
+          </div>
+
+          {/* Studios Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            <div className="group relative h-[450px] rounded-[2rem] overflow-hidden border border-white/10 bg-zinc-900/40 hover:border-purple-500/50 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-b from-purple-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                  <span className="text-5xl font-instrument text-white/20">01</span>
+                  <div className="w-12 h-12 rounded-full glass-button flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
+                    <Image className="w-6 h-6" />
                   </div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-instrument tracking-tight mb-3">Casting Studio</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Create photorealistic AI models with precise control over demographics, features, and brand aesthetics. Your models, your rules.
+                  </p>
                 </div>
               </div>
             </div>
 
+            <div className="group relative h-[450px] rounded-[2rem] overflow-hidden border border-white/10 bg-zinc-900/40 hover:border-blue-500/50 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                  <span className="text-5xl font-instrument text-white/20">02</span>
+                  <div className="w-12 h-12 rounded-full glass-button flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                    <Shirt className="w-6 h-6" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-instrument tracking-tight mb-3">Outfit Studio</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Dress your AI models in any outfit or product. Perfect for fashion, e-commerce, and lookbooks—no physical samples needed.
+                  </p>
+                </div>
+              </div>
+            </div>
 
+            <div className="group relative h-[450px] rounded-[2rem] overflow-hidden border border-white/10 bg-zinc-900/40 hover:border-orange-500/50 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-b from-orange-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                  <span className="text-5xl font-instrument text-white/20">03</span>
+                  <div className="w-12 h-12 rounded-full glass-button flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                    <Camera className="w-6 h-6" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-instrument tracking-tight mb-3">Photo Studio</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Generate campaign-ready visuals at scale. Call sheets, mood boards, and production-quality images in minutes, not weeks.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
 
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-400">
-            <span className="text-xs uppercase tracking-widest">Scroll</span>
-            <div className="w-px h-8 bg-gradient-to-b from-zinc-400 to-transparent animate-pulse" />
-          </div>
-        </section>
-
-        {/* Draggable Cards Section */}
-        <DraggableCardsSection />
-
-        {/* Sticky Scroll Process Section */}
-        <StickyScrollProcessSection />
-
-
-
-
-
-        {/* Creative Power, Unbound Section - Light Bento Grid */}
-        <section className="py-24 px-6 md:px-12 bg-white border-b border-black/10">
-          <div className="max-w-[1400px] mx-auto">
-            
-            {/* Section Header */}
-            <div className="mb-20 max-w-2xl">
-              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-4">
-                <span className="w-2 h-2 rounded-full bg-orange" />
-                Why Us
+      {/* Benefits Section */}
+      <section className="py-24 md:py-32 border-t border-white/5">
+        <div className="container">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <p className="text-sm font-medium text-green-400 uppercase tracking-wider mb-4">
+                Why FormaStudio
               </p>
-              <h2 className="text-5xl md:text-7xl font-medium text-zinc-900 tracking-tight font-geist mb-6">
-                Creative power, <span className="text-zinc-400">unbound.</span>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-instrument tracking-tight mb-8">
+                Built for the way
+                <br />
+                <span className="text-muted-foreground">modern brands work</span>
               </h2>
-              <p className="text-xl text-zinc-500 font-light leading-relaxed">
-                Save time, cut costs, and do more with less. We help you work smarter so you can focus on strategy.
-              </p>
-            </div>
 
-            {/* Bento Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Large Card Left (AI That Knows You) */}
-              <div className="lg:col-span-5 group relative min-h-[640px] bg-zinc-100 border border-black/10 rounded-[2.5rem] hover:border-orange/30 transition-all duration-500 overflow-hidden flex flex-col justify-between p-10">
-                {/* Background Gradient Hint */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80 z-0 pointer-events-none" />
-
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="w-2 h-2 rounded-full bg-orange shadow-[0_0_12px_rgba(249,115,22,0.6)] animate-pulse" />
-                    <span className="uppercase text-xs font-bold tracking-[0.2em] text-zinc-500">Consistent</span>
+              <div className="space-y-8">
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-xl glass-button flex items-center justify-center shrink-0">
+                    <Zap className="w-6 h-6 text-yellow-400" />
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-geist font-medium text-zinc-900 tracking-tight mb-4 leading-[0.95]">AI That Knows You</h3>
-                  <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-sm">
-                    Feed us your brand assets once, and our AI masters your look forever.
-                  </p>
-                </div>
-                
-                <div className="absolute bottom-0 left-0 w-full h-[55%] z-0 rounded-b-[2.5rem] overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent z-10" />
-                  <img 
-                    src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f36259a7-cc94-4846-8290-2df52026731d_original.gif" 
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out" 
-                    alt="AI Gen"
-                  />
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="lg:col-span-7 flex flex-col gap-6 h-full">
-                
-                {/* Wide Card (Perfect Consistency) */}
-                <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
-                  <div className="relative z-10 flex-1">
-                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tight font-geist font-medium mb-4">Perfect Consistency</h3>
-                    <p className="text-lg text-zinc-500 font-light leading-relaxed">
-                      Every piece of content adheres strictly to your guidelines, ensuring a unified brand voice across channels.
+                  <div>
+                    <h3 className="font-medium text-lg mb-2">10x Faster Production</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Go from concept to campaign in hours, not weeks. Generate hundreds of variations while your competitors are still booking studios.
                     </p>
                   </div>
-                  <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-2xl overflow-hidden border border-black/10 group-hover:border-orange/30 transition-colors">
-                    <img 
-                      src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ebfeb48e-4108-49c6-86a2-a1491f93b564_original.gif" 
-                      className="transition-all duration-700 ease-in-out w-full h-full object-cover"
-                      alt="Brand Consistency"
-                    />
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-xl glass-button flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-6 h-6 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg mb-2">90% Cost Reduction</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Replace $10,000+ photoshoots with AI-generated content. Same quality, fraction of the cost. Scale without scaling your budget.
+                    </p>
                   </div>
                 </div>
 
-                {/* Split Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-                  
-                  {/* Cost Efficiency */}
-                  <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
-                    <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight font-geist">Cost Efficiency</h3>
-                      <p className="text-base text-zinc-500 font-light">Cut overhead significantly.</p>
-                    </div>
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-baseline gap-1 mb-5">
-                        <span className="text-7xl font-semibold text-zinc-900 tracking-tighter font-geist">-85</span>
-                        <span className="text-3xl text-orange font-medium">%</span>
-                      </div>
-                      <div className="w-full bg-zinc-300 h-1.5 rounded-full overflow-hidden">
-                        <div className="h-full bg-orange w-[15%] group-hover:w-[85%] transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
-                      </div>
-                    </div>
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-xl glass-button flex items-center justify-center shrink-0">
+                    <Globe className="w-6 h-6 text-blue-400" />
                   </div>
-
-                  {/* Hyper Speed */}
-                  <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
-                    <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight font-geist">Hyper Speed</h3>
-                      <p className="text-base text-zinc-500 font-light">Concept to final in 24h.</p>
-                    </div>
-                    
-                    <div className="relative z-10 flex items-end">
-                      <div className="flex items-center gap-3 bg-white border border-black/10 rounded-full pl-5 pr-6 py-3 shadow-lg group-hover:border-orange/30 transition-colors">
-                        <div className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange" />
-                        </div>
-                        <span className="text-sm font-mono text-zinc-600 tracking-wide">Rendering...</span>
-                      </div>
-                    </div>
+                  <div>
+                    <h3 className="font-medium text-lg mb-2">Global Representation</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Create models representing any demographic, any market. Authentic diversity without the logistics of global casting.
+                    </p>
                   </div>
+                </div>
 
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-xl glass-button flex items-center justify-center shrink-0">
+                    <Shield className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg mb-2">Full Commercial Rights</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Own your AI models completely. No usage fees, no licensing headaches, no contract renewals. Your brand assets, forever.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="aspect-square rounded-[2rem] glass-card p-8 flex flex-col items-center justify-center">
+                <div className="text-center mb-8">
+                  <p className="text-6xl md:text-7xl font-instrument mb-2">90%</p>
+                  <p className="text-muted-foreground">average cost savings</p>
+                </div>
+                <div className="w-full h-px bg-white/10 my-6" />
+                <div className="grid grid-cols-2 gap-8 w-full">
+                  <div className="text-center">
+                    <p className="text-3xl font-instrument mb-1">10x</p>
+                    <p className="text-sm text-muted-foreground">faster delivery</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-instrument mb-1">∞</p>
+                    <p className="text-sm text-muted-foreground">variations</p>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -top-4 -right-4 w-32 h-32 bg-green-500/20 rounded-full blur-3xl" />
+              <div className="absolute -bottom-4 -left-4 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof Section */}
+      <section className="py-24 md:py-32 border-t border-white/5">
+        <div className="container">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <p className="text-sm font-medium text-yellow-400 uppercase tracking-wider mb-4">
+              Trusted By
+            </p>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-instrument tracking-tight">
+              Join the brands already
+              <br />
+              <span className="text-muted-foreground">transforming their creative</span>
+            </h2>
+          </div>
+
+          {/* Testimonials */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            <div className="glass-card rounded-2xl p-8">
+              <div className="flex gap-1 mb-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                "We cut our content production costs by 85% and increased our output 10x. FormaStudio is the future of fashion marketing."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400" />
+                <div>
+                  <p className="font-medium text-sm">Sarah Chen</p>
+                  <p className="text-xs text-muted-foreground">Creative Director, Luxe Fashion</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card rounded-2xl p-8">
+              <div className="flex gap-1 mb-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                "Finally, a tool that understands what creative directors actually need. The model consistency is incredible."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400" />
+                <div>
+                  <p className="font-medium text-sm">Marcus Williams</p>
+                  <p className="text-xs text-muted-foreground">Brand Manager, Urban Collective</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card rounded-2xl p-8">
+              <div className="flex gap-1 mb-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                "We launched campaigns in 12 markets simultaneously. Before FormaStudio, that would have taken 6 months and $500K."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400" />
+                <div>
+                  <p className="font-medium text-sm">Elena Rodriguez</p>
+                  <p className="text-xs text-muted-foreground">CMO, Global Beauty Co</p>
                 </div>
               </div>
             </div>
           </div>
-        </section>
 
-        {/* Benefits Section */}
-        <section id="benefits" className="border-b border-black/10 bg-zinc-50">
-          <div className="px-6 md:px-12 py-16 flex flex-col md:flex-row items-start md:items-end justify-between border-b border-black/10">
-            <div>
-              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-4">
-                <span className="w-2 h-2 rounded-full bg-orange" />
-                Why Choose Us
+          {/* Brand logos placeholder */}
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 opacity-40">
+            {["VOGUE", "ELLE", "GQ", "BAZAAR", "COSMOPOLITAN"].map((brand) => (
+              <span key={brand} className="text-lg md:text-xl font-instrument tracking-wider">
+                {brand}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Early Access Section */}
+      <section className="py-24 md:py-32 border-t border-white/5">
+        <div className="container">
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <p className="text-sm font-medium text-purple-400 uppercase tracking-wider mb-4">
+              Early Access
+            </p>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-instrument tracking-tight mb-6">
+              Be first in line for
+              <br />
+              <span className="text-muted-foreground">exclusive benefits</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="glass-card rounded-2xl p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-6 h-6 text-purple-400" />
+              </div>
+              <h3 className="font-medium mb-2">50% Launch Discount</h3>
+              <p className="text-sm text-muted-foreground">
+                Waitlist members get half off their first 3 months
               </p>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-zinc-900 font-geist">
-                Benefits
+            </div>
+
+            <div className="glass-card rounded-2xl p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-6 h-6 text-yellow-400" />
+              </div>
+              <h3 className="font-medium mb-2">500 Bonus Points</h3>
+              <p className="text-sm text-muted-foreground">
+                Extra generation credits to explore every feature
+              </p>
+            </div>
+
+            <div className="glass-card rounded-2xl p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                <Users className="w-6 h-6 text-green-400" />
+              </div>
+              <h3 className="font-medium mb-2">Priority Access</h3>
+              <p className="text-sm text-muted-foreground">
+                Skip the line and get access before public launch
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Waitlist Form Section */}
+      <section id="waitlist-form" className="py-24 md:py-32 border-t border-white/5">
+        <div className="container">
+          <div className="max-w-2xl mx-auto">
+            <div className="glass-card rounded-[2rem] p-8 md:p-12 relative overflow-hidden">
+              {/* Background gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/10" />
+
+              <div className="relative z-10">
+                {submitted ? (
+                  <div className="text-center py-8">
+                    <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
+                      <Check className="w-10 h-10 text-green-400" />
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-instrument mb-4">
+                      {alreadyRegistered ? "You're already on the list!" : "You're on the list!"}
+                    </h3>
+                    {position && (
+                      <p className="text-muted-foreground mb-4">
+                        You're <span className="text-foreground font-medium">#{position}</span> in line
+                      </p>
+                    )}
+                    <p className="text-muted-foreground">
+                      We'll email you when it's your turn to access FormaStudio.
+                      <br />
+                      Get ready to transform your creative workflow.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-center mb-8">
+                      <h3 className="text-2xl md:text-3xl font-instrument mb-4">
+                        Join the waitlist
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Be the first to know when FormaStudio launches.
+                        <br />
+                        Early access members get exclusive benefits.
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div>
+                        <Input
+                          type="text"
+                          placeholder="Your name (optional)"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="h-12 bg-white/5 border-white/10 focus:border-white/20 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="email"
+                          placeholder="Enter your email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          className="h-12 bg-white/5 border-white/10 focus:border-white/20 rounded-xl"
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={joinMutation.isPending}
+                        className="w-full h-12 rounded-xl bg-white text-zinc-900 hover:bg-white/90 font-medium"
+                      >
+                        {joinMutation.isPending ? (
+                          "Joining..."
+                        ) : (
+                          <>
+                            Get Early Access
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </>
+                        )}
+                      </Button>
+                    </form>
+
+                    {joinMutation.isError && (
+                      <p className="text-red-400 text-sm text-center mt-4">
+                        Something went wrong. Please try again.
+                      </p>
+                    )}
+
+                    <p className="text-xs text-muted-foreground text-center mt-6">
+                      No spam, ever. Unsubscribe anytime.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Social proof below form */}
+            <div className="flex items-center justify-center gap-4 mt-8">
+              <div className="flex -space-x-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 border-2 border-background"
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Join <span className="text-foreground font-medium">{stats?.displayCount || 847}+</span> creators waiting
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-24 md:py-32 border-t border-white/5">
+        <div className="container">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-instrument tracking-tight">
+                Frequently asked
+                <br />
+                <span className="text-muted-foreground">questions</span>
               </h2>
             </div>
-            <a href="#contact" className="mt-6 md:mt-0 px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 border-black/20 hover:bg-black hover:text-white">
-              Join Waitlist
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-black/10">
-            {/* Benefit 1 */}
-            <div className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
-              <div className="flex h-32 border-b mb-6 items-center justify-center border-black/10">
-                <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">90%</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 tracking-tight group-hover:text-orange transition-colors">Cost Savings</h3>
-              <p className="text-sm leading-relaxed text-zinc-500">
-                Eliminate expensive photoshoots, model fees, and studio rentals.
-              </p>
-            </div>
-
-            {/* Benefit 2 */}
-            <div className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
-              <div className="flex h-32 border-b mb-6 items-center justify-center border-black/10">
-                <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">&lt;5m</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 tracking-tight group-hover:text-orange transition-colors">Generation Time</h3>
-              <p className="text-sm leading-relaxed text-zinc-500">
-                From concept to campaign-ready assets in under 5 minutes.
-              </p>
-            </div>
-
-            {/* Benefit 3 */}
-            <div className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
-              <div className="flex h-32 border-b mb-6 items-center justify-center border-black/10">
-                <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">∞</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 tracking-tight group-hover:text-orange transition-colors">Unlimited Variations</h3>
-              <p className="text-sm leading-relaxed text-zinc-500">
-                Generate endless variations without additional cost or time.
-              </p>
-            </div>
-
-            {/* Benefit 4 */}
-            <div className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
-              <div className="flex h-32 border-b mb-6 items-center justify-center border-black/10">
-                <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">24/7</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 tracking-tight group-hover:text-orange transition-colors">Always Available</h3>
-              <p className="text-sm leading-relaxed text-zinc-500">
-                Create content anytime, anywhere. No scheduling required.
-              </p>
+            <div className="space-y-4">
+              {[
+                {
+                  q: "How realistic are the AI-generated models?",
+                  a: "Our models are indistinguishable from real photography. We use state-of-the-art AI trained specifically for fashion and commercial imagery, ensuring photorealistic results that meet professional standards.",
+                },
+                {
+                  q: "Do I own the rights to the generated content?",
+                  a: "Yes, absolutely. All content generated through FormaStudio is yours to use commercially without any additional licensing fees or restrictions. Your AI models belong to you.",
+                },
+                {
+                  q: "Can I use the same model across multiple campaigns?",
+                  a: "That's exactly what FormaStudio is designed for. Create a model once, and use their consistent identity across unlimited campaigns, seasons, and markets.",
+                },
+                {
+                  q: "How does pricing work?",
+                  a: "FormaStudio uses a points-based system. Each generation consumes points based on complexity. Waitlist members receive 500 bonus points and 50% off their first 3 months.",
+                },
+                {
+                  q: "When will FormaStudio launch?",
+                  a: "We're currently in private beta with select brands. Public launch is planned for Q2 2026. Waitlist members get priority access before the general public.",
+                },
+              ].map((faq, i) => (
+                <div key={i} className="glass-card rounded-xl p-6">
+                  <h3 className="font-medium mb-2">{faq.q}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+                </div>
+              ))}
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Contact / CTA Section */}
-        <section id="contact" className="grid grid-cols-1 lg:grid-cols-2 border-b border-black/10">
-          {/* Left: Form */}
-          <div className="p-8 md:p-16 flex flex-col justify-center border-black/10 lg:border-r">
-            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-6">
-              <span className="w-2 h-2 rounded-full bg-orange" />
-              Get Early Access
-            </p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 font-geist">
-              Join the Waitlist
+      {/* Final CTA */}
+      <section className="py-24 md:py-32 border-t border-white/5">
+        <div className="container">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-instrument tracking-tight mb-6">
+              Ready to revolutionize
+              <br />
+              <span className="text-muted-foreground">your creative workflow?</span>
             </h2>
-            <p className="text-sm text-zinc-500 mb-8 max-w-md leading-relaxed">
-              Be among the first to experience the future of AI-powered fashion photography. Early access members get exclusive benefits.
+            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
+              Join thousands of creative professionals already on the waitlist.
+              Don't miss your chance at early access pricing.
             </p>
-
-            {submitted ? (
-              <div className="p-6 border border-green-200 bg-green-50 rounded-xl">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="font-semibold text-green-800">You're on the list!</span>
-                </div>
-                <p className="text-sm text-green-700">
-                  We'll notify you when FormaStudio launches. Check your email for confirmation.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Your Name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="px-4 py-3 border border-black/10 bg-white focus:border-orange focus:outline-none transition-colors text-sm"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email Address *"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="px-4 py-3 border border-black/10 bg-white focus:border-orange focus:outline-none transition-colors text-sm"
-                  />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Company (Optional)"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  className="w-full px-4 py-3 border border-black/10 bg-white focus:border-orange focus:outline-none transition-colors text-sm"
-                />
-                <select
-                  value={formData.interest}
-                  onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
-                  className="w-full px-4 py-3 border border-black/10 bg-white focus:border-orange focus:outline-none transition-colors text-sm"
-                >
-                  <option value="All Studios">Interested in All Studios</option>
-                  <option value="Casting Studio">Casting Studio</option>
-                  <option value="Outfit Studio">Outfit Studio</option>
-                  <option value="Photo Studio">Photo Studio</option>
-                </select>
-                <button
-                  type="submit"
-                  disabled={joinWaitlist.isPending}
-                  className="w-full py-4 bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {joinWaitlist.isPending ? "Joining..." : "Join Waitlist"}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            )}
+            <Button
+              onClick={scrollToWaitlist}
+              size="lg"
+              className="h-14 px-8 rounded-full bg-white text-zinc-900 hover:bg-white/90 font-medium group"
+            >
+              Join the Waitlist
+              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
           </div>
+        </div>
+      </section>
 
-          {/* Right: Visual */}
-          <div className="relative min-h-[400px] lg:min-h-full overflow-hidden group">
-            <img 
-              src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200&auto=format&fit=crop" 
-              alt="Fashion Model" 
-              className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 to-transparent" />
-            
-            {/* Floating Stats */}
-            <div className="absolute bottom-8 left-8 right-8 grid grid-cols-3 gap-4">
-              <div className="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-center">
-                <span className="block text-2xl font-bold text-white">847+</span>
-                <span className="text-[0.65rem] uppercase tracking-wider text-white/70">On Waitlist</span>
-              </div>
-              <div className="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-center">
-                <span className="block text-2xl font-bold text-white">Q1</span>
-                <span className="text-[0.65rem] uppercase tracking-wider text-white/70">2026 Launch</span>
-              </div>
-              <div className="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-center">
-                <span className="block text-2xl font-bold text-white">50%</span>
-                <span className="text-[0.65rem] uppercase tracking-wider text-white/70">Early Discount</span>
-              </div>
+      {/* Footer */}
+      <footer className="py-12 border-t border-white/5">
+        <div className="container">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-instrument">
+                Forma<span className="text-muted-foreground">Studio</span>
+              </span>
+              <span className="text-xs text-muted-foreground">™</span>
             </div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="px-6 md:px-12 py-12 md:py-16 bg-zinc-50">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12 pb-12 border-b border-black/10">
-            <div>
-              <Link href="/" className="flex items-center gap-2 text-2xl tracking-tight font-normal mb-4">
-                <span className="w-7 h-7 rounded flex items-center justify-center text-sm bg-zinc-900 text-white">F</span>
-                <span className="font-geist font-bold text-zinc-900">FORMA</span>
-              </Link>
-              <p className="text-sm text-zinc-500 max-w-xs">
-                AI-powered creative studio for fashion and lifestyle brands.
-              </p>
-            </div>
-            
-            <div className="flex flex-col md:flex-row gap-8 md:gap-16">
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4">Studios</h4>
-                <ul className="space-y-2">
-                  <li><a href="#studios" className="text-sm text-zinc-600 hover:text-orange transition-colors">Casting Studio</a></li>
-                  <li><a href="#studios" className="text-sm text-zinc-600 hover:text-orange transition-colors">Outfit Studio</a></li>
-                  <li><a href="#studios" className="text-sm text-zinc-600 hover:text-orange transition-colors">Photo Studio</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4">Company</h4>
-                <ul className="space-y-2">
-                  <li><a href="#" className="text-sm text-zinc-600 hover:text-orange transition-colors">About</a></li>
-                  <li><a href="#contact" className="text-sm text-zinc-600 hover:text-orange transition-colors">Contact</a></li>
-                  <li><Link href="/login" className="text-sm text-zinc-600 hover:text-orange transition-colors">Sign In</Link></li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-xs text-zinc-400">
-              © 2026 FormaStudio. All rights reserved.
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} FormaStudio. All rights reserved.
             </p>
-            <div className="flex items-center gap-2 text-xs text-zinc-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span id="dynamic-location">Global</span>
-              <span>·</span>
-              <span id="dynamic-time">00:00</span>
-            </div>
           </div>
-        </footer>
-      </main>
+        </div>
+      </footer>
     </div>
   );
 }
