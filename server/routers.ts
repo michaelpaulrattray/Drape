@@ -2,7 +2,8 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { getUserPoints, getPointTransactions, deductPoints, addPoints, addToWaitlist, getWaitlistCount } from "./db";
+import { getUserPoints, getPointTransactions, deductPoints, addPoints, addToWaitlist, getWaitlistCount, updateUserProfile, getUserProfile } from "./db";
+import { storagePut } from "./storage";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -106,6 +107,99 @@ export const appRouter = router({
           required: input.required,
         };
       }),
+  }),
+
+  profile: router({
+    // Get user profile with custom fields
+    get: protectedProcedure.query(async ({ ctx }) => {
+      const profile = await getUserProfile(ctx.user.id);
+      if (!profile) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Profile not found",
+        });
+      }
+      return {
+        id: profile.id,
+        name: profile.name,
+        displayName: profile.displayName,
+        email: profile.email,
+        avatarUrl: profile.customAvatarUrl || profile.avatarUrl,
+        originalAvatarUrl: profile.avatarUrl,
+        customAvatarUrl: profile.customAvatarUrl,
+        createdAt: profile.createdAt,
+      };
+    }),
+
+    // Update display name
+    updateDisplayName: protectedProcedure
+      .input(z.object({ displayName: z.string().max(50) }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await updateUserProfile(ctx.user.id, {
+          displayName: input.displayName.trim() || undefined,
+        });
+        if (!result.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: result.error || "Failed to update display name",
+          });
+        }
+        return { success: true };
+      }),
+
+    // Upload custom avatar
+    uploadAvatar: protectedProcedure
+      .input(z.object({
+        base64: z.string(),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          // Decode base64
+          const buffer = Buffer.from(input.base64, "base64");
+          
+          // Generate unique filename
+          const ext = input.mimeType.split("/")[1] || "png";
+          const filename = `avatars/${ctx.user.id}-${Date.now()}.${ext}`;
+          
+          // Upload to S3
+          const { url } = await storagePut(filename, buffer, input.mimeType);
+          
+          // Update user profile
+          const result = await updateUserProfile(ctx.user.id, {
+            customAvatarUrl: url,
+          });
+          
+          if (!result.success) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to save avatar URL",
+            });
+          }
+          
+          return { success: true, avatarUrl: url };
+        } catch (error) {
+          console.error("Avatar upload error:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to upload avatar",
+          });
+        }
+      }),
+
+    // Reset to original avatar
+    resetAvatar: protectedProcedure.mutation(async ({ ctx }) => {
+      const result = await updateUserProfile(ctx.user.id, {
+        customAvatarUrl: undefined,
+      });
+      if (!result.success) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to reset avatar",
+        });
+      }
+      return { success: true };
+    }),
   }),
 
   waitlist: router({

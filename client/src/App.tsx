@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Waitlist from "./pages/Waitlist";
+import Settings from "./pages/Settings";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
 function Router() {
@@ -19,7 +20,7 @@ function Router() {
       <Route path="/casting-studio" component={ComingSoon} />
       <Route path="/outfit-studio" component={ComingSoon} />
       <Route path="/photo-studio" component={ComingSoon} />
-      <Route path="/settings" component={ComingSoon} />
+      <Route path="/settings" component={Settings} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -88,3 +88,13 @@
 - [x] Redesign Coming Soon pages with Lumen light theme
 - [x] Ensure dashboard maintains dark theme for app interface
 - [x] Update ThemeProvider to handle light/dark based on route
+
+## Mango-Style Dashboard Redesign
+- [x] Add display_name field to user schema for profile customization
+- [x] Create Mango-style sidebar navigation component
+- [x] Redesign dashboard layout with dark theme (#0D0C12 background)
+- [x] Add profile header section with avatar and stats
+- [x] Create studio cards with hover effects
+- [x] Build profile settings page with avatar upload
+- [x] Build profile settings page with display name editing
+- [x] Add recent activity section

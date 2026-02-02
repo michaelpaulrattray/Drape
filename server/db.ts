@@ -330,3 +330,52 @@ export async function checkEmailOnWaitlist(email: string): Promise<boolean> {
     return false;
   }
 }
+
+
+// ============ Profile Functions ============
+
+export async function updateUserProfile(
+  userId: number,
+  data: { displayName?: string; customAvatarUrl?: string }
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    const updateData: Record<string, unknown> = {};
+    
+    if (data.displayName !== undefined) {
+      updateData.displayName = data.displayName || null;
+    }
+    if (data.customAvatarUrl !== undefined) {
+      updateData.customAvatarUrl = data.customAvatarUrl || null;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return { success: true };
+    }
+
+    await db.update(users).set(updateData).where(eq(users.id, userId));
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to update profile:", error);
+    return { success: false, error: "Failed to update profile" };
+  }
+}
+
+export async function getUserProfile(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    return null;
+  }
+
+  try {
+    const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error("[Database] Failed to get user profile:", error);
+    return null;
+  }
+}
