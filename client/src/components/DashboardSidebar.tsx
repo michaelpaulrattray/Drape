@@ -61,18 +61,18 @@ export function DashboardSidebar({ user, pointsBalance = 0 }: DashboardSidebarPr
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group cursor-pointer",
           isActive(item.href)
-            ? "bg-lime/10 text-lime"
+            ? "bg-orange/10 text-orange"
             : "text-white/60 hover:text-white hover:bg-white/5"
         )}
         onClick={() => setMobileOpen(false)}
       >
         <item.icon className={cn(
           "w-5 h-5 transition-colors",
-          isActive(item.href) ? "text-lime" : "text-white/40 group-hover:text-white/60"
+          isActive(item.href) ? "text-orange" : "text-white/40 group-hover:text-white/60"
         )} />
         <span className="text-sm font-medium">{item.label}</span>
         {item.badge && (
-          <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-lime/20 text-lime">
+          <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-orange/20 text-orange">
             {item.badge}
           </span>
         )}
@@ -86,8 +86,7 @@ export function DashboardSidebar({ user, pointsBalance = 0 }: DashboardSidebarPr
       <div className="p-4 border-b border-white/5">
         <Link href="/dashboard">
           <span className="text-xl font-instrument tracking-tight cursor-pointer flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-lime" />
-            Forma<span className="opacity-50">Studio</span>
+            <span className="text-orange">Forma</span><span className="opacity-50">Studio</span>
           </span>
         </Link>
       </div>
@@ -153,10 +152,10 @@ export function DashboardSidebar({ user, pointsBalance = 0 }: DashboardSidebarPr
             <span className="text-xs text-white/40 uppercase tracking-wider">Points Balance</span>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-instrument text-lime">{pointsBalance.toLocaleString()}</span>
+            <span className="text-2xl font-instrument text-orange">{pointsBalance.toLocaleString()}</span>
             <span className="text-sm text-white/40">pts</span>
           </div>
-          <button className="w-full mt-3 py-2 text-sm font-medium rounded-lg bg-lime/10 text-lime hover:bg-lime/20 transition-colors">
+          <button className="w-full mt-3 py-2 text-sm font-medium rounded-full btn-orange">
             Get More Points
           </button>
         </div>
@@ -166,8 +165,8 @@ export function DashboardSidebar({ user, pointsBalance = 0 }: DashboardSidebarPr
       {user && (
         <div className="p-4 border-t border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lime/30 to-lime/10 flex items-center justify-center">
-              <span className="text-sm font-medium text-lime">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange/30 to-orange/10 flex items-center justify-center">
+              <span className="text-sm font-medium text-orange">
                 {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "U"}
               </span>
             </div>

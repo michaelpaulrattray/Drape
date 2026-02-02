@@ -40,7 +40,7 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="animate-pulse">
-          <Sparkles className="w-8 h-8 text-lime" />
+          <Sparkles className="w-8 h-8 text-orange" />
         </div>
       </div>
     );
@@ -57,7 +57,6 @@ export default function Dashboard() {
       description: "Create and cast AI models with precise control over demographics and features",
       icon: Image,
       href: "/casting-studio",
-      gradient: "from-purple-500/20 to-pink-500/20",
       badge: "New",
     },
     {
@@ -66,7 +65,6 @@ export default function Dashboard() {
       description: "Dress your AI models in any outfit or style",
       icon: Shirt,
       href: "/outfit-studio",
-      gradient: "from-blue-500/20 to-cyan-500/20",
       badge: null,
     },
     {
@@ -75,7 +73,6 @@ export default function Dashboard() {
       description: "Generate campaign-ready outputs combining models with products",
       icon: Camera,
       href: "/photo-studio",
-      gradient: "from-orange-500/20 to-yellow-500/20",
       badge: null,
     },
   ];
@@ -103,7 +100,7 @@ export default function Dashboard() {
                 <Input
                   type="text"
                   placeholder="Search models, outfits, campaigns..."
-                  className="w-full h-10 pl-10 bg-white/5 border-white/10 rounded-full text-sm placeholder:text-white/40 focus:border-lime focus:ring-lime"
+                  className="w-full h-10 pl-10 bg-white/5 border-white/10 rounded-full text-sm placeholder:text-white/40 focus:border-orange focus:ring-orange"
                 />
               </div>
             </div>
@@ -112,10 +109,10 @@ export default function Dashboard() {
             <div className="flex items-center gap-3 ml-4">
               <button className="p-2 rounded-full hover:bg-white/5 transition-colors relative">
                 <Bell className="w-5 h-5 text-white/60" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-lime rounded-full" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-orange rounded-full" />
               </button>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-lime/30 to-lime/10 flex items-center justify-center">
-                <span className="text-sm font-medium text-lime">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange/30 to-orange/10 flex items-center justify-center">
+                <span className="text-sm font-medium text-orange">
                   {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
                 </span>
               </div>
@@ -126,7 +123,7 @@ export default function Dashboard() {
         {/* Content */}
         <div className="p-4 lg:p-8">
           {/* Welcome Banner */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-lime/10 via-lime/5 to-transparent border border-lime/20 p-6 lg:p-8 mb-8">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange/10 via-orange/5 to-transparent border border-orange/20 p-6 lg:p-8 mb-8">
             <div className="relative z-10">
               <h1 className="text-2xl lg:text-3xl font-instrument mb-2">
                 Welcome back, {user?.name?.split(" ")[0] || "Creator"}
@@ -137,7 +134,7 @@ export default function Dashboard() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={() => setLocation("/casting-studio")}
-                  className="btn-lime rounded-full h-10 px-5"
+                  className="btn-orange rounded-full h-10 px-5"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   New Model
@@ -150,7 +147,7 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-lime/10 rounded-full blur-3xl" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-orange/10 rounded-full blur-3xl" />
           </div>
 
           {/* Quick Stats */}
@@ -160,7 +157,7 @@ export default function Dashboard() {
                 <Sparkles className="w-4 h-4" />
                 <span className="text-xs uppercase tracking-wider">Points</span>
               </div>
-              <p className="text-2xl font-instrument text-lime">{pointsData?.balance?.toLocaleString() || 0}</p>
+              <p className="text-2xl font-instrument text-orange">{pointsData?.balance?.toLocaleString() || 0}</p>
             </div>
             <div className="bg-white/5 rounded-xl p-4 border border-white/5">
               <div className="flex items-center gap-2 text-white/40 mb-2">
@@ -198,23 +195,23 @@ export default function Dashboard() {
                 <button
                   key={studio.id}
                   onClick={() => setLocation(studio.href)}
-                  className="group relative overflow-hidden rounded-2xl bg-white/5 border border-white/5 p-6 text-left hover:border-lime/30 transition-all duration-300"
+                  className="group relative overflow-hidden rounded-2xl bg-white/5 border border-white/5 p-6 text-left hover:border-orange/30 transition-all duration-300"
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${studio.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative z-10">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-lime/10 transition-colors">
-                        <studio.icon className="w-6 h-6 text-white/60 group-hover:text-lime transition-colors" />
+                      <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-orange/10 transition-colors">
+                        <studio.icon className="w-6 h-6 text-white/60 group-hover:text-orange transition-colors" />
                       </div>
                       {studio.badge && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-lime/20 text-lime">
+                        <span className="text-xs px-2 py-1 rounded-full bg-orange/20 text-orange">
                           {studio.badge}
                         </span>
                       )}
                     </div>
                     <h3 className="text-lg font-instrument mb-2">{studio.title}</h3>
                     <p className="text-sm text-white/50 mb-4">{studio.description}</p>
-                    <div className="flex items-center text-sm text-lime opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center text-sm text-orange opacity-0 group-hover:opacity-100 transition-opacity">
                       <span>Open Studio</span>
                       <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -238,9 +235,9 @@ export default function Dashboard() {
                   {recentActivity.map((activity, i) => (
                     <div key={i} className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors cursor-pointer">
                       <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
-                        {activity.type === "model" && <Image className="w-5 h-5 text-purple-400" />}
-                        {activity.type === "outfit" && <Shirt className="w-5 h-5 text-blue-400" />}
-                        {activity.type === "photo" && <Camera className="w-5 h-5 text-orange-400" />}
+                        {activity.type === "model" && <Image className="w-5 h-5 text-orange" />}
+                        {activity.type === "outfit" && <Shirt className="w-5 h-5 text-orange/70" />}
+                        {activity.type === "photo" && <Camera className="w-5 h-5 text-orange/50" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{activity.name}</p>
