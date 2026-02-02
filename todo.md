@@ -88,3 +88,8 @@
 - [x] Add dark theme cards with hover effects and descriptions
 - [x] Implement drag-to-scroll functionality with momentum
 - [x] Style consistently with LUMEN light theme (dark section with light cards)
+
+## Draggable Cards Auto-Scroll
+- [x] Add slow auto-scroll animation to draggable cards section
+- [x] Implement infinite loop with cloned cards
+- [x] Pause auto-scroll on drag interaction
