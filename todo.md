@@ -159,3 +159,8 @@
 ## Hero Section Button Update
 - [x] Remove "View Studios" button from hero
 - [x] Make "Get Access" button more prominent and visible
+
+## Remove /app Page
+- [x] Remove /app route from App.tsx
+- [x] Update login redirect to go directly to /dashboard
+- [x] Removed Home import (page file kept for reference)
