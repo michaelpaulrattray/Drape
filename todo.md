@@ -115,3 +115,9 @@
 
 ## Section Reordering
 - [x] Move "Solving Problems With Intelligent AI" section directly under hero section
+
+## Streamline Waitlist Page Layout
+- [x] Remove Exploration (Casting/Styling/Studio/Campaign) section
+- [x] Remove Process section with AI Workflow/Traditional tabs
+- [x] Remove Methodology section (Create, Scale & Deliver)
+- [x] Keep: Hero → Services → Creative Power → Waitlist → Footer
