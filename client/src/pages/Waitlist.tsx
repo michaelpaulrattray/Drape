@@ -1,7 +1,165 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, ArrowLeft, ChevronRight, Menu, X, Check, Camera, Palette, Sparkles, ArrowUpRight } from "lucide-react";
+
+// Draggable Cards Data
+const draggableCards = [
+  {
+    id: 1,
+    number: "01",
+    title: "Ad Creatives",
+    description: "Platform-perfect ads that match your brand identity and boost performance metrics without the manual grind.",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop",
+  },
+  {
+    id: 2,
+    number: "02",
+    title: "Product Visuals",
+    description: "Generate unlimited angles, lighting scenarios, and environments for your products without a single reshoot.",
+    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop",
+  },
+  {
+    id: 3,
+    number: "03",
+    title: "Social Content",
+    description: "Never run dry on content. Deploy daily on-brand social posts that engage your audience and grow your reach.",
+    image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&auto=format&fit=crop",
+  },
+  {
+    id: 4,
+    number: "04",
+    title: "Campaign Shots",
+    description: "Full photoshoots in any environment—studio, outdoor, lifestyle. Export high-resolution assets ready for print.",
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop",
+  },
+];
+
+// Draggable Cards Section Component
+function DraggableCardsSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - containerRef.current.offsetLeft);
+    setScrollLeft(containerRef.current.scrollLeft);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - containerRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    containerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.touches[0].pageX - containerRef.current.offsetLeft);
+    setScrollLeft(containerRef.current.scrollLeft);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    const x = e.touches[0].pageX - containerRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    containerRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  return (
+    <section className="overflow-hidden z-10 bg-zinc-950 border-b border-zinc-900/50 pt-24 pb-24 relative">
+      {/* Header */}
+      <div className="px-6 md:px-12 mb-16 md:mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
+          <h2 className="text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight font-geist text-white">
+            Solving Problems With <br />
+            <span className="text-zinc-600">Intelligent AI</span>
+          </h2>
+          <div className="lg:pl-12">
+            <p className="text-lg md:text-xl font-light text-zinc-400 leading-relaxed">
+              Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Draggable Container */}
+      <div
+        ref={containerRef}
+        className={`flex w-full overflow-x-auto no-scrollbar select-none touch-pan-y ${
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        }`}
+        style={{
+          maskImage: "linear-gradient(to right, transparent, black 5%, black 95%, transparent)",
+          WebkitMaskImage: "linear-gradient(to right, transparent, black 5%, black 95%, transparent)",
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleMouseUp}
+        onTouchMove={handleTouchMove}
+      >
+        <div
+          ref={trackRef}
+          className="flex gap-6 md:gap-8 min-w-max px-4 md:px-8 items-stretch"
+        >
+          {/* Duplicate cards for infinite scroll effect */}
+          {[...draggableCards, ...draggableCards].map((card, index) => (
+            <div
+              key={`${card.id}-${index}`}
+              className="group relative w-[85vw] md:w-[500px] h-[500px] md:h-[600px] rounded-[2rem] overflow-hidden border border-zinc-800 bg-zinc-900/40 hover:border-zinc-600 transition-colors duration-500 shrink-0"
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0 w-full h-full">
+                <img
+                  src={card.image}
+                  alt={card.title}
+                  className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 ease-out"
+                  draggable="false"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/20 to-zinc-950" />
+              </div>
+
+              {/* Content */}
+              <div className="absolute inset-0 p-8 md:p-10 flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                  <span className="font-geist text-5xl md:text-6xl text-white/90 font-light">
+                    {card.number}
+                  </span>
+                  <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-white/20">
+                    <ArrowUpRight className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-3xl md:text-4xl font-geist tracking-tight text-white mb-3 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                    {card.title}
+                  </h3>
+                  <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-500">
+                    <p className="text-zinc-300 text-sm leading-relaxed max-w-[90%] pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">
+                      {card.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Waitlist() {
   const [formData, setFormData] = useState({
@@ -294,6 +452,9 @@ export default function Waitlist() {
             </div>
           </div>
         </section>
+
+        {/* Draggable Cards Section */}
+        <DraggableCardsSection />
 
         {/* Exploration Section - Gallery */}
         <section id="studios" className="grid grid-cols-1 md:grid-cols-2 border-b border-black/10">
