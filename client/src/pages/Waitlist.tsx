@@ -668,16 +668,20 @@ export default function Waitlist() {
 
 
 
-        {/* Creative Power, Unbound Section - Dark Bento Grid */}
-        <section className="py-24 px-6 md:px-12 bg-zinc-950 border-b border-zinc-900/50">
+        {/* Creative Power, Unbound Section - Light Bento Grid */}
+        <section className="py-24 px-6 md:px-12 bg-white border-b border-black/10">
           <div className="max-w-[1400px] mx-auto">
             
             {/* Section Header */}
             <div className="mb-20 max-w-2xl">
-              <h2 className="text-5xl md:text-7xl font-medium text-white tracking-tight font-geist mb-6">
-                Creative power, <span className="text-zinc-600">unbound.</span>
+              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-4">
+                <span className="w-2 h-2 rounded-full bg-orange" />
+                Why Us
+              </p>
+              <h2 className="text-5xl md:text-7xl font-medium text-zinc-900 tracking-tight font-geist mb-6">
+                Creative power, <span className="text-zinc-400">unbound.</span>
               </h2>
-              <p className="text-xl text-zinc-400 font-light leading-relaxed">
+              <p className="text-xl text-zinc-500 font-light leading-relaxed">
                 Save time, cut costs, and do more with less. We help you work smarter so you can focus on strategy.
               </p>
             </div>
@@ -686,26 +690,26 @@ export default function Waitlist() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
               {/* Large Card Left (AI That Knows You) */}
-              <div className="lg:col-span-5 group relative min-h-[640px] bg-zinc-900/20 border border-zinc-800 rounded-[2.5rem] hover:border-zinc-600 transition-all duration-500 overflow-hidden flex flex-col justify-between p-10">
+              <div className="lg:col-span-5 group relative min-h-[640px] bg-zinc-100 border border-black/10 rounded-[2.5rem] hover:border-orange/30 transition-all duration-500 overflow-hidden flex flex-col justify-between p-10">
                 {/* Background Gradient Hint */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-950/80 z-0 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80 z-0 pointer-events-none" />
 
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-6">
                     <span className="w-2 h-2 rounded-full bg-orange shadow-[0_0_12px_rgba(249,115,22,0.6)] animate-pulse" />
                     <span className="uppercase text-xs font-bold tracking-[0.2em] text-zinc-500">Consistent</span>
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-geist font-medium text-white tracking-tight mb-4 leading-[0.95]">AI That Knows You</h3>
-                  <p className="text-lg text-zinc-400 font-light leading-relaxed max-w-sm">
+                  <h3 className="text-4xl md:text-5xl font-geist font-medium text-zinc-900 tracking-tight mb-4 leading-[0.95]">AI That Knows You</h3>
+                  <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-sm">
                     Feed us your brand assets once, and our AI masters your look forever.
                   </p>
                 </div>
                 
                 <div className="absolute bottom-0 left-0 w-full h-[55%] z-0 rounded-b-[2.5rem] overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/20 to-transparent z-10" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent z-10" />
                   <img 
                     src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f36259a7-cc94-4846-8290-2df52026731d_original.gif" 
-                    className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out" 
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out" 
                     alt="AI Gen"
                   />
                 </div>
@@ -715,14 +719,14 @@ export default function Waitlist() {
               <div className="lg:col-span-7 flex flex-col gap-6 h-full">
                 
                 {/* Wide Card (Perfect Consistency) */}
-                <div className="group relative bg-zinc-900/20 border border-zinc-800 rounded-[2.5rem] p-10 hover:border-zinc-600 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
+                <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
                   <div className="relative z-10 flex-1">
-                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-white tracking-tight font-geist font-medium mb-4">Perfect Consistency</h3>
-                    <p className="text-lg text-zinc-400 font-light leading-relaxed">
+                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tight font-geist font-medium mb-4">Perfect Consistency</h3>
+                    <p className="text-lg text-zinc-500 font-light leading-relaxed">
                       Every piece of content adheres strictly to your guidelines, ensuring a unified brand voice across channels.
                     </p>
                   </div>
-                  <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-2xl overflow-hidden border border-zinc-800/50 group-hover:border-zinc-600 transition-colors">
+                  <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-2xl overflow-hidden border border-black/10 group-hover:border-orange/30 transition-colors">
                     <img 
                       src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ebfeb48e-4108-49c6-86a2-a1491f93b564_original.gif" 
                       className="transition-all duration-700 ease-in-out w-full h-full object-cover"
@@ -735,37 +739,37 @@ export default function Waitlist() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
                   
                   {/* Cost Efficiency */}
-                  <div className="group relative bg-zinc-900/20 border border-zinc-800 rounded-[2.5rem] p-10 hover:border-zinc-600 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
+                  <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
                     <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-white mb-2 tracking-tight font-geist">Cost Efficiency</h3>
+                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight font-geist">Cost Efficiency</h3>
                       <p className="text-base text-zinc-500 font-light">Cut overhead significantly.</p>
                     </div>
                     
                     <div className="relative z-10">
                       <div className="flex items-baseline gap-1 mb-5">
-                        <span className="text-7xl font-semibold text-white tracking-tighter font-geist">-85</span>
+                        <span className="text-7xl font-semibold text-zinc-900 tracking-tighter font-geist">-85</span>
                         <span className="text-3xl text-orange font-medium">%</span>
                       </div>
-                      <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-zinc-300 h-1.5 rounded-full overflow-hidden">
                         <div className="h-full bg-orange w-[15%] group-hover:w-[85%] transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
                       </div>
                     </div>
                   </div>
 
                   {/* Hyper Speed */}
-                  <div className="group relative bg-zinc-900/20 border border-zinc-800 rounded-[2.5rem] p-10 hover:border-zinc-600 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
+                  <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
                     <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-white mb-2 tracking-tight font-geist">Hyper Speed</h3>
+                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight font-geist">Hyper Speed</h3>
                       <p className="text-base text-zinc-500 font-light">Concept to final in 24h.</p>
                     </div>
                     
                     <div className="relative z-10 flex items-end">
-                      <div className="flex items-center gap-3 bg-black border border-zinc-800 rounded-full pl-5 pr-6 py-3 shadow-lg group-hover:border-zinc-600 transition-colors">
+                      <div className="flex items-center gap-3 bg-white border border-black/10 rounded-full pl-5 pr-6 py-3 shadow-lg group-hover:border-orange/30 transition-colors">
                         <div className="relative flex h-2.5 w-2.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange opacity-75" />
                           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange" />
                         </div>
-                        <span className="text-sm font-mono text-zinc-300 tracking-wide">Rendering...</span>
+                        <span className="text-sm font-mono text-zinc-600 tracking-wide">Rendering...</span>
                       </div>
                     </div>
                   </div>
