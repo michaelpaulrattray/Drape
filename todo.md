@@ -152,12 +152,34 @@
 - [x] Remove "AI Model Casting" section from landing page
 - [x] Remove "Cast, Style & Generate" section from landing page
 
-## LUMEN Style Redesign
-- [x] Redesign hero section to match LUMEN exactly (4-column grid, left content, center carousel, right stats)
-- [x] Add sky-blue accent color scheme from LUMEN
-- [x] Add animated neon grid lines background
-- [x] Add grayscale image treatment with contrast boost
-- [ ] Restyle navigation to match LUMEN dropdown menu style
-- [x] Restyle all sections with LUMEN typography and spacing
-- [x] Add border-based section dividers
-- [x] Update fonts to match LUMEN (Geist headings, Inter body, Space Grotesk mono)
+## Styling Inconsistencies Review
+- [x] Review homepage for styling inconsistencies
+- [x] Add gradient transitions between light and dark sections
+- [x] Standardize typography (use font-geist consistently for headings)
+- [x] Standardize section labels (orange dot + uppercase pattern)
+- [x] Standardize CTA button styles
+- [x] Fix step number font consistency
+
+## Creative Power Unbound Section
+- [x] Replace "From Idea to Launch" section with "Creative Power, Unbound" bento grid
+- [x] Implement dark theme bento grid with 4 cards layout
+- [x] Add animated progress bar and rendering indicator
+
+## Draggable Cards Slow Scroll Effect
+- [x] Add slow scroll marquee animation to draggable cards section
+- [x] Implement auto-scroll with pause on drag
+
+## Creative Power Section Light Theme
+- [x] Convert Creative Power, Unbound section from dark to light background
+
+## Hero Section Updates
+- [x] Make CTA text in header smaller
+- [x] Remove cost savings and generation time cards
+- [x] Keep only studio status card
+- [x] Increase model image size
+
+## Remove Studio Status Card
+- [x] Remove studio status card from hero section
+
+## Hero Spacing Fix
+- [x] Reduce empty space between hero headline and subheading/buttons

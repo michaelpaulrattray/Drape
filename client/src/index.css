@@ -50,9 +50,6 @@
   /* Orange accent color */
   --color-orange: oklch(0.7 0.18 45);
   --color-orange-foreground: oklch(1 0 0);
-  /* Sky blue accent color (LUMEN style) */
-  --color-sky: oklch(0.685 0.169 237.323);
-  --color-sky-foreground: oklch(1 0 0);
 }
 
 /* Lumen-Style Light Theme - Default for public pages */
@@ -127,7 +124,7 @@
   --ring: oklch(0.7 0.18 45 / 50%);
 }
 
-/* Custom scrollbar - LUMEN style with sky blue */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -135,20 +132,8 @@
   background: oklch(0.96 0 0);
 }
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.685 0.169 237.323);
+  background: oklch(0.7 0.18 45);
   border-radius: 3px;
-}
-
-/* LUMEN Grid Lines Background */
-.grid-lines {
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 25% 100%;
-}
-
-/* Text outline effect */
-.text-outline {
-  -webkit-text-stroke: 1px rgba(0,0,0,0.2);
-  color: transparent;
 }
 
 .dark ::-webkit-scrollbar-track {
