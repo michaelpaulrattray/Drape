@@ -79,3 +79,6 @@
 - [x] Add recognition/benefits section
 - [x] Redesign footer with newsletter form
 - [x] Ensure mobile responsiveness
+
+## Cleanup
+- [x] Remove /app page (users go directly to dashboard after login)
