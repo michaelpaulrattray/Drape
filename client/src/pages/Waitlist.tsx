@@ -11,7 +11,7 @@ const stickyProcessSteps = [
     title: "Share Your Vision + Guidelines",
     description: "A simple brief or a 15-minute sync is all we need. We digest your brand guidelines, goals, and aesthetic preferences to build a custom model that understands your visual language.",
     cta: "Start a project",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&auto=format&fit=crop",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f36259a7-cc94-4846-8290-2df52026731d_original.gif",
   },
   {
     id: 2,
@@ -19,7 +19,7 @@ const stickyProcessSteps = [
     title: "(Intelligent) Model Generation",
     description: "We configure our AI models to your style. Instead of generic outputs, you get high-fidelity options tailored to your specific campaign needs in hours, not weeks.",
     cta: "See examples",
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ebfeb48e-4108-49c6-86a2-a1491f93b564_original.gif",
   },
   {
     id: 3,
@@ -27,11 +27,11 @@ const stickyProcessSteps = [
     title: "Launch & Automated Scaling",
     description: "Receive production-ready assets for every platform. We can even set up automated pipelines so your content scales effortlessly as your audience grows.",
     cta: "Scale now",
-    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200&auto=format&fit=crop",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg",
   },
 ];
 
-// Sticky Scroll Process Section Component
+// Sticky Scroll Process Section Component - Dark Theme (Original Design)
 function StickyScrollProcessSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
@@ -63,54 +63,35 @@ function StickyScrollProcessSection() {
     };
   }, []);
 
-  // Ref for syncing heights
-  const leftColRef = useRef<HTMLDivElement>(null);
-  const rightColRef = useRef<HTMLDivElement>(null);
-
-  // Sync left column height with right column
-  useEffect(() => {
-    const syncHeight = () => {
-      if (leftColRef.current && rightColRef.current) {
-        const rightHeight = rightColRef.current.offsetHeight;
-        leftColRef.current.style.height = `${rightHeight}px`;
-      }
-    };
-    
-    syncHeight();
-    window.addEventListener('resize', syncHeight);
-    return () => window.removeEventListener('resize', syncHeight);
-  }, []);
-
   return (
-    <section ref={sectionRef} className="relative bg-zinc-50 border-b border-black/10" id="sticky-process">
+    <section ref={sectionRef} className="relative bg-zinc-950 border-b border-zinc-900/50" id="sticky-process">
       <div className="max-w-[1600px] mx-auto">
-        {/* Use flex layout with JavaScript height sync */}
-        <div className="flex flex-col lg:flex-row">
+        <div className="grid grid-cols-1 lg:grid-cols-2">
           
-          {/* Left Column: Height synced via JavaScript */}
-          <div ref={leftColRef} className="hidden lg:block lg:w-1/2 relative border-r border-black/10">
-            <div className="sticky top-0 h-screen w-full flex items-center justify-center p-8 lg:p-12">
-              <div className="relative w-full h-[80vh] max-h-[700px]">
+          {/* Left Column: Sticky Image Wrapper */}
+          <div className="hidden lg:block relative h-full min-h-screen border-r border-zinc-900/50">
+            <div className="sticky top-0 h-screen w-full flex items-center justify-center p-12 lg:p-16">
+              <div className="relative w-full h-[85vh] max-h-[800px] flex items-start">
                 
                 {/* Dynamic Image Container */}
-                <div className="relative w-4/5 h-full overflow-hidden bg-zinc-100">
+                <div className="relative w-3/4 h-full overflow-hidden">
                   {stickyProcessSteps.map((step, index) => (
                     <img
                       key={step.id}
                       src={step.image}
                       alt={`Process Step ${step.number}`}
-                      className={`w-full h-full object-cover grayscale transition-all duration-700 ease-in-out ${
+                      className={`process-img w-full h-full object-cover grayscale opacity-90 transition-all duration-500 ease-in-out ${
                         index === activeStep 
-                          ? 'opacity-100 relative z-10' 
-                          : 'opacity-0 absolute inset-0 scale-105 z-0'
+                          ? 'active relative' 
+                          : 'inactive'
                       }`}
                     />
                   ))}
                 </div>
 
                 {/* Large Sticky Number */}
-                <div className="absolute right-0 top-8 z-20">
-                  <span className="font-geist text-8xl lg:text-9xl text-zinc-200 tracking-tight transition-all duration-500 font-bold">
+                <div className="absolute -right-4 top-8 z-20">
+                  <span className="font-instrument-serif text-7xl lg:text-8xl text-zinc-100/90 tracking-tight transition-all duration-500">
                     {stickyProcessSteps[activeStep]?.number || '01'}
                   </span>
                 </div>
@@ -119,47 +100,36 @@ function StickyScrollProcessSection() {
           </div>
 
           {/* Right Column: Scrolling Text */}
-          <div ref={rightColRef} className="lg:w-1/2 px-6 md:px-12 py-16 lg:py-32 flex flex-col gap-y-16 lg:gap-y-48 relative">
+          <div className="md:px-12 md:py-32 flex flex-col lg:gap-64 pt-24 pr-6 pb-24 pl-6 relative gap-x-32 gap-y-32">
             
-            {/* Section Header */}
-            <div className="lg:mb-8">
-              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-4">
-                <span className="w-2 h-2 rounded-full bg-orange" />
-                How It Works
-              </p>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-zinc-900 font-geist leading-[0.95]">
-                Our Process
-              </h2>
+            {/* Mobile Header */}
+            <div className="lg:hidden mb-8">
+              <div className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 border border-zinc-800 bg-zinc-900/80 backdrop-blur-sm rounded-full px-3 py-1 mb-6 tracking-wider uppercase">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange" />
+                Process
+              </div>
+              <h2 className="text-4xl md:text-5xl font-instrument-serif text-white tracking-tight">How it works</h2>
             </div>
 
             {/* Steps */}
-            {stickyProcessSteps.map((step, index) => (
+            {stickyProcessSteps.map((step) => (
               <div
                 key={step.id}
-                className="sticky-process-step group flex flex-col justify-center min-h-[50vh] lg:min-h-[60vh]"
+                className="sticky-process-step group flex flex-col justify-center min-h-[40vh]"
                 data-step={step.id}
               >
-                {/* Mobile Image */}
-                <div className="lg:hidden mb-6 aspect-[4/3] overflow-hidden border border-black/10">
-                  <img
-                    src={step.image}
-                    alt={`Process Step ${step.number}`}
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                  />
-                </div>
-                
-                <span className="lg:hidden text-5xl font-geist font-bold text-zinc-200 mb-4 block">
+                <span className="lg:hidden text-6xl font-instrument-serif text-zinc-700 mb-6 block">
                   {step.number}
                 </span>
-                <h3 className="text-3xl md:text-4xl lg:text-5xl font-geist font-semibold text-zinc-900 tracking-tight mb-6 group-hover:text-orange transition-colors">
+                <h3 className="text-4xl md:text-5xl lg:text-6xl font-instrument-serif text-zinc-100 tracking-tight mb-8 group-hover:text-white transition-colors">
                   {step.title}
                 </h3>
-                <p className="text-base md:text-lg text-zinc-500 leading-relaxed max-w-lg mb-8">
+                <p className="text-lg md:text-xl text-zinc-400 font-light leading-relaxed max-w-lg mb-10">
                   {step.description}
                 </p>
                 <a
                   href="#contact"
-                  className="text-sm uppercase tracking-widest font-medium text-zinc-900 border-b border-zinc-300 pb-1 w-fit hover:border-orange hover:text-orange transition-all"
+                  className="text-sm uppercase tracking-widest font-medium text-white border-b border-zinc-600 pb-1 w-fit hover:border-white hover:text-orange transition-all"
                 >
                   {step.cta}
                 </a>

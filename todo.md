@@ -143,3 +143,7 @@
 - [x] Right column: scrolling step blocks that drive image transitions
 - [x] Scroll-driven image crossfade animation based on active step
 - [x] Responsive fallback for mobile (stacked layout)
+
+## Restore Original Sticky Scroll Design
+- [x] Restore original dark theme sticky scroll process section from reference HTML
+- [x] Apply overflow-hidden fix to prevent sticky breaking
