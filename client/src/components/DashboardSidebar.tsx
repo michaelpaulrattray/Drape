@@ -39,19 +39,18 @@ export default function DashboardSidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const NavLink = ({ item, isActive }: { item: NavItem; isActive: boolean }) => (
-    <Link href={item.href}>
-      <a
-        className={cn(
-          "flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all",
-          isActive
-            ? "text-orange bg-orange/10 border-l-2 border-orange"
-            : "text-white/60 hover:text-white hover:bg-white/5 border-l-2 border-transparent"
-        )}
-        onClick={() => setIsMobileOpen(false)}
-      >
-        <item.icon className="w-4 h-4" />
-        <span>{item.label}</span>
-      </a>
+    <Link
+      href={item.href}
+      className={cn(
+        "flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all",
+        isActive
+          ? "text-orange bg-orange/10 border-l-2 border-orange"
+          : "text-white/60 hover:text-white hover:bg-white/5 border-l-2 border-transparent"
+      )}
+      onClick={() => setIsMobileOpen(false)}
+    >
+      <item.icon className="w-4 h-4" />
+      <span>{item.label}</span>
     </Link>
   );
 
@@ -59,11 +58,9 @@ export default function DashboardSidebar() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-6 py-6 border-b border-white/5">
-        <Link href="/dashboard">
-          <a className="inline-flex items-center gap-2 font-bold tracking-tighter text-xl">
-            <span className="w-6 h-6 rounded flex items-center justify-center text-sm text-zinc-900 bg-orange">F</span>
-            <span className="font-geist text-white">FORMA</span>
-          </a>
+        <Link href="/dashboard" className="inline-flex items-center gap-2 font-bold tracking-tighter text-xl">
+          <span className="w-6 h-6 rounded flex items-center justify-center text-sm text-zinc-900 bg-orange">F</span>
+          <span className="font-geist text-white">FORMA</span>
         </Link>
       </div>
 

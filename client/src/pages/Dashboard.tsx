@@ -114,10 +114,8 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <Link href="/settings">
-                  <a className="px-5 py-2.5 text-sm font-medium border transition-colors border-white/10 text-white/70 hover:text-white hover:bg-white/5">
-                    Edit Profile
-                  </a>
+                <Link href="/settings" className="px-5 py-2.5 text-sm font-medium border transition-colors border-white/10 text-white/70 hover:text-white hover:bg-white/5">
+                  Edit Profile
                 </Link>
                 <button className="px-5 py-2.5 text-sm font-semibold bg-orange text-zinc-900 hover:bg-orange/90 transition-colors">
                   Upgrade Plan
@@ -198,27 +196,25 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
               {studios.map((studio) => (
-                <Link key={studio.href} href={studio.href}>
-                  <a className="group block bg-background p-6 md:p-8 hover:bg-secondary/50 transition-colors">
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="w-12 h-12 rounded flex items-center justify-center bg-white/5 border border-white/10 group-hover:border-orange/50 transition-colors">
-                        <studio.icon className="w-5 h-5 text-white/60 group-hover:text-orange transition-colors" />
-                      </div>
-                      <span className="px-2 py-1 text-[9px] font-semibold uppercase tracking-widest bg-white/5 text-white/40 border border-white/10">
-                        {studio.status}
-                      </span>
+                <Link key={studio.href} href={studio.href} className="group block bg-background p-6 md:p-8 hover:bg-secondary/50 transition-colors">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="w-12 h-12 rounded flex items-center justify-center bg-white/5 border border-white/10 group-hover:border-orange/50 transition-colors">
+                      <studio.icon className="w-5 h-5 text-white/60 group-hover:text-orange transition-colors" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-orange transition-colors font-geist">
-                      {studio.title}
-                    </h3>
-                    <p className="text-sm text-white/50 leading-relaxed mb-4">
-                      {studio.description}
-                    </p>
-                    <div className="flex items-center gap-1 text-xs font-medium text-white/40 group-hover:text-orange transition-colors">
-                      <span>Open studio</span>
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </a>
+                    <span className="px-2 py-1 text-[9px] font-semibold uppercase tracking-widest bg-white/5 text-white/40 border border-white/10">
+                      {studio.status}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-orange transition-colors font-geist">
+                    {studio.title}
+                  </h3>
+                  <p className="text-sm text-white/50 leading-relaxed mb-4">
+                    {studio.description}
+                  </p>
+                  <div className="flex items-center gap-1 text-xs font-medium text-white/40 group-hover:text-orange transition-colors">
+                    <span>Open studio</span>
+                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </Link>
               ))}
             </div>
