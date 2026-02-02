@@ -77,19 +77,21 @@ function DraggableCardsSection() {
   };
 
   return (
-    <section className="overflow-hidden z-10 bg-zinc-950 border-b border-zinc-900/50 pt-24 pb-24 relative">
+    <section className="overflow-hidden z-10 bg-zinc-50 border-b border-black/10 pt-20 pb-20 md:pt-28 md:pb-28 relative">
       {/* Header */}
-      <div className="px-6 md:px-12 mb-16 md:mb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
-          <h2 className="text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight font-geist text-white">
-            Solving Problems With <br />
-            <span className="text-zinc-600">Intelligent AI</span>
-          </h2>
-          <div className="lg:pl-12">
-            <p className="text-lg md:text-xl font-light text-zinc-400 leading-relaxed">
-              Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
+      <div className="px-6 md:px-12 mb-12 md:mb-16">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div>
+            <p className="text-[10px] uppercase font-semibold tracking-[0.2em] mb-3 text-orange">
+              Our Capabilities
             </p>
+            <h2 className="text-3xl md:text-5xl lg:text-6xl leading-[1.1] tracking-tight font-geist text-zinc-900">
+              What We Create
+            </h2>
           </div>
+          <p className="text-sm md:text-base text-zinc-500 max-w-md leading-relaxed">
+            From AI model casting to campaign-ready photoshoots, we handle the entire creative production pipeline.
+          </p>
         </div>
       </div>
 
@@ -100,8 +102,8 @@ function DraggableCardsSection() {
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
         style={{
-          maskImage: "linear-gradient(to right, transparent, black 5%, black 95%, transparent)",
-          WebkitMaskImage: "linear-gradient(to right, transparent, black 5%, black 95%, transparent)",
+          maskImage: "linear-gradient(to right, transparent, black 3%, black 97%, transparent)",
+          WebkitMaskImage: "linear-gradient(to right, transparent, black 3%, black 97%, transparent)",
         }}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
@@ -113,44 +115,42 @@ function DraggableCardsSection() {
       >
         <div
           ref={trackRef}
-          className="flex gap-6 md:gap-8 min-w-max px-4 md:px-8 items-stretch"
+          className="flex gap-4 md:gap-6 min-w-max px-6 md:px-12 items-stretch"
         >
           {/* Duplicate cards for infinite scroll effect */}
           {[...draggableCards, ...draggableCards].map((card, index) => (
             <div
               key={`${card.id}-${index}`}
-              className="group relative w-[85vw] md:w-[500px] h-[500px] md:h-[600px] rounded-[2rem] overflow-hidden border border-zinc-800 bg-zinc-900/40 hover:border-zinc-600 transition-colors duration-500 shrink-0"
+              className="group relative w-[75vw] md:w-[380px] h-[420px] md:h-[480px] overflow-hidden border border-black/10 bg-white hover:border-orange/50 transition-all duration-500 shrink-0 hover:shadow-xl"
             >
               {/* Background Image */}
               <div className="absolute inset-0 w-full h-full">
                 <img
                   src={card.image}
                   alt={card.title}
-                  className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 ease-out"
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out"
                   draggable="false"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/20 to-zinc-950" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/60 to-transparent" />
               </div>
 
               {/* Content */}
-              <div className="absolute inset-0 p-8 md:p-10 flex flex-col justify-between">
+              <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
-                  <span className="font-geist text-5xl md:text-6xl text-white/90 font-light">
+                  <span className="text-[10px] uppercase font-semibold tracking-[0.15em] px-2 py-1 bg-orange text-white">
                     {card.number}
                   </span>
-                  <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-white/20">
-                    <ArrowUpRight className="w-5 h-5 text-white" />
+                  <div className="w-9 h-9 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 bg-white text-zinc-900 group-hover:translate-x-0 translate-x-2">
+                    <ArrowUpRight className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-3xl md:text-4xl font-geist tracking-tight text-white mb-3 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                  <h3 className="text-2xl md:text-3xl font-geist tracking-tight text-white mb-2 group-hover:text-orange transition-colors duration-300">
                     {card.title}
                   </h3>
-                  <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-500">
-                    <p className="text-zinc-300 text-sm leading-relaxed max-w-[90%] pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">
-                      {card.description}
-                    </p>
-                  </div>
+                  <p className="text-zinc-300 text-sm leading-relaxed max-w-[95%] opacity-80 group-hover:opacity-100 transition-opacity duration-500">
+                    {card.description}
+                  </p>
                 </div>
               </div>
             </div>
