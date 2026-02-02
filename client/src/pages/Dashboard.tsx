@@ -14,7 +14,7 @@ import {
   Shirt,
   Camera,
   ChevronRight,
-  Play,
+  ArrowRight,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -56,13 +56,13 @@ export default function Dashboard() {
       case "purchase":
         return <ArrowUpRight className="w-4 h-4 text-green-400" />;
       case "bonus":
-        return <Sparkles className="w-4 h-4 text-yellow-400" />;
+        return <Sparkles className="w-4 h-4 text-orange" />;
       case "signup":
         return <Crown className="w-4 h-4 text-purple-400" />;
       case "refund":
         return <ArrowUpRight className="w-4 h-4 text-blue-400" />;
       default:
-        return <Zap className="w-4 h-4 text-slate-400" />;
+        return <Zap className="w-4 h-4 text-white/40" />;
     }
   };
 
@@ -72,8 +72,6 @@ export default function Dashboard() {
       description: "Create and cast AI models for your campaigns",
       icon: Image,
       href: "/casting-studio",
-      color: "bg-purple-500/20",
-      iconColor: "text-purple-400",
       status: "Coming Soon",
     },
     {
@@ -81,8 +79,6 @@ export default function Dashboard() {
       description: "Style your models with virtual outfits",
       icon: Shirt,
       href: "/outfit-studio",
-      color: "bg-cyan-500/20",
-      iconColor: "text-cyan-400",
       status: "Coming Soon",
     },
     {
@@ -90,202 +86,213 @@ export default function Dashboard() {
       description: "Generate campaign-ready photoshoots",
       icon: Camera,
       href: "/photo-studio",
-      color: "bg-yellow-500/20",
-      iconColor: "text-yellow-400",
       status: "Coming Soon",
     },
   ];
 
   return (
     <DashboardLayout>
-      <div className="p-6 md:p-8 space-y-8">
-        {/* Profile Header */}
-        <div className="bg-[#14121D] border border-white/5 rounded-2xl p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white text-2xl font-semibold overflow-hidden ring-2 ring-white/10">
-                {user?.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.name || ""} className="w-full h-full object-cover" />
-                ) : (
-                  user?.name?.charAt(0).toUpperCase() || "U"
-                )}
-              </div>
+      <div className="min-h-screen relative">
+        {/* Background Grid Lines */}
+        <div className="fixed inset-0 grid-lines-dark pointer-events-none z-0" />
+
+        {/* Content */}
+        <div className="relative z-10 p-6 md:p-8 lg:p-12 space-y-8">
+          {/* Header Section */}
+          <section className="border-b border-white/5 pb-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
-                <h1 className="text-2xl font-semibold text-white">
-                  Welcome back, {user?.name?.split(" ")[0] || "Creator"}
+                <p className="text-[10px] uppercase font-semibold tracking-widest mb-2 text-orange">
+                  Dashboard
+                </p>
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tighter leading-none font-geist text-white">
+                  Welcome back
+                  <span className="text-orange">.</span>
                 </h1>
-                <p className="text-slate-400 text-sm">
-                  Ready to create something amazing today?
+                <p className="text-sm text-white/50 mt-3 max-w-md">
+                  {user?.name?.split(" ")[0] || "Creator"}, ready to create something amazing today?
                 </p>
               </div>
+              <div className="flex items-center gap-3">
+                <Link href="/settings">
+                  <a className="px-5 py-2.5 text-sm font-medium border transition-colors border-white/10 text-white/70 hover:text-white hover:bg-white/5">
+                    Edit Profile
+                  </a>
+                </Link>
+                <button className="px-5 py-2.5 text-sm font-semibold bg-orange text-zinc-900 hover:bg-orange/90 transition-colors">
+                  Upgrade Plan
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Link href="/settings">
-                <a className="px-4 py-2 rounded-lg bg-[#1F1D2B] text-slate-300 text-sm font-medium hover:bg-[#252333] transition-colors border border-white/5">
-                  Edit Profile
-                </a>
-              </Link>
-              <button className="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors">
-                Upgrade Plan
+          </section>
+
+          {/* Stats Grid */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
+            {/* Points Balance */}
+            <div className="bg-zinc-950 p-6 md:p-8">
+              <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
+                <Sparkles className="w-3.5 h-3.5 text-orange" />
+                <span>Points Balance</span>
+              </div>
+              <div className="flex items-baseline gap-2 mb-6">
+                <span className="text-5xl font-bold tracking-tighter font-geist text-white">
+                  {pointsLoading ? "..." : pointsData?.balance ?? 0}
+                </span>
+                <span className="text-white/40 text-sm font-medium">points</span>
+              </div>
+              <button className="flex items-center gap-2 text-sm font-medium text-orange hover:text-orange/80 transition-colors group">
+                <span>Get more points</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
-          </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Points Balance */}
-          <div className="bg-[#14121D] border border-white/5 rounded-2xl p-5">
-            <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span>Points Balance</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-semibold text-white">
-                {pointsLoading ? "..." : pointsData?.balance ?? 0}
-              </span>
-              <span className="text-slate-500 text-sm">points</span>
-            </div>
-            <button className="mt-4 w-full px-4 py-2 rounded-lg bg-[#1F1D2B] text-orange-400 text-sm font-medium hover:bg-[#252333] transition-colors border border-orange-500/20">
-              Get more points
-            </button>
-          </div>
-
-          {/* Current Plan */}
-          <div className="bg-[#14121D] border border-white/5 rounded-2xl p-5">
-            <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
-              <Crown className="w-4 h-4 text-purple-400" />
-              <span>Current Plan</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-semibold text-white capitalize">
-                {pointsLoading ? "..." : pointsData?.planTier ?? "Free"}
-              </span>
-            </div>
-            <button className="mt-4 w-full px-4 py-2 rounded-lg bg-[#1F1D2B] text-purple-400 text-sm font-medium hover:bg-[#252333] transition-colors border border-purple-500/20">
-              View plans
-            </button>
-          </div>
-
-          {/* This Month */}
-          <div className="bg-[#14121D] border border-white/5 rounded-2xl p-5">
-            <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
-              <TrendingUp className="w-4 h-4 text-green-400" />
-              <span>This Month</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-semibold text-white">
-                {transactionsLoading
-                  ? "..."
-                  : transactions?.filter((t) => t.amount < 0).length ?? 0}
-              </span>
-              <span className="text-slate-500 text-sm">generations</span>
-            </div>
-            <p className="mt-4 text-xs text-slate-500">
-              Keep creating amazing content
-            </p>
-          </div>
-        </div>
-
-        {/* Studios Section */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Your Studios</h2>
-            <button className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-slate-500 hover:text-white transition-colors">
-              <Play className="w-3 h-3" />
-              Quick start
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {studios.map((studio) => (
-              <Link key={studio.href} href={studio.href}>
-                <a className="group block bg-[#14121D] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-xl ${studio.color} flex items-center justify-center ring-1 ring-white/10`}>
-                      <studio.icon className={`w-6 h-6 ${studio.iconColor}`} />
-                    </div>
-                    <span className="px-2 py-1 rounded text-[10px] font-medium uppercase tracking-wider bg-white/5 text-slate-400">
-                      {studio.status}
-                    </span>
-                  </div>
-                  <h3 className="text-base font-medium text-white mb-1 group-hover:text-orange-400 transition-colors">
-                    {studio.title}
-                  </h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">
-                    {studio.description}
-                  </p>
-                  <div className="mt-4 flex items-center gap-1 text-xs text-slate-500 group-hover:text-slate-300 transition-colors">
-                    <span>Open studio</span>
-                    <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </a>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
-            <button className="text-xs font-medium text-slate-500 hover:text-white transition-colors">
-              View all
-            </button>
-          </div>
-
-          <div className="bg-[#14121D] border border-white/5 rounded-2xl overflow-hidden">
-            {transactionsLoading ? (
-              <div className="p-6 text-center text-slate-500">
-                Loading transactions...
+            {/* Current Plan */}
+            <div className="bg-zinc-950 p-6 md:p-8">
+              <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
+                <Crown className="w-3.5 h-3.5 text-purple-400" />
+                <span>Current Plan</span>
               </div>
-            ) : transactions && transactions.length > 0 ? (
-              <div className="divide-y divide-white/5">
-                {transactions.slice(0, 5).map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#1F1D2B] flex items-center justify-center ring-1 ring-white/10">
-                        {getTransactionIcon(transaction.type)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-200">
-                          {transaction.description || transaction.type}
-                        </p>
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDate(transaction.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`text-sm font-medium ${
-                          transaction.amount > 0 ? "text-green-400" : "text-red-400"
-                        }`}
-                      >
-                        {transaction.amount > 0 ? "+" : ""}
-                        {transaction.amount}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Balance: {transaction.balanceAfter}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-baseline gap-2 mb-6">
+                <span className="text-5xl font-bold tracking-tighter font-geist text-white capitalize">
+                  {pointsLoading ? "..." : pointsData?.planTier ?? "Free"}
+                </span>
               </div>
-            ) : (
-              <div className="p-8 text-center">
-                <Sparkles className="w-12 h-12 mx-auto mb-4 text-slate-600" />
-                <p className="text-slate-400">No transactions yet</p>
-                <p className="text-sm text-slate-500 mt-1">
-                  Start creating to see your activity here
+              <button className="flex items-center gap-2 text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors group">
+                <span>View plans</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+
+            {/* This Month */}
+            <div className="bg-zinc-950 p-6 md:p-8">
+              <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
+                <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+                <span>This Month</span>
+              </div>
+              <div className="flex items-baseline gap-2 mb-6">
+                <span className="text-5xl font-bold tracking-tighter font-geist text-white">
+                  {transactionsLoading
+                    ? "..."
+                    : transactions?.filter((t) => t.amount < 0).length ?? 0}
+                </span>
+                <span className="text-white/40 text-sm font-medium">generations</span>
+              </div>
+              <p className="text-sm text-white/40">
+                Keep creating amazing content
+              </p>
+            </div>
+          </section>
+
+          {/* Studios Section */}
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-[10px] uppercase font-semibold tracking-widest text-orange mb-1">
+                  Your Studios
                 </p>
+                <h2 className="text-xl font-bold tracking-tight font-geist text-white">
+                  Start Creating
+                </h2>
               </div>
-            )}
-          </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
+              {studios.map((studio) => (
+                <Link key={studio.href} href={studio.href}>
+                  <a className="group block bg-zinc-950 p-6 md:p-8 hover:bg-zinc-900/50 transition-colors">
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="w-12 h-12 rounded flex items-center justify-center bg-white/5 border border-white/10 group-hover:border-orange/50 transition-colors">
+                        <studio.icon className="w-5 h-5 text-white/60 group-hover:text-orange transition-colors" />
+                      </div>
+                      <span className="px-2 py-1 text-[9px] font-semibold uppercase tracking-widest bg-white/5 text-white/40 border border-white/10">
+                        {studio.status}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-orange transition-colors font-geist">
+                      {studio.title}
+                    </h3>
+                    <p className="text-sm text-white/50 leading-relaxed mb-4">
+                      {studio.description}
+                    </p>
+                    <div className="flex items-center gap-1 text-xs font-medium text-white/40 group-hover:text-orange transition-colors">
+                      <span>Open studio</span>
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </a>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* Recent Activity */}
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-[10px] uppercase font-semibold tracking-widest text-orange mb-1">
+                  Activity
+                </p>
+                <h2 className="text-xl font-bold tracking-tight font-geist text-white">
+                  Recent Transactions
+                </h2>
+              </div>
+              <button className="text-xs font-medium text-white/40 hover:text-white transition-colors">
+                View all
+              </button>
+            </div>
+
+            <div className="border border-white/5 bg-zinc-950/50">
+              {transactionsLoading ? (
+                <div className="p-8 text-center text-white/40">
+                  Loading transactions...
+                </div>
+              ) : transactions && transactions.length > 0 ? (
+                <div className="divide-y divide-white/5">
+                  {transactions.slice(0, 5).map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 md:p-5 hover:bg-white/[0.02] transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded flex items-center justify-center bg-white/5 border border-white/10">
+                          {getTransactionIcon(transaction.type)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {transaction.description || transaction.type}
+                          </p>
+                          <p className="text-xs text-white/40 flex items-center gap-1 mt-0.5">
+                            <Clock className="w-3 h-3" />
+                            {formatDate(transaction.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className={`text-sm font-semibold ${
+                            transaction.amount > 0 ? "text-green-400" : "text-red-400"
+                          }`}
+                        >
+                          {transaction.amount > 0 ? "+" : ""}
+                          {transaction.amount}
+                        </p>
+                        <p className="text-xs text-white/40 mt-0.5">
+                          Balance: {transaction.balanceAfter}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 text-center">
+                  <Sparkles className="w-10 h-10 mx-auto mb-4 text-white/20" />
+                  <p className="text-white/60 font-medium">No transactions yet</p>
+                  <p className="text-sm text-white/40 mt-1">
+                    Start creating to see your activity here
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </DashboardLayout>

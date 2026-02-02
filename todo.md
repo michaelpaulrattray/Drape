@@ -98,3 +98,11 @@
 - [x] Build profile settings page with avatar upload
 - [x] Build profile settings page with display name editing
 - [x] Add recent activity section
+
+## Dashboard Restyling (Forma Design in Dark Mode)
+- [x] Update dashboard to use Geist typography and Forma design language
+- [x] Add subtle grid lines background (dark mode version)
+- [x] Use orange accent color consistently
+- [x] Restyle cards with border styling matching public pages
+- [x] Update sidebar to match Forma aesthetic
+- [x] Update Settings page to match new dashboard style

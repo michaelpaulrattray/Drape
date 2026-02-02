@@ -228,6 +228,12 @@
     background-size: 25% 100%;
   }
 
+  /* Dark mode grid lines */
+  .grid-lines-dark {
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 25% 100%;
+  }
+
   /* Text outline for large display text */
   .text-outline {
     -webkit-text-stroke: 1px rgba(0, 0, 0, 0.2);
