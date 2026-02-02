@@ -15,6 +15,13 @@
       "when": 1770011356050,
       "tag": "0001_certain_triathlon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770012254744,
+      "tag": "0002_noisy_the_captain",
+      "breakpoints": true
     }
   ]
 }

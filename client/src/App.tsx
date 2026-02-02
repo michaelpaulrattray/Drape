@@ -7,11 +7,14 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Waitlist from "./pages/Waitlist";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      {/* Waitlist is the main landing page during pre-launch */}
+      <Route path="/" component={Waitlist} />
+      <Route path="/app" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/casting-studio" component={ComingSoon} />

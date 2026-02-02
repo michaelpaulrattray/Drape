@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { getUserPoints, getPointTransactions, deductPoints, addPoints } from "./db";
+import { getUserPoints, getPointTransactions, deductPoints, addPoints, addToWaitlist, getWaitlistCount } from "./db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -19,7 +19,6 @@ export const appRouter = router({
   }),
 
   points: router({
-    // Get current user's points balance
     getBalance: protectedProcedure.query(async ({ ctx }) => {
       const userPoints = await getUserPoints(ctx.user.id);
       if (!userPoints) {
@@ -35,7 +34,6 @@ export const appRouter = router({
       };
     }),
 
-    // Get transaction history
     getTransactions: protectedProcedure
       .input(z.object({ limit: z.number().min(1).max(100).default(20) }).optional())
       .query(async ({ ctx, input }) => {
@@ -43,7 +41,6 @@ export const appRouter = router({
         return transactions;
       }),
 
-    // Deduct points (for internal use during generations)
     deduct: protectedProcedure
       .input(z.object({
         amount: z.number().positive(),
@@ -70,7 +67,6 @@ export const appRouter = router({
         return { success: true, newBalance: result.newBalance };
       }),
 
-    // Add points (for purchases, bonuses, refunds)
     add: protectedProcedure
       .input(z.object({
         amount: z.number().positive(),
@@ -97,7 +93,6 @@ export const appRouter = router({
         return { success: true, newBalance: result.newBalance };
       }),
 
-    // Check if user has enough points
     checkBalance: protectedProcedure
       .input(z.object({ required: z.number().positive() }))
       .query(async ({ ctx, input }) => {
@@ -111,6 +106,52 @@ export const appRouter = router({
           required: input.required,
         };
       }),
+  }),
+
+  waitlist: router({
+    // Join the waitlist
+    join: publicProcedure
+      .input(z.object({
+        email: z.string().email("Please enter a valid email address"),
+        name: z.string().min(1).optional(),
+        company: z.string().optional(),
+        role: z.string().optional(),
+        source: z.string().optional(),
+        referralCode: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await addToWaitlist({
+          email: input.email.toLowerCase().trim(),
+          name: input.name || null,
+          company: input.company || null,
+          role: input.role || null,
+          source: input.source || "landing_page",
+          referralCode: input.referralCode || null,
+        });
+
+        if (!result.success && result.error !== "already_registered") {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: result.error || "Failed to join waitlist",
+          });
+        }
+
+        return {
+          success: true,
+          position: result.position,
+          alreadyRegistered: result.error === "already_registered",
+        };
+      }),
+
+    // Get waitlist stats (public for social proof)
+    getStats: publicProcedure.query(async () => {
+      const count = await getWaitlistCount();
+      return {
+        totalSignups: count,
+        // Add some base numbers for social proof
+        displayCount: count + 847, // Base number for early traction appearance
+      };
+    }),
   }),
 });
 

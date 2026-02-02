@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, bigint } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -26,7 +26,7 @@ export type InsertUser = typeof users.$inferInsert;
 export const points = mysqlTable("points", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
-  balance: int("balance").notNull().default(100), // New users get 100 free points
+  balance: int("balance").notNull().default(100),
   planTier: mysqlEnum("planTier", ["free", "pro", "enterprise"]).default("free").notNull(),
   planExpiresAt: timestamp("planExpiresAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -42,13 +42,31 @@ export type InsertPoints = typeof points.$inferInsert;
 export const pointTransactions = mysqlTable("point_transactions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  amount: int("amount").notNull(), // Positive for credits, negative for debits
+  amount: int("amount").notNull(),
   type: mysqlEnum("type", ["generation", "purchase", "bonus", "refund", "signup"]).notNull(),
   description: text("description"),
-  referenceId: varchar("referenceId", { length: 64 }), // For linking to generations, purchases, etc.
-  balanceAfter: int("balanceAfter").notNull(), // Snapshot of balance after transaction
+  referenceId: varchar("referenceId", { length: 64 }),
+  balanceAfter: int("balanceAfter").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type PointTransaction = typeof pointTransactions.$inferSelect;
 export type InsertPointTransaction = typeof pointTransactions.$inferInsert;
+
+/**
+ * Waitlist table for capturing early access signups.
+ */
+export const waitlist = mysqlTable("waitlist", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  name: text("name"),
+  company: text("company"),
+  role: varchar("role", { length: 128 }), // e.g., "Creative Director", "Brand Manager"
+  source: varchar("source", { length: 64 }), // e.g., "landing_page", "referral"
+  referralCode: varchar("referralCode", { length: 32 }),
+  notified: boolean("notified").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Waitlist = typeof waitlist.$inferSelect;
+export type InsertWaitlist = typeof waitlist.$inferInsert;
