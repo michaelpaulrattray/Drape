@@ -177,3 +177,6 @@
 - [x] Remove cost savings and generation time cards
 - [x] Keep only studio status card
 - [x] Increase model image size
+
+## Remove Studio Status Card
+- [x] Remove studio status card from hero section

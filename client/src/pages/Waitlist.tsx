@@ -587,35 +587,7 @@ export default function Waitlist() {
                 </div>
               </div>
 
-              {/* Right: Stats Panel - Studio Status Only */}
-              <div className="w-full lg:w-auto ml-auto overflow-hidden bg-zinc-900 border-zinc-800 border rounded-2xl p-5 relative shadow-sm">
-                {/* Decorative Icon */}
-                <div className="absolute top-0 right-0 p-3 opacity-10">
-                  <Sparkles className="w-16 h-16 text-orange" />
-                </div>
-                
-                {/* System Status Only */}
-                <div className="flex justify-between items-center mb-4">
-                  <span className="uppercase text-xs text-orange tracking-widest font-space">
-                    Studio Status
-                  </span>
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                </div>
-                <div className="space-y-2 font-space text-[0.65rem] text-zinc-400">
-                  <div className="flex justify-between">
-                    <span>&gt; Casting Studio</span>
-                    <span className="text-white">Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>&gt; Outfit Studio</span>
-                    <span className="text-white">Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>&gt; Photo Studio</span>
-                    <span className="text-emerald-400">Ready</span>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
 
