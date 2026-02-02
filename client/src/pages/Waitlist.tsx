@@ -216,14 +216,20 @@ function ServicesMarqueeSection() {
   const tripleCards = [...serviceCards, ...serviceCards, ...serviceCards];
 
   return (
-    <section className="border-b border-black/10 bg-zinc-950 py-24 overflow-hidden">
+    <section className="border-t border-b border-black/10 bg-white py-24 overflow-hidden">
       <div className="px-6 md:px-12 mb-16 md:mb-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
-          <h2 className="text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight font-geist text-white">
-            Solving Problems With <br/><span className="text-zinc-600">Intelligent AI</span>
-          </h2>
+          <div>
+            <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-500 font-medium mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+              Services
+            </span>
+            <h2 className="text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight font-geist text-zinc-900">
+              Solving Problems With <br/><span className="text-zinc-400">Intelligent AI</span>
+            </h2>
+          </div>
           <div className="lg:pl-12">
-            <p className="text-lg md:text-xl font-light text-zinc-400 leading-relaxed">
+            <p className="text-lg md:text-xl font-light text-zinc-600 leading-relaxed">
               Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
             </p>
           </div>
@@ -234,7 +240,7 @@ function ServicesMarqueeSection() {
       <div 
         ref={containerRef}
         className="flex w-full overflow-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y"
-        style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}
+        style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -250,32 +256,34 @@ function ServicesMarqueeSection() {
           {tripleCards.map((card, index) => (
             <div 
               key={index} 
-              className="group relative w-[85vw] md:w-[500px] h-[600px] rounded-[2rem] overflow-hidden border border-zinc-800 bg-zinc-900/40 hover:border-zinc-600 transition-colors duration-500 shrink-0"
+              className="group relative w-[85vw] md:w-[420px] h-[520px] overflow-hidden border border-black/10 bg-zinc-50 hover:border-sky-500/50 transition-all duration-500 shrink-0"
             >
               <div className="absolute inset-0 w-full h-full">
                 <img 
                   src={card.image} 
-                  className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 ease-out" 
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out" 
                   draggable="false" 
                   alt={card.title}
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/20 to-zinc-950" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white" />
               </div>
-              <div className="absolute inset-0 p-8 md:p-10 flex flex-col justify-between">
+              <div className="absolute inset-0 p-8 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
-                  <span className="font-instrument-serif text-5xl md:text-6xl text-white/90">{card.number}</span>
-                  <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-white/20">
-                    <ArrowUpRight className="w-5 h-5 text-white" />
+                  <span className="font-geist text-6xl md:text-7xl font-bold text-zinc-900/10 group-hover:text-sky-500/20 transition-colors duration-500">{card.number}</span>
+                  <div className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-black/10">
+                    <ArrowUpRight className="w-5 h-5 text-zinc-900" />
                   </div>
                 </div>
-                <div>
-                  <h3 className="text-3xl md:text-4xl font-instrument-serif tracking-tight text-white mb-3 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                <div className="bg-white/90 backdrop-blur-sm p-6 -mx-8 -mb-8 border-t border-black/10">
+                  <h3 className="text-xl md:text-2xl font-geist font-semibold tracking-tight text-zinc-900 mb-2">
                     {card.title}
                   </h3>
-                  <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-500">
-                    <p className="text-zinc-300 text-sm leading-relaxed max-w-[90%] pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100">
-                      {card.description}
-                    </p>
+                  <p className="text-zinc-600 text-sm leading-relaxed">
+                    {card.description}
+                  </p>
+                  <div className="mt-4 pt-4 border-t border-black/10 flex items-center justify-between">
+                    <span className="text-xs uppercase tracking-[0.15em] text-zinc-400">Learn more</span>
+                    <ArrowRight className="w-4 h-4 text-sky-500" />
                   </div>
                 </div>
               </div>

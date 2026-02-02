@@ -93,3 +93,9 @@
 - [x] Add slow auto-scroll animation to draggable cards section
 - [x] Implement infinite loop with cloned cards
 - [x] Pause auto-scroll on drag interaction
+
+## Restyle Draggable Cards to LUMEN Style
+- [x] Change dark background to light/white background
+- [x] Update card styling to match LUMEN aesthetic (light cards, clean borders)
+- [x] Update typography to match rest of page (Geist font, consistent sizing)
+- [x] Add sky-blue accent color for hover states
