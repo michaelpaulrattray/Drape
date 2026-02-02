@@ -109,3 +109,7 @@
 
 ## Dark Mode Color Adjustment
 - [x] Lighten dashboard background from pure black to softer dark gray
+
+## Bug Fix
+- [x] Fix dashboard dark mode - content area showing white instead of dark
+- [x] Update dashboard background to #0a0a0a (bg-studio-950)
