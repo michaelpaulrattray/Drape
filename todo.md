@@ -120,3 +120,5 @@
 - [x] Redesign draggable card section to match light theme (white bg, orange accents, Geist font)
 - [x] Add "From Idea to Launch in 3 Steps" section under Cast, Style & Generate section
 - [x] Redesign "From Idea to Launch in 3 Steps" section to match light theme (white bg, orange accents, borders)
+- [x] Create two-column sticky scroll ProcessSection component with IntersectionObserver
+- [x] Add ProcessSection under draggable cards section on waitlist page
