@@ -127,3 +127,8 @@
 - [x] Update Services section copy for high detail and character consistency
 - [x] Update Creative Power section to highlight AI casting capabilities
 - [x] Update Waitlist CTA copy with stronger value proposition
+
+## Video Demo Section
+- [x] Add looping video demonstrating upload-to-result process
+- [x] Position video section between Services and Creative Power sections
+- [x] Style video with clean, minimal design matching page aesthetic

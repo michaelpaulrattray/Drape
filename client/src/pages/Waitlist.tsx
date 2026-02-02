@@ -532,7 +532,122 @@ export default function Waitlist() {
         {/* Services Draggable Cards Section with Auto-Scroll */}
         <ServicesMarqueeSection />
 
+        {/* Video Demo Section */}
+        <section className="py-24 px-6 md:px-12 bg-zinc-950 border-b border-white/10 relative overflow-hidden">
+          {/* Background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-900 opacity-50" />
+          
+          <div className="max-w-6xl mx-auto relative z-10">
+            {/* Section Header */}
+            <div className="text-center mb-16">
+              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-400 font-medium mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>
+                How It Works
+              </span>
+              <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6 text-white font-geist">
+                Upload. <span className="text-zinc-500">Generate. Done.</span>
+              </h2>
+              <p className="text-lg text-zinc-400 font-light max-w-xl mx-auto">
+                Watch our AI learn your model's identity from reference photos and generate unlimited variations—all without a single prompt.
+              </p>
+            </div>
 
+            {/* Video Container */}
+            <div className="relative group">
+              {/* Glow effect */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-sky-500/20 via-sky-400/10 to-sky-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              
+              {/* Video wrapper */}
+              <div className="relative bg-zinc-900 rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+                {/* Browser-style header */}
+                <div className="flex items-center gap-2 px-4 py-3 bg-zinc-800/50 border-b border-white/5">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  </div>
+                  <div className="flex-1 flex justify-center">
+                    <div className="px-4 py-1 bg-zinc-700/50 rounded-md text-xs text-zinc-400 font-mono">
+                      formastudio.ai/studio
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Video content */}
+                <div className="relative aspect-video bg-zinc-900">
+                  <video 
+                    className="w-full h-full object-cover"
+                    autoPlay 
+                    loop 
+                    muted 
+                    playsInline
+                    poster="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2564&auto=format&fit=crop"
+                  >
+                    <source src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/demo-workflow.mp4" type="video/mp4" />
+                  </video>
+                  
+                  {/* Overlay with workflow steps */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-transparent pointer-events-none" />
+                  
+                  {/* Workflow steps indicator */}
+                  <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+                    <div className="flex items-center justify-center gap-4 md:gap-8">
+                      <div className="flex items-center gap-3 text-white/90">
+                        <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
+                          <span className="text-sky-400 font-bold text-sm">1</span>
+                        </div>
+                        <div className="hidden md:block">
+                          <p className="text-sm font-medium">Upload References</p>
+                          <p className="text-xs text-zinc-400">5-10 photos</p>
+                        </div>
+                      </div>
+                      
+                      <div className="w-8 h-px bg-gradient-to-r from-sky-500/50 to-sky-400/50" />
+                      
+                      <div className="flex items-center gap-3 text-white/90">
+                        <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
+                          <span className="text-sky-400 font-bold text-sm">2</span>
+                        </div>
+                        <div className="hidden md:block">
+                          <p className="text-sm font-medium">AI Learns Identity</p>
+                          <p className="text-xs text-zinc-400">~30 seconds</p>
+                        </div>
+                      </div>
+                      
+                      <div className="w-8 h-px bg-gradient-to-r from-sky-400/50 to-sky-500/50" />
+                      
+                      <div className="flex items-center gap-3 text-white/90">
+                        <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
+                          <span className="text-sky-400 font-bold text-sm">3</span>
+                        </div>
+                        <div className="hidden md:block">
+                          <p className="text-sm font-medium">Generate Content</p>
+                          <p className="text-xs text-zinc-400">Unlimited 8K images</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-white/10">
+              <div className="text-center">
+                <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">30<span className="text-sky-400">s</span></p>
+                <p className="text-sm text-zinc-500 mt-2">Model Training</p>
+              </div>
+              <div className="text-center">
+                <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">0</p>
+                <p className="text-sm text-zinc-500 mt-2">Prompts Required</p>
+              </div>
+              <div className="text-center">
+                <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">∞</p>
+                <p className="text-sm text-zinc-500 mt-2">Variations</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Creative Power, Unbound Section */}
         <section className="py-24 px-6 md:px-12 bg-white border-b border-black/10" id="benefits">
