@@ -222,7 +222,7 @@ function ServicesMarqueeSection() {
           <div>
             <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-500 font-medium mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
-              Services
+              
             </span>
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
               Your Creative <br/><span className="text-zinc-400">Studio Suite.</span>
@@ -426,7 +426,7 @@ export default function Waitlist() {
               </p>
               <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
                 FORMA
-                <span className="text-sky-500 text-6xl align-top">+</span>
+                <span className="text-sky-500 text-6xl align-top">Studio</span>
               </h1>
               <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-black/20" />
             </div>

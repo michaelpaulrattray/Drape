@@ -140,3 +140,7 @@
 - [x] Update service cards with accurate workflow steps
 - [x] Update bento grid cards with correct messaging
 - [x] Emphasize unique tools and creative process throughout
+
+## Visual Editor Changes
+- [x] Changed "FORMA+" to "FORMAStudio" in hero section
+- [x] Removed "Services" label from studio suite section
