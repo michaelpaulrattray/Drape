@@ -82,3 +82,9 @@
 
 ## Cleanup
 - [x] Remove /app page (users go directly to dashboard after login)
+
+## Global Style Consistency
+- [x] Redesign Login page with Lumen light theme (orange accents, Geist font)
+- [x] Redesign Coming Soon pages with Lumen light theme
+- [x] Ensure dashboard maintains dark theme for app interface
+- [x] Update ThemeProvider to handle light/dark based on route
