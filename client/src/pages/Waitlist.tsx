@@ -344,139 +344,78 @@ export default function Waitlist() {
 
       {/* Main Content */}
       <main className="z-10 relative">
-        {/* Hero Section - 4 Column Grid */}
-        <section className="md:pt-24 md:pb-32 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-0 border-b pt-16 pr-6 pb-20 pl-6 relative border-black/10">
-          {/* Abstract Video Background */}
-          <video 
-            src="https://cdn.coverr.co/videos/coverr-shadows-of-leaves-on-a-wall-3536/1080p.mp4" 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            className="z-10 opacity-[0.08] w-full h-full object-cover absolute inset-0"
-          />
-
-          {/* Left Col */}
-          <div className="col-span-1 flex flex-col z-20 h-full relative justify-between">
-            <div className="mb-16">
-              <p className="text-[10px] uppercase md:text-xs font-semibold tracking-widest mb-2 text-orange">
-                AI Creative Studio
-              </p>
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
-                FORMA
-                <span className="text-orange text-6xl align-top">+</span>
-              </h1>
-              <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-black/20" />
-              <p className="text-sm leading-relaxed text-zinc-500 max-w-xs">
-                Generate AI models, style outfits, and create campaign-ready photoshoots—all without a single real photoshoot.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-8 mb-12">
-              <div className="group cursor-pointer">
-                <Camera className="w-8 h-8 mb-4 group-hover:text-orange transition-colors text-zinc-800" />
-                <h3 className="text-sm font-semibold leading-tight mb-2">
-                  AI Model
-                  <br />
-                  Casting
-                </h3>
-                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange" />
-              </div>
-              <div className="group cursor-pointer">
-                <Palette className="w-8 h-8 mb-4 group-hover:text-orange transition-colors text-zinc-800" />
-                <h3 className="leading-tight text-sm font-semibold mb-2">
-                  Virtual
-                  <br />
-                  Styling
-                </h3>
-                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange" />
-              </div>
-            </div>
-
-            <div className="flex gap-12 mt-auto text-xs font-medium tracking-wide text-zinc-600">
-              <a href="#studios" className="flex items-center gap-2 transition-colors hover:text-black">
-                View Studios
-                <ChevronRight className="w-3 h-3" />
-              </a>
-              <a href="#contact" className="flex items-center gap-2 transition-colors hover:text-black">
-                Join Waitlist
-                <ChevronRight className="w-3 h-3" />
-              </a>
-            </div>
+        {/* Hero Section - Centered Impact Layout */}
+        <section className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden pt-24 pb-20 px-6 md:px-12">
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1920&auto=format&fit=crop" 
+              alt="Hero Background" 
+              className="w-full h-full object-cover opacity-20 grayscale"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-zinc-50 via-zinc-50/90 to-zinc-50" />
           </div>
 
-          {/* Center Visual - Hero Gallery */}
-          <div className="col-span-1 md:col-span-2 flex md:py-0 pt-10 pb-10 relative items-center justify-center">
-            <div className="aspect-[3/4] group overflow-hidden md:aspect-auto md:h-[600px] w-full relative">
-              {/* Slider Track */}
-              <div 
-                className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform w-full h-full"
-                style={{ transform: `translateX(-${heroSlide * 100}%)` }}
+          {/* Main Hero Content */}
+          <div className="relative z-10 text-center max-w-5xl mx-auto">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-orange/30 bg-orange/5 mb-8">
+              <span className="w-2 h-2 rounded-full bg-orange animate-pulse" />
+              <span className="text-xs font-medium uppercase tracking-widest text-orange">AI Creative Studio</span>
+            </div>
+
+            {/* Main Headline */}
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] mb-6 font-geist text-zinc-900">
+              Stop Paying $10,000
+              <br />
+              <span className="text-zinc-400">Per Photoshoot</span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-lg md:text-xl text-zinc-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Generate AI models, style outfits, and create campaign-ready photoshoots in minutes—all without a single real photoshoot.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+              <a 
+                href="#contact" 
+                className="group px-8 py-4 bg-orange text-white font-semibold rounded-full hover:bg-orange/90 transition-all duration-300 flex items-center gap-3 text-base shadow-lg shadow-orange/25 hover:shadow-xl hover:shadow-orange/30 hover:-translate-y-0.5"
               >
-                {heroSlides.map((slide, index) => (
-                  <div key={index} className="flex-shrink-0 z-10 w-full h-full relative">
-                    <img 
-                      src={slide.image} 
-                      alt={slide.title} 
-                      className="w-full h-full object-cover grayscale contrast-125 group-hover:grayscale-0 transition-all duration-700"
-                    />
-                    <div className="bg-gradient-to-t via-transparent to-transparent z-10 absolute inset-0 from-zinc-900/50" />
-                    <div className="absolute bottom-0 left-0 p-8 transform transition-transform duration-500 group-hover:-translate-y-2">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="px-2 py-0.5 rounded border text-[10px] font-space uppercase backdrop-blur-md border-white/20 bg-white/10 text-white">
-                          {slide.tag}
-                        </span>
-                      </div>
-                      <h3 className="text-2xl font-semibold tracking-tight mb-1 text-white font-geist">{slide.title}</h3>
-                      <p className="text-sm line-clamp-1 text-white/70">{slide.subtitle}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                Get Early Access
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </a>
+              <a 
+                href="#studios" 
+                className="px-8 py-4 border-2 border-zinc-200 text-zinc-700 font-semibold rounded-full hover:border-zinc-900 hover:bg-zinc-900 hover:text-white transition-all duration-300 flex items-center gap-3 text-base"
+              >
+                View Studios
+              </a>
+            </div>
 
-              {/* Navigation Overlay */}
-              <div className="flex gap-3 z-20 absolute right-8 bottom-8 items-center">
-                <div className="px-3 py-1.5 rounded-full backdrop-blur-xl border text-xs font-space mr-2 shadow-lg bg-black/80 border-white/10 text-white">
-                  <span>{String(heroSlide + 1).padStart(2, '0')}</span>
-                  <span className="mx-1 text-white/30">/</span>
-                  <span>03</span>
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setHeroSlide((prev) => (prev - 1 + 3) % 3)}
-                    className="w-10 h-10 rounded-full border backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-lg border-white/10 bg-black/50 text-white hover:bg-white hover:text-black"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={() => setHeroSlide((prev) => (prev + 1) % 3)}
-                    className="w-10 h-10 rounded-full border backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-lg border-white/10 bg-black/50 text-white hover:bg-white hover:text-black"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+            {/* Stats Row */}
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
+              <div className="text-center">
+                <span className="block text-4xl md:text-5xl font-bold tracking-tighter text-zinc-900 font-geist">90%</span>
+                <span className="text-xs uppercase tracking-widest text-zinc-500 mt-1">Cost Savings</span>
+              </div>
+              <div className="w-px h-12 bg-zinc-200 hidden md:block" />
+              <div className="text-center">
+                <span className="block text-4xl md:text-5xl font-bold tracking-tighter text-zinc-900 font-geist">&lt;5min</span>
+                <span className="text-xs uppercase tracking-widest text-zinc-500 mt-1">Generation Time</span>
+              </div>
+              <div className="w-px h-12 bg-zinc-200 hidden md:block" />
+              <div className="text-center">
+                <span className="block text-4xl md:text-5xl font-bold tracking-tighter text-zinc-900 font-geist">∞</span>
+                <span className="text-xs uppercase tracking-widest text-zinc-500 mt-1">Variations</span>
               </div>
             </div>
           </div>
 
-          {/* Right Col - Stats */}
-          <div className="col-span-1 flex flex-col md:items-end z-20 md:pt-0 h-full pt-8 relative items-start pl-6 md:pl-0">
-            <div className="text-right">
-              <p className="text-[10px] uppercase font-semibold text-zinc-400 tracking-widest mb-1">
-                Cost Savings
-              </p>
-              <span className="text-6xl md:text-8xl font-bold tracking-tighter text-zinc-900 font-geist">
-                90%
-              </span>
-            </div>
-            <div className="text-right mt-8 md:mt-auto">
-              <p className="text-[10px] uppercase font-semibold text-zinc-400 tracking-widest mb-1">
-                Time to Generate
-              </p>
-              <span className="text-4xl md:text-5xl font-bold tracking-tighter text-zinc-900 font-geist">
-                &lt;5 min
-              </span>
-            </div>
+          {/* Scroll Indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-400">
+            <span className="text-xs uppercase tracking-widest">Scroll</span>
+            <div className="w-px h-8 bg-gradient-to-b from-zinc-400 to-transparent animate-pulse" />
           </div>
         </section>
 

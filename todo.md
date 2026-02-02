@@ -124,3 +124,8 @@
 ## Header & Footer Updates
 - [x] Redesign header navigation to inline style (logo left, nav links right, mix-blend-difference)
 - [x] Add dynamic location tag to footer with user's timezone/location
+
+## Hero Section Redesign
+- [x] Redesign hero with clearer headline, prominent CTAs, and better visual hierarchy
+- [x] Make copy more visible and impactful
+- [x] Simplify layout for better user focus
