@@ -129,7 +129,7 @@ export default function Dashboard() {
           {/* Stats Grid */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
             {/* Points Balance */}
-            <div className="bg-zinc-950 p-6 md:p-8">
+            <div className="bg-background p-6 md:p-8">
               <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
                 <Sparkles className="w-3.5 h-3.5 text-orange" />
                 <span>Points Balance</span>
@@ -147,7 +147,7 @@ export default function Dashboard() {
             </div>
 
             {/* Current Plan */}
-            <div className="bg-zinc-950 p-6 md:p-8">
+            <div className="bg-background p-6 md:p-8">
               <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
                 <Crown className="w-3.5 h-3.5 text-purple-400" />
                 <span>Current Plan</span>
@@ -164,7 +164,7 @@ export default function Dashboard() {
             </div>
 
             {/* This Month */}
-            <div className="bg-zinc-950 p-6 md:p-8">
+            <div className="bg-background p-6 md:p-8">
               <div className="flex items-center gap-2 text-[10px] uppercase font-semibold tracking-widest text-white/40 mb-4">
                 <TrendingUp className="w-3.5 h-3.5 text-green-400" />
                 <span>This Month</span>
@@ -199,7 +199,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/5">
               {studios.map((studio) => (
                 <Link key={studio.href} href={studio.href}>
-                  <a className="group block bg-zinc-950 p-6 md:p-8 hover:bg-zinc-900/50 transition-colors">
+                  <a className="group block bg-background p-6 md:p-8 hover:bg-secondary/50 transition-colors">
                     <div className="flex items-start justify-between mb-6">
                       <div className="w-12 h-12 rounded flex items-center justify-center bg-white/5 border border-white/10 group-hover:border-orange/50 transition-colors">
                         <studio.icon className="w-5 h-5 text-white/60 group-hover:text-orange transition-colors" />
@@ -240,7 +240,7 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="border border-white/5 bg-zinc-950/50">
+            <div className="border border-border bg-background/50">
               {transactionsLoading ? (
                 <div className="p-8 text-center text-white/40">
                   Loading transactions...

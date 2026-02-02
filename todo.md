@@ -106,3 +106,6 @@
 - [x] Restyle cards with border styling matching public pages
 - [x] Update sidebar to match Forma aesthetic
 - [x] Update Settings page to match new dashboard style
+
+## Dark Mode Color Adjustment
+- [x] Lighten dashboard background from pure black to softer dark gray

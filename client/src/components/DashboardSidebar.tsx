@@ -144,7 +144,7 @@ export default function DashboardSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(true)}
-        className="fixed top-4 left-4 z-50 p-2.5 rounded bg-zinc-900 border border-white/10 text-white md:hidden"
+        className="fixed top-4 left-4 z-50 p-2.5 rounded bg-sidebar border border-sidebar-border text-white md:hidden"
       >
         <Menu className="w-5 h-5" />
       </button>
@@ -161,7 +161,7 @@ export default function DashboardSidebar() {
       {isMobileOpen && (
         <button
           onClick={() => setIsMobileOpen(false)}
-          className="fixed top-4 right-4 z-50 p-2.5 rounded bg-zinc-900 border border-white/10 text-white md:hidden"
+          className="fixed top-4 right-4 z-50 p-2.5 rounded bg-sidebar border border-sidebar-border text-white md:hidden"
         >
           <X className="w-5 h-5" />
         </button>
@@ -170,7 +170,7 @@ export default function DashboardSidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed md:static h-screen w-64 flex-shrink-0 border-r border-white/5 bg-zinc-950 z-50 transition-transform duration-300",
+          "fixed md:static h-screen w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar z-50 transition-transform duration-300",
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >

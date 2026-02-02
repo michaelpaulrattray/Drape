@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center relative">
+      <div className="min-h-screen bg-background flex items-center justify-center relative">
         {/* Background Grid Lines */}
         <div className="fixed inset-0 grid-lines-dark pointer-events-none z-0" />
         
@@ -58,7 +58,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="h-screen w-full flex bg-zinc-950 text-white overflow-hidden">
+    <div className="h-screen w-full flex bg-background text-foreground overflow-hidden">
       <DashboardSidebar />
       <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
