@@ -535,8 +535,8 @@ export default function Waitlist() {
                 {/* Tilted Background Shape */}
                 <div className="absolute inset-0 bg-zinc-900 rounded-2xl rotate-3 opacity-10 group-hover:rotate-6 transition-transform duration-500" />
                 
-                {/* Main Image */}
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl h-[400px] lg:h-[500px] xl:h-[550px] w-full">
+                {/* Main Image - Increased Size */}
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl h-[480px] lg:h-[600px] xl:h-[700px] w-full">
                   <img 
                     src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop" 
                     alt="AI Fashion Model" 
@@ -564,9 +564,9 @@ export default function Waitlist() {
             <div className="flex flex-col lg:flex-row mt-8 lg:mt-12 gap-12 items-start animate-fade-in-up animation-delay-300">
               {/* Left: Subtitle + CTA */}
               <div className="max-w-2xl">
-                <h2 className="text-xl md:text-2xl leading-tight font-medium text-zinc-800 tracking-tight font-space mb-6">
+                <p className="text-base md:text-lg leading-relaxed font-normal text-zinc-600 tracking-tight font-space mb-6">
                   Generate AI models, style outfits, and create campaign-ready photoshoots in minutes—all without a single real photoshoot.
-                </h2>
+                </p>
 
                 <div className="flex flex-wrap gap-4">
                   <a 
@@ -587,64 +587,32 @@ export default function Waitlist() {
                 </div>
               </div>
 
-              {/* Right: Stats Panel */}
-              <div className="w-full lg:w-5/12 ml-auto overflow-hidden bg-zinc-950 border-zinc-200 border rounded-2xl p-6 relative shadow-sm">
+              {/* Right: Stats Panel - Studio Status Only */}
+              <div className="w-full lg:w-auto ml-auto overflow-hidden bg-zinc-900 border-zinc-800 border rounded-2xl p-5 relative shadow-sm">
                 {/* Decorative Icon */}
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <Sparkles className="w-24 h-24 text-orange" />
+                <div className="absolute top-0 right-0 p-3 opacity-10">
+                  <Sparkles className="w-16 h-16 text-orange" />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Stat 1 */}
-                  <div className="bg-zinc-50 border-zinc-100 border rounded-xl p-4">
-                    <div className="uppercase text-xs text-zinc-400 font-space mb-1">
-                      Cost Savings
-                    </div>
-                    <div className="text-3xl font-medium text-zinc-900 font-geist">
-                      90%
-                    </div>
-                    <div className="text-[0.6rem] text-green-600 mt-2 flex items-center gap-1">
-                      <Zap className="w-2.5 h-2.5" />
-                      vs Traditional
-                    </div>
+                {/* System Status Only */}
+                <div className="flex justify-between items-center mb-4">
+                  <span className="uppercase text-xs text-orange tracking-widest font-space">
+                    Studio Status
+                  </span>
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                </div>
+                <div className="space-y-2 font-space text-[0.65rem] text-zinc-400">
+                  <div className="flex justify-between">
+                    <span>&gt; Casting Studio</span>
+                    <span className="text-white">Active</span>
                   </div>
-                  
-                  {/* Stat 2 */}
-                  <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100">
-                    <div className="text-xs font-space uppercase text-zinc-400 mb-1">
-                      Generation Time
-                    </div>
-                    <div className="text-3xl font-geist font-medium text-zinc-900">
-                      &lt;5min
-                    </div>
-                    <div className="text-[0.6rem] text-green-600 mt-2 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" />
-                      Per Asset
-                    </div>
+                  <div className="flex justify-between">
+                    <span>&gt; Outfit Studio</span>
+                    <span className="text-white">Active</span>
                   </div>
-                  
-                  {/* System Status */}
-                  <div className="col-span-2 text-white bg-zinc-900 rounded-xl p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="uppercase text-xs text-orange tracking-widest font-space">
-                        Studio Status
-                      </span>
-                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    </div>
-                    <div className="space-y-2 font-space text-[0.65rem] text-zinc-400">
-                      <div className="flex justify-between">
-                        <span>&gt; Casting Studio</span>
-                        <span className="text-white">Active</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>&gt; Outfit Studio</span>
-                        <span className="text-white">Active</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>&gt; Photo Studio</span>
-                        <span className="text-emerald-400">Ready</span>
-                      </div>
-                    </div>
+                  <div className="flex justify-between">
+                    <span>&gt; Photo Studio</span>
+                    <span className="text-emerald-400">Ready</span>
                   </div>
                 </div>
               </div>
