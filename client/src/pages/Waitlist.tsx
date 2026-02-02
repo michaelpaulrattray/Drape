@@ -224,7 +224,7 @@ function ServicesMarqueeSection() {
               <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
               Services
             </span>
-            <h2 className="text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight font-geist text-zinc-900">
+            <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
               Solving Problems With <br/><span className="text-zinc-400">Intelligent AI</span>
             </h2>
           </div>
@@ -762,7 +762,7 @@ export default function Waitlist() {
           <div className="max-w-[1400px] mx-auto">
             
             <div className="mb-20 max-w-2xl">
-              <h2 className="text-5xl md:text-7xl font-medium text-zinc-900 tracking-tight font-serif mb-6">
+              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
                 Creative power, <span className="text-zinc-400">unbound.</span>
               </h2>
               <p className="text-xl text-zinc-500 font-light leading-relaxed">
@@ -782,7 +782,7 @@ export default function Waitlist() {
                     <span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(56,189,248,0.6)] animate-pulse"></span>
                     <span className="uppercase text-xs font-bold tracking-[0.2em] text-zinc-500">Consistent</span>
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-serif text-zinc-900 tracking-tight mb-4 leading-[0.95]">AI That Knows You</h3>
+                  <h3 className="text-4xl md:text-5xl font-geist font-semibold text-zinc-900 tracking-tighter mb-4 leading-[0.95]">AI That Knows You</h3>
                   <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-sm">
                     Feed us your brand assets once, and our AI masters your look forever.
                   </p>
@@ -800,7 +800,7 @@ export default function Waitlist() {
                 {/* Wide Card (Perfect Consistency) */}
                 <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
                   <div className="relative z-10 flex-1">
-                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tight font-serif mb-4">Perfect Consistency</h3>
+                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tighter font-geist font-semibold mb-4">Perfect Consistency</h3>
                     <p className="text-lg text-zinc-500 font-light leading-relaxed">
                       Every piece of content adheres strictly to your guidelines, ensuring a unified brand voice across channels.
                     </p>

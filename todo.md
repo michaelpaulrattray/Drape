@@ -107,3 +107,8 @@
 - [x] Add wide card for Perfect Consistency feature
 - [x] Add two split cards for Cost Efficiency and Hyper Speed stats
 - [x] Style with light theme matching LUMEN aesthetic
+
+## Typography Consistency Fix
+- [x] Ensure "Solving Problems With Intelligent AI" section matches page typography
+- [x] Ensure "Creative power, unbound" section matches page typography
+- [x] Use consistent font families, sizes, and weights across all sections
