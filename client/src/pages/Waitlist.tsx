@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
+import { StickyScrollSection } from "@/components/StickyScrollSection";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, ArrowLeft, ChevronRight, Menu, X, Check, Camera, Palette, Sparkles, ArrowUpRight } from "lucide-react";
 
@@ -455,6 +456,9 @@ export default function Waitlist() {
 
         {/* Draggable Cards Section */}
         <DraggableCardsSection />
+
+        {/* Sticky Scroll Process Section */}
+        <StickyScrollSection />
 
         {/* Exploration Section - Gallery */}
         <section id="studios" className="grid grid-cols-1 md:grid-cols-2 border-b border-black/10">

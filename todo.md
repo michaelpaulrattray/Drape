@@ -120,3 +120,4 @@
 - [x] Redesign draggable card section to match light theme (white bg, orange accents, Geist font)
 - [x] Add "From Idea to Launch in 3 Steps" section under Cast, Style & Generate section
 - [x] Redesign "From Idea to Launch in 3 Steps" section to match light theme (white bg, orange accents, borders)
+- [x] Implement sticky scroll section with dynamic image switching under scrollable card section
