@@ -757,76 +757,99 @@ export default function Waitlist() {
         {/* Services Draggable Cards Section with Auto-Scroll */}
         <ServicesMarqueeSection />
 
-        {/* Journal Section */}
-        <section className="border-b border-black/10 bg-zinc-50">
-          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-black/10">
-            {/* Left: Featured Article */}
-            <div className="group relative min-h-[600px] flex flex-col justify-end p-8 md:p-12 overflow-hidden cursor-pointer">
-              <img 
-                src="https://images.unsplash.com/photo-1452587925148-ce544e77e70d?q=80&w=2574&auto=format&fit=crop" 
-                alt="Featured" 
-                className="group-hover:opacity-80 group-hover:scale-105 transition-all duration-1000 ease-out opacity-60 w-full h-full object-cover absolute inset-0 grayscale"
-              />
-              <div className="bg-gradient-to-t to-transparent absolute inset-0 from-zinc-50 via-zinc-50/60" />
-              
-              <div className="relative z-10 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="px-3 py-1 border text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm border-sky-500/30 bg-sky-500/10 text-sky-600">Featured</span>
-                  <span className="text-xs font-mono tracking-tight text-black/50">FEB 02, 2026</span>
-                </div>
-                
-                <h3 className="md:text-7xl uppercase text-5xl font-bold tracking-tighter mb-8 text-zinc-900 font-geist">
-                  The Future of 
-                  <span className="font-normal text-black/40"> AI Fashion</span>
-                </h3>
-                
-                <p className="leading-relaxed line-clamp-2 md:text-lg text-zinc-600 max-w-md mb-8">
-                  Exploring how AI is revolutionizing fashion photography and model casting, 
-                  where digital innovation meets creative vision.
-                </p>
-                
-                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest transition-colors text-black group-hover:text-sky-600">
-                  Read Full Entry
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center group-hover:text-white transition-all duration-300 border-black/20 group-hover:bg-sky-600 group-hover:border-sky-600">
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                </div>
-              </div>
+        {/* Creative Power, Unbound Section */}
+        <section className="py-24 px-6 md:px-12 bg-white border-b border-black/10" id="benefits">
+          <div className="max-w-[1400px] mx-auto">
+            
+            <div className="mb-20 max-w-2xl">
+              <h2 className="text-5xl md:text-7xl font-medium text-zinc-900 tracking-tight font-serif mb-6">
+                Creative power, <span className="text-zinc-400">unbound.</span>
+              </h2>
+              <p className="text-xl text-zinc-500 font-light leading-relaxed">
+                Save time, cut costs, and do more with less. We help you work smarter so you can focus on strategy.
+              </p>
             </div>
 
-            {/* Right: Editorial List */}
-            <div className="flex flex-col h-full">
-              <div className="p-8 md:p-12 border-b flex items-center justify-between bg-white/[0.02] border-black/10">
-                <div>
-                  <h2 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase mb-2 text-zinc-900 font-geist">Journal</h2>
-                  <p className="text-xs uppercase tracking-widest text-black/40">Behind the Scenes</p>
-                </div>
-                <a href="#" className="px-5 py-2.5 border text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2 border-black/10 hover:bg-black hover:text-zinc-100">
-                  Archive
-                  <BookOpen className="w-3.5 h-3.5" />
-                </a>
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
-              <div className="flex-1 divide-y divide-black/10">
-                {journalEntries.map((entry, index) => (
-                  <a key={index} href="#" className="group block p-8 md:px-12 transition-colors relative overflow-hidden hover:bg-black/5">
-                    <div className="absolute right-0 top-0 bottom-0 w-1 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 bg-sky-500" />
-                    <div className="flex justify-between items-start gap-6">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-sky-600">{entry.category}</span>
-                          <span className="w-1 h-1 rounded-full bg-black/20" />
-                          <span className="text-[10px] uppercase tracking-widest text-black/40">{entry.type}</span>
-                        </div>
-                        <h4 className="text-xl md:text-2xl font-semibold mb-2 group-hover:text-black transition-colors text-black/90">{entry.title}</h4>
-                        <p className="text-sm group-hover:text-black/70 transition-colors text-black/40">{entry.description}</p>
+              {/* Large Card Left (AI That Knows You) */}
+              <div className="lg:col-span-5 group relative min-h-[640px] bg-zinc-50 border border-black/10 rounded-lg hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col justify-between p-10">
+                {/* Background Gradient Hint */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80 z-0 pointer-events-none"></div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(56,189,248,0.6)] animate-pulse"></span>
+                    <span className="uppercase text-xs font-bold tracking-[0.2em] text-zinc-500">Consistent</span>
+                  </div>
+                  <h3 className="text-4xl md:text-5xl font-serif text-zinc-900 tracking-tight mb-4 leading-[0.95]">AI That Knows You</h3>
+                  <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-sm">
+                    Feed us your brand assets once, and our AI masters your look forever.
+                  </p>
+                </div>
+                
+                <div className="absolute bottom-0 left-0 w-full h-[55%] z-0 rounded-b-lg overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-white via-zinc-50/20 to-transparent z-10"></div>
+                  <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f36259a7-cc94-4846-8290-2df52026731d_original.gif" className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out grayscale group-hover:grayscale-0" alt="AI Gen" />
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="lg:col-span-7 flex flex-col gap-6 h-full">
+                
+                {/* Wide Card (Perfect Consistency) */}
+                <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
+                  <div className="relative z-10 flex-1">
+                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tight font-serif mb-4">Perfect Consistency</h3>
+                    <p className="text-lg text-zinc-500 font-light leading-relaxed">
+                      Every piece of content adheres strictly to your guidelines, ensuring a unified brand voice across channels.
+                    </p>
+                  </div>
+                  <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden border border-black/10 group-hover:border-sky-500/30 transition-colors">
+                    <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ebfeb48e-4108-49c6-86a2-a1491f93b564_original.gif" className="transition-all duration-700 ease-in-out w-full h-full object-cover grayscale group-hover:grayscale-0" alt="Consistency" />
+                  </div>
+                </div>
+
+                {/* Split Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+                  
+                  {/* Cost Efficiency */}
+                  <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
+                    <div className="relative z-10">
+                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">Cost Efficiency</h3>
+                      <p className="text-base text-zinc-400 font-light">Cut overhead significantly.</p>
+                    </div>
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-baseline gap-1 mb-5">
+                        <span className="text-7xl font-semibold text-zinc-900 tracking-tighter">-85</span>
+                        <span className="text-3xl text-sky-500 font-medium">%</span>
                       </div>
-                      <div className="flex hidden md:flex transition-colors w-20 h-20 border items-center justify-center bg-black/5 border-black/10 group-hover:bg-sky-100 text-sky-600">
-                        <Sparkles className="w-6 h-6" />
+                      <div className="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
+                        <div className="h-full bg-sky-500 w-[15%] group-hover:w-[85%] transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(56,189,248,0.5)]"></div>
                       </div>
                     </div>
-                  </a>
-                ))}
+                  </div>
+
+                  {/* Hyper Speed */}
+                  <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
+                    <div className="relative z-10">
+                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">Hyper Speed</h3>
+                      <p className="text-base text-zinc-400 font-light">Concept to final in 24h.</p>
+                    </div>
+                    
+                    <div className="relative z-10 flex items-end">
+                      <div className="flex items-center gap-3 bg-white border border-black/10 rounded-full pl-5 pr-6 py-3 shadow-lg group-hover:border-sky-500/30 transition-colors">
+                        <div className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+                        </div>
+                        <span className="text-sm font-mono text-zinc-600 tracking-wide">Rendering...</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
           </div>
