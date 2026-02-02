@@ -346,14 +346,21 @@ export default function Waitlist() {
       <main className="z-10 relative">
         {/* Hero Section - Centered Impact Layout */}
         <section className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden pt-24 pb-20 px-6 md:px-12">
-          {/* Background Image */}
-          <div className="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1920&auto=format&fit=crop" 
-              alt="Hero Background" 
-              className="w-full h-full object-cover opacity-20 grayscale"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-zinc-50 via-zinc-50/90 to-zinc-50" />
+          {/* Animated Gradient Background */}
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            {/* Base gradient */}
+            <div className="absolute inset-0 bg-zinc-50" />
+            
+            {/* Animated gradient orbs */}
+            <div className="absolute -top-1/2 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-orange/20 via-orange/5 to-transparent blur-3xl animate-[float_20s_ease-in-out_infinite]" />
+            <div className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-tl from-zinc-300/30 via-zinc-200/10 to-transparent blur-3xl animate-[float_25s_ease-in-out_infinite_reverse]" />
+            <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-gradient-to-bl from-orange/10 via-transparent to-transparent blur-2xl animate-[float_15s_ease-in-out_infinite_2s]" />
+            
+            {/* Subtle grid overlay */}
+            <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+            
+            {/* Noise texture overlay */}
+            <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }} />
           </div>
 
           {/* Main Hero Content */}

@@ -129,3 +129,6 @@
 - [x] Redesign hero with clearer headline, prominent CTAs, and better visual hierarchy
 - [x] Make copy more visible and impactful
 - [x] Simplify layout for better user focus
+
+## Hero Background Enhancement
+- [x] Add animated gradient background to hero section
