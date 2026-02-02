@@ -132,3 +132,11 @@
 - [x] Add looping video demonstrating upload-to-result process
 - [x] Position video section between Services and Creative Power sections
 - [x] Style video with clean, minimal design matching page aesthetic
+
+## Copy Correction - Accurate Workflow & Capabilities
+- [x] Update video demo section: 4-step workflow (Design Model → Claim Passport → Wardrobe Studio → Generate Campaigns)
+- [x] Change all 8K references to 4K realism
+- [x] Update hero slides to reflect zero-prompt high-fidelity tools
+- [x] Update service cards with accurate workflow steps
+- [x] Update bento grid cards with correct messaging
+- [x] Emphasize unique tools and creative process throughout

@@ -27,21 +27,21 @@ import { Link } from "wouter";
 const heroSlides = [
   {
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp",
-    tag: "Zero Prompt",
-    title: "Just Upload",
-    description: "No prompts needed. Your brand speaks for itself.",
+    tag: "Casting Studio",
+    title: "Design Your Model",
+    description: "Create unique AI characters with our zero-prompt creative tools.",
   },
   {
     image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2564&auto=format&fit=crop",
-    tag: "8K Detail",
-    title: "Pixel Perfect",
-    description: "Hyper-realistic detail that rivals real photography.",
+    tag: "4K Fidelity",
+    title: "Extreme Detail",
+    description: "High-fidelity output that rivals professional photography.",
   },
   {
     image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=2574&auto=format&fit=crop",
-    tag: "Consistent",
-    title: "Same Face, Every Time",
-    description: "Your AI model stays identical across thousands of shots.",
+    tag: "Model Passport",
+    title: "Own Your Creation",
+    description: "Claim legal ownership over your AI model with a digital passport.",
   },
 ];
 
@@ -81,26 +81,26 @@ const explorationProjects = [
 const serviceCards = [
   {
     number: "01",
-    title: "Zero-Prompt Casting",
-    description: "Upload reference photos. Our AI learns your model's face, body, and essence—no prompts required.",
+    title: "Casting Studio",
+    description: "Design your AI model from scratch. Our zero-prompt tools let you craft unique characters with complete creative control.",
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg",
   },
   {
     number: "02",
-    title: "8K Photorealism",
-    description: "Every pore, every strand of hair rendered in extreme detail. Indistinguishable from real photography.",
+    title: "Model Passport",
+    description: "Claim legal ownership over your AI creation. Your model, your rights—protected and documented.",
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/04ff5a45-5b01-4b68-a092-f3ec2da28b5e_1600w.jpg",
   },
   {
     number: "03",
-    title: "Character Lock",
-    description: "Same face across 10,000 images. Perfect consistency for campaigns, catalogs, and social content.",
+    title: "Wardrobe Studio",
+    description: "Outfit your model in any style. From streetwear to haute couture—no physical samples needed.",
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f365bf31-c2fb-44c2-a24a-c78fedc640ba_1600w.jpg",
   },
   {
     number: "04",
-    title: "Infinite Variations",
-    description: "One model, unlimited outfits, poses, and environments. Scale your content without limits.",
+    title: "Campaign Generator",
+    description: "Generate photoshoots, product shots, and full campaigns. 4K fidelity with perfect character consistency.",
     image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2532&auto=format&fit=crop",
   },
 ];
@@ -225,12 +225,12 @@ function ServicesMarqueeSection() {
               Services
             </span>
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-              Zero Prompts. <br/><span className="text-zinc-400">Infinite Possibilities.</span>
+              Your Creative <br/><span className="text-zinc-400">Studio Suite.</span>
             </h2>
           </div>
           <div className="lg:pl-12">
             <p className="text-lg md:text-xl font-light text-zinc-600 leading-relaxed">
-              Upload your references. Our AI learns your model's identity and generates campaign-ready content with extreme detail and perfect consistency.
+              From character design to campaign delivery. Zero prompts, maximum fidelity—unique tools built for the creative process.
             </p>
           </div>
         </div>
@@ -545,10 +545,10 @@ export default function Waitlist() {
                 How It Works
               </span>
               <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6 text-white font-geist">
-                Upload. <span className="text-zinc-500">Generate. Done.</span>
+                Design. Own. <span className="text-zinc-500">Create.</span>
               </h2>
               <p className="text-lg text-zinc-400 font-light max-w-xl mx-auto">
-                Watch our AI learn your model's identity from reference photos and generate unlimited variations—all without a single prompt.
+                A creative journey from character design to campaign-ready content—zero prompts, maximum fidelity.
               </p>
             </div>
 
@@ -590,39 +590,51 @@ export default function Waitlist() {
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-transparent pointer-events-none" />
                   
                   {/* Workflow steps indicator */}
-                  <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-                    <div className="flex items-center justify-center gap-4 md:gap-8">
-                      <div className="flex items-center gap-3 text-white/90">
-                        <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
-                          <span className="text-sky-400 font-bold text-sm">1</span>
+                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+                    <div className="flex items-center justify-center gap-2 md:gap-4 flex-wrap">
+                      <div className="flex items-center gap-2 text-white/90">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
+                          <span className="text-sky-400 font-bold text-xs md:text-sm">1</span>
                         </div>
                         <div className="hidden md:block">
-                          <p className="text-sm font-medium">Upload References</p>
-                          <p className="text-xs text-zinc-400">5-10 photos</p>
+                          <p className="text-sm font-medium">Design Model</p>
+                          <p className="text-xs text-zinc-400">Casting Studio</p>
                         </div>
                       </div>
                       
-                      <div className="w-8 h-px bg-gradient-to-r from-sky-500/50 to-sky-400/50" />
+                      <div className="w-4 md:w-6 h-px bg-gradient-to-r from-sky-500/50 to-sky-400/50" />
                       
-                      <div className="flex items-center gap-3 text-white/90">
-                        <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
-                          <span className="text-sky-400 font-bold text-sm">2</span>
+                      <div className="flex items-center gap-2 text-white/90">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
+                          <span className="text-sky-400 font-bold text-xs md:text-sm">2</span>
                         </div>
                         <div className="hidden md:block">
-                          <p className="text-sm font-medium">AI Learns Identity</p>
-                          <p className="text-xs text-zinc-400">~30 seconds</p>
+                          <p className="text-sm font-medium">Claim Passport</p>
+                          <p className="text-xs text-zinc-400">Legal Ownership</p>
                         </div>
                       </div>
                       
-                      <div className="w-8 h-px bg-gradient-to-r from-sky-400/50 to-sky-500/50" />
+                      <div className="w-4 md:w-6 h-px bg-gradient-to-r from-sky-400/50 to-sky-500/50" />
                       
-                      <div className="flex items-center gap-3 text-white/90">
-                        <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
-                          <span className="text-sky-400 font-bold text-sm">3</span>
+                      <div className="flex items-center gap-2 text-white/90">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
+                          <span className="text-sky-400 font-bold text-xs md:text-sm">3</span>
                         </div>
                         <div className="hidden md:block">
-                          <p className="text-sm font-medium">Generate Content</p>
-                          <p className="text-xs text-zinc-400">Unlimited 8K images</p>
+                          <p className="text-sm font-medium">Wardrobe Studio</p>
+                          <p className="text-xs text-zinc-400">Outfit Your Model</p>
+                        </div>
+                      </div>
+                      
+                      <div className="w-4 md:w-6 h-px bg-gradient-to-r from-sky-500/50 to-sky-400/50" />
+                      
+                      <div className="flex items-center gap-2 text-white/90">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
+                          <span className="text-sky-400 font-bold text-xs md:text-sm">4</span>
+                        </div>
+                        <div className="hidden md:block">
+                          <p className="text-sm font-medium">Generate</p>
+                          <p className="text-xs text-zinc-400">Campaigns & Shoots</p>
                         </div>
                       </div>
                     </div>
@@ -634,8 +646,8 @@ export default function Waitlist() {
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-white/10">
               <div className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">30<span className="text-sky-400">s</span></p>
-                <p className="text-sm text-zinc-500 mt-2">Model Training</p>
+                <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">4K<span className="text-sky-400">+</span></p>
+                <p className="text-sm text-zinc-500 mt-2">Photorealism</p>
               </div>
               <div className="text-center">
                 <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">0</p>
@@ -643,7 +655,7 @@ export default function Waitlist() {
               </div>
               <div className="text-center">
                 <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">∞</p>
-                <p className="text-sm text-zinc-500 mt-2">Variations</p>
+                <p className="text-sm text-zinc-500 mt-2">Campaigns</p>
               </div>
             </div>
           </div>
@@ -655,10 +667,10 @@ export default function Waitlist() {
             
             <div className="mb-20 max-w-2xl">
               <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-                One upload. <span className="text-zinc-400">Endless content.</span>
+                Creative power, <span className="text-zinc-400">unbound.</span>
               </h2>
               <p className="text-xl text-zinc-500 font-light leading-relaxed">
-                Train your AI model once. Generate thousands of hyper-realistic images with locked character identity—no prompts, no inconsistencies.
+                Design once, generate forever. Our high-fidelity tools give you complete creative control—no prompts, no compromises.
               </p>
             </div>
 
@@ -674,9 +686,9 @@ export default function Waitlist() {
                     <span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(56,189,248,0.6)] animate-pulse"></span>
                     <span className="uppercase text-xs font-bold tracking-[0.2em] text-zinc-500">Zero Prompt</span>
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-geist font-semibold text-zinc-900 tracking-tighter mb-4 leading-[0.95]">Upload. Done.</h3>
+                  <h3 className="text-4xl md:text-5xl font-geist font-semibold text-zinc-900 tracking-tighter mb-4 leading-[0.95]">Pure Creation</h3>
                   <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-sm">
-                    No complex prompts. No trial and error. Just upload your references and let our AI learn your model's identity.
+                    No prompts. No guesswork. Our intuitive tools let you design and refine your AI model with complete creative freedom.
                   </p>
                 </div>
                 
@@ -708,13 +720,13 @@ export default function Waitlist() {
                   {/* Cost Efficiency */}
                   <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
                     <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">8K Resolution</h3>
-                      <p className="text-base text-zinc-400 font-light">Every pore. Every strand.</p>
+                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">4K Fidelity</h3>
+                      <p className="text-base text-zinc-400 font-light">Every detail. Every texture.</p>
                     </div>
                     
                     <div className="relative z-10">
                       <div className="flex items-baseline gap-1 mb-5">
-                        <span className="text-7xl font-semibold text-zinc-900 tracking-tighter">8K</span>
+                        <span className="text-7xl font-semibold text-zinc-900 tracking-tighter">4K</span>
                         <span className="text-3xl text-sky-500 font-medium">+</span>
                       </div>
                       <div className="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
@@ -755,10 +767,10 @@ export default function Waitlist() {
               Early Access
             </p>
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-              Cast Your First Model
+              Design Your First Model
             </h2>
             <p className="text-lg text-zinc-500 mb-12 max-w-md mx-auto">
-              Zero prompts. 8K detail. Perfect consistency. Be among the first to create AI models that look indistinguishable from real photography.
+              Zero prompts. 4K fidelity. Perfect consistency. Be among the first to create and own AI models with our unique creative tools.
             </p>
 
             {!submitted && !alreadyRegistered ? (
