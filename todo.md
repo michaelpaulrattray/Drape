@@ -186,3 +186,11 @@
 
 ## Creative Power Card Corners
 - [x] Change Creative Power, Unbound section cards from rounded to square corners
+
+## Hero Section Redesign (LUMEN Style)
+- [x] Redesign hero with 3-column grid layout (left content, center image, right empty/minimal)
+- [x] Move image to center-right with more space on left for CTA content
+- [x] Add service category icons (AI Model Generation, Campaign Assets)
+- [x] Add subtle video/animated background
+- [x] Add image carousel with navigation controls
+- [x] Remove projects archived counter

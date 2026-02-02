@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, ArrowLeft, ChevronRight, Menu, X, Check, Camera, Palette, Sparkles, ArrowUpRight, Zap, Clock, Infinity } from "lucide-react";
+import { ArrowRight, ArrowLeft, ChevronRight, Menu, X, Check, Camera, Palette, Sparkles, ArrowUpRight, Zap, Clock, Infinity, Image as ImageIcon } from "lucide-react";
 
 // Sticky Scroll Process Section Data
 const stickyProcessSteps = [
@@ -498,100 +498,117 @@ export default function Waitlist() {
 
       {/* Main Content */}
       <main className="z-10 relative">
-        {/* Hero Section - Split Layout */}
-        <section className="min-h-screen relative overflow-hidden pt-24 pb-16 px-6 md:px-12 bg-zinc-100">
-          {/* Background Elements */}
-          <div className="absolute inset-0 z-0 overflow-hidden">
-            <div className="absolute top-0 right-0 w-[50rem] h-[50rem] bg-gradient-to-b from-white/60 to-transparent opacity-50 blur-3xl pointer-events-none rounded-full translate-x-1/3 -translate-y-1/3" />
-          </div>
+        {/* Hero Section - LUMEN Style 3-Column Layout */}
+        <section className="min-h-screen relative pt-24 pb-20 px-6 md:px-12 bg-zinc-50 border-b border-black/10">
+          {/* Subtle Grid Lines Background */}
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-50" style={{ backgroundImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px)', backgroundSize: '25% 100%' }} />
+          
+          {/* Animated Background Video (subtle) */}
+          <video 
+            src="https://cdn.coverr.co/videos/coverr-shadows-of-leaves-on-a-wall-3536/1080p.mp4" 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-[0.06]"
+          />
 
           <div className="max-w-[90rem] mx-auto relative z-10">
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-16 gap-y-12 items-start pt-8 md:pt-12">
-              {/* Left Content - 7 columns */}
-              <div className="lg:col-span-7 flex flex-col gap-6">
-                {/* Tagline */}
-                <div className="flex items-center gap-4 animate-fade-in-up">
-                  <div className="h-px w-12 bg-zinc-400" />
-                  <span className="uppercase text-xs md:text-sm font-medium text-zinc-500 tracking-widest">
+            {/* 3-Column Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[calc(100vh-12rem)]">
+              
+              {/* Left Column - Content */}
+              <div className="col-span-1 flex flex-col justify-between h-full py-4">
+                <div className="mb-16">
+                  <p className="text-[10px] md:text-xs uppercase font-semibold tracking-widest mb-3 text-orange">
                     AI-First Creative Studio
-                  </span>
+                  </p>
+                  <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
+                    FORMA
+                    <span className="text-orange text-5xl md:text-6xl align-top">+</span>
+                  </h1>
+                  <div className="h-px w-full bg-gradient-to-r from-black/20 to-transparent my-6" />
                 </div>
 
-                {/* Main Headline */}
-                <h1 className="text-5xl md:text-7xl lg:text-8xl xl:text-9xl leading-[0.85] uppercase font-medium text-zinc-900 tracking-tight font-geist animate-fade-in-up animation-delay-100">
-                  Stop Paying
-                  <br />
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-zinc-500 to-zinc-900">
-                    $10,000 Per
-                  </span>
-                  <br />
-                  Photoshoot
-                </h1>
+                {/* Service Categories */}
+                <div className="grid grid-cols-2 gap-8 mb-12">
+                  <div className="group cursor-pointer">
+                    <Camera className="w-8 h-8 mb-4 text-zinc-800 group-hover:text-orange transition-colors" />
+                    <h3 className="text-sm font-semibold leading-tight mb-2">
+                      AI Model
+                      <br />
+                      Generation
+                    </h3>
+                    <div className="w-4 h-0.5 bg-orange group-hover:w-8 transition-all" />
+                  </div>
+                  <div className="group cursor-pointer">
+                    <ImageIcon className="w-8 h-8 mb-4 text-zinc-800 group-hover:text-orange transition-colors" />
+                    <h3 className="text-sm font-semibold leading-tight mb-2">
+                      Campaign
+                      <br />
+                      Assets
+                    </h3>
+                    <div className="w-4 h-0.5 bg-orange group-hover:w-8 transition-all" />
+                  </div>
+                </div>
 
-                {/* Subtitle + CTA - Moved here to reduce spacing */}
-                <div className="max-w-xl mt-4 animate-fade-in-up animation-delay-200">
-                  <p className="text-base md:text-lg leading-relaxed font-normal text-zinc-600 tracking-tight font-space mb-6">
-                    Generate AI models, style outfits, and create campaign-ready photoshoots in minutes—all without a single real photoshoot.
-                  </p>
+                {/* CTA Links */}
+                <div className="flex gap-8 mt-auto text-xs font-medium tracking-wide text-zinc-600">
+                  <a href="#studios" className="flex items-center gap-2 hover:text-black transition-colors">
+                    View Studios
+                    <ChevronRight className="w-3 h-3" />
+                  </a>
+                  <a href="#contact" className="flex items-center gap-2 hover:text-black transition-colors">
+                    Get Access
+                    <ChevronRight className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
 
-                  <div className="flex flex-wrap gap-4">
-                    <a 
-                      href="#contact" 
-                      className="group relative px-8 py-4 bg-zinc-900 text-white rounded-lg overflow-hidden transition-all hover:shadow-xl hover:shadow-zinc-500/20"
-                    >
-                      <span className="relative z-10 flex items-center gap-2 uppercase text-sm font-semibold tracking-widest">
-                        Get Early Access
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {/* Center Visual - Image Carousel (2 columns) */}
+              <div className="col-span-1 md:col-span-2 flex items-center justify-center py-10 md:py-0">
+                <div className="aspect-[3/4] md:aspect-auto md:h-[600px] w-full relative group overflow-hidden">
+                  {/* Main Image */}
+                  <img 
+                    src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp" 
+                    alt="AI Fashion Model" 
+                    className="w-full h-full object-cover grayscale contrast-125"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/50 via-transparent to-transparent z-10" />
+                  
+                  {/* Image Overlay Info */}
+                  <div className="absolute bottom-0 left-0 p-8 z-20 transform transition-transform duration-500 group-hover:-translate-y-2">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="px-2 py-0.5 rounded border text-[10px] font-mono uppercase backdrop-blur-md border-white/20 bg-white/10 text-white">
+                        AI Generated
                       </span>
-                    </a>
-                    <a 
-                      href="#studios" 
-                      className="px-8 py-4 border-2 border-zinc-200 text-zinc-700 font-semibold rounded-lg hover:border-zinc-900 hover:bg-zinc-900 hover:text-white transition-all duration-300 flex items-center gap-2 text-sm uppercase tracking-widest"
-                    >
-                      View Studios
-                    </a>
+                    </div>
+                    <h3 className="text-2xl font-semibold tracking-tight mb-1 text-white font-geist">The Human Gaze</h3>
+                    <p className="text-sm text-white/70">Photorealistic AI model generation.</p>
+                  </div>
+
+                  {/* Navigation Controls */}
+                  <div className="absolute right-8 bottom-8 z-20 flex items-center gap-3">
+                    <div className="px-3 py-1.5 rounded-full backdrop-blur-xl border text-xs font-mono mr-2 shadow-lg bg-black/80 border-white/10 text-white">
+                      <span>01</span><span className="mx-1 text-white/30">/</span>03
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="w-10 h-10 rounded-full border backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-lg border-white/10 bg-black/50 text-white hover:bg-white hover:text-black">
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <button className="w-10 h-10 rounded-full border backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-lg border-white/10 bg-black/50 text-white hover:bg-white hover:text-black">
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right Visual - 5 columns */}
-              <div className="lg:col-span-5 group h-full relative animate-fade-in-up animation-delay-200">
-                {/* Tilted Background Shape */}
-                <div className="absolute inset-0 bg-zinc-900 rounded-2xl rotate-3 opacity-10 group-hover:rotate-6 transition-transform duration-500" />
-                
-                {/* Main Image - Increased Size */}
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl h-[480px] lg:h-[600px] xl:h-[700px] w-full">
-                  <img 
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop" 
-                    alt="AI Fashion Model" 
-                    className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/40 to-transparent" />
-                  
-                  {/* Overlay Card */}
-                  <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-white">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[0.65rem] uppercase tracking-widest font-space">
-                        Model Generation
-                      </span>
-                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    </div>
-                    <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
-                      <div className="h-full bg-white w-2/3 animate-[pulse_2s_infinite]" />
-                    </div>
-                  </div>
-                </div>
+              {/* Right Column - Empty/Minimal (removed projects archived) */}
+              <div className="col-span-1 hidden md:flex flex-col items-end justify-start h-full pt-4">
+                {/* Intentionally minimal - space for visual balance */}
               </div>
             </div>
-
-
-          </div>
-
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-400">
-            <span className="text-xs uppercase tracking-widest">Scroll</span>
-            <div className="w-px h-8 bg-gradient-to-b from-zinc-400 to-transparent animate-pulse" />
           </div>
         </section>
 
