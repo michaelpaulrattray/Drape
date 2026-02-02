@@ -120,3 +120,7 @@
 - [x] Redesign draggable card section to match light theme (white bg, orange accents, Geist font)
 - [x] Add "From Idea to Launch in 3 Steps" section under Cast, Style & Generate section
 - [x] Redesign "From Idea to Launch in 3 Steps" section to match light theme (white bg, orange accents, borders)
+
+## Header & Footer Updates
+- [x] Redesign header navigation to inline style (logo left, nav links right, mix-blend-difference)
+- [x] Add dynamic location tag to footer with user's timezone/location

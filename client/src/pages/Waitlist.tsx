@@ -191,6 +191,36 @@ export default function Waitlist() {
     return () => clearInterval(interval);
   }, []);
 
+  // Dynamic Time/Location for footer
+  useEffect(() => {
+    const timeElement = document.getElementById('dynamic-time');
+    const locationElement = document.getElementById('dynamic-location');
+    
+    const updateClock = () => {
+      if (timeElement) {
+        const now = new Date();
+        timeElement.textContent = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      }
+    };
+    
+    const updateLocation = () => {
+      if (locationElement) {
+        try {
+          const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const locationName = timeZone ? timeZone.split('/').pop()?.replace(/_/g, ' ') || 'Global' : 'Global';
+          locationElement.textContent = locationName;
+        } catch {
+          locationElement.textContent = 'Earth';
+        }
+      }
+    };
+    
+    updateClock();
+    updateLocation();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Hero slides data
   const heroSlides = [
     {
@@ -275,28 +305,25 @@ export default function Waitlist() {
         </svg>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex md:px-12 z-50 border-b pt-6 pr-6 pb-6 pl-6 relative items-center justify-between border-black/5 bg-zinc-50/80 backdrop-blur-md">
-        <Link href="/" className="inline-flex items-center gap-2 font-bold tracking-tighter text-2xl">
-          <span className="w-6 h-6 rounded flex items-center justify-center text-sm text-white bg-zinc-900">F</span>
-          <span className="font-geist">FORMA</span>
+      {/* Navigation - Inline Style */}
+      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-5 md:px-12 md:py-6 flex justify-between items-center mix-blend-difference text-white pointer-events-none">
+        <Link href="/" className="group flex items-center gap-2 text-xl md:text-2xl tracking-tight font-normal pointer-events-auto">
+          <span className="w-6 h-6 rounded flex items-center justify-center text-sm bg-white text-black">F</span>
+          <span className="font-geist font-bold">FORMA</span>
         </Link>
 
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-1">
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="group flex items-center gap-3 px-5 py-2 border transition duration-300 bg-transparent border-black/10 hover:bg-black/5"
-          >
-            <Menu className="w-5 h-5 stroke-[1.5]" />
-            <span className="text-sm font-medium tracking-wide">Menu</span>
-          </button>
+        {/* Desktop Menu - Inline Links */}
+        <div className="hidden md:flex items-center gap-8 lg:gap-10 pointer-events-auto">
+          <a href="#studios" className="text-xs font-medium uppercase tracking-widest hover:text-zinc-300 transition-colors">Studios</a>
+          <a href="#process" className="text-xs font-medium uppercase tracking-widest hover:text-zinc-300 transition-colors">Process</a>
+          <a href="#benefits" className="text-xs font-medium uppercase tracking-widest hover:text-zinc-300 transition-colors">Benefits</a>
+          <a href="#contact" className="px-5 py-2 rounded-full border border-white/30 hover:bg-white hover:text-black transition-all duration-300 text-xs font-medium uppercase tracking-widest backdrop-blur-sm">Get Early Access</a>
         </div>
 
         {/* Mobile Menu Button */}
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 border border-black/10 hover:bg-black/5 transition-colors"
+          className="md:hidden p-2 pointer-events-auto"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -1008,6 +1035,13 @@ export default function Waitlist() {
             </div>
 
             <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 max-w-7xl mx-auto border-black/10">
+              {/* Dynamic Location Tag */}
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 bg-zinc-100 text-zinc-500 text-xs font-mono">
+                <span className="text-zinc-900" id="dynamic-time">--:--</span>
+                <span className="text-zinc-300">|</span>
+                <span id="dynamic-location">Loading...</span>
+              </div>
+
               <p className="text-xs text-zinc-400">
                 © 2025 FormaStudio™. All rights reserved.
               </p>
