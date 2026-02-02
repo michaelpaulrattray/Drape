@@ -155,3 +155,30 @@
 - [x] Testimonials section
 - [x] FAQ accordion
 - [x] Footer with links
+
+
+## Phase 1.11: Fix Sticky Scroll in Process Section
+
+- [x] Fix sticky image positioning to stay visible while scrolling
+- [x] Ensure image changes as user scrolls through each step
+- [x] Verify step number overlay updates correctly
+- [x] Test on desktop viewport
+
+
+## Phase 1.12: Waitlist Page Rebuild from Reference HTML
+
+### Structure
+- [x] Hero section with video background and gradient overlay
+- [x] Mix-blend-difference navigation
+- [x] Draggable services marquee section
+- [x] Process section with proper sticky scroll (grid layout)
+- [x] Benefits bento grid section
+- [x] Contact form with glass panel styling
+- [x] Footer with marquee text and dynamic time
+
+### Sticky Scroll Fix (from reference)
+- [x] Use CSS Grid (grid-cols-2) instead of flexbox
+- [x] Left column: relative h-full min-h-screen with border
+- [x] Sticky container: top-0 h-screen with flex items-center
+- [x] Right column: scrolling steps with min-h-[40vh] each
+- [x] IntersectionObserver with rootMargin: '-40% 0px -40% 0px'

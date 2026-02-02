@@ -304,21 +304,29 @@
     justify-content: center;
   }
 
-  /* Process image transitions */
-  .process-image {
-    position: absolute;
-    inset: 0;
-    transition: opacity 0.7s ease, transform 0.7s ease;
+  /* Process image transitions - from reference */
+  .process-img {
+    transition: opacity 0.5s ease-in-out, transform 0.7s cubic-bezier(0.2, 0, 0.2, 1);
   }
 
-  .process-image.active {
+  .process-img.active {
     opacity: 1;
     transform: scale(1);
   }
 
-  .process-image.inactive {
+  .process-img.inactive {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(1.05);
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  /* Fade in up animation class */
+  .fade-in-up {
+    animation: fade-in-up 0.8s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
   }
 }
 
