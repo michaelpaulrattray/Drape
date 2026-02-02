@@ -1,265 +1,279 @@
-import { useEffect } from "react";
-import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
+import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Redirect } from "wouter";
 import {
-  Search,
-  Bell,
+  Sparkles,
+  TrendingUp,
+  Clock,
+  ArrowUpRight,
+  ArrowDownRight,
+  Crown,
+  Zap,
   Image,
   Shirt,
   Camera,
-  ArrowRight,
-  Sparkles,
-  Zap,
-  Clock,
-  TrendingUp,
-  Plus,
 } from "lucide-react";
-import { getLoginUrl } from "@/const";
+import { Link } from "wouter";
 
 export default function Dashboard() {
-  const { user, loading, isAuthenticated } = useAuth();
-  const [, setLocation] = useLocation();
+  const { user, isAuthenticated, loading } = useAuth();
 
-  // Fetch points balance
-  const { data: pointsData } = trpc.points.getBalance.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
+  // Get points data
+  const { data: pointsData, isLoading: pointsLoading } = trpc.points.getBalance.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      window.location.href = getLoginUrl();
-    }
-  }, [loading, isAuthenticated]);
+  // Get transaction history
+  const { data: transactions, isLoading: transactionsLoading } = trpc.points.getTransactions.useQuery(
+    { limit: 10 },
+    { enabled: isAuthenticated }
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-pulse">
-          <Sparkles className="w-8 h-8 text-orange" />
+      <AppLayout>
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   if (!isAuthenticated) {
-    return null;
+    return <Redirect to="/login" />;
   }
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case "generation":
+        return <ArrowDownRight className="w-4 h-4 text-red-400" />;
+      case "purchase":
+        return <ArrowUpRight className="w-4 h-4 text-green-400" />;
+      case "bonus":
+        return <Sparkles className="w-4 h-4 text-yellow-400" />;
+      case "signup":
+        return <Crown className="w-4 h-4 text-purple-400" />;
+      case "refund":
+        return <ArrowUpRight className="w-4 h-4 text-blue-400" />;
+      default:
+        return <Zap className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
 
   const studios = [
     {
-      id: "casting",
       title: "Casting Studio",
-      description: "Create and cast AI models with precise control over demographics and features",
+      description: "Create and cast AI models",
       icon: Image,
       href: "/casting-studio",
-      badge: "New",
+      color: "from-purple-500/20 to-pink-500/20",
     },
     {
-      id: "outfit",
       title: "Outfit Studio",
-      description: "Dress your AI models in any outfit or style",
+      description: "Style your models with outfits",
       icon: Shirt,
       href: "/outfit-studio",
-      badge: null,
+      color: "from-blue-500/20 to-cyan-500/20",
     },
     {
-      id: "photo",
       title: "Photo Studio",
-      description: "Generate campaign-ready outputs combining models with products",
+      description: "Generate campaign visuals",
       icon: Camera,
       href: "/photo-studio",
-      badge: null,
+      color: "from-orange-500/20 to-yellow-500/20",
     },
-  ];
-
-  const recentActivity = [
-    { type: "model", name: "Summer Campaign Model", time: "2 hours ago" },
-    { type: "outfit", name: "Casual Collection Shoot", time: "Yesterday" },
-    { type: "photo", name: "Product Launch Assets", time: "3 days ago" },
   ];
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Sidebar */}
-      <DashboardSidebar user={user} pointsBalance={pointsData?.balance || 0} />
+    <AppLayout>
+      <div className="container py-8 md:py-12">
+        {/* Header */}
+        <div className="mb-8 md:mb-12">
+          <h1 className="text-3xl md:text-4xl font-instrument tracking-tight mb-2">
+            Welcome back, <span className="text-muted-foreground">{user?.name?.split(" ")[0] || "Creator"}</span>
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your account and track your creative journey
+          </p>
+        </div>
 
-      {/* Main Content */}
-      <main className="lg:ml-64 min-h-screen">
-        {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-black/80 backdrop-blur-md border-b border-white/5">
-          <div className="flex items-center justify-between px-4 lg:px-8 h-16">
-            {/* Search */}
-            <div className="flex-1 max-w-xl ml-12 lg:ml-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                <Input
-                  type="text"
-                  placeholder="Search models, outfits, campaigns..."
-                  className="w-full h-10 pl-10 bg-white/5 border-white/10 rounded-full text-sm placeholder:text-white/40 focus:border-orange focus:ring-orange"
-                />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
+          {/* Points Balance Card */}
+          <Card className="glass-card border-white/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-400" />
+                Points Balance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-instrument">
+                  {pointsLoading ? "..." : pointsData?.balance ?? 0}
+                </span>
+                <span className="text-muted-foreground text-sm">points</span>
               </div>
-            </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 glass-button hover:bg-white hover:text-zinc-900"
+              >
+                Get more points
+              </Button>
+            </CardContent>
+          </Card>
 
-            {/* Right Actions */}
-            <div className="flex items-center gap-3 ml-4">
-              <button className="p-2 rounded-full hover:bg-white/5 transition-colors relative">
-                <Bell className="w-5 h-5 text-white/60" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-orange rounded-full" />
-              </button>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange/30 to-orange/10 flex items-center justify-center">
-                <span className="text-sm font-medium text-orange">
-                  {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
+          {/* Plan Card */}
+          <Card className="glass-card border-white/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Crown className="w-4 h-4 text-purple-400" />
+                Current Plan
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-instrument capitalize">
+                  {pointsLoading ? "..." : pointsData?.planTier ?? "Free"}
                 </span>
               </div>
-            </div>
-          </div>
-        </header>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 glass-button hover:bg-white hover:text-zinc-900"
+              >
+                Upgrade plan
+              </Button>
+            </CardContent>
+          </Card>
 
-        {/* Content */}
-        <div className="p-4 lg:p-8">
-          {/* Welcome Banner */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange/10 via-orange/5 to-transparent border border-orange/20 p-6 lg:p-8 mb-8">
-            <div className="relative z-10">
-              <h1 className="text-2xl lg:text-3xl font-instrument mb-2">
-                Welcome back, {user?.name?.split(" ")[0] || "Creator"}
-              </h1>
-              <p className="text-white/60 mb-4 max-w-xl">
-                Your AI creative studio is ready. Start casting models, styling outfits, or generating campaign visuals.
+          {/* Quick Stats Card */}
+          <Card className="glass-card border-white/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-green-400" />
+                This Month
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-instrument">
+                  {transactionsLoading
+                    ? "..."
+                    : transactions?.filter((t) => t.amount < 0).length ?? 0}
+                </span>
+                <span className="text-muted-foreground text-sm">generations</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                Keep creating amazing content
               </p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={() => setLocation("/casting-studio")}
-                  className="btn-orange rounded-full h-10 px-5"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Model
-                </Button>
-                <Button
-                  variant="outline"
-                  className="rounded-full h-10 px-5 border-white/10 hover:bg-white/5"
-                >
-                  View Tutorial
-                </Button>
-              </div>
-            </div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-orange/10 rounded-full blur-3xl" />
-          </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-              <div className="flex items-center gap-2 text-white/40 mb-2">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-xs uppercase tracking-wider">Points</span>
-              </div>
-              <p className="text-2xl font-instrument text-orange">{pointsData?.balance?.toLocaleString() || 0}</p>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-              <div className="flex items-center gap-2 text-white/40 mb-2">
-                <Image className="w-4 h-4" />
-                <span className="text-xs uppercase tracking-wider">Models</span>
-              </div>
-              <p className="text-2xl font-instrument">0</p>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-              <div className="flex items-center gap-2 text-white/40 mb-2">
-                <Zap className="w-4 h-4" />
-                <span className="text-xs uppercase tracking-wider">Generations</span>
-              </div>
-              <p className="text-2xl font-instrument">0</p>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-              <div className="flex items-center gap-2 text-white/40 mb-2">
-                <Clock className="w-4 h-4" />
-                <span className="text-xs uppercase tracking-wider">This Month</span>
-              </div>
-              <p className="text-2xl font-instrument">0</p>
-            </div>
-          </div>
-
-          {/* Studios Grid */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-instrument">Studios</h2>
-              <button className="text-sm text-white/40 hover:text-white transition-colors">
-                View All
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {studios.map((studio) => (
-                <button
-                  key={studio.id}
-                  onClick={() => setLocation(studio.href)}
-                  className="group relative overflow-hidden rounded-2xl bg-white/5 border border-white/5 p-6 text-left hover:border-orange/30 transition-all duration-300"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-orange/10 transition-colors">
-                        <studio.icon className="w-6 h-6 text-white/60 group-hover:text-orange transition-colors" />
-                      </div>
-                      {studio.badge && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-orange/20 text-orange">
-                          {studio.badge}
-                        </span>
-                      )}
+        {/* Studios Section */}
+        <div className="mb-8 md:mb-12">
+          <h2 className="text-xl font-instrument mb-4">Your Studios</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {studios.map((studio) => (
+              <Link key={studio.href} href={studio.href}>
+                <Card className="glass-card border-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer group h-full">
+                  <CardContent className="p-6">
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${studio.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
+                    >
+                      <studio.icon className="w-6 h-6" />
                     </div>
-                    <h3 className="text-lg font-instrument mb-2">{studio.title}</h3>
-                    <p className="text-sm text-white/50 mb-4">{studio.description}</p>
-                    <div className="flex items-center text-sm text-orange opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>Open Studio</span>
-                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                    <h3 className="font-instrument text-lg mb-1">{studio.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {studio.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Transaction History */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-instrument">Recent Activity</h2>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              View all
+            </Button>
           </div>
 
-          {/* Recent Activity */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-instrument">Recent Activity</h2>
-              <button className="text-sm text-white/40 hover:text-white transition-colors">
-                View History
-              </button>
-            </div>
-            <div className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
-              {recentActivity.length > 0 ? (
+          <Card className="glass-card border-white/10">
+            <CardContent className="p-0">
+              {transactionsLoading ? (
+                <div className="p-6 text-center text-muted-foreground">
+                  Loading transactions...
+                </div>
+              ) : transactions && transactions.length > 0 ? (
                 <div className="divide-y divide-white/5">
-                  {recentActivity.map((activity, i) => (
-                    <div key={i} className="flex items-center gap-4 p-4 hover:bg-white/5 transition-colors cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
-                        {activity.type === "model" && <Image className="w-5 h-5 text-orange" />}
-                        {activity.type === "outfit" && <Shirt className="w-5 h-5 text-orange/70" />}
-                        {activity.type === "photo" && <Camera className="w-5 h-5 text-orange/50" />}
+                  {transactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full glass-button flex items-center justify-center">
+                          {getTransactionIcon(transaction.type)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {transaction.description || transaction.type}
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDate(transaction.createdAt)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{activity.name}</p>
-                        <p className="text-xs text-white/40">{activity.time}</p>
+                      <div className="text-right">
+                        <p
+                          className={`text-sm font-medium ${
+                            transaction.amount > 0 ? "text-green-400" : "text-red-400"
+                          }`}
+                        >
+                          {transaction.amount > 0 ? "+" : ""}
+                          {transaction.amount}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Balance: {transaction.balanceAfter}
+                        </p>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-white/20" />
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="p-8 text-center">
-                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                    <TrendingUp className="w-6 h-6 text-white/20" />
-                  </div>
-                  <p className="text-white/40 mb-2">No recent activity</p>
-                  <p className="text-sm text-white/20">Start creating to see your history here</p>
+                  <Sparkles className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">No transactions yet</p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">
+                    Start creating to see your activity here
+                  </p>
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
