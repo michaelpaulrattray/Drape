@@ -64,7 +64,9 @@ function StickyScrollProcessSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative bg-zinc-950 border-b border-zinc-900/50" id="sticky-process">
+    <section ref={sectionRef} className="relative bg-zinc-950" id="sticky-process">
+      {/* Gradient Transition from Light to Dark */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-zinc-50 to-zinc-950 pointer-events-none" />
       <div className="max-w-[1600px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           
@@ -91,7 +93,7 @@ function StickyScrollProcessSection() {
 
                 {/* Large Sticky Number */}
                 <div className="absolute -right-4 top-8 z-20">
-                  <span className="font-instrument-serif text-7xl lg:text-8xl text-zinc-100/90 tracking-tight transition-all duration-500">
+                  <span className="font-geist font-bold text-7xl lg:text-8xl text-zinc-100/90 tracking-tight transition-all duration-500">
                     {stickyProcessSteps[activeStep]?.number || '01'}
                   </span>
                 </div>
@@ -108,7 +110,7 @@ function StickyScrollProcessSection() {
                 <span className="w-1.5 h-1.5 rounded-full bg-orange" />
                 Process
               </div>
-              <h2 className="text-4xl md:text-5xl font-instrument-serif text-white tracking-tight">How it works</h2>
+              <h2 className="text-4xl md:text-5xl font-geist font-semibold text-white tracking-tight">How it works</h2>
             </div>
 
             {/* Steps */}
@@ -118,10 +120,10 @@ function StickyScrollProcessSection() {
                 className="sticky-process-step group flex flex-col justify-center min-h-[40vh]"
                 data-step={step.id}
               >
-                <span className="lg:hidden text-6xl font-instrument-serif text-zinc-700 mb-6 block">
+                <span className="lg:hidden text-6xl font-geist font-bold text-zinc-700 mb-6 block">
                   {step.number}
                 </span>
-                <h3 className="text-4xl md:text-5xl lg:text-6xl font-instrument-serif text-zinc-100 tracking-tight mb-8 group-hover:text-white transition-colors">
+                <h3 className="text-4xl md:text-5xl lg:text-6xl font-geist font-semibold text-zinc-100 tracking-tight mb-8 group-hover:text-white transition-colors">
                   {step.title}
                 </h3>
                 <p className="text-lg md:text-xl text-zinc-400 font-light leading-relaxed max-w-lg mb-10">
@@ -129,15 +131,18 @@ function StickyScrollProcessSection() {
                 </p>
                 <a
                   href="#contact"
-                  className="text-sm uppercase tracking-widest font-medium text-white border-b border-zinc-600 pb-1 w-fit hover:border-white hover:text-orange transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 border border-zinc-700 text-sm font-medium text-white uppercase tracking-widest hover:bg-white hover:text-zinc-900 hover:border-white transition-all duration-300"
                 >
                   {step.cta}
+                  <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
             ))}
           </div>
         </div>
       </div>
+      {/* Gradient Transition from Dark to Light */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-zinc-950 pointer-events-none" />
     </section>
   );
 }
@@ -221,10 +226,11 @@ function DraggableCardsSection() {
       <div className="px-6 md:px-12 mb-12 md:mb-16">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
-            <p className="text-[10px] uppercase font-semibold tracking-[0.2em] mb-3 text-orange">
+            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-4">
+              <span className="w-2 h-2 rounded-full bg-orange" />
               Our Capabilities
             </p>
-            <h2 className="text-3xl md:text-5xl lg:text-6xl leading-[1.1] tracking-tight font-geist text-zinc-900">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl leading-[1.1] tracking-tighter font-semibold font-geist text-zinc-900">
               What We Create
             </h2>
           </div>
@@ -726,12 +732,18 @@ export default function Waitlist() {
         </section>
 
         {/* Benefits Section */}
-        <section id="benefits" className="border-b border-black/10">
-          <div className="px-6 md:px-12 py-16 flex flex-col md:flex-row items-end justify-between border-b border-black/10">
-            <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase text-zinc-900 font-geist">
-              Benefits
-            </h2>
-            <a href="#contact" className="mt-4 md:mt-0 px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 mb-2 border-black/20 hover:bg-black hover:text-white">
+        <section id="benefits" className="border-b border-black/10 bg-zinc-50">
+          <div className="px-6 md:px-12 py-16 flex flex-col md:flex-row items-start md:items-end justify-between border-b border-black/10">
+            <div>
+              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-4">
+                <span className="w-2 h-2 rounded-full bg-orange" />
+                Why Choose Us
+              </p>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-zinc-900 font-geist">
+                Benefits
+              </h2>
+            </div>
+            <a href="#contact" className="mt-6 md:mt-0 px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 border-black/20 hover:bg-black hover:text-white">
               Join Waitlist
               <ArrowRight className="w-4 h-4" />
             </a>

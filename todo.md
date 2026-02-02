@@ -151,3 +151,11 @@
 ## Section Removal
 - [x] Remove "AI Model Casting" section from landing page
 - [x] Remove "Cast, Style & Generate" section from landing page
+
+## Styling Inconsistencies Review
+- [x] Review homepage for styling inconsistencies
+- [x] Add gradient transitions between light and dark sections
+- [x] Standardize typography (use font-geist consistently for headings)
+- [x] Standardize section labels (orange dot + uppercase pattern)
+- [x] Standardize CTA button styles
+- [x] Fix step number font consistency
