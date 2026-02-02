@@ -533,21 +533,21 @@ export default function Waitlist() {
         <ServicesMarqueeSection />
 
         {/* Video Demo Section */}
-        <section className="py-24 px-6 md:px-12 bg-zinc-950 border-b border-white/10 relative overflow-hidden">
+        <section className="py-24 px-6 md:px-12 bg-white border-b border-black/10 relative overflow-hidden">
           {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-900 opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-50 via-white to-zinc-50 opacity-50" />
           
           <div className="max-w-6xl mx-auto relative z-10">
             {/* Section Header */}
             <div className="text-center mb-16">
-              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-400 font-medium mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>
+              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-500 font-medium mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
                 How It Works
               </span>
-              <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6 text-white font-geist">
-                Design. Own. <span className="text-zinc-500">Create.</span>
+              <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
+                Design. Own. <span className="text-zinc-400">Create.</span>
               </h2>
-              <p className="text-lg text-zinc-400 font-light max-w-xl mx-auto">
+              <p className="text-lg text-zinc-500 font-light max-w-xl mx-auto">
                 A creative journey from character design to campaign-ready content—zero prompts, maximum fidelity.
               </p>
             </div>
@@ -558,16 +558,16 @@ export default function Waitlist() {
               <div className="absolute -inset-1 bg-gradient-to-r from-sky-500/20 via-sky-400/10 to-sky-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               
               {/* Video wrapper */}
-              <div className="relative bg-zinc-900 rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+              <div className="relative bg-zinc-900 rounded-xl border border-black/10 overflow-hidden shadow-2xl">
                 {/* Browser-style header */}
-                <div className="flex items-center gap-2 px-4 py-3 bg-zinc-800/50 border-b border-white/5">
+                <div className="flex items-center gap-2 px-4 py-3 bg-zinc-800 border-b border-white/5">
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-red-500/80" />
                     <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                     <div className="w-3 h-3 rounded-full bg-green-500/80" />
                   </div>
                   <div className="flex-1 flex justify-center">
-                    <div className="px-4 py-1 bg-zinc-700/50 rounded-md text-xs text-zinc-400 font-mono">
+                    <div className="px-4 py-1 bg-zinc-700 rounded-md text-xs text-zinc-400 font-mono">
                       formastudio.ai/studio
                     </div>
                   </div>
@@ -644,17 +644,17 @@ export default function Waitlist() {
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-white/10">
+            <div className="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-black/10">
               <div className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">4K<span className="text-sky-400">+</span></p>
+                <p className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tighter">4K<span className="text-sky-500">+</span></p>
                 <p className="text-sm text-zinc-500 mt-2">Photorealism</p>
               </div>
               <div className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">0</p>
+                <p className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tighter">0</p>
                 <p className="text-sm text-zinc-500 mt-2">Prompts Required</p>
               </div>
               <div className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-white tracking-tighter">∞</p>
+                <p className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tighter">∞</p>
                 <p className="text-sm text-zinc-500 mt-2">Campaigns</p>
               </div>
             </div>

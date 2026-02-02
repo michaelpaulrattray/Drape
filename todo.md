@@ -144,3 +144,8 @@
 ## Visual Editor Changes
 - [x] Changed "FORMA+" to "FORMAStudio" in hero section
 - [x] Removed "Services" label from studio suite section
+
+## Video Section Background Update
+- [x] Change video section from dark (zinc-950) to white background
+- [x] Update text colors for visibility on white background
+- [x] Maintain visual hierarchy and video emphasis
