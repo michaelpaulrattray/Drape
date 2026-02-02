@@ -112,3 +112,6 @@
 - [x] Ensure "Solving Problems With Intelligent AI" section matches page typography
 - [x] Ensure "Creative power, unbound" section matches page typography
 - [x] Use consistent font families, sizes, and weights across all sections
+
+## Section Reordering
+- [x] Move "Solving Problems With Intelligent AI" section directly under hero section

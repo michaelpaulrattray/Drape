@@ -529,6 +529,9 @@ export default function Waitlist() {
           </div>
         </section>
 
+        {/* Services Draggable Cards Section with Auto-Scroll */}
+        <ServicesMarqueeSection />
+
         {/* Exploration Section */}
         <section id="studios" className="grid grid-cols-1 md:grid-cols-2 border-b border-black/10">
           {/* Left: Gallery */}
@@ -753,9 +756,6 @@ export default function Waitlist() {
             </div>
           </div>
         </section>
-
-        {/* Services Draggable Cards Section with Auto-Scroll */}
-        <ServicesMarqueeSection />
 
         {/* Creative Power, Unbound Section */}
         <section className="py-24 px-6 md:px-12 bg-white border-b border-black/10" id="benefits">
