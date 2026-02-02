@@ -82,3 +82,20 @@
 - [x] Update FAQ to accordion style
 - [x] Simplify navigation
 - [x] Add showcase images of AI capabilities
+
+
+## Phase 1.7: Dashboard Redesign (Mango Style)
+
+### Routing Changes
+- [x] Remove /app page route
+- [x] Update routing so logged-in users go to dashboard
+
+### Dashboard Design Updates
+- [x] Add lime/green accent color
+- [x] Create sidebar navigation component
+- [x] Add user profile section in sidebar
+- [x] Create top header with search bar
+- [x] Add studio cards (Casting, Outfit, Photo)
+- [x] Display points balance prominently
+- [x] Add recent activity/models section
+- [x] Mobile-responsive sidebar (collapsible)
