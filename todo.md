@@ -76,8 +76,9 @@
 - [x] Exploration section: 2-column gallery with project slider
 - [x] Process section: stats with AI workflow content
 - [x] Methodology section: camera image with philosophy text
-- [x] Benefits section: 4-column grid with icons
-- [x] Footer: minimal with social links
+- [x] Recognition section: 4-column awards grid
+- [x] Journal section: featured article with sidebar entries
+- [x] Waitlist section: centered form with name/email
+- [x] Footer: 4-column layout with social links
 - [x] Add sky-blue accent color (#38bdf8)
-- [x] Add animated neon grid lines background
 - [x] Grayscale image treatment with contrast boost
