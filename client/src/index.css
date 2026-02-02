@@ -447,4 +447,20 @@
   .opacity-0-initial {
     opacity: 0;
   }
+
+  /* Sticky scroll process section image transitions */
+  .process-img {
+    transition: opacity 0.6s ease-in-out, transform 0.8s cubic-bezier(0.2, 0, 0.2, 1);
+  }
+  .process-img.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .process-img.inactive {
+    opacity: 0;
+    transform: scale(1.05);
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 }

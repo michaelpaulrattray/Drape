@@ -3,6 +3,175 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, ArrowLeft, ChevronRight, Menu, X, Check, Camera, Palette, Sparkles, ArrowUpRight, Zap, Clock, Infinity } from "lucide-react";
 
+// Sticky Scroll Process Section Data
+const stickyProcessSteps = [
+  {
+    id: 1,
+    number: "01",
+    title: "Share Your Vision + Guidelines",
+    description: "A simple brief or a 15-minute sync is all we need. We digest your brand guidelines, goals, and aesthetic preferences to build a custom model that understands your visual language.",
+    cta: "Start a project",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 2,
+    number: "02",
+    title: "(Intelligent) Model Generation",
+    description: "We configure our AI models to your style. Instead of generic outputs, you get high-fidelity options tailored to your specific campaign needs in hours, not weeks.",
+    cta: "See examples",
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 3,
+    number: "03",
+    title: "Launch & Automated Scaling",
+    description: "Receive production-ready assets for every platform. We can even set up automated pipelines so your content scales effortlessly as your audience grows.",
+    cta: "Scale now",
+    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200&auto=format&fit=crop",
+  },
+];
+
+// Sticky Scroll Process Section Component
+function StickyScrollProcessSection() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    const processSteps = document.querySelectorAll('.sticky-process-step');
+    
+    const observerOptions = {
+      root: null,
+      rootMargin: '-40% 0px -40% 0px',
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const step = entry.target.getAttribute('data-step');
+          if (step) {
+            setActiveStep(parseInt(step) - 1);
+          }
+        }
+      });
+    }, observerOptions);
+
+    processSteps.forEach((step) => observer.observe(step));
+
+    return () => {
+      processSteps.forEach((step) => observer.unobserve(step));
+    };
+  }, []);
+
+  // Ref for syncing heights
+  const leftColRef = useRef<HTMLDivElement>(null);
+  const rightColRef = useRef<HTMLDivElement>(null);
+
+  // Sync left column height with right column
+  useEffect(() => {
+    const syncHeight = () => {
+      if (leftColRef.current && rightColRef.current) {
+        const rightHeight = rightColRef.current.offsetHeight;
+        leftColRef.current.style.height = `${rightHeight}px`;
+      }
+    };
+    
+    syncHeight();
+    window.addEventListener('resize', syncHeight);
+    return () => window.removeEventListener('resize', syncHeight);
+  }, []);
+
+  return (
+    <section ref={sectionRef} className="relative bg-zinc-50 border-b border-black/10" id="sticky-process">
+      <div className="max-w-[1600px] mx-auto">
+        {/* Use flex layout with JavaScript height sync */}
+        <div className="flex flex-col lg:flex-row">
+          
+          {/* Left Column: Height synced via JavaScript */}
+          <div ref={leftColRef} className="hidden lg:block lg:w-1/2 relative border-r border-black/10">
+            <div className="sticky top-0 h-screen w-full flex items-center justify-center p-8 lg:p-12">
+              <div className="relative w-full h-[80vh] max-h-[700px]">
+                
+                {/* Dynamic Image Container */}
+                <div className="relative w-4/5 h-full overflow-hidden bg-zinc-100">
+                  {stickyProcessSteps.map((step, index) => (
+                    <img
+                      key={step.id}
+                      src={step.image}
+                      alt={`Process Step ${step.number}`}
+                      className={`w-full h-full object-cover grayscale transition-all duration-700 ease-in-out ${
+                        index === activeStep 
+                          ? 'opacity-100 relative z-10' 
+                          : 'opacity-0 absolute inset-0 scale-105 z-0'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Large Sticky Number */}
+                <div className="absolute right-0 top-8 z-20">
+                  <span className="font-geist text-8xl lg:text-9xl text-zinc-200 tracking-tight transition-all duration-500 font-bold">
+                    {stickyProcessSteps[activeStep]?.number || '01'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Scrolling Text */}
+          <div ref={rightColRef} className="lg:w-1/2 px-6 md:px-12 py-16 lg:py-32 flex flex-col gap-y-16 lg:gap-y-48 relative">
+            
+            {/* Section Header */}
+            <div className="lg:mb-8">
+              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-4">
+                <span className="w-2 h-2 rounded-full bg-orange" />
+                How It Works
+              </p>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-zinc-900 font-geist leading-[0.95]">
+                Our Process
+              </h2>
+            </div>
+
+            {/* Steps */}
+            {stickyProcessSteps.map((step, index) => (
+              <div
+                key={step.id}
+                className="sticky-process-step group flex flex-col justify-center min-h-[50vh] lg:min-h-[60vh]"
+                data-step={step.id}
+              >
+                {/* Mobile Image */}
+                <div className="lg:hidden mb-6 aspect-[4/3] overflow-hidden border border-black/10">
+                  <img
+                    src={step.image}
+                    alt={`Process Step ${step.number}`}
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                  />
+                </div>
+                
+                <span className="lg:hidden text-5xl font-geist font-bold text-zinc-200 mb-4 block">
+                  {step.number}
+                </span>
+                <h3 className="text-3xl md:text-4xl lg:text-5xl font-geist font-semibold text-zinc-900 tracking-tight mb-6 group-hover:text-orange transition-colors">
+                  {step.title}
+                </h3>
+                <p className="text-base md:text-lg text-zinc-500 leading-relaxed max-w-lg mb-8">
+                  {step.description}
+                </p>
+                <a
+                  href="#contact"
+                  className="text-sm uppercase tracking-widest font-medium text-zinc-900 border-b border-zinc-300 pb-1 w-fit hover:border-orange hover:text-orange transition-all"
+                >
+                  {step.cta}
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Draggable Cards Data
 const draggableCards = [
   {
@@ -271,7 +440,7 @@ export default function Waitlist() {
   const currentProject = galleryProjects[galleryIndex];
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-zinc-100">
+    <div className="min-h-screen relative bg-zinc-100">
       {/* Subtle Noise Texture */}
       <div className="fixed inset-0 pointer-events-none opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-0" />
 
@@ -509,6 +678,9 @@ export default function Waitlist() {
 
         {/* Draggable Cards Section */}
         <DraggableCardsSection />
+
+        {/* Sticky Scroll Process Section */}
+        <StickyScrollProcessSection />
 
         {/* Exploration Section - Gallery */}
         <section id="studios" className="grid grid-cols-1 md:grid-cols-2 border-b border-black/10">

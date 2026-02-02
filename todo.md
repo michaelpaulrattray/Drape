@@ -135,3 +135,11 @@
 
 ## Hero Section Split Layout Redesign
 - [x] Redesign hero section with split layout (content left, image with stats right)
+
+
+## Sticky Scroll Process Section
+- [x] Implement dual-column sticky image + scrolling text section below draggable cards
+- [x] Left column: sticky image that stays pinned during scroll
+- [x] Right column: scrolling step blocks that drive image transitions
+- [x] Scroll-driven image crossfade animation based on active step
+- [x] Responsive fallback for mobile (stacked layout)
