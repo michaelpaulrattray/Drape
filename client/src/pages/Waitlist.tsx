@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, ArrowLeft, ChevronRight, Menu, X, Check, Camera, Palette, Sparkles, ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowLeft, ChevronRight, Menu, X, Check, Camera, Palette, Sparkles, ArrowUpRight, Zap, Clock, Infinity } from "lucide-react";
 
 // Draggable Cards Data
 const draggableCards = [
@@ -262,19 +262,22 @@ export default function Waitlist() {
     {
       title: "Campaign",
       subtitle: "Photo Generation",
-      description: "Create full photoshoots in any environment—studio, outdoor, lifestyle. Export high-resolution assets ready for print and web.",
+      description: "Generate campaign-ready photoshoots in any environment. Studio, outdoor, lifestyle—all without a single real photoshoot.",
       img1: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&auto=format&fit=crop",
-      img2: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&auto=format&fit=crop",
+      img2: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop",
     },
   ];
 
   const currentProject = galleryProjects[galleryIndex];
 
   return (
-    <div className="min-h-screen overflow-x-hidden relative text-zinc-900 bg-zinc-50 selection:bg-orange/20 selection:text-zinc-900">
-      {/* Background Grid Lines with Animated Neon */}
-      <div className="fixed inset-0 grid-lines pointer-events-none z-0 overflow-hidden">
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <div className="min-h-screen relative overflow-hidden bg-zinc-100">
+      {/* Subtle Noise Texture */}
+      <div className="fixed inset-0 pointer-events-none opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-0" />
+
+      {/* Animated Neon Grid Lines */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="neonGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" style={{ stopColor: "rgba(249, 115, 22, 0)", stopOpacity: 0 }} />
@@ -344,77 +347,155 @@ export default function Waitlist() {
 
       {/* Main Content */}
       <main className="z-10 relative">
-        {/* Hero Section - Centered Impact Layout */}
-        <section className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden pt-24 pb-20 px-6 md:px-12">
-          {/* Animated Gradient Background */}
+        {/* Hero Section - Split Layout */}
+        <section className="min-h-screen relative overflow-hidden pt-24 pb-16 px-6 md:px-12 bg-zinc-100">
+          {/* Background Elements */}
           <div className="absolute inset-0 z-0 overflow-hidden">
-            {/* Base gradient */}
-            <div className="absolute inset-0 bg-zinc-50" />
-            
-            {/* Animated gradient orbs */}
-            <div className="absolute -top-1/2 -left-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-orange/20 via-orange/5 to-transparent blur-3xl animate-[float_20s_ease-in-out_infinite]" />
-            <div className="absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-tl from-zinc-300/30 via-zinc-200/10 to-transparent blur-3xl animate-[float_25s_ease-in-out_infinite_reverse]" />
-            <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-gradient-to-bl from-orange/10 via-transparent to-transparent blur-2xl animate-[float_15s_ease-in-out_infinite_2s]" />
-            
-            {/* Subtle grid overlay */}
-            <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-            
-            {/* Noise texture overlay */}
-            <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }} />
+            <div className="absolute top-0 right-0 w-[50rem] h-[50rem] bg-gradient-to-b from-white/60 to-transparent opacity-50 blur-3xl pointer-events-none rounded-full translate-x-1/3 -translate-y-1/3" />
           </div>
 
-          {/* Main Hero Content */}
-          <div className="relative z-10 text-center max-w-5xl mx-auto">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-orange/30 bg-orange/5 mb-8">
-              <span className="w-2 h-2 rounded-full bg-orange animate-pulse" />
-              <span className="text-xs font-medium uppercase tracking-widest text-orange">AI Creative Studio</span>
+          <div className="max-w-[90rem] mx-auto relative z-10">
+            {/* Main Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-16 gap-y-12 items-start pt-8 md:pt-12">
+              {/* Left Content - 7 columns */}
+              <div className="lg:col-span-7 flex flex-col gap-8">
+                {/* Tagline */}
+                <div className="flex items-center gap-4 animate-fade-in-up">
+                  <div className="h-px w-12 bg-zinc-400" />
+                  <span className="uppercase text-xs md:text-sm font-medium text-zinc-500 tracking-widest">
+                    AI-First Creative Studio
+                  </span>
+                </div>
+
+                {/* Main Headline */}
+                <h1 className="text-5xl md:text-7xl lg:text-8xl xl:text-9xl leading-[0.85] uppercase font-medium text-zinc-900 tracking-tight font-geist animate-fade-in-up animation-delay-100">
+                  Stop Paying
+                  <br />
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-zinc-500 to-zinc-900">
+                    $10,000 Per
+                  </span>
+                  <br />
+                  Photoshoot
+                </h1>
+              </div>
+
+              {/* Right Visual - 5 columns */}
+              <div className="lg:col-span-5 group h-full relative animate-fade-in-up animation-delay-200">
+                {/* Tilted Background Shape */}
+                <div className="absolute inset-0 bg-zinc-900 rounded-2xl rotate-3 opacity-10 group-hover:rotate-6 transition-transform duration-500" />
+                
+                {/* Main Image */}
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl h-[400px] lg:h-[500px] xl:h-[550px] w-full">
+                  <img 
+                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&auto=format&fit=crop" 
+                    alt="AI Fashion Model" 
+                    className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/40 to-transparent" />
+                  
+                  {/* Overlay Card */}
+                  <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-white">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-[0.65rem] uppercase tracking-widest font-space">
+                        Model Generation
+                      </span>
+                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                    </div>
+                    <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-white w-2/3 animate-[pulse_2s_infinite]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Main Headline */}
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] mb-6 font-geist text-zinc-900">
-              Stop Paying $10,000
-              <br />
-              <span className="text-zinc-400">Per Photoshoot</span>
-            </h1>
+            {/* Bottom Row - Subtitle + Stats */}
+            <div className="flex flex-col lg:flex-row mt-8 lg:mt-12 gap-12 items-start animate-fade-in-up animation-delay-300">
+              {/* Left: Subtitle + CTA */}
+              <div className="max-w-2xl">
+                <h2 className="text-xl md:text-2xl leading-tight font-medium text-zinc-800 tracking-tight font-space mb-6">
+                  Generate AI models, style outfits, and create campaign-ready photoshoots in minutes—all without a single real photoshoot.
+                </h2>
 
-            {/* Subheadline */}
-            <p className="text-lg md:text-xl text-zinc-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Generate AI models, style outfits, and create campaign-ready photoshoots in minutes—all without a single real photoshoot.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-              <a 
-                href="#contact" 
-                className="group px-8 py-4 bg-orange text-white font-semibold rounded-full hover:bg-orange/90 transition-all duration-300 flex items-center gap-3 text-base shadow-lg shadow-orange/25 hover:shadow-xl hover:shadow-orange/30 hover:-translate-y-0.5"
-              >
-                Get Early Access
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </a>
-              <a 
-                href="#studios" 
-                className="px-8 py-4 border-2 border-zinc-200 text-zinc-700 font-semibold rounded-full hover:border-zinc-900 hover:bg-zinc-900 hover:text-white transition-all duration-300 flex items-center gap-3 text-base"
-              >
-                View Studios
-              </a>
-            </div>
-
-            {/* Stats Row */}
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-              <div className="text-center">
-                <span className="block text-4xl md:text-5xl font-bold tracking-tighter text-zinc-900 font-geist">90%</span>
-                <span className="text-xs uppercase tracking-widest text-zinc-500 mt-1">Cost Savings</span>
+                <div className="flex flex-wrap gap-4">
+                  <a 
+                    href="#contact" 
+                    className="group relative px-8 py-4 bg-zinc-900 text-white rounded-lg overflow-hidden transition-all hover:shadow-xl hover:shadow-zinc-500/20"
+                  >
+                    <span className="relative z-10 flex items-center gap-2 uppercase text-sm font-semibold tracking-widest">
+                      Get Early Access
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </a>
+                  <a 
+                    href="#studios" 
+                    className="px-8 py-4 border-2 border-zinc-200 text-zinc-700 font-semibold rounded-lg hover:border-zinc-900 hover:bg-zinc-900 hover:text-white transition-all duration-300 flex items-center gap-2 text-sm uppercase tracking-widest"
+                  >
+                    View Studios
+                  </a>
+                </div>
               </div>
-              <div className="w-px h-12 bg-zinc-200 hidden md:block" />
-              <div className="text-center">
-                <span className="block text-4xl md:text-5xl font-bold tracking-tighter text-zinc-900 font-geist">&lt;5min</span>
-                <span className="text-xs uppercase tracking-widest text-zinc-500 mt-1">Generation Time</span>
-              </div>
-              <div className="w-px h-12 bg-zinc-200 hidden md:block" />
-              <div className="text-center">
-                <span className="block text-4xl md:text-5xl font-bold tracking-tighter text-zinc-900 font-geist">∞</span>
-                <span className="text-xs uppercase tracking-widest text-zinc-500 mt-1">Variations</span>
+
+              {/* Right: Stats Panel */}
+              <div className="w-full lg:w-5/12 ml-auto overflow-hidden bg-zinc-950 border-zinc-200 border rounded-2xl p-6 relative shadow-sm">
+                {/* Decorative Icon */}
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <Sparkles className="w-24 h-24 text-orange" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Stat 1 */}
+                  <div className="bg-zinc-50 border-zinc-100 border rounded-xl p-4">
+                    <div className="uppercase text-xs text-zinc-400 font-space mb-1">
+                      Cost Savings
+                    </div>
+                    <div className="text-3xl font-medium text-zinc-900 font-geist">
+                      90%
+                    </div>
+                    <div className="text-[0.6rem] text-green-600 mt-2 flex items-center gap-1">
+                      <Zap className="w-2.5 h-2.5" />
+                      vs Traditional
+                    </div>
+                  </div>
+                  
+                  {/* Stat 2 */}
+                  <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                    <div className="text-xs font-space uppercase text-zinc-400 mb-1">
+                      Generation Time
+                    </div>
+                    <div className="text-3xl font-geist font-medium text-zinc-900">
+                      &lt;5min
+                    </div>
+                    <div className="text-[0.6rem] text-green-600 mt-2 flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" />
+                      Per Asset
+                    </div>
+                  </div>
+                  
+                  {/* System Status */}
+                  <div className="col-span-2 text-white bg-zinc-900 rounded-xl p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="uppercase text-xs text-orange tracking-widest font-space">
+                        Studio Status
+                      </span>
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    </div>
+                    <div className="space-y-2 font-space text-[0.65rem] text-zinc-400">
+                      <div className="flex justify-between">
+                        <span>&gt; Casting Studio</span>
+                        <span className="text-white">Active</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>&gt; Outfit Studio</span>
+                        <span className="text-white">Active</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>&gt; Photo Studio</span>
+                        <span className="text-emerald-400">Ready</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -698,303 +779,191 @@ export default function Waitlist() {
               <div className="flex h-32 border-b mb-6 items-center justify-center border-black/10">
                 <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">90%</span>
               </div>
-              <p className="text-[10px] font-bold uppercase mb-2 text-orange">
-                Cost Reduction
-              </p>
-              <h3 className="leading-tight transition-colors text-xl font-semibold mb-4 text-zinc-900">
-                Save vs Traditional Shoots
-              </h3>
-              <p className="text-sm text-zinc-500">
-                Eliminate agency fees, model costs, location rentals, and post-production expenses.
+              <h3 className="text-lg font-semibold mb-2 tracking-tight group-hover:text-orange transition-colors">Cost Savings</h3>
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Eliminate expensive photoshoots, model fees, and studio rentals.
               </p>
             </div>
 
             {/* Benefit 2 */}
             <div className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
-              <div className="h-32 flex items-center justify-center border-b mb-6 border-black/10">
-                <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">10x</span>
+              <div className="flex h-32 border-b mb-6 items-center justify-center border-black/10">
+                <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">&lt;5m</span>
               </div>
-              <p className="text-[10px] font-bold uppercase mb-2 text-orange">
-                Speed
-              </p>
-              <h3 className="leading-tight transition-colors text-xl font-semibold mb-4 text-zinc-900">
-                Faster Production
-              </h3>
-              <p className="text-sm text-zinc-500">
-                Generate campaign assets in minutes, not weeks. Iterate instantly on creative direction.
+              <h3 className="text-lg font-semibold mb-2 tracking-tight group-hover:text-orange transition-colors">Generation Time</h3>
+              <p className="text-sm leading-relaxed text-zinc-500">
+                From concept to campaign-ready assets in under 5 minutes.
               </p>
             </div>
 
             {/* Benefit 3 */}
-            <div className="p-8 group transition-colors cursor-pointer hover:bg-black/5">
-              <div className="h-32 flex items-center justify-center border-b mb-6 border-black/10">
+            <div className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
+              <div className="flex h-32 border-b mb-6 items-center justify-center border-black/10">
                 <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">∞</span>
               </div>
-              <p className="text-[10px] font-bold uppercase mb-2 text-orange">
-                Variations
-              </p>
-              <h3 className="leading-tight transition-colors text-xl font-semibold mb-4 text-zinc-900">
-                Unlimited Options
-              </h3>
-              <p className="text-sm text-zinc-500">
-                Generate endless variations of poses, outfits, and environments without additional cost.
+              <h3 className="text-lg font-semibold mb-2 tracking-tight group-hover:text-orange transition-colors">Unlimited Variations</h3>
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Generate endless variations without additional cost or time.
               </p>
             </div>
 
             {/* Benefit 4 */}
-            <div className="p-8 group transition-colors cursor-pointer hover:bg-black/5">
-              <div className="h-32 flex items-center justify-center border-b mb-6 border-black/10">
+            <div className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
+              <div className="flex h-32 border-b mb-6 items-center justify-center border-black/10">
                 <span className="text-6xl font-bold tracking-tighter group-hover:scale-110 transition-transform duration-300 text-zinc-800 font-geist">24/7</span>
               </div>
-              <p className="text-[10px] font-bold uppercase mb-2 text-orange">
-                Availability
-              </p>
-              <h3 className="leading-tight transition-colors text-xl font-semibold mb-4 text-zinc-900">
-                Always On Demand
-              </h3>
-              <p className="text-sm text-zinc-500">
-                No scheduling conflicts. Generate content whenever you need it, day or night.
+              <h3 className="text-lg font-semibold mb-2 tracking-tight group-hover:text-orange transition-colors">Always Available</h3>
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Create content anytime, anywhere. No scheduling required.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Contact / Waitlist Section */}
-        <section id="contact" className="border-b border-black/10 bg-zinc-50">
-          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-black/10">
-            {/* Left: Featured Visual */}
-            <div className="group relative min-h-[500px] lg:min-h-[600px] flex flex-col justify-end p-8 md:p-12 overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1200&auto=format&fit=crop" 
-                alt="Fashion Campaign" 
-                className="group-hover:opacity-80 group-hover:scale-105 transition-all duration-1000 ease-out opacity-60 w-full h-full object-cover absolute inset-0 grayscale"
-              />
-              <div className="bg-gradient-to-t to-transparent absolute inset-0 from-zinc-50 via-zinc-50/60" />
+        {/* Contact / CTA Section */}
+        <section id="contact" className="grid grid-cols-1 lg:grid-cols-2 border-b border-black/10">
+          {/* Left: Form */}
+          <div className="p-8 md:p-16 flex flex-col justify-center border-black/10 lg:border-r">
+            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange tracking-[0.2em] mb-6">
+              <span className="w-2 h-2 rounded-full bg-orange" />
+              Get Early Access
+            </p>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 font-geist">
+              Join the Waitlist
+            </h2>
+            <p className="text-sm text-zinc-500 mb-8 max-w-md leading-relaxed">
+              Be among the first to experience the future of AI-powered fashion photography. Early access members get exclusive benefits.
+            </p>
 
-              <div className="relative z-10 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest border bg-white/80 backdrop-blur-sm border-black/10 text-orange">
-                    Early Access
-                  </span>
+            {submitted ? (
+              <div className="p-6 border border-green-200 bg-green-50 rounded-xl">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-semibold text-green-800">You're on the list!</span>
                 </div>
-                <h3 className="text-3xl md:text-4xl font-bold tracking-tight mb-3 text-zinc-900 font-geist">
-                  Join the Waitlist
-                </h3>
-                <p className="text-sm leading-relaxed max-w-sm text-zinc-600">
-                  Be among the first to experience the future of AI-powered creative production. Early access members receive exclusive benefits.
+                <p className="text-sm text-green-700">
+                  We'll notify you when FormaStudio launches. Check your email for confirmation.
                 </p>
               </div>
-            </div>
-
-            {/* Right: Form */}
-            <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center">
-              <div className="mb-8">
-                <h3 className="text-2xl font-bold tracking-tight mb-4 font-geist">Early Access Benefits</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-orange/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-orange" />
-                    </div>
-                    <span className="text-sm">50% discount on launch pricing</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-orange/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-orange" />
-                    </div>
-                    <span className="text-sm">500 bonus generation points</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-orange/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-orange" />
-                    </div>
-                    <span className="text-sm">Priority access to new features</span>
-                  </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Your Name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="px-4 py-3 border border-black/10 bg-white focus:border-orange focus:outline-none transition-colors text-sm"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email Address *"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="px-4 py-3 border border-black/10 bg-white focus:border-orange focus:outline-none transition-colors text-sm"
+                  />
                 </div>
+                <input
+                  type="text"
+                  placeholder="Company (Optional)"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  className="w-full px-4 py-3 border border-black/10 bg-white focus:border-orange focus:outline-none transition-colors text-sm"
+                />
+                <select
+                  value={formData.interest}
+                  onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
+                  className="w-full px-4 py-3 border border-black/10 bg-white focus:border-orange focus:outline-none transition-colors text-sm"
+                >
+                  <option value="All Studios">Interested in All Studios</option>
+                  <option value="Casting Studio">Casting Studio</option>
+                  <option value="Outfit Studio">Outfit Studio</option>
+                  <option value="Photo Studio">Photo Studio</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={joinWaitlist.isPending}
+                  className="w-full py-4 bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {joinWaitlist.isPending ? "Joining..." : "Join Waitlist"}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* Right: Visual */}
+          <div className="relative min-h-[400px] lg:min-h-full overflow-hidden group">
+            <img 
+              src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200&auto=format&fit=crop" 
+              alt="Fashion Model" 
+              className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 to-transparent" />
+            
+            {/* Floating Stats */}
+            <div className="absolute bottom-8 left-8 right-8 grid grid-cols-3 gap-4">
+              <div className="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-center">
+                <span className="block text-2xl font-bold text-white">847+</span>
+                <span className="text-[0.65rem] uppercase tracking-wider text-white/70">On Waitlist</span>
               </div>
-
-              {submitted ? (
-                <div className="text-center py-12 border border-black/10 bg-white">
-                  <div className="w-16 h-16 rounded-full bg-orange/10 flex items-center justify-center mx-auto mb-6">
-                    <Check className="w-8 h-8 text-orange" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3 font-geist">You're on the list!</h3>
-                  <p className="text-zinc-500 text-sm">We'll notify you when FormaStudio launches.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold mb-2 text-black">Name</label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="border px-4 py-3 text-sm placeholder-zinc-400 focus:outline-none focus:bg-white w-full transition-all bg-white border-black/10 text-black focus:border-orange"
-                        placeholder="Your name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold mb-2 text-black">Company</label>
-                      <input
-                        type="text"
-                        value={formData.company}
-                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                        className="border px-4 py-3 text-sm placeholder-zinc-400 focus:outline-none focus:bg-white w-full transition-all bg-white border-black/10 text-black focus:border-orange"
-                        placeholder="Your company"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-2 text-black">Email *</label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="border px-4 py-3 text-sm placeholder-zinc-400 focus:outline-none focus:bg-white w-full transition-all bg-white border-black/10 text-black focus:border-orange"
-                      placeholder="you@company.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-2 text-black">Interest</label>
-                    <select
-                      value={formData.interest}
-                      onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
-                      className="border px-4 py-3 text-sm focus:outline-none w-full transition-all bg-white border-black/10 text-black focus:border-orange"
-                    >
-                      <option>All Studios</option>
-                      <option>Casting Studio</option>
-                      <option>Outfit Studio</option>
-                      <option>Photo Studio</option>
-                    </select>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={joinWaitlist.isPending}
-                    className="w-full py-4 font-semibold text-sm transition-colors text-white bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {joinWaitlist.isPending ? "Joining..." : "Join Waitlist"}
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </form>
-              )}
+              <div className="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-center">
+                <span className="block text-2xl font-bold text-white">Q1</span>
+                <span className="text-[0.65rem] uppercase tracking-wider text-white/70">2026 Launch</span>
+              </div>
+              <div className="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 text-center">
+                <span className="block text-2xl font-bold text-white">50%</span>
+                <span className="text-[0.65rem] uppercase tracking-wider text-white/70">Early Discount</span>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Footer */}
-        <footer className="overflow-hidden pt-16 pb-12 relative bg-zinc-100/50">
-          <div className="md:px-12 flex flex-col md:flex-row z-10 mb-12 pr-6 pl-6 relative gap-x-12 gap-y-8 items-start md:items-end justify-between">
-            <div className="flex items-center gap-8">
-              <div className="w-12 h-12 rounded-full border flex items-center justify-center border-zinc-900 bg-zinc-900">
-                <span className="font-bold text-white text-xl">F</span>
-              </div>
-              <div className="flex gap-4 text-xs font-semibold tracking-widest uppercase opacity-80">
-                <span>F</span>
-                <span>O</span>
-                <span>R</span>
-                <span>M</span>
-                <span>A</span>
-              </div>
+        <footer className="px-6 md:px-12 py-12 md:py-16 bg-zinc-50">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12 pb-12 border-b border-black/10">
+            <div>
+              <Link href="/" className="flex items-center gap-2 text-2xl tracking-tight font-normal mb-4">
+                <span className="w-7 h-7 rounded flex items-center justify-center text-sm bg-zinc-900 text-white">F</span>
+                <span className="font-geist font-bold text-zinc-900">FORMA</span>
+              </Link>
+              <p className="text-sm text-zinc-500 max-w-xs">
+                AI-powered creative studio for fashion and lifestyle brands.
+              </p>
             </div>
-
-            <div className="text-left md:text-right">
-              <p className="text-sm font-semibold mb-4 text-zinc-900">Connect:</p>
-              <div className="flex gap-4 md:justify-end">
-                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black hover:text-white">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                  </svg>
-                </a>
-                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black hover:text-white">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
-                  </svg>
-                </a>
-                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black hover:text-white">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" />
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                  </svg>
-                </a>
+            
+            <div className="flex flex-col md:flex-row gap-8 md:gap-16">
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4">Studios</h4>
+                <ul className="space-y-2">
+                  <li><a href="#studios" className="text-sm text-zinc-600 hover:text-orange transition-colors">Casting Studio</a></li>
+                  <li><a href="#studios" className="text-sm text-zinc-600 hover:text-orange transition-colors">Outfit Studio</a></li>
+                  <li><a href="#studios" className="text-sm text-zinc-600 hover:text-orange transition-colors">Photo Studio</a></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4">Company</h4>
+                <ul className="space-y-2">
+                  <li><a href="#" className="text-sm text-zinc-600 hover:text-orange transition-colors">About</a></li>
+                  <li><a href="#contact" className="text-sm text-zinc-600 hover:text-orange transition-colors">Contact</a></li>
+                  <li><Link href="/login" className="text-sm text-zinc-600 hover:text-orange transition-colors">Sign In</Link></li>
+                </ul>
               </div>
             </div>
           </div>
 
-          {/* Bottom Navigation Bar */}
-          <div className="md:px-12 border-t pt-12 pr-6 pb-8 pl-6 border-black/10">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12 max-w-7xl mx-auto">
-              {/* Brand & Newsletter */}
-              <div className="space-y-6">
-                <Link href="/" className="inline-flex items-center gap-2 font-bold tracking-tighter text-2xl">
-                  <span className="w-6 h-6 rounded flex items-center justify-center text-sm text-white bg-zinc-900">F</span>
-                  <span className="font-geist">FORMA</span>
-                </Link>
-                <p className="text-sm leading-relaxed max-w-xs text-zinc-500">
-                  AI-powered creative studio for fashion brands, agencies, and content creators.
-                </p>
-              </div>
-
-              {/* Links Column 1 */}
-              <div>
-                <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Studios</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
-                  <li><a href="#" className="transition-colors block hover:text-orange">Casting Studio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange">Outfit Studio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange">Photo Studio</a></li>
-                </ul>
-              </div>
-
-              {/* Links Column 2 */}
-              <div>
-                <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Company</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
-                  <li><a href="#" className="transition-colors block hover:text-orange">About</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange">Blog</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange">Careers</a></li>
-                </ul>
-              </div>
-
-              {/* Links Column 3 */}
-              <div>
-                <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Contact</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
-                  <li><a href="#" className="transition-colors flex items-center gap-2 hover:text-orange">
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect width="20" height="16" x="2" y="4" rx="2" />
-                      <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" />
-                    </svg>
-                    hello@formastudio.app
-                  </a></li>
-                  <li><Link href="/login" className="transition-colors flex items-center gap-2 hover:text-orange">
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                      <polyline points="10 17 15 12 10 7" />
-                      <line x1="15" x2="3" y1="12" y2="12" />
-                    </svg>
-                    Sign In
-                  </Link></li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 max-w-7xl mx-auto border-black/10">
-              {/* Dynamic Location Tag */}
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-black/10 bg-zinc-100 text-zinc-500 text-xs font-mono">
-                <span className="text-zinc-900" id="dynamic-time">--:--</span>
-                <span className="text-zinc-300">|</span>
-                <span id="dynamic-location">Loading...</span>
-              </div>
-
-              <p className="text-xs text-zinc-400">
-                © 2025 FormaStudio™. All rights reserved.
-              </p>
-              <div className="flex items-center gap-6 text-xs text-zinc-400">
-                <a href="#" className="transition-colors hover:text-black">Privacy Policy</a>
-                <a href="#" className="transition-colors hover:text-black">Terms of Service</a>
-              </div>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-xs text-zinc-400">
+              © 2026 FormaStudio. All rights reserved.
+            </p>
+            <div className="flex items-center gap-2 text-xs text-zinc-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span id="dynamic-location">Global</span>
+              <span>·</span>
+              <span id="dynamic-time">00:00</span>
             </div>
           </div>
         </footer>

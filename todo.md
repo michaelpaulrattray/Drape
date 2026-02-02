@@ -132,3 +132,6 @@
 
 ## Hero Background Enhancement
 - [x] Add animated gradient background to hero section
+
+## Hero Section Split Layout Redesign
+- [x] Redesign hero section with split layout (content left, image with stats right)
