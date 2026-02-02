@@ -27,21 +27,21 @@ import { Link } from "wouter";
 const heroSlides = [
   {
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp",
-    tag: "Portraiture",
-    title: "The Human Gaze",
-    description: "Raw emotion captured in monochrome.",
+    tag: "Zero Prompt",
+    title: "Just Upload",
+    description: "No prompts needed. Your brand speaks for itself.",
   },
   {
     image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2564&auto=format&fit=crop",
-    tag: "AI Generated",
-    title: "Digital Muse",
-    description: "Photorealistic AI model generation.",
+    tag: "8K Detail",
+    title: "Pixel Perfect",
+    description: "Hyper-realistic detail that rivals real photography.",
   },
   {
     image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=2574&auto=format&fit=crop",
-    tag: "Campaign",
-    title: "Brand Identity",
-    description: "Consistent model personas for your brand.",
+    tag: "Consistent",
+    title: "Same Face, Every Time",
+    description: "Your AI model stays identical across thousands of shots.",
   },
 ];
 
@@ -81,26 +81,26 @@ const explorationProjects = [
 const serviceCards = [
   {
     number: "01",
-    title: "AI Model Casting",
-    description: "Generate unique, consistent AI model identities for your brand with photorealistic quality.",
+    title: "Zero-Prompt Casting",
+    description: "Upload reference photos. Our AI learns your model's face, body, and essence—no prompts required.",
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg",
   },
   {
     number: "02",
-    title: "Outfit Generation",
-    description: "Create any outfit on your AI models. From streetwear to haute couture, no physical samples needed.",
+    title: "8K Photorealism",
+    description: "Every pore, every strand of hair rendered in extreme detail. Indistinguishable from real photography.",
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/04ff5a45-5b01-4b68-a092-f3ec2da28b5e_1600w.jpg",
   },
   {
     number: "03",
-    title: "Campaign Production",
-    description: "Full photoshoot generation with complete lighting and environment control for campaign-ready assets.",
+    title: "Character Lock",
+    description: "Same face across 10,000 images. Perfect consistency for campaigns, catalogs, and social content.",
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f365bf31-c2fb-44c2-a24a-c78fedc640ba_1600w.jpg",
   },
   {
     number: "04",
-    title: "Brand Consistency",
-    description: "Maintain perfect visual consistency across all channels with AI-powered brand asset generation.",
+    title: "Infinite Variations",
+    description: "One model, unlimited outfits, poses, and environments. Scale your content without limits.",
     image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2532&auto=format&fit=crop",
   },
 ];
@@ -225,12 +225,12 @@ function ServicesMarqueeSection() {
               Services
             </span>
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-              Solving Problems With <br/><span className="text-zinc-400">Intelligent AI</span>
+              Zero Prompts. <br/><span className="text-zinc-400">Infinite Possibilities.</span>
             </h2>
           </div>
           <div className="lg:pl-12">
             <p className="text-lg md:text-xl font-light text-zinc-600 leading-relaxed">
-              Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
+              Upload your references. Our AI learns your model's identity and generates campaign-ready content with extreme detail and perfect consistency.
             </p>
           </div>
         </div>
@@ -540,10 +540,10 @@ export default function Waitlist() {
             
             <div className="mb-20 max-w-2xl">
               <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-                Creative power, <span className="text-zinc-400">unbound.</span>
+                One upload. <span className="text-zinc-400">Endless content.</span>
               </h2>
               <p className="text-xl text-zinc-500 font-light leading-relaxed">
-                Save time, cut costs, and do more with less. We help you work smarter so you can focus on strategy.
+                Train your AI model once. Generate thousands of hyper-realistic images with locked character identity—no prompts, no inconsistencies.
               </p>
             </div>
 
@@ -557,11 +557,11 @@ export default function Waitlist() {
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-6">
                     <span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(56,189,248,0.6)] animate-pulse"></span>
-                    <span className="uppercase text-xs font-bold tracking-[0.2em] text-zinc-500">Consistent</span>
+                    <span className="uppercase text-xs font-bold tracking-[0.2em] text-zinc-500">Zero Prompt</span>
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-geist font-semibold text-zinc-900 tracking-tighter mb-4 leading-[0.95]">AI That Knows You</h3>
+                  <h3 className="text-4xl md:text-5xl font-geist font-semibold text-zinc-900 tracking-tighter mb-4 leading-[0.95]">Upload. Done.</h3>
                   <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-sm">
-                    Feed us your brand assets once, and our AI masters your look forever.
+                    No complex prompts. No trial and error. Just upload your references and let our AI learn your model's identity.
                   </p>
                 </div>
                 
@@ -577,9 +577,9 @@ export default function Waitlist() {
                 {/* Wide Card (Perfect Consistency) */}
                 <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
                   <div className="relative z-10 flex-1">
-                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tighter font-geist font-semibold mb-4">Perfect Consistency</h3>
+                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tighter font-geist font-semibold mb-4">Character Lock</h3>
                     <p className="text-lg text-zinc-500 font-light leading-relaxed">
-                      Every piece of content adheres strictly to your guidelines, ensuring a unified brand voice across channels.
+                      Same face, same features, same identity—across 10,000 images. Your AI model never drifts.
                     </p>
                   </div>
                   <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden border border-black/10 group-hover:border-sky-500/30 transition-colors">
@@ -593,17 +593,17 @@ export default function Waitlist() {
                   {/* Cost Efficiency */}
                   <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
                     <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">Cost Efficiency</h3>
-                      <p className="text-base text-zinc-400 font-light">Cut overhead significantly.</p>
+                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">8K Resolution</h3>
+                      <p className="text-base text-zinc-400 font-light">Every pore. Every strand.</p>
                     </div>
                     
                     <div className="relative z-10">
                       <div className="flex items-baseline gap-1 mb-5">
-                        <span className="text-7xl font-semibold text-zinc-900 tracking-tighter">-85</span>
-                        <span className="text-3xl text-sky-500 font-medium">%</span>
+                        <span className="text-7xl font-semibold text-zinc-900 tracking-tighter">8K</span>
+                        <span className="text-3xl text-sky-500 font-medium">+</span>
                       </div>
                       <div className="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
-                        <div className="h-full bg-sky-500 w-[15%] group-hover:w-[85%] transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(56,189,248,0.5)]"></div>
+                        <div className="h-full bg-sky-500 w-[15%] group-hover:w-[100%] transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(56,189,248,0.5)]"></div>
                       </div>
                     </div>
                   </div>
@@ -611,8 +611,8 @@ export default function Waitlist() {
                   {/* Hyper Speed */}
                   <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
                     <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">Hyper Speed</h3>
-                      <p className="text-base text-zinc-400 font-light">Concept to final in 24h.</p>
+                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">Instant Scale</h3>
+                      <p className="text-base text-zinc-400 font-light">1 to 10,000 images. Same day.</p>
                     </div>
                     
                     <div className="relative z-10 flex items-end">
@@ -640,11 +640,10 @@ export default function Waitlist() {
               Early Access
             </p>
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-              Join the Waitlist
+              Cast Your First Model
             </h2>
             <p className="text-lg text-zinc-500 mb-12 max-w-md mx-auto">
-              Be among the first to experience AI-powered fashion photography. 
-              Limited spots available for our beta launch.
+              Zero prompts. 8K detail. Perfect consistency. Be among the first to create AI models that look indistinguishable from real photography.
             </p>
 
             {!submitted && !alreadyRegistered ? (

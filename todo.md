@@ -121,3 +121,9 @@
 - [x] Remove Process section with AI Workflow/Traditional tabs
 - [x] Remove Methodology section (Create, Scale & Deliver)
 - [x] Keep: Hero → Services → Creative Power → Waitlist → Footer
+
+## Copy Improvement - AI Casting Studio
+- [x] Update hero section copy to emphasize zero-prompt creative process
+- [x] Update Services section copy for high detail and character consistency
+- [x] Update Creative Power section to highlight AI casting capabilities
+- [x] Update Waitlist CTA copy with stronger value proposition
