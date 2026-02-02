@@ -183,3 +183,6 @@
 
 ## Hero Spacing Fix
 - [x] Reduce empty space between hero headline and subheading/buttons
+
+## Creative Power Card Corners
+- [x] Change Creative Power, Unbound section cards from rounded to square corners

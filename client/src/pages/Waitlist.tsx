@@ -627,7 +627,7 @@ export default function Waitlist() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
               {/* Large Card Left (AI That Knows You) */}
-              <div className="lg:col-span-5 group relative min-h-[640px] bg-zinc-100 border border-black/10 rounded-[2.5rem] hover:border-orange/30 transition-all duration-500 overflow-hidden flex flex-col justify-between p-10">
+              <div className="lg:col-span-5 group relative min-h-[640px] bg-zinc-100 border border-black/10 rounded-lg hover:border-orange/30 transition-all duration-500 overflow-hidden flex flex-col justify-between p-10">
                 {/* Background Gradient Hint */}
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80 z-0 pointer-events-none" />
 
@@ -642,7 +642,7 @@ export default function Waitlist() {
                   </p>
                 </div>
                 
-                <div className="absolute bottom-0 left-0 w-full h-[55%] z-0 rounded-b-[2.5rem] overflow-hidden">
+                <div className="absolute bottom-0 left-0 w-full h-[55%] z-0 rounded-b-lg overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent z-10" />
                   <img 
                     src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f36259a7-cc94-4846-8290-2df52026731d_original.gif" 
@@ -656,7 +656,7 @@ export default function Waitlist() {
               <div className="lg:col-span-7 flex flex-col gap-6 h-full">
                 
                 {/* Wide Card (Perfect Consistency) */}
-                <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
+                <div className="group relative bg-zinc-100 border border-black/10 rounded-lg p-10 hover:border-orange/30 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
                   <div className="relative z-10 flex-1">
                     <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tight font-geist font-medium mb-4">Perfect Consistency</h3>
                     <p className="text-lg text-zinc-500 font-light leading-relaxed">
@@ -676,7 +676,7 @@ export default function Waitlist() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
                   
                   {/* Cost Efficiency */}
-                  <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
+                  <div className="group relative bg-zinc-100 border border-black/10 rounded-lg p-10 hover:border-orange/30 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
                     <div className="relative z-10">
                       <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight font-geist">Cost Efficiency</h3>
                       <p className="text-base text-zinc-500 font-light">Cut overhead significantly.</p>
@@ -694,7 +694,7 @@ export default function Waitlist() {
                   </div>
 
                   {/* Hyper Speed */}
-                  <div className="group relative bg-zinc-100 border border-black/10 rounded-[2.5rem] p-10 hover:border-orange/30 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
+                  <div className="group relative bg-zinc-100 border border-black/10 rounded-lg p-10 hover:border-orange/30 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
                     <div className="relative z-10">
                       <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight font-geist">Hyper Speed</h3>
                       <p className="text-base text-zinc-500 font-light">Concept to final in 24h.</p>
