@@ -613,6 +613,88 @@ export default function Waitlist() {
           </div>
         </section>
 
+        {/* From Idea to Launch Section */}
+        <section className="py-16 md:py-24 px-6 md:px-12 bg-zinc-950 border-b border-zinc-800">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-start lg:items-center mb-12 md:mb-16">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-white font-geist leading-[0.95]">
+                From Idea to Launch<br className="hidden sm:block" />
+                <span className="text-white/50">in 3 Steps</span>
+              </h2>
+              <div className="hidden lg:block w-px h-20 bg-white/20" />
+              <p className="text-sm md:text-base text-zinc-400 max-w-xs">
+                No complicated process. Just tell us what you need and we handle the rest.
+              </p>
+            </div>
+
+            <div className="h-px bg-white/10 mb-12" />
+
+            {/* Steps Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              {/* Step 1 */}
+              <div className="relative rounded-3xl p-6 md:p-8 bg-gradient-to-b from-white/5 to-transparent border border-white/10 group hover:border-white/20 transition-colors">
+                <span className="absolute -top-3 left-6 inline-flex items-center px-4 py-1.5 rounded-full border border-white/20 bg-zinc-950 text-xs text-white tracking-tight">
+                  STEP 1
+                </span>
+                <div className="h-48 md:h-56 mb-6 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                  <img 
+                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop" 
+                    alt="Share Your Vision" 
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                  />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-semibold tracking-tighter text-white mb-3 font-geist">
+                  Share Your Vision
+                </h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  Quick call or message to understand your goals, brand style, and timeline.
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div className="relative rounded-3xl p-6 md:p-8 bg-gradient-to-b from-white/5 to-transparent border border-white/10 group hover:border-white/20 transition-colors">
+                <span className="absolute -top-3 left-6 inline-flex items-center px-4 py-1.5 rounded-full border border-white/20 bg-zinc-950 text-xs text-white tracking-tight">
+                  STEP 2
+                </span>
+                <div className="h-48 md:h-56 mb-6 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                  <img 
+                    src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop" 
+                    alt="We Build with AI" 
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                  />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-semibold tracking-tighter text-white mb-3 font-geist">
+                  We Build with AI
+                </h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  Using the latest AI tools, we design visuals and build automations tailored to you.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="relative rounded-3xl p-6 md:p-8 bg-gradient-to-b from-white/5 to-transparent border border-white/10 group hover:border-white/20 transition-colors">
+                <span className="absolute -top-3 left-6 inline-flex items-center px-4 py-1.5 rounded-full border border-white/20 bg-zinc-950 text-xs text-white tracking-tight">
+                  STEP 3
+                </span>
+                <div className="h-48 md:h-56 mb-6 rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                  <img 
+                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop" 
+                    alt="Launch & Grow" 
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                  />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-semibold tracking-tighter text-white mb-3 font-geist">
+                  Launch &amp; Grow
+                </h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  Get your assets, launch your campaign, and watch the results come in.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Benefits Section */}
         <section id="benefits" className="border-b border-black/10">
           <div className="px-6 md:px-12 py-16 flex flex-col md:flex-row items-end justify-between border-b border-black/10">

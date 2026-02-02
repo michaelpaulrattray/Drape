@@ -118,3 +118,4 @@
 - [x] Update dark mode background to #18181b (zinc-900) for softer dark theme
 - [x] Add scrolling/draggable card section under hero on waitlist page
 - [x] Redesign draggable card section to match light theme (white bg, orange accents, Geist font)
+- [x] Add "From Idea to Launch in 3 Steps" section under Cast, Style & Generate section
