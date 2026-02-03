@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,21 +27,21 @@ import { Link } from "wouter";
 const heroSlides = [
   {
     image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp",
-    tag: "Casting Studio",
-    title: "Design Your Model",
-    description: "Create unique AI characters with our zero-prompt creative tools.",
+    tag: "Portraiture",
+    title: "The Human Gaze",
+    description: "Raw emotion captured in monochrome.",
   },
   {
     image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2564&auto=format&fit=crop",
-    tag: "4K Fidelity",
-    title: "Extreme Detail",
-    description: "High-fidelity output that rivals professional photography.",
+    tag: "AI Generated",
+    title: "Digital Muse",
+    description: "Photorealistic AI model generation.",
   },
   {
     image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=2574&auto=format&fit=crop",
-    tag: "Model Passport",
-    title: "Own Your Creation",
-    description: "Claim legal ownership over your AI model with a digital passport.",
+    tag: "Campaign",
+    title: "Brand Identity",
+    description: "Consistent model personas for your brand.",
   },
 ];
 
@@ -77,31 +77,27 @@ const explorationProjects = [
   },
 ];
 
-// Draggable service cards data
-const serviceCards = [
+// Recognition/Awards data
+const awards = [
   {
-    number: "01",
-    title: "Casting Studio",
-    description: "Design your AI model from scratch. Our zero-prompt tools let you craft unique characters with complete creative control.",
-    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg",
+    category: "AI Innovation",
+    title: "Best AI Creative Tool 2024",
+    link: "View Gallery",
   },
   {
-    number: "02",
-    title: "Model Passport",
-    description: "Claim legal ownership over your AI creation. Your model, your rights—protected and documented.",
-    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/04ff5a45-5b01-4b68-a092-f3ec2da28b5e_1600w.jpg",
+    category: "Fashion Tech",
+    title: "Top 10 Fashion AI Startups",
+    link: "Read more",
   },
   {
-    number: "03",
-    title: "Wardrobe Studio",
-    description: "Outfit your model in any style. From streetwear to haute couture—no physical samples needed.",
-    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f365bf31-c2fb-44c2-a24a-c78fedc640ba_1600w.jpg",
+    category: "Creative AI",
+    title: "Excellence in AI Photography",
+    link: "Read more",
   },
   {
-    number: "04",
-    title: "Campaign Generator",
-    description: "Generate photoshoots, product shots, and full campaigns. 4K fidelity with perfect character consistency.",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2532&auto=format&fit=crop",
+    category: "Industry",
+    title: "Fashion Forward Award",
+    link: "View List",
   },
 ];
 
@@ -126,174 +122,6 @@ const journalEntries = [
     description: "Best practices for generating photorealistic fashion imagery.",
   },
 ];
-
-// Services Marquee Section Component with Auto-Scroll
-function ServicesMarqueeSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const positionRef = useRef(0);
-  const isDraggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const prevTranslateRef = useRef(0);
-  const animationRef = useRef<number | undefined>(undefined);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    const track = trackRef.current;
-    if (!container || !track) return;
-
-    const speed = 0.5;
-
-    const animate = () => {
-      if (!isDraggingRef.current) {
-        positionRef.current += speed;
-      }
-      
-      const trackWidth = track.scrollWidth;
-      const setWidth = trackWidth / 3;
-
-      if (positionRef.current >= setWidth) {
-        positionRef.current = 0;
-        if (isDraggingRef.current) {
-          prevTranslateRef.current += setWidth;
-          startXRef.current += setWidth;
-        }
-      }
-      if (positionRef.current < 0) {
-        positionRef.current = setWidth - 1;
-        if (isDraggingRef.current) {
-          prevTranslateRef.current -= setWidth;
-          startXRef.current -= setWidth;
-        }
-      }
-
-      track.style.transform = `translateX(${-positionRef.current}px)`;
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    isDraggingRef.current = true;
-    startXRef.current = e.pageX;
-    prevTranslateRef.current = positionRef.current;
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDraggingRef.current) return;
-    const diff = startXRef.current - e.pageX;
-    positionRef.current = prevTranslateRef.current + diff;
-  };
-
-  const handleMouseUp = () => {
-    isDraggingRef.current = false;
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    isDraggingRef.current = true;
-    startXRef.current = e.touches[0].clientX;
-    prevTranslateRef.current = positionRef.current;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingRef.current) return;
-    const diff = startXRef.current - e.touches[0].clientX;
-    positionRef.current = prevTranslateRef.current + diff;
-  };
-
-  const handleTouchEnd = () => {
-    isDraggingRef.current = false;
-  };
-
-  // Triple the cards for infinite scroll
-  const tripleCards = [...serviceCards, ...serviceCards, ...serviceCards];
-
-  return (
-    <section className="border-t border-b border-black/10 bg-white py-24 overflow-hidden">
-      <div className="px-6 md:px-12 mb-16 md:mb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
-          <div>
-            <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-500 font-medium mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
-              
-            </span>
-            <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-              Your Creative <br/><span className="text-zinc-400">Studio Suite.</span>
-            </h2>
-          </div>
-          <div className="lg:pl-12">
-            <p className="text-lg md:text-xl font-light text-zinc-600 leading-relaxed">
-              From character design to campaign delivery. Zero prompts, maximum fidelity—unique tools built for the creative process.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Auto-Scrolling Marquee Container */}
-      <div 
-        ref={containerRef}
-        className="flex w-full overflow-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y"
-        style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div 
-          ref={trackRef}
-          className="flex gap-6 md:gap-8 min-w-max px-4 md:px-8 items-stretch will-change-transform"
-        >
-          {tripleCards.map((card, index) => (
-            <div 
-              key={index} 
-              className="group relative w-[85vw] md:w-[420px] h-[520px] overflow-hidden border border-black/10 bg-zinc-50 hover:border-sky-500/50 transition-all duration-500 shrink-0"
-            >
-              <div className="absolute inset-0 w-full h-full">
-                <img 
-                  src={card.image} 
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out" 
-                  draggable="false" 
-                  alt={card.title}
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white" />
-              </div>
-              <div className="absolute inset-0 p-8 flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <span className="font-geist text-6xl md:text-7xl font-bold text-zinc-900/10 group-hover:text-sky-500/20 transition-colors duration-500">{card.number}</span>
-                  <div className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-black/10">
-                    <ArrowUpRight className="w-5 h-5 text-zinc-900" />
-                  </div>
-                </div>
-                <div className="bg-white/90 backdrop-blur-sm p-6 -mx-8 -mb-8 border-t border-black/10">
-                  <h3 className="text-xl md:text-2xl font-geist font-semibold tracking-tight text-zinc-900 mb-2">
-                    {card.title}
-                  </h3>
-                  <p className="text-zinc-600 text-sm leading-relaxed">
-                    {card.description}
-                  </p>
-                  <div className="mt-4 pt-4 border-t border-black/10 flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-[0.15em] text-zinc-400">Learn more</span>
-                    <ArrowRight className="w-4 h-4 text-sky-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 export default function Waitlist() {
   const [email, setEmail] = useState("");
@@ -378,20 +206,29 @@ export default function Waitlist() {
       </div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center mix-blend-difference text-white pointer-events-none">
-        <a href="#" className="group flex items-center gap-2 text-2xl md:text-3xl tracking-tight font-normal pointer-events-auto font-geist">
-          <span className="border-b border-white pb-0.5 group-hover:border-transparent transition-colors duration-300">forma</span>
-          <span>studio</span>
+      <nav className="flex md:px-12 z-50 border-b px-6 py-6 relative items-center justify-between border-black/5 bg-zinc-50/80 backdrop-blur-md">
+        <a href="#" className="inline-flex items-center gap-2 font-bold tracking-tighter text-2xl font-geist">
+          <span className="w-6 h-6 rounded flex items-center justify-center text-sm text-white bg-zinc-900">F</span>
+          FORMA
         </a>
 
-        {/* Desktop Menu */}
-        <div className="flex items-center pointer-events-auto">
-          <a 
-            href="#waitlist" 
-            className="px-5 py-2 rounded-full border border-white/20 hover:bg-white hover:text-black transition-all duration-300 text-sm font-medium uppercase tracking-wide backdrop-blur-sm"
+        <div className="relative">
+          <button 
+            onClick={() => setNavOpen(!navOpen)} 
+            className="group flex items-center gap-3 px-5 py-2 border transition duration-300 bg-transparent border-black/10 hover:bg-black/5"
           >
-            Join Waitlist
-          </a>
+            <Menu className="w-5 h-5 stroke-[1.5] text-black" />
+            <span className="text-sm font-medium tracking-wide">Studios</span>
+          </button>
+          
+          {navOpen && (
+            <div className="absolute right-0 top-full mt-2 w-56 border shadow-2xl py-2 z-50 backdrop-blur-xl bg-white border-black/5">
+              <a href="#" className="block px-6 py-3 text-sm font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-sky-600">Casting Studio</a>
+              <a href="#" className="block px-6 py-3 text-sm font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-sky-600">Outfit Studio</a>
+              <a href="#" className="block px-6 py-3 text-sm font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-sky-600">Photo Studio</a>
+              <a href="#waitlist" className="block px-6 py-3 text-sm font-medium transition-colors tracking-wide text-black/70 hover:bg-black/5 hover:text-sky-600">Get Early Access</a>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -417,7 +254,7 @@ export default function Waitlist() {
               </p>
               <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
                 FORMA
-                <span className="text-sky-500 text-6xl align-top">Studio</span>
+                <span className="text-sky-500 text-6xl align-top">+</span>
               </h1>
               <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-black/20" />
             </div>
@@ -443,13 +280,14 @@ export default function Waitlist() {
               </div>
             </div>
 
-            <div className="mt-auto">
-              <a 
-                href="#waitlist" 
-                className="inline-flex items-center gap-3 px-8 py-4 bg-sky-500 text-white font-semibold text-sm uppercase tracking-wider rounded-full hover:bg-sky-600 transition-all duration-300 shadow-lg shadow-sky-500/25 hover:shadow-xl hover:shadow-sky-500/30 hover:-translate-y-0.5"
-              >
-                Get Early Access
-                <ArrowRight className="w-4 h-4" />
+            <div className="flex gap-12 mt-auto text-xs font-medium tracking-wide text-zinc-600">
+              <a href="#studios" className="flex items-center gap-2 transition-colors hover:text-black">
+                View Studios
+                <ChevronRight className="w-3 h-3" />
+              </a>
+              <a href="#waitlist" className="flex items-center gap-2 transition-colors hover:text-black">
+                Get Access
+                <ChevronRight className="w-3 h-3" />
               </a>
             </div>
           </div>
@@ -519,231 +357,334 @@ export default function Waitlist() {
           </div>
         </section>
 
-        {/* Services Draggable Cards Section with Auto-Scroll */}
-        <ServicesMarqueeSection />
-
-        {/* Video Demo Section */}
-        <section className="py-24 px-6 md:px-12 bg-white border-b border-black/10 relative overflow-hidden">
-          {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-50 via-white to-zinc-50 opacity-50" />
-          
-          <div className="max-w-6xl mx-auto relative z-10">
-            {/* Section Header */}
-            <div className="text-center mb-16">
-              <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-500 font-medium mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
-                How It Works
-              </span>
-              <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-                Design. Own. <span className="text-zinc-400">Create.</span>
-              </h2>
-              <p className="text-lg text-zinc-500 font-light max-w-xl mx-auto">
-                A creative journey from character design to campaign-ready content—zero prompts, maximum fidelity.
-              </p>
+        {/* Exploration Section */}
+        <section id="studios" className="grid grid-cols-1 md:grid-cols-2 border-b border-black/10">
+          {/* Left: Gallery */}
+          <div className="md:p-12 overflow-hidden group border-black/10 border-r p-6 relative">
+            <div className="grid grid-cols-2 gap-4 h-full">
+              <div className="bg-zinc-200 w-full h-64 md:h-80 relative overflow-hidden">
+                <img 
+                  src={currentProject.img1} 
+                  className="w-full h-full object-cover grayscale opacity-90 group-hover:scale-105 transition-transform duration-700"
+                  alt={currentProject.title}
+                />
+              </div>
+              <div className="w-full h-64 md:h-80 relative overflow-hidden translate-y-8 bg-zinc-200">
+                <img 
+                  src={currentProject.img2} 
+                  className="w-full h-full object-cover grayscale opacity-90 group-hover:scale-105 transition-transform duration-700 delay-75"
+                  alt={currentProject.subtitle}
+                />
+              </div>
             </div>
+          </div>
 
-            {/* Video Container */}
-            <div className="relative group">
-              {/* Glow effect */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-sky-500/20 via-sky-400/10 to-sky-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              
-              {/* Video wrapper */}
-              <div className="relative bg-zinc-900 rounded-xl border border-black/10 overflow-hidden shadow-2xl">
-                {/* Browser-style header */}
-                <div className="flex items-center gap-2 px-4 py-3 bg-zinc-800 border-b border-white/5">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                  </div>
-                  <div className="flex-1 flex justify-center">
-                    <div className="px-4 py-1 bg-zinc-700 rounded-md text-xs text-zinc-400 font-mono">
-                      formastudio.ai/studio
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Video content */}
-                <div className="relative aspect-video bg-zinc-900">
-                  <video 
-                    className="w-full h-full object-cover"
-                    autoPlay 
-                    loop 
-                    muted 
-                    playsInline
-                    poster="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2564&auto=format&fit=crop"
+          {/* Right: Text Content */}
+          <div className="md:p-12 flex flex-col p-6 justify-center">
+            <h2 className="text-7xl md:text-9xl font-semibold tracking-tighter mb-4 text-zinc-900 font-geist">
+              {currentProject.title}
+            </h2>
+            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-zinc-600">
+              {currentProject.subtitle}
+            </h3>
+            <p className="leading-relaxed md:text-base text-sm text-zinc-500 max-w-md mb-10">
+              {currentProject.description}
+            </p>
+
+            <div className="flex items-center justify-between mt-auto pt-8 border-t border-black/10">
+              <div className="flex items-center gap-4">
+                <span className="text-3xl font-semibold font-mono">
+                  <span>{String(projectSlide + 1).padStart(2, '0')}</span>
+                  <span className="text-base align-top ml-1 text-black/30">/ {String(explorationProjects.length).padStart(2, '0')}</span>
+                </span>
+                <div className="flex gap-2 ml-4">
+                  <button 
+                    onClick={prevProjectSlide}
+                    className="flex transition hover:bg-black hover:text-white w-8 h-8 border-black/20 border rounded-full items-center justify-center text-black"
                   >
-                    <source src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/demo-workflow.mp4" type="video/mp4" />
-                  </video>
-                  
-                  {/* Overlay with workflow steps */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-transparent pointer-events-none" />
-                  
-                  {/* Workflow steps indicator */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                    <div className="flex items-center justify-center gap-2 md:gap-4 flex-wrap">
-                      <div className="flex items-center gap-2 text-white/90">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
-                          <span className="text-sky-400 font-bold text-xs md:text-sm">1</span>
-                        </div>
-                        <div className="hidden md:block">
-                          <p className="text-sm font-medium">Design Model</p>
-                          <p className="text-xs text-zinc-400">Casting Studio</p>
-                        </div>
-                      </div>
-                      
-                      <div className="w-4 md:w-6 h-px bg-gradient-to-r from-sky-500/50 to-sky-400/50" />
-                      
-                      <div className="flex items-center gap-2 text-white/90">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
-                          <span className="text-sky-400 font-bold text-xs md:text-sm">2</span>
-                        </div>
-                        <div className="hidden md:block">
-                          <p className="text-sm font-medium">Claim Passport</p>
-                          <p className="text-xs text-zinc-400">Legal Ownership</p>
-                        </div>
-                      </div>
-                      
-                      <div className="w-4 md:w-6 h-px bg-gradient-to-r from-sky-400/50 to-sky-500/50" />
-                      
-                      <div className="flex items-center gap-2 text-white/90">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
-                          <span className="text-sky-400 font-bold text-xs md:text-sm">3</span>
-                        </div>
-                        <div className="hidden md:block">
-                          <p className="text-sm font-medium">Wardrobe Studio</p>
-                          <p className="text-xs text-zinc-400">Outfit Your Model</p>
-                        </div>
-                      </div>
-                      
-                      <div className="w-4 md:w-6 h-px bg-gradient-to-r from-sky-500/50 to-sky-400/50" />
-                      
-                      <div className="flex items-center gap-2 text-white/90">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center">
-                          <span className="text-sky-400 font-bold text-xs md:text-sm">4</span>
-                        </div>
-                        <div className="hidden md:block">
-                          <p className="text-sm font-medium">Generate</p>
-                          <p className="text-xs text-zinc-400">Campaigns & Shoots</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={nextProjectSlide}
+                    className="flex transition hover:bg-black hover:text-white w-8 h-8 border-black/20 border rounded-full items-center justify-center text-black"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Stats row */}
-            <div className="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-black/10">
-              <div className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tighter">4K<span className="text-sky-500">+</span></p>
-                <p className="text-sm text-zinc-500 mt-2">Photorealism</p>
-              </div>
-              <div className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tighter">0</p>
-                <p className="text-sm text-zinc-500 mt-2">Prompts Required</p>
-              </div>
-              <div className="text-center">
-                <p className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tighter">∞</p>
-                <p className="text-sm text-zinc-500 mt-2">Campaigns</p>
-              </div>
+              <a href="#waitlist" className="px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 border-black/20 hover:bg-black hover:text-white">
+                All Studios
+                <ArrowRight className="w-4 h-4" />
+              </a>
             </div>
           </div>
         </section>
 
-        {/* Creative Power, Unbound Section */}
-        <section className="py-24 px-6 md:px-12 bg-white border-b border-black/10" id="benefits">
-          <div className="max-w-[1400px] mx-auto">
-            
-            <div className="mb-20 max-w-2xl">
-              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-                Creative power, <span className="text-zinc-400">unbound.</span>
+        {/* Process Section */}
+        <section className="relative border-b border-black/10">
+          {/* Tabs */}
+          <div className="absolute top-0 left-0 md:left-1/4 flex z-20">
+            <button className="text-sm font-semibold border-r px-8 py-3 backdrop-blur-sm bg-white/50 border-black/10 text-zinc-900">
+              AI Workflow
+            </button>
+            <button className="transition-colors text-sm font-semibold px-8 py-3 hover:text-black text-black/50">
+              Traditional
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* Left Content */}
+            <div className="md:p-12 md:pt-32 flex flex-col border-black/10 border-r pt-24 p-6 relative justify-center">
+              <h2 className="md:text-7xl uppercase text-5xl font-bold tracking-tighter mb-8 text-zinc-900 font-geist">
+                Process
               </h2>
-              <p className="text-xl text-zinc-500 font-light leading-relaxed">
-                Design once, generate forever. Our high-fidelity tools give you complete creative control—no prompts, no compromises.
+
+              <div className="mb-12">
+                <h4 className="text-xl font-semibold mb-2">AI-Powered Pipeline</h4>
+                <h5 className="text-lg text-black/70 mb-6">From Brief to Campaign</h5>
+                <p className="leading-relaxed text-sm text-zinc-500 max-w-sm">
+                  Our AI handles the entire creative pipeline. From model generation to final campaign assets, 
+                  we deliver photorealistic results in hours, not weeks.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-8 pt-8 border-t border-black/10">
+                <div>
+                  <p className="text-[10px] font-bold uppercase mb-1 text-sky-600">
+                    Turnaround
+                  </p>
+                  <p className="text-2xl font-bold font-mono">24h</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase mb-1 text-sky-600">
+                    Cost
+                  </p>
+                  <p className="text-2xl font-bold font-mono">-90%</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase mb-1 text-sky-600">
+                    Variations
+                  </p>
+                  <p className="text-2xl font-bold font-mono">∞</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Image */}
+            <div className="relative h-[500px] md:h-auto overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2532&auto=format&fit=crop" 
+                className="absolute inset-0 w-full h-full object-cover grayscale contrast-125"
+                alt="Process"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t to-transparent from-zinc-50/20" />
+            </div>
+          </div>
+        </section>
+
+        {/* Methodology Section */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 border-b relative group border-black/10 bg-zinc-50">
+          {/* Left: Visual Content */}
+          <div className="relative min-h-[500px] lg:min-h-[700px] border-r overflow-hidden border-black/10">
+            <img 
+              src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=2564&auto=format&fit=crop" 
+              alt="Camera Lens" 
+              className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000 ease-out"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t to-transparent from-zinc-50 via-zinc-50/20" />
+            
+            {/* Floating Data Card */}
+            <div className="absolute bottom-8 left-8 right-8 md:left-12 md:right-auto md:w-80 backdrop-blur-xl border p-6 z-10 transition-colors duration-300 bg-white/80 border-black/10 hover:bg-white">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-black/10">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-sky-600">Current Tech</span>
+                <Camera className="w-4 h-4 text-zinc-500" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-wider font-semibold text-black/50">Engine: Flux Pro</p>
+                <p className="text-lg font-medium tracking-tight">Photorealistic Generation</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Philosophy & Interactive List */}
+          <div className="flex flex-col">
+            {/* Header */}
+            <div className="p-8 md:p-16 flex-1 flex flex-col justify-center relative">
+              <div className="absolute top-0 right-0 p-6 opacity-5">
+                <Sparkles className="w-[120px] h-[120px]" />
+              </div>
+
+              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-sky-600 tracking-[0.2em] mb-6">
+                <span className="w-2 h-2 rounded-full bg-sky-600" />
+                Vision
+              </p>
+              <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter leading-none mb-6 text-zinc-900 font-geist">
+                Create, Scale & 
+                <span className="text-black/30"> Deliver</span>
+              </h2>
+              <p className="leading-relaxed md:text-base text-sm text-zinc-500 max-w-md">
+                AI photography is not just about generating images, but creating consistent brand identities. 
+                We combine cutting-edge AI with creative direction to deliver campaign-ready assets.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Large Card Left (AI That Knows You) */}
-              <div className="lg:col-span-5 group relative min-h-[640px] bg-zinc-50 border border-black/10 rounded-lg hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col justify-between p-10">
-                {/* Background Gradient Hint */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80 z-0 pointer-events-none"></div>
-
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(56,189,248,0.6)] animate-pulse"></span>
-                    <span className="uppercase text-xs font-bold tracking-[0.2em] text-zinc-500">Zero Prompt</span>
+            {/* Accordion / List Items */}
+            <div className="border-t divide-y border-black/10 divide-black/10 bg-white">
+              {/* Item 1 */}
+              <a href="#" className="group block md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-6">
+                    <span className="font-mono text-xs transition-colors text-sky-600/50 group-hover:text-sky-600">01</span>
+                    <div className="flex flex-col">
+                      <h3 className="group-hover:text-black transition-colors text-lg font-medium text-black/80 tracking-tight">Model Creation</h3>
+                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-black/40">Define characteristics and generate consistent AI models</span>
+                    </div>
                   </div>
-                  <h3 className="text-4xl md:text-5xl font-geist font-semibold text-zinc-900 tracking-tighter mb-4 leading-[0.95]">Pure Creation</h3>
-                  <p className="text-lg text-zinc-500 font-light leading-relaxed max-w-sm">
-                    No prompts. No guesswork. Our intuitive tools let you design and refine your AI model with complete creative freedom.
-                  </p>
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-sky-600/50 group-hover:bg-sky-600/10">
+                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-sky-600" />
+                  </div>
                 </div>
-                
-                <div className="absolute bottom-0 left-0 w-full h-[55%] z-0 rounded-b-lg overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-white via-zinc-50/20 to-transparent z-10"></div>
-                  <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f36259a7-cc94-4846-8290-2df52026731d_original.gif" className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out grayscale group-hover:grayscale-0" alt="AI Gen" />
+              </a>
+
+              {/* Item 2 */}
+              <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-6">
+                    <span className="font-mono text-xs transition-colors text-sky-600/50 group-hover:text-sky-600">02</span>
+                    <div className="flex flex-col">
+                      <h3 className="group-hover:text-black transition-colors text-lg font-medium text-black/80 tracking-tight">Outfit Styling</h3>
+                      <span className="group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform group-hover:translate-y-0 text-xs text-black/40 opacity-0 h-0 mt-1 translate-y-2">Generate any outfit on your AI models</span>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-sky-600/50 group-hover:bg-sky-600/10">
+                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-sky-600" />
+                  </div>
+                </div>
+              </a>
+
+              {/* Item 3 */}
+              <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-6">
+                    <span className="font-mono text-xs transition-colors text-sky-600/50 group-hover:text-sky-600">03</span>
+                    <div className="flex flex-col">
+                      <h3 className="text-lg font-medium tracking-tight group-hover:text-black transition-colors text-black/80">Campaign Production</h3>
+                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-black/40">Full photoshoot generation with lighting control</span>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-sky-600/50 group-hover:bg-sky-600/10">
+                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-sky-600" />
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Recognition Section */}
+        <section className="border-b border-black/10">
+          <div className="px-6 md:px-12 py-16 flex items-end justify-between border-b border-black/10">
+            <h2 className="text-6xl md:text-7xl font-bold tracking-tighter uppercase text-zinc-900 font-geist">
+              Recognition
+            </h2>
+            <a href="#" className="px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 mb-2 border-black/20 hover:bg-black hover:text-white">
+              Press Kit
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-black/10">
+            {awards.map((award, index) => (
+              <div key={index} className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
+                <div className="flex h-40 border-b mb-6 items-center justify-center border-black/10">
+                  <Sparkles className="text-6xl group-hover:scale-110 transition-transform duration-300 text-zinc-800 w-16 h-16" />
+                </div>
+                <p className="text-[10px] font-bold uppercase mb-2 text-sky-600">
+                  {award.category}
+                </p>
+                <h3 className="leading-tight transition-colors text-xl font-semibold mb-6 text-zinc-900">
+                  {award.title}
+                </h3>
+                <div className="flex items-center text-xs font-medium group-hover:text-black transition-colors text-black/50">
+                  {award.link}
+                  <ChevronRight className="w-3 h-3 ml-1" />
                 </div>
               </div>
+            ))}
+          </div>
+        </section>
 
-              {/* Right Column */}
-              <div className="lg:col-span-7 flex flex-col gap-6 h-full">
+        {/* Journal Section */}
+        <section className="border-b border-black/10 bg-zinc-50">
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-black/10">
+            {/* Left: Featured Article */}
+            <div className="group relative min-h-[600px] flex flex-col justify-end p-8 md:p-12 overflow-hidden cursor-pointer">
+              <img 
+                src="https://images.unsplash.com/photo-1452587925148-ce544e77e70d?q=80&w=2574&auto=format&fit=crop" 
+                alt="Featured" 
+                className="group-hover:opacity-80 group-hover:scale-105 transition-all duration-1000 ease-out opacity-60 w-full h-full object-cover absolute inset-0 grayscale"
+              />
+              <div className="bg-gradient-to-t to-transparent absolute inset-0 from-zinc-50 via-zinc-50/60" />
+              
+              <div className="relative z-10 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="px-3 py-1 border text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm border-sky-500/30 bg-sky-500/10 text-sky-600">Featured</span>
+                  <span className="text-xs font-mono tracking-tight text-black/50">FEB 02, 2026</span>
+                </div>
                 
-                {/* Wide Card (Perfect Consistency) */}
-                <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
-                  <div className="relative z-10 flex-1">
-                    <h3 className="md:text-5xl leading-[0.95] text-4xl text-zinc-900 tracking-tighter font-geist font-semibold mb-4">Character Lock</h3>
-                    <p className="text-lg text-zinc-500 font-light leading-relaxed">
-                      Same face, same features, same identity—across 10,000 images. Your AI model never drifts.
-                    </p>
-                  </div>
-                  <div className="relative w-full md:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden border border-black/10 group-hover:border-sky-500/30 transition-colors">
-                    <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ebfeb48e-4108-49c6-86a2-a1491f93b564_original.gif" className="transition-all duration-700 ease-in-out w-full h-full object-cover grayscale group-hover:grayscale-0" alt="Consistency" />
+                <h3 className="md:text-7xl uppercase text-5xl font-bold tracking-tighter mb-8 text-zinc-900 font-geist">
+                  The Future of 
+                  <span className="font-normal text-black/40"> AI Fashion</span>
+                </h3>
+                
+                <p className="leading-relaxed line-clamp-2 md:text-lg text-zinc-600 max-w-md mb-8">
+                  Exploring how AI is revolutionizing fashion photography and model casting, 
+                  where digital innovation meets creative vision.
+                </p>
+                
+                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest transition-colors text-black group-hover:text-sky-600">
+                  Read Full Entry
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center group-hover:text-white transition-all duration-300 border-black/20 group-hover:bg-sky-600 group-hover:border-sky-600">
+                    <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Split Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-                  
-                  {/* Cost Efficiency */}
-                  <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
-                    <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">4K Fidelity</h3>
-                      <p className="text-base text-zinc-400 font-light">Every detail. Every texture.</p>
-                    </div>
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-baseline gap-1 mb-5">
-                        <span className="text-7xl font-semibold text-zinc-900 tracking-tighter">4K</span>
-                        <span className="text-3xl text-sky-500 font-medium">+</span>
-                      </div>
-                      <div className="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
-                        <div className="h-full bg-sky-500 w-[15%] group-hover:w-[100%] transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(56,189,248,0.5)]"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hyper Speed */}
-                  <div className="group relative bg-zinc-50 border border-black/10 rounded-lg p-10 hover:border-sky-500/50 transition-all duration-500 flex flex-col justify-between min-h-[320px] overflow-hidden">
-                    <div className="relative z-10">
-                      <h3 className="text-3xl font-medium text-zinc-900 mb-2 tracking-tight">Instant Scale</h3>
-                      <p className="text-base text-zinc-400 font-light">1 to 10,000 images. Same day.</p>
-                    </div>
-                    
-                    <div className="relative z-10 flex items-end">
-                      <div className="flex items-center gap-3 bg-white border border-black/10 rounded-full pl-5 pr-6 py-3 shadow-lg group-hover:border-sky-500/30 transition-colors">
-                        <div className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+            {/* Right: Editorial List */}
+            <div className="flex flex-col h-full">
+              <div className="p-8 md:p-12 border-b flex items-center justify-between bg-white/[0.02] border-black/10">
+                <div>
+                  <h2 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase mb-2 text-zinc-900 font-geist">Journal</h2>
+                  <p className="text-xs uppercase tracking-widest text-black/40">Behind the Scenes</p>
+                </div>
+                <a href="#" className="px-5 py-2.5 border text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2 border-black/10 hover:bg-black hover:text-zinc-100">
+                  Archive
+                  <BookOpen className="w-3.5 h-3.5" />
+                </a>
+              </div>
+              
+              <div className="flex-1 divide-y divide-black/10">
+                {journalEntries.map((entry, index) => (
+                  <a key={index} href="#" className="group block p-8 md:px-12 transition-colors relative overflow-hidden hover:bg-black/5">
+                    <div className="absolute right-0 top-0 bottom-0 w-1 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 bg-sky-500" />
+                    <div className="flex justify-between items-start gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-sky-600">{entry.category}</span>
+                          <span className="w-1 h-1 rounded-full bg-black/20" />
+                          <span className="text-[10px] uppercase tracking-widest text-black/40">{entry.type}</span>
                         </div>
-                        <span className="text-sm font-mono text-zinc-600 tracking-wide">Rendering...</span>
+                        <h4 className="text-xl md:text-2xl font-semibold mb-2 group-hover:text-black transition-colors text-black/90">{entry.title}</h4>
+                        <p className="text-sm group-hover:text-black/70 transition-colors text-black/40">{entry.description}</p>
+                      </div>
+                      <div className="flex hidden md:flex transition-colors w-20 h-20 border items-center justify-center bg-black/5 border-black/10 group-hover:bg-sky-100 text-sky-600">
+                        <Sparkles className="w-6 h-6" />
                       </div>
                     </div>
-                  </div>
-
-                </div>
+                  </a>
+                ))}
               </div>
             </div>
           </div>
@@ -757,10 +698,11 @@ export default function Waitlist() {
               Early Access
             </p>
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-              Design Your First Model
+              Join the Waitlist
             </h2>
             <p className="text-lg text-zinc-500 mb-12 max-w-md mx-auto">
-              Zero prompts. 4K fidelity. Perfect consistency. Be among the first to create and own AI models with our unique creative tools.
+              Be among the first to experience AI-powered fashion photography. 
+              Limited spots available for our beta launch.
             </p>
 
             {!submitted && !alreadyRegistered ? (
