@@ -125,8 +125,15 @@ export default function Dashboard() {
 
   return (
     <div className="h-screen w-screen flex bg-[#0A0A0A] text-white overflow-hidden selection:bg-orange-500/30 font-sans">
-      {/* Grid Pattern Background */}
-      <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+      {/* Abstract Landscape Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.08] grayscale"
+          style={{ backgroundImage: 'url(https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/wnAIJHqYRuNunYpg.png)' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-[#0A0A0A]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-transparent to-[#0A0A0A]" />
+      </div>
       
       {/* Sidebar - Glass Morphism */}
       <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-white/10 bg-black/40 backdrop-blur-xl relative z-10">

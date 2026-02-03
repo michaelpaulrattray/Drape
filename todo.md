@@ -175,3 +175,9 @@
 - [x] Frosted glass cards with gradient borders
 - [x] Clip animation inspired orange accent on hover
 - [x] Editorial/premium creative studio aesthetic
+
+## Dashboard Background Update
+- [x] Remove checkerboard/grid pattern from dashboard
+- [x] Add abstract landscape image as background
+- [x] Desaturate and fade image to very subtle opacity (8% opacity + grayscale)
+- [x] Ensure seamless blend with dark background (edge gradients)
