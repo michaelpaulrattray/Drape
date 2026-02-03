@@ -94,30 +94,37 @@ describe("Model Creation - Validation", () => {
 });
 
 describe("Point Cost Calculations", () => {
+  it("should have correct point costs defined", () => {
+    // Verify all point costs are defined
+    expect(POINT_COSTS.castingImage).toBe(12);
+    expect(POINT_COSTS.fullBody).toBe(8);
+    expect(POINT_COSTS.multiView).toBe(15);
+    expect(POINT_COSTS.iterate).toBe(5);
+    expect(POINT_COSTS.upscale).toBe(3);
+  });
+
   it("should calculate total cost for full model generation", () => {
-    // Master prompt + casting image + full body + 2 multi-views
+    // Casting image + full body + 2 multi-views
     const totalCost =
-      POINT_COSTS.masterPrompt +
       POINT_COSTS.castingImage +
       POINT_COSTS.fullBody +
       POINT_COSTS.multiView * 2;
 
-    expect(totalCost).toBe(2 + 12 + 8 + 15 * 2); // 52 points
+    expect(totalCost).toBe(12 + 8 + 15 * 2); // 50 points
   });
 
   it("should calculate cost for minimal model (just headshot)", () => {
-    const minimalCost = POINT_COSTS.masterPrompt + POINT_COSTS.castingImage;
-    expect(minimalCost).toBe(14); // 2 + 12
+    const minimalCost = POINT_COSTS.castingImage;
+    expect(minimalCost).toBe(12);
   });
 
   it("should calculate cost for iteration workflow", () => {
-    // Create model + generate image + 3 iterations
+    // Generate image + 3 iterations
     const iterationCost =
-      POINT_COSTS.masterPrompt +
       POINT_COSTS.castingImage +
-      POINT_COSTS.iteration * 3;
+      POINT_COSTS.iterate * 3;
 
-    expect(iterationCost).toBe(2 + 12 + 5 * 3); // 29 points
+    expect(iterationCost).toBe(12 + 5 * 3); // 27 points
   });
 });
 

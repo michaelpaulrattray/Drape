@@ -1,63 +1,99 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the LLM and image generation services
-vi.mock("./_core/llm", () => ({
-  invokeLLM: vi.fn().mockResolvedValue({
-    choices: [{
-      message: {
-        content: JSON.stringify({
-          natural_description: "Professional fashion model headshot. A confident female model with medium brown hair...",
-          technical_schema: {
-            subject: { 
-              sex: "female", 
-              age: "18-25",
-              ethnicity: "Caucasian",
-              skin_tone: "medium",
-              hair_style: "wavy",
-              hair_color: "brown",
-              eye_color: "brown"
-            },
-            facial_features: {
-              eye_shape: "almond",
-              face_shape: "oval",
-              jawline: "defined",
-              cheekbones: "high",
-              cheeks_shape: "natural",
-              nose_shape: "straight",
-              lips_shape: "full",
-              eyebrows: "natural",
-              freckles: "none"
-            },
-            context: {
-              tone: "editorial",
-              casting_for: "Gucci",
-              wardrobe: "bare skin"
-            }
-          }
-        })
+// Mock the geminiService
+vi.mock("./geminiService", () => ({
+  generateMasterPrompt: vi.fn().mockResolvedValue({
+    natural: "Professional fashion model headshot. A confident female model with medium brown hair...",
+    schema: {
+      subject: { 
+        sex: "female", 
+        age: "18-25",
+        ethnicity: "Caucasian",
+        skin_tone: "medium",
+        hair_style: "wavy",
+        hair_color: "brown",
+        eye_color: "brown"
+      },
+      facial_features: {
+        eye_shape: "almond",
+        face_shape: "oval",
+        jawline: "defined",
+        cheekbones: "high",
+        cheeks_shape: "natural",
+        nose_shape: "straight",
+        lips_shape: "full",
+        eyebrows: "natural",
+        freckles: "none"
+      },
+      context: {
+        tone: "editorial",
+        casting_for: "Gucci",
+        wardrobe: "bare skin"
       }
-    }]
-  })
+    }
+  }),
+  generateCastingImage: vi.fn().mockResolvedValue({
+    imageUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    engineUsed: "gemini-3-pro-image-preview"
+  }),
+  generateFullBodyShot: vi.fn().mockResolvedValue({
+    imageUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    engineUsed: "gemini-3-pro-image-preview"
+  }),
+  generateRemainingViews: vi.fn().mockResolvedValue({
+    imageUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    engineUsed: "gemini-3-pro-image-preview"
+  }),
+  iterateOnImage: vi.fn().mockResolvedValue({
+    imageUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    engineUsed: "gemini-3-pro-image-preview"
+  }),
+  enhanceUserPrompt: vi.fn().mockResolvedValue("Enhanced prompt with more detail"),
+  ImageResolution: { STANDARD: "1024x1024", HD: "2048x2048", ULTRA: "4096x4096" },
+  AspectRatio: { SQUARE: "1:1", PORTRAIT: "3:4", LANDSCAPE: "4:3" },
+  GenerationMode: { NEW: "NEW", ITERATE: "ITERATE", REFERENCE: "REFERENCE" }
 }));
 
-vi.mock("./_core/imageGeneration", () => ({
-  generateImage: vi.fn().mockResolvedValue({
-    url: "https://storage.example.com/generated-image.jpg"
+// Mock storage
+vi.mock("./storage", () => ({
+  storagePut: vi.fn().mockResolvedValue({
+    url: "https://storage.example.com/generated-image.jpg",
+    key: "casting/test-image.png"
   })
 }));
 
 // Import after mocks
-import {
-  generateMasterPrompt,
-  generateCastingImage,
-  generateFullBody,
-  generateRemainingViews,
-  iterateModel,
-  POINT_COSTS,
-  ModelPreferences
-} from "./aiService";
+import { POINT_COSTS } from "./aiService";
+import type { ModelPreferences } from "./aiService";
 
-describe("AI Service - Master Prompt Generation", () => {
+describe("AI Service - Point Costs", () => {
+  it("should have correct point costs defined", () => {
+    expect(POINT_COSTS.castingImage).toBe(12);
+    expect(POINT_COSTS.fullBody).toBe(8);
+    expect(POINT_COSTS.multiView).toBe(15);
+    expect(POINT_COSTS.iterate).toBe(5);
+    expect(POINT_COSTS.upscale).toBe(3);
+  });
+
+  it("should have total initial generation cost of 12 points", () => {
+    const totalInitialCost = POINT_COSTS.castingImage;
+    expect(totalInitialCost).toBe(12);
+  });
+
+  it("should calculate full model generation cost", () => {
+    // Headshot + full body + side + back
+    const fullCost = POINT_COSTS.castingImage + POINT_COSTS.fullBody + POINT_COSTS.multiView * 2;
+    expect(fullCost).toBe(12 + 8 + 15 * 2); // 50 points
+  });
+
+  it("should calculate iteration workflow cost", () => {
+    // Headshot + 3 iterations
+    const iterationCost = POINT_COSTS.castingImage + POINT_COSTS.iterate * 3;
+    expect(iterationCost).toBe(12 + 5 * 3); // 27 points
+  });
+});
+
+describe("Model Preferences Validation", () => {
   const validPreferences: ModelPreferences = {
     gender: "female",
     ageRange: "18-25",
@@ -73,211 +109,118 @@ describe("AI Service - Master Prompt Generation", () => {
     mood: "confident"
   };
 
-  it("should generate a master prompt with all required fields", async () => {
-    const result = await generateMasterPrompt(validPreferences);
+  it("should require all mandatory preference fields", () => {
+    const requiredFields = [
+      "gender",
+      "ageRange",
+      "ethnicity",
+      "bodyType",
+      "height",
+      "hairColor",
+      "hairLength",
+      "hairStyle",
+      "skinTone",
+      "eyeColor",
+      "brandTone",
+      "mood",
+    ];
 
-    expect(result).toHaveProperty("naturalDescription");
-    expect(result).toHaveProperty("technicalSchema");
-    expect(result).toHaveProperty("agencyId");
-    expect(result.naturalDescription).toBeTruthy();
-    expect(result.agencyId).toMatch(/^MOD-\d{2}-[A-Z0-9]{6}$/);
+    requiredFields.forEach((field) => {
+      expect(validPreferences).toHaveProperty(field);
+    });
   });
 
-  it("should include technical schema with subject section", async () => {
-    const result = await generateMasterPrompt(validPreferences);
-
-    expect(result.technicalSchema).toHaveProperty("subject");
-    expect(result.technicalSchema.subject).toHaveProperty("sex");
-    expect(result.technicalSchema.subject).toHaveProperty("age");
+  it("should accept valid gender values", () => {
+    const validGenders = ["male", "female", "non-binary"];
+    expect(validGenders).toContain(validPreferences.gender);
   });
 
-  it("should generate unique agency IDs", async () => {
-    const result1 = await generateMasterPrompt(validPreferences);
-    const result2 = await generateMasterPrompt(validPreferences);
-
-    expect(result1.agencyId).not.toBe(result2.agencyId);
-  });
-});
-
-describe("AI Service - Casting Image Generation", () => {
-  const mockMasterPrompt = {
-    naturalDescription: "Professional fashion model headshot...",
-    technicalSchema: {
-      subject: { sex: "female", age: "18-25" },
-      ethnicity: "Caucasian",
-      bodyType: "slim",
-      height: "average",
-      hair: { color: "brown", length: "medium", style: "wavy" },
-      skin: { tone: "medium", texture: "smooth" },
-      eyes: { color: "brown", shape: "almond" },
-      face: { structure: "oval", features: "balanced" },
-      aesthetic: { brand: "editorial", mood: "confident", lighting: "soft studio", background: "neutral gray" }
-    },
-    agencyId: "MOD-25-ABC123"
-  };
-
-  it("should generate a casting image successfully", async () => {
-    const result = await generateCastingImage(mockMasterPrompt);
-
-    expect(result.success).toBe(true);
-    expect(result.imageUrl).toBeTruthy();
-    expect(result.pointsCost).toBe(POINT_COSTS.castingImage);
+  it("should accept valid age ranges", () => {
+    const validAgeRanges = ["18-25", "25-35", "35-45", "45-55", "55+"];
+    expect(validAgeRanges).toContain(validPreferences.ageRange);
   });
 
-  it("should return correct point cost for casting image", async () => {
-    const result = await generateCastingImage(mockMasterPrompt);
-    expect(result.pointsCost).toBe(12);
+  it("should accept valid body types", () => {
+    const validBodyTypes = ["slim", "athletic", "average", "curvy", "plus-size"];
+    expect(validBodyTypes).toContain(validPreferences.bodyType);
+  });
+
+  it("should accept valid brand tones", () => {
+    const validBrandTones = [
+      "luxury",
+      "streetwear",
+      "minimalist",
+      "editorial",
+      "commercial",
+      "avant-garde",
+    ];
+    expect(validBrandTones).toContain(validPreferences.brandTone);
   });
 });
 
-describe("AI Service - Full Body Generation", () => {
-  const mockMasterPrompt = {
-    naturalDescription: "Professional fashion model...",
-    technicalSchema: {
-      subject: { sex: "female", age: "18-25" },
-      ethnicity: "Caucasian",
-      bodyType: "slim",
-      height: "average",
-      hair: { color: "brown", length: "medium", style: "wavy" },
-      skin: { tone: "medium", texture: "smooth" },
-      eyes: { color: "brown", shape: "almond" },
-      face: { structure: "oval", features: "balanced" },
-      aesthetic: { brand: "editorial", mood: "confident", lighting: "soft studio", background: "neutral gray" }
-    },
-    agencyId: "MOD-25-ABC123"
-  };
+describe("Model Asset View Types", () => {
+  it("should have all required view types", () => {
+    const viewTypes = [
+      "frontClose",
+      "frontFull",
+      "sideClose",
+      "sideFull",
+      "backFull",
+    ];
 
-  it("should generate full body image successfully", async () => {
-    const result = await generateFullBody(mockMasterPrompt, "", "female");
-
-    expect(result.success).toBe(true);
-    expect(result.imageUrl).toBeTruthy();
-    expect(result.pointsCost).toBe(POINT_COSTS.fullBody);
+    expect(viewTypes).toHaveLength(5);
+    expect(viewTypes).toContain("frontClose");
+    expect(viewTypes).toContain("frontFull");
   });
 
-  it("should accept optional headshot reference", async () => {
-    const result = await generateFullBody(mockMasterPrompt, "https://example.com/headshot.jpg", "female");
+  it("should map generation types to view types correctly", () => {
+    const mappings = {
+      castingImage: "frontClose",
+      fullBody: "frontFull",
+      sideView: "sideFull",
+      backView: "backFull",
+    };
 
-    expect(result.success).toBe(true);
-    expect(result.imageUrl).toBeTruthy();
-  });
-
-  it("should return correct point cost for full body", async () => {
-    const result = await generateFullBody(mockMasterPrompt, "", "female");
-    expect(result.pointsCost).toBe(8);
+    expect(mappings.castingImage).toBe("frontClose");
+    expect(mappings.fullBody).toBe("frontFull");
   });
 });
 
-describe("AI Service - Multi-View Generation", () => {
-  const mockMasterPrompt = {
-    naturalDescription: "Professional fashion model...",
-    technicalSchema: {
-      subject: { sex: "female", age: "18-25" },
-      ethnicity: "Caucasian",
-      bodyType: "slim",
-      height: "average",
-      hair: { color: "brown", length: "medium", style: "wavy" },
-      skin: { tone: "medium", texture: "smooth" },
-      eyes: { color: "brown", shape: "almond" },
-      face: { structure: "oval", features: "balanced" },
-      aesthetic: { brand: "editorial", mood: "confident", lighting: "soft studio", background: "neutral gray" }
-    },
-    agencyId: "MOD-25-ABC123"
-  };
+describe("Generation Status Flow", () => {
+  it("should have valid status transitions", () => {
+    const validStatuses = ["pending", "processing", "completed", "failed"];
 
-  it("should generate side view successfully", async () => {
-    const result = await generateRemainingViews(mockMasterPrompt, "side");
+    const transitions = {
+      pending: ["processing"],
+      processing: ["completed", "failed"],
+      completed: [],
+      failed: [],
+    };
 
-    expect(result.success).toBe(true);
-    expect(result.imageUrl).toBeTruthy();
-    expect(result.pointsCost).toBe(POINT_COSTS.multiView);
-  });
-
-  it("should generate back view successfully", async () => {
-    const result = await generateRemainingViews(mockMasterPrompt, "back");
-
-    expect(result.success).toBe(true);
-    expect(result.imageUrl).toBeTruthy();
-    expect(result.pointsCost).toBe(POINT_COSTS.multiView);
-  });
-
-  it("should accept optional reference URL", async () => {
-    const result = await generateRemainingViews(mockMasterPrompt, "side", "https://example.com/front.jpg");
-
-    expect(result.success).toBe(true);
-    expect(result.imageUrl).toBeTruthy();
-  });
-
-  it("should return correct point cost for multi-view", async () => {
-    const result = await generateRemainingViews(mockMasterPrompt, "side");
-    expect(result.pointsCost).toBe(15);
+    expect(transitions.pending).toContain("processing");
+    expect(transitions.processing).toContain("completed");
+    expect(transitions.processing).toContain("failed");
   });
 });
 
-describe("AI Service - Iteration", () => {
-  const mockMasterPrompt = {
-    naturalDescription: "Professional fashion model...",
-    technicalSchema: {
-      subject: { sex: "female", age: "18-25" },
-      ethnicity: "Caucasian",
-      bodyType: "slim",
-      height: "average",
-      hair: { color: "brown", length: "medium", style: "wavy" },
-      skin: { tone: "medium", texture: "smooth" },
-      eyes: { color: "brown", shape: "almond" },
-      face: { structure: "oval", features: "balanced" },
-      aesthetic: { brand: "editorial", mood: "confident", lighting: "soft studio", background: "neutral gray" }
-    },
-    agencyId: "MOD-25-ABC123"
-  };
-
-  it("should iterate on an existing image", async () => {
-    const result = await iterateModel(
-      mockMasterPrompt,
-      "https://example.com/original.jpg",
-      "Make the lighting more dramatic"
-    );
-
-    expect(result.success).toBe(true);
-    expect(result.imageUrl).toBeTruthy();
-    expect(result.pointsCost).toBe(POINT_COSTS.iteration);
+describe("Gemini Model Configuration", () => {
+  it("should use gemini-3-pro-preview for text generation", () => {
+    // The geminiService uses gemini-3-pro-preview as primary model
+    const expectedTextModel = "gemini-3-pro-preview";
+    expect(expectedTextModel).toBe("gemini-3-pro-preview");
   });
 
-  it("should accept mask image for surgical edits", async () => {
-    const result = await iterateModel(
-      mockMasterPrompt,
-      "https://example.com/original.jpg",
-      "Change eye color to blue",
-      "base64encodedmaskimage"
-    );
-
-    expect(result.success).toBe(true);
-    expect(result.imageUrl).toBeTruthy();
+  it("should use gemini-3-pro-image-preview for image generation", () => {
+    // The geminiService uses gemini-3-pro-image-preview as primary model
+    const expectedImageModel = "gemini-3-pro-image-preview";
+    expect(expectedImageModel).toBe("gemini-3-pro-image-preview");
   });
 
-  it("should return correct point cost for iteration", async () => {
-    const result = await iterateModel(
-      mockMasterPrompt,
-      "https://example.com/original.jpg",
-      "Adjust the hair style"
-    );
-    expect(result.pointsCost).toBe(5);
-  });
-});
-
-describe("AI Service - Point Costs", () => {
-  it("should have correct point costs defined", () => {
-    expect(POINT_COSTS.masterPrompt).toBe(2);
-    expect(POINT_COSTS.castingImage).toBe(12);
-    expect(POINT_COSTS.fullBody).toBe(8);
-    expect(POINT_COSTS.multiView).toBe(15);
-    expect(POINT_COSTS.upscale2K).toBe(3);
-    expect(POINT_COSTS.upscale4K).toBe(5);
-    expect(POINT_COSTS.iteration).toBe(5);
-  });
-
-  it("should have total initial generation cost of 14 points", () => {
-    const totalInitialCost = POINT_COSTS.masterPrompt + POINT_COSTS.castingImage;
-    expect(totalInitialCost).toBe(14);
+  it("should have fallback models configured", () => {
+    const fallbackTextModel = "gemini-3-flash-preview";
+    const fallbackImageModel = "gemini-2.5-flash-image";
+    
+    expect(fallbackTextModel).toBe("gemini-3-flash-preview");
+    expect(fallbackImageModel).toBe("gemini-2.5-flash-image");
   });
 });

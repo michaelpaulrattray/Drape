@@ -190,32 +190,17 @@ export const appRouter = router({
         name: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Check if user has enough points for master prompt generation
-        const userPoints = await getUserPoints(ctx.user.id);
-        if (!userPoints || userPoints.balance < POINT_COSTS.masterPrompt) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Insufficient points. Need ${POINT_COSTS.masterPrompt} points.`,
-          });
-        }
-
-        // Generate master prompt
+        // Generate master prompt (no point cost for this step)
         const masterPrompt = await generateMasterPrompt(input.preferences as ModelPreferences);
 
-        // Deduct points
-        await deductPoints(
-          ctx.user.id,
-          POINT_COSTS.masterPrompt,
-          "generation",
-          "Master prompt generation",
-          masterPrompt.agencyId
-        );
+        // Generate a unique agency ID
+        const agencyId = `AG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-        // Save model to database
+        // Save model to database (no point cost for master prompt generation)
         const result = await createModel({
           userId: ctx.user.id,
-          agencyId: masterPrompt.agencyId,
-          name: input.name || `Model ${masterPrompt.agencyId}`,
+          agencyId,
+          name: input.name || `Model ${agencyId}`,
           masterPrompt: masterPrompt.naturalDescription,
           technicalSchema: masterPrompt.technicalSchema,
           preferences: input.preferences,
@@ -232,10 +217,9 @@ export const appRouter = router({
         return {
           success: true,
           modelId: result.modelId,
-          agencyId: masterPrompt.agencyId,
+          agencyId,
           masterPrompt: masterPrompt.naturalDescription,
           technicalSchema: masterPrompt.technicalSchema,
-          pointsCost: POINT_COSTS.masterPrompt,
         };
       }),
 
@@ -338,21 +322,24 @@ export const appRouter = router({
 
         try {
           // Generate image
-          const result = await generateCastingImage({
-            naturalDescription: model.masterPrompt,
-            technicalSchema: model.technicalSchema as any,
-            agencyId: model.agencyId,
-          });
+          const castingBrand = (model.technicalSchema as any)?.context?.casting_for || 'Generic';
+          const result = await generateCastingImage(
+            model.masterPrompt,
+            {
+              castingBrand,
+              frame: 'HEADSHOT',
+            }
+          );
 
-          if (!result.success || !result.imageUrl) {
+          if (!result.imageUrl) {
             await updateGeneration(genResult.generationId!, {
               status: "failed",
-              errorMessage: result.error,
+              errorMessage: "No image generated",
               completedAt: new Date(),
             });
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
-              message: result.error || "Failed to generate image",
+              message: "Failed to generate image",
             });
           }
 
@@ -432,25 +419,29 @@ export const appRouter = router({
           const assets = await getModelAssets(input.modelId);
           const headshot = assets.find(a => a.viewType === "frontClose");
 
+          if (!headshot?.storageUrl) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "No headshot found for full body generation",
+            });
+          }
+
+          const gender = (model.preferences as any)?.gender || 'female';
           const result = await generateFullBody(
-            {
-              naturalDescription: model.masterPrompt,
-              technicalSchema: model.technicalSchema as any,
-              agencyId: model.agencyId,
-            },
-            headshot?.storageUrl || '',
-            (model.preferences as any)?.gender || 'female'
+            model.masterPrompt,
+            headshot.storageUrl,
+            gender
           );
 
-          if (!result.success || !result.imageUrl) {
+          if (!result.imageUrl) {
             await updateGeneration(genResult.generationId!, {
               status: "failed",
-              errorMessage: result.error,
+              errorMessage: "No image generated",
               completedAt: new Date(),
             });
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
-              message: result.error || "Failed to generate full body image",
+              message: "Failed to generate full body image",
             });
           }
 
@@ -527,25 +518,30 @@ export const appRouter = router({
           const assets = await getModelAssets(input.modelId);
           const reference = assets.find(a => a.viewType === "frontClose" || a.viewType === "frontFull");
 
+          if (!reference?.storageUrl) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "No reference image found for multi-view generation",
+            });
+          }
+
+          const gender = (model.technicalSchema as any)?.subject?.sex || 'female';
           const result = await generateRemainingViews(
-            {
-              naturalDescription: model.masterPrompt,
-              technicalSchema: model.technicalSchema as any,
-              agencyId: model.agencyId,
-            },
-            input.viewType,
-            reference?.storageUrl
+            model.masterPrompt,
+            reference.storageUrl,
+            gender,
+            input.viewType
           );
 
-          if (!result.success || !result.imageUrl) {
+          if (!result.imageUrl) {
             await updateGeneration(genResult.generationId!, {
               status: "failed",
-              errorMessage: result.error,
+              errorMessage: "No image generated",
               completedAt: new Date(),
             });
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
-              message: result.error || "Failed to generate view",
+              message: "Failed to generate view",
             });
           }
 
@@ -596,10 +592,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const userPoints = await getUserPoints(ctx.user.id);
-        if (!userPoints || userPoints.balance < POINT_COSTS.iteration) {
+        if (!userPoints || userPoints.balance < POINT_COSTS.iterate) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Insufficient points. Need ${POINT_COSTS.iteration} points.`,
+            message: `Insufficient points. Need ${POINT_COSTS.iterate} points.`,
           });
         }
 
@@ -622,36 +618,36 @@ export const appRouter = router({
           modelId: input.modelId,
           type: "iteration",
           status: "processing",
-          pointsCost: POINT_COSTS.iteration,
+          pointsCost: POINT_COSTS.iterate,
           metadata: { feedback: input.feedback, assetId: input.assetId },
         });
 
         try {
           const result = await iterateModel(
-            {
-              naturalDescription: model.masterPrompt,
-              technicalSchema: model.technicalSchema as any,
-              agencyId: model.agencyId,
-            },
+            model.masterPrompt,
             targetAsset.storageUrl,
-            input.feedback
+            input.feedback,
+            {
+              castingBrand: (model.technicalSchema as any)?.context?.casting_for,
+              frame: targetAsset.viewType === 'frontClose' ? 'HEADSHOT' : 'FULL_BODY',
+            }
           );
 
-          if (!result.success || !result.imageUrl) {
+          if (!result.imageUrl) {
             await updateGeneration(genResult.generationId!, {
               status: "failed",
-              errorMessage: result.error,
+              errorMessage: "No image generated",
               completedAt: new Date(),
             });
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
-              message: result.error || "Failed to iterate model",
+              message: "Failed to iterate model",
             });
           }
 
           await deductPoints(
             ctx.user.id,
-            POINT_COSTS.iteration,
+            POINT_COSTS.iterate,
             "generation",
             "Model iteration",
             `gen-${genResult.generationId}`
@@ -662,7 +658,7 @@ export const appRouter = router({
             viewType: targetAsset.viewType,
             resolution: "1K",
             storageUrl: result.imageUrl,
-            pointsCost: POINT_COSTS.iteration,
+            pointsCost: POINT_COSTS.iterate,
           });
 
           await updateGeneration(genResult.generationId!, {
@@ -674,7 +670,7 @@ export const appRouter = router({
           return {
             success: true,
             imageUrl: result.imageUrl,
-            pointsCost: POINT_COSTS.iteration,
+            pointsCost: POINT_COSTS.iterate,
           };
         } catch (error) {
           await updateGeneration(genResult.generationId!, {

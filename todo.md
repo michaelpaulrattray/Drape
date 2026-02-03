@@ -515,3 +515,22 @@
 - [ ] Add skin texture/finish descriptions
 - [ ] Add surgical edit protocols for iterations
 - [ ] Verify model versions match reference
+
+
+## Gemini API Direct Integration (Hard Requirement)
+
+### Requirements
+- [ ] Use user's GEMINI_API_KEY directly (not Forge API)
+- [ ] Use exact same models as reference app:
+  - Text: gemini-3-pro-preview (primary), gemini-3-flash-preview (fallback)
+  - Image: gemini-3-pro-image-preview (primary), gemini-2.5-flash-image (fallback)
+- [ ] Match reference app's API calls exactly
+
+### Implementation Tasks
+- [ ] Create geminiService.ts matching reference app exactly
+- [ ] Implement generateCastingSpec() with exact same prompts
+- [ ] Implement generateImage() with exact same parameters
+- [ ] Implement enhanceUserPrompt() with exact same logic
+- [ ] Update aiService.ts to use geminiService
+- [ ] Add SAFETY_SETTINGS to disable content filters
+- [ ] Test with real Gemini API calls

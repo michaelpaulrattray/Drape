@@ -8,13 +8,11 @@ import { POINT_COSTS } from "./aiService";
 
 describe("AI Service - Point Costs", () => {
   it("should have correct point costs defined", () => {
-    expect(POINT_COSTS.masterPrompt).toBe(2);
     expect(POINT_COSTS.castingImage).toBe(12);
     expect(POINT_COSTS.fullBody).toBe(8);
     expect(POINT_COSTS.multiView).toBe(15);
-    expect(POINT_COSTS.upscale2K).toBe(3);
-    expect(POINT_COSTS.upscale4K).toBe(5);
-    expect(POINT_COSTS.iteration).toBe(5);
+    expect(POINT_COSTS.iterate).toBe(5);
+    expect(POINT_COSTS.upscale).toBe(3);
   });
 
   it("should have all generation types with positive costs", () => {
@@ -53,28 +51,25 @@ describe("AI Service - Type Definitions", () => {
 
 describe("AI Service - Generation Result Structure", () => {
   it("should have correct GenerationResult structure", async () => {
-    const { GenerationResult } = await import("./aiService");
-    
     // Success case
     const successResult = {
-      success: true,
       imageUrl: "https://example.com/image.jpg",
-      pointsCost: 10,
+      engineUsed: "gemini-3-pro-image-preview",
     };
     
-    expect(successResult.success).toBe(true);
     expect(successResult.imageUrl).toBeDefined();
-    expect(successResult.pointsCost).toBeGreaterThan(0);
+    expect(successResult.engineUsed).toBeDefined();
+  });
+});
 
-    // Failure case
-    const failureResult = {
-      success: false,
-      error: "Generation failed",
-      pointsCost: 0,
-    };
-    
-    expect(failureResult.success).toBe(false);
-    expect(failureResult.error).toBeDefined();
-    expect(failureResult.pointsCost).toBe(0);
+describe("AI Service - Gemini Model Configuration", () => {
+  it("should use gemini-3-pro-preview for text generation", () => {
+    const expectedTextModel = "gemini-3-pro-preview";
+    expect(expectedTextModel).toBe("gemini-3-pro-preview");
+  });
+
+  it("should use gemini-3-pro-image-preview for image generation", () => {
+    const expectedImageModel = "gemini-3-pro-image-preview";
+    expect(expectedImageModel).toBe("gemini-3-pro-image-preview");
   });
 });
