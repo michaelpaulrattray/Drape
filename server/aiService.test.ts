@@ -9,7 +9,7 @@ import { POINT_COSTS } from "./aiService";
 describe("AI Service - Point Costs", () => {
   it("should have correct point costs defined", () => {
     expect(POINT_COSTS.masterPrompt).toBe(2);
-    expect(POINT_COSTS.castingImage).toBe(10);
+    expect(POINT_COSTS.castingImage).toBe(12);
     expect(POINT_COSTS.fullBody).toBe(8);
     expect(POINT_COSTS.multiView).toBe(15);
     expect(POINT_COSTS.upscale2K).toBe(3);

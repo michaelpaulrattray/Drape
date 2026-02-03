@@ -102,12 +102,12 @@ describe("Point Cost Calculations", () => {
       POINT_COSTS.fullBody +
       POINT_COSTS.multiView * 2;
 
-    expect(totalCost).toBe(2 + 10 + 8 + 15 * 2); // 50 points
+    expect(totalCost).toBe(2 + 12 + 8 + 15 * 2); // 52 points
   });
 
   it("should calculate cost for minimal model (just headshot)", () => {
     const minimalCost = POINT_COSTS.masterPrompt + POINT_COSTS.castingImage;
-    expect(minimalCost).toBe(12); // 2 + 10
+    expect(minimalCost).toBe(14); // 2 + 12
   });
 
   it("should calculate cost for iteration workflow", () => {
@@ -117,7 +117,7 @@ describe("Point Cost Calculations", () => {
       POINT_COSTS.castingImage +
       POINT_COSTS.iteration * 3;
 
-    expect(iterationCost).toBe(2 + 10 + 5 * 3); // 27 points
+    expect(iterationCost).toBe(2 + 12 + 5 * 3); // 29 points
   });
 });
 

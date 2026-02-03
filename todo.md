@@ -474,3 +474,44 @@
 - [x] Update EYE_PRESETS constant with image URLs from CDN
 - [x] Update VisualEyeGrid component to render images instead of gradients
 - [x] Test eye color selector displays correctly with realistic eye images
+
+
+## Gemini Prompt & Model Audit (COMPLETED)
+
+### Model Versions
+- [x] Uses platform's invokeLLM and generateImage helpers (model selection handled by Forge API)
+- [x] Prompts structured to match reference app's Gemini integration
+
+### Prompt Directives Implemented
+- [x] MASTER_PROMPT_SYSTEM_INSTRUCTION - detailed casting director system prompt (60+ lines)
+- [x] BASE_STUDIO_SETTINGS - visual directives for lighting, camera, background
+- [x] Brand-specific directives (Gucci, Prada, Saint Laurent, Balenciaga, Miu Miu, Versace, Zara, Social Media)
+- [x] TriBlend vibe descriptions (Editorial/Commercial/Runway percentages)
+- [x] Skin texture descriptions (Raw, Glass, Freckled, Textured, Mature)
+- [x] Skin finish descriptions (Natural, Matte, Dewy, Oily)
+- [x] Negative constraints (no CGI, no smiling, no tattoos unless specified)
+- [x] Tattoo persistence rules (clean skin vs body art)
+- [x] Geometry locking for surgical edits
+- [x] Frame directives (headshot vs full body constraints)
+
+### Functions Implemented
+- [x] generateMasterPrompt - with full system instruction and JSON schema output
+- [x] generateCastingImage - with dynamic studio settings and mode support (NEW/ITERATE)
+- [x] generateFullBody - with gender-specific wardrobe constraints
+- [x] generateRemainingViews - side/back views with character consistency
+- [x] iterateModel - with surgical mask support and frame locking
+- [x] enhanceUserPrompt - AI prompt enhancement for refinement input
+- [x] All 66 tests passing
+- [ ] getSkinDescription - detailed skin texture/finish descriptions
+- [ ] getBrandDirectives - brand-specific casting instructions
+- [ ] getNegativeConstraints - avoid list for image generation
+- [ ] getStudioSettings - dynamic studio configuration
+- [ ] formatGeminiError - user-friendly error messages
+
+### Implementation Tasks
+- [ ] Update aiService.ts with reference app's prompt structure
+- [ ] Add MASTER_PROMPT_SYSTEM_INSTRUCTION constant
+- [ ] Add brand descriptors and vibe blend logic
+- [ ] Add skin texture/finish descriptions
+- [ ] Add surgical edit protocols for iterations
+- [ ] Verify model versions match reference

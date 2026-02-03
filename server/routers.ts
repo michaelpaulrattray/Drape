@@ -216,7 +216,7 @@ export const appRouter = router({
           userId: ctx.user.id,
           agencyId: masterPrompt.agencyId,
           name: input.name || `Model ${masterPrompt.agencyId}`,
-          masterPrompt: masterPrompt.fullPrompt,
+          masterPrompt: masterPrompt.naturalDescription,
           technicalSchema: masterPrompt.technicalSchema,
           preferences: input.preferences,
           status: "draft",
@@ -233,7 +233,7 @@ export const appRouter = router({
           success: true,
           modelId: result.modelId,
           agencyId: masterPrompt.agencyId,
-          masterPrompt: masterPrompt.fullPrompt,
+          masterPrompt: masterPrompt.naturalDescription,
           technicalSchema: masterPrompt.technicalSchema,
           pointsCost: POINT_COSTS.masterPrompt,
         };
@@ -339,7 +339,7 @@ export const appRouter = router({
         try {
           // Generate image
           const result = await generateCastingImage({
-            fullPrompt: model.masterPrompt,
+            naturalDescription: model.masterPrompt,
             technicalSchema: model.technicalSchema as any,
             agencyId: model.agencyId,
           });
@@ -434,11 +434,12 @@ export const appRouter = router({
 
           const result = await generateFullBody(
             {
-              fullPrompt: model.masterPrompt,
+              naturalDescription: model.masterPrompt,
               technicalSchema: model.technicalSchema as any,
               agencyId: model.agencyId,
             },
-            headshot?.storageUrl
+            headshot?.storageUrl || '',
+            (model.preferences as any)?.gender || 'female'
           );
 
           if (!result.success || !result.imageUrl) {
@@ -528,7 +529,7 @@ export const appRouter = router({
 
           const result = await generateRemainingViews(
             {
-              fullPrompt: model.masterPrompt,
+              naturalDescription: model.masterPrompt,
               technicalSchema: model.technicalSchema as any,
               agencyId: model.agencyId,
             },
@@ -628,7 +629,7 @@ export const appRouter = router({
         try {
           const result = await iterateModel(
             {
-              fullPrompt: model.masterPrompt,
+              naturalDescription: model.masterPrompt,
               technicalSchema: model.technicalSchema as any,
               agencyId: model.agencyId,
             },

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 // Mock the LLM and image generation services
 vi.mock("./_core/llm", () => ({
@@ -6,18 +6,33 @@ vi.mock("./_core/llm", () => ({
     choices: [{
       message: {
         content: JSON.stringify({
-          fullPrompt: "Professional fashion model headshot. A confident female model with medium brown hair...",
-          technicalSchema: {
-            gender: "female",
-            age: "18-25",
-            ethnicity: "Caucasian",
-            bodyType: "slim",
-            height: "average",
-            hair: { color: "brown", length: "medium", style: "wavy" },
-            skin: { tone: "medium", texture: "smooth" },
-            eyes: { color: "brown", shape: "almond" },
-            face: { structure: "oval", features: "balanced" },
-            aesthetic: { brand: "editorial", mood: "confident", lighting: "soft studio", background: "neutral gray" }
+          natural_description: "Professional fashion model headshot. A confident female model with medium brown hair...",
+          technical_schema: {
+            subject: { 
+              sex: "female", 
+              age: "18-25",
+              ethnicity: "Caucasian",
+              skin_tone: "medium",
+              hair_style: "wavy",
+              hair_color: "brown",
+              eye_color: "brown"
+            },
+            facial_features: {
+              eye_shape: "almond",
+              face_shape: "oval",
+              jawline: "defined",
+              cheekbones: "high",
+              cheeks_shape: "natural",
+              nose_shape: "straight",
+              lips_shape: "full",
+              eyebrows: "natural",
+              freckles: "none"
+            },
+            context: {
+              tone: "editorial",
+              casting_for: "Gucci",
+              wardrobe: "bare skin"
+            }
           }
         })
       }
@@ -61,24 +76,19 @@ describe("AI Service - Master Prompt Generation", () => {
   it("should generate a master prompt with all required fields", async () => {
     const result = await generateMasterPrompt(validPreferences);
 
-    expect(result).toHaveProperty("fullPrompt");
+    expect(result).toHaveProperty("naturalDescription");
     expect(result).toHaveProperty("technicalSchema");
     expect(result).toHaveProperty("agencyId");
-    expect(result.fullPrompt).toBeTruthy();
+    expect(result.naturalDescription).toBeTruthy();
     expect(result.agencyId).toMatch(/^MOD-\d{2}-[A-Z0-9]{6}$/);
   });
 
-  it("should include technical schema with all sections", async () => {
+  it("should include technical schema with subject section", async () => {
     const result = await generateMasterPrompt(validPreferences);
 
-    expect(result.technicalSchema).toHaveProperty("gender");
-    expect(result.technicalSchema).toHaveProperty("age");
-    expect(result.technicalSchema).toHaveProperty("ethnicity");
-    expect(result.technicalSchema).toHaveProperty("hair");
-    expect(result.technicalSchema).toHaveProperty("skin");
-    expect(result.technicalSchema).toHaveProperty("eyes");
-    expect(result.technicalSchema).toHaveProperty("face");
-    expect(result.technicalSchema).toHaveProperty("aesthetic");
+    expect(result.technicalSchema).toHaveProperty("subject");
+    expect(result.technicalSchema.subject).toHaveProperty("sex");
+    expect(result.technicalSchema.subject).toHaveProperty("age");
   });
 
   it("should generate unique agency IDs", async () => {
@@ -91,10 +101,9 @@ describe("AI Service - Master Prompt Generation", () => {
 
 describe("AI Service - Casting Image Generation", () => {
   const mockMasterPrompt = {
-    fullPrompt: "Professional fashion model headshot...",
+    naturalDescription: "Professional fashion model headshot...",
     technicalSchema: {
-      gender: "female",
-      age: "18-25",
+      subject: { sex: "female", age: "18-25" },
       ethnicity: "Caucasian",
       bodyType: "slim",
       height: "average",
@@ -117,16 +126,15 @@ describe("AI Service - Casting Image Generation", () => {
 
   it("should return correct point cost for casting image", async () => {
     const result = await generateCastingImage(mockMasterPrompt);
-    expect(result.pointsCost).toBe(10);
+    expect(result.pointsCost).toBe(12);
   });
 });
 
 describe("AI Service - Full Body Generation", () => {
   const mockMasterPrompt = {
-    fullPrompt: "Professional fashion model...",
+    naturalDescription: "Professional fashion model...",
     technicalSchema: {
-      gender: "female",
-      age: "18-25",
+      subject: { sex: "female", age: "18-25" },
       ethnicity: "Caucasian",
       bodyType: "slim",
       height: "average",
@@ -140,7 +148,7 @@ describe("AI Service - Full Body Generation", () => {
   };
 
   it("should generate full body image successfully", async () => {
-    const result = await generateFullBody(mockMasterPrompt);
+    const result = await generateFullBody(mockMasterPrompt, "", "female");
 
     expect(result.success).toBe(true);
     expect(result.imageUrl).toBeTruthy();
@@ -148,24 +156,23 @@ describe("AI Service - Full Body Generation", () => {
   });
 
   it("should accept optional headshot reference", async () => {
-    const result = await generateFullBody(mockMasterPrompt, "https://example.com/headshot.jpg");
+    const result = await generateFullBody(mockMasterPrompt, "https://example.com/headshot.jpg", "female");
 
     expect(result.success).toBe(true);
     expect(result.imageUrl).toBeTruthy();
   });
 
   it("should return correct point cost for full body", async () => {
-    const result = await generateFullBody(mockMasterPrompt);
+    const result = await generateFullBody(mockMasterPrompt, "", "female");
     expect(result.pointsCost).toBe(8);
   });
 });
 
 describe("AI Service - Multi-View Generation", () => {
   const mockMasterPrompt = {
-    fullPrompt: "Professional fashion model...",
+    naturalDescription: "Professional fashion model...",
     technicalSchema: {
-      gender: "female",
-      age: "18-25",
+      subject: { sex: "female", age: "18-25" },
       ethnicity: "Caucasian",
       bodyType: "slim",
       height: "average",
@@ -198,6 +205,7 @@ describe("AI Service - Multi-View Generation", () => {
     const result = await generateRemainingViews(mockMasterPrompt, "side", "https://example.com/front.jpg");
 
     expect(result.success).toBe(true);
+    expect(result.imageUrl).toBeTruthy();
   });
 
   it("should return correct point cost for multi-view", async () => {
@@ -206,12 +214,11 @@ describe("AI Service - Multi-View Generation", () => {
   });
 });
 
-describe("AI Service - Model Iteration", () => {
+describe("AI Service - Iteration", () => {
   const mockMasterPrompt = {
-    fullPrompt: "Professional fashion model...",
+    naturalDescription: "Professional fashion model...",
     technicalSchema: {
-      gender: "female",
-      age: "18-25",
+      subject: { sex: "female", age: "18-25" },
       ethnicity: "Caucasian",
       bodyType: "slim",
       height: "average",
@@ -224,10 +231,10 @@ describe("AI Service - Model Iteration", () => {
     agencyId: "MOD-25-ABC123"
   };
 
-  it("should iterate on existing model with feedback", async () => {
+  it("should iterate on an existing image", async () => {
     const result = await iterateModel(
       mockMasterPrompt,
-      "https://example.com/current.jpg",
+      "https://example.com/original.jpg",
       "Make the lighting more dramatic"
     );
 
@@ -236,11 +243,23 @@ describe("AI Service - Model Iteration", () => {
     expect(result.pointsCost).toBe(POINT_COSTS.iteration);
   });
 
+  it("should accept mask image for surgical edits", async () => {
+    const result = await iterateModel(
+      mockMasterPrompt,
+      "https://example.com/original.jpg",
+      "Change eye color to blue",
+      "base64encodedmaskimage"
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.imageUrl).toBeTruthy();
+  });
+
   it("should return correct point cost for iteration", async () => {
     const result = await iterateModel(
       mockMasterPrompt,
-      "https://example.com/current.jpg",
-      "Add more contrast"
+      "https://example.com/original.jpg",
+      "Adjust the hair style"
     );
     expect(result.pointsCost).toBe(5);
   });
@@ -249,7 +268,7 @@ describe("AI Service - Model Iteration", () => {
 describe("AI Service - Point Costs", () => {
   it("should have correct point costs defined", () => {
     expect(POINT_COSTS.masterPrompt).toBe(2);
-    expect(POINT_COSTS.castingImage).toBe(10);
+    expect(POINT_COSTS.castingImage).toBe(12);
     expect(POINT_COSTS.fullBody).toBe(8);
     expect(POINT_COSTS.multiView).toBe(15);
     expect(POINT_COSTS.upscale2K).toBe(3);
@@ -257,8 +276,8 @@ describe("AI Service - Point Costs", () => {
     expect(POINT_COSTS.iteration).toBe(5);
   });
 
-  it("should have total initial generation cost of 12 points", () => {
+  it("should have total initial generation cost of 14 points", () => {
     const totalInitialCost = POINT_COSTS.masterPrompt + POINT_COSTS.castingImage;
-    expect(totalInitialCost).toBe(12);
+    expect(totalInitialCost).toBe(14);
   });
 });
