@@ -660,3 +660,21 @@
 - [x] Check reference app's export ID generation logic (MOD-YY-XXXXXX format)
 - [x] Implement unique export ID for each export action (generateExportId helper)
 - [x] Export ID included in ZIP filename and PDF document
+
+
+## Fix Disconnected Features - COMPLETED
+
+### Reference Image in Generation
+- [x] Pass reference image from frontend to backend in castingImage endpoint
+- [x] Update routers.ts to accept and use referenceImage parameter
+- [x] Verify reference image is used in AI generation
+
+### Upscale on Export
+- [x] Create upscale tRPC endpoint in routers.ts (generation.upscale)
+- [x] Integrate upscale with export flow based on resolution selection
+- [x] Support 1K (original), 2K, and 4K resolutions
+
+### Back View Generation
+- [x] Fix workflow to generate both side AND back views
+- [x] Update Next Stage flow to include back view generation (4 steps now)
+- [x] Ensure all 4 views are generated before export

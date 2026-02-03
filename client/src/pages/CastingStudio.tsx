@@ -796,6 +796,7 @@ export default function CastingStudio() {
   const generateFullBodyMutation = trpc.generation.fullBody.useMutation();
   const generateMultiViewMutation = trpc.generation.multiView.useMutation();
   const iterateMutation = trpc.generation.iterate.useMutation();
+  const upscaleMutation = trpc.generation.upscale.useMutation();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -1126,6 +1127,7 @@ export default function CastingStudio() {
       setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot..." }));
       const imageResult = await generateCastingMutation.mutateAsync({
         modelId: modelResult.modelId!,
+        referenceImage: prefs.referenceImage,
       });
 
       if (imageResult.success && imageResult.imageUrl) {
@@ -1384,18 +1386,41 @@ export default function CastingStudio() {
         backFull: '05_Full_Body_Rear.png'
       };
 
-      // Add images to ZIP (using current resolution - upscaling would require backend call)
+      // Process images - upscale if needed, then add to ZIP
       for (const asset of currentAssets) {
         const filename = viewFileMap[asset.viewType] || `${asset.viewType}.png`;
-        setGenState(prev => ({ ...prev, currentStep: `Adding ${asset.viewType}...` }));
         
-        // Fetch the image and convert to base64
         try {
-          const response = await fetch(asset.storageUrl);
+          let imageUrl = asset.storageUrl;
+          
+          // Upscale if resolution is 2K or 4K
+          if (exportRes !== '1K') {
+            setGenState(prev => ({ ...prev, currentStep: `Upscaling ${asset.viewType} to ${exportRes}...` }));
+            const upscaleResult = await upscaleMutation.mutateAsync({
+              imageUrl: asset.storageUrl,
+              resolution: exportRes,
+            });
+            if (upscaleResult.success && upscaleResult.imageUrl) {
+              imageUrl = upscaleResult.imageUrl;
+            }
+          } else {
+            setGenState(prev => ({ ...prev, currentStep: `Adding ${asset.viewType}...` }));
+          }
+          
+          // Fetch the image and add to ZIP
+          const response = await fetch(imageUrl);
           const blob = await response.blob();
           zip.file(filename, blob);
         } catch (e) {
-          console.error(`Failed to fetch ${asset.viewType}:`, e);
+          console.error(`Failed to process ${asset.viewType}:`, e);
+          // Fall back to original image if upscale fails
+          try {
+            const response = await fetch(asset.storageUrl);
+            const blob = await response.blob();
+            zip.file(filename, blob);
+          } catch (fallbackError) {
+            console.error(`Failed to fetch fallback ${asset.viewType}:`, fallbackError);
+          }
         }
       }
 
@@ -1615,24 +1640,33 @@ export default function CastingStudio() {
         label: 'Generate Full Body', 
         action: handleGenerateFullBody,
         step: 2,
-        total: 3,
+        total: 4,
       };
     }
     
     if (!currentAssets.some(a => a.viewType === 'sideClose')) {
       return { 
-        label: 'Generate Angles', 
+        label: 'Generate Side View', 
         action: () => handleGenerateMultiView('side'),
         step: 3,
-        total: 3,
+        total: 4,
+      };
+    }
+    
+    if (!currentAssets.some(a => a.viewType === 'backFull')) {
+      return { 
+        label: 'Generate Back View', 
+        action: () => handleGenerateMultiView('back'),
+        step: 4,
+        total: 4,
       };
     }
 
     return {
       label: 'Export Character Pack',
       action: () => setShowExportModal(true),
-      step: 4, 
-      total: 3,
+      step: 5, 
+      total: 4,
     };
   }, [currentAssets, genState.isGenerating]);
 

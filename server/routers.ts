@@ -13,7 +13,7 @@ import {
 import { storagePut, storageDelete } from "./storage";
 import {
   generateMasterPrompt, generateCastingImage, generateFullBody, generateRemainingViews,
-  iterateModel, enhanceUserPrompt, POINT_COSTS, ModelPreferences
+  iterateModel, enhanceUserPrompt, upscaleImage, POINT_COSTS, ModelPreferences, ImageResolution
 } from "./aiService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -335,7 +335,10 @@ export const appRouter = router({
   generation: router({
     // Generate casting image (headshot)
     castingImage: protectedProcedure
-      .input(z.object({ modelId: z.number() }))
+      .input(z.object({ 
+        modelId: z.number(),
+        referenceImage: z.string().optional(),
+      }))
       .mutation(async ({ ctx, input }) => {
         // Check points
         const userPoints = await getUserPoints(ctx.user.id);
@@ -372,6 +375,7 @@ export const appRouter = router({
             {
               castingBrand,
               frame: 'HEADSHOT',
+              referenceImage: input.referenceImage,
             }
           );
 
@@ -758,6 +762,56 @@ export const appRouter = router({
 
     // Get point costs for all generation types
     costs: publicProcedure.query(() => POINT_COSTS),
+
+    // Upscale existing image
+    upscale: protectedProcedure
+      .input(z.object({
+        imageUrl: z.string(),
+        resolution: z.enum(['1K', '2K', '4K']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Check points for upscaling (use iterate cost)
+        const userPoints = await getUserPoints(ctx.user.id);
+        const upscaleCost = POINT_COSTS.iterate;
+        if (!userPoints || userPoints.balance < upscaleCost) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient points. Need ${upscaleCost} points.`,
+          });
+        }
+
+        try {
+          // Map resolution string to ImageResolution enum
+          const resolutionMap: Record<string, ImageResolution> = {
+            '1K': ImageResolution.STANDARD,
+            '2K': ImageResolution.HIGH,
+            '4K': ImageResolution.ULTRA,
+          };
+          const targetRes = resolutionMap[input.resolution] || ImageResolution.STANDARD;
+
+          const result = await upscaleImage(input.imageUrl, targetRes);
+
+          // Deduct points
+          await deductPoints(
+            ctx.user.id,
+            upscaleCost,
+            "generation",
+            `Upscale to ${input.resolution}`,
+            `upscale-${Date.now()}`
+          );
+
+          return {
+            success: true,
+            imageUrl: result.imageUrl,
+          };
+        } catch (error) {
+          console.error("[Upscale] Error:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to upscale image",
+          });
+        }
+      }),
 
     // Enhance user prompt with AI
     enhance: protectedProcedure
