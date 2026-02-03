@@ -913,6 +913,78 @@ export const generateRemainingViews = async (
 };
 
 /**
+ * Generate a single view (side, walk, or back)
+ * This generates only the requested view instead of all 3 at once
+ */
+export const generateSingleView = async (
+  masterPrompt: string,
+  sourceImageUrl: string,
+  gender: string,
+  viewType: 'side' | 'walk' | 'back'
+): Promise<{ imageUrl: string; engineUsed: string }> => {
+  const ai = getAiClient();
+  const mimeType = extractMimeType(sourceImageUrl);
+  const base64Data = sourceImageUrl.replace(/^data:.*?;base64,/, "");
+
+  const dynamicStudioSettings = getStudioSettings(masterPrompt);
+
+  const normalizedGender = gender.trim().toLowerCase();
+  const wardrobeConstraint = normalizedGender === 'male'
+    ? "Attire: Simple black boxer briefs. BARE CHEST."
+    : "Attire: Minimalist black activewear.";
+
+  // Map viewType to the appropriate prompt
+  const viewPrompts: Record<string, string> = {
+    'side': `SIDE PROFILE PORTRAIT. Head and shoulders only. Facing Right. ${wardrobeConstraint} Same subject.`,
+    'walk': `FULL BODY SIDE PROFILE. Walking motion. Facing Right. ${wardrobeConstraint} Same subject.`,
+    'back': `FULL BODY FROM BEHIND. Walking away. ${wardrobeConstraint} Same subject. No new back tattoos.`
+  };
+
+  const prompt = viewPrompts[viewType];
+  const fullPrompt = `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${prompt}\n${dynamicStudioSettings}\nOriginal Spec: ${masterPrompt}`;
+
+  const executeViewGen = async (model: string) => {
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: {
+        parts: [
+          { inlineData: { data: base64Data, mimeType: mimeType } },
+          { text: fullPrompt }
+        ]
+      },
+      config: {
+        imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
+        safetySettings: SAFETY_SETTINGS
+      }
+    });
+
+    const imgPart = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+    if (imgPart?.inlineData) {
+      return {
+        imageUrl: `data:image/png;base64,${imgPart.inlineData.data}`,
+        engineUsed: model
+      };
+    }
+    throw new Error("No image generated");
+  };
+
+  try {
+    // Try primary model first
+    try {
+      return await executeViewGen('gemini-3-pro-image-preview');
+    } catch (e: any) {
+      // Fallback to flash model if pro fails
+      if (e.status === 403 || e.status === 404 || e.message?.includes('403') || e.message?.includes('not found')) {
+        return await executeViewGen('gemini-2.5-flash-image');
+      }
+      throw e;
+    }
+  } catch (error) {
+    throw new Error(formatGeminiError(error));
+  }
+};
+
+/**
  * Upscale existing image
  */
 export const upscaleExistingImage = async (

@@ -841,3 +841,10 @@
 - [x] Reduce perceived delay with instant visual feedback (animate-in fade-in)
 - [x] Add subtle animations/transitions for state changes
 - [x] Show estimated time remaining for generation operations (ElapsedTimeDisplay)
+
+
+## Bug Fix: Multi-View Generation (Side/Walk/Back)
+- [x] Analyze original app's multi-view generation logic
+- [x] Compare with current implementation - found issue: was generating all 3 views but only using 1
+- [x] Fix: Created generateSingleView function that generates only the requested view
+- [x] Updated aiService to use new single view generation

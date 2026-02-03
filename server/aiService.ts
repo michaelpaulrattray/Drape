@@ -199,7 +199,8 @@ export async function generateFullBody(
 }
 
 /**
- * Generate remaining views (side, back)
+ * Generate a single view (side, walk, or back)
+ * This generates only the requested view instead of all 3 at once
  */
 export async function generateRemainingViews(
   masterPrompt: string,
@@ -216,28 +217,15 @@ export async function generateRemainingViews(
     sourceBase64 = `data:image/png;base64,${base64}`;
   }
 
-  const views = await gemini.generateRemainingViews(masterPrompt, sourceBase64, gender);
-
-  // Get the requested view
-  let base64Result: string | undefined;
-  if (viewType === 'side') {
-    base64Result = views.sideClose;
-  } else if (viewType === 'walk') {
-    base64Result = views.sideFull;
-  } else {
-    base64Result = views.backFull;
-  }
-
-  if (!base64Result) {
-    throw new Error(`Failed to generate ${viewType} view`);
-  }
+  // Use the new single view generation function
+  const result = await gemini.generateSingleView(masterPrompt, sourceBase64, gender, viewType);
 
   // Upload base64 to S3 for persistent storage
-  const s3Url = await uploadBase64ToS3(base64Result, viewType);
+  const s3Url = await uploadBase64ToS3(result.imageUrl, viewType);
 
   return {
     imageUrl: s3Url,
-    engineUsed: 'gemini-3-pro-image-preview',
+    engineUsed: result.engineUsed,
   };
 }
 
