@@ -203,3 +203,9 @@
 - [x] Include account settings (notifications, preferences)
 - [x] Remove inline edit functionality from profile header
 - [x] Style modal with glass morphism to match dashboard aesthetic
+
+## Dashboard Button Styling Update
+- [x] Change main buttons to white pill-shaped (rounded-full)
+- [x] Use white/light backgrounds instead of orange for primary buttons
+- [x] Keep orange only for small accents (dots, indicators, hover borders)
+- [x] Apply consistent pill shape across all dashboard buttons

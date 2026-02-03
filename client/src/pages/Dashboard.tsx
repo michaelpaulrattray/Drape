@@ -282,9 +282,9 @@ export default function Dashboard() {
             />
             <button 
               onClick={() => bannerInputRef.current?.click()}
-              className="absolute top-6 right-10 px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white/10 backdrop-blur-sm"
+              className="absolute top-6 right-10 px-3 py-2 rounded-full bg-white text-neutral-900 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-neutral-100"
             >
-              <Upload className="w-3.5 h-3.5" />
+              <Upload className="w-3.5 h-3.5 text-orange-500" />
               CHANGE COVER
             </button>
           </div>
@@ -334,8 +334,8 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="flex items-center gap-3 pb-2">
-                <button className="group px-5 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40">
-                  <Sparkles className="w-4 h-4" />
+                <button className="group px-5 py-2.5 rounded-full bg-white text-neutral-900 text-sm font-medium hover:bg-neutral-100 transition-all flex items-center gap-2 shadow-lg shadow-white/10">
+                  <Sparkles className="w-4 h-4 text-orange-500" />
                   Get Credits
                 </button>
                 <button className="p-2.5 rounded-full bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors backdrop-blur-sm">
@@ -361,9 +361,9 @@ export default function Dashboard() {
                 </div>
                 <p className="text-sm text-neutral-500 font-mono pl-12">// Your latest creations</p>
               </div>
-              <button className="flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-orange-400 transition-colors group px-4 py-2 rounded-md bg-white/5 border border-white/10 hover:border-orange-500/30">
+              <button className="flex items-center gap-2 text-sm font-medium text-neutral-900 hover:text-black transition-colors group px-4 py-2 rounded-full bg-white hover:bg-neutral-100">
                 View all
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1 text-orange-500" />
               </button>
             </div>
 
