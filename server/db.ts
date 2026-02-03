@@ -343,9 +343,21 @@ export async function createModel(data: InsertModel): Promise<{ success: boolean
   }
 
   try {
-    const result = await db.insert(models).values(data);
-    // Get the inserted model ID
-    const inserted = await db.select().from(models).where(eq(models.agencyId, data.agencyId)).limit(1);
+    // Insert the model (agencyId is null for drafts, assigned on export/minting)
+    const result = await db.insert(models).values({
+      ...data,
+      status: 'draft', // All new models start as drafts
+    });
+    
+    // Get the inserted model ID using the auto-increment ID
+    // We need to query by the unique combination of userId + createdAt (most recent)
+    const inserted = await db
+      .select()
+      .from(models)
+      .where(eq(models.userId, data.userId))
+      .orderBy(desc(models.createdAt))
+      .limit(1);
+    
     return { success: true, modelId: inserted[0]?.id };
   } catch (error) {
     console.error("[Database] Failed to create model:", error);
@@ -396,6 +408,43 @@ export async function updateModel(
   } catch (error) {
     console.error("[Database] Failed to update model:", error);
     return { success: false, error: "Failed to update model" };
+  }
+}
+
+/**
+ * Mint a model on export - assigns agencyId and locks the identity
+ * This is called when a user exports their model for the first time
+ */
+export async function mintModel(
+  modelId: number,
+  agencyId: string
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    // Check if model is already minted
+    const existing = await db.select().from(models).where(eq(models.id, modelId)).limit(1);
+    if (existing.length === 0) {
+      return { success: false, error: "Model not found" };
+    }
+    if (existing[0].agencyId) {
+      return { success: false, error: "Model already minted" };
+    }
+
+    // Mint the model: assign agencyId, set status to active, record mint time
+    await db.update(models).set({
+      agencyId,
+      status: 'active',
+      mintedAt: new Date(),
+    }).where(eq(models.id, modelId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to mint model:", error);
+    return { success: false, error: "Failed to mint model" };
   }
 }
 

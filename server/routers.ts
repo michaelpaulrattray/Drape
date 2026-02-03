@@ -4,11 +4,11 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { 
   getUserPoints, getPointTransactions, deductPoints, addPoints, addToWaitlist, getWaitlistCount,
-  createModel, getModelById, getUserModels, updateModel, deleteModel,
+  createModel, getModelById, getUserModels, updateModel, deleteModel, mintModel,
   createModelAsset, getModelAssets,
   createGeneration, updateGeneration, getUserGenerations,
   updateUserProfile, getUserById, getUserStorageInfo, updateUserStorageUsed,
-  deleteModelWithAssetKeys
+  deleteModelWithAssetKeys, getModelByAgencyId
 } from "./db";
 import { storagePut, storageDelete } from "./storage";
 import {
@@ -237,14 +237,12 @@ export const appRouter = router({
         // Debug: Log generated master prompt
         console.log('[models.create] Generated master prompt:', masterPrompt.naturalDescription?.substring(0, 500) + '...');
 
-        // Generate a unique agency ID
-        const agencyId = `AG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-        // Save model to database (no point cost for master prompt generation)
+        // Save model to database as draft (no agencyId until export/minting)
+        // agencyId will be assigned when user exports the model (minting)
         const result = await createModel({
           userId: ctx.user.id,
-          agencyId,
-          name: input.name || `Model ${agencyId}`,
+          // agencyId is null for drafts - will be minted on export
+          name: input.name || `Draft Model`,
           masterPrompt: masterPrompt.naturalDescription,
           technicalSchema: masterPrompt.technicalSchema,
           preferences: input.preferences,
@@ -261,7 +259,7 @@ export const appRouter = router({
         return {
           success: true,
           modelId: result.modelId,
-          agencyId,
+          agencyId: null, // Not minted yet - will be assigned on export
           masterPrompt: masterPrompt.naturalDescription,
           technicalSchema: masterPrompt.technicalSchema,
         };
@@ -834,6 +832,56 @@ export const appRouter = router({
           };
         }
       }),
+
+    // Mint model on export - assigns agencyId and locks identity
+    mint: protectedProcedure
+      .input(z.object({
+        modelId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get the model
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Check if already minted
+        if (model.agencyId) {
+          return {
+            success: true,
+            agencyId: model.agencyId,
+            alreadyMinted: true,
+          };
+        }
+
+        // Generate unique agency ID (MOD-YY-XXXXXX format)
+        const chars = '0123456789ABCDEF';
+        let hash = '';
+        for (let i = 0; i < 6; i++) {
+          hash += chars[Math.floor(Math.random() * 16)];
+        }
+        const agencyId = `MOD-${new Date().getFullYear().toString().slice(-2)}-${hash}`;
+
+        // Mint the model
+        const result = await mintModel(input.modelId, agencyId);
+        if (!result.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: result.error || "Failed to mint model",
+          });
+        }
+
+        console.log(`[Mint] Model ${input.modelId} minted with agencyId: ${agencyId}`);
+
+        return {
+          success: true,
+          agencyId,
+          alreadyMinted: false,
+        };
+      }),
   }),
 
   // ============ User Profile ============
@@ -1002,6 +1050,77 @@ export const appRouter = router({
         percentage: Math.round((info.used / info.limit) * 100),
       };
     }),
+  }),
+
+  // ============ Model Identity Registry (Cross-App) ============
+  // This router provides public endpoints for looking up minted model identities
+  // Only models that have been exported (minted) are accessible via these endpoints
+  registry: router({
+    // Public lookup by agencyId - for cross-app model retrieval
+    // Only returns minted (active) models with agencyId assigned
+    lookup: publicProcedure
+      .input(z.object({
+        agencyId: z.string().regex(/^MOD-\d{2}-[A-F0-9]{6}$/, "Invalid Model ID format"),
+      }))
+      .query(async ({ input }) => {
+        const model = await getModelByAgencyId(input.agencyId);
+        
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+
+        // Only return minted models (status = 'active')
+        if (model.status !== 'active') {
+          throw new TRPCError({ 
+            code: "NOT_FOUND", 
+            message: "Model not found or not yet minted" 
+          });
+        }
+
+        // Get associated assets
+        const assets = await getModelAssets(model.id);
+
+        // Return public identity bundle (no internal IDs or user info)
+        return {
+          agencyId: model.agencyId,
+          name: model.name,
+          masterPrompt: model.masterPrompt,
+          technicalSchema: model.technicalSchema,
+          preferences: model.preferences,
+          mintedAt: model.mintedAt,
+          assets: assets.map(a => ({
+            viewType: a.viewType,
+            resolution: a.resolution,
+            storageUrl: a.storageUrl,
+          })),
+        };
+      }),
+
+    // Verify if a model ID exists and is minted
+    verify: publicProcedure
+      .input(z.object({
+        agencyId: z.string(),
+      }))
+      .query(async ({ input }) => {
+        // Validate format first
+        const formatValid = /^MOD-\d{2}-[A-F0-9]{6}$/.test(input.agencyId);
+        if (!formatValid) {
+          return { valid: false, exists: false, minted: false };
+        }
+
+        const model = await getModelByAgencyId(input.agencyId);
+        
+        if (!model) {
+          return { valid: true, exists: false, minted: false };
+        }
+
+        return {
+          valid: true,
+          exists: true,
+          minted: model.status === 'active',
+          mintedAt: model.status === 'active' ? model.mintedAt : null,
+        };
+      }),
   }),
 });
 

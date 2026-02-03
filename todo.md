@@ -678,3 +678,30 @@
 - [x] Fix workflow to generate both side AND back views
 - [x] Update Next Stage flow to include back view generation (4 steps now)
 - [x] Ensure all 4 views are generated before export
+
+
+## Model Identity Registry System
+
+### Database Schema Updates
+- [x] Add mintedAt timestamp column to models table
+- [x] Make agencyId nullable in models table (null during draft)
+- [x] Update status enum to include 'locked' for immutable models
+- [x] agencyId becomes unique only when set (on export)
+
+### Draft Session (Casting)
+- [x] Update model creation to use status='draft' without agencyId
+- [x] Allow iterations and refinements on draft models
+- [x] Draft models are mutable
+
+### Export Minting Flow
+- [x] On export: generate and assign agencyId (MOD-YY-XXXXXX)
+- [x] Lock identity bundle (masterPrompt, technicalSchema)
+- [x] Change status from 'draft' to 'active' (or 'locked')
+- [x] Generate legal PDF with minted agencyId
+- [x] Model becomes immutable after minting
+
+### Cross-App Identity Retrieval
+- [x] Create registry.lookup endpoint for cross-app lookup by agencyId
+- [x] Create registry.verify endpoint to check if model exists and is minted
+- [x] Return identity prompt for injection into other app generations
+- [x] Only return data for 'active' models (not drafts)

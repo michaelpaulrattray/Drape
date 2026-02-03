@@ -85,12 +85,17 @@ export type InsertWaitlist = typeof waitlist.$inferInsert;
 export const models = mysqlTable("models", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  agencyId: varchar("agencyId", { length: 32 }).notNull().unique(), // e.g., "MOD-26-A1B2C3"
+  agencyId: varchar("agencyId", { length: 32 }).unique(), // e.g., "MOD-26-A1B2C3" - null until minted on export
   name: varchar("name", { length: 128 }), // User-assigned name
   masterPrompt: text("masterPrompt").notNull(), // Full generation prompt
   technicalSchema: json("technicalSchema").notNull(), // JSON object with model specs
   preferences: json("preferences").notNull(), // Original ModelPreferences input
-  status: mysqlEnum("status", ["draft", "active", "archived"]).default("active").notNull(),
+  status: mysqlEnum("status", ["draft", "active", "locked", "archived"]).default("draft").notNull(),
+  // draft = work in progress, mutable
+  // active = minted with agencyId, identity locked
+  // locked = permanently immutable (legacy support)
+  // archived = soft deleted
+  mintedAt: timestamp("mintedAt"), // When the model was exported/minted
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

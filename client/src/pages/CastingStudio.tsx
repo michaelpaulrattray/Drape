@@ -1358,25 +1358,40 @@ export default function CastingStudio() {
   };
 
   // Export handler with unique ID, PDF generation, and ZIP creation
+  // Mint mutation for minting model on export
+  const mintMutation = trpc.generation.mint.useMutation();
+
   const handleExport = async (characterName: string, exportRes: ImageResolution) => {
     if (currentAssets.length === 0) {
       toast.error('No assets to export');
       return;
     }
 
+    if (!currentModelId) {
+      toast.error('No model to export');
+      return;
+    }
+
     setShowExportModal(false);
-    setGenState({ isGenerating: true, currentStep: `Processing Export Pack (${exportRes})...`, error: null });
-
-    // Generate unique export ID
-    const exportId = generateExportId();
-    const safeName = characterName ? characterName.trim().toUpperCase() : `MODEL ID ${exportId}`;
-    const cleanId = exportId.replace(/[^a-zA-Z0-9]/g, '_');
-    const zipFilename = `CASTING_PACK_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}_${exportRes}.zip`;
-    const pdfFilename = `LEGAL_IDENTITY_${cleanId}.pdf`;
-
-    const zip = new JSZip();
+    setGenState({ isGenerating: true, currentStep: `Minting Model Identity...`, error: null });
 
     try {
+      // Mint the model on export - this assigns the agencyId and locks the identity
+      const mintResult = await mintMutation.mutateAsync({ modelId: currentModelId });
+      const exportId = mintResult.agencyId;
+      
+      if (!exportId) {
+        throw new Error('Failed to mint model - no agencyId returned');
+      }
+
+      setGenState({ isGenerating: true, currentStep: `Processing Export Pack (${exportRes})...`, error: null });
+
+      const safeName = characterName ? characterName.trim().toUpperCase() : `MODEL ID ${exportId}`;
+      const cleanId = exportId.replace(/[^a-zA-Z0-9]/g, '_');
+      const zipFilename = `CASTING_PACK_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}_${exportRes}.zip`;
+      const pdfFilename = `LEGAL_IDENTITY_${cleanId}.pdf`;
+
+      const zip = new JSZip();
       // Collect all view URLs
       const viewFileMap: Record<string, string> = {
         frontClose: '01_Headshot_Primary.png',

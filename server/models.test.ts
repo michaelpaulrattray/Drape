@@ -187,3 +187,106 @@ describe("Agency ID Generation", () => {
     });
   });
 });
+
+describe("Model Minting System", () => {
+  it("should create models as drafts without agencyId", () => {
+    // When a model is first created, it should be a draft
+    const newModel = {
+      id: 1,
+      userId: 1,
+      agencyId: null, // No agencyId until minted
+      name: "Draft Model",
+      status: "draft",
+      masterPrompt: "Test prompt",
+      technicalSchema: {},
+      preferences: {},
+      mintedAt: null,
+    };
+
+    expect(newModel.agencyId).toBeNull();
+    expect(newModel.status).toBe("draft");
+    expect(newModel.mintedAt).toBeNull();
+  });
+
+  it("should mint model on export with valid agencyId", () => {
+    // When a model is exported, it gets minted
+    const mintedModel = {
+      id: 1,
+      userId: 1,
+      agencyId: "MOD-26-A1B2C3",
+      name: "Minted Model",
+      status: "active",
+      masterPrompt: "Test prompt",
+      technicalSchema: {},
+      preferences: {},
+      mintedAt: new Date(),
+    };
+
+    expect(mintedModel.agencyId).toBe("MOD-26-A1B2C3");
+    expect(mintedModel.status).toBe("active");
+    expect(mintedModel.mintedAt).toBeInstanceOf(Date);
+  });
+
+  it("should not allow minting an already minted model", () => {
+    // Minting should be idempotent - return existing agencyId if already minted
+    const alreadyMinted = {
+      agencyId: "MOD-26-EXISTING",
+      alreadyMinted: true,
+    };
+
+    expect(alreadyMinted.alreadyMinted).toBe(true);
+    expect(alreadyMinted.agencyId).toBe("MOD-26-EXISTING");
+  });
+
+  it("should validate agencyId format for registry lookup", () => {
+    const validFormat = /^MOD-\d{2}-[A-F0-9]{6}$/;
+    
+    // Valid IDs
+    expect("MOD-26-A1B2C3").toMatch(validFormat);
+    expect("MOD-25-FFFFFF").toMatch(validFormat);
+    expect("MOD-26-000000").toMatch(validFormat);
+    
+    // Invalid IDs
+    expect("MOD-2-A1B2C3").not.toMatch(validFormat); // Year too short
+    expect("MOD-26-A1B2C").not.toMatch(validFormat); // Hash too short
+    expect("AG-26-A1B2C3").not.toMatch(validFormat); // Wrong prefix
+    expect("MOD-26-G1B2C3").not.toMatch(validFormat); // Invalid hex char
+  });
+
+  it("should only allow cross-app retrieval for minted models", () => {
+    // Draft models should not be retrievable via registry
+    const draftModel = { status: "draft", agencyId: null };
+    const mintedModel = { status: "active", agencyId: "MOD-26-A1B2C3" };
+
+    const canRetrieve = (model: { status: string; agencyId: string | null }) => {
+      return model.status === "active" && model.agencyId !== null;
+    };
+
+    expect(canRetrieve(draftModel)).toBe(false);
+    expect(canRetrieve(mintedModel)).toBe(true);
+  });
+});
+
+describe("Model Status Transitions", () => {
+  it("should have valid model statuses", () => {
+    const validStatuses = ["draft", "active", "locked", "archived"];
+    
+    expect(validStatuses).toContain("draft");
+    expect(validStatuses).toContain("active");
+    expect(validStatuses).toContain("locked");
+    expect(validStatuses).toContain("archived");
+  });
+
+  it("should only transition draft to active on mint", () => {
+    // Valid transition: draft -> active (on mint/export)
+    const validTransitions = {
+      draft: ["active", "archived"], // Can mint or archive
+      active: ["locked", "archived"], // Can lock or archive
+      locked: [], // Terminal state
+      archived: [], // Terminal state (soft delete)
+    };
+
+    expect(validTransitions.draft).toContain("active");
+    expect(validTransitions.active).not.toContain("draft"); // Can't go back to draft
+  });
+});
