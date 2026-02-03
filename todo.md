@@ -824,3 +824,10 @@
 ## Bug Fix: Main Image Not Loading After CORS Fix
 - [x] Remove crossOrigin attribute that breaks image loading
 - [x] Implement alternative approach for mask canvas export (fetch image as blob, draw to canvas)
+
+
+## Bug Fix: Mask Overlay Fetch Failing (CORS)
+- [x] Fetch to S3 URL failing due to CORS - need alternative approach
+- [x] Implemented: Frontend sends mask-only PNG (transparent with red strokes)
+- [x] Server composites mask with base image using sharp library
+- [x] No CORS issues since server fetches the base image directly

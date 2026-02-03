@@ -1076,47 +1076,28 @@ export default function CastingStudio() {
     setCurrentPath([]);
   };
 
-  // Generate mask overlay image for surgical edit/eraser
-  // Fetches image as blob to avoid CORS tainted canvas issues
+  // Generate mask-only overlay image for surgical edit/eraser
+  // Creates a transparent PNG with just the red mask strokes
+  // The server will composite this with the original image
   const getGuideOverlayDataUrl = async (): Promise<string | undefined> => {
-    if (maskPaths.length === 0 || !imageRef.current || !currentImageUrl) return undefined;
+    if (maskPaths.length === 0 || !imageRef.current) return undefined;
     
     const img = imageRef.current;
     
     try {
-      // Fetch the image as a blob to bypass CORS restrictions
-      const response = await fetch(currentImageUrl);
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      
-      // Create a new image from the blob URL (same-origin, no CORS issues)
-      const corsImage = new Image();
-      corsImage.crossOrigin = 'anonymous';
-      
-      await new Promise<void>((resolve, reject) => {
-        corsImage.onload = () => resolve();
-        corsImage.onerror = reject;
-        corsImage.src = objectUrl;
-      });
-      
+      // Create a canvas matching the original image dimensions
       const cvs = document.createElement('canvas');
-      cvs.width = corsImage.naturalWidth;
-      cvs.height = corsImage.naturalHeight;
+      cvs.width = img.naturalWidth;
+      cvs.height = img.naturalHeight;
 
       const ctx = cvs.getContext('2d');
-      if (!ctx) {
-        URL.revokeObjectURL(objectUrl);
-        return undefined;
-      }
+      if (!ctx) return undefined;
 
-      // Draw the fetched image (now same-origin)
-      ctx.drawImage(corsImage, 0, 0);
-      
-      // Clean up the object URL
-      URL.revokeObjectURL(objectUrl);
+      // Start with transparent background (no base image needed)
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
 
       // Calculate brush size relative to image size
-      const brushSize = Math.max(10, corsImage.naturalWidth * 0.04);
+      const brushSize = Math.max(10, img.naturalWidth * 0.04);
 
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';

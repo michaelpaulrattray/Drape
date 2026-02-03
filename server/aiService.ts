@@ -72,6 +72,39 @@ async function uploadBase64ToS3(base64DataUrl: string, prefix: string): Promise<
   return url;
 }
 
+/**
+ * Composite mask overlay with base image
+ * Takes a transparent PNG with red mask strokes and composites it over the base image
+ */
+async function compositeMaskWithImage(baseImageBase64: string, maskBase64: string): Promise<string> {
+  // Import sharp for image compositing (server-side)
+  const sharp = await import('sharp');
+  
+  // Extract base64 data from data URLs
+  const baseData = baseImageBase64.replace(/^data:.*?;base64,/, "");
+  const maskData = maskBase64.replace(/^data:.*?;base64,/, "");
+  
+  const baseBuffer = Buffer.from(baseData, 'base64');
+  const maskBuffer = Buffer.from(maskData, 'base64');
+  
+  // Get base image dimensions
+  const baseMetadata = await sharp.default(baseBuffer).metadata();
+  
+  // Resize mask to match base image dimensions if needed
+  const resizedMask = await sharp.default(maskBuffer)
+    .resize(baseMetadata.width, baseMetadata.height, { fit: 'fill' })
+    .toBuffer();
+  
+  // Composite mask over base image
+  const composited = await sharp.default(baseBuffer)
+    .composite([{ input: resizedMask, blend: 'over' }])
+    .png()
+    .toBuffer();
+  
+  // Return as base64 data URL
+  return `data:image/png;base64,${composited.toString('base64')}`;
+}
+
 // ============ Main Functions ============
 
 /**
@@ -217,14 +250,12 @@ export async function iterateModel(
   iterationRequest: string,
   options: {
     maskImage?: string;
-    maskBase64?: string; // Base64 encoded mask from frontend
+    maskBase64?: string; // Base64 encoded mask overlay from frontend (transparent PNG with red strokes)
     additionalReference?: string;
     frame?: 'HEADSHOT' | 'FULL_BODY';
     castingBrand?: string;
   } = {}
 ): Promise<GenerationResult> {
-  // Use maskBase64 if provided (from frontend), otherwise use maskImage
-  const effectiveMask = options.maskBase64 || options.maskImage;
   // If currentImageUrl is an S3 URL, we need to fetch it and convert to base64
   let currentBase64 = currentImageUrl;
   if (currentImageUrl.startsWith('http')) {
@@ -232,6 +263,15 @@ export async function iterateModel(
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
     currentBase64 = `data:image/png;base64,${base64}`;
+  }
+
+  // Composite the mask overlay with the base image if provided
+  let effectiveMask: string | undefined;
+  if (options.maskBase64 || options.maskImage) {
+    const maskData = options.maskBase64 || options.maskImage;
+    // The frontend now sends just the mask strokes on transparent background
+    // We need to composite it with the base image to create the guide overlay
+    effectiveMask = await compositeMaskWithImage(currentBase64, maskData!);
   }
 
   const result = await gemini.generateCastingImage(
@@ -245,7 +285,7 @@ export async function iterateModel(
     options.castingBrand || 'Generic',
     options.frame || 'HEADSHOT',
     undefined,
-    effectiveMask // Use the effective mask (from frontend or direct)
+    effectiveMask // Use the composited mask overlay
   );
 
   // Upload base64 to S3 for persistent storage
