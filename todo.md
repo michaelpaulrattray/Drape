@@ -534,3 +534,67 @@
 - [ ] Update aiService.ts to use geminiService
 - [ ] Add SAFETY_SETTINGS to disable content filters
 - [ ] Test with real Gemini API calls
+
+
+## Two-Step Generation Pipeline Logic Audit
+
+### 1. Data Structure (types.ts / ModelPreferences)
+- [ ] Verify ModelPreferences interface has all required fields
+- [ ] Check: castingBrand, castingVibe (Tri-Blend), gender, ethnicity, skinTexture, hairStyle, facialHair, etc.
+
+### 2. Input Layer (ControlPanel / CastingStudio)
+- [ ] Verify TriBlend Selector calculates weights between Editorial/Commercial/Runway
+- [ ] Verify HairColorWheel maps visual selection to text strings (e.g., "Warm Copper")
+- [ ] Verify all UI inputs update the prefs state correctly
+
+### 3. Orchestrator (App.tsx / CastingStudio)
+- [ ] Verify two-step pipeline execution:
+  - Step A: generateMasterPrompt(prefs) - Text Generation
+  - Step B: generateCastingImage(masterPrompt) - Image Generation
+
+### 4. Logic Core (geminiService.ts)
+- [ ] Verify brandDescriptors dictionary (Gucci → "Eclectic, unconventional beauty...")
+- [ ] Verify Vibe Logic calculates "Vibe Blend" string from Tri-Blend weights
+- [ ] Verify getSkinDescription helper generates detailed skin paragraph
+- [ ] Verify getStudioSettings injects camera/lighting rules
+- [ ] Verify SAFETY_SETTINGS and negative prompts are applied
+- [ ] Verify output includes natural_description (300+ words) and technical_schema
+
+### 5. System Instruction (constants.ts / MASTER_PROMPT_SYSTEM_INSTRUCTION)
+- [ ] Verify "Technical Director" persona is defined
+- [ ] Verify rules: "No marketing fluff", "Describe skin texture in extreme detail"
+- [ ] Verify tattoo location rules are enforced
+
+
+## Master Prompt Logic Fix
+
+### Issues Identified
+- [ ] Hairstyle details not being passed properly (e.g., "updo with curtain bangs" becomes just "updo")
+- [ ] Brand DNA not being translated correctly (Miu Miu should produce "subversive preppy, youthful intellectual" look)
+- [ ] Vibe blend instructions not being appended based on thresholds (>60% Editorial should add "Features should be striking and unconventional")
+
+### Missing Logic from Reference App
+- [ ] Brand Directive Injection for image model (different from text description)
+- [ ] Quality Baseline Construction merging Brand DNA + Vibe Calculation
+- [ ] Proper hair detail concatenation (style + fringe + length + texture)
+- [ ] Threshold-based vibe instructions (>60% triggers specific text)
+
+### Fixes Required
+- [ ] Update generateMasterPrompt to include all hair details in prompt
+- [ ] Update getBrandDirectives to match reference app exactly
+- [ ] Add threshold checks for vibe blend instructions
+- [ ] Verify quality baseline construction matches reference
+
+
+## Workspace Layout Fix (Reference Design Match) - COMPLETED
+
+### Layout Structure Issues
+- [x] Fix main workspace layout to match reference design exactly
+- [x] Add Director's Note section at bottom of workspace (shows master prompt)
+- [x] Position iterate/chat input overlaying the bottom of the image container
+- [x] Add vertical shot thumbnails strip on LEFT side of image container
+- [x] HEAD thumbnail at top with label, ADD BODY button below
+- [x] Empty placeholder slots for additional shots (side, back views)
+- [x] Move reference upload node to RIGHT side panel
+- [x] Add NEXT STAGE / GENERATE FULL BODY button on right side
+- [x] Ensure proper spacing and alignment matches reference

@@ -169,29 +169,73 @@ export const appRouter = router({
   // ============ AI Model Generation ============
   models: router({
     // Create a new AI model from preferences
+    // Schema matches geminiService.ts ModelPreferences interface exactly
     create: protectedProcedure
       .input(z.object({
         preferences: z.object({
-          gender: z.enum(["male", "female", "non-binary"]),
-          ageRange: z.enum(["18-25", "25-35", "35-45", "45-55", "55+"]),
-          ethnicity: z.string(),
-          bodyType: z.enum(["slim", "athletic", "average", "curvy", "plus-size"]),
-          height: z.enum(["petite", "average", "tall"]),
-          hairColor: z.string(),
-          hairLength: z.enum(["bald", "buzz", "short", "medium", "long"]),
-          hairStyle: z.string(),
-          skinTone: z.string(),
-          eyeColor: z.string(),
-          facialFeatures: z.string().optional(),
-          brandTone: z.enum(["luxury", "streetwear", "minimalist", "editorial", "commercial", "avant-garde"]),
-          mood: z.enum(["confident", "serene", "edgy", "playful", "mysterious", "natural"]),
-          referenceDescription: z.string().optional(),
+          // Demographics
+          gender: z.string().optional(),
+          age: z.union([z.number(), z.string()]).optional(),
+          ethnicity: z.string().optional(),
+          bodyType: z.string().optional(),
+          
+          // Face structure
+          faceShape: z.string().optional(),
+          jawline: z.string().optional(),
+          cheekbones: z.string().optional(),
+          cheeks: z.string().optional(),
+          eyeShape: z.string().optional(),
+          noseShape: z.string().optional(),
+          lipShape: z.string().optional(),
+          eyebrowStyle: z.string().optional(),
+          
+          // Skin
+          skinTone: z.string().optional(),
+          skinTexture: z.string().optional(),
+          skinFinish: z.string().optional(),
+          
+          // Eyes
+          eyeColor: z.string().optional(),
+          
+          // Hair - complete builder
+          hairStyle: z.string().optional(),
+          hairColor: z.string().optional(),
+          hairLength: z.string().optional(),
+          hairTexture: z.string().optional(),
+          hairFringe: z.string().optional(),
+          hairParting: z.string().optional(),
+          hairVolume: z.string().optional(),
+          hairFlyaways: z.string().optional(),
+          hairHairline: z.string().optional(),
+          hairTuck: z.string().optional(),
+          hairFade: z.string().optional(),
+          facialHair: z.string().optional(),
+          
+          // Brand & Vibe
+          castingBrand: z.string().optional(),
+          castingVibe: z.object({
+            editorial: z.number(),
+            commercial: z.number(),
+            runway: z.number(),
+          }).optional(),
+          
+          // Additional
+          features: z.string().optional(),
+          referenceImage: z.string().optional(),
+          previousMasterPrompt: z.string().optional(),
+          userPrompt: z.string().optional(),
         }),
         name: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Debug: Log received preferences
+        console.log('[models.create] Received preferences:', JSON.stringify(input.preferences, null, 2));
+        
         // Generate master prompt (no point cost for this step)
         const masterPrompt = await generateMasterPrompt(input.preferences as ModelPreferences);
+        
+        // Debug: Log generated master prompt
+        console.log('[models.create] Generated master prompt:', masterPrompt.naturalDescription?.substring(0, 500) + '...');
 
         // Generate a unique agency ID
         const agencyId = `AG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;

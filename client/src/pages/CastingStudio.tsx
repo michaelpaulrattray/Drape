@@ -736,6 +736,9 @@ export default function CastingStudio() {
   const [currentAssets, setCurrentAssets] = useState<GeneratedAsset[]>([]);
   const [activeView, setActiveView] = useState<string>("frontClose");
   const [modelName, setModelName] = useState("");
+  const [currentMasterPrompt, setCurrentMasterPrompt] = useState<string>("");
+  const [showSchema, setShowSchema] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // History for undo/redo
   const [history, setHistory] = useState<GeneratedAsset[][]>([]);
@@ -999,22 +1002,59 @@ export default function CastingStudio() {
     setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null });
 
     try {
+      // Pass ALL preferences directly to backend - no conversion/stripping
+      // The backend geminiService.ts handles all the prompt generation logic
       const backendPrefs = {
-        gender: prefs.gender.toLowerCase() as "male" | "female" | "non-binary",
-        ageRange: getAgeRange(prefs.age),
+        // Demographics
+        gender: prefs.gender,
+        age: prefs.age,
         ethnicity: prefs.ethnicity,
-        bodyType: prefs.bodyType.toLowerCase().replace(/ /g, '-') as any,
-        height: "average" as const,
-        hairColor: prefs.hairColor,
-        hairLength: prefs.hairLength?.toLowerCase().replace(/ /g, '-') as any || "medium",
-        hairStyle: prefs.hairStyle,
+        bodyType: prefs.bodyType,
+        
+        // Face structure
+        faceShape: prefs.faceShape,
+        jawline: prefs.jawline,
+        cheekbones: prefs.cheekbones,
+        cheeks: prefs.cheeks,
+        eyeShape: prefs.eyeShape,
+        noseShape: prefs.noseShape,
+        lipShape: prefs.lipShape,
+        eyebrowStyle: prefs.eyebrowStyle,
+        
+        // Skin
         skinTone: prefs.skinTone,
+        skinTexture: prefs.skinTexture,
+        skinFinish: prefs.skinFinish,
+        
+        // Eyes
         eyeColor: prefs.eyeColor,
-        facialFeatures: prefs.features,
-        brandTone: getBrandTone(prefs.castingBrand),
-        mood: getMood(prefs.castingVibe),
-        referenceDescription: prefs.userPrompt,
+        
+        // Hair - complete builder
+        hairStyle: prefs.hairStyle,
+        hairColor: prefs.hairColor,
+        hairLength: prefs.hairLength,
+        hairTexture: prefs.hairTexture,
+        hairFringe: prefs.hairFringe,
+        hairParting: prefs.hairParting,
+        hairVolume: prefs.hairVolume,
+        hairFlyaways: prefs.hairFlyaways,
+        hairHairline: prefs.hairHairline,
+        hairTuck: prefs.hairTuck,
+        hairFade: prefs.hairFade,
+        facialHair: prefs.facialHair,
+        
+        // Brand & Vibe - pass directly, NOT converted
+        castingBrand: prefs.castingBrand,
+        castingVibe: prefs.castingVibe,
+        
+        // Additional
+        features: prefs.features,
+        referenceImage: prefs.referenceImage,
+        userPrompt: prefs.userPrompt,
       };
+      
+      // Debug: Log preferences being sent
+      console.log('[CastingStudio] Sending preferences to backend:', JSON.stringify(backendPrefs, null, 2));
 
       setGenState((prev) => ({ ...prev, currentStep: "Generating casting specification..." }));
       const modelResult = await createModelMutation.mutateAsync({
@@ -1023,6 +1063,7 @@ export default function CastingStudio() {
       });
 
       setCurrentModelId(modelResult.modelId ?? null);
+      setCurrentMasterPrompt(modelResult.masterPrompt || "");
 
       setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot..." }));
       const imageResult = await generateCastingMutation.mutateAsync({
@@ -1051,36 +1092,7 @@ export default function CastingStudio() {
     }
   };
 
-  // Helper functions for backend conversion
-  const getAgeRange = (age: string): "18-25" | "25-35" | "35-45" | "45-55" | "55+" => {
-    const ageNum = parseInt(age);
-    if (ageNum < 25) return "18-25";
-    if (ageNum < 35) return "25-35";
-    if (ageNum < 45) return "35-45";
-    if (ageNum < 55) return "45-55";
-    return "55+";
-  };
 
-  const getBrandTone = (brand: string): "luxury" | "streetwear" | "minimalist" | "editorial" | "commercial" | "avant-garde" => {
-    const mapping: Record<string, any> = {
-      "Gucci": "luxury",
-      "Prada": "minimalist",
-      "Saint Laurent": "editorial",
-      "Balenciaga": "streetwear",
-      "Miu Miu": "avant-garde",
-      "Versace": "luxury",
-      "Zara": "commercial",
-      "Social Media": "commercial",
-    };
-    return mapping[brand] || "editorial";
-  };
-
-  const getMood = (vibe: CastingVibe): "confident" | "serene" | "edgy" | "playful" | "mysterious" | "natural" => {
-    if (vibe.editorial > 0.5) return "edgy";
-    if (vibe.commercial > 0.5) return "natural";
-    if (vibe.runway > 0.5) return "mysterious";
-    return "confident";
-  };
 
   // Handle generate full body with stage lock
   const handleGenerateFullBody = async () => {
@@ -1830,6 +1842,144 @@ export default function CastingStudio() {
           </div>
         )}
 
+        {/* Left Vertical Thumbnails Strip */}
+        {currentAssets.length > 0 && (
+          <div className="absolute left-6 top-24 bottom-10 z-30 flex flex-col gap-3 w-20 overflow-y-auto no-scrollbar py-2 pointer-events-none">
+            <div className="contents pointer-events-auto">
+              {/* HEAD Thumbnail */}
+              {currentAssets.find(a => a.viewType === 'frontClose') && (
+                <button 
+                  onClick={() => setActiveView('frontClose')}
+                  className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                    activeView === 'frontClose' 
+                    ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
+                    : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                  }`}
+                >
+                  <img src={currentAssets.find(a => a.viewType === 'frontClose')?.storageUrl} alt="Head" className="w-full h-full object-cover" />
+                  {currentAssets.some(a => a.viewType === 'frontFull') && (
+                    <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-md rounded-full p-1 border border-white/10 z-20">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
+                    <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Head</span>
+                  </div>
+                </button>
+              )}
+
+              {/* ADD BODY / Full Body Thumbnail */}
+              {currentAssets.find(a => a.viewType === 'frontFull') ? (
+                <button 
+                  onClick={() => setActiveView('frontFull')}
+                  className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                    activeView === 'frontFull' 
+                    ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
+                    : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                  }`}
+                >
+                  <img src={currentAssets.find(a => a.viewType === 'frontFull')?.storageUrl} alt="Full" className="w-full h-full object-cover" />
+                  {currentAssets.some(a => a.viewType === 'sideClose') && (
+                    <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-md rounded-full p-1 border border-white/10 z-20">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
+                    <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Full</span>
+                  </div>
+                </button>
+              ) : (
+                <button 
+                  onClick={() => nextStage?.step === 2 && nextStage.action()}
+                  className="w-full aspect-[3/4] bg-black/40 backdrop-blur-sm border border-studio-800 border-dashed hover:border-white hover:bg-studio-900 transition-all flex flex-col items-center justify-center space-y-2 group shadow-lg"
+                >
+                  <div className="w-6 h-6 rounded-full border border-studio-600 flex items-center justify-center text-studio-500 group-hover:text-white group-hover:border-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </div>
+                  <span className="text-[7px] font-mono uppercase text-studio-500 group-hover:text-white tracking-widest text-center px-1">Add Body</span>
+                </button>
+              )}
+
+              {/* Side/Walk/Back Views or Locked Placeholders */}
+              {currentAssets.find(a => a.viewType === 'frontFull') ? (
+                currentAssets.find(a => a.viewType === 'sideClose') ? (
+                  <>
+                    <button 
+                      onClick={() => setActiveView('sideClose')}
+                      className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                        activeView === 'sideClose' 
+                        ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
+                        : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                      }`}
+                    >
+                      <img src={currentAssets.find(a => a.viewType === 'sideClose')?.storageUrl} alt="Side" className="w-full h-full object-cover" />
+                      <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
+                        <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Side</span>
+                      </div>
+                    </button>
+                    {currentAssets.find(a => a.viewType === 'sideFull') && (
+                      <button 
+                        onClick={() => setActiveView('sideFull')}
+                        className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                          activeView === 'sideFull' 
+                          ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
+                          : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                        }`}
+                      >
+                        <img src={currentAssets.find(a => a.viewType === 'sideFull')?.storageUrl} alt="Walk" className="w-full h-full object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
+                          <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Walk</span>
+                        </div>
+                      </button>
+                    )}
+                    {currentAssets.find(a => a.viewType === 'backFull') && (
+                      <button 
+                        onClick={() => setActiveView('backFull')}
+                        className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                          activeView === 'backFull' 
+                          ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
+                          : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                        }`}
+                      >
+                        <img src={currentAssets.find(a => a.viewType === 'backFull')?.storageUrl} alt="Back" className="w-full h-full object-cover" />
+                        <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-md rounded-full p-1 border border-white/10 z-20">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        </div>
+                        <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
+                          <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Back</span>
+                        </div>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => nextStage?.step === 3 && nextStage.action()}
+                    className="w-full aspect-[3/4] bg-black/40 backdrop-blur-sm border border-studio-800 border-dashed hover:border-white hover:bg-studio-900 transition-all flex flex-col items-center justify-center space-y-2 group shadow-lg"
+                  >
+                    <div className="w-6 h-6 rounded-full border border-studio-600 flex items-center justify-center text-studio-500 group-hover:text-white group-hover:border-white transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </div>
+                    <span className="text-[7px] font-mono uppercase text-studio-500 group-hover:text-white tracking-widest text-center px-1">Add Angles</span>
+                  </button>
+                )
+              ) : (
+                <>
+                  {/* Locked placeholders */}
+                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
+                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </div>
+                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
+                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </div>
+                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
+                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Main Content */}
         {currentAssets.length > 0 ? (
           <div className="w-full h-full flex flex-col relative z-10">
@@ -1850,7 +2000,7 @@ export default function CastingStudio() {
             )}
 
             {/* Image Display Area */}
-            <div className="flex-1 relative min-h-0 flex items-center justify-center p-4">
+            <div className="flex-1 relative min-h-0 flex items-center justify-center p-4 group">
               {/* Next Stage Button */}
               {nextStage && !genState.isGenerating && (
                 <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4 animate-in fade-in slide-in-from-right-8 duration-700">
@@ -1949,51 +2099,86 @@ export default function CastingStudio() {
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Bottom Panel - Refinement Input */}
-            <div className="w-full bg-studio-950 border-t border-studio-800 flex-shrink-0 z-20">
-              <div className="w-full max-w-[1400px] mx-auto p-5">
-                {/* View Tabs */}
-                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                  {[
-                    { key: "frontClose", label: "Headshot" },
-                    { key: "frontFull", label: "Full Body" },
-                    { key: "sideClose", label: "Side" },
-                    { key: "backFull", label: "Back" },
-                  ].map((view) => {
-                    const hasAsset = currentAssets.some((a) => a.viewType === view.key);
-                    const isLocked = (view.key === 'frontClose' && currentAssets.some(a => a.viewType === 'frontFull')) ||
-                                    (view.key === 'frontFull' && currentAssets.some(a => a.viewType === 'sideClose'));
-                    return (
-                      <button
-                        key={view.key}
-                        onClick={() => hasAsset && setActiveView(view.key)}
-                        disabled={!hasAsset}
-                        className={`px-4 py-2 rounded-sm text-[10px] font-mono uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeView === view.key
-                          ? "bg-white text-black"
-                          : hasAsset
-                            ? "bg-studio-900 border border-studio-800 text-white hover:bg-studio-800"
-                            : "bg-studio-900/50 border border-studio-800/50 text-studio-700 cursor-not-allowed"
-                          }`}
-                      >
-                        {isLocked && hasAsset && (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        )}
-                        {view.label}
-                      </button>
-                    );
-                  })}
+                {/* Download Button */}
+                <button
+                  onClick={() => {
+                    if (!currentImageUrl) return;
+                    const link = document.createElement('a');
+                    link.href = currentImageUrl;
+                    link.download = `FORMASTUDIO_${activeView}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="absolute bottom-4 right-4 z-30 p-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-studio-400 hover:text-white hover:border-white/30 transition-all"
+                  title="Download Image"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+
+                {/* View Label */}
+                <div className="absolute bottom-4 left-4 z-30 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded">
+                  <span className="text-[9px] font-mono uppercase text-white tracking-widest">
+                    {activeView === 'frontClose' ? 'FRONT CLOSE' : 
+                     activeView === 'frontFull' ? 'FRONT FULL' :
+                     activeView === 'sideClose' ? 'SIDE CLOSE' :
+                     activeView === 'sideFull' ? 'SIDE FULL' :
+                     activeView === 'backFull' ? 'BACK FULL' : activeView.toUpperCase()}
+                  </span>
                 </div>
+              </div>
 
-                {/* Refinement Input */}
-                <div className="flex items-end gap-2 bg-studio-900/50 border border-studio-800 rounded-lg p-2">
-                  {isViewLocked && !unlockMode ? (
+              {/* Overlaying Chat Input */}
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg z-30" onClick={e => e.stopPropagation()}>
+                {/* Inline Helper Text for Masking */}
+                {isMasking && (
+                  <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded border border-white/10 shadow-lg">
+                      <span className={`text-[9px] font-mono font-bold ${activeTool === 'eraser' ? 'text-purple-400' : 'text-red-400'}`}>
+                        {maskPaths.length === 0 ? "STEP 01" : "STEP 02"}
+                      </span>
+                      <span className="w-px h-2 bg-white/20"></span>
+                      <span className="text-[9px] font-mono text-studio-300 uppercase tracking-wide">
+                        {maskPaths.length === 0 
+                          ? "Paint Target Area" 
+                          : (activeTool === 'eraser' ? "Click Erase Button" : "Describe Edit & Generate")
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className={`mx-4 bg-black/70 backdrop-blur-md border rounded-[26px] shadow-2xl flex items-end p-1.5 transition-all focus-within:ring-1 focus-within:ring-white/20 ${isViewLocked && !unlockMode && activeTool !== 'eraser' ? 'border-studio-700 opacity-90' : 'border-white/10'}`}>
+                  {/* Regenerate Button */}
+                  <button
+                    onClick={handleGenerate}
+                    disabled={(isViewLocked && !unlockMode) || !isIterationAllowed}
+                    className={`flex-shrink-0 p-2 mb-1 transition-colors ${isViewLocked && !unlockMode ? 'text-studio-600 cursor-not-allowed' : 'text-studio-400 hover:text-white'}`}
+                    title="Regenerate with Current Settings"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                  </button>
+
+                  <div className="w-px h-4 bg-white/10 mx-1 mb-3"></div>
+
+                  {/* Input Area */}
+                  {activeTool === 'eraser' ? (
+                    <div className="flex-1 px-3 py-2.5 min-h-[36px] flex items-center">
+                      <span className="text-xs font-mono text-purple-300/50 uppercase tracking-widest">
+                        {maskPaths.length === 0 ? "Paint Area to Erase" : "Ready to Erase"}
+                      </span>
+                    </div>
+                  ) : isViewLocked && !unlockMode ? (
                     <div className="flex-1 flex items-center justify-between px-4 py-2">
-                      <div className="flex items-center space-x-2 text-amber-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <span className="text-xs font-mono uppercase tracking-widest">View Locked</span>
+                      <div className="flex items-center space-x-2 text-studio-400 select-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <span className="text-xs font-mono uppercase tracking-widest">Locked</span>
+                        <Tooltip content={
+                          activeView === 'backFull' 
+                          ? "Editing this finalized view may break visual consistency with the rest of the character pack."
+                          : "This view is the source for downstream assets (Full Body, Angles). Editing it will reset them."
+                        } />
                       </div>
                       <button 
                         onClick={() => setUnlockMode(true)}
@@ -2022,12 +2207,14 @@ export default function CastingStudio() {
                       }}
                       placeholder={
                         isEnhancing ? "Optimizing instruction with AI..." :
-                        activeTool === 'surgical' 
+                        isViewLocked 
+                        ? (activeView === 'backFull' ? "WARNING: MAKING CHANGES TO THIS IMAGE COULD RUIN CHARACTER CONSISTENCY..." : "Editing will reset downstream assets...")
+                        : activeTool === 'surgical' 
                           ? `Describe change for masked area (e.g. 'Add scar')...` 
                           : `Iterate on ${activeView.replace(/([A-Z])/g, ' $1').toLowerCase()}...`
                       }
                       rows={1}
-                      className={`flex-1 bg-transparent border-none text-xs placeholder:text-studio-500 focus:outline-none focus:ring-0 px-3 py-2.5 font-mono resize-none custom-scrollbar min-h-[36px] max-h-[300px] ${isEnhancing ? 'text-studio-500 animate-pulse' : 'text-white'}`}
+                      className={`flex-1 bg-transparent border-none text-xs placeholder:text-studio-500 focus:outline-none focus:ring-0 px-3 py-2.5 font-mono resize-none custom-scrollbar min-h-[36px] max-h-[300px] ${isViewLocked ? 'text-amber-100 placeholder:text-amber-500/50' : isEnhancing ? 'text-studio-500 animate-pulse' : 'text-white'}`}
                     />
                   )}
                   
@@ -2065,6 +2252,43 @@ export default function CastingStudio() {
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Panel - Director's Note */}
+            <div className="w-full bg-studio-950 border-t border-studio-800 flex-shrink-0 z-20">
+              <div className="w-full max-w-[1400px] mx-auto p-5 space-y-6">
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  <div className="flex-1 space-y-2 group">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-[10px] uppercase font-bold text-studio-500 tracking-widest">
+                        {showSchema ? "Technical Schema" : "Director's Note"}
+                      </h3>
+                      <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button 
+                          onClick={() => setShowSchema(!showSchema)}
+                          className="text-[9px] uppercase font-mono text-studio-400 hover:text-white transition-colors"
+                        >
+                          {showSchema ? "View Description" : "View Schema"}
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const content = currentMasterPrompt;
+                            navigator.clipboard.writeText(content);
+                            setIsCopied(true);
+                            setTimeout(() => setIsCopied(false), 2000);
+                          }}
+                          className={`text-[9px] uppercase font-mono transition-colors ${isCopied ? 'text-green-500' : 'text-studio-400 hover:text-white'}`}
+                        >
+                          {isCopied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[11px] font-mono text-studio-400 leading-relaxed max-h-20 overflow-y-auto custom-scrollbar select-text">
+                      {currentMasterPrompt || "Master prompt will appear here after generation..."}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

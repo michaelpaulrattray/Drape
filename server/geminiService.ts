@@ -311,6 +311,19 @@ export const generateMasterPrompt = async (
   prefs: ModelPreferences,
   mode: 'NEW' | 'ITERATE' | 'REFERENCE' = 'NEW'
 ): Promise<{ natural: string; schema: any }> => {
+  // Debug: Log all received preferences
+  console.log('[geminiService] generateMasterPrompt called with:');
+  console.log('[geminiService] - castingBrand:', prefs.castingBrand);
+  console.log('[geminiService] - castingVibe:', JSON.stringify(prefs.castingVibe));
+  console.log('[geminiService] - hairStyle:', prefs.hairStyle);
+  console.log('[geminiService] - hairFringe:', prefs.hairFringe);
+  console.log('[geminiService] - hairLength:', prefs.hairLength);
+  console.log('[geminiService] - hairTexture:', prefs.hairTexture);
+  console.log('[geminiService] - skinTexture:', prefs.skinTexture);
+  console.log('[geminiService] - skinFinish:', prefs.skinFinish);
+  console.log('[geminiService] - faceShape:', prefs.faceShape);
+  console.log('[geminiService] - All prefs:', JSON.stringify(prefs, null, 2));
+  
   const ai = getAiClient();
   const skinInstruction = getSkinDescription(prefs.skinTexture, prefs.skinFinish);
   const parts: GeminiPart[] = [];
