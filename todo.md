@@ -857,3 +857,9 @@
 - [x] Updated frontend to use batch endpoint and populate all thumbnails at once
 - [ ] Ensure export includes all generated views
 - [ ] Check workflow progression after all views are generated
+
+
+## Bug Fix: Export CORS Errors
+- [x] Export function failing to fetch S3 images due to CORS
+- [x] Create server-side image proxy endpoint to fetch images (proxyImage)
+- [x] Update frontend export to use proxy endpoint for ZIP and PDF images

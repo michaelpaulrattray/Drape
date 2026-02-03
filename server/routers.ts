@@ -925,6 +925,33 @@ export const appRouter = router({
         }
       }),
 
+    // Proxy endpoint to fetch S3 images and return as base64 (bypasses CORS)
+    proxyImage: protectedProcedure
+      .input(z.object({
+        imageUrl: z.string().url(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const response = await fetch(input.imageUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          const buffer = await response.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString('base64');
+          const contentType = response.headers.get('content-type') || 'image/png';
+          return {
+            success: true,
+            base64: `data:${contentType};base64,${base64}`,
+          };
+        } catch (error) {
+          console.error('[ProxyImage] Error:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to fetch image',
+          });
+        }
+      }),
+
     // Enhance user prompt with AI
     enhance: protectedProcedure
       .input(z.object({

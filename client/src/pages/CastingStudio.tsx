@@ -950,6 +950,7 @@ export default function CastingStudio() {
   const generateAllViewsMutation = trpc.generation.generateAllViews.useMutation();
   const iterateMutation = trpc.generation.iterate.useMutation();
   const upscaleMutation = trpc.generation.upscale.useMutation();
+  const proxyImageMutation = trpc.generation.proxyImage.useMutation();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -1741,17 +1742,32 @@ export default function CastingStudio() {
             setGenState(prev => ({ ...prev, currentStep: `Adding ${asset.viewType}...` }));
           }
           
-          // Fetch the image and add to ZIP
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          zip.file(filename, blob);
+          // Fetch the image via server proxy (bypasses CORS) and add to ZIP
+          const proxyResult = await proxyImageMutation.mutateAsync({ imageUrl });
+          if (proxyResult.success && proxyResult.base64) {
+            // Convert base64 to blob
+            const base64Data = proxyResult.base64.split(',')[1];
+            const binaryString = atob(base64Data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            zip.file(filename, bytes);
+          }
         } catch (e) {
           console.error(`Failed to process ${asset.viewType}:`, e);
           // Fall back to original image if upscale fails
           try {
-            const response = await fetch(asset.storageUrl);
-            const blob = await response.blob();
-            zip.file(filename, blob);
+            const fallbackResult = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
+            if (fallbackResult.success && fallbackResult.base64) {
+              const base64Data = fallbackResult.base64.split(',')[1];
+              const binaryString = atob(base64Data);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              zip.file(filename, bytes);
+            }
           } catch (fallbackError) {
             console.error(`Failed to fetch fallback ${asset.viewType}:`, fallbackError);
           }
@@ -1789,26 +1805,22 @@ export default function CastingStudio() {
       const headshotAsset = currentAssets.find(a => a.viewType === 'frontClose');
       if (headshotAsset) {
         try {
-          const response = await fetch(headshotAsset.storageUrl);
-          const blob = await response.blob();
-          const base64 = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-          
-          const imgProps = doc.getImageProperties(base64);
-          const imgRatio = imgProps.width / imgProps.height;
-          const maxH = 80;
-          let imgW = contentWidth * 0.6;
-          let imgH = imgW / imgRatio;
-          if (imgH > maxH) {
-            imgH = maxH;
-            imgW = imgH * imgRatio;
+          const headshotProxy = await proxyImageMutation.mutateAsync({ imageUrl: headshotAsset.storageUrl });
+          if (headshotProxy.success && headshotProxy.base64) {
+            const base64 = headshotProxy.base64;
+            const imgProps = doc.getImageProperties(base64);
+            const imgRatio = imgProps.width / imgProps.height;
+            const maxH = 80;
+            let imgW = contentWidth * 0.6;
+            let imgH = imgW / imgRatio;
+            if (imgH > maxH) {
+              imgH = maxH;
+              imgW = imgH * imgRatio;
+            }
+            const imgX = margin + (contentWidth - imgW) / 2;
+            doc.addImage(base64, 'PNG', imgX, cursorY, imgW, imgH);
+            cursorY += imgH + 10;
           }
-          const imgX = margin + (contentWidth - imgW) / 2;
-          doc.addImage(base64, 'PNG', imgX, cursorY, imgW, imgH);
-          cursorY += imgH + 10;
         } catch (e) {
           console.error('Failed to add image to PDF:', e);
           cursorY += 10;
