@@ -242,16 +242,17 @@ function ServicesMarqueeSection() {
       <div className="px-6 md:px-12 mb-16 md:mb-20 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
           <div>
-            <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-500 font-medium mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-sky-600 tracking-[0.2em] mb-6">
+              <span className="w-2 h-2 rounded-full bg-sky-600" />
               Services
-            </span>
-            <h2 className="text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight font-geist text-zinc-900">
-              Solving Problems With <br/><span className="text-zinc-400">Intelligent AI</span>
+            </p>
+            <h2 className="text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none text-zinc-900 font-geist">
+              Solving Problems With<br/>
+              <span className="text-black/30">Intelligent AI</span>
             </h2>
           </div>
-          <div className="lg:pl-12 lg:border-l lg:border-black/[0.06]">
-            <p className="text-lg md:text-xl font-light text-zinc-600 leading-relaxed">
+          <div className="lg:pl-12 lg:border-l lg:border-black/10">
+            <p className="leading-relaxed md:text-base text-sm text-zinc-500 max-w-md">
               Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
             </p>
           </div>
