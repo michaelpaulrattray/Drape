@@ -4,18 +4,12 @@ import { Redirect } from "wouter";
 import { Link } from "wouter";
 import {
   Home,
-  Library,
-  History,
   Clock,
-  Download,
-  ChevronDown,
   ChevronRight,
   Search,
   Bell,
-  Settings,
   Play,
   MoreHorizontal,
-  Menu,
   Camera,
   Shirt,
   Image,
@@ -24,14 +18,27 @@ import {
   Layers,
   Palette,
   ArrowRight,
-  Plus,
   LogOut,
+  CreditCard,
+  BarChart3,
+  GraduationCap,
+  Scale,
+  Gift,
+  Edit3,
+  Upload,
+  X,
+  Check,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [activeNav, setActiveNav] = useState("home");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editedName, setEditedName] = useState("");
+  const [editedEmail, setEditedEmail] = useState("");
+  const profilePicInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   // Get points data
   const { data: pointsData } = trpc.points.getBalance.useQuery(
@@ -51,30 +58,44 @@ export default function Dashboard() {
     return <Redirect to="/login" />;
   }
 
-  // Home section items (previously under Tools)
+  const handleEditProfile = () => {
+    setEditedName(user?.name || "");
+    setEditedEmail(user?.email || "");
+    setIsEditingProfile(true);
+  };
+
+  const handleSaveProfile = () => {
+    // TODO: Implement actual profile update via tRPC
+    setIsEditingProfile(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+  };
+
+  // Home section items (simplified)
   const homeNavItems = [
     { id: "home", label: "Home", icon: Home },
-    { id: "library", label: "Library", icon: Library },
-    { id: "history", label: "History", icon: History },
     { id: "models", label: "Your Models", icon: Users },
     { id: "generations", label: "Generations", icon: Layers },
-    { id: "downloads", label: "Downloads", icon: Download },
+    { id: "billing", label: "Billing & Usage", icon: CreditCard },
   ];
 
-  // Tools section items (Studios moved here)
+  // Tools section items (Studios)
   const toolsNavItems = [
     { id: "casting", label: "Casting Studio", icon: Camera },
     { id: "wardrobe", label: "Wardrobe Studio", icon: Shirt },
     { id: "photo", label: "Photo Studio", icon: Image },
   ];
 
+  // Updated Resources
   const resources = [
-    { name: "Casting Pro", color: "bg-violet-500/15" },
-    { name: "Style Guide", color: "bg-sky-500/15" },
-    { name: "Campaign Kit", color: "bg-amber-500/15" },
+    { name: "Learn Casting", icon: GraduationCap, color: "bg-violet-500/15" },
+    { name: "Learn Wardrobe", icon: GraduationCap, color: "bg-sky-500/15" },
+    { name: "Learn Campaign", icon: GraduationCap, color: "bg-amber-500/15" },
+    { name: "Affiliate Program", icon: Gift, color: "bg-emerald-500/15" },
+    { name: "Legal & Copyright", icon: Scale, color: "bg-neutral-500/15" },
   ];
-
-  const contentTabs = ["All", "Models", "Outfits", "Campaigns", "Exports"];
 
   const recentWork = [
     {
@@ -126,7 +147,7 @@ export default function Dashboard() {
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto px-4 space-y-8 pb-6" style={{ scrollbarWidth: 'none' }}>
-          {/* Home Section (with Library, History, etc.) */}
+          {/* Home Section */}
           <nav className="space-y-1.5">
             {homeNavItems.map((item) => (
               <button
@@ -183,7 +204,7 @@ export default function Dashboard() {
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-7 h-7 rounded-lg ${resource.color} flex items-center justify-center`}>
-                      <Palette className="w-3.5 h-3.5 text-neutral-300" />
+                      <resource.icon className="w-3.5 h-3.5 text-neutral-300" />
                     </div>
                     <span className="text-sm">{resource.name}</span>
                   </div>
@@ -220,7 +241,7 @@ export default function Dashboard() {
         {/* Header with Profile Banner */}
         <div className="relative">
           {/* Banner - Grayscale Abstract Studio Style */}
-          <div className="h-52 relative overflow-hidden bg-[#1a1a1a]">
+          <div className="h-52 relative overflow-hidden bg-[#1a1a1a] group">
             {/* Abstract geometric pattern */}
             <div className="absolute inset-0">
               <svg className="w-full h-full opacity-20" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice">
@@ -246,33 +267,116 @@ export default function Dashboard() {
             {/* Subtle gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a1a] via-transparent to-[#1a1a1a] opacity-60" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#151515] via-transparent to-transparent" />
+            
+            {/* Edit Banner Button */}
+            <input
+              type="file"
+              ref={bannerInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={(e) => {
+                // TODO: Handle banner upload
+                console.log("Banner file:", e.target.files?.[0]);
+              }}
+            />
+            <button 
+              onClick={() => bannerInputRef.current?.click()}
+              className="absolute top-4 right-4 px-3 py-2 rounded-lg bg-black/50 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-black/70 backdrop-blur-sm"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Change Cover
+            </button>
           </div>
 
           {/* Profile Info */}
           <div className="absolute bottom-0 left-0 right-0 px-10 pb-6">
             <div className="flex items-end gap-6">
-              {/* Profile Avatar - Grayscale Abstract */}
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-neutral-500 via-neutral-600 to-neutral-800 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#151515] shadow-xl relative overflow-hidden">
-                {/* Abstract pattern inside avatar */}
-                <div className="absolute inset-0 opacity-30">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <circle cx="70" cy="30" r="40" fill="none" stroke="#666" strokeWidth="0.5"/>
-                    <circle cx="30" cy="70" r="30" fill="none" stroke="#555" strokeWidth="0.5"/>
-                    <line x1="0" y1="100" x2="100" y2="0" stroke="#666" strokeWidth="0.3"/>
-                  </svg>
+              {/* Profile Avatar - Editable */}
+              <div className="relative group/avatar">
+                <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-neutral-500 via-neutral-600 to-neutral-800 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#151515] shadow-xl relative overflow-hidden">
+                  {/* Abstract pattern inside avatar */}
+                  <div className="absolute inset-0 opacity-30">
+                    <svg viewBox="0 0 100 100" className="w-full h-full">
+                      <circle cx="70" cy="30" r="40" fill="none" stroke="#666" strokeWidth="0.5"/>
+                      <circle cx="30" cy="70" r="30" fill="none" stroke="#555" strokeWidth="0.5"/>
+                      <line x1="0" y1="100" x2="100" y2="0" stroke="#666" strokeWidth="0.3"/>
+                    </svg>
+                  </div>
+                  <span className="relative z-10">{user?.name?.charAt(0) || "F"}</span>
                 </div>
-                <span className="relative z-10">{user?.name?.charAt(0) || "F"}</span>
+                {/* Edit Avatar Button */}
+                <input
+                  type="file"
+                  ref={profilePicInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => {
+                    // TODO: Handle profile picture upload
+                    console.log("Profile pic file:", e.target.files?.[0]);
+                  }}
+                />
+                <button 
+                  onClick={() => profilePicInputRef.current?.click()}
+                  className="absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity"
+                >
+                  <Upload className="w-6 h-6 text-white" />
+                </button>
               </div>
+              
               <div className="flex-1 pb-2">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-semibold text-[#f0f0f0]">{user?.name || "Creator"}</h1>
-                  <span className="px-3 py-1 rounded-full bg-neutral-700/50 text-neutral-300 text-xs font-medium border border-neutral-600/30">
-                    PRO
-                  </span>
-                </div>
-                <p className="text-neutral-400 text-sm">
-                  {pointsData?.balance || 0} credits • {pointsData?.planTier || "Free"} plan
-                </p>
+                {isEditingProfile ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      className="bg-[#252525] border border-white/10 rounded-lg px-3 py-2 text-[#f0f0f0] text-lg font-semibold w-full max-w-xs focus:outline-none focus:border-violet-500"
+                      placeholder="Your name"
+                    />
+                    <input
+                      type="email"
+                      value={editedEmail}
+                      onChange={(e) => setEditedEmail(e.target.value)}
+                      className="bg-[#252525] border border-white/10 rounded-lg px-3 py-2 text-neutral-400 text-sm w-full max-w-xs focus:outline-none focus:border-violet-500"
+                      placeholder="Your email"
+                    />
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={handleSaveProfile}
+                        className="px-3 py-1.5 rounded-lg bg-violet-500 text-white text-sm font-medium hover:bg-violet-600 transition-colors flex items-center gap-1.5"
+                      >
+                        <Check className="w-4 h-4" />
+                        Save
+                      </button>
+                      <button 
+                        onClick={handleCancelEdit}
+                        className="px-3 py-1.5 rounded-lg bg-[#252525] text-neutral-300 text-sm font-medium hover:bg-[#2a2a2a] transition-colors flex items-center gap-1.5"
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-2xl font-semibold text-[#f0f0f0]">{user?.name || "Creator"}</h1>
+                      <span className="px-3 py-1 rounded-full bg-neutral-700/50 text-neutral-300 text-xs font-medium border border-neutral-600/30">
+                        PRO
+                      </span>
+                      <button 
+                        onClick={handleEditProfile}
+                        className="p-1.5 rounded-lg text-neutral-500 hover:text-[#f0f0f0] hover:bg-[#252525] transition-colors"
+                        title="Edit Profile"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-neutral-400 text-sm">
+                      {pointsData?.balance || 0} credits • {pointsData?.planTier || "Free"} plan
+                    </p>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-3 pb-2">
                 <button className="px-5 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-medium hover:bg-violet-600 transition-colors flex items-center gap-2 shadow-lg shadow-violet-500/25">
@@ -290,29 +394,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-white/[0.06] px-10 bg-[#151515]/80 backdrop-blur-sm sticky top-0 z-20">
-          <div className="flex items-center gap-1" style={{ scrollbarWidth: 'none' }}>
-            {contentTabs.map((tab, idx) => (
-              <button
-                key={tab}
-                className={`relative px-5 py-4 text-sm font-medium transition-colors ${
-                  idx === 0
-                    ? "text-[#f0f0f0]"
-                    : "text-neutral-500 hover:text-neutral-300"
-                }`}
-              >
-                {tab}
-                {idx === 0 && (
-                  <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-500 rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Content Area */}
-        <div className="p-10 space-y-12">
+        <div className="p-10 pt-8 space-y-12">
           {/* Recent Work Section */}
           <div>
             <div className="flex items-center justify-between mb-6">

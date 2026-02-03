@@ -153,3 +153,15 @@
 - [x] Remove Team Members section
 - [x] Add logout button (in sidebar user profile area)
 - [x] Change profile picture gradient to grayscale abstract style
+
+## Dashboard Updates - Profile & Menu Reorganization
+- [x] Make user profile editable (profile picture, header background, email)
+- [x] Add Billing & Usage to Home menu items
+- [x] Remove small inline menu under profile picture (tabs)
+- [x] Remove Downloads, History, Library menu items
+- [x] Update Resources section:
+  - [x] Casting Pro → Learn Casting
+  - [x] Style Guide → Learn Wardrobe
+  - [x] Campaign Kit → Learn Campaign
+  - [x] Add Affiliate Program
+  - [x] Add Legal & Copyright
