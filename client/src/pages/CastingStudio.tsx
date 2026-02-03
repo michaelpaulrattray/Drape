@@ -263,30 +263,34 @@ const FACE_ICONS: Record<string, React.ReactNode> = {
 const ConnectorLine = ({ isActive }: { isActive: boolean }) => {
   if (!isActive) return null;
   
+  // Reference node is at: top-20 (80px) right-8 (32px), size: w-48 (192px) h-64 (256px)
+  // So reference node center-left edge is at: top ~208px (80 + 256/2), right 224px (32 + 192)
+  // Main image container starts around the center of the workspace
+  
   return (
     <div className="absolute top-0 right-0 w-full h-full z-5 pointer-events-none overflow-visible">
-      {/* Elegant minimal connector - horizontal line with dot endpoints */}
+      {/* Elegant minimal connector - curves from reference node to main image */}
       <svg 
         className="absolute overflow-visible"
         style={{
-          top: '120px',
-          right: '80px',
-          width: '180px',
-          height: '60px'
+          top: '180px',      // Align with middle of reference node
+          right: '224px',    // Start from left edge of reference node (32px + 192px width)
+          width: '120px',    // Shorter, tighter connection
+          height: '80px'
         }}
-        viewBox="0 0 180 60"
+        viewBox="0 0 120 80"
         fill="none"
       >
         <defs>
           {/* Animated gradient for the line */}
-          <linearGradient id="connector-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
-            <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
+          <linearGradient id="connector-gradient" x1="100%" y1="0%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.3)" />
             <stop offset="100%" stopColor="rgba(255,255,255,0.1)" />
           </linearGradient>
           {/* Subtle glow effect */}
           <filter id="connector-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feGaussianBlur stdDeviation="1.5" result="blur"/>
             <feMerge>
               <feMergeNode in="blur"/>
               <feMergeNode in="SourceGraphic"/>
@@ -294,54 +298,53 @@ const ConnectorLine = ({ isActive }: { isActive: boolean }) => {
           </filter>
         </defs>
         
-        {/* Main connection path - elegant S-curve */}
+        {/* Main connection path - smooth bezier from reference to image */}
         <path 
-          d="M 0 30 Q 60 30, 90 15 T 180 30"
+          d="M 120 40 C 80 40, 40 40, 0 40"
           stroke="url(#connector-gradient)"
-          strokeWidth="1"
+          strokeWidth="1.5"
           fill="none"
           strokeLinecap="round"
           filter="url(#connector-glow)"
-          className="animate-pulse"
-          style={{ animationDuration: '3s' }}
+          strokeDasharray="4 6"
         />
         
-        {/* Start dot - near reference image */}
+        {/* Start dot - at reference image edge */}
+        <circle 
+          cx="120" 
+          cy="40" 
+          r="5" 
+          fill="rgba(255,255,255,0.9)"
+          filter="url(#connector-glow)"
+        />
+        <circle 
+          cx="120" 
+          cy="40" 
+          r="2.5" 
+          fill="white"
+        />
+        
+        {/* End dot - pointing toward main image */}
         <circle 
           cx="0" 
-          cy="30" 
+          cy="40" 
           r="4" 
-          fill="rgba(255,255,255,0.8)"
+          fill="rgba(255,255,255,0.6)"
           filter="url(#connector-glow)"
         />
         <circle 
           cx="0" 
-          cy="30" 
+          cy="40" 
           r="2" 
           fill="white"
         />
         
-        {/* End dot - near main image */}
-        <circle 
-          cx="180" 
-          cy="30" 
-          r="4" 
-          fill="rgba(255,255,255,0.8)"
-          filter="url(#connector-glow)"
-        />
-        <circle 
-          cx="180" 
-          cy="30" 
-          r="2" 
-          fill="white"
-        />
-        
-        {/* Animated traveling dot */}
+        {/* Animated traveling dot - flows from reference to main */}
         <circle r="2" fill="white" filter="url(#connector-glow)">
           <animateMotion 
-            dur="4s" 
+            dur="2.5s" 
             repeatCount="indefinite"
-            path="M 0 30 Q 60 30, 90 15 T 180 30"
+            path="M 120 40 C 80 40, 40 40, 0 40"
           />
         </circle>
       </svg>

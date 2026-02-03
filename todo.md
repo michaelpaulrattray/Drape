@@ -785,3 +785,9 @@
 - [x] Redesign the connector between reference image node and main image
 - [x] Create elegant, minimal connection design (S-curve with animated traveling dot)
 - [x] Ensure smooth animation and responsive behavior (pulse animation, glow effects)
+
+
+## Connector Position Fine-Tuning
+- [x] Align connector start point with reference image node center (top: 180px, right: 224px)
+- [x] Align connector end point toward main image container
+- [x] Use dashed line with gradient and animated traveling dot
