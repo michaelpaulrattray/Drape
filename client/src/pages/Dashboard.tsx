@@ -151,10 +151,10 @@ export default function Dashboard() {
             ))}
           </nav>
 
-          {/* My Studio Section */}
+          {/* Tools Section */}
           <div>
             <h3 className="px-4 text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">
-              My Studio
+              Tools
             </h3>
             <nav className="space-y-1">
               {channelNavItems.map((item) => (
@@ -173,10 +173,10 @@ export default function Dashboard() {
             </nav>
           </div>
 
-          {/* Templates */}
+          {/* Resources */}
           <div>
             <h3 className="px-4 text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">
-              Templates
+              Resources
             </h3>
             <nav className="space-y-1">
               {templates.map((template, idx) => (

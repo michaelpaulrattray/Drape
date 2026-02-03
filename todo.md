@@ -142,3 +142,7 @@
 - [x] 12-16px border-radius on cards (rounded-xl, rounded-2xl)
 - [x] WCAG contrast compliance for eye comfort
 - [x] Match homepage fonts/weights/line-height
+
+## Dashboard Sidebar Label Updates
+- [x] Change "TEMPLATES" to "RESOURCES"
+- [x] Change "MY STUDIO" to "TOOLS"
