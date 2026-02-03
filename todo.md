@@ -117,3 +117,10 @@
 - [x] Remove /app route (users go directly to dashboard)
 - [x] Remove /settings page
 - [x] Update OAuth callback to redirect to /dashboard
+
+## Login Page Redesign
+- [x] Match homepage light theme (bg-zinc-50, text-zinc-900)
+- [x] Add subtle gridlines background
+- [x] Use inline header style with forma studio logo
+- [x] Style login button with sky-blue accent
+- [x] Add cohesive typography and spacing
