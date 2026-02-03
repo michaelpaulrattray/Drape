@@ -1077,49 +1077,76 @@ export default function CastingStudio() {
   };
 
   // Generate mask overlay image for surgical edit/eraser
-  const getGuideOverlayDataUrl = (): string | undefined => {
-    if (maskPaths.length === 0 || !imageRef.current) return undefined;
+  // Fetches image as blob to avoid CORS tainted canvas issues
+  const getGuideOverlayDataUrl = async (): Promise<string | undefined> => {
+    if (maskPaths.length === 0 || !imageRef.current || !currentImageUrl) return undefined;
     
     const img = imageRef.current;
     
-    const cvs = document.createElement('canvas');
-    cvs.width = img.naturalWidth;
-    cvs.height = img.naturalHeight;
-
-    const ctx = cvs.getContext('2d');
-    if (!ctx) return undefined;
-
-    // Draw the original image
-    ctx.drawImage(img, 0, 0);
-
-    // Calculate brush size relative to image size
-    const brushSize = Math.max(10, img.naturalWidth * 0.04);
-
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // Draw mask paths with semi-transparent red overlay
-    ctx.lineWidth = brushSize;
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.45)';
-
-    const drawPaths = () => {
-      maskPaths.forEach(path => {
-        if (path.length < 1) return;
-        ctx.beginPath();
-        ctx.moveTo(path[0].x * cvs.width, path[0].y * cvs.height);
-        path.forEach(p => ctx.lineTo(p.x * cvs.width, p.y * cvs.height));
-        ctx.stroke();
+    try {
+      // Fetch the image as a blob to bypass CORS restrictions
+      const response = await fetch(currentImageUrl);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      
+      // Create a new image from the blob URL (same-origin, no CORS issues)
+      const corsImage = new Image();
+      corsImage.crossOrigin = 'anonymous';
+      
+      await new Promise<void>((resolve, reject) => {
+        corsImage.onload = () => resolve();
+        corsImage.onerror = reject;
+        corsImage.src = objectUrl;
       });
-    };
-    
-    drawPaths();
+      
+      const cvs = document.createElement('canvas');
+      cvs.width = corsImage.naturalWidth;
+      cvs.height = corsImage.naturalHeight;
 
-    // Add a softer inner layer for better visibility
-    ctx.lineWidth = brushSize * 0.8;
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.1)'; 
-    drawPaths();
+      const ctx = cvs.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
+        return undefined;
+      }
 
-    return cvs.toDataURL('image/png');
+      // Draw the fetched image (now same-origin)
+      ctx.drawImage(corsImage, 0, 0);
+      
+      // Clean up the object URL
+      URL.revokeObjectURL(objectUrl);
+
+      // Calculate brush size relative to image size
+      const brushSize = Math.max(10, corsImage.naturalWidth * 0.04);
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Draw mask paths with semi-transparent red overlay
+      ctx.lineWidth = brushSize;
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.45)';
+
+      const drawPaths = () => {
+        maskPaths.forEach(path => {
+          if (path.length < 1) return;
+          ctx.beginPath();
+          ctx.moveTo(path[0].x * cvs.width, path[0].y * cvs.height);
+          path.forEach(p => ctx.lineTo(p.x * cvs.width, p.y * cvs.height));
+          ctx.stroke();
+        });
+      };
+      
+      drawPaths();
+
+      // Add a softer inner layer for better visibility
+      ctx.lineWidth = brushSize * 0.8;
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.1)'; 
+      drawPaths();
+
+      return cvs.toDataURL('image/png');
+    } catch (error) {
+      console.error('Failed to generate mask overlay:', error);
+      return undefined;
+    }
   };
 
   // Get hair styles based on gender
@@ -1479,12 +1506,16 @@ export default function CastingStudio() {
   const handleRefineSubmit = async () => {
     if (!currentModelId || !currentImageUrl) return;
 
-    // Get mask if we're in masking mode
-    const maskBase64 = isMasking ? getGuideOverlayDataUrl() : undefined;
+    // Get mask if we're in masking mode (now async to handle CORS)
+    const maskBase64 = isMasking ? await getGuideOverlayDataUrl() : undefined;
 
     // For eraser tool, use automatic prompt (no text needed)
     if (activeTool === 'eraser') {
       if (maskPaths.length === 0) return;
+      if (!maskBase64) {
+        toast.error('Failed to generate mask overlay. Please try again.');
+        return;
+      }
       const prompt = "FIX ARTIFACT: Remove the content in the masked area. Inpaint with surrounding skin texture, lighting, and noise. Restore the background if needed. Do not add new objects.";
       await performIteration(prompt, maskBase64);
       setActiveTool('none');
@@ -1500,6 +1531,10 @@ export default function CastingStudio() {
       }
       if (!refineInput.trim()) {
         toast.error('Please describe the change you want to make');
+        return;
+      }
+      if (!maskBase64) {
+        toast.error('Failed to generate mask overlay. Please try again.');
         return;
       }
       await performIteration(refineInput, maskBase64);
@@ -2704,7 +2739,6 @@ export default function CastingStudio() {
                       ref={imageRef}
                       src={currentImageUrl} 
                       alt="Active View" 
-                      crossOrigin="anonymous"
                       className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black" style={{marginTop: '70px'}}
                     />
                     

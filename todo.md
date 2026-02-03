@@ -819,3 +819,8 @@
 - [x] Investigate Apply button click handler for surgical edit
 - [x] Investigate Erase button click handler for eraser tool
 - [x] Fix the submission logic - added crossOrigin="anonymous" to fix CORS tainted canvas error
+
+
+## Bug Fix: Main Image Not Loading After CORS Fix
+- [x] Remove crossOrigin attribute that breaks image loading
+- [x] Implement alternative approach for mask canvas export (fetch image as blob, draw to canvas)
