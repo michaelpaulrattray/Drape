@@ -2,7 +2,16 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { getUserPoints, getPointTransactions, deductPoints, addPoints, addToWaitlist, getWaitlistCount } from "./db";
+import { 
+  getUserPoints, getPointTransactions, deductPoints, addPoints, addToWaitlist, getWaitlistCount,
+  createModel, getModelById, getUserModels, updateModel, deleteModel,
+  createModelAsset, getModelAssets,
+  createGeneration, updateGeneration, getUserGenerations
+} from "./db";
+import {
+  generateMasterPrompt, generateCastingImage, generateFullBody, generateRemainingViews,
+  iterateModel, POINT_COSTS, ModelPreferences
+} from "./aiService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -152,6 +161,537 @@ export const appRouter = router({
         displayCount: count + 847, // Base number for early traction appearance
       };
     }),
+  }),
+
+  // ============ AI Model Generation ============
+  models: router({
+    // Create a new AI model from preferences
+    create: protectedProcedure
+      .input(z.object({
+        preferences: z.object({
+          gender: z.enum(["male", "female", "non-binary"]),
+          ageRange: z.enum(["18-25", "25-35", "35-45", "45-55", "55+"]),
+          ethnicity: z.string(),
+          bodyType: z.enum(["slim", "athletic", "average", "curvy", "plus-size"]),
+          height: z.enum(["petite", "average", "tall"]),
+          hairColor: z.string(),
+          hairLength: z.enum(["bald", "buzz", "short", "medium", "long"]),
+          hairStyle: z.string(),
+          skinTone: z.string(),
+          eyeColor: z.string(),
+          facialFeatures: z.string().optional(),
+          brandTone: z.enum(["luxury", "streetwear", "minimalist", "editorial", "commercial", "avant-garde"]),
+          mood: z.enum(["confident", "serene", "edgy", "playful", "mysterious", "natural"]),
+          referenceDescription: z.string().optional(),
+        }),
+        name: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Check if user has enough points for master prompt generation
+        const userPoints = await getUserPoints(ctx.user.id);
+        if (!userPoints || userPoints.balance < POINT_COSTS.masterPrompt) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient points. Need ${POINT_COSTS.masterPrompt} points.`,
+          });
+        }
+
+        // Generate master prompt
+        const masterPrompt = await generateMasterPrompt(input.preferences as ModelPreferences);
+
+        // Deduct points
+        await deductPoints(
+          ctx.user.id,
+          POINT_COSTS.masterPrompt,
+          "generation",
+          "Master prompt generation",
+          masterPrompt.agencyId
+        );
+
+        // Save model to database
+        const result = await createModel({
+          userId: ctx.user.id,
+          agencyId: masterPrompt.agencyId,
+          name: input.name || `Model ${masterPrompt.agencyId}`,
+          masterPrompt: masterPrompt.fullPrompt,
+          technicalSchema: masterPrompt.technicalSchema,
+          preferences: input.preferences,
+          status: "draft",
+        });
+
+        if (!result.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: result.error || "Failed to create model",
+          });
+        }
+
+        return {
+          success: true,
+          modelId: result.modelId,
+          agencyId: masterPrompt.agencyId,
+          masterPrompt: masterPrompt.fullPrompt,
+          technicalSchema: masterPrompt.technicalSchema,
+          pointsCost: POINT_COSTS.masterPrompt,
+        };
+      }),
+
+    // Get user's models
+    list: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
+      .query(async ({ ctx, input }) => {
+        const models = await getUserModels(ctx.user.id, input?.limit ?? 50);
+        return models;
+      }),
+
+    // Get a specific model by ID
+    get: protectedProcedure
+      .input(z.object({ modelId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        const assets = await getModelAssets(input.modelId);
+        return { ...model, assets };
+      }),
+
+    // Update model name or status
+    update: protectedProcedure
+      .input(z.object({
+        modelId: z.number(),
+        name: z.string().optional(),
+        status: z.enum(["draft", "active", "archived"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        const updateData: { name?: string; status?: "draft" | "active" | "archived" } = {};
+        if (input.name) updateData.name = input.name;
+        if (input.status) updateData.status = input.status;
+
+        await updateModel(input.modelId, updateData);
+        return { success: true };
+      }),
+
+    // Delete a model
+    delete: protectedProcedure
+      .input(z.object({ modelId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        await deleteModel(input.modelId);
+        return { success: true };
+      }),
+  }),
+
+  // ============ AI Image Generation ============
+  generation: router({
+    // Generate casting image (headshot)
+    castingImage: protectedProcedure
+      .input(z.object({ modelId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        // Check points
+        const userPoints = await getUserPoints(ctx.user.id);
+        if (!userPoints || userPoints.balance < POINT_COSTS.castingImage) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient points. Need ${POINT_COSTS.castingImage} points.`,
+          });
+        }
+
+        // Get model
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Create generation record
+        const genResult = await createGeneration({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          type: "castingImage",
+          status: "processing",
+          pointsCost: POINT_COSTS.castingImage,
+        });
+
+        try {
+          // Generate image
+          const result = await generateCastingImage({
+            fullPrompt: model.masterPrompt,
+            technicalSchema: model.technicalSchema as any,
+            agencyId: model.agencyId,
+          });
+
+          if (!result.success || !result.imageUrl) {
+            await updateGeneration(genResult.generationId!, {
+              status: "failed",
+              errorMessage: result.error,
+              completedAt: new Date(),
+            });
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: result.error || "Failed to generate image",
+            });
+          }
+
+          // Deduct points
+          await deductPoints(
+            ctx.user.id,
+            POINT_COSTS.castingImage,
+            "generation",
+            "Casting image generation",
+            `gen-${genResult.generationId}`
+          );
+
+          // Save asset
+          await createModelAsset({
+            modelId: input.modelId,
+            viewType: "frontClose",
+            resolution: "1K",
+            storageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.castingImage,
+          });
+
+          // Update generation record
+          await updateGeneration(genResult.generationId!, {
+            status: "completed",
+            resultUrl: result.imageUrl,
+            completedAt: new Date(),
+          });
+
+          // Update model status to active
+          await updateModel(input.modelId, { status: "active" });
+
+          return {
+            success: true,
+            imageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.castingImage,
+          };
+        } catch (error) {
+          await updateGeneration(genResult.generationId!, {
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown error",
+            completedAt: new Date(),
+          });
+          throw error;
+        }
+      }),
+
+    // Generate full body image
+    fullBody: protectedProcedure
+      .input(z.object({ modelId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userPoints = await getUserPoints(ctx.user.id);
+        if (!userPoints || userPoints.balance < POINT_COSTS.fullBody) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient points. Need ${POINT_COSTS.fullBody} points.`,
+          });
+        }
+
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        const genResult = await createGeneration({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          type: "fullBody",
+          status: "processing",
+          pointsCost: POINT_COSTS.fullBody,
+        });
+
+        try {
+          // Get existing headshot for reference
+          const assets = await getModelAssets(input.modelId);
+          const headshot = assets.find(a => a.viewType === "frontClose");
+
+          const result = await generateFullBody(
+            {
+              fullPrompt: model.masterPrompt,
+              technicalSchema: model.technicalSchema as any,
+              agencyId: model.agencyId,
+            },
+            headshot?.storageUrl
+          );
+
+          if (!result.success || !result.imageUrl) {
+            await updateGeneration(genResult.generationId!, {
+              status: "failed",
+              errorMessage: result.error,
+              completedAt: new Date(),
+            });
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: result.error || "Failed to generate full body image",
+            });
+          }
+
+          await deductPoints(
+            ctx.user.id,
+            POINT_COSTS.fullBody,
+            "generation",
+            "Full body image generation",
+            `gen-${genResult.generationId}`
+          );
+
+          await createModelAsset({
+            modelId: input.modelId,
+            viewType: "frontFull",
+            resolution: "1K",
+            storageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.fullBody,
+          });
+
+          await updateGeneration(genResult.generationId!, {
+            status: "completed",
+            resultUrl: result.imageUrl,
+            completedAt: new Date(),
+          });
+
+          return {
+            success: true,
+            imageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.fullBody,
+          };
+        } catch (error) {
+          await updateGeneration(genResult.generationId!, {
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown error",
+            completedAt: new Date(),
+          });
+          throw error;
+        }
+      }),
+
+    // Generate side or back view
+    multiView: protectedProcedure
+      .input(z.object({
+        modelId: z.number(),
+        viewType: z.enum(["side", "back"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const userPoints = await getUserPoints(ctx.user.id);
+        if (!userPoints || userPoints.balance < POINT_COSTS.multiView) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient points. Need ${POINT_COSTS.multiView} points.`,
+          });
+        }
+
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        const genResult = await createGeneration({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          type: "multiView",
+          status: "processing",
+          pointsCost: POINT_COSTS.multiView,
+          metadata: { viewType: input.viewType },
+        });
+
+        try {
+          const assets = await getModelAssets(input.modelId);
+          const reference = assets.find(a => a.viewType === "frontClose" || a.viewType === "frontFull");
+
+          const result = await generateRemainingViews(
+            {
+              fullPrompt: model.masterPrompt,
+              technicalSchema: model.technicalSchema as any,
+              agencyId: model.agencyId,
+            },
+            input.viewType,
+            reference?.storageUrl
+          );
+
+          if (!result.success || !result.imageUrl) {
+            await updateGeneration(genResult.generationId!, {
+              status: "failed",
+              errorMessage: result.error,
+              completedAt: new Date(),
+            });
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: result.error || "Failed to generate view",
+            });
+          }
+
+          await deductPoints(
+            ctx.user.id,
+            POINT_COSTS.multiView,
+            "generation",
+            `${input.viewType} view generation`,
+            `gen-${genResult.generationId}`
+          );
+
+          const assetViewType = input.viewType === "side" ? "sideFull" : "backFull";
+          await createModelAsset({
+            modelId: input.modelId,
+            viewType: assetViewType,
+            resolution: "1K",
+            storageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.multiView,
+          });
+
+          await updateGeneration(genResult.generationId!, {
+            status: "completed",
+            resultUrl: result.imageUrl,
+            completedAt: new Date(),
+          });
+
+          return {
+            success: true,
+            imageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.multiView,
+          };
+        } catch (error) {
+          await updateGeneration(genResult.generationId!, {
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown error",
+            completedAt: new Date(),
+          });
+          throw error;
+        }
+      }),
+
+    // Iterate/refine a model image
+    iterate: protectedProcedure
+      .input(z.object({
+        modelId: z.number(),
+        feedback: z.string().min(1),
+        assetId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const userPoints = await getUserPoints(ctx.user.id);
+        if (!userPoints || userPoints.balance < POINT_COSTS.iteration) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient points. Need ${POINT_COSTS.iteration} points.`,
+          });
+        }
+
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        const assets = await getModelAssets(input.modelId);
+        const targetAsset = assets.find(a => a.id === input.assetId);
+        if (!targetAsset) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Asset not found" });
+        }
+
+        const genResult = await createGeneration({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          type: "iteration",
+          status: "processing",
+          pointsCost: POINT_COSTS.iteration,
+          metadata: { feedback: input.feedback, assetId: input.assetId },
+        });
+
+        try {
+          const result = await iterateModel(
+            {
+              fullPrompt: model.masterPrompt,
+              technicalSchema: model.technicalSchema as any,
+              agencyId: model.agencyId,
+            },
+            targetAsset.storageUrl,
+            input.feedback
+          );
+
+          if (!result.success || !result.imageUrl) {
+            await updateGeneration(genResult.generationId!, {
+              status: "failed",
+              errorMessage: result.error,
+              completedAt: new Date(),
+            });
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: result.error || "Failed to iterate model",
+            });
+          }
+
+          await deductPoints(
+            ctx.user.id,
+            POINT_COSTS.iteration,
+            "generation",
+            "Model iteration",
+            `gen-${genResult.generationId}`
+          );
+
+          await createModelAsset({
+            modelId: input.modelId,
+            viewType: targetAsset.viewType,
+            resolution: "1K",
+            storageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.iteration,
+          });
+
+          await updateGeneration(genResult.generationId!, {
+            status: "completed",
+            resultUrl: result.imageUrl,
+            completedAt: new Date(),
+          });
+
+          return {
+            success: true,
+            imageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.iteration,
+          };
+        } catch (error) {
+          await updateGeneration(genResult.generationId!, {
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown error",
+            completedAt: new Date(),
+          });
+          throw error;
+        }
+      }),
+
+    // Get generation history
+    history: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
+      .query(async ({ ctx, input }) => {
+        const generations = await getUserGenerations(ctx.user.id, input?.limit ?? 50);
+        return generations;
+      }),
+
+    // Get point costs for all generation types
+    costs: publicProcedure.query(() => POINT_COSTS),
   }),
 });
 

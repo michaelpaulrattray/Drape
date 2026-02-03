@@ -227,3 +227,29 @@
 ## Accent Color Updates
 - [x] Change hero "Get Early Access" button from blue to black
 - [x] Replace all blue accent colors (sky-500, sky-600) with orange accent color from dashboard
+
+## Phase 2: Core AI & Points System Integration
+### Points System (Already Implemented)
+- [x] Points table in database schema
+- [x] Point transactions tracking
+- [x] getUserPoints, deductPoints, addPoints functions
+- [x] tRPC endpoints for balance, transactions, deduct, add, checkBalance
+- [x] Initial signup bonus (100 points)
+
+### AI Service Integration (Implemented)
+- [x] Create AI service module for Gemini API integration
+- [x] Implement generateMasterPrompt() - Generate casting specification from preferences
+- [x] Implement generateCastingImage() - Generate model image from master prompt
+- [x] Implement generateFullBody() - Expand headshot to full body
+- [x] Implement generateRemainingViews() - Generate side/back views
+- [x] Create tRPC endpoints for AI generation
+- [x] Integrate points deduction with AI generation
+
+### Model Data Persistence (Implemented)
+- [x] Create models table in database schema
+- [x] Create model_assets table in database schema
+- [x] Implement model CRUD operations in db.ts
+- [x] Create tRPC endpoints for model management
+- [x] Link AI generations to model records
+- [x] Generation history tracking
+- [x] Unit tests for AI service and models

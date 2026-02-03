@@ -330,3 +330,201 @@ export async function checkEmailOnWaitlist(email: string): Promise<boolean> {
     return false;
   }
 }
+
+
+// ============ Model Functions ============
+
+import { models, modelAssets, generations, InsertModel, InsertModelAsset, InsertGeneration } from "../drizzle/schema";
+
+export async function createModel(data: InsertModel): Promise<{ success: boolean; modelId?: number; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    const result = await db.insert(models).values(data);
+    // Get the inserted model ID
+    const inserted = await db.select().from(models).where(eq(models.agencyId, data.agencyId)).limit(1);
+    return { success: true, modelId: inserted[0]?.id };
+  } catch (error) {
+    console.error("[Database] Failed to create model:", error);
+    return { success: false, error: "Failed to create model" };
+  }
+}
+
+export async function getModelById(modelId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(models).where(eq(models.id, modelId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getModelByAgencyId(agencyId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(models).where(eq(models.agencyId, agencyId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getUserModels(userId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(models)
+    .where(eq(models.userId, userId))
+    .orderBy(desc(models.createdAt))
+    .limit(limit);
+}
+
+export async function updateModel(
+  modelId: number,
+  data: Partial<Pick<InsertModel, "name" | "status">>
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    await db.update(models).set(data).where(eq(models.id, modelId));
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to update model:", error);
+    return { success: false, error: "Failed to update model" };
+  }
+}
+
+export async function deleteModel(modelId: number): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    // Delete associated assets first
+    await db.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
+    // Delete the model
+    await db.delete(models).where(eq(models.id, modelId));
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to delete model:", error);
+    return { success: false, error: "Failed to delete model" };
+  }
+}
+
+// ============ Model Asset Functions ============
+
+export async function createModelAsset(data: InsertModelAsset): Promise<{ success: boolean; assetId?: number; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    await db.insert(modelAssets).values(data);
+    // Get the inserted asset
+    const inserted = await db
+      .select()
+      .from(modelAssets)
+      .where(eq(modelAssets.modelId, data.modelId))
+      .orderBy(desc(modelAssets.createdAt))
+      .limit(1);
+    return { success: true, assetId: inserted[0]?.id };
+  } catch (error) {
+    console.error("[Database] Failed to create model asset:", error);
+    return { success: false, error: "Failed to create model asset" };
+  }
+}
+
+export async function getModelAssets(modelId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(modelAssets)
+    .where(eq(modelAssets.modelId, modelId))
+    .orderBy(desc(modelAssets.createdAt));
+}
+
+export async function getModelAssetByView(modelId: number, viewType: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(modelAssets)
+    .where(eq(modelAssets.modelId, modelId))
+    .orderBy(desc(modelAssets.createdAt));
+  
+  // Filter by viewType manually since we can't use enum in where clause easily
+  const filtered = result.filter(a => a.viewType === viewType);
+  return filtered.length > 0 ? filtered[0] : null;
+}
+
+// ============ Generation Tracking Functions ============
+
+export async function createGeneration(data: InsertGeneration): Promise<{ success: boolean; generationId?: number; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    await db.insert(generations).values(data);
+    // Get the most recent generation for this user
+    const inserted = await db
+      .select()
+      .from(generations)
+      .where(eq(generations.userId, data.userId))
+      .orderBy(desc(generations.createdAt))
+      .limit(1);
+    return { success: true, generationId: inserted[0]?.id };
+  } catch (error) {
+    console.error("[Database] Failed to create generation:", error);
+    return { success: false, error: "Failed to create generation" };
+  }
+}
+
+export async function updateGeneration(
+  generationId: number,
+  data: Partial<Pick<InsertGeneration, "status" | "resultUrl" | "errorMessage" | "completedAt">>
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    await db.update(generations).set(data).where(eq(generations.id, generationId));
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to update generation:", error);
+    return { success: false, error: "Failed to update generation" };
+  }
+}
+
+export async function getUserGenerations(userId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(generations)
+    .where(eq(generations.userId, userId))
+    .orderBy(desc(generations.createdAt))
+    .limit(limit);
+}
+
+export async function getGenerationById(generationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(generations).where(eq(generations.id, generationId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}

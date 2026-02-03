@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -70,3 +70,72 @@ export const waitlist = mysqlTable("waitlist", {
 
 export type Waitlist = typeof waitlist.$inferSelect;
 export type InsertWaitlist = typeof waitlist.$inferInsert;
+
+/**
+ * AI Models table for storing generated model specifications.
+ */
+export const models = mysqlTable("models", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  agencyId: varchar("agencyId", { length: 32 }).notNull().unique(), // e.g., "MOD-26-A1B2C3"
+  name: varchar("name", { length: 128 }), // User-assigned name
+  masterPrompt: text("masterPrompt").notNull(), // Full generation prompt
+  technicalSchema: json("technicalSchema").notNull(), // JSON object with model specs
+  preferences: json("preferences").notNull(), // Original ModelPreferences input
+  status: mysqlEnum("status", ["draft", "active", "archived"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Model = typeof models.$inferSelect;
+export type InsertModel = typeof models.$inferInsert;
+
+/**
+ * Model assets table for storing generated images.
+ */
+export const modelAssets = mysqlTable("model_assets", {
+  id: int("id").autoincrement().primaryKey(),
+  modelId: int("modelId").notNull(),
+  viewType: mysqlEnum("viewType", [
+    "frontClose",   // Headshot/portrait
+    "frontFull",    // Full body front
+    "sideClose",    // Side profile headshot
+    "sideFull",     // Full body side
+    "backFull",     // Full body back
+  ]).notNull(),
+  resolution: mysqlEnum("resolution", ["1K", "2K", "4K"]).default("1K").notNull(),
+  storageUrl: text("storageUrl").notNull(), // S3 URL
+  storageKey: varchar("storageKey", { length: 256 }), // S3 key for management
+  pointsCost: int("pointsCost").notNull(), // Points spent on this asset
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ModelAsset = typeof modelAssets.$inferSelect;
+export type InsertModelAsset = typeof modelAssets.$inferInsert;
+
+/**
+ * Generations table for tracking all AI generation requests.
+ */
+export const generations = mysqlTable("generations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  modelId: int("modelId"), // Nullable - may be a new model creation
+  type: mysqlEnum("type", [
+    "masterPrompt",
+    "castingImage",
+    "fullBody",
+    "multiView",
+    "iteration",
+    "upscale",
+  ]).notNull(),
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
+  pointsCost: int("pointsCost").notNull(),
+  resultUrl: text("resultUrl"), // Output image URL
+  errorMessage: text("errorMessage"), // Error if failed
+  metadata: json("metadata"), // Additional generation params
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type Generation = typeof generations.$inferSelect;
+export type InsertGeneration = typeof generations.$inferInsert;
