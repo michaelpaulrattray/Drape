@@ -791,3 +791,10 @@
 - [x] Align connector start point with reference image node center (top: 180px, right: 224px)
 - [x] Align connector end point toward main image container
 - [x] Use dashed line with gradient and animated traveling dot
+
+
+## Overlay Element Alignment
+- [x] Resize view label to fit better (bottom-2 left-2, smaller padding)
+- [x] Align chat input bar properly within image bounds (bottom-2, max-w-xl, compact padding)
+- [x] Position download button to align with other elements (bottom-2 right-2)
+- [x] Ensure consistent spacing between overlay elements (all at bottom-2)

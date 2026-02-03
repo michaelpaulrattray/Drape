@@ -2805,14 +2805,14 @@ export default function CastingStudio() {
                       toast.error('Download failed');
                     }
                   }}
-                  className="absolute bottom-4 right-4 z-30 p-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-studio-400 hover:text-white hover:border-white/30 transition-all"
-                  title="Download Image" style={{marginBottom: '50px'}}
+                  className="absolute bottom-2 right-2 z-30 p-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-studio-400 hover:text-white hover:border-white/30 transition-all"
+                  title="Download Image"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
 
                 {/* View Label */}
-                <div className="absolute bottom-4 left-4 z-30 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded" style={{marginBottom: '50px'}}>
+                <div className="absolute bottom-2 left-2 z-30 px-2 py-0.5 bg-black/60 backdrop-blur-md border border-white/10 rounded">
                   <span className="text-[9px] font-mono uppercase text-white tracking-widest">
                     {activeView === 'frontClose' ? 'FRONT CLOSE' : 
                      activeView === 'frontFull' ? 'FRONT FULL' :
@@ -2824,7 +2824,7 @@ export default function CastingStudio() {
               </div>
 
               {/* Overlaying Chat Input - positioned at bottom of image container */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl z-30 px-4" onClick={e => e.stopPropagation()} style={{marginBottom: '75px', marginLeft: '20px'}}>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full max-w-xl z-30 px-2" onClick={e => e.stopPropagation()}>
                 {/* Inline Helper Text for Masking */}
                 {isMasking && (
                   <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
@@ -2843,28 +2843,28 @@ export default function CastingStudio() {
                   </div>
                 )}
 
-                <div className={`mx-4 bg-black/70 backdrop-blur-md border rounded-[26px] shadow-2xl flex items-end p-1.5 transition-all focus-within:ring-1 focus-within:ring-white/20 ${isViewLocked && !unlockMode && activeTool !== 'eraser' ? 'border-studio-700 opacity-90' : 'border-white/10'}`}>
+                <div className={`mx-1 bg-black/80 backdrop-blur-md border rounded-full shadow-xl flex items-center p-1 transition-all focus-within:ring-1 focus-within:ring-white/20 ${isViewLocked && !unlockMode && activeTool !== 'eraser' ? 'border-studio-700 opacity-90' : 'border-white/10'}`}>
                   {/* Regenerate Button */}
                   <button
                     onClick={handleGenerate}
                     disabled={(isViewLocked && !unlockMode) || !isIterationAllowed}
-                    className={`flex-shrink-0 p-2 mb-1 transition-colors ${isViewLocked && !unlockMode ? 'text-studio-600 cursor-not-allowed' : 'text-studio-400 hover:text-white'}`}
+                    className={`flex-shrink-0 p-1.5 transition-colors ${isViewLocked && !unlockMode ? 'text-studio-600 cursor-not-allowed' : 'text-studio-400 hover:text-white'}`}
                     title="Regenerate with Current Settings"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
                   </button>
 
-                  <div className="w-px h-4 bg-white/10 mx-1 mb-3"></div>
+                  <div className="w-px h-4 bg-white/10 mx-1"></div>
 
                   {/* Input Area */}
                   {activeTool === 'eraser' ? (
-                    <div className="flex-1 px-3 py-2.5 min-h-[36px] flex items-center">
+                    <div className="flex-1 px-2 py-1.5 min-h-[28px] flex items-center">
                       <span className="text-xs font-mono text-purple-300/50 uppercase tracking-widest">
                         {maskPaths.length === 0 ? "Paint Area to Erase" : "Ready to Erase"}
                       </span>
                     </div>
                   ) : isViewLocked && !unlockMode ? (
-                    <div className="flex-1 flex items-center justify-between px-4 py-2">
+                    <div className="flex-1 flex items-center justify-between px-2 py-1">
                       <div className="flex items-center space-x-2 text-studio-400 select-none">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         <span className="text-xs font-mono uppercase tracking-widest">Locked</span>
@@ -2882,7 +2882,7 @@ export default function CastingStudio() {
                       </button>
                     </div>
                   ) : !isIterationAllowed ? (
-                    <div className="flex-1 px-4 py-2 flex items-center space-x-2 text-studio-600 select-none">
+                    <div className="flex-1 px-2 py-1 flex items-center space-x-2 text-studio-600 select-none">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                       <span className="text-xs font-mono uppercase tracking-widest">Locked Angle</span>
                       <Tooltip content="To maintain consistency, only the Headshot, Front Full Body, and Back View can be iterated with text. Use Magic Eraser for corrections." />
@@ -2908,7 +2908,7 @@ export default function CastingStudio() {
                           : `Iterate on ${activeView.replace(/([A-Z])/g, ' $1').toLowerCase()}...`
                       }
                       rows={1}
-                      className={`flex-1 bg-transparent border-none text-xs placeholder:text-studio-500 focus:outline-none focus:ring-0 px-3 py-2.5 font-mono resize-none custom-scrollbar min-h-[36px] max-h-[300px] ${isViewLocked ? 'text-amber-100 placeholder:text-amber-500/50' : isEnhancing ? 'text-studio-500 animate-pulse' : 'text-white'}`}
+                      className={`flex-1 bg-transparent border-none text-xs placeholder:text-studio-500 focus:outline-none focus:ring-0 px-2 py-1.5 font-mono resize-none custom-scrollbar min-h-[28px] max-h-[200px] ${isViewLocked ? 'text-amber-100 placeholder:text-amber-500/50' : isEnhancing ? 'text-studio-500 animate-pulse' : 'text-white'}`}
                     />
                   )}
                   
@@ -2917,7 +2917,7 @@ export default function CastingStudio() {
                     <button
                       onClick={handleEnhance}
                       disabled={!refineInput.trim() || isEnhancing}
-                      className="flex-shrink-0 p-2 mb-1 text-studio-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors mr-1"
+                      className="flex-shrink-0 p-1.5 text-studio-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       title="Enhance Prompt (AI)"
                     >
                       {isEnhancing ? (
@@ -2933,7 +2933,7 @@ export default function CastingStudio() {
                     <button 
                       onClick={handleRefineSubmit}
                       disabled={maskPaths.length === 0}
-                      className={`flex-shrink-0 px-4 py-2 mb-1 mr-1 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${maskPaths.length > 0 ? 'bg-purple-500 text-white hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-studio-800 text-studio-600 cursor-not-allowed'}`}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${maskPaths.length > 0 ? 'bg-purple-500 text-white hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-studio-800 text-studio-600 cursor-not-allowed'}`}
                     >
                       Erase
                     </button>
@@ -2941,7 +2941,7 @@ export default function CastingStudio() {
                     <button 
                       onClick={handleRefineSubmit}
                       disabled={maskPaths.length === 0 || !refineInput.trim() || (isViewLocked && !unlockMode)}
-                      className={`flex-shrink-0 px-4 py-2 mb-1 mr-1 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${(maskPaths.length > 0 && refineInput.trim()) ? 'bg-red-500 text-white hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-studio-800 text-studio-600 cursor-not-allowed'}`}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${(maskPaths.length > 0 && refineInput.trim()) ? 'bg-red-500 text-white hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-studio-800 text-studio-600 cursor-not-allowed'}`}
                     >
                       Apply
                     </button>
@@ -2949,7 +2949,7 @@ export default function CastingStudio() {
                     <button 
                       onClick={handleRefineSubmit}
                       disabled={!refineInput.trim() || (isViewLocked && !unlockMode) || !isIterationAllowed}
-                      className={`flex-shrink-0 p-2 mb-1 rounded-full transition-colors ${(isViewLocked && !unlockMode) || !isIterationAllowed ? 'bg-studio-800 text-studio-600 cursor-not-allowed' : 'bg-white text-black hover:bg-studio-200 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                      className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${(isViewLocked && !unlockMode) || !isIterationAllowed ? 'bg-studio-800 text-studio-600 cursor-not-allowed' : 'bg-white text-black hover:bg-studio-200 disabled:opacity-50 disabled:cursor-not-allowed'}`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
