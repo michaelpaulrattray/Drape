@@ -329,3 +329,26 @@
 - [x] All 65 tests passing (including 16 Casting Studio tests)
 - [ ] Mobile-responsive layout
 - [ ] Keyboard shortcuts for common actions
+
+## Bug Fix: Casting Studio UI Mismatch (COMPLETED)
+
+### Issues Identified & Fixed
+- [x] Added TriBlend selector (Editorial/Commercial/Runway triangle)
+- [x] Added HairColorWheel component (visual color wheel picker with Dyed/Natural tabs)
+- [x] Added Physique section with body type icons (Ultra Thin, Slim, Athletic, Muscular, Curvy, Petite)
+- [x] Fixed brand options (Gucci, Prada, Saint Laurent, Balenciaga, Miu Miu, Versace, Zara, Social Media)
+- [x] Added skin texture and finish options
+- [x] Added advanced face details (jawline, cheekbones, cheeks, eye shape, nose, lips)
+- [x] Added hair builder options (length, texture, fringe, parting, volume, flyaways, hairline, tuck, fade)
+- [x] Added reference image upload node in ImageViewer (drag-and-drop)
+- [x] Added refinement text input for iterations
+- [ ] Missing resolution selector and upscale options (future)
+- [ ] Missing export pack functionality (future)
+
+### Rebuild Tasks Completed
+- [x] Copied exact components from reference app (TriBlendSelector, HairColorWheel, Tooltip)
+- [x] Matched styling with studio-* color classes
+- [x] Implemented TriBlendSelector component with draggable puck
+- [x] Implemented HairColorWheel component with color wheel and tone controls
+- [x] Matched ImageViewer layout with reference node
+- [x] All 65 tests passing
