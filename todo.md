@@ -219,3 +219,4 @@
 - [x] Redesign "Join the Waitlist" section to match landing page aesthetic
 - [x] Update "Solving Problems With Intelligent AI" section typography and style to match rest of page
 - [x] Add email input field above Get Early Access button in hero section
+- [x] Update Trusted By section icons to target market brands (Shopify, Meta, Facebook, Nike, Instagram, Google)
