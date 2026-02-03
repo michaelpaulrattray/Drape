@@ -383,7 +383,7 @@ export async function getUserModels(userId: number, limit: number = 50) {
 
 export async function updateModel(
   modelId: number,
-  data: Partial<Pick<InsertModel, "name" | "status">>
+  data: Partial<Pick<InsertModel, "name" | "status" | "masterPrompt" | "technicalSchema">>
 ): Promise<{ success: boolean; error?: string }> {
   const db = await getDb();
   if (!db) {

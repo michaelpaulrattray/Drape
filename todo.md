@@ -598,3 +598,29 @@
 - [x] Move reference upload node to RIGHT side panel
 - [x] Add NEXT STAGE / GENERATE FULL BODY button on right side
 - [x] Ensure proper spacing and alignment matches reference
+
+
+## Post-Casting Workspace QA Audit - COMPLETED
+
+### Tool Selection + Guided Overlays
+- [x] Tool tip/selector visibly highlights as "active" when clicked (ToolButton component with pulsing dot)
+- [x] Contextual overlays/instructions appear to guide user on next steps (STEP 01/02 badges)
+- [x] Match reference app's SURGICAL EDIT and MAGIC ERASER tool states (Tool Mode Overlay Badge)
+
+### Enhance Prompt Placement + Behavior
+- [x] Enhance Prompt action lives next to Send button
+- [x] Clicking Enhance Prompt transforms/enhances user's prompt text (calls generation.enhance mutation)
+- [x] Enhanced prompt flows correctly into generation/send action
+- [x] Does not replace unrelated fields
+
+### Contextual Tool Availability
+- [x] Only appropriate edit tools visible depending on current view/state
+- [x] Tool enable/disable rules match original app logic
+- [x] Surgical Edit tool available on headshot views
+- [x] Magic Eraser tool available with proper state management
+
+### Master Prompt Rules
+- [x] Master Prompt is copyable (Copy button works in Director's Note)
+- [x] Master Prompt is dynamic (updates every iteration via generateMasterPrompt)
+- [x] Master Prompt reflects latest source of truth for model identity (stored in DB and returned)
+- [x] View Schema button works correctly (toggles between natural description and technical schema)

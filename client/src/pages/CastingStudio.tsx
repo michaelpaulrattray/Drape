@@ -1255,6 +1255,12 @@ export default function CastingStudio() {
         setCurrentAssets(newAssets);
         setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
         setHistoryIndex((prev) => prev + 1);
+        
+        // Update master prompt if returned from iteration
+        if (result.masterPrompt) {
+          setCurrentMasterPrompt(result.masterPrompt);
+        }
+        
         toast.success("Iteration complete!");
         refetchPoints();
       }
@@ -1268,14 +1274,20 @@ export default function CastingStudio() {
   };
 
   // AI prompt enhancement
+  const enhanceMutation = trpc.generation.enhance.useMutation();
+  
   const handleEnhance = async () => {
     if (!refineInput.trim() || isEnhancing) return;
     setIsEnhancing(true);
     try {
-      // Simple enhancement - in production this would call an AI service
-      const enhanced = `[ENHANCED] ${refineInput.trim()}. Maintain character consistency and lighting.`;
-      setRefineInput(enhanced);
-      toast.success("Prompt enhanced!");
+      const result = await enhanceMutation.mutateAsync({ prompt: refineInput.trim() });
+      if (result.success && result.enhancedPrompt) {
+        setRefineInput(result.enhancedPrompt);
+        toast.success("Prompt enhanced!");
+      }
+    } catch (error) {
+      console.error("Enhance error:", error);
+      toast.error("Failed to enhance prompt");
     } finally {
       setIsEnhancing(false);
     }
@@ -2089,13 +2101,30 @@ export default function CastingStudio() {
                   </div>
                 )}
 
-                {/* Masking Instructions */}
+                {/* Tool Mode Overlay Badge */}
                 {isMasking && (
                   <div className="absolute top-4 right-4 z-50 pointer-events-none select-none animate-in fade-in slide-in-from-top-1 duration-300">
-                    <div className={`px-3 py-2 rounded-lg backdrop-blur-md border ${activeTool === 'eraser' ? 'bg-purple-500/20 border-purple-500/50 text-purple-200' : 'bg-red-500/20 border-red-500/50 text-red-200'}`}>
-                      <p className="text-[10px] font-mono uppercase tracking-wider">
-                        {activeTool === 'eraser' ? 'Paint area to erase' : 'Paint area to edit'}
-                      </p>
+                    <div className="bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-white/10 flex items-center space-x-2 shadow-lg">
+                      {activeTool === 'eraser' ? (
+                        <svg className="w-3 h-3 text-purple-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" /><path d="M22 21H7" /><path d="m5 11 9 9" /></svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-red-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z" /><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" /><path d="M2 2l7.586 7.586" /><circle cx="11" cy="11" r="2" /></svg>
+                      )}
+                      <span className={`text-[10px] font-mono uppercase tracking-wider ${activeTool === 'eraser' ? 'text-purple-300' : 'text-red-300'}`}>
+                        {activeTool === 'eraser' ? 'Magic Eraser' : 'Surgical Edit'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Locked Source Badge */}
+                {isViewLocked && !isMasking && (
+                  <div className="absolute top-4 left-4 z-20 animate-in fade-in duration-300">
+                    <div className="bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-white/10 flex items-center space-x-2 shadow-lg">
+                      <svg className="w-3 h-3 text-studio-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                      <span className="text-[10px] font-mono uppercase text-studio-300 tracking-wider">
+                        {activeView === 'backFull' ? "Consistency Lock" : "Locked Source"}
+                      </span>
                     </div>
                   </div>
                 )}

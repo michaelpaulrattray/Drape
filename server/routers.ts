@@ -13,7 +13,7 @@ import {
 import { storagePut, storageDelete } from "./storage";
 import {
   generateMasterPrompt, generateCastingImage, generateFullBody, generateRemainingViews,
-  iterateModel, POINT_COSTS, ModelPreferences
+  iterateModel, enhanceUserPrompt, POINT_COSTS, ModelPreferences
 } from "./aiService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -667,8 +667,20 @@ export const appRouter = router({
         });
 
         try {
+          // Regenerate master prompt with iteration feedback
+          const updatedPromptResult = await generateMasterPrompt(
+            {
+              ...model.preferences as any,
+              userPrompt: input.feedback,
+              previousMasterPrompt: model.masterPrompt,
+            },
+            'ITERATE'
+          );
+          const updatedMasterPrompt = updatedPromptResult.naturalDescription;
+          const updatedSchema = updatedPromptResult.technicalSchema;
+
           const result = await iterateModel(
-            model.masterPrompt,
+            updatedMasterPrompt,
             targetAsset.storageUrl,
             input.feedback,
             {
@@ -705,6 +717,12 @@ export const appRouter = router({
             pointsCost: POINT_COSTS.iterate,
           });
 
+          // Update model with new master prompt
+          await updateModel(input.modelId, {
+            masterPrompt: updatedMasterPrompt,
+            technicalSchema: updatedSchema,
+          });
+
           await updateGeneration(genResult.generationId!, {
             status: "completed",
             resultUrl: result.imageUrl,
@@ -715,6 +733,8 @@ export const appRouter = router({
             success: true,
             imageUrl: result.imageUrl,
             pointsCost: POINT_COSTS.iterate,
+            masterPrompt: updatedMasterPrompt,
+            technicalSchema: updatedSchema,
           };
         } catch (error) {
           await updateGeneration(genResult.generationId!, {
@@ -736,6 +756,28 @@ export const appRouter = router({
 
     // Get point costs for all generation types
     costs: publicProcedure.query(() => POINT_COSTS),
+
+    // Enhance user prompt with AI
+    enhance: protectedProcedure
+      .input(z.object({
+        prompt: z.string().min(1).max(2000),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const enhanced = await enhanceUserPrompt(input.prompt);
+          return {
+            success: true,
+            enhancedPrompt: enhanced,
+          };
+        } catch (error) {
+          console.error("[Enhance] Error:", error);
+          // Return original prompt on error
+          return {
+            success: true,
+            enhancedPrompt: input.prompt,
+          };
+        }
+      }),
   }),
 
   // ============ User Profile ============
