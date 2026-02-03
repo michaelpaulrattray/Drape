@@ -260,39 +260,94 @@ const FACE_ICONS: Record<string, React.ReactNode> = {
 
 // ============ ConnectorLine Component ============
 
-const ConnectorLine = ({ isActive }: { isActive: boolean }) => (
-  <div 
-    className={`absolute top-32 right-56 w-[30vw] h-[30vh] z-10 pointer-events-none transition-all duration-1000 ease-out origin-top-right ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90 blur-sm'}`}
-  >
-    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="overflow-visible">
-      <defs>
-        <linearGradient id="connector-grad" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
-          <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
-          <stop offset="100%" stopColor="transparent" />
-        </linearGradient>
-        <filter id="glow-line">
-          <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
-      <path 
-        d="M 100 0 C 60 0, 40 100, 0 100" 
-        vectorEffect="non-scaling-stroke"
-        stroke="url(#connector-grad)" 
-        strokeWidth="1.5" 
+const ConnectorLine = ({ isActive }: { isActive: boolean }) => {
+  if (!isActive) return null;
+  
+  return (
+    <div className="absolute top-0 right-0 w-full h-full z-5 pointer-events-none overflow-visible">
+      {/* Elegant minimal connector - horizontal line with dot endpoints */}
+      <svg 
+        className="absolute overflow-visible"
+        style={{
+          top: '120px',
+          right: '80px',
+          width: '180px',
+          height: '60px'
+        }}
+        viewBox="0 0 180 60"
         fill="none"
-        strokeDasharray="4 4"
-        filter="url(#glow-line)"
-        className="opacity-80"
-      />
-      <circle cx="100" cy="0" r="3" fill="white" filter="url(#glow-line)" vectorEffect="non-scaling-stroke" />
-    </svg>
-  </div>
-);
+      >
+        <defs>
+          {/* Animated gradient for the line */}
+          <linearGradient id="connector-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.1)" />
+          </linearGradient>
+          {/* Subtle glow effect */}
+          <filter id="connector-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        {/* Main connection path - elegant S-curve */}
+        <path 
+          d="M 0 30 Q 60 30, 90 15 T 180 30"
+          stroke="url(#connector-gradient)"
+          strokeWidth="1"
+          fill="none"
+          strokeLinecap="round"
+          filter="url(#connector-glow)"
+          className="animate-pulse"
+          style={{ animationDuration: '3s' }}
+        />
+        
+        {/* Start dot - near reference image */}
+        <circle 
+          cx="0" 
+          cy="30" 
+          r="4" 
+          fill="rgba(255,255,255,0.8)"
+          filter="url(#connector-glow)"
+        />
+        <circle 
+          cx="0" 
+          cy="30" 
+          r="2" 
+          fill="white"
+        />
+        
+        {/* End dot - near main image */}
+        <circle 
+          cx="180" 
+          cy="30" 
+          r="4" 
+          fill="rgba(255,255,255,0.8)"
+          filter="url(#connector-glow)"
+        />
+        <circle 
+          cx="180" 
+          cy="30" 
+          r="2" 
+          fill="white"
+        />
+        
+        {/* Animated traveling dot */}
+        <circle r="2" fill="white" filter="url(#connector-glow)">
+          <animateMotion 
+            dur="4s" 
+            repeatCount="indefinite"
+            path="M 0 30 Q 60 30, 90 15 T 180 30"
+          />
+        </circle>
+      </svg>
+    </div>
+  );
+};
 
 // ============ StageLockModal Component ============
 

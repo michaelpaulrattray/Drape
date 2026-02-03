@@ -779,3 +779,9 @@
 - [x] Reduce dead space in workspace
 - [x] Enlarge main image to fill more of the available space (max-h-[calc(100vh-180px)])
 - [x] Adjust spacing between elements for tighter layout (reduced Director's Note padding)
+
+
+## Connector Link Redesign
+- [x] Redesign the connector between reference image node and main image
+- [x] Create elegant, minimal connection design (S-curve with animated traveling dot)
+- [x] Ensure smooth animation and responsive behavior (pulse animation, glow effects)
