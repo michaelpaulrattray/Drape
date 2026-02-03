@@ -8,10 +8,18 @@ export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
+  displayName: varchar("displayName", { length: 128 }), // Custom display name
   email: varchar("email", { length: 320 }),
-  avatarUrl: text("avatarUrl"),
+  avatarUrl: text("avatarUrl"), // Profile picture S3 URL
+  avatarKey: varchar("avatarKey", { length: 256 }), // S3 key for cleanup
+  bannerUrl: text("bannerUrl"), // Cover photo S3 URL
+  bannerKey: varchar("bannerKey", { length: 256 }), // S3 key for cleanup
+  bio: text("bio"), // User bio/description
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  // Storage quota management (in bytes)
+  storageUsed: int("storageUsed").default(0).notNull(), // Current storage used
+  storageLimit: int("storageLimit").default(104857600).notNull(), // 100MB default limit
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

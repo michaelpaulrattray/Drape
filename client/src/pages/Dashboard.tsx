@@ -23,7 +23,7 @@ import {
   Aperture,
   Settings,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
 
 export default function Dashboard() {
@@ -44,6 +44,24 @@ export default function Dashboard() {
     undefined,
     { enabled: isAuthenticated }
   );
+
+  // Get profile data from backend
+  const { data: profileData } = trpc.profile.get.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+
+  // Sync profile images from backend on load
+  useEffect(() => {
+    if (profileData) {
+      if (profileData.avatarUrl && !profileImage) {
+        setProfileImage(profileData.avatarUrl);
+      }
+      if (profileData.bannerUrl && !bannerImage) {
+        setBannerImage(profileData.bannerUrl);
+      }
+    }
+  }, [profileData]);
 
   if (loading) {
     return (

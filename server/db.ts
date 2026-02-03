@@ -528,3 +528,137 @@ export async function getGenerationById(generationId: number) {
   const result = await db.select().from(generations).where(eq(generations.id, generationId)).limit(1);
   return result.length > 0 ? result[0] : null;
 }
+
+
+// ============ User Profile Functions ============
+
+export interface ProfileUpdateData {
+  displayName?: string | null;
+  bio?: string | null;
+  avatarUrl?: string | null;
+  avatarKey?: string | null;
+  bannerUrl?: string | null;
+  bannerKey?: string | null;
+}
+
+export async function updateUserProfile(
+  userId: number,
+  data: ProfileUpdateData
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    const updateData: Record<string, unknown> = {};
+    
+    if (data.displayName !== undefined) updateData.displayName = data.displayName;
+    if (data.bio !== undefined) updateData.bio = data.bio;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+    if (data.avatarKey !== undefined) updateData.avatarKey = data.avatarKey;
+    if (data.bannerUrl !== undefined) updateData.bannerUrl = data.bannerUrl;
+    if (data.bannerKey !== undefined) updateData.bannerKey = data.bannerKey;
+
+    if (Object.keys(updateData).length === 0) {
+      return { success: true }; // Nothing to update
+    }
+
+    await db.update(users).set(updateData).where(eq(users.id, userId));
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to update user profile:", error);
+    return { success: false, error: "Failed to update profile" };
+  }
+}
+
+export async function getUserById(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getUserStorageInfo(userId: number): Promise<{ used: number; limit: number } | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select({ storageUsed: users.storageUsed, storageLimit: users.storageLimit })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  
+  if (result.length === 0) return null;
+  return { used: result[0].storageUsed, limit: result[0].storageLimit };
+}
+
+export async function updateUserStorageUsed(
+  userId: number,
+  bytesChange: number
+): Promise<{ success: boolean; newUsed?: number; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    const user = await getUserById(userId);
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    const newUsed = Math.max(0, user.storageUsed + bytesChange);
+    
+    // Check if adding storage would exceed limit (only for positive changes)
+    if (bytesChange > 0 && newUsed > user.storageLimit) {
+      return { success: false, error: "Storage limit exceeded" };
+    }
+
+    await db.update(users).set({ storageUsed: newUsed }).where(eq(users.id, userId));
+    return { success: true, newUsed };
+  } catch (error) {
+    console.error("[Database] Failed to update storage used:", error);
+    return { success: false, error: "Failed to update storage" };
+  }
+}
+
+// ============ Asset Cleanup Functions ============
+
+export async function getModelAssetsForCleanup(modelId: number): Promise<{ storageKey: string | null }[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({ storageKey: modelAssets.storageKey })
+    .from(modelAssets)
+    .where(eq(modelAssets.modelId, modelId));
+}
+
+export async function deleteModelWithAssetKeys(modelId: number): Promise<{ 
+  success: boolean; 
+  assetKeys: string[]; 
+  error?: string 
+}> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, assetKeys: [], error: "Database not available" };
+  }
+
+  try {
+    // Get all asset keys before deletion
+    const assets = await getModelAssetsForCleanup(modelId);
+    const assetKeys = assets.map(a => a.storageKey).filter((k): k is string => k !== null);
+
+    // Delete associated assets first
+    await db.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
+    // Delete the model
+    await db.delete(models).where(eq(models.id, modelId));
+    
+    return { success: true, assetKeys };
+  } catch (error) {
+    console.error("[Database] Failed to delete model:", error);
+    return { success: false, assetKeys: [], error: "Failed to delete model" };
+  }
+}

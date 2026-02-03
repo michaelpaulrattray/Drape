@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { trpc } from "@/lib/trpc";
 import {
   X,
   User,
@@ -10,6 +11,8 @@ import {
   Check,
   ChevronRight,
   Sparkles,
+  AlertCircle,
+  HardDrive,
 } from "lucide-react";
 
 interface ProfileSettingsModalProps {
@@ -44,35 +47,183 @@ export default function ProfileSettingsModal({
 }: ProfileSettingsModalProps) {
   const [activeTab, setActiveTab] = useState<"profile" | "billing" | "notifications" | "security">("profile");
   const [editedName, setEditedName] = useState(user?.name || "");
-  const [editedEmail, setEditedEmail] = useState(user?.email || "");
+  const [editedBio, setEditedBio] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch user profile data
+  const { data: profileData, refetch: refetchProfile } = trpc.profile.get.useQuery(
+    undefined,
+    { enabled: isOpen }
+  );
+
+  // Fetch storage info
+  const { data: storageInfo } = trpc.profile.storageInfo.useQuery(
+    undefined,
+    { enabled: isOpen }
+  );
+
+  // Mutations
+  const updateProfileMutation = trpc.profile.update.useMutation({
+    onSuccess: () => {
+      setSuccessMessage("Profile updated successfully!");
+      refetchProfile();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (err) => {
+      setError(err.message);
+      setTimeout(() => setError(null), 5000);
+    },
+  });
+
+  const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
+    onSuccess: (data) => {
+      onProfileImageChange(data.avatarUrl);
+      setSuccessMessage("Avatar updated!");
+      refetchProfile();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (err) => {
+      setError(err.message);
+      setTimeout(() => setError(null), 5000);
+    },
+  });
+
+  const uploadBannerMutation = trpc.profile.uploadBanner.useMutation({
+    onSuccess: (data) => {
+      onBannerImageChange(data.bannerUrl);
+      setSuccessMessage("Banner updated!");
+      refetchProfile();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (err) => {
+      setError(err.message);
+      setTimeout(() => setError(null), 5000);
+    },
+  });
+
+  // Update local state when profile data loads
+  useEffect(() => {
+    if (profileData) {
+      setEditedName(profileData.displayName || profileData.name || "");
+      setEditedBio(profileData.bio || "");
+      if (profileData.avatarUrl) {
+        onProfileImageChange(profileData.avatarUrl);
+      }
+      if (profileData.bannerUrl) {
+        onBannerImageChange(profileData.bannerUrl);
+      }
+    }
+  }, [profileData]);
 
   if (!isOpen) return null;
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate save - in production this would call a tRPC mutation
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setIsSaving(false);
-    onClose();
-  };
-
-  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      onProfileImageChange(url);
+    setError(null);
+    try {
+      await updateProfileMutation.mutateAsync({
+        displayName: editedName || undefined,
+        bio: editedBio || undefined,
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleBannerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      onBannerImageChange(url);
+    if (!file) return;
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Avatar file size must be under 5MB");
+      return;
     }
+
+    // Validate file type
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Avatar must be a JPG, PNG, or WebP image");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setError(null);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(",")[1];
+        await uploadAvatarMutation.mutateAsync({
+          base64Data: base64,
+          mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
+          fileSize: file.size,
+        });
+        setIsUploadingAvatar(false);
+      };
+      reader.onerror = () => {
+        setError("Failed to read file");
+        setIsUploadingAvatar(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Banner file size must be under 10MB");
+      return;
+    }
+
+    // Validate file type
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Banner must be a JPG, PNG, or WebP image");
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    setError(null);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(",")[1];
+        await uploadBannerMutation.mutateAsync({
+          base64Data: base64,
+          mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
+          fileSize: file.size,
+        });
+        setIsUploadingBanner(false);
+      };
+      reader.onerror = () => {
+        setError("Failed to read file");
+        setIsUploadingBanner(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsUploadingBanner(false);
+    }
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
   const tabs = [
@@ -106,6 +257,20 @@ export default function ProfileSettingsModal({
           </button>
         </div>
 
+        {/* Error/Success Messages */}
+        {error && (
+          <div className="mx-6 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400" />
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+        )}
+        {successMessage && (
+          <div className="mx-6 mt-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+            <Check className="w-4 h-4 text-green-400" />
+            <p className="text-sm text-green-400">{successMessage}</p>
+          </div>
+        )}
+
         <div className="flex h-[calc(85vh-80px)]">
           {/* Sidebar Tabs */}
           <div className="w-48 border-r border-white/10 p-4 space-y-1">
@@ -136,7 +301,7 @@ export default function ProfileSettingsModal({
                   </label>
                   <div className="relative h-32 rounded-lg overflow-hidden border border-white/10 group">
                     <img
-                      src={bannerImage || defaultBanner}
+                      src={bannerImage || profileData?.bannerUrl || defaultBanner}
                       alt="Cover"
                       className="w-full h-full object-cover"
                       style={{ filter: 'grayscale(100%) brightness(0.4)' }}
@@ -144,20 +309,31 @@ export default function ProfileSettingsModal({
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <button
                         onClick={() => bannerInputRef.current?.click()}
-                        className="px-4 py-2 rounded-md bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"
+                        disabled={isUploadingBanner}
+                        className="px-4 py-2 rounded-md bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2 disabled:opacity-50"
                       >
-                        <Upload className="w-4 h-4" />
-                        Change Cover
+                        {isUploadingBanner ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" />
+                            Change Cover
+                          </>
+                        )}
                       </button>
                     </div>
                     <input
                       type="file"
                       ref={bannerInputRef}
                       className="hidden"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       onChange={handleBannerImageUpload}
                     />
                   </div>
+                  <p className="text-xs text-neutral-600 mt-2 font-mono">JPG, PNG or WebP. Max 10MB.</p>
                 </div>
 
                 {/* Avatar Upload */}
@@ -169,33 +345,38 @@ export default function ProfileSettingsModal({
                     <div className="relative group">
                       <div className="w-20 h-20 rounded-full overflow-hidden border border-white/10">
                         <img
-                          src={profileImage || defaultAvatar}
+                          src={profileImage || profileData?.avatarUrl || defaultAvatar}
                           alt="Profile"
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <button
                         onClick={() => profilePicInputRef.current?.click()}
-                        className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        disabled={isUploadingAvatar}
+                        className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:opacity-50"
                       >
-                        <Upload className="w-5 h-5 text-white" />
+                        {isUploadingAvatar ? (
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <Upload className="w-5 h-5 text-white" />
+                        )}
                       </button>
                       <input
                         type="file"
                         ref={profilePicInputRef}
                         className="hidden"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         onChange={handleProfileImageUpload}
                       />
                     </div>
                     <div>
                       <p className="text-sm text-neutral-300">Upload a new profile picture</p>
-                      <p className="text-xs text-neutral-500 font-mono">JPG, PNG or GIF. Max 5MB.</p>
+                      <p className="text-xs text-neutral-500 font-mono">JPG, PNG or WebP. Max 5MB.</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Name */}
+                {/* Display Name */}
                 <div>
                   <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">
                     // Display Name
@@ -204,25 +385,71 @@ export default function ProfileSettingsModal({
                     type="text"
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
+                    maxLength={100}
                     className="w-full bg-white/5 border border-white/10 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors"
                     placeholder="Your display name"
                   />
+                  <p className="text-xs text-neutral-600 mt-1 font-mono">{editedName.length}/100 characters</p>
                 </div>
 
-                {/* Email */}
+                {/* Bio */}
+                <div>
+                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">
+                    // Bio
+                  </label>
+                  <textarea
+                    value={editedBio}
+                    onChange={(e) => setEditedBio(e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    className="w-full bg-white/5 border border-white/10 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                    placeholder="Tell us about yourself..."
+                  />
+                  <p className="text-xs text-neutral-600 mt-1 font-mono">{editedBio.length}/500 characters</p>
+                </div>
+
+                {/* Email (read-only) */}
                 <div>
                   <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">
                     // Email Address
                   </label>
                   <input
                     type="email"
-                    value={editedEmail}
-                    onChange={(e) => setEditedEmail(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors"
-                    placeholder="your@email.com"
+                    value={profileData?.email || user?.email || ""}
+                    readOnly
+                    className="w-full bg-white/5 border border-white/10 rounded-md px-4 py-3 text-neutral-400 text-sm cursor-not-allowed"
                   />
-                  <p className="text-xs text-neutral-600 mt-2 font-mono">Used for account notifications</p>
+                  <p className="text-xs text-neutral-600 mt-2 font-mono">Email cannot be changed</p>
                 </div>
+
+                {/* Storage Usage */}
+                {storageInfo && (
+                  <div>
+                    <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">
+                      // Storage Usage
+                    </label>
+                    <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="w-4 h-4 text-neutral-400" />
+                          <span className="text-sm text-white">
+                            {formatBytes(storageInfo.used)} / {formatBytes(storageInfo.limit)}
+                          </span>
+                        </div>
+                        <span className="text-xs text-neutral-500 font-mono">{storageInfo.percentage}% used</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all ${
+                            storageInfo.percentage > 90 ? "bg-red-500" : 
+                            storageInfo.percentage > 70 ? "bg-orange-500" : "bg-green-500"
+                          }`}
+                          style={{ width: `${storageInfo.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Save Button */}
                 <div className="pt-4">
@@ -370,7 +597,7 @@ export default function ProfileSettingsModal({
                   </label>
                   <div className="space-y-3">
                     {[
-                      { provider: "Google", connected: true, email: user?.email },
+                      { provider: "Google", connected: true, email: profileData?.email || user?.email },
                       { provider: "Apple", connected: false, email: null },
                     ].map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10">

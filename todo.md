@@ -253,3 +253,36 @@
 - [x] Link AI generations to model records
 - [x] Generation history tracking
 - [x] Unit tests for AI service and models
+
+## Phase 3: Model & Asset Storage (Completion)
+
+### User Profile Persistence
+- [x] Add profile fields to user table (displayName, bio, avatarUrl, avatarKey, bannerUrl, bannerKey)
+- [x] Add storage quota fields to user table (storageUsed, storageLimit)
+- [x] Create profile.get tRPC endpoint to fetch full profile
+- [x] Create profile.update tRPC endpoint for displayName and bio
+- [x] Create profile.uploadAvatar tRPC endpoint with S3 storage
+- [x] Create profile.uploadBanner tRPC endpoint with S3 storage
+- [x] Create profile.storageInfo tRPC endpoint for storage usage
+- [x] Update Dashboard to fetch and display persistent profile data
+- [x] Update ProfileSettingsModal to save changes to database
+- [x] Add storage usage display in profile settings
+
+### Asset Management & Scalability
+- [x] Add storageDelete function to storage.ts for S3 cleanup
+- [x] Add S3 cleanup on profile image update (delete old avatar/banner)
+- [x] Implement file size limits and validation (5MB avatar, 10MB banner)
+- [x] Implement storage quota per user (100MB default limit)
+- [x] Add storage limit enforcement on uploads
+- [x] Track storage usage with updateUserStorageUsed function
+- [ ] Implement asset upload endpoint for reference images
+- [ ] Add S3 cleanup on model deletion (delete associated assets)
+- [ ] Add image compression/optimization before upload
+
+### Asset Versioning
+- [ ] Track iteration history for each view type
+- [ ] Allow users to view previous versions of generated images
+
+### Testing
+- [x] Profile management unit tests (16 tests)
+- [x] All 49 tests passing
