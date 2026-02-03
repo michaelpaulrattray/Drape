@@ -258,9 +258,6 @@ export default function Dashboard() {
             {/* Glass Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-[#0A0A0A] backdrop-blur-sm" />
             
-            {/* Grid Pattern Overlay */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px]" />
-            
             {/* Top Label */}
             <div className="absolute top-6 left-10 flex items-center gap-4">
               <span className="font-mono text-[10px] text-neutral-500 uppercase tracking-widest">[01/01] // DASHBOARD</span>

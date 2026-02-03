@@ -209,3 +209,6 @@
 - [x] Use white/light backgrounds instead of orange for primary buttons
 - [x] Keep orange only for small accents (dots, indicators, hover borders)
 - [x] Apply consistent pill shape across all dashboard buttons
+
+## Bug Fixes
+- [x] Fix cover photo showing checkerboard pattern instead of uploaded image
