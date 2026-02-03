@@ -216,7 +216,9 @@ function ServicesMarqueeSection() {
   const tripleCards = [...serviceCards, ...serviceCards, ...serviceCards];
 
   return (
-    <section className="border-t border-b border-black/10 bg-white py-24 overflow-hidden">
+    <section className="border-t border-b border-black/10 bg-zinc-50 py-24 overflow-hidden relative">
+      {/* Grid lines overlay for visual consistency */}
+      <div className="absolute inset-0 grid-lines pointer-events-none" />
       <div className="px-6 md:px-12 mb-16 md:mb-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
           <div>
