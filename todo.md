@@ -624,3 +624,24 @@
 - [x] Master Prompt is dynamic (updates every iteration via generateMasterPrompt)
 - [x] Master Prompt reflects latest source of truth for model identity (stored in DB and returned)
 - [x] View Schema button works correctly (toggles between natural description and technical schema)
+
+
+## Surgical Edit & Magic Eraser Tool Verification - COMPLETED
+
+### Surgical Edit Tool
+- [x] Verify mask painting works correctly (canvas drawing)
+- [x] Verify mask is sent to backend as base64 (added getGuideOverlayDataUrl function)
+- [x] Verify surgical edit generation uses mask correctly (passes maskBase64 through iteration endpoint)
+- [x] Verify step instructions match reference (STEP 01: Paint Target Area, STEP 02: Describe Edit)
+
+### Magic Eraser Tool
+- [x] Verify eraser mask painting works correctly
+- [x] Verify "ERASE" button appears after painting
+- [x] Verify eraser generation removes painted areas (uses automatic prompt with mask)
+- [x] Verify step instructions match reference (STEP 01: Paint Area, STEP 02: Click Erase Button)
+
+### Common Functionality
+- [x] Verify tool switching clears previous mask (useEffect on activeTool)
+- [x] Verify mask overlay is visible during painting (canvas with pointer events)
+- [x] Verify brush size/cursor is appropriate (20px line width, crosshair cursor)
+- [x] Verify mask paths are properly stored and cleared

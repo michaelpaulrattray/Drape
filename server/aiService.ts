@@ -215,11 +215,14 @@ export async function iterateModel(
   iterationRequest: string,
   options: {
     maskImage?: string;
+    maskBase64?: string; // Base64 encoded mask from frontend
     additionalReference?: string;
     frame?: 'HEADSHOT' | 'FULL_BODY';
     castingBrand?: string;
   } = {}
 ): Promise<GenerationResult> {
+  // Use maskBase64 if provided (from frontend), otherwise use maskImage
+  const effectiveMask = options.maskBase64 || options.maskImage;
   // If currentImageUrl is an S3 URL, we need to fetch it and convert to base64
   let currentBase64 = currentImageUrl;
   if (currentImageUrl.startsWith('http')) {
@@ -240,7 +243,7 @@ export async function iterateModel(
     options.castingBrand || 'Generic',
     options.frame || 'HEADSHOT',
     undefined,
-    options.maskImage
+    effectiveMask // Use the effective mask (from frontend or direct)
   );
 
   // Upload base64 to S3 for persistent storage

@@ -903,6 +903,52 @@ export default function CastingStudio() {
     setCurrentPath([]);
   };
 
+  // Generate mask overlay image for surgical edit/eraser
+  const getGuideOverlayDataUrl = (): string | undefined => {
+    if (maskPaths.length === 0 || !imageRef.current) return undefined;
+    
+    const img = imageRef.current;
+    
+    const cvs = document.createElement('canvas');
+    cvs.width = img.naturalWidth;
+    cvs.height = img.naturalHeight;
+
+    const ctx = cvs.getContext('2d');
+    if (!ctx) return undefined;
+
+    // Draw the original image
+    ctx.drawImage(img, 0, 0);
+
+    // Calculate brush size relative to image size
+    const brushSize = Math.max(10, img.naturalWidth * 0.04);
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Draw mask paths with semi-transparent red overlay
+    ctx.lineWidth = brushSize;
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.45)';
+
+    const drawPaths = () => {
+      maskPaths.forEach(path => {
+        if (path.length < 1) return;
+        ctx.beginPath();
+        ctx.moveTo(path[0].x * cvs.width, path[0].y * cvs.height);
+        path.forEach(p => ctx.lineTo(p.x * cvs.width, p.y * cvs.height));
+        ctx.stroke();
+      });
+    };
+    
+    drawPaths();
+
+    // Add a softer inner layer for better visibility
+    ctx.lineWidth = brushSize * 0.8;
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.1)'; 
+    drawPaths();
+
+    return cvs.toDataURL('image/png');
+  };
+
   // Get hair styles based on gender
   const currentHairFamilies = useMemo(() => {
     const g = (prefs.gender || "Female").toLowerCase();
@@ -1194,26 +1240,29 @@ export default function CastingStudio() {
   const handleRefineSubmit = async () => {
     if (!currentModelId || !currentImageUrl) return;
 
+    // Get mask if we're in masking mode
+    const maskBase64 = isMasking ? getGuideOverlayDataUrl() : undefined;
+
     // For eraser tool, use automatic prompt
     if (activeTool === 'eraser') {
       if (maskPaths.length === 0) return;
       const prompt = "FIX ARTIFACT: Remove the content in the masked area. Inpaint with surrounding skin texture, lighting, and noise. Restore the background if needed. Do not add new objects.";
-      await performIteration(prompt);
+      await performIteration(prompt, maskBase64);
       setActiveTool('none');
       setMaskPaths([]);
       return;
     }
 
-    // For text input
+    // For text input (surgical edit or regular iteration)
     if (refineInput.trim()) {
-      await performIteration(refineInput);
+      await performIteration(refineInput, maskBase64);
       setRefineInput("");
       setActiveTool('none');
       setMaskPaths([]);
     }
   };
 
-  const performIteration = async (prompt: string) => {
+  const performIteration = async (prompt: string, maskBase64?: string) => {
     if (!currentModelId) return;
 
     if (!pointsData || pointsData.balance < POINT_COSTS.iteration) {
@@ -1221,7 +1270,7 @@ export default function CastingStudio() {
       return;
     }
 
-    setGenState({ isGenerating: true, currentStep: "Iterating...", error: null });
+    setGenState({ isGenerating: true, currentStep: maskBase64 ? "Applying surgical edit..." : "Iterating...", error: null });
 
     try {
       // Find the asset ID for the current view
@@ -1234,6 +1283,7 @@ export default function CastingStudio() {
         modelId: currentModelId,
         feedback: prompt,
         assetId: currentAsset.id,
+        maskBase64, // Pass the mask for surgical edit/eraser
       });
 
       if (result.success && result.imageUrl) {

@@ -633,6 +633,7 @@ export const appRouter = router({
         modelId: z.number(),
         feedback: z.string().min(1),
         assetId: z.number(),
+        maskBase64: z.string().optional(), // Base64 encoded mask image for surgical edit/eraser
       }))
       .mutation(async ({ ctx, input }) => {
         const userPoints = await getUserPoints(ctx.user.id);
@@ -686,6 +687,7 @@ export const appRouter = router({
             {
               castingBrand: (model.technicalSchema as any)?.context?.casting_for,
               frame: targetAsset.viewType === 'frontClose' ? 'HEADSHOT' : 'FULL_BODY',
+              maskBase64: input.maskBase64, // Pass mask for surgical edit/eraser
             }
           );
 
