@@ -716,3 +716,45 @@
 
 ## Bug Fixes
 - [x] Fix infinite loop in HairColorWheel component (useEffect dependency issue at line 80)
+
+
+## UI/UX Fixes to Match Original App (Reference Image 1)
+
+### Workspace Layout
+- [ ] Update UI/layout to match Reference Image 1 (spacing, alignment, node layout, panels)
+- [ ] Fix image container positioning to match original
+
+### Chat/Iteration Submission
+- [x] Fix chat box to allow submission when tool is selected + text entered
+- [x] Ensure correct iteration flow is triggered (surgical tool requires mask + text)
+
+### Download Button
+- [x] Fix Download button to trigger immediate browser download (fetches as blob for cross-origin)
+
+### Reference Node Connections
+- [ ] Fix visual connector/edge between reference image nodes and main image container
+- [ ] Fix node positioning and edge rendering for all screen sizes
+
+### Technical Schema Viewer
+- [x] Implement "View Technical Schema" in Director's Notes
+- [x] Display JSON representation of master prompt / technical schema
+- [x] Create proper viewer/modal/panel for JSON display (toggle button in Director's Notes)
+
+### Tool Icon Visibility
+- [x] Increase visibility of tool icons in default (inactive) state
+- [x] Maintain hover/active styling
+
+### Undo/Redo Behavior
+- [x] Fix undo/redo stack consistency (already working correctly)
+- [x] Include/exclude tool actions and prompt edits appropriately
+- [x] Reflect state updates in UI immediately
+
+### Auto-Generation Flow
+- [x] Add walking side view generation (step 4 in workflow)
+- [ ] Auto-generate remaining views after full frontal body view
+- [ ] Remove need for "Generate Next View" click
+
+### Export Functionality
+- [x] Export individual PNG images for each view (all views in ZIP)
+- [x] Generate correct PDF layout with embedded images
+- [x] Fix export packaging/layout to match original app

@@ -172,7 +172,7 @@ export async function generateRemainingViews(
   masterPrompt: string,
   sourceImageUrl: string,
   gender: string,
-  viewType: 'side' | 'back'
+  viewType: 'side' | 'back' | 'walk'
 ): Promise<GenerationResult> {
   // If sourceImageUrl is an S3 URL, we need to fetch it and convert to base64
   let sourceBase64 = sourceImageUrl;
@@ -188,7 +188,9 @@ export async function generateRemainingViews(
   // Get the requested view
   let base64Result: string | undefined;
   if (viewType === 'side') {
-    base64Result = views.sideClose || views.sideFull;
+    base64Result = views.sideClose;
+  } else if (viewType === 'walk') {
+    base64Result = views.sideFull;
   } else {
     base64Result = views.backFull;
   }

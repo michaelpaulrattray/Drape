@@ -344,7 +344,7 @@ const ToolButton = ({
     className={`relative group w-10 h-10 flex items-center justify-center rounded-lg border transition-all duration-200 shadow-lg backdrop-blur-sm
       ${isActive 
         ? color === 'red' ? 'bg-red-500/10 border-red-500 text-red-400' : 'bg-purple-500/10 border-purple-500 text-purple-400'
-        : 'bg-black/60 border-studio-700 text-studio-400 hover:text-white hover:border-studio-500'
+        : 'bg-black/60 border-studio-600 text-studio-300 hover:text-white hover:border-studio-400'
       }
     `}
     title={label}
@@ -803,6 +803,7 @@ export default function CastingStudio() {
   const [activeView, setActiveView] = useState<string>("frontClose");
   const [modelName, setModelName] = useState("");
   const [currentMasterPrompt, setCurrentMasterPrompt] = useState<string>("");
+  const [currentTechnicalSchema, setCurrentTechnicalSchema] = useState<Record<string, any> | null>(null);
   const [showSchema, setShowSchema] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -1220,6 +1221,7 @@ export default function CastingStudio() {
 
       setCurrentModelId(modelResult.modelId ?? null);
       setCurrentMasterPrompt(modelResult.masterPrompt || "");
+      setCurrentTechnicalSchema(modelResult.technicalSchema || null);
 
       setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot..." }));
       const imageResult = await generateCastingMutation.mutateAsync({
@@ -1298,53 +1300,66 @@ export default function CastingStudio() {
   };
 
   // Handle generate multi-view with stage lock
-  const handleGenerateMultiView = async (viewType: "side" | "back") => {
+  const handleGenerateMultiView = async (viewType: "side" | "back" | "walk") => {
     if (!currentModelId) return;
 
-    setLockModal({
-      isOpen: true,
-      title: 'Lock Body & Generate Views?',
-      message: "Are you sure you want to proceed to casting sheet generation? You won't be able to edit the body pose without resetting the entire sheet.",
-      onConfirm: async () => {
-        setLockModal(prev => ({ ...prev, isOpen: false }));
-
-        if (!pointsData || pointsData.balance < POINT_COSTS.multiView) {
-          toast.error(`Insufficient points. Need ${POINT_COSTS.multiView} points.`);
-          return;
-        }
-
-        setGenState({ isGenerating: true, currentStep: `Generating ${viewType} view...`, error: null });
-
-        try {
-          const result = await generateMultiViewMutation.mutateAsync({
-            modelId: currentModelId,
-            viewType,
-          });
-
-          if (result.success && result.imageUrl) {
-            const viewKey = viewType === "side" ? "sideClose" : "backFull";
-            const newAsset: GeneratedAsset = {
-              id: Date.now(),
-              viewType: viewKey,
-              storageUrl: result.imageUrl,
-            };
-            const newAssets = [...currentAssets.filter((a) => a.viewType !== viewKey), newAsset];
-            setCurrentAssets(newAssets);
-            setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
-            setHistoryIndex((prev) => prev + 1);
-            setActiveView(viewKey);
-            toast.success(`${viewType} view generated!`);
-            refetchPoints();
-          }
-
-          setGenState({ isGenerating: false, currentStep: "", error: null });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Generation failed";
-          setGenState({ isGenerating: false, currentStep: "", error: message });
-          toast.error(message);
-        }
+    // For walk view, skip the lock modal since body is already locked
+    const skipLockModal = viewType === 'walk' || viewType === 'back';
+    
+    const doGenerate = async () => {
+      if (!pointsData || pointsData.balance < POINT_COSTS.multiView) {
+        toast.error(`Insufficient points. Need ${POINT_COSTS.multiView} points.`);
+        return;
       }
-    });
+
+      const viewLabel = viewType === 'walk' ? 'walking' : viewType;
+      setGenState({ isGenerating: true, currentStep: `Generating ${viewLabel} view...`, error: null });
+
+      try {
+        // Map viewType to backend expected value
+        const backendViewType = viewType === 'walk' ? 'walk' : viewType;
+        const result = await generateMultiViewMutation.mutateAsync({
+          modelId: currentModelId,
+          viewType: backendViewType as "side" | "back",
+        });
+
+        if (result.success && result.imageUrl) {
+          const viewKey = viewType === "side" ? "sideClose" : viewType === "walk" ? "sideFull" : "backFull";
+          const newAsset: GeneratedAsset = {
+            id: Date.now(),
+            viewType: viewKey,
+            storageUrl: result.imageUrl,
+          };
+          const newAssets = [...currentAssets.filter((a) => a.viewType !== viewKey), newAsset];
+          setCurrentAssets(newAssets);
+          setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
+          setHistoryIndex((prev) => prev + 1);
+          setActiveView(viewKey);
+          toast.success(`${viewLabel} view generated!`);
+          refetchPoints();
+        }
+
+        setGenState({ isGenerating: false, currentStep: "", error: null });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Generation failed";
+        setGenState({ isGenerating: false, currentStep: "", error: message });
+        toast.error(message);
+      }
+    };
+
+    if (skipLockModal) {
+      await doGenerate();
+    } else {
+      setLockModal({
+        isOpen: true,
+        title: 'Lock Body & Generate Views?',
+        message: "Are you sure you want to proceed to casting sheet generation? You won't be able to edit the body pose without resetting the entire sheet.",
+        onConfirm: async () => {
+          setLockModal(prev => ({ ...prev, isOpen: false }));
+          await doGenerate();
+        }
+      });
+    }
   };
 
   // Handle iteration/refinement
@@ -1354,7 +1369,7 @@ export default function CastingStudio() {
     // Get mask if we're in masking mode
     const maskBase64 = isMasking ? getGuideOverlayDataUrl() : undefined;
 
-    // For eraser tool, use automatic prompt
+    // For eraser tool, use automatic prompt (no text needed)
     if (activeTool === 'eraser') {
       if (maskPaths.length === 0) return;
       const prompt = "FIX ARTIFACT: Remove the content in the masked area. Inpaint with surrounding skin texture, lighting, and noise. Restore the background if needed. Do not add new objects.";
@@ -1364,7 +1379,24 @@ export default function CastingStudio() {
       return;
     }
 
-    // For text input (surgical edit or regular iteration)
+    // For surgical tool with mask - require both mask and text
+    if (activeTool === 'surgical') {
+      if (maskPaths.length === 0) {
+        toast.error('Please paint the area you want to edit first');
+        return;
+      }
+      if (!refineInput.trim()) {
+        toast.error('Please describe the change you want to make');
+        return;
+      }
+      await performIteration(refineInput, maskBase64);
+      setRefineInput("");
+      setActiveTool('none');
+      setMaskPaths([]);
+      return;
+    }
+
+    // For regular text iteration (no tool selected)
     if (refineInput.trim()) {
       await performIteration(refineInput, maskBase64);
       setRefineInput("");
@@ -1752,7 +1784,7 @@ export default function CastingStudio() {
         label: 'Generate Full Body', 
         action: handleGenerateFullBody,
         step: 2,
-        total: 4,
+        total: 5,
       };
     }
     
@@ -1761,7 +1793,16 @@ export default function CastingStudio() {
         label: 'Generate Side View', 
         action: () => handleGenerateMultiView('side'),
         step: 3,
-        total: 4,
+        total: 5,
+      };
+    }
+    
+    if (!currentAssets.some(a => a.viewType === 'sideFull')) {
+      return { 
+        label: 'Generate Walking View', 
+        action: () => handleGenerateMultiView('walk'),
+        step: 4,
+        total: 5,
       };
     }
     
@@ -1769,16 +1810,16 @@ export default function CastingStudio() {
       return { 
         label: 'Generate Back View', 
         action: () => handleGenerateMultiView('back'),
-        step: 4,
-        total: 4,
+        step: 5,
+        total: 5,
       };
     }
 
     return {
       label: 'Export Character Pack',
       action: () => setShowExportModal(true),
-      step: 5, 
-      total: 4,
+      step: 6, 
+      total: 5,
     };
   }, [currentAssets, genState.isGenerating]);
 
@@ -2597,14 +2638,25 @@ export default function CastingStudio() {
 
                 {/* Download Button */}
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!currentImageUrl) return;
-                    const link = document.createElement('a');
-                    link.href = currentImageUrl;
-                    link.download = `FORMASTUDIO_${activeView}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    try {
+                      // Fetch the image as blob to handle cross-origin
+                      const response = await fetch(currentImageUrl);
+                      const blob = await response.blob();
+                      const blobUrl = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = blobUrl;
+                      link.download = `FORMASTUDIO_${activeView}.png`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(blobUrl);
+                      toast.success('Image downloaded!');
+                    } catch (error) {
+                      console.error('Download failed:', error);
+                      toast.error('Download failed');
+                    }
                   }}
                   className="absolute bottom-4 right-4 z-30 p-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-studio-400 hover:text-white hover:border-white/30 transition-all"
                   title="Download Image"
@@ -2738,6 +2790,14 @@ export default function CastingStudio() {
                     >
                       Erase
                     </button>
+                  ) : activeTool === 'surgical' ? (
+                    <button 
+                      onClick={handleRefineSubmit}
+                      disabled={maskPaths.length === 0 || !refineInput.trim() || (isViewLocked && !unlockMode)}
+                      className={`flex-shrink-0 px-4 py-2 mb-1 mr-1 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${(maskPaths.length > 0 && refineInput.trim()) ? 'bg-red-500 text-white hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-studio-800 text-studio-600 cursor-not-allowed'}`}
+                    >
+                      Apply
+                    </button>
                   ) : (
                     <button 
                       onClick={handleRefineSubmit}
@@ -2765,11 +2825,13 @@ export default function CastingStudio() {
                           onClick={() => setShowSchema(!showSchema)}
                           className="text-[9px] uppercase font-mono text-studio-400 hover:text-white transition-colors"
                         >
-                          {showSchema ? "View Description" : "View Schema"}
+                          {showSchema ? "View Description" : "View Technical Schema"}
                         </button>
                         <button 
                           onClick={() => {
-                            const content = currentMasterPrompt;
+                            const content = showSchema 
+                              ? JSON.stringify(currentTechnicalSchema, null, 2) 
+                              : currentMasterPrompt;
                             navigator.clipboard.writeText(content);
                             setIsCopied(true);
                             setTimeout(() => setIsCopied(false), 2000);
@@ -2780,9 +2842,17 @@ export default function CastingStudio() {
                         </button>
                       </div>
                     </div>
-                    <p className="text-[11px] font-mono text-studio-400 leading-relaxed max-h-20 overflow-y-auto custom-scrollbar select-text">
-                      {currentMasterPrompt || "Master prompt will appear here after generation..."}
-                    </p>
+                    {showSchema ? (
+                      <pre className="text-[10px] font-mono text-studio-400 leading-relaxed max-h-32 overflow-y-auto custom-scrollbar select-text bg-black/30 p-3 rounded border border-studio-800">
+                        {currentTechnicalSchema 
+                          ? JSON.stringify(currentTechnicalSchema, null, 2) 
+                          : "Technical schema will appear here after generation..."}
+                      </pre>
+                    ) : (
+                      <p className="text-[11px] font-mono text-studio-400 leading-relaxed max-h-20 overflow-y-auto custom-scrollbar select-text">
+                        {currentMasterPrompt || "Master prompt will appear here after generation..."}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

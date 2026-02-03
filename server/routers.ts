@@ -528,11 +528,11 @@ export const appRouter = router({
         }
       }),
 
-    // Generate side or back view
+    // Generate side, back, or walk view
     multiView: protectedProcedure
       .input(z.object({
         modelId: z.number(),
-        viewType: z.enum(["side", "back"]),
+        viewType: z.enum(["side", "back", "walk"]),
       }))
       .mutation(async ({ ctx, input }) => {
         const userPoints = await getUserPoints(ctx.user.id);
@@ -599,7 +599,7 @@ export const appRouter = router({
             `gen-${genResult.generationId}`
           );
 
-          const assetViewType = input.viewType === "side" ? "sideFull" : "backFull";
+          const assetViewType = input.viewType === "side" ? "sideClose" : input.viewType === "walk" ? "sideFull" : "backFull";
           await createModelAsset({
             modelId: input.modelId,
             viewType: assetViewType,
