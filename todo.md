@@ -712,3 +712,7 @@
 - [x] Auto-populate all form fields with random valid values
 - [x] Auto-trigger model generation after populating form
 - [x] Add keyboard shortcuts: Ctrl+Shift+D (fill) and Ctrl+Shift+G (fill + generate)
+
+
+## Bug Fixes
+- [x] Fix infinite loop in HairColorWheel component (useEffect dependency issue at line 80)

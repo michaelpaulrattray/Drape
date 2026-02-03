@@ -68,49 +68,61 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
   const colors = activeTab === 'Dyed' ? DYED_COLORS : NATURAL_COLORS;
   const segmentAngle = 360 / colors.length;
 
-  // Initialize state from currentColor prop
-  useEffect(() => {
-        const lower = currentColor.toLowerCase();
-        // Clean the name by removing tone prefixes we might have added
-        const cleanName = currentColor.replace(/^(Warm|Cool \/ Ash)\s+/i, '').trim();
+  // Track if we've initialized from the prop
+  const initializedRef = useRef(false);
+  const lastExternalColorRef = useRef(currentColor);
 
-        // Resolve which tab the new color belongs to.
-        let targetTab = activeTab; 
-        
-        const currentTabColors = activeTab === 'Dyed' ? DYED_COLORS : NATURAL_COLORS;
-        const existsInCurrent = currentTabColors.some(c => cleanName.toLowerCase().includes(c.label.toLowerCase()));
-        
-        if (!existsInCurrent) {
-             const otherTab = activeTab === 'Dyed' ? 'Natural' : 'Dyed';
-             const otherTabColors = otherTab === 'Dyed' ? DYED_COLORS : NATURAL_COLORS;
-             const existsInOther = otherTabColors.some(c => cleanName.toLowerCase().includes(c.label.toLowerCase()));
-             
-             if (existsInOther) {
-                 targetTab = otherTab;
-             } else {
-                 // Fallback logic for completely unknown colors: try to guess based on Natural list
-                 const isNatural = NATURAL_COLORS.some(c => cleanName.toLowerCase().includes(c.label.toLowerCase()));
-                 targetTab = isNatural ? 'Natural' : 'Dyed';
-             }
-        }
-        
-        // 2. Determine Tone (Replaces Intensity)
-        let targetTone: 'Warm' | 'Neutral' | 'Cool' = 'Neutral';
-        if (lower.startsWith('warm')) targetTone = 'Warm';
-        else if (lower.startsWith('cool') || lower.includes('ash')) targetTone = 'Cool';
-        
-        // 3. Determine Index using the TARGET tab's colors
-        const targetColors = targetTab === 'Dyed' ? DYED_COLORS : NATURAL_COLORS;
-        const foundIndex = targetColors.findIndex(c => 
-            cleanName.toLowerCase().includes(c.label.toLowerCase())
-        );
-        
-        // Batch updates
-        if (targetTab !== activeTab) setActiveTab(targetTab);
-        setTone(targetTone);
-        if (foundIndex !== -1) setSelectedIndex(foundIndex);
-        
-  }, [currentColor]); // React to external changes.
+  // Initialize state from currentColor prop - only when prop changes externally
+  useEffect(() => {
+    // Skip if this is the same color we just set internally
+    if (currentColor === lastExternalColorRef.current && initializedRef.current) {
+      return;
+    }
+    
+    // Skip empty colors
+    if (!currentColor) {
+      initializedRef.current = true;
+      return;
+    }
+
+    const lower = currentColor.toLowerCase();
+    // Clean the name by removing tone prefixes we might have added
+    const cleanName = currentColor.replace(/^(Warm|Cool \/ Ash)\s+/i, '').trim();
+
+    // Resolve which tab the new color belongs to.
+    // First check Natural colors (more common for initial values)
+    const isNatural = NATURAL_COLORS.some(c => cleanName.toLowerCase().includes(c.label.toLowerCase()));
+    const isDyed = DYED_COLORS.some(c => cleanName.toLowerCase().includes(c.label.toLowerCase()));
+    
+    let targetTab: 'Dyed' | 'Natural' = 'Natural'; // Default to Natural
+    if (isDyed && !isNatural) {
+      targetTab = 'Dyed';
+    } else if (isNatural) {
+      targetTab = 'Natural';
+    }
+    
+    // 2. Determine Tone (Replaces Intensity)
+    let targetTone: 'Warm' | 'Neutral' | 'Cool' = 'Neutral';
+    if (lower.startsWith('warm')) targetTone = 'Warm';
+    else if (lower.startsWith('cool') || lower.includes('ash')) targetTone = 'Cool';
+    
+    // 3. Determine Index using the TARGET tab's colors
+    const targetColors = targetTab === 'Dyed' ? DYED_COLORS : NATURAL_COLORS;
+    const foundIndex = targetColors.findIndex(c => 
+      cleanName.toLowerCase().includes(c.label.toLowerCase())
+    );
+    
+    // Update refs before state changes
+    lastExternalColorRef.current = currentColor;
+    initializedRef.current = true;
+    
+    // Batch updates - only update if different
+    setActiveTab(prev => prev !== targetTab ? targetTab : prev);
+    setTone(prev => prev !== targetTone ? targetTone : prev);
+    if (foundIndex !== -1) {
+      setSelectedIndex(prev => prev !== foundIndex ? foundIndex : prev);
+    }
+  }, [currentColor]); // Only react to external color changes
 
   // Update parent when selection changes
   const commitSelection = useCallback(() => {
@@ -126,13 +138,18 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
     
     // Only fire if different to avoid cycle
     if (finalString !== currentColor) {
+        // Update ref BEFORE calling onColorSelect to prevent re-initialization
+        lastExternalColorRef.current = finalString;
         onColorSelect(finalString);
     }
   }, [colors, selectedIndex, tone, onColorSelect, currentColor]);
 
-  // Trigger commit on interaction end or click
+  // Track if user is interacting (to avoid committing during initialization)
+  const userInteractedRef = useRef(false);
+
+  // Trigger commit on interaction end or click - but only after user interaction
   useEffect(() => {
-     if (!isDragging) {
+     if (!isDragging && userInteractedRef.current) {
          commitSelection();
      }
   }, [selectedIndex, tone, activeTab, isDragging, commitSelection]);
@@ -160,6 +177,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    userInteractedRef.current = true;
     setIsDragging(true);
     handleWheelInteraction(e.clientX, e.clientY);
   };
@@ -281,13 +299,13 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
         <div className="flex justify-center">
              <div className="bg-studio-900 border border-studio-800 p-0.5 rounded-full flex relative">
                   <button
-                    onClick={() => setActiveTab('Dyed')}
+                    onClick={() => { userInteractedRef.current = true; setActiveTab('Dyed'); }}
                     className={`px-8 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all duration-300 ${activeTab === 'Dyed' ? 'bg-studio-700 text-white shadow-sm' : 'text-studio-500 hover:text-studio-300'}`}
                   >
                     Dyed
                   </button>
                   <button
-                    onClick={() => setActiveTab('Natural')}
+                    onClick={() => { userInteractedRef.current = true; setActiveTab('Natural'); }}
                     className={`px-8 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all duration-300 ${activeTab === 'Natural' ? 'bg-studio-700 text-white shadow-sm' : 'text-studio-500 hover:text-studio-300'}`}
                   >
                     Natural
@@ -310,7 +328,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
                 {colors.map((c, i) => (
                     <button
                         key={c.label}
-                        onClick={() => setSelectedIndex(i)}
+                        onClick={() => { userInteractedRef.current = true; setSelectedIndex(i); }}
                         className={`flex flex-col items-center space-y-1 group min-w-[40px]`}
                     >
                         <div className={`w-8 h-8 rounded-full border transition-all duration-200 ${selectedIndex === i ? 'border-white scale-110' : 'border-transparent group-hover:border-studio-500'}`} style={{ backgroundColor: c.hex }}>
@@ -341,7 +359,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
                 {['Warm', 'Neutral', 'Cool'].map((t) => (
                     <button
                         key={t}
-                        onClick={() => setTone(t as any)}
+                        onClick={() => { userInteractedRef.current = true; setTone(t as any); }}
                         className={`flex-1 py-1.5 rounded-sm text-[9px] font-mono uppercase tracking-widest transition-all ${tone === t ? 'bg-studio-700 text-white shadow-sm' : 'text-studio-500 hover:text-studio-300'}`}
                     >
                         {t === 'Cool' ? 'Cool / Ash' : t}
