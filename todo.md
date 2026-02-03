@@ -82,3 +82,20 @@
 - [x] Footer: 4-column layout with social links
 - [x] Add sky-blue accent color (#38bdf8)
 - [x] Grayscale image treatment with contrast boost
+
+## Replace Recognition with Draggable Cards
+- [x] Replace Recognition section with scrolling draggable card section
+- [x] Add dark theme cards with hover effects and descriptions
+- [x] Implement drag-to-scroll functionality with momentum
+- [x] Style consistently with LUMEN light theme (dark section with light cards)
+
+## Draggable Cards Auto-Scroll
+- [x] Add slow auto-scroll animation to draggable cards section
+- [x] Implement infinite loop with cloned cards
+- [x] Pause auto-scroll on drag interaction
+
+## Restyle Draggable Cards to LUMEN Style
+- [x] Change dark background to light/white background
+- [x] Update card styling to match LUMEN aesthetic (light cards, clean borders)
+- [x] Update typography to match rest of page (Geist font, consistent sizing)
+- [x] Add sky-blue accent color for hover states

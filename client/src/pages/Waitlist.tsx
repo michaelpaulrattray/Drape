@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,27 +77,31 @@ const explorationProjects = [
   },
 ];
 
-// Recognition/Awards data
-const awards = [
+// Draggable service cards data
+const serviceCards = [
   {
-    category: "AI Innovation",
-    title: "Best AI Creative Tool 2024",
-    link: "View Gallery",
+    number: "01",
+    title: "AI Model Casting",
+    description: "Generate unique, consistent AI model identities for your brand with photorealistic quality.",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg",
   },
   {
-    category: "Fashion Tech",
-    title: "Top 10 Fashion AI Startups",
-    link: "Read more",
+    number: "02",
+    title: "Outfit Generation",
+    description: "Create any outfit on your AI models. From streetwear to haute couture, no physical samples needed.",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/04ff5a45-5b01-4b68-a092-f3ec2da28b5e_1600w.jpg",
   },
   {
-    category: "Creative AI",
-    title: "Excellence in AI Photography",
-    link: "Read more",
+    number: "03",
+    title: "Campaign Production",
+    description: "Full photoshoot generation with complete lighting and environment control for campaign-ready assets.",
+    image: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/f365bf31-c2fb-44c2-a24a-c78fedc640ba_1600w.jpg",
   },
   {
-    category: "Industry",
-    title: "Fashion Forward Award",
-    link: "View List",
+    number: "04",
+    title: "Brand Consistency",
+    description: "Maintain perfect visual consistency across all channels with AI-powered brand asset generation.",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2532&auto=format&fit=crop",
   },
 ];
 
@@ -122,6 +126,174 @@ const journalEntries = [
     description: "Best practices for generating photorealistic fashion imagery.",
   },
 ];
+
+// Services Marquee Section Component with Auto-Scroll
+function ServicesMarqueeSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const positionRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const prevTranslateRef = useRef(0);
+  const animationRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const track = trackRef.current;
+    if (!container || !track) return;
+
+    const speed = 0.5;
+
+    const animate = () => {
+      if (!isDraggingRef.current) {
+        positionRef.current += speed;
+      }
+      
+      const trackWidth = track.scrollWidth;
+      const setWidth = trackWidth / 3;
+
+      if (positionRef.current >= setWidth) {
+        positionRef.current = 0;
+        if (isDraggingRef.current) {
+          prevTranslateRef.current += setWidth;
+          startXRef.current += setWidth;
+        }
+      }
+      if (positionRef.current < 0) {
+        positionRef.current = setWidth - 1;
+        if (isDraggingRef.current) {
+          prevTranslateRef.current -= setWidth;
+          startXRef.current -= setWidth;
+        }
+      }
+
+      track.style.transform = `translateX(${-positionRef.current}px)`;
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDraggingRef.current = true;
+    startXRef.current = e.pageX;
+    prevTranslateRef.current = positionRef.current;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    const diff = startXRef.current - e.pageX;
+    positionRef.current = prevTranslateRef.current + diff;
+  };
+
+  const handleMouseUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDraggingRef.current = true;
+    startXRef.current = e.touches[0].clientX;
+    prevTranslateRef.current = positionRef.current;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current) return;
+    const diff = startXRef.current - e.touches[0].clientX;
+    positionRef.current = prevTranslateRef.current + diff;
+  };
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false;
+  };
+
+  // Triple the cards for infinite scroll
+  const tripleCards = [...serviceCards, ...serviceCards, ...serviceCards];
+
+  return (
+    <section className="border-t border-b border-black/10 bg-white py-24 overflow-hidden">
+      <div className="px-6 md:px-12 mb-16 md:mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
+          <div>
+            <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-500 font-medium mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+              Services
+            </span>
+            <h2 className="text-4xl md:text-6xl lg:text-7xl leading-[0.95] tracking-tight font-geist text-zinc-900">
+              Solving Problems With <br/><span className="text-zinc-400">Intelligent AI</span>
+            </h2>
+          </div>
+          <div className="lg:pl-12">
+            <p className="text-lg md:text-xl font-light text-zinc-600 leading-relaxed">
+              Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Auto-Scrolling Marquee Container */}
+      <div 
+        ref={containerRef}
+        className="flex w-full overflow-hidden select-none cursor-grab active:cursor-grabbing touch-pan-y"
+        style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div 
+          ref={trackRef}
+          className="flex gap-6 md:gap-8 min-w-max px-4 md:px-8 items-stretch will-change-transform"
+        >
+          {tripleCards.map((card, index) => (
+            <div 
+              key={index} 
+              className="group relative w-[85vw] md:w-[420px] h-[520px] overflow-hidden border border-black/10 bg-zinc-50 hover:border-sky-500/50 transition-all duration-500 shrink-0"
+            >
+              <div className="absolute inset-0 w-full h-full">
+                <img 
+                  src={card.image} 
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out" 
+                  draggable="false" 
+                  alt={card.title}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white" />
+              </div>
+              <div className="absolute inset-0 p-8 flex flex-col justify-between">
+                <div className="flex justify-between items-start">
+                  <span className="font-geist text-6xl md:text-7xl font-bold text-zinc-900/10 group-hover:text-sky-500/20 transition-colors duration-500">{card.number}</span>
+                  <div className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-black/10">
+                    <ArrowUpRight className="w-5 h-5 text-zinc-900" />
+                  </div>
+                </div>
+                <div className="bg-white/90 backdrop-blur-sm p-6 -mx-8 -mb-8 border-t border-black/10">
+                  <h3 className="text-xl md:text-2xl font-geist font-semibold tracking-tight text-zinc-900 mb-2">
+                    {card.title}
+                  </h3>
+                  <p className="text-zinc-600 text-sm leading-relaxed">
+                    {card.description}
+                  </p>
+                  <div className="mt-4 pt-4 border-t border-black/10 flex items-center justify-between">
+                    <span className="text-xs uppercase tracking-[0.15em] text-zinc-400">Learn more</span>
+                    <ArrowRight className="w-4 h-4 text-sky-500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Waitlist() {
   const [email, setEmail] = useState("");
@@ -582,38 +754,8 @@ export default function Waitlist() {
           </div>
         </section>
 
-        {/* Recognition Section */}
-        <section className="border-b border-black/10">
-          <div className="px-6 md:px-12 py-16 flex items-end justify-between border-b border-black/10">
-            <h2 className="text-6xl md:text-7xl font-bold tracking-tighter uppercase text-zinc-900 font-geist">
-              Recognition
-            </h2>
-            <a href="#" className="px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 mb-2 border-black/20 hover:bg-black hover:text-white">
-              Press Kit
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-black/10">
-            {awards.map((award, index) => (
-              <div key={index} className="group transition-colors cursor-pointer hover:bg-black/5 p-8">
-                <div className="flex h-40 border-b mb-6 items-center justify-center border-black/10">
-                  <Sparkles className="text-6xl group-hover:scale-110 transition-transform duration-300 text-zinc-800 w-16 h-16" />
-                </div>
-                <p className="text-[10px] font-bold uppercase mb-2 text-sky-600">
-                  {award.category}
-                </p>
-                <h3 className="leading-tight transition-colors text-xl font-semibold mb-6 text-zinc-900">
-                  {award.title}
-                </h3>
-                <div className="flex items-center text-xs font-medium group-hover:text-black transition-colors text-black/50">
-                  {award.link}
-                  <ChevronRight className="w-3 h-3 ml-1" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Services Draggable Cards Section with Auto-Scroll */}
+        <ServicesMarqueeSection />
 
         {/* Journal Section */}
         <section className="border-b border-black/10 bg-zinc-50">
