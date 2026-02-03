@@ -194,3 +194,12 @@
 - [x] Add default cover/banner image for users without custom upload
 - [x] Add default profile picture/avatar for users without custom upload
 - [x] Ensure professional appearance for new users
+
+## Profile Settings Modal
+- [x] Add cog/settings icon next to logout button in sidebar
+- [x] Create profile settings modal/popout component
+- [x] Include profile editing section (name, email, avatar, banner)
+- [x] Include billing plan display and upgrade option
+- [x] Include account settings (notifications, preferences)
+- [x] Remove inline edit functionality from profile header
+- [x] Style modal with glass morphism to match dashboard aesthetic

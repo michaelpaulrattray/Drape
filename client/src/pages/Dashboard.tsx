@@ -19,20 +19,17 @@ import {
   GraduationCap,
   Scale,
   Gift,
-  Edit3,
   Upload,
-  X,
-  Check,
   Aperture,
+  Settings,
 } from "lucide-react";
 import { useState, useRef } from "react";
+import ProfileSettingsModal from "@/components/ProfileSettingsModal";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [activeNav, setActiveNav] = useState("home");
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editedName, setEditedName] = useState("");
-  const [editedEmail, setEditedEmail] = useState("");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [bannerImage, setBannerImage] = useState<string | null>(null);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
@@ -59,20 +56,6 @@ export default function Dashboard() {
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
   }
-
-  const handleEditProfile = () => {
-    setEditedName(user?.name || "");
-    setEditedEmail(user?.email || "");
-    setIsEditingProfile(true);
-  };
-
-  const handleSaveProfile = () => {
-    setIsEditingProfile(false);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditingProfile(false);
-  };
 
   // Home section items
   const homeNavItems = [
@@ -241,6 +224,13 @@ export default function Dashboard() {
               <p className="text-[10px] text-neutral-500 font-mono truncate">{pointsData?.balance || 0} CREDITS</p>
             </div>
             <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="text-neutral-500 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"
+              title="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button 
               onClick={() => logout()}
               className="text-neutral-500 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-white/5"
               title="Logout"
@@ -333,59 +323,15 @@ export default function Dashboard() {
               </div>
               
               <div className="flex-1 pb-2">
-                {isEditingProfile ? (
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={editedName}
-                      onChange={(e) => setEditedName(e.target.value)}
-                      className="bg-white/5 border border-white/10 rounded-md px-3 py-2 text-white text-lg font-semibold w-full max-w-xs focus:outline-none focus:border-orange-500 backdrop-blur-sm"
-                      placeholder="Your name"
-                    />
-                    <input
-                      type="email"
-                      value={editedEmail}
-                      onChange={(e) => setEditedEmail(e.target.value)}
-                      className="bg-white/5 border border-white/10 rounded-md px-3 py-2 text-neutral-400 text-sm w-full max-w-xs focus:outline-none focus:border-orange-500 backdrop-blur-sm"
-                      placeholder="Your email"
-                    />
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={handleSaveProfile}
-                        className="px-4 py-2 rounded-md bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-1.5"
-                      >
-                        <Check className="w-4 h-4" />
-                        Save
-                      </button>
-                      <button 
-                        onClick={handleCancelEdit}
-                        className="px-4 py-2 rounded-md bg-white/5 border border-white/10 text-neutral-300 text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-1.5"
-                      >
-                        <X className="w-4 h-4" />
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-semibold text-white tracking-tight">{user?.name || "Creator"}</h1>
-                      <span className="px-2.5 py-1 rounded-none bg-orange-500/20 text-orange-400 text-[10px] font-mono uppercase tracking-wider border border-orange-500/30">
-                        PRO
-                      </span>
-                      <button 
-                        onClick={handleEditProfile}
-                        className="p-2 rounded-full text-neutral-500 hover:text-white hover:bg-white/5 transition-colors"
-                        title="Edit Profile"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <p className="text-neutral-500 text-sm font-mono">
-                      {pointsData?.balance || 0} credits • {pointsData?.planTier || "free"} plan
-                    </p>
-                  </>
-                )}
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-semibold text-white tracking-tight">{user?.name || "Creator"}</h1>
+                  <span className="px-2.5 py-1 rounded-none bg-orange-500/20 text-orange-400 text-[10px] font-mono uppercase tracking-wider border border-orange-500/30">
+                    PRO
+                  </span>
+                </div>
+                <p className="text-neutral-500 text-sm font-mono">
+                  {pointsData?.balance || 0} credits • {pointsData?.planTier || "free"} plan
+                </p>
               </div>
               <div className="flex items-center gap-3 pb-2">
                 <button className="group px-5 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40">
@@ -515,6 +461,21 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Profile Settings Modal */}
+      <ProfileSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={user}
+        profileImage={profileImage}
+        bannerImage={bannerImage}
+        onProfileImageChange={setProfileImage}
+        onBannerImageChange={setBannerImage}
+        pointsBalance={pointsData?.balance || 0}
+        planTier={pointsData?.planTier || "free"}
+        defaultAvatar={DEFAULT_AVATAR}
+        defaultBanner={DEFAULT_BANNER}
+      />
     </div>
   );
 }
