@@ -64,6 +64,13 @@ interface GenerationState {
   error: string | null;
 }
 
+type EditTool = 'none' | 'surgical' | 'eraser';
+
+enum ImageResolution {
+  STD = '1K',
+  HIGH = '2K',
+}
+
 // ============ Constants ============
 
 const BRAND_OPTIONS = [
@@ -182,6 +189,202 @@ const FACE_ICONS: Record<string, React.ReactNode> = {
   "Heart": <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" transform="scale(0.8) translate(3, 2)" />,
   "Diamond": <polygon points="12 2 4 10 12 22 20 10" />,
   "Random": <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l-5 5M4 4l5 5" />,
+};
+
+// ============ ConnectorLine Component ============
+
+const ConnectorLine = ({ isActive }: { isActive: boolean }) => (
+  <div 
+    className={`absolute top-[18rem] right-[21.5rem] w-[35vw] h-[35vh] z-0 pointer-events-none transition-all duration-1000 ease-out origin-top-right ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90 blur-sm'}`}
+  >
+    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="overflow-visible">
+      <defs>
+        <linearGradient id="connector-grad" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
+          <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
+          <stop offset="100%" stopColor="transparent" />
+        </linearGradient>
+        <filter id="glow-line">
+          <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <path 
+        d="M 100 0 C 50 0, 50 100, 0 100" 
+        vectorEffect="non-scaling-stroke"
+        stroke="url(#connector-grad)" 
+        strokeWidth="1.5" 
+        fill="none"
+        strokeDasharray="4 4"
+        filter="url(#glow-line)"
+        className="opacity-80"
+      />
+      <circle cx="100" cy="0" r="2" fill="white" filter="url(#glow-line)" vectorEffect="non-scaling-stroke" />
+    </svg>
+  </div>
+);
+
+// ============ StageLockModal Component ============
+
+const StageLockModal = ({ 
+  isOpen, 
+  title, 
+  message, 
+  onConfirm, 
+  onCancel 
+}: { 
+  isOpen: boolean; 
+  title: string; 
+  message: string; 
+  onConfirm: () => void; 
+  onCancel: () => void;
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-[#0a0a0a] border border-studio-700 p-6 max-w-sm w-full shadow-2xl space-y-4">
+        <h3 className="text-sm font-mono uppercase text-white font-bold tracking-widest">{title}</h3>
+        <p className="text-xs font-mono text-studio-400 leading-relaxed">{message}</p>
+        <div className="flex space-x-2 pt-2">
+          <button onClick={onCancel} className="flex-1 py-2 border border-studio-800 text-studio-400 hover:text-white hover:border-studio-500 text-[10px] uppercase font-mono tracking-widest transition-colors">Cancel</button>
+          <button onClick={onConfirm} className="flex-1 py-2 bg-white text-black hover:bg-studio-200 text-[10px] uppercase font-mono tracking-widest transition-colors font-bold">Confirm</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============ ToolButton Component ============
+
+const ToolButton = ({ 
+  isActive, 
+  onClick, 
+  icon, 
+  label,
+  color = "red" 
+}: { 
+  isActive: boolean; 
+  onClick: () => void; 
+  icon: React.ReactNode; 
+  label: string;
+  color?: "red" | "purple";
+}) => (
+  <button
+    onClick={(e) => { e.stopPropagation(); onClick(); }}
+    className={`relative group w-10 h-10 flex items-center justify-center rounded-lg border transition-all duration-200 shadow-lg backdrop-blur-sm
+      ${isActive 
+        ? color === 'red' ? 'bg-red-500/10 border-red-500 text-red-400' : 'bg-purple-500/10 border-purple-500 text-purple-400'
+        : 'bg-black/60 border-studio-700 text-studio-400 hover:text-white hover:border-studio-500'
+      }
+    `}
+    title={label}
+  >
+    <div className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+      {icon}
+    </div>
+    
+    {isActive && (
+      <span className={`absolute top-0 right-0 -mt-1 -mr-1 flex h-2.5 w-2.5`}>
+        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${color === 'red' ? 'bg-red-500' : 'bg-purple-500'}`}></span>
+        <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${color === 'red' ? 'bg-red-500' : 'bg-purple-500'}`}></span>
+      </span>
+    )}
+  </button>
+);
+
+// ============ Export Modal Component ============
+
+const ExportModal = ({
+  isOpen,
+  onClose,
+  onExport,
+  previewImage,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onExport: (name: string, resolution: ImageResolution) => void;
+  previewImage?: string;
+}) => {
+  const [characterName, setCharacterName] = useState("");
+  const [exportRes, setExportRes] = useState<ImageResolution>(ImageResolution.HIGH);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="max-w-2xl w-full bg-[#0a0a0a] border border-studio-800 flex flex-col md:flex-row shadow-2xl relative overflow-hidden">
+        <div className="w-full md:w-1/2 aspect-[3/4] relative border-b md:border-b-0 md:border-r border-studio-800 bg-black">
+          {previewImage && (
+            <img src={previewImage} className="w-full h-full object-cover opacity-80" alt="Identity Ref" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+          <div className="absolute top-4 left-4 p-2 border border-white/20 bg-black/50 backdrop-blur-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-white/50"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          </div>
+        </div>
+
+        <div className="w-full md:w-1/2 p-8 flex flex-col justify-center space-y-8 relative">
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 text-studio-500 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          <div className="space-y-2">
+            <h2 className="text-2xl font-mono text-white uppercase tracking-tighter">Identity Card</h2>
+            <p className="text-xs font-mono text-studio-500 leading-relaxed">
+              Assign a unique identity to finalize this casting session and export your character pack.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-2 group">
+              <label className="text-[9px] font-mono text-studio-500 uppercase tracking-widest group-focus-within:text-white transition-colors">Model Name</label>
+              <input 
+                autoFocus
+                type="text" 
+                value={characterName}
+                onChange={e => setCharacterName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && characterName) onExport(characterName, exportRes); }}
+                placeholder="ENTER NAME"
+                className="w-full bg-transparent border-b border-studio-700 text-xl font-mono text-white py-2 focus:outline-none focus:border-white placeholder:text-studio-800 uppercase tracking-wider transition-colors"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">Output Quality</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[ImageResolution.STD, ImageResolution.HIGH].map(res => (
+                  <button
+                    key={res}
+                    onClick={() => setExportRes(res)}
+                    className={`py-2 text-[10px] font-mono uppercase tracking-widest border transition-all ${
+                      exportRes === res 
+                        ? 'border-white bg-white text-black font-bold'
+                        : 'border-studio-800 text-studio-500 hover:border-studio-500'
+                    }`}
+                  >
+                    {res}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onExport(characterName || 'Unknown Model', exportRes)}
+            className="w-full py-3 bg-white text-black font-mono text-xs uppercase tracking-widest hover:bg-studio-200 transition-colors font-bold"
+          >
+            Export Character Pack
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // ============ Helper Components ============
@@ -460,6 +663,10 @@ function ReferenceNode({
 
         <input type="file" ref={inputRef} className="hidden" accept="image/*" onChange={handleFileChange} disabled={disabled} />
       </div>
+
+      {image && !disabled && (
+        <div className="absolute top-1/2 right-full mr-3 w-10 h-px bg-gradient-to-l from-white/50 to-transparent"></div>
+      )}
     </div>
   );
 }
@@ -468,28 +675,28 @@ function ReferenceNode({
 
 export default function CastingStudio() {
   const [, navigate] = useLocation();
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
 
-  // Form state
+  // Model preferences state
   const [prefs, setPrefs] = useState<ModelPreferences>({
     castingBrand: 'Gucci',
-    castingVibe: { editorial: 0.8, commercial: 0.1, runway: 0.1 },
-    gender: 'Female',
+    castingVibe: { editorial: 0.33, commercial: 0.33, runway: 0.34 },
+    gender: '',
     age: '23',
     ethnicity: '',
     bodyType: 'Slim',
-    faceShape: 'Random',
+    faceShape: 'Oval',
     skinTone: '',
     skinTexture: 'Raw / Standard',
     skinFinish: 'Natural',
     eyeColor: '',
     hairColor: '',
     hairStyle: '',
-    hairLength: '',
-    hairTexture: '',
-    hairFringe: '',
-    hairParting: '',
-    hairVolume: '',
+    hairLength: 'Medium',
+    hairTexture: 'Straight',
+    hairFringe: 'None',
+    hairParting: 'Center',
+    hairVolume: 'Natural',
     hairFlyaways: '',
     hairHairline: '',
     hairTuck: '',
@@ -528,10 +735,32 @@ export default function CastingStudio() {
   const [showAdvancedFace, setShowAdvancedFace] = useState(false);
   const [showAdvancedHair, setShowAdvancedHair] = useState(false);
   const [refineInput, setRefineInput] = useState("");
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [unlockMode, setUnlockMode] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Resolution state
+  const [resolution, setResolution] = useState<ImageResolution>(ImageResolution.STD);
+
+  // Tools state
+  const [activeTool, setActiveTool] = useState<EditTool>('none');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [maskPaths, setMaskPaths] = useState<Array<Array<{x: number, y: number}>>>([]);
+  const [currentPath, setCurrentPath] = useState<Array<{x: number, y: number}>>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  // Modal states
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [lockModal, setLockModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
   // Points data
-  const { data: pointsData } = trpc.points.getBalance.useQuery(undefined, {
+  const { data: pointsData, refetch: refetchPoints } = trpc.points.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
@@ -540,6 +769,7 @@ export default function CastingStudio() {
   const generateCastingMutation = trpc.generation.castingImage.useMutation();
   const generateFullBodyMutation = trpc.generation.fullBody.useMutation();
   const generateMultiViewMutation = trpc.generation.multiView.useMutation();
+  const iterateMutation = trpc.generation.iterate.useMutation();
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -556,6 +786,108 @@ export default function CastingStudio() {
       textAreaRef.current.style.height = Math.min(scrollHeight, 200) + 'px';
     }
   }, [refineInput]);
+
+  // Reset tool state when view changes
+  useEffect(() => {
+    setUnlockMode(false);
+    setActiveTool('none');
+    setMaskPaths([]);
+    setCurrentPath([]);
+  }, [activeView, currentAssets]);
+
+  // Clear mask when tool changes
+  useEffect(() => {
+    setMaskPaths([]);
+    setCurrentPath([]);
+  }, [activeTool]);
+
+  // Sync canvas with image
+  const isMasking = activeTool !== 'none';
+
+  useEffect(() => {
+    const syncCanvas = () => {
+      if (imageRef.current && canvasRef.current) {
+        const { width, height } = imageRef.current.getBoundingClientRect();
+        
+        canvasRef.current.width = width;
+        canvasRef.current.height = height;
+        
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx && isMasking) {
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.lineWidth = 20; 
+          ctx.strokeStyle = activeTool === 'eraser' 
+            ? 'rgba(216, 180, 254, 0.8)'
+            : 'rgba(255, 100, 100, 0.8)';
+          
+          if (maskPaths.length > 0) {
+            maskPaths.forEach(path => {
+              if (path.length < 1) return;
+              ctx.beginPath();
+              ctx.moveTo(path[0].x * width, path[0].y * height);
+              path.forEach(p => ctx.lineTo(p.x * width, p.y * height));
+              ctx.stroke();
+            });
+          }
+        }
+      }
+    };
+
+    syncCanvas();
+
+    if (isMasking) {
+      window.addEventListener('resize', syncCanvas);
+      setTimeout(syncCanvas, 50);
+    }
+    
+    return () => window.removeEventListener('resize', syncCanvas);
+  }, [isMasking, maskPaths, activeTool]);
+
+  // Canvas drawing handlers
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isMasking) return;
+    setIsDrawing(true);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setCurrentPath([{ x, y }]);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isMasking || !isDrawing) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const newPoint = { x, y };
+    setCurrentPath(prev => [...prev, newPoint]);
+
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 20;
+      ctx.strokeStyle = activeTool === 'eraser' 
+        ? 'rgba(216, 180, 254, 0.8)'
+        : 'rgba(255, 100, 100, 0.8)';
+      
+      const w = rect.width;
+      const h = rect.height;
+      
+      ctx.beginPath();
+      const prev = currentPath[currentPath.length - 1] || newPoint;
+      ctx.moveTo(prev.x * w, prev.y * h);
+      ctx.lineTo(x * w, y * h);
+      ctx.stroke();
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (!isMasking || !isDrawing) return;
+    setIsDrawing(false);
+    setMaskPaths(prev => [...prev, currentPath]);
+    setCurrentPath([]);
+  };
 
   // Get hair styles based on gender
   const currentHairFamilies = useMemo(() => {
@@ -620,6 +952,26 @@ export default function CastingStudio() {
   const canGenerateFullBody = currentAssets.some((a) => a.viewType === "frontClose");
   const canGenerateMultiView = currentAssets.some((a) => a.viewType === "frontFull" || a.viewType === "frontClose");
 
+  // View locking logic
+  const isViewLocked = useMemo(() => {
+    if (currentAssets.length === 0) return false;
+    if (activeView === 'frontClose' && currentAssets.some(a => a.viewType === 'frontFull')) return true;
+    if (activeView === 'frontFull' && currentAssets.some(a => a.viewType === 'sideClose')) return true;
+    if (activeView === 'backFull') return true;
+    return false;
+  }, [activeView, currentAssets]);
+
+  const hasDownstreamDependencies = useMemo(() => {
+    if (currentAssets.length === 0) return false;
+    if (activeView === 'frontClose' && currentAssets.some(a => a.viewType === 'frontFull')) return true;
+    if (activeView === 'frontFull' && currentAssets.some(a => a.viewType === 'sideClose')) return true;
+    return false;
+  }, [activeView, currentAssets]);
+
+  const isIterationAllowed = useMemo(() => {
+    return ['frontClose', 'frontFull', 'backFull'].includes(activeView);
+  }, [activeView]);
+
   // Handle generate
   const handleGenerate = async () => {
     if (!isFormValid) {
@@ -636,7 +988,6 @@ export default function CastingStudio() {
     setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null });
 
     try {
-      // Convert prefs to backend format
       const backendPrefs = {
         gender: prefs.gender.toLowerCase() as "male" | "female" | "non-binary",
         ageRange: getAgeRange(prefs.age),
@@ -678,6 +1029,7 @@ export default function CastingStudio() {
         setHistoryIndex(0);
         setActiveView("frontClose");
         toast.success("Model generated successfully!");
+        refetchPoints();
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -719,80 +1071,204 @@ export default function CastingStudio() {
     return "confident";
   };
 
-  // Handle generate full body
+  // Handle generate full body with stage lock
   const handleGenerateFullBody = async () => {
     if (!currentModelId) return;
 
-    if (!pointsData || pointsData.balance < POINT_COSTS.fullBody) {
-      toast.error(`Insufficient points. Need ${POINT_COSTS.fullBody} points.`);
+    setLockModal({
+      isOpen: true,
+      title: 'Lock Headshot & Generate Body?',
+      message: "Are you sure you want to proceed to full-body generation? You won't be able to return and edit the head without resetting the body generation.",
+      onConfirm: async () => {
+        setLockModal(prev => ({ ...prev, isOpen: false }));
+        
+        if (!pointsData || pointsData.balance < POINT_COSTS.fullBody) {
+          toast.error(`Insufficient points. Need ${POINT_COSTS.fullBody} points.`);
+          return;
+        }
+
+        setGenState({ isGenerating: true, currentStep: "Generating Full Body View...", error: null });
+
+        try {
+          const result = await generateFullBodyMutation.mutateAsync({ modelId: currentModelId });
+
+          if (result.success && result.imageUrl) {
+            const newAsset: GeneratedAsset = {
+              id: Date.now(),
+              viewType: "frontFull",
+              storageUrl: result.imageUrl,
+            };
+            const newAssets = [...currentAssets.filter((a) => a.viewType !== "frontFull"), newAsset];
+            setCurrentAssets(newAssets);
+            setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
+            setHistoryIndex((prev) => prev + 1);
+            setActiveView("frontFull");
+            toast.success("Full body generated!");
+            refetchPoints();
+          }
+
+          setGenState({ isGenerating: false, currentStep: "", error: null });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Generation failed";
+          setGenState({ isGenerating: false, currentStep: "", error: message });
+          toast.error(message);
+        }
+      }
+    });
+  };
+
+  // Handle generate multi-view with stage lock
+  const handleGenerateMultiView = async (viewType: "side" | "back") => {
+    if (!currentModelId) return;
+
+    setLockModal({
+      isOpen: true,
+      title: 'Lock Body & Generate Views?',
+      message: "Are you sure you want to proceed to casting sheet generation? You won't be able to edit the body pose without resetting the entire sheet.",
+      onConfirm: async () => {
+        setLockModal(prev => ({ ...prev, isOpen: false }));
+
+        if (!pointsData || pointsData.balance < POINT_COSTS.multiView) {
+          toast.error(`Insufficient points. Need ${POINT_COSTS.multiView} points.`);
+          return;
+        }
+
+        setGenState({ isGenerating: true, currentStep: `Generating ${viewType} view...`, error: null });
+
+        try {
+          const result = await generateMultiViewMutation.mutateAsync({
+            modelId: currentModelId,
+            viewType,
+          });
+
+          if (result.success && result.imageUrl) {
+            const viewKey = viewType === "side" ? "sideClose" : "backFull";
+            const newAsset: GeneratedAsset = {
+              id: Date.now(),
+              viewType: viewKey,
+              storageUrl: result.imageUrl,
+            };
+            const newAssets = [...currentAssets.filter((a) => a.viewType !== viewKey), newAsset];
+            setCurrentAssets(newAssets);
+            setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
+            setHistoryIndex((prev) => prev + 1);
+            setActiveView(viewKey);
+            toast.success(`${viewType} view generated!`);
+            refetchPoints();
+          }
+
+          setGenState({ isGenerating: false, currentStep: "", error: null });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Generation failed";
+          setGenState({ isGenerating: false, currentStep: "", error: message });
+          toast.error(message);
+        }
+      }
+    });
+  };
+
+  // Handle iteration/refinement
+  const handleRefineSubmit = async () => {
+    if (!currentModelId || !currentImageUrl) return;
+
+    // For eraser tool, use automatic prompt
+    if (activeTool === 'eraser') {
+      if (maskPaths.length === 0) return;
+      const prompt = "FIX ARTIFACT: Remove the content in the masked area. Inpaint with surrounding skin texture, lighting, and noise. Restore the background if needed. Do not add new objects.";
+      await performIteration(prompt);
+      setActiveTool('none');
+      setMaskPaths([]);
       return;
     }
 
-    setGenState({ isGenerating: true, currentStep: "Generating Full Body View...", error: null });
+    // For text input
+    if (refineInput.trim()) {
+      await performIteration(refineInput);
+      setRefineInput("");
+      setActiveTool('none');
+      setMaskPaths([]);
+    }
+  };
+
+  const performIteration = async (prompt: string) => {
+    if (!currentModelId) return;
+
+    if (!pointsData || pointsData.balance < POINT_COSTS.iteration) {
+      toast.error(`Insufficient points. Need ${POINT_COSTS.iteration} points.`);
+      return;
+    }
+
+    setGenState({ isGenerating: true, currentStep: "Iterating...", error: null });
 
     try {
-      const result = await generateFullBodyMutation.mutateAsync({ modelId: currentModelId });
+      // Find the asset ID for the current view
+      const currentAsset = currentAssets.find(a => a.viewType === activeView);
+      if (!currentAsset) {
+        throw new Error('No asset found for current view');
+      }
+      
+      const result = await iterateMutation.mutateAsync({
+        modelId: currentModelId,
+        feedback: prompt,
+        assetId: currentAsset.id,
+      });
 
       if (result.success && result.imageUrl) {
         const newAsset: GeneratedAsset = {
           id: Date.now(),
-          viewType: "frontFull",
+          viewType: activeView,
           storageUrl: result.imageUrl,
         };
-        const newAssets = [...currentAssets.filter((a) => a.viewType !== "frontFull"), newAsset];
+        
+        // Clear downstream views if editing upstream
+        let newAssets = [...currentAssets];
+        if (activeView === 'frontClose') {
+          newAssets = newAssets.filter(a => a.viewType === 'frontClose');
+        } else if (activeView === 'frontFull') {
+          newAssets = newAssets.filter(a => ['frontClose', 'frontFull'].includes(a.viewType));
+        }
+        
+        newAssets = [...newAssets.filter((a) => a.viewType !== activeView), newAsset];
         setCurrentAssets(newAssets);
         setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
         setHistoryIndex((prev) => prev + 1);
-        setActiveView("frontFull");
-        toast.success("Full body generated!");
+        toast.success("Iteration complete!");
+        refetchPoints();
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Generation failed";
+      const message = error instanceof Error ? error.message : "Iteration failed";
       setGenState({ isGenerating: false, currentStep: "", error: message });
       toast.error(message);
     }
   };
 
-  // Handle generate multi-view
-  const handleGenerateMultiView = async (viewType: "side" | "back") => {
-    if (!currentModelId) return;
-
-    if (!pointsData || pointsData.balance < POINT_COSTS.multiView) {
-      toast.error(`Insufficient points. Need ${POINT_COSTS.multiView} points.`);
-      return;
-    }
-
-    setGenState({ isGenerating: true, currentStep: `Generating ${viewType} view...`, error: null });
-
+  // AI prompt enhancement
+  const handleEnhance = async () => {
+    if (!refineInput.trim() || isEnhancing) return;
+    setIsEnhancing(true);
     try {
-      const result = await generateMultiViewMutation.mutateAsync({
-        modelId: currentModelId,
-        viewType,
-      });
-
-      if (result.success && result.imageUrl) {
-        const viewKey = viewType === "side" ? "sideClose" : "backFull";
-        const newAsset: GeneratedAsset = {
-          id: Date.now(),
-          viewType: viewKey,
-          storageUrl: result.imageUrl,
-        };
-        const newAssets = [...currentAssets.filter((a) => a.viewType !== viewKey), newAsset];
-        setCurrentAssets(newAssets);
-        setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
-        setHistoryIndex((prev) => prev + 1);
-        setActiveView(viewKey);
-        toast.success(`${viewType} view generated!`);
-      }
-
-      setGenState({ isGenerating: false, currentStep: "", error: null });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Generation failed";
-      setGenState({ isGenerating: false, currentStep: "", error: message });
-      toast.error(message);
+      // Simple enhancement - in production this would call an AI service
+      const enhanced = `[ENHANCED] ${refineInput.trim()}. Maintain character consistency and lighting.`;
+      setRefineInput(enhanced);
+      toast.success("Prompt enhanced!");
+    } finally {
+      setIsEnhancing(false);
     }
+  };
+
+  // Export handler
+  const handleExport = (name: string, res: ImageResolution) => {
+    toast.success(`Exporting ${name} at ${res} resolution...`);
+    setShowExportModal(false);
+    // In production, this would trigger actual export
+  };
+
+  // Retry handler
+  const handleRetry = () => {
+    setGenState({ isGenerating: false, currentStep: "", error: null });
+    handleGenerate();
   };
 
   // Undo/Redo
@@ -813,6 +1289,36 @@ export default function CastingStudio() {
     }
   };
 
+  // Next stage calculation
+  const nextStage = useMemo(() => {
+    if (currentAssets.length === 0 || genState.isGenerating) return null;
+    
+    if (!currentAssets.some(a => a.viewType === 'frontFull')) {
+      return { 
+        label: 'Generate Full Body', 
+        action: handleGenerateFullBody,
+        step: 2,
+        total: 3,
+      };
+    }
+    
+    if (!currentAssets.some(a => a.viewType === 'sideClose')) {
+      return { 
+        label: 'Generate Angles', 
+        action: () => handleGenerateMultiView('side'),
+        step: 3,
+        total: 3,
+      };
+    }
+
+    return {
+      label: 'Export Character Pack',
+      action: () => setShowExportModal(true),
+      step: 4, 
+      total: 3,
+    };
+  }, [currentAssets, genState.isGenerating]);
+
   // Loading state
   if (authLoading) {
     return (
@@ -824,6 +1330,23 @@ export default function CastingStudio() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col lg:flex-row">
+      {/* Stage Lock Modal */}
+      <StageLockModal
+        isOpen={lockModal.isOpen}
+        title={lockModal.title}
+        message={lockModal.message}
+        onConfirm={lockModal.onConfirm}
+        onCancel={() => setLockModal(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExport}
+        previewImage={currentAssets.find(a => a.viewType === 'frontClose')?.storageUrl}
+      />
+
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-studio-800 bg-[#080808]">
         <button
@@ -1042,184 +1565,144 @@ export default function CastingStudio() {
                 />
               </div>
 
-              {/* Advanced Features Toggle */}
+              {/* Advanced Face Toggle */}
               <button
                 onClick={() => setShowAdvancedFace(!showAdvancedFace)}
-                className="w-full flex items-center justify-between py-2 text-[9px] font-mono text-studio-500 hover:text-white uppercase tracking-wider border-t border-studio-800 mt-4"
+                className="w-full flex items-center justify-between py-2 text-[9px] font-mono text-studio-500 hover:text-white uppercase tracking-wider border-t border-studio-800"
               >
                 <span>Advanced Features</span>
                 <span className="text-lg leading-none">{showAdvancedFace ? '−' : '+'}</span>
               </button>
 
               {showAdvancedFace && (
-                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200 pb-2">
                   <SelectControl label="Jawline" options={CHAR_OPTIONS.jawline} value={prefs.jawline || ""} onChange={v => updatePref('jawline', v)} />
                   <SelectControl label="Cheekbones" options={CHAR_OPTIONS.cheekbones} value={prefs.cheekbones || ""} onChange={v => updatePref('cheekbones', v)} />
-                  <SelectControl label="Cheek Shape" options={CHAR_OPTIONS.cheeks} value={prefs.cheeks || ""} onChange={v => updatePref('cheeks', v)} />
+                  <SelectControl label="Cheeks" options={CHAR_OPTIONS.cheeks} value={prefs.cheeks || ""} onChange={v => updatePref('cheeks', v)} />
                   <SelectControl label="Eye Shape" options={CHAR_OPTIONS.eyeShape} value={prefs.eyeShape || ""} onChange={v => updatePref('eyeShape', v)} />
-                  <SelectControl label="Nose Shape" options={CHAR_OPTIONS.noseShape} value={prefs.noseShape || ""} onChange={v => updatePref('noseShape', v)} />
-                  <SelectControl label="Lip Shape" options={CHAR_OPTIONS.lipShape} value={prefs.lipShape || ""} onChange={v => updatePref('lipShape', v)} />
+                  <SelectControl label="Nose" options={CHAR_OPTIONS.noseShape} value={prefs.noseShape || ""} onChange={v => updatePref('noseShape', v)} />
+                  <SelectControl label="Lips" options={CHAR_OPTIONS.lipShape} value={prefs.lipShape || ""} onChange={v => updatePref('lipShape', v)} />
+                  {prefs.gender === 'Male' && (
+                    <SelectControl label="Facial Hair" options={CHAR_OPTIONS.facialHair} value={prefs.facialHair || ""} onChange={v => updatePref('facialHair', v)} />
+                  )}
                 </div>
               )}
             </div>
           </CollapsibleSection>
 
           {/* 4. SKIN & COMPLEXION */}
-          <CollapsibleSection title="Skin & Complexion">
+          <CollapsibleSection title="Skin & Complexion" required>
             <div className="space-y-5 pt-1">
               <div className="space-y-2">
                 <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider block">Skin Tone</label>
-                <div className="grid grid-cols-6 gap-2">
-                  {SKIN_TONES.map(tone => (
-                    <button
-                      key={tone.label}
-                      onClick={() => updatePref('skinTone', tone.value)}
-                      title={tone.label}
-                      className={`group relative h-8 rounded border transition-all overflow-hidden ${prefs.skinTone === tone.value
-                        ? 'border-white ring-1 ring-white'
-                        : 'border-studio-800 hover:border-studio-500'
-                        }`}
-                    >
-                      <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${tone.base} 0%, ${tone.shadow} 100%)` }} />
-                    </button>
-                  ))}
+                <div className="flex gap-2">
+                  {SKIN_TONES.map(tone => {
+                    const isSelected = prefs.skinTone === tone.value;
+                    return (
+                      <button
+                        key={tone.label}
+                        onClick={() => updatePref('skinTone', tone.value)}
+                        className={`
+                          relative flex-1 aspect-square rounded-lg border-2 transition-all duration-300 group overflow-hidden
+                          ${isSelected
+                            ? 'border-white ring-1 ring-white scale-105 z-10'
+                            : 'border-transparent hover:border-studio-600 hover:scale-105'
+                          }
+                        `}
+                        title={tone.label}
+                      >
+                        <div
+                          className="absolute inset-0"
+                          style={{ background: `linear-gradient(145deg, ${tone.base} 0%, ${tone.shadow} 100%)` }}
+                        />
+                        <div className="absolute top-1 left-1 w-2 h-2 bg-white/30 rounded-full blur-[2px]" />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider">Texture</label>
-                    <Tooltip content="Defines surface realism. 'Raw' shows pores/fuzz. 'Glass' is hyper-smooth. 'Textured' adds acne/scars." />
-                  </div>
-                  <div className="relative group">
-                    <select
-                      value={prefs.skinTexture || 'Raw / Standard'}
-                      onChange={(e) => updatePref('skinTexture', e.target.value)}
-                      className="w-full bg-studio-900 border border-studio-800 text-studio-300 text-[10px] font-mono py-2 pl-2 pr-6 rounded-sm focus:border-white focus:outline-none appearance-none cursor-pointer hover:border-studio-600 transition-colors"
-                    >
-                      {SKIN_TEXTURES.map(tex => (
-                        <option key={tex} value={tex} className="bg-studio-900 text-studio-300">{tex}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-studio-500 group-hover:text-studio-300 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider">Finish</label>
-                    <Tooltip content="Defines light reflection. 'Matte' is powdered. 'Dewy' is wet/hydrated. 'Oily' is unretouched shine." />
-                  </div>
-                  <div className="relative group">
-                    <select
-                      value={prefs.skinFinish || 'Natural'}
-                      onChange={(e) => updatePref('skinFinish', e.target.value)}
-                      className="w-full bg-studio-900 border border-studio-800 text-studio-300 text-[10px] font-mono py-2 pl-2 pr-6 rounded-sm focus:border-white focus:outline-none appearance-none cursor-pointer hover:border-studio-600 transition-colors"
-                    >
-                      {SKIN_FINISHES.map(fin => (
-                        <option key={fin} value={fin} className="bg-studio-900 text-studio-300">{fin}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-studio-500 group-hover:text-studio-300 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </div>
-                  </div>
-                </div>
+                <SelectControl label="Texture" options={SKIN_TEXTURES} value={prefs.skinTexture || ""} onChange={v => updatePref('skinTexture', v)} tooltip="Skin surface quality" />
+                <SelectControl label="Finish" options={SKIN_FINISHES} value={prefs.skinFinish || ""} onChange={v => updatePref('skinFinish', v)} tooltip="Skin shine level" />
               </div>
             </div>
           </CollapsibleSection>
 
-          {/* 5. EYES & HAIR */}
-          <CollapsibleSection title="Eyes & Hair">
+          {/* 5. EYES */}
+          <CollapsibleSection title="Eyes" required>
+            <div className="space-y-2 pt-1">
+              <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider block">Eye Color</label>
+              <VisualEyeGrid
+                options={EYE_PRESETS}
+                selected={prefs.eyeColor || ""}
+                onSelect={(val) => updatePref('eyeColor', val)}
+              />
+            </div>
+          </CollapsibleSection>
+
+          {/* 6. HAIR */}
+          <CollapsibleSection title="Hair" required>
             <div className="space-y-5 pt-1">
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider block">Iris Color</label>
-                <VisualEyeGrid
-                  options={EYE_PRESETS}
-                  selected={prefs.eyeColor}
-                  onSelect={(val) => updatePref('eyeColor', val)}
+                <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider block">Hair Color</label>
+                <HairColorWheel
+                  currentColor={prefs.hairColor || ""}
+                  onColorSelect={(val: string) => updatePref('hairColor', val)}
                 />
               </div>
 
-              <div className="space-y-2 pt-2 border-t border-studio-800">
-                <div className="flex justify-between items-center">
-                  <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider block">Hair Color</label>
-                  <span className="text-[9px] font-mono text-white tracking-wide">{prefs.hairColor || "Natural"}</span>
-                </div>
-
-                <div className="bg-studio-900/30 rounded-lg border border-studio-800/50 p-4">
-                  <HairColorWheel
-                    currentColor={prefs.hairColor || "Natural"}
-                    onColorSelect={(color) => updatePref('hairColor', color)}
-                  />
-                </div>
-              </div>
-
-              {/* Hair Builder */}
-              <div className="space-y-4 pt-2 border-t border-studio-800">
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider">Style Family</label>
-                    <Tooltip content="Base architectural cut. Select 'Buzz', 'Bob', 'Layers', etc." />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {currentHairFamilies.map(style => (
+              <div className="space-y-2">
+                <label className="text-[9px] uppercase font-mono text-studio-500 tracking-wider block">Style Family</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {currentHairFamilies.map(style => {
+                    const isSelected = prefs.hairStyle === style;
+                    return (
                       <button
                         key={style}
                         onClick={() => updatePref('hairStyle', style)}
                         className={`
-                          px-2 py-2.5 rounded-sm text-[9px] font-mono uppercase tracking-wide border transition-all
-                          ${prefs.hairStyle === style
+                          px-2 py-2 rounded-sm border text-[8px] font-mono uppercase tracking-wide transition-all
+                          ${isSelected
                             ? 'bg-studio-800 border-white text-white'
-                            : 'bg-transparent border-studio-800 text-studio-500 hover:border-studio-600 hover:text-studio-300'
+                            : 'bg-studio-900 border-studio-800 text-studio-500 hover:border-studio-600 hover:text-studio-300'
                           }
                         `}
                       >
                         {style}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
+              </div>
 
-                {/* Core Modifiers */}
-                <div className="grid grid-cols-2 gap-4">
-                  <SelectControl label="Length" options={HAIR_LENGTHS} value={prefs.hairLength || ""} onChange={v => updatePref('hairLength', v)} />
-                  <SelectControl label="Texture" options={HAIR_TEXTURES} value={prefs.hairTexture || ""} onChange={v => updatePref('hairTexture', v)} />
-                  <SelectControl label="Fringe / Bangs" options={HAIR_FRINGES} value={prefs.hairFringe || ""} onChange={v => updatePref('hairFringe', v)} />
-                  <SelectControl label="Parting" options={HAIR_PARTINGS} value={prefs.hairParting || ""} onChange={v => updatePref('hairParting', v)} />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <SelectControl label="Length" options={HAIR_LENGTHS} value={prefs.hairLength || ""} onChange={v => updatePref('hairLength', v)} />
+                <SelectControl label="Texture" options={HAIR_TEXTURES} value={prefs.hairTexture || ""} onChange={v => updatePref('hairTexture', v)} />
+                <SelectControl label="Fringe" options={HAIR_FRINGES} value={prefs.hairFringe || ""} onChange={v => updatePref('hairFringe', v)} />
+                <SelectControl label="Parting" options={HAIR_PARTINGS} value={prefs.hairParting || ""} onChange={v => updatePref('hairParting', v)} />
+                <SelectControl label="Volume" options={HAIR_VOLUMES} value={prefs.hairVolume || ""} onChange={v => updatePref('hairVolume', v)} />
+              </div>
 
-                {/* Volume & Facial Hair */}
-                <div className={prefs.gender === 'Male' ? "grid grid-cols-2 gap-4" : ""}>
-                  <SelectControl label="Volume & Shape" options={HAIR_VOLUMES} value={prefs.hairVolume || ""} onChange={v => updatePref('hairVolume', v)} />
-                  {prefs.gender === 'Male' && (
-                    <SelectControl label="Facial Hair" options={CHAR_OPTIONS.facialHair} value={prefs.facialHair || ""} onChange={v => updatePref('facialHair', v)} />
+              {/* Advanced Hair Toggle */}
+              <button
+                onClick={() => setShowAdvancedHair(!showAdvancedHair)}
+                className="w-full flex items-center justify-between py-2 text-[9px] font-mono text-studio-500 hover:text-white uppercase tracking-wider border-t border-studio-800"
+              >
+                <span>Advanced Styling</span>
+                <span className="text-lg leading-none">{showAdvancedHair ? '−' : '+'}</span>
+              </button>
+
+              {showAdvancedHair && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200 pb-2">
+                  <SelectControl label="Flyaways" options={["None", "Natural", "Intentional"]} value={prefs.hairFlyaways || ""} onChange={v => updatePref('hairFlyaways', v)} />
+                  <SelectControl label="Hairline" options={["Natural", "Clean"]} value={prefs.hairHairline || ""} onChange={v => updatePref('hairHairline', v)} />
+                  <SelectControl label="Tuck" options={HAIR_TUCKS} value={prefs.hairTuck || ""} onChange={v => updatePref('hairTuck', v)} />
+                  {(prefs.gender === 'Male' || prefs.hairStyle?.includes('Fade') || prefs.hairStyle?.includes('Buzz')) && (
+                    <SelectControl label="Fade / Taper" options={HAIR_FADES} value={prefs.hairFade || ""} onChange={v => updatePref('hairFade', v)} />
                   )}
                 </div>
-
-                {/* Advanced Hair Toggle */}
-                <button
-                  onClick={() => setShowAdvancedHair(!showAdvancedHair)}
-                  className="w-full flex items-center justify-between py-2 text-[9px] font-mono text-studio-500 hover:text-white uppercase tracking-wider border-t border-studio-800"
-                >
-                  <span>Advanced Styling</span>
-                  <span className="text-lg leading-none">{showAdvancedHair ? '−' : '+'}</span>
-                </button>
-
-                {showAdvancedHair && (
-                  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200 pb-2">
-                    <SelectControl label="Flyaways" options={["None", "Natural", "Intentional"]} value={prefs.hairFlyaways || ""} onChange={v => updatePref('hairFlyaways', v)} />
-                    <SelectControl label="Hairline" options={["Natural", "Clean"]} value={prefs.hairHairline || ""} onChange={v => updatePref('hairHairline', v)} />
-                    <SelectControl label="Tuck" options={HAIR_TUCKS} value={prefs.hairTuck || ""} onChange={v => updatePref('hairTuck', v)} />
-                    {(prefs.gender === 'Male' || prefs.hairStyle?.includes('Fade') || prefs.hairStyle?.includes('Buzz')) && (
-                      <SelectControl label="Fade / Taper" options={HAIR_FADES} value={prefs.hairFade || ""} onChange={v => updatePref('hairFade', v)} />
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </CollapsibleSection>
         </div>
@@ -1252,102 +1735,338 @@ export default function CastingStudio() {
       </aside>
 
       {/* Right Panel - Image Viewer */}
-      <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative">
-        {/* Top Bar */}
-        <div className="p-4 border-b border-studio-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0A0A0A]">
-          {/* View Tabs */}
-          <div className="flex gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-            {[
-              { key: "frontClose", label: "Headshot" },
-              { key: "frontFull", label: "Full Body" },
-              { key: "sideClose", label: "Side" },
-              { key: "backFull", label: "Back" },
-            ].map((view) => {
-              const hasAsset = currentAssets.some((a) => a.viewType === view.key);
-              return (
-                <button
-                  key={view.key}
-                  onClick={() => hasAsset && setActiveView(view.key)}
-                  disabled={!hasAsset}
-                  className={`px-4 py-2 rounded-sm text-[10px] font-mono uppercase tracking-widest transition-all whitespace-nowrap ${activeView === view.key
-                    ? "bg-white text-black"
-                    : hasAsset
-                      ? "bg-studio-900 border border-studio-800 text-white hover:bg-studio-800"
-                      : "bg-studio-900/50 border border-studio-800/50 text-studio-700 cursor-not-allowed"
-                    }`}
-                >
-                  {view.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleUndo}
-              disabled={!canUndo}
-              className={`p-2 rounded-sm border transition-all ${canUndo ? "border-studio-800 text-white hover:bg-studio-800" : "border-studio-800/50 text-studio-700"
-                }`}
-              title="Undo"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" /></svg>
-            </button>
-            <button
-              onClick={handleRedo}
-              disabled={!canRedo}
-              className={`p-2 rounded-sm border transition-all ${canRedo ? "border-studio-800 text-white hover:bg-studio-800" : "border-studio-800/50 text-studio-700"
-                }`}
-              title="Redo"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" /></svg>
-            </button>
-            {currentImageUrl && (
-              <a
-                href={currentImageUrl}
-                download={`CASTING_${Date.now()}_${activeView}.png`}
-                className="p-2 rounded-sm border border-studio-800 text-white hover:bg-studio-800 transition-all"
-                title="Download"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-              </a>
-            )}
-          </div>
+      <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative bg-[#050505]">
+        {/* Background Effects */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-studio-600/10 rounded-full blur-[90px] mix-blend-screen opacity-30"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-black via-[#050505] to-transparent opacity-90"></div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex items-center justify-center p-8 bg-[#050505] relative">
-          {/* Reference Node - Positioned in corner */}
-          <div className="absolute top-8 right-8 z-40 hidden xl:block">
+        {/* ConnectorLine */}
+        <ConnectorLine isActive={!!currentAssets.length && !!prefs.referenceImage} />
+
+        {/* Top Controls */}
+        <div className="absolute top-4 left-4 z-40 flex items-center space-x-2">
+          <button 
+            onClick={handleUndo} 
+            disabled={!canUndo || genState.isGenerating} 
+            className="p-2.5 bg-black/50 hover:bg-studio-800 disabled:opacity-30 disabled:hover:bg-black/50 text-white rounded-full border border-white/10 backdrop-blur-sm transition-all"
+            title="Undo"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          </button>
+          <button 
+            onClick={handleRedo} 
+            disabled={!canRedo || genState.isGenerating} 
+            className="p-2.5 bg-black/50 hover:bg-studio-800 disabled:opacity-30 disabled:hover:bg-black/50 text-white rounded-full border border-white/10 backdrop-blur-sm transition-all"
+            title="Redo"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+          </button>
+        </div>
+
+        {/* Resolution Selector */}
+        <div className="absolute top-4 right-4 z-40 flex bg-black/50 border border-white/10 rounded-full p-1 backdrop-blur-sm">
+          {[ImageResolution.STD, ImageResolution.HIGH].map(res => (
+            <button
+              key={res}
+              onClick={() => setResolution(res)}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-mono font-bold transition-all ${resolution === res ? 'bg-white text-black' : 'text-studio-400 hover:text-white'}`}
+            >
+              {res}
+            </button>
+          ))}
+        </div>
+
+        {/* Reference Node */}
+        {currentAssets.length > 0 && (
+          <div className="absolute top-24 right-8 z-40 hidden xl:block">
             <ReferenceNode
               image={prefs.referenceImage}
               onSet={(img) => updatePref('referenceImage', img)}
               disabled={genState.isGenerating}
             />
           </div>
+        )}
 
-          {genState.isGenerating ? (
-            <div className="flex flex-col items-center justify-center space-y-6">
-              <div className="relative w-24 h-24">
-                <div className="absolute inset-0 border border-studio-800 rounded-full" />
-                <div className="absolute inset-0 border-t border-white rounded-full animate-spin" />
+        {/* Error Display */}
+        {genState.error && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-8 bg-black/80 backdrop-blur-sm">
+            <div className="max-w-md w-full border border-red-900/50 bg-red-950/20 p-8 text-center space-y-4">
+              <div className="w-16 h-16 mx-auto border border-red-900 rounded-full flex items-center justify-center text-red-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
-              <div className="text-center space-y-2">
-                <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em] animate-pulse">Processing</h3>
-                <p className="text-[10px] font-mono text-studio-500 uppercase tracking-widest">
-                  {genState.currentStep || 'Initializing...'}
+              <div>
+                <h3 className="text-red-500 font-mono uppercase tracking-widest text-sm mb-2">System Malfunction</h3>
+                <p className="text-red-400/70 font-mono text-xs leading-relaxed">
+                  {genState.error}
                 </p>
+                <button 
+                  onClick={handleRetry}
+                  className="mt-6 px-6 py-2 bg-red-900/50 hover:bg-red-800 text-red-100 font-mono text-xs uppercase tracking-widest border border-red-800 transition-colors"
+                >
+                  Retry Casting
+                </button>
               </div>
             </div>
-          ) : currentImageUrl ? (
-            <div className="relative max-w-2xl max-h-full">
-              <img
-                src={currentImageUrl}
-                alt="Generated model"
-                className="max-w-full max-h-[70vh] object-contain shadow-2xl"
-              />
+          </div>
+        )}
+
+        {/* Main Content */}
+        {currentAssets.length > 0 ? (
+          <div className="w-full h-full flex flex-col relative z-10">
+            {/* Loading Overlay */}
+            {genState.isGenerating && (
+              <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center space-y-6">
+                <div className="relative w-24 h-24">
+                  <div className="absolute inset-0 border border-studio-800 rounded-full"></div>
+                  <div className="absolute inset-0 border-t border-white rounded-full animate-spin"></div>
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em] animate-pulse">Processing</h3>
+                  <p className="text-[10px] font-mono text-studio-500 uppercase tracking-widest">
+                    {genState.currentStep || 'Initializing...'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Image Display Area */}
+            <div className="flex-1 relative min-h-0 flex items-center justify-center p-4">
+              {/* Next Stage Button */}
+              {nextStage && !genState.isGenerating && (
+                <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4 animate-in fade-in slide-in-from-right-8 duration-700">
+                  <div className="text-right space-y-1 drop-shadow-md">
+                    <div className="flex items-center justify-end space-x-2 text-studio-400">
+                      <div className="flex space-x-1">
+                        {[...Array(nextStage.total)].map((_, i) => (
+                          <div key={i} className={`h-1 w-3 rounded-full ${i + 1 < nextStage.step ? 'bg-white' : i + 1 === nextStage.step ? 'bg-white animate-pulse' : 'bg-studio-700'}`}></div>
+                        ))}
+                      </div>
+                      <h4 className="text-[9px] font-mono uppercase tracking-widest">
+                        {nextStage.step > nextStage.total ? 'Workflow Complete' : 'Next Stage'}
+                      </h4>
+                    </div>
+                    <p className="text-xs font-mono font-bold text-white uppercase tracking-wider">{nextStage.label}</p>
+                  </div>
+                  <button
+                    onClick={nextStage.action}
+                    className="group relative w-16 h-16 bg-white rounded-full flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+                  >
+                    <div className="absolute inset-0 rounded-full border border-white opacity-50 group-hover:animate-ping"></div>
+                    <svg className="w-6 h-6 text-black relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  </button>
+                </div>
+              )}
+
+              {/* Main Image */}
+              <div className="relative h-full max-w-full flex items-center justify-center select-none">
+                {currentImageUrl && (
+                  <>
+                    <img 
+                      ref={imageRef}
+                      src={currentImageUrl} 
+                      alt="Active View" 
+                      className="max-h-full max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black"
+                    />
+                    
+                    {/* Masking Canvas */}
+                    <canvas 
+                      ref={canvasRef}
+                      className={`absolute top-0 left-0 cursor-crosshair touch-none ${isMasking ? 'pointer-events-auto z-20' : 'pointer-events-none z-10'}`}
+                      onPointerDown={handlePointerDown}
+                      onPointerMove={handlePointerMove}
+                      onPointerUp={handlePointerUp}
+                    />
+                  </>
+                )}
+
+                {/* Tools Bar */}
+                {!genState.isGenerating && currentAssets.length > 0 && (
+                  <div className="absolute top-1/2 -translate-y-1/2 right-4 flex flex-col gap-3 z-30 animate-in fade-in slide-in-from-right-4 duration-500">
+                    {/* Surgical Edit */}
+                    {(isIterationAllowed && (!isViewLocked || unlockMode)) && (
+                      <ToolButton 
+                        isActive={activeTool === 'surgical'} 
+                        onClick={() => setActiveTool(activeTool === 'surgical' ? 'none' : 'surgical')}
+                        icon={
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                            <path d="M2 2l7.586 7.586" />
+                            <circle cx="11" cy="11" r="2" />
+                          </svg>
+                        }
+                        label="Surgical Edit"
+                        color="red"
+                      />
+                    )}
+                    
+                    {/* Magic Eraser */}
+                    {(!hasDownstreamDependencies || unlockMode) && (
+                      <ToolButton 
+                        isActive={activeTool === 'eraser'} 
+                        onClick={() => setActiveTool(activeTool === 'eraser' ? 'none' : 'eraser')}
+                        icon={
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+                            <path d="M22 21H7" />
+                            <path d="m5 11 9 9" />
+                          </svg>
+                        }
+                        label="Magic Eraser"
+                        color="purple"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Masking Instructions */}
+                {isMasking && (
+                  <div className="absolute top-4 right-4 z-50 pointer-events-none select-none animate-in fade-in slide-in-from-top-1 duration-300">
+                    <div className={`px-3 py-2 rounded-lg backdrop-blur-md border ${activeTool === 'eraser' ? 'bg-purple-500/20 border-purple-500/50 text-purple-200' : 'bg-red-500/20 border-red-500/50 text-red-200'}`}>
+                      <p className="text-[10px] font-mono uppercase tracking-wider">
+                        {activeTool === 'eraser' ? 'Paint area to erase' : 'Paint area to edit'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
+
+            {/* Bottom Panel - Refinement Input */}
+            <div className="w-full bg-studio-950 border-t border-studio-800 flex-shrink-0 z-20">
+              <div className="w-full max-w-[1400px] mx-auto p-5">
+                {/* View Tabs */}
+                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                  {[
+                    { key: "frontClose", label: "Headshot" },
+                    { key: "frontFull", label: "Full Body" },
+                    { key: "sideClose", label: "Side" },
+                    { key: "backFull", label: "Back" },
+                  ].map((view) => {
+                    const hasAsset = currentAssets.some((a) => a.viewType === view.key);
+                    const isLocked = (view.key === 'frontClose' && currentAssets.some(a => a.viewType === 'frontFull')) ||
+                                    (view.key === 'frontFull' && currentAssets.some(a => a.viewType === 'sideClose'));
+                    return (
+                      <button
+                        key={view.key}
+                        onClick={() => hasAsset && setActiveView(view.key)}
+                        disabled={!hasAsset}
+                        className={`px-4 py-2 rounded-sm text-[10px] font-mono uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeView === view.key
+                          ? "bg-white text-black"
+                          : hasAsset
+                            ? "bg-studio-900 border border-studio-800 text-white hover:bg-studio-800"
+                            : "bg-studio-900/50 border border-studio-800/50 text-studio-700 cursor-not-allowed"
+                          }`}
+                      >
+                        {isLocked && hasAsset && (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        )}
+                        {view.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Refinement Input */}
+                <div className="flex items-end gap-2 bg-studio-900/50 border border-studio-800 rounded-lg p-2">
+                  {isViewLocked && !unlockMode ? (
+                    <div className="flex-1 flex items-center justify-between px-4 py-2">
+                      <div className="flex items-center space-x-2 text-amber-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <span className="text-xs font-mono uppercase tracking-widest">View Locked</span>
+                      </div>
+                      <button 
+                        onClick={() => setUnlockMode(true)}
+                        className="text-[9px] font-mono uppercase tracking-widest text-studio-500 hover:text-white transition-colors border-b border-dashed border-studio-700 hover:border-white pb-0.5"
+                      >
+                        Unlock to Edit
+                      </button>
+                    </div>
+                  ) : !isIterationAllowed ? (
+                    <div className="flex-1 px-4 py-2 flex items-center space-x-2 text-studio-600 select-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                      <span className="text-xs font-mono uppercase tracking-widest">Locked Angle</span>
+                      <Tooltip content="To maintain consistency, only the Headshot, Front Full Body, and Back View can be iterated with text. Use Magic Eraser for corrections." />
+                    </div>
+                  ) : (
+                    <textarea 
+                      ref={textAreaRef}
+                      value={refineInput}
+                      onChange={(e) => setRefineInput(e.target.value)}
+                      disabled={isEnhancing} 
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && !isEnhancing) {
+                          e.preventDefault();
+                          handleRefineSubmit();
+                        }
+                      }}
+                      placeholder={
+                        isEnhancing ? "Optimizing instruction with AI..." :
+                        activeTool === 'surgical' 
+                          ? `Describe change for masked area (e.g. 'Add scar')...` 
+                          : `Iterate on ${activeView.replace(/([A-Z])/g, ' $1').toLowerCase()}...`
+                      }
+                      rows={1}
+                      className={`flex-1 bg-transparent border-none text-xs placeholder:text-studio-500 focus:outline-none focus:ring-0 px-3 py-2.5 font-mono resize-none custom-scrollbar min-h-[36px] max-h-[300px] ${isEnhancing ? 'text-studio-500 animate-pulse' : 'text-white'}`}
+                    />
+                  )}
+                  
+                  {/* Enhance button */}
+                  {((!isViewLocked || unlockMode) && isIterationAllowed && activeTool !== 'eraser') && (
+                    <button
+                      onClick={handleEnhance}
+                      disabled={!refineInput.trim() || isEnhancing}
+                      className="flex-shrink-0 p-2 mb-1 text-studio-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors mr-1"
+                      title="Enhance Prompt (AI)"
+                    >
+                      {isEnhancing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h0"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Submit button */}
+                  {activeTool === 'eraser' ? (
+                    <button 
+                      onClick={handleRefineSubmit}
+                      disabled={maskPaths.length === 0}
+                      className={`flex-shrink-0 px-4 py-2 mb-1 mr-1 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${maskPaths.length > 0 ? 'bg-purple-500 text-white hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-studio-800 text-studio-600 cursor-not-allowed'}`}
+                    >
+                      Erase
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleRefineSubmit}
+                      disabled={!refineInput.trim() || (isViewLocked && !unlockMode) || !isIterationAllowed}
+                      className={`flex-shrink-0 p-2 mb-1 rounded-full transition-colors ${(isViewLocked && !unlockMode) || !isIterationAllowed ? 'bg-studio-800 text-studio-600 cursor-not-allowed' : 'bg-white text-black hover:bg-studio-200 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : genState.isGenerating ? (
+          <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+            <div className="relative w-24 h-24">
+              <div className="absolute inset-0 border border-studio-800 rounded-full"></div>
+              <div className="absolute inset-0 border-t border-white rounded-full animate-spin"></div>
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em] animate-pulse">Processing</h3>
+              <p className="text-[10px] font-mono text-studio-500 uppercase tracking-widest">
+                {genState.currentStep || 'Initializing...'}
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Empty State */
+          <div className="flex-1 flex items-center justify-center p-8">
             <div className="relative z-10 w-full max-w-3xl p-8 flex flex-col items-center justify-center min-h-[500px]">
               <div className="mb-12 text-center space-y-6">
                 <div className="relative inline-block">
@@ -1407,82 +2126,6 @@ export default function CastingStudio() {
                 </div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Bottom Actions */}
-        {currentAssets.length > 0 && !genState.isGenerating && (
-          <div className="p-4 border-t border-studio-800 bg-[#0A0A0A]">
-            {/* Refinement Input */}
-            <div className="mb-4">
-              <div className="flex gap-2">
-                <textarea
-                  ref={textAreaRef}
-                  value={refineInput}
-                  onChange={(e) => setRefineInput(e.target.value)}
-                  placeholder="Describe refinements... (e.g., 'add more dramatic lighting', 'softer expression')"
-                  className="flex-1 bg-studio-900 border border-studio-800 text-white text-sm py-3 px-4 rounded-sm focus:border-white focus:outline-none resize-none font-mono placeholder:text-studio-600"
-                  rows={1}
-                />
-                <button
-                  onClick={() => {
-                    if (refineInput.trim()) {
-                      toast.info("Iteration feature coming soon!");
-                    }
-                  }}
-                  disabled={!refineInput.trim()}
-                  className="px-4 py-2 bg-white text-black font-mono text-xs uppercase tracking-widest hover:bg-studio-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  Refine
-                </button>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {canGenerateFullBody && !currentAssets.some((a) => a.viewType === "frontFull") && (
-                <button
-                  onClick={handleGenerateFullBody}
-                  className="px-4 py-2 rounded-sm bg-studio-900 border border-studio-800 text-white text-[10px] font-mono uppercase tracking-widest hover:bg-studio-800 hover:border-studio-600 transition-all flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                  Full Body ({POINT_COSTS.fullBody} pts)
-                </button>
-              )}
-              {canGenerateMultiView && !currentAssets.some((a) => a.viewType === "sideClose") && (
-                <button
-                  onClick={() => handleGenerateMultiView("side")}
-                  className="px-4 py-2 rounded-sm bg-studio-900 border border-studio-800 text-white text-[10px] font-mono uppercase tracking-widest hover:bg-studio-800 hover:border-studio-600 transition-all flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                  Side View ({POINT_COSTS.multiView} pts)
-                </button>
-              )}
-              {canGenerateMultiView && !currentAssets.some((a) => a.viewType === "backFull") && (
-                <button
-                  onClick={() => handleGenerateMultiView("back")}
-                  className="px-4 py-2 rounded-sm bg-studio-900 border border-studio-800 text-white text-[10px] font-mono uppercase tracking-widest hover:bg-studio-800 hover:border-studio-600 transition-all flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                  Back View ({POINT_COSTS.multiView} pts)
-                </button>
-              )}
-              <button
-                onClick={handleGenerate}
-                className="px-4 py-2 rounded-sm bg-white/10 border border-white/30 text-white text-[10px] font-mono uppercase tracking-widest hover:bg-white/20 transition-all flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3" /></svg>
-                Recast
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Error Display */}
-        {genState.error && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-sm text-red-400 text-sm font-mono flex items-center gap-2">
-            <X className="w-4 h-4" />
-            {genState.error}
           </div>
         )}
       </main>

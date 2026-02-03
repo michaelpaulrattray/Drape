@@ -352,3 +352,70 @@
 - [x] Implemented HairColorWheel component with color wheel and tone controls
 - [x] Matched ImageViewer layout with reference node
 - [x] All 65 tests passing
+
+## Cross-Reference Audit: Casting Studio vs Reference App (COMPLETED)
+
+### Structural Comparison
+- [x] ControlPanel width matches reference (400px) - VERIFIED
+- [x] ImageViewer takes remaining space (flex-1) - VERIFIED
+- [x] Overall layout structure matches - VERIFIED
+
+### ControlPanel Components Audit
+- [x] Brand selector (8 options with descriptions) - MATCHES
+- [x] TriBlendSelector component - MATCHES
+- [x] Gender segmented control with icons - MATCHES
+- [x] Age slider (18-85) - MATCHES
+- [x] Ethnicity multi-select (max 2 or Mixed) - MATCHES
+- [x] Physique body type icons (6 options) - MATCHES
+- [x] Face Shape icons (6 options) - MATCHES
+- [x] Eyebrow Style selector - MATCHES
+- [x] Advanced Face Features toggle - MATCHES
+- [x] Skin Tone visual picker (6 colors) - MATCHES
+- [x] Skin Texture dropdown - MATCHES
+- [x] Skin Finish dropdown - MATCHES
+- [x] Eye Color visual grid (15 colors) - MATCHES
+- [x] HairColorWheel component - MATCHES
+- [x] Hair Style Family selector - MATCHES
+- [x] Hair Length dropdown - MATCHES
+- [x] Hair Texture dropdown - MATCHES
+- [x] Hair Fringe dropdown - MATCHES
+- [x] Hair Parting dropdown - MATCHES
+- [x] Hair Volume dropdown - MATCHES
+- [x] Advanced Hair toggle - MATCHES
+- [x] Flyaways, Hairline, Tuck, Fade options - MATCHES
+
+### ImageViewer Components Audit
+- [x] View tabs (Headshot, Full Body, Side, Back) - MATCHES
+- [x] Undo/Redo buttons - MATCHES
+- [x] Download button - MATCHES
+- [x] ReferenceNode drag-and-drop - MATCHES
+- [x] Loading spinner animation - MATCHES
+- [x] Empty state with branding - MATCHES
+- [x] Points display - MATCHES
+- [x] Cost breakdown - MATCHES
+- [x] Refinement text input - MATCHES
+- [x] Action buttons (Full Body, Side, Back, Recast) - MATCHES
+
+### Missing Features - NOW IMPLEMENTED
+- [x] ConnectorLine SVG animation between reference node and main image
+- [x] StageLockModal confirmation dialogs
+- [x] Surgical/Eraser masking tools for refinement (canvas-based drawing)
+- [x] Export Pack modal (character name + resolution selection)
+- [x] Resolution selector (1K/2K toggle)
+- [x] enhanceUserPrompt AI enhancement for refinement text
+- [x] Retry button on error
+- [x] ToolButton component with active state indicators
+
+### Styling Verification
+- [x] studio-* color classes match reference
+- [x] custom-scrollbar styling implemented
+- [x] Animation classes (animate-in, fade-in, slide-in-from-top-2) working
+- [x] Hover states and transitions verified
+
+### Workflow Implementation
+- [x] Stage-based generation (headshot → body → sheet) with StageLockModal
+- [x] Downstream views cleared when upstream changes
+- [x] Iteration with mask support (surgical/eraser tools)
+- [x] View locking system with unlock mode
+- [x] All 65 tests passing
+
