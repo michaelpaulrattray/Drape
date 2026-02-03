@@ -133,3 +133,12 @@
 - [x] Add Recent Work content grid section
 - [x] Style with dark background (#0D0C12), rose accent for active items
 - [x] Add Quick Actions cards for studio access
+
+## Dashboard Clean Modern Dark Theme
+- [x] Background: #151515 to #1a1a1a (dark gray, not pure black)
+- [x] Text: #e5e5e5 to #f0f0f0 for readability
+- [x] Accents: muted violet (#8b5cf6), sky (#60a5fa), amber colors
+- [x] Generous spacing with subtle shadows
+- [x] 12-16px border-radius on cards (rounded-xl, rounded-2xl)
+- [x] WCAG contrast compliance for eye comfort
+- [x] Match homepage fonts/weights/line-height

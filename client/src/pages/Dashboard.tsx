@@ -4,9 +4,6 @@ import { Redirect } from "wouter";
 import { Link } from "wouter";
 import {
   Home,
-  Video,
-  Film,
-  Music,
   Library,
   History,
   Clock,
@@ -24,9 +21,10 @@ import {
   Image,
   Sparkles,
   Users,
-  Grid3X3,
   Layers,
   Palette,
+  ArrowRight,
+  Plus,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -42,8 +40,8 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#0D0C12]">
-        <div className="animate-pulse text-slate-400">Loading...</div>
+      <div className="h-screen w-screen flex items-center justify-center bg-[#151515]">
+        <div className="animate-pulse text-neutral-400">Loading...</div>
       </div>
     );
   }
@@ -53,24 +51,24 @@ export default function Dashboard() {
   }
 
   const mainNavItems = [
-    { id: "home", label: "Home", icon: Home, color: "text-rose-400", active: true },
-    { id: "casting", label: "Casting Studio", icon: Camera, color: "text-pink-400" },
-    { id: "wardrobe", label: "Wardrobe Studio", icon: Shirt, color: "text-cyan-400" },
-    { id: "photo", label: "Photo Studio", icon: Image, color: "text-emerald-400" },
+    { id: "home", label: "Home", icon: Home },
+    { id: "casting", label: "Casting Studio", icon: Camera },
+    { id: "wardrobe", label: "Wardrobe Studio", icon: Shirt },
+    { id: "photo", label: "Photo Studio", icon: Image },
   ];
 
   const channelNavItems = [
-    { id: "library", label: "Library", icon: Library, color: "text-indigo-400" },
-    { id: "history", label: "History", icon: History, color: "text-orange-400" },
-    { id: "models", label: "Your Models", icon: Users, color: "text-red-400" },
-    { id: "generations", label: "Generations", icon: Layers, color: "text-blue-400" },
-    { id: "downloads", label: "Downloads", icon: Download, color: "text-green-400" },
+    { id: "library", label: "Library", icon: Library },
+    { id: "history", label: "History", icon: History },
+    { id: "models", label: "Your Models", icon: Users },
+    { id: "generations", label: "Generations", icon: Layers },
+    { id: "downloads", label: "Downloads", icon: Download },
   ];
 
-  const subscriptions = [
-    { name: "Casting Pro", color: "bg-indigo-500/20", textColor: "text-indigo-400" },
-    { name: "Style Guide", color: "bg-pink-500/20", textColor: "text-pink-400" },
-    { name: "Campaign Kit", color: "bg-orange-500/20", textColor: "text-orange-400" },
+  const templates = [
+    { name: "Casting Pro", color: "bg-violet-500/15" },
+    { name: "Style Guide", color: "bg-sky-500/15" },
+    { name: "Campaign Kit", color: "bg-amber-500/15" },
   ];
 
   const contentTabs = ["All", "Models", "Outfits", "Campaigns", "Exports"];
@@ -114,89 +112,85 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="h-screen w-screen flex bg-[#0D0C12] text-slate-300 overflow-hidden selection:bg-purple-500/30 selection:text-purple-200">
+    <div className="h-screen w-screen flex bg-[#151515] text-[#e5e5e5] overflow-hidden selection:bg-violet-500/30 selection:text-violet-200 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 h-full flex flex-col flex-shrink-0 border-r border-white/5 bg-[#0D0C12]">
-        {/* Window Controls & Logo */}
-        <div className="px-6 pt-5 pb-6">
-          <div className="flex space-x-2 mb-6 opacity-80">
-            <div className="w-3 h-3 rounded-full bg-[#FF5F57]"></div>
-            <div className="w-3 h-3 rounded-full bg-[#FEBC2E]"></div>
-            <div className="w-3 h-3 rounded-full bg-[#28C840]"></div>
-          </div>
-
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <button className="text-slate-400 hover:text-white transition-colors">
-              <Menu className="w-6 h-6" />
-            </button>
-            <h1 className="flex items-center gap-2 text-xl font-semibold text-white tracking-tight">
-              FormaStudio
-            </h1>
+      <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-white/[0.06] bg-[#1a1a1a]">
+        {/* Logo */}
+        <div className="px-6 pt-6 pb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-violet-500/20">
+              F
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-[#f0f0f0] tracking-tight">FormaStudio</h1>
+              <p className="text-xs text-neutral-500">Creative Suite</p>
+            </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto px-3 space-y-6 pb-6 no-scrollbar">
+        <div className="flex-1 overflow-y-auto px-4 space-y-8 pb-6" style={{ scrollbarWidth: 'none' }}>
           {/* Main Section */}
-          <nav className="space-y-1">
+          <nav className="space-y-1.5">
             {mainNavItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveNav(item.id)}
-                className={`w-full flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   activeNav === item.id
-                    ? `bg-gradient-to-r from-rose-500/10 to-transparent font-medium border-l-2 border-rose-500 text-rose-400`
-                    : "text-slate-400 hover:text-slate-100 hover:bg-white/5"
+                    ? "bg-[#252525] text-[#f0f0f0] shadow-sm"
+                    : "text-neutral-400 hover:text-[#e5e5e5] hover:bg-[#1f1f1f]"
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${activeNav === item.id ? item.color : `group-hover:${item.color}`}`} />
-                <span>{item.label}</span>
+                <item.icon className={`w-5 h-5 ${activeNav === item.id ? "text-violet-400" : ""}`} />
+                <span className="font-medium">{item.label}</span>
+                {activeNav === item.id && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400" />
+                )}
               </button>
             ))}
           </nav>
 
-          {/* My Channel Section */}
+          {/* My Studio Section */}
           <div>
-            <h3 className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            <h3 className="px-4 text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">
               My Studio
             </h3>
             <nav className="space-y-1">
               {channelNavItems.map((item) => (
                 <button
                   key={item.id}
-                  className="w-full flex items-center gap-4 px-3 py-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all group"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-[#e5e5e5] hover:bg-[#1f1f1f] transition-all"
                 >
-                  <item.icon className={`w-[18px] h-[18px] group-hover:${item.color}`} />
+                  <item.icon className="w-[18px] h-[18px]" />
                   <span className="text-sm">{item.label}</span>
                 </button>
               ))}
-              <button className="w-full flex items-center gap-4 px-3 py-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all">
+              <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-400 transition-all">
                 <ChevronDown className="w-[18px] h-[18px]" />
                 <span className="text-sm">Show More</span>
               </button>
             </nav>
           </div>
 
-          {/* Subscriptions List */}
+          {/* Templates */}
           <div>
-            <h3 className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            <h3 className="px-4 text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">
               Templates
             </h3>
             <nav className="space-y-1">
-              {subscriptions.map((sub, idx) => (
+              {templates.map((template, idx) => (
                 <button
                   key={idx}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all group"
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-neutral-400 hover:text-[#e5e5e5] hover:bg-[#1f1f1f] transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-lg ${sub.color} flex items-center justify-center ${sub.textColor} ring-1 ring-white/10`}>
-                      <Palette className="w-3 h-3" />
+                    <div className={`w-7 h-7 rounded-lg ${template.color} flex items-center justify-center`}>
+                      <Palette className="w-3.5 h-3.5 text-neutral-300" />
                     </div>
-                    <span className="text-sm group-hover:translate-x-1 transition-transform">
-                      {sub.name}
-                    </span>
+                    <span className="text-sm">{template.name}</span>
                   </div>
-                  <ChevronRight className="w-3 h-3 text-slate-600" />
+                  <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400" />
                 </button>
               ))}
             </nav>
@@ -204,16 +198,16 @@ export default function Dashboard() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+        <div className="p-4 border-t border-white/[0.06]">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[#1f1f1f]">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-violet-500/20">
               {user?.name?.charAt(0) || "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.name || "User"}</p>
-              <p className="text-xs text-slate-500 truncate">{pointsData?.balance || 0} points</p>
+              <p className="text-sm font-medium text-[#f0f0f0] truncate">{user?.name || "User"}</p>
+              <p className="text-xs text-neutral-500 truncate">{pointsData?.balance || 0} credits</p>
             </div>
-            <button className="text-slate-400 hover:text-white transition-colors">
+            <button className="text-neutral-500 hover:text-[#e5e5e5] transition-colors p-1.5 rounded-lg hover:bg-[#252525]">
               <Settings className="w-4 h-4" />
             </button>
           </div>
@@ -221,41 +215,41 @@ export default function Dashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto no-scrollbar">
+      <main className="flex-1 overflow-y-auto bg-[#151515]" style={{ scrollbarWidth: 'none' }}>
         {/* Header with Profile Banner */}
         <div className="relative">
           {/* Banner */}
-          <div className="h-48 bg-gradient-to-r from-[#1a1625] via-[#2d1f3d] to-[#1a1625] relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1200&h=300&fit=crop')] bg-cover bg-center opacity-30"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0D0C12] to-transparent"></div>
+          <div className="h-52 relative overflow-hidden bg-gradient-to-br from-[#1e1e2e] via-[#252535] to-[#1e1e2e]">
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1200&h=300&fit=crop')] bg-cover bg-center opacity-20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#151515] via-transparent to-transparent" />
           </div>
 
           {/* Profile Info */}
-          <div className="absolute bottom-0 left-0 right-0 px-8 pb-4">
+          <div className="absolute bottom-0 left-0 right-0 px-10 pb-6">
             <div className="flex items-end gap-6">
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#0D0C12] shadow-2xl">
+              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#151515] shadow-xl shadow-violet-500/20">
                 {user?.name?.charAt(0) || "F"}
               </div>
               <div className="flex-1 pb-2">
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-2xl font-bold text-white">{user?.name || "Creator"}</h1>
-                  <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-xs font-semibold">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-semibold text-[#f0f0f0]">{user?.name || "Creator"}</h1>
+                  <span className="px-3 py-1 rounded-full bg-violet-500/15 text-violet-400 text-xs font-medium border border-violet-500/20">
                     PRO
                   </span>
                 </div>
-                <p className="text-slate-400 text-sm">
-                  {pointsData?.balance || 0} points • {pointsData?.planTier || "Free"} plan
+                <p className="text-neutral-400 text-sm">
+                  {pointsData?.balance || 0} credits • {pointsData?.planTier || "Free"} plan
                 </p>
               </div>
               <div className="flex items-center gap-3 pb-2">
-                <button className="px-4 py-2 rounded-lg bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2">
+                <button className="px-5 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-medium hover:bg-violet-600 transition-colors flex items-center gap-2 shadow-lg shadow-violet-500/25">
                   <Sparkles className="w-4 h-4" />
-                  Get Points
+                  Get Credits
                 </button>
-                <button className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors">
+                <button className="p-2.5 rounded-xl bg-[#252525] text-neutral-300 hover:text-[#f0f0f0] hover:bg-[#2a2a2a] transition-colors">
                   <Bell className="w-5 h-5" />
                 </button>
-                <button className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors">
+                <button className="p-2.5 rounded-xl bg-[#252525] text-neutral-300 hover:text-[#f0f0f0] hover:bg-[#2a2a2a] transition-colors">
                   <Search className="w-5 h-5" />
                 </button>
               </div>
@@ -264,101 +258,101 @@ export default function Dashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-white/5 px-8">
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <div className="border-b border-white/[0.06] px-10 bg-[#151515]/80 backdrop-blur-sm sticky top-0 z-20">
+          <div className="flex items-center gap-1" style={{ scrollbarWidth: 'none' }}>
             {contentTabs.map((tab, idx) => (
               <button
                 key={tab}
-                className={`py-4 px-4 text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${
+                className={`py-4 px-5 text-sm font-medium transition-all relative ${
                   idx === 0
-                    ? "text-white border-b-2 border-rose-500"
-                    : "text-slate-400 hover:text-white"
+                    ? "text-[#f0f0f0]"
+                    : "text-neutral-500 hover:text-neutral-300"
                 }`}
               >
                 {tab}
+                {idx === 0 && (
+                  <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-500 rounded-full" />
+                )}
               </button>
             ))}
-            <button className="ml-auto py-4 text-slate-400 hover:text-white">
-              <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className="p-8 space-y-10">
-          {/* VIP Supporters Section */}
-          <div className="bg-[#14121D] border border-white/5 rounded-2xl p-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-white mb-1">
-                Team Members
-              </h2>
-              <p className="text-sm text-slate-500">
-                Collaborate with your creative team
-              </p>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="flex -space-x-3">
-                {teamMembers.map((src, idx) => (
-                  <img
-                    key={idx}
-                    className="w-10 h-10 rounded-full ring-2 ring-[#14121D] object-cover"
-                    src={src}
-                    alt=""
-                  />
-                ))}
-                <div className="w-10 h-10 rounded-full ring-2 ring-[#14121D] flex items-center justify-center text-xs font-bold text-white z-10 bg-rose-600">
-                  +5
-                </div>
+        <div className="p-10 space-y-12">
+          {/* Team Members Section */}
+          <div className="rounded-2xl border border-white/[0.06] bg-[#1a1a1a] p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-[#f0f0f0] mb-1">Team Members</h2>
+                <p className="text-sm text-neutral-500">Collaborate with your creative team</p>
               </div>
-              <button className="px-5 py-2 rounded-lg bg-[#1F1D2B] text-blue-400 text-sm font-semibold hover:bg-[#252333] transition-colors border border-blue-500/20">
-                Invite
-              </button>
+              <div className="flex items-center gap-6">
+                <div className="flex -space-x-3">
+                  {teamMembers.map((src, idx) => (
+                    <img
+                      key={idx}
+                      className="w-10 h-10 rounded-full ring-2 ring-[#1a1a1a] object-cover hover:scale-110 transition-transform"
+                      src={src}
+                      alt=""
+                    />
+                  ))}
+                  <div className="w-10 h-10 rounded-full ring-2 ring-[#1a1a1a] flex items-center justify-center text-xs font-semibold text-white bg-gradient-to-br from-violet-500 to-sky-500">
+                    +5
+                  </div>
+                </div>
+                <button className="px-5 py-2.5 rounded-xl border border-white/[0.08] text-neutral-300 text-sm font-medium hover:bg-[#252525] hover:border-white/[0.12] transition-all">
+                  Invite
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Recent Work Section */}
           <div>
-            <div className="flex items-center gap-4 mb-6">
-              <h2 className="text-lg font-semibold text-white tracking-tight">
-                Recent Work
-              </h2>
-              <button className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-slate-500 hover:text-white transition-colors">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-[#f0f0f0]">Recent Work</h2>
+                <p className="text-sm text-neutral-500 mt-1">Your latest creations</p>
+              </div>
+              <button className="flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-[#e5e5e5] transition-colors group">
                 <Play className="w-4 h-4" />
                 View all
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {recentWork.map((item, idx) => (
                 <div key={idx} className="group cursor-pointer">
-                  <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
+                  <div className="relative aspect-video rounded-xl overflow-hidden mb-3 border border-white/[0.06] shadow-sm">
                     <img
                       src={item.thumbnail}
                       className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                       alt={item.title}
                     />
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
-                    <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-bold text-white tracking-wide">
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
+                    <span className="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-black/70 text-xs text-white font-medium">
                       {item.duration}
                     </span>
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 rounded-md bg-black/60 text-white hover:bg-black/80">
+                      <button className="p-2 rounded-lg bg-black/50 text-white hover:bg-black/70 backdrop-blur-sm">
                         <Clock className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                   <div className="flex gap-3 items-start">
                     <div className="flex-1">
-                      <h3 className="text-sm font-medium text-slate-200 leading-snug group-hover:text-white mb-1.5 line-clamp-2">
+                      <h3 className="text-sm font-medium text-neutral-200 leading-snug group-hover:text-[#f0f0f0] mb-1.5 line-clamp-2 transition-colors">
                         {item.title}
                       </h3>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <div className="flex items-center gap-2 text-xs text-neutral-500">
                         <span>{item.views}</span>
-                        <span className="w-0.5 h-0.5 rounded-full bg-slate-500"></span>
+                        <span className="w-1 h-1 rounded-full bg-neutral-600" />
                         <span>{item.time}</span>
                       </div>
                     </div>
-                    <button className="text-slate-500 hover:text-white">
+                    <button className="text-neutral-500 hover:text-[#e5e5e5] transition-colors p-1">
                       <MoreHorizontal className="w-4 h-4" />
                     </button>
                   </div>
@@ -369,35 +363,36 @@ export default function Dashboard() {
 
           {/* Quick Actions */}
           <div>
-            <h2 className="text-lg font-semibold text-white tracking-tight mb-6">
-              Quick Actions
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-[#f0f0f0]">Quick Actions</h2>
+              <p className="text-sm text-neutral-500 mt-1">Start creating</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link href="/casting-studio">
-                <div className="bg-[#14121D] border border-white/5 rounded-2xl p-6 hover:border-rose-500/30 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Camera className="w-6 h-6 text-rose-400" />
+                <div className="group rounded-2xl border border-white/[0.06] bg-[#1a1a1a] p-6 hover:border-violet-500/30 hover:bg-[#1e1e1e] transition-all cursor-pointer shadow-sm">
+                  <div className="w-14 h-14 rounded-xl bg-violet-500/15 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-violet-500/20">
+                    <Camera className="w-6 h-6 text-violet-400" />
                   </div>
-                  <h3 className="text-white font-medium mb-1">Create New Model</h3>
-                  <p className="text-sm text-slate-500">Design and cast AI models</p>
+                  <h3 className="text-[#f0f0f0] font-semibold mb-1">Create New Model</h3>
+                  <p className="text-sm text-neutral-500">Design and cast AI models</p>
                 </div>
               </Link>
               <Link href="/wardrobe-studio">
-                <div className="bg-[#14121D] border border-white/5 rounded-2xl p-6 hover:border-cyan-500/30 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Shirt className="w-6 h-6 text-cyan-400" />
+                <div className="group rounded-2xl border border-white/[0.06] bg-[#1a1a1a] p-6 hover:border-sky-500/30 hover:bg-[#1e1e1e] transition-all cursor-pointer shadow-sm">
+                  <div className="w-14 h-14 rounded-xl bg-sky-500/15 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-sky-500/20">
+                    <Shirt className="w-6 h-6 text-sky-400" />
                   </div>
-                  <h3 className="text-white font-medium mb-1">Style Outfits</h3>
-                  <p className="text-sm text-slate-500">Dress your models</p>
+                  <h3 className="text-[#f0f0f0] font-semibold mb-1">Style Outfits</h3>
+                  <p className="text-sm text-neutral-500">Dress your models</p>
                 </div>
               </Link>
               <Link href="/photo-studio">
-                <div className="bg-[#14121D] border border-white/5 rounded-2xl p-6 hover:border-emerald-500/30 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Image className="w-6 h-6 text-emerald-400" />
+                <div className="group rounded-2xl border border-white/[0.06] bg-[#1a1a1a] p-6 hover:border-amber-500/30 hover:bg-[#1e1e1e] transition-all cursor-pointer shadow-sm">
+                  <div className="w-14 h-14 rounded-xl bg-amber-500/15 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-amber-500/20">
+                    <Image className="w-6 h-6 text-amber-400" />
                   </div>
-                  <h3 className="text-white font-medium mb-1">Generate Campaign</h3>
-                  <p className="text-sm text-slate-500">Create stunning visuals</p>
+                  <h3 className="text-[#f0f0f0] font-semibold mb-1">Generate Campaign</h3>
+                  <p className="text-sm text-neutral-500">Create stunning visuals</p>
                 </div>
               </Link>
             </div>
