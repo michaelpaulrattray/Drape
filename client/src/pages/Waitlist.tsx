@@ -439,7 +439,7 @@ export default function Waitlist() {
               </p>
               <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
                 FORMA
-                <span className="text-sky-500 text-6xl align-top">+</span>
+                <span className="text-sky-500 text-6xl align-top">Studio</span>
               </h1>
               <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-black/20" />
             </div>

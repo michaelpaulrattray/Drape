@@ -212,3 +212,6 @@
 
 ## Bug Fixes
 - [x] Fix cover photo showing checkerboard pattern instead of uploaded image
+
+## Landing Page Updates
+- [x] Change title from "FORMA+" to "FORMA Studio"
