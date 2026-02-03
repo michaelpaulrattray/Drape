@@ -108,10 +108,9 @@
   border-radius: 3px;
 }
 
-/* Grid lines background */
+/* Grid lines background - removed for cleaner look */
 .grid-lines {
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 25% 100%;
+  /* background pattern removed */
 }
 
 /* Text outline utility */

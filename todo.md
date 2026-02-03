@@ -217,3 +217,4 @@
 - [x] Change title from "FORMA+" to "FORMA Studio"
 - [x] Add scrolling brand logos section below hero with "Trusted by top creatives working for:"
 - [x] Redesign "Join the Waitlist" section to match landing page aesthetic
+- [x] Remove grid lines background from Trusted By section
