@@ -844,6 +844,11 @@ export default function CastingStudio() {
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [autoGenCancelled, setAutoGenCancelled] = useState(false);
 
+  // Enhanced UI state
+  const [isDirectorNoteCollapsed, setIsDirectorNoteCollapsed] = useState(false);
+  const [showToolPalette, setShowToolPalette] = useState(false);
+  const [ambientColor, setAmbientColor] = useState<string>('rgba(99, 102, 241, 0.1)');
+
   // Points data
   const { data: pointsData, refetch: refetchPoints } = trpc.points.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -886,6 +891,67 @@ export default function CastingStudio() {
     setMaskPaths([]);
     setCurrentPath([]);
   }, [activeTool]);
+
+  // Extract dominant color from current image for ambient lighting
+  useEffect(() => {
+    const extractColor = async () => {
+      const currentAsset = currentAssets.find(a => a.viewType === activeView);
+      if (!currentAsset?.storageUrl) {
+        setAmbientColor('rgba(99, 102, 241, 0.1)');
+        return;
+      }
+
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = currentAsset.storageUrl;
+        
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        // Create a small canvas to sample colors
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Sample from center of image
+        const sampleSize = 50;
+        canvas.width = sampleSize;
+        canvas.height = sampleSize;
+        ctx.drawImage(img, img.width / 4, img.height / 4, img.width / 2, img.height / 2, 0, 0, sampleSize, sampleSize);
+
+        const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+        let r = 0, g = 0, b = 0, count = 0;
+
+        for (let i = 0; i < imageData.length; i += 4) {
+          r += imageData[i];
+          g += imageData[i + 1];
+          b += imageData[i + 2];
+          count++;
+        }
+
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+
+        // Boost saturation slightly for more vibrant ambient effect
+        const max = Math.max(r, g, b);
+        const boost = 1.2;
+        r = Math.min(255, Math.round(r * boost));
+        g = Math.min(255, Math.round(g * boost));
+        b = Math.min(255, Math.round(b * boost));
+
+        setAmbientColor(`rgba(${r}, ${g}, ${b}, 0.3)`);
+      } catch (e) {
+        // Fallback to default color on error
+        setAmbientColor('rgba(99, 102, 241, 0.1)');
+      }
+    };
+
+    extractColor();
+  }, [currentAssets, activeView]);
 
   // Debug utility: Auto-fill form with random preferences and optionally trigger generation
   const handleDebugFill = (autoGenerate: boolean = false) => {
@@ -2582,6 +2648,67 @@ export default function CastingStudio() {
         {/* Main Content */}
         {currentAssets.length > 0 ? (
           <div className="w-full h-full flex flex-col relative z-10">
+            {/* Progress Rail - Generation Stages */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-full px-3 py-2 shadow-2xl">
+                {[
+                  { key: 'frontClose', label: 'HEAD', icon: '👤' },
+                  { key: 'frontFull', label: 'BODY', icon: '🧍' },
+                  { key: 'sideFull', label: 'SIDE', icon: '↔️' },
+                  { key: 'walkFull', label: 'WALK', icon: '🚶' },
+                  { key: 'backFull', label: 'BACK', icon: '↩️' },
+                ].map((stage, idx, arr) => {
+                  const hasAsset = currentAssets.some(a => a.viewType === stage.key);
+                  const isActive = activeView === stage.key;
+                  const asset = currentAssets.find(a => a.viewType === stage.key);
+                  return (
+                    <React.Fragment key={stage.key}>
+                      <button
+                        onClick={() => hasAsset && setActiveView(stage.key)}
+                        disabled={!hasAsset}
+                        className={`relative group/stage flex flex-col items-center transition-all duration-300 ${
+                          isActive 
+                            ? 'scale-110' 
+                            : hasAsset 
+                              ? 'hover:scale-105 opacity-70 hover:opacity-100' 
+                              : 'opacity-30 cursor-not-allowed'
+                        }`}
+                      >
+                        {/* Thumbnail or placeholder */}
+                        <div className={`w-10 h-12 rounded overflow-hidden border-2 transition-all ${
+                          isActive ? 'border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'border-transparent'
+                        }`}>
+                          {asset ? (
+                            <img src={asset.storageUrl} alt={stage.label} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-studio-900 flex items-center justify-center text-studio-600">
+                              <span className="text-xs">{stage.icon}</span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Label */}
+                        <span className={`text-[7px] font-mono uppercase tracking-wider mt-1 transition-colors ${
+                          isActive ? 'text-white' : 'text-studio-500'
+                        }`}>
+                          {stage.label}
+                        </span>
+                        {/* Active indicator */}
+                        {isActive && (
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
+                        )}
+                      </button>
+                      {/* Connector line */}
+                      {idx < arr.length - 1 && (
+                        <div className={`w-4 h-px transition-colors ${
+                          currentAssets.some(a => a.viewType === arr[idx + 1].key) ? 'bg-white/50' : 'bg-studio-700'
+                        }`}></div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Loading Overlay */}
             {genState.isGenerating && (
               <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center space-y-6">
@@ -2600,6 +2727,18 @@ export default function CastingStudio() {
 
             {/* Image Display Area */}
             <div className="flex-1 relative min-h-0 flex items-center justify-center p-2 lg:p-4 group">
+              {/* Ambient Lighting Effect */}
+              {currentImageUrl && (
+                <div 
+                  className="absolute inset-0 pointer-events-none overflow-hidden"
+                  style={{
+                    background: `radial-gradient(ellipse 80% 60% at 50% 50%, ${ambientColor}, transparent 70%)`,
+                    opacity: 0.4,
+                    filter: 'blur(60px)',
+                    transition: 'all 1s ease-out',
+                  }}
+                />
+              )}
               {/* Next Stage Button */}
               {nextStage && !genState.isGenerating && (
                 <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4 animate-in fade-in slide-in-from-right-8 duration-700">
@@ -2657,43 +2796,96 @@ export default function CastingStudio() {
                   </>
                 )}
 
-                {/* Tools Bar - positioned at right edge of image */}
+                {/* Floating Tool Palette - appears on hover */}
                 {!genState.isGenerating && currentAssets.length > 0 && (
-                  <div className="absolute top-1/2 -translate-y-1/2 -right-2 flex flex-col gap-2 z-30 animate-in fade-in slide-in-from-right-4 duration-500">
-                    {/* Surgical Edit */}
-                    {(isIterationAllowed && (!isViewLocked || unlockMode)) && (
-                      <ToolButton 
-                        isActive={activeTool === 'surgical'} 
-                        onClick={() => setActiveTool(activeTool === 'surgical' ? 'none' : 'surgical')}
-                        icon={
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 19l7-7 3 3-7 7-3-3z" />
-                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-                            <path d="M2 2l7.586 7.586" />
-                            <circle cx="11" cy="11" r="2" />
-                          </svg>
-                        }
-                        label="Surgical Edit"
-                        color="red"
-                      />
-                    )}
-                    
-                    {/* Magic Eraser */}
-                    {(!hasDownstreamDependencies || unlockMode) && (
-                      <ToolButton 
-                        isActive={activeTool === 'eraser'} 
-                        onClick={() => setActiveTool(activeTool === 'eraser' ? 'none' : 'eraser')}
-                        icon={
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
-                            <path d="M22 21H7" />
-                            <path d="m5 11 9 9" />
-                          </svg>
-                        }
-                        label="Magic Eraser"
-                        color="purple"
-                      />
-                    )}
+                  <div 
+                    className="absolute top-1/2 right-4 -translate-y-1/2 z-30"
+                    onMouseEnter={() => setShowToolPalette(true)}
+                    onMouseLeave={() => !activeTool && setShowToolPalette(false)}
+                  >
+                    {/* Trigger area */}
+                    <div className={`transition-all duration-300 ${showToolPalette || activeTool !== 'none' ? 'opacity-100' : 'opacity-40 hover:opacity-100'}`}>
+                      <div className={`flex flex-col gap-2 p-2 rounded-xl transition-all duration-300 ${
+                        showToolPalette || activeTool !== 'none' 
+                          ? 'bg-black/80 backdrop-blur-xl border border-white/20 shadow-2xl' 
+                          : 'bg-transparent'
+                      }`}>
+                        {/* Surgical Edit */}
+                        {(isIterationAllowed && (!isViewLocked || unlockMode)) && (
+                          <ToolButton 
+                            isActive={activeTool === 'surgical'} 
+                            onClick={() => {
+                              setActiveTool(activeTool === 'surgical' ? 'none' : 'surgical');
+                              if (activeTool === 'surgical') setShowToolPalette(false);
+                            }}
+                            icon={
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 19l7-7 3 3-7 7-3-3z" />
+                                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+                                <path d="M2 2l7.586 7.586" />
+                                <circle cx="11" cy="11" r="2" />
+                              </svg>
+                            }
+                            label="Surgical Edit"
+                            color="red"
+                          />
+                        )}
+                        
+                        {/* Magic Eraser */}
+                        {(!hasDownstreamDependencies || unlockMode) && (
+                          <ToolButton 
+                            isActive={activeTool === 'eraser'} 
+                            onClick={() => {
+                              setActiveTool(activeTool === 'eraser' ? 'none' : 'eraser');
+                              if (activeTool === 'eraser') setShowToolPalette(false);
+                            }}
+                            icon={
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+                                <path d="M22 21H7" />
+                                <path d="m5 11 9 9" />
+                              </svg>
+                            }
+                            label="Magic Eraser"
+                            color="purple"
+                          />
+                        )}
+
+                        {/* Divider */}
+                        {(showToolPalette || activeTool !== 'none') && (
+                          <div className="h-px bg-white/10 my-1"></div>
+                        )}
+
+                        {/* Quick Actions - only show when palette is expanded */}
+                        {(showToolPalette || activeTool !== 'none') && (
+                          <>
+                            {/* Upscale - placeholder for now */}
+                            <button
+                              onClick={() => toast.info('Upscale feature coming soon')}
+                              disabled={resolution === ImageResolution.ULTRA || genState.isGenerating}
+                              className="w-10 h-10 rounded-lg bg-studio-800/50 hover:bg-studio-700 border border-studio-700 hover:border-studio-500 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed group"
+                              title="Upscale to 2K/4K"
+                            >
+                              <svg className="w-5 h-5 text-studio-400 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                              </svg>
+                            </button>
+
+                            {/* Export */}
+                            <button
+                              onClick={() => setShowExportModal(true)}
+                              disabled={currentAssets.length === 0}
+                              className="w-10 h-10 rounded-lg bg-studio-800/50 hover:bg-studio-700 border border-studio-700 hover:border-studio-500 flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed group"
+                              title="Export Character Pack"
+                            >
+                              <svg className="w-5 h-5 text-studio-400 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                              </svg>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -2900,48 +3092,68 @@ export default function CastingStudio() {
               </div>
             </div>
 
-            {/* Bottom Panel - Director's Note */}
-            <div className="w-full bg-studio-950 border-t border-studio-800 flex-shrink-0 z-20">
-              <div className="w-full max-w-[1400px] mx-auto p-3 lg:p-4">
-                <div className="flex flex-col md:flex-row gap-3 items-start">
-                  <div className="flex-1 space-y-2 group">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[10px] uppercase font-bold text-studio-500 tracking-widest">
-                        {showSchema ? "Technical Schema" : "Director's Note"}
-                      </h3>
-                      <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button 
-                          onClick={() => setShowSchema(!showSchema)}
-                          className="text-[9px] uppercase font-mono text-studio-400 hover:text-white transition-colors"
-                        >
-                          {showSchema ? "View Description" : "View Technical Schema"}
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const content = showSchema 
-                              ? JSON.stringify(currentTechnicalSchema, null, 2) 
-                              : currentMasterPrompt;
-                            navigator.clipboard.writeText(content);
-                            setIsCopied(true);
-                            setTimeout(() => setIsCopied(false), 2000);
-                          }}
-                          className={`text-[9px] uppercase font-mono transition-colors ${isCopied ? 'text-green-500' : 'text-studio-400 hover:text-white'}`}
-                        >
-                          {isCopied ? "Copied" : "Copy"}
-                        </button>
+            {/* Bottom Panel - Director's Note (Collapsible) */}
+            <div className={`w-full bg-studio-950 border-t border-studio-800 flex-shrink-0 z-20 transition-all duration-300 ${isDirectorNoteCollapsed ? 'h-10' : ''}`}>
+              {/* Collapse Toggle Bar */}
+              <button
+                onClick={() => setIsDirectorNoteCollapsed(!isDirectorNoteCollapsed)}
+                className="w-full h-10 flex items-center justify-center gap-2 hover:bg-studio-900/50 transition-colors group"
+              >
+                <div className={`w-6 h-0.5 bg-studio-700 rounded-full group-hover:bg-studio-500 transition-colors`}></div>
+                <span className="text-[8px] font-mono uppercase tracking-widest text-studio-600 group-hover:text-studio-400 transition-colors">
+                  {isDirectorNoteCollapsed ? 'Show Director\'s Note' : 'Hide'}
+                </span>
+                <svg 
+                  className={`w-3 h-3 text-studio-600 group-hover:text-studio-400 transition-all duration-300 ${isDirectorNoteCollapsed ? 'rotate-180' : ''}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* Content */}
+              <div className={`overflow-hidden transition-all duration-300 ${isDirectorNoteCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
+                <div className="w-full max-w-[1400px] mx-auto px-3 pb-3 lg:px-4 lg:pb-4">
+                  <div className="flex flex-col md:flex-row gap-3 items-start">
+                    <div className="flex-1 space-y-2 group">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-[10px] uppercase font-bold text-studio-500 tracking-widest">
+                          {showSchema ? "Technical Schema" : "Director's Note"}
+                        </h3>
+                        <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <button 
+                            onClick={() => setShowSchema(!showSchema)}
+                            className="text-[9px] uppercase font-mono text-studio-400 hover:text-white transition-colors"
+                          >
+                            {showSchema ? "View Description" : "View Technical Schema"}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const content = showSchema 
+                                ? JSON.stringify(currentTechnicalSchema, null, 2) 
+                                : currentMasterPrompt;
+                              navigator.clipboard.writeText(content);
+                              setIsCopied(true);
+                              setTimeout(() => setIsCopied(false), 2000);
+                            }}
+                            className={`text-[9px] uppercase font-mono transition-colors ${isCopied ? 'text-green-500' : 'text-studio-400 hover:text-white'}`}
+                          >
+                            {isCopied ? "Copied" : "Copy"}
+                          </button>
+                        </div>
                       </div>
+                      {showSchema ? (
+                        <pre className="text-[10px] font-mono text-studio-400 leading-relaxed max-h-32 overflow-y-auto custom-scrollbar select-text bg-black/30 p-3 rounded border border-studio-800">
+                          {currentTechnicalSchema 
+                            ? JSON.stringify(currentTechnicalSchema, null, 2) 
+                            : "Technical schema will appear here after generation..."}
+                        </pre>
+                      ) : (
+                        <p className="text-[10px] font-mono text-studio-400 leading-relaxed max-h-16 overflow-y-auto custom-scrollbar select-text">
+                          {currentMasterPrompt || "Master prompt will appear here after generation..."}
+                        </p>
+                      )}
                     </div>
-                    {showSchema ? (
-                      <pre className="text-[10px] font-mono text-studio-400 leading-relaxed max-h-32 overflow-y-auto custom-scrollbar select-text bg-black/30 p-3 rounded border border-studio-800">
-                        {currentTechnicalSchema 
-                          ? JSON.stringify(currentTechnicalSchema, null, 2) 
-                          : "Technical schema will appear here after generation..."}
-                      </pre>
-                    ) : (
-                      <p className="text-[10px] font-mono text-studio-400 leading-relaxed max-h-16 overflow-y-auto custom-scrollbar select-text">
-                        {currentMasterPrompt || "Master prompt will appear here after generation..."}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
