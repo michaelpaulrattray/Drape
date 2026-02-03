@@ -807,3 +807,9 @@
 - [x] Enhance locked placeholder design (added labels, improved styling)
 - [x] Add view type labels with better typography (9px, tracking-widest, gradient bg)
 - [ ] Consider adding thumbnail preview on hover (future enhancement)
+
+
+## Bug Fix: Asset Not Found Error
+- [x] Investigate which mutation is throwing "Asset not found" error
+- [x] Fix the asset lookup logic - now returning assetId from all generation mutations
+- [x] Update frontend to use returned assetId instead of Date.now()

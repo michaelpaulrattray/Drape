@@ -1293,7 +1293,7 @@ export default function CastingStudio() {
 
       if (imageResult.success && imageResult.imageUrl) {
         const newAsset: GeneratedAsset = {
-          id: Date.now(),
+          id: imageResult.assetId || Date.now(),
           viewType: "frontClose",
           storageUrl: imageResult.imageUrl,
         };
@@ -1338,7 +1338,7 @@ export default function CastingStudio() {
 
           if (result.success && result.imageUrl) {
             const newAsset: GeneratedAsset = {
-              id: Date.now(),
+              id: result.assetId || Date.now(),
               viewType: "frontFull",
               storageUrl: result.imageUrl,
             };
@@ -1389,7 +1389,7 @@ export default function CastingStudio() {
         if (result.success && result.imageUrl) {
           const viewKey = viewType === "side" ? "sideClose" : viewType === "walk" ? "sideFull" : "backFull";
           const newAsset: GeneratedAsset = {
-            id: Date.now(),
+            id: result.assetId || Date.now(),
             viewType: viewKey,
             storageUrl: result.imageUrl,
           };
@@ -1544,7 +1544,7 @@ export default function CastingStudio() {
 
       if (result.success && result.imageUrl) {
         const newAsset: GeneratedAsset = {
-          id: Date.now(),
+          id: result.assetId || Date.now(),
           viewType: activeView,
           storageUrl: result.imageUrl,
         };

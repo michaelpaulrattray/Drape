@@ -399,7 +399,7 @@ export const appRouter = router({
           );
 
           // Save asset
-          await createModelAsset({
+          const assetResult = await createModelAsset({
             modelId: input.modelId,
             viewType: "frontClose",
             resolution: "1K",
@@ -421,6 +421,7 @@ export const appRouter = router({
             success: true,
             imageUrl: result.imageUrl,
             pointsCost: POINT_COSTS.castingImage,
+            assetId: assetResult.assetId,
           };
         } catch (error) {
           await updateGeneration(genResult.generationId!, {
@@ -499,7 +500,7 @@ export const appRouter = router({
             `gen-${genResult.generationId}`
           );
 
-          await createModelAsset({
+          const assetResult = await createModelAsset({
             modelId: input.modelId,
             viewType: "frontFull",
             resolution: "1K",
@@ -517,6 +518,7 @@ export const appRouter = router({
             success: true,
             imageUrl: result.imageUrl,
             pointsCost: POINT_COSTS.fullBody,
+            assetId: assetResult.assetId,
           };
         } catch (error) {
           await updateGeneration(genResult.generationId!, {
@@ -600,7 +602,7 @@ export const appRouter = router({
           );
 
           const assetViewType = input.viewType === "side" ? "sideClose" : input.viewType === "walk" ? "sideFull" : "backFull";
-          await createModelAsset({
+          const assetResult = await createModelAsset({
             modelId: input.modelId,
             viewType: assetViewType,
             resolution: "1K",
@@ -618,6 +620,7 @@ export const appRouter = router({
             success: true,
             imageUrl: result.imageUrl,
             pointsCost: POINT_COSTS.multiView,
+            assetId: assetResult.assetId,
           };
         } catch (error) {
           await updateGeneration(genResult.generationId!, {
@@ -713,7 +716,7 @@ export const appRouter = router({
             `gen-${genResult.generationId}`
           );
 
-          await createModelAsset({
+          const assetResult = await createModelAsset({
             modelId: input.modelId,
             viewType: targetAsset.viewType,
             resolution: "1K",
@@ -739,6 +742,7 @@ export const appRouter = router({
             pointsCost: POINT_COSTS.iterate,
             masterPrompt: updatedMasterPrompt,
             technicalSchema: updatedSchema,
+            assetId: assetResult.assetId,
           };
         } catch (error) {
           await updateGeneration(genResult.generationId!, {
