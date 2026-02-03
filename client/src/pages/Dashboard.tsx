@@ -25,11 +25,12 @@ import {
   Palette,
   ArrowRight,
   Plus,
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 
 export default function Dashboard() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const [activeNav, setActiveNav] = useState("home");
 
   // Get points data
@@ -50,14 +51,9 @@ export default function Dashboard() {
     return <Redirect to="/login" />;
   }
 
-  const mainNavItems = [
+  // Home section items (previously under Tools)
+  const homeNavItems = [
     { id: "home", label: "Home", icon: Home },
-    { id: "casting", label: "Casting Studio", icon: Camera },
-    { id: "wardrobe", label: "Wardrobe Studio", icon: Shirt },
-    { id: "photo", label: "Photo Studio", icon: Image },
-  ];
-
-  const channelNavItems = [
     { id: "library", label: "Library", icon: Library },
     { id: "history", label: "History", icon: History },
     { id: "models", label: "Your Models", icon: Users },
@@ -65,7 +61,14 @@ export default function Dashboard() {
     { id: "downloads", label: "Downloads", icon: Download },
   ];
 
-  const templates = [
+  // Tools section items (Studios moved here)
+  const toolsNavItems = [
+    { id: "casting", label: "Casting Studio", icon: Camera },
+    { id: "wardrobe", label: "Wardrobe Studio", icon: Shirt },
+    { id: "photo", label: "Photo Studio", icon: Image },
+  ];
+
+  const resources = [
     { name: "Casting Pro", color: "bg-violet-500/15" },
     { name: "Style Guide", color: "bg-sky-500/15" },
     { name: "Campaign Kit", color: "bg-amber-500/15" },
@@ -104,13 +107,6 @@ export default function Dashboard() {
     },
   ];
 
-  const teamMembers = [
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face",
-  ];
-
   return (
     <div className="h-screen w-screen flex bg-[#151515] text-[#e5e5e5] overflow-hidden selection:bg-violet-500/30 selection:text-violet-200 font-sans">
       {/* Sidebar */}
@@ -130,9 +126,9 @@ export default function Dashboard() {
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto px-4 space-y-8 pb-6" style={{ scrollbarWidth: 'none' }}>
-          {/* Main Section */}
+          {/* Home Section (with Library, History, etc.) */}
           <nav className="space-y-1.5">
-            {mainNavItems.map((item) => (
+            {homeNavItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveNav(item.id)}
@@ -151,25 +147,26 @@ export default function Dashboard() {
             ))}
           </nav>
 
-          {/* Tools Section */}
+          {/* Tools Section (Studios) */}
           <div>
             <h3 className="px-4 text-xs font-medium text-neutral-500 uppercase tracking-wider mb-3">
               Tools
             </h3>
             <nav className="space-y-1">
-              {channelNavItems.map((item) => (
+              {toolsNavItems.map((item) => (
                 <button
                   key={item.id}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:text-[#e5e5e5] hover:bg-[#1f1f1f] transition-all"
+                  onClick={() => setActiveNav(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                    activeNav === item.id
+                      ? "bg-[#252525] text-[#f0f0f0]"
+                      : "text-neutral-400 hover:text-[#e5e5e5] hover:bg-[#1f1f1f]"
+                  }`}
                 >
-                  <item.icon className="w-[18px] h-[18px]" />
+                  <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-violet-400" : ""}`} />
                   <span className="text-sm">{item.label}</span>
                 </button>
               ))}
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-400 transition-all">
-                <ChevronDown className="w-[18px] h-[18px]" />
-                <span className="text-sm">Show More</span>
-              </button>
             </nav>
           </div>
 
@@ -179,16 +176,16 @@ export default function Dashboard() {
               Resources
             </h3>
             <nav className="space-y-1">
-              {templates.map((template, idx) => (
+              {resources.map((resource, idx) => (
                 <button
                   key={idx}
                   className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-neutral-400 hover:text-[#e5e5e5] hover:bg-[#1f1f1f] transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-7 h-7 rounded-lg ${template.color} flex items-center justify-center`}>
+                    <div className={`w-7 h-7 rounded-lg ${resource.color} flex items-center justify-center`}>
                       <Palette className="w-3.5 h-3.5 text-neutral-300" />
                     </div>
-                    <span className="text-sm">{template.name}</span>
+                    <span className="text-sm">{resource.name}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400" />
                 </button>
@@ -197,18 +194,22 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* User Profile */}
+        {/* User Profile with Logout */}
         <div className="p-4 border-t border-white/[0.06]">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-[#1f1f1f]">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg shadow-violet-500/20">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neutral-600 to-neutral-800 flex items-center justify-center text-white font-semibold text-sm">
               {user?.name?.charAt(0) || "U"}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-[#f0f0f0] truncate">{user?.name || "User"}</p>
               <p className="text-xs text-neutral-500 truncate">{pointsData?.balance || 0} credits</p>
             </div>
-            <button className="text-neutral-500 hover:text-[#e5e5e5] transition-colors p-1.5 rounded-lg hover:bg-[#252525]">
-              <Settings className="w-4 h-4" />
+            <button 
+              onClick={() => logout()}
+              className="text-neutral-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-[#252525]"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -218,22 +219,54 @@ export default function Dashboard() {
       <main className="flex-1 overflow-y-auto bg-[#151515]" style={{ scrollbarWidth: 'none' }}>
         {/* Header with Profile Banner */}
         <div className="relative">
-          {/* Banner */}
-          <div className="h-52 relative overflow-hidden bg-gradient-to-br from-[#1e1e2e] via-[#252535] to-[#1e1e2e]">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1200&h=300&fit=crop')] bg-cover bg-center opacity-20" />
+          {/* Banner - Grayscale Abstract Studio Style */}
+          <div className="h-52 relative overflow-hidden bg-[#1a1a1a]">
+            {/* Abstract geometric pattern */}
+            <div className="absolute inset-0">
+              <svg className="w-full h-full opacity-20" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#404040" />
+                    <stop offset="100%" stopColor="#1a1a1a" />
+                  </linearGradient>
+                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#333" strokeWidth="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                <circle cx="200" cy="150" r="180" fill="none" stroke="#333" strokeWidth="1" opacity="0.5"/>
+                <circle cx="200" cy="150" r="120" fill="none" stroke="#444" strokeWidth="0.5" opacity="0.3"/>
+                <circle cx="1000" cy="100" r="200" fill="none" stroke="#333" strokeWidth="1" opacity="0.4"/>
+                <line x1="0" y1="200" x2="400" y2="50" stroke="#444" strokeWidth="0.5" opacity="0.3"/>
+                <line x1="800" y1="0" x2="1200" y2="250" stroke="#444" strokeWidth="0.5" opacity="0.3"/>
+                <rect x="500" y="80" width="200" height="140" fill="none" stroke="#3a3a3a" strokeWidth="1" opacity="0.4" transform="rotate(15 600 150)"/>
+                <polygon points="900,50 950,150 850,150" fill="none" stroke="#3a3a3a" strokeWidth="0.5" opacity="0.3"/>
+              </svg>
+            </div>
+            {/* Subtle gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#1a1a1a] via-transparent to-[#1a1a1a] opacity-60" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#151515] via-transparent to-transparent" />
           </div>
 
           {/* Profile Info */}
           <div className="absolute bottom-0 left-0 right-0 px-10 pb-6">
             <div className="flex items-end gap-6">
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-violet-500 to-sky-500 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#151515] shadow-xl shadow-violet-500/20">
-                {user?.name?.charAt(0) || "F"}
+              {/* Profile Avatar - Grayscale Abstract */}
+              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-neutral-500 via-neutral-600 to-neutral-800 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#151515] shadow-xl relative overflow-hidden">
+                {/* Abstract pattern inside avatar */}
+                <div className="absolute inset-0 opacity-30">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <circle cx="70" cy="30" r="40" fill="none" stroke="#666" strokeWidth="0.5"/>
+                    <circle cx="30" cy="70" r="30" fill="none" stroke="#555" strokeWidth="0.5"/>
+                    <line x1="0" y1="100" x2="100" y2="0" stroke="#666" strokeWidth="0.3"/>
+                  </svg>
+                </div>
+                <span className="relative z-10">{user?.name?.charAt(0) || "F"}</span>
               </div>
               <div className="flex-1 pb-2">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-2xl font-semibold text-[#f0f0f0]">{user?.name || "Creator"}</h1>
-                  <span className="px-3 py-1 rounded-full bg-violet-500/15 text-violet-400 text-xs font-medium border border-violet-500/20">
+                  <span className="px-3 py-1 rounded-full bg-neutral-700/50 text-neutral-300 text-xs font-medium border border-neutral-600/30">
                     PRO
                   </span>
                 </div>
@@ -263,7 +296,7 @@ export default function Dashboard() {
             {contentTabs.map((tab, idx) => (
               <button
                 key={tab}
-                className={`py-4 px-5 text-sm font-medium transition-all relative ${
+                className={`relative px-5 py-4 text-sm font-medium transition-colors ${
                   idx === 0
                     ? "text-[#f0f0f0]"
                     : "text-neutral-500 hover:text-neutral-300"
@@ -280,34 +313,6 @@ export default function Dashboard() {
 
         {/* Content Area */}
         <div className="p-10 space-y-12">
-          {/* Team Members Section */}
-          <div className="rounded-2xl border border-white/[0.06] bg-[#1a1a1a] p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-[#f0f0f0] mb-1">Team Members</h2>
-                <p className="text-sm text-neutral-500">Collaborate with your creative team</p>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="flex -space-x-3">
-                  {teamMembers.map((src, idx) => (
-                    <img
-                      key={idx}
-                      className="w-10 h-10 rounded-full ring-2 ring-[#1a1a1a] object-cover hover:scale-110 transition-transform"
-                      src={src}
-                      alt=""
-                    />
-                  ))}
-                  <div className="w-10 h-10 rounded-full ring-2 ring-[#1a1a1a] flex items-center justify-center text-xs font-semibold text-white bg-gradient-to-br from-violet-500 to-sky-500">
-                    +5
-                  </div>
-                </div>
-                <button className="px-5 py-2.5 rounded-xl border border-white/[0.08] text-neutral-300 text-sm font-medium hover:bg-[#252525] hover:border-white/[0.12] transition-all">
-                  Invite
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Recent Work Section */}
           <div>
             <div className="flex items-center justify-between mb-6">

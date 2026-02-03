@@ -146,3 +146,10 @@
 ## Dashboard Sidebar Label Updates
 - [x] Change "TEMPLATES" to "RESOURCES"
 - [x] Change "MY STUDIO" to "TOOLS"
+
+## Dashboard Reorganization
+- [x] Move Studios (Casting, Wardrobe, Photo) under Tools menu
+- [x] Move current Tools items (Library, History, etc.) under Home menu
+- [x] Remove Team Members section
+- [x] Add logout button (in sidebar user profile area)
+- [x] Change profile picture gradient to grayscale abstract style
