@@ -813,3 +813,9 @@
 - [x] Investigate which mutation is throwing "Asset not found" error
 - [x] Fix the asset lookup logic - now returning assetId from all generation mutations
 - [x] Update frontend to use returned assetId instead of Date.now()
+
+
+## Bug Fix: Surgical Edit/Eraser Buttons Not Working
+- [x] Investigate Apply button click handler for surgical edit
+- [x] Investigate Erase button click handler for eraser tool
+- [x] Fix the submission logic - added crossOrigin="anonymous" to fix CORS tainted canvas error

@@ -2704,6 +2704,7 @@ export default function CastingStudio() {
                       ref={imageRef}
                       src={currentImageUrl} 
                       alt="Active View" 
+                      crossOrigin="anonymous"
                       className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black" style={{marginTop: '70px'}}
                     />
                     
