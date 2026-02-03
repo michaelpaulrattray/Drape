@@ -262,13 +262,13 @@ const FACE_ICONS: Record<string, React.ReactNode> = {
 
 const ConnectorLine = ({ isActive }: { isActive: boolean }) => (
   <div 
-    className={`absolute top-[18rem] right-[21.5rem] w-[35vw] h-[35vh] z-0 pointer-events-none transition-all duration-1000 ease-out origin-top-right ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90 blur-sm'}`}
+    className={`absolute top-32 right-56 w-[30vw] h-[30vh] z-10 pointer-events-none transition-all duration-1000 ease-out origin-top-right ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90 blur-sm'}`}
   >
     <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="overflow-visible">
       <defs>
         <linearGradient id="connector-grad" x1="100%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
-          <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
+          <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
           <stop offset="100%" stopColor="transparent" />
         </linearGradient>
         <filter id="glow-line">
@@ -280,7 +280,7 @@ const ConnectorLine = ({ isActive }: { isActive: boolean }) => (
         </filter>
       </defs>
       <path 
-        d="M 100 0 C 50 0, 50 100, 0 100" 
+        d="M 100 0 C 60 0, 40 100, 0 100" 
         vectorEffect="non-scaling-stroke"
         stroke="url(#connector-grad)" 
         strokeWidth="1.5" 
@@ -289,7 +289,7 @@ const ConnectorLine = ({ isActive }: { isActive: boolean }) => (
         filter="url(#glow-line)"
         className="opacity-80"
       />
-      <circle cx="100" cy="0" r="2" fill="white" filter="url(#glow-line)" vectorEffect="non-scaling-stroke" />
+      <circle cx="100" cy="0" r="3" fill="white" filter="url(#glow-line)" vectorEffect="non-scaling-stroke" />
     </svg>
   </div>
 );
@@ -840,6 +840,10 @@ export default function CastingStudio() {
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
+  // Auto-generation state
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [autoGenCancelled, setAutoGenCancelled] = useState(false);
+
   // Points data
   const { data: pointsData, refetch: refetchPoints } = trpc.points.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -1300,16 +1304,17 @@ export default function CastingStudio() {
   };
 
   // Handle generate multi-view with stage lock
-  const handleGenerateMultiView = async (viewType: "side" | "back" | "walk") => {
-    if (!currentModelId) return;
+  const handleGenerateMultiView = async (viewType: "side" | "back" | "walk", isAutoGen: boolean = false): Promise<boolean> => {
+    if (!currentModelId) return false;
 
     // For walk view, skip the lock modal since body is already locked
-    const skipLockModal = viewType === 'walk' || viewType === 'back';
+    const skipLockModal = viewType === 'walk' || viewType === 'back' || isAutoGen;
     
-    const doGenerate = async () => {
+    const doGenerate = async (): Promise<boolean> => {
       if (!pointsData || pointsData.balance < POINT_COSTS.multiView) {
         toast.error(`Insufficient points. Need ${POINT_COSTS.multiView} points.`);
-        return;
+        setIsAutoGenerating(false);
+        return false;
       }
 
       const viewLabel = viewType === 'walk' ? 'walking' : viewType;
@@ -1340,25 +1345,75 @@ export default function CastingStudio() {
         }
 
         setGenState({ isGenerating: false, currentStep: "", error: null });
+        return true;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Generation failed";
         setGenState({ isGenerating: false, currentStep: "", error: message });
         toast.error(message);
+        setIsAutoGenerating(false);
+        return false;
       }
     };
 
     if (skipLockModal) {
-      await doGenerate();
+      return await doGenerate();
     } else {
-      setLockModal({
-        isOpen: true,
-        title: 'Lock Body & Generate Views?',
-        message: "Are you sure you want to proceed to casting sheet generation? You won't be able to edit the body pose without resetting the entire sheet.",
-        onConfirm: async () => {
-          setLockModal(prev => ({ ...prev, isOpen: false }));
-          await doGenerate();
-        }
+      return new Promise((resolve) => {
+        setLockModal({
+          isOpen: true,
+          title: 'Lock Body & Generate All Views?',
+          message: "This will generate all remaining views (side, walking, back) automatically. You won't be able to edit the body pose without resetting the entire sheet.",
+          onConfirm: async () => {
+            setLockModal(prev => ({ ...prev, isOpen: false }));
+            const success = await doGenerate();
+            resolve(success);
+          }
+        });
       });
+    }
+  };
+
+  // Auto-generate all remaining views after full body
+  const handleAutoGenerateAllViews = async () => {
+    if (!currentModelId || isAutoGenerating) return;
+    
+    setIsAutoGenerating(true);
+    setAutoGenCancelled(false);
+    
+    // Generate side view first (with lock modal)
+    const sideSuccess = await handleGenerateMultiView('side', false);
+    if (!sideSuccess || autoGenCancelled) {
+      setIsAutoGenerating(false);
+      return;
+    }
+    
+    // Small delay between generations
+    await new Promise(r => setTimeout(r, 500));
+    
+    // Generate walking view
+    if (autoGenCancelled) {
+      setIsAutoGenerating(false);
+      return;
+    }
+    const walkSuccess = await handleGenerateMultiView('walk', true);
+    if (!walkSuccess || autoGenCancelled) {
+      setIsAutoGenerating(false);
+      return;
+    }
+    
+    await new Promise(r => setTimeout(r, 500));
+    
+    // Generate back view
+    if (autoGenCancelled) {
+      setIsAutoGenerating(false);
+      return;
+    }
+    const backSuccess = await handleGenerateMultiView('back', true);
+    
+    setIsAutoGenerating(false);
+    
+    if (backSuccess) {
+      toast.success('All views generated! Ready to export.');
     }
   };
 
@@ -1788,15 +1843,40 @@ export default function CastingStudio() {
       };
     }
     
+    // After full body, trigger auto-generation of all remaining views
     if (!currentAssets.some(a => a.viewType === 'sideClose')) {
       return { 
-        label: 'Generate Side View', 
-        action: () => handleGenerateMultiView('side'),
+        label: 'Generate All Views', 
+        action: handleAutoGenerateAllViews,
         step: 3,
         total: 5,
+        isAutoGen: true,
       };
     }
     
+    // Show progress during auto-generation
+    if (isAutoGenerating) {
+      if (!currentAssets.some(a => a.viewType === 'sideFull')) {
+        return { 
+          label: 'Generating Walking View...', 
+          action: () => {},
+          step: 4,
+          total: 5,
+          isProgress: true,
+        };
+      }
+      if (!currentAssets.some(a => a.viewType === 'backFull')) {
+        return { 
+          label: 'Generating Back View...', 
+          action: () => {},
+          step: 5,
+          total: 5,
+          isProgress: true,
+        };
+      }
+    }
+    
+    // Manual fallback if auto-gen was cancelled
     if (!currentAssets.some(a => a.viewType === 'sideFull')) {
       return { 
         label: 'Generate Walking View', 
@@ -1821,7 +1901,7 @@ export default function CastingStudio() {
       step: 6, 
       total: 5,
     };
-  }, [currentAssets, genState.isGenerating]);
+  }, [currentAssets, genState.isGenerating, isAutoGenerating]);
 
   // Loading state
   if (authLoading) {
@@ -2329,7 +2409,7 @@ export default function CastingStudio() {
 
         {/* Reference Node */}
         {currentAssets.length > 0 && (
-          <div className="absolute top-24 right-12 z-40 hidden xl:block">
+          <div className="absolute top-20 right-8 z-40 hidden lg:block">
             <ReferenceNode
               image={prefs.referenceImage}
               onSet={(img) => updatePref('referenceImage', img)}
@@ -2363,7 +2443,7 @@ export default function CastingStudio() {
 
         {/* Left Vertical Thumbnails Strip */}
         {currentAssets.length > 0 && (
-          <div className="absolute left-6 top-24 bottom-10 z-30 flex flex-col gap-3 w-20 overflow-y-auto no-scrollbar py-2 pointer-events-none">
+          <div className="absolute left-6 top-24 bottom-10 z-30 flex flex-col gap-3 w-24 overflow-y-auto no-scrollbar py-2 pointer-events-none">
             <div className="contents pointer-events-auto">
               {/* HEAD Thumbnail */}
               {currentAssets.find(a => a.viewType === 'frontClose') && (
@@ -2531,18 +2611,27 @@ export default function CastingStudio() {
                         ))}
                       </div>
                       <h4 className="text-[9px] font-mono uppercase tracking-widest">
-                        {nextStage.step > nextStage.total ? 'Workflow Complete' : 'Next Stage'}
+                        {nextStage.step > nextStage.total ? 'Workflow Complete' : isAutoGenerating ? 'Auto-Generating' : 'Next Stage'}
                       </h4>
                     </div>
                     <p className="text-xs font-mono font-bold text-white uppercase tracking-wider">{nextStage.label}</p>
                   </div>
-                  <button
-                    onClick={nextStage.action}
-                    className="group relative w-16 h-16 bg-white rounded-full flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.2)]"
-                  >
-                    <div className="absolute inset-0 rounded-full border border-white opacity-50 group-hover:animate-ping"></div>
-                    <svg className="w-6 h-6 text-black relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                  </button>
+                  {!isAutoGenerating ? (
+                    <button
+                      onClick={nextStage.action}
+                      className="group relative w-16 h-16 bg-white rounded-full flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+                    >
+                      <div className="absolute inset-0 rounded-full border border-white opacity-50 group-hover:animate-ping"></div>
+                      <svg className="w-6 h-6 text-black relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setAutoGenCancelled(true)}
+                      className="group relative px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center justify-center hover:bg-red-500/30 transition-all duration-300"
+                    >
+                      <span className="text-[10px] font-mono text-red-400 uppercase tracking-wider">Cancel</span>
+                    </button>
+                  )}
                 </div>
               )}
 

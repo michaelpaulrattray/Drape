@@ -721,8 +721,10 @@
 ## UI/UX Fixes to Match Original App (Reference Image 1)
 
 ### Workspace Layout
-- [ ] Update UI/layout to match Reference Image 1 (spacing, alignment, node layout, panels)
-- [ ] Fix image container positioning to match original
+- [x] Match left sidebar thumbnail size and spacing from reference (w-24)
+- [x] Match main image container positioning and size
+- [x] Match right panel (reference node + next stage button) positioning
+- [x] Fix overall spacing and alignment to match Reference Image 1
 
 ### Chat/Iteration Submission
 - [x] Fix chat box to allow submission when tool is selected + text entered
@@ -732,8 +734,9 @@
 - [x] Fix Download button to trigger immediate browser download (fetches as blob for cross-origin)
 
 ### Reference Node Connections
-- [ ] Fix visual connector/edge between reference image nodes and main image container
-- [ ] Fix node positioning and edge rendering for all screen sizes
+- [x] Add SVG curved connector line from reference node to main image
+- [x] Position connector to flow naturally between elements (updated curve path)
+- [x] Ensure connector scales properly at different screen sizes
 
 ### Technical Schema Viewer
 - [x] Implement "View Technical Schema" in Director's Notes
@@ -751,8 +754,9 @@
 
 ### Auto-Generation Flow
 - [x] Add walking side view generation (step 4 in workflow)
-- [ ] Auto-generate remaining views after full frontal body view
-- [ ] Remove need for "Generate Next View" click
+- [x] Auto-trigger next view generation after each view completes (handleAutoGenerateAllViews)
+- [x] Show progress indicator during sequential generation
+- [x] Allow user to cancel auto-generation if needed (Cancel button)
 
 ### Export Functionality
 - [x] Export individual PNG images for each view (all views in ZIP)
