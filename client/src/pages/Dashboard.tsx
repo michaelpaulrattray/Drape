@@ -140,7 +140,7 @@ export default function Dashboard() {
         {/* Logo */}
         <div className="px-6 pt-6 pb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neutral-700 to-neutral-900 flex items-center justify-center border border-white/10">
+            <div className="w-10 h-10 rounded-none bg-gradient-to-br from-neutral-700 to-neutral-900 flex items-center justify-center border border-white/10">
               <Aperture className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -223,7 +223,7 @@ export default function Dashboard() {
         {/* User Profile */}
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10 backdrop-blur-sm">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-neutral-600 to-neutral-800 flex items-center justify-center text-white font-mono text-sm border border-white/10">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neutral-600 to-neutral-800 flex items-center justify-center text-white font-mono text-sm border border-white/10">
               {user?.name?.charAt(0) || "U"}
             </div>
             <div className="flex-1 min-w-0">
@@ -232,7 +232,7 @@ export default function Dashboard() {
             </div>
             <button 
               onClick={() => logout()}
-              className="text-neutral-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-white/5"
+              className="text-neutral-500 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-white/5"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -276,7 +276,7 @@ export default function Dashboard() {
             />
             <button 
               onClick={() => bannerInputRef.current?.click()}
-              className="absolute top-6 right-10 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white/10 backdrop-blur-sm"
+              className="absolute top-6 right-10 px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white/10 backdrop-blur-sm"
             >
               <Upload className="w-3.5 h-3.5" />
               CHANGE COVER
@@ -288,7 +288,7 @@ export default function Dashboard() {
             <div className="flex items-end gap-6">
               {/* Profile Avatar */}
               <div className="relative group/avatar">
-                <div className="w-28 h-28 rounded-xl bg-gradient-to-br from-neutral-700 via-neutral-800 to-neutral-900 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#0A0A0A] border border-white/10 relative overflow-hidden">
+                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-neutral-700 via-neutral-800 to-neutral-900 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#0A0A0A] border border-white/10 relative overflow-hidden">
                   <span className="relative z-10 font-mono">{user?.name?.charAt(0) || "F"}</span>
                 </div>
                 <input
@@ -300,7 +300,7 @@ export default function Dashboard() {
                 />
                 <button 
                   onClick={() => profilePicInputRef.current?.click()}
-                  className="absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity border border-white/10"
+                  className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity border border-white/10"
                 >
                   <Upload className="w-6 h-6 text-white" />
                 </button>
@@ -313,27 +313,27 @@ export default function Dashboard() {
                       type="text"
                       value={editedName}
                       onChange={(e) => setEditedName(e.target.value)}
-                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-lg font-semibold w-full max-w-xs focus:outline-none focus:border-orange-500 backdrop-blur-sm"
+                      className="bg-white/5 border border-white/10 rounded-md px-3 py-2 text-white text-lg font-semibold w-full max-w-xs focus:outline-none focus:border-orange-500 backdrop-blur-sm"
                       placeholder="Your name"
                     />
                     <input
                       type="email"
                       value={editedEmail}
                       onChange={(e) => setEditedEmail(e.target.value)}
-                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-neutral-400 text-sm w-full max-w-xs focus:outline-none focus:border-orange-500 backdrop-blur-sm"
+                      className="bg-white/5 border border-white/10 rounded-md px-3 py-2 text-neutral-400 text-sm w-full max-w-xs focus:outline-none focus:border-orange-500 backdrop-blur-sm"
                       placeholder="Your email"
                     />
                     <div className="flex gap-2">
                       <button 
                         onClick={handleSaveProfile}
-                        className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 rounded-md bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-1.5"
                       >
                         <Check className="w-4 h-4" />
                         Save
                       </button>
                       <button 
                         onClick={handleCancelEdit}
-                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-neutral-300 text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-1.5"
+                        className="px-4 py-2 rounded-md bg-white/5 border border-white/10 text-neutral-300 text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-1.5"
                       >
                         <X className="w-4 h-4" />
                         Cancel
@@ -344,12 +344,12 @@ export default function Dashboard() {
                   <>
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl font-semibold text-white tracking-tight">{user?.name || "Creator"}</h1>
-                      <span className="px-2.5 py-1 rounded-md bg-orange-500/20 text-orange-400 text-[10px] font-mono uppercase tracking-wider border border-orange-500/30">
+                      <span className="px-2.5 py-1 rounded-none bg-orange-500/20 text-orange-400 text-[10px] font-mono uppercase tracking-wider border border-orange-500/30">
                         PRO
                       </span>
                       <button 
                         onClick={handleEditProfile}
-                        className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/5 transition-colors"
+                        className="p-2 rounded-full text-neutral-500 hover:text-white hover:bg-white/5 transition-colors"
                         title="Edit Profile"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -366,10 +366,10 @@ export default function Dashboard() {
                   <Sparkles className="w-4 h-4" />
                   Get Credits
                 </button>
-                <button className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors backdrop-blur-sm">
+                <button className="p-2.5 rounded-full bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors backdrop-blur-sm">
                   <Bell className="w-5 h-5" />
                 </button>
-                <button className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors backdrop-blur-sm">
+                <button className="p-2.5 rounded-full bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors backdrop-blur-sm">
                   <Search className="w-5 h-5" />
                 </button>
               </div>
@@ -389,7 +389,7 @@ export default function Dashboard() {
                 </div>
                 <p className="text-sm text-neutral-500 font-mono pl-12">// Your latest creations</p>
               </div>
-              <button className="flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-orange-400 transition-colors group px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-orange-500/30">
+              <button className="flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-orange-400 transition-colors group px-4 py-2 rounded-md bg-white/5 border border-white/10 hover:border-orange-500/30">
                 View all
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
@@ -398,18 +398,18 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {recentWork.map((item, idx) => (
                 <div key={idx} className="group cursor-pointer">
-                  <div className="relative aspect-video rounded-xl overflow-hidden mb-3 border border-white/10 bg-white/5 backdrop-blur-sm">
+                  <div className="relative aspect-video rounded-lg overflow-hidden mb-3 border border-white/10 bg-white/5 backdrop-blur-sm">
                     <img
                       src={item.thumbnail}
                       className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500 grayscale group-hover:grayscale-0"
                       alt={item.title}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <span className="absolute bottom-2 right-2 px-2 py-1 rounded-md bg-black/70 text-[10px] text-white font-mono backdrop-blur-sm border border-white/10">
+                    <span className="absolute bottom-2 right-2 px-2 py-1 rounded-none bg-black/70 text-[10px] text-white font-mono backdrop-blur-sm border border-white/10">
                       {item.duration}
                     </span>
                     {/* Hover overlay with orange accent */}
-                    <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange-500/50 rounded-xl transition-colors" />
+                    <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange-500/50 rounded-lg transition-colors" />
                   </div>
                   <div className="flex gap-3 items-start">
                     <div className="flex-1">
@@ -443,7 +443,7 @@ export default function Dashboard() {
                   {/* Clip animation inspired accent */}
                   <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
+                  <div className="w-14 h-14 rounded-none bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
                     <Camera className="w-6 h-6 text-neutral-400 group-hover:text-orange-400 transition-colors" />
                   </div>
                   <h3 className="text-white font-semibold mb-1 tracking-tight">Create New Model</h3>
@@ -459,7 +459,7 @@ export default function Dashboard() {
                 <div className="group rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:border-orange-500/30 hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
+                  <div className="w-14 h-14 rounded-none bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
                     <Shirt className="w-6 h-6 text-neutral-400 group-hover:text-orange-400 transition-colors" />
                   </div>
                   <h3 className="text-white font-semibold mb-1 tracking-tight">Style Outfits</h3>
@@ -474,7 +474,7 @@ export default function Dashboard() {
                 <div className="group rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:border-orange-500/30 hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
+                  <div className="w-14 h-14 rounded-none bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
                     <Image className="w-6 h-6 text-neutral-400 group-hover:text-orange-400 transition-colors" />
                   </div>
                   <h3 className="text-white font-semibold mb-1 tracking-tight">Generate Campaign</h3>

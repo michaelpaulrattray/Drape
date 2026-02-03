@@ -181,3 +181,11 @@
 - [x] Add abstract landscape image as background
 - [x] Desaturate and fade image to very subtle opacity (8% opacity + grayscale)
 - [x] Ensure seamless blend with dark background (edge gradients)
+
+## Dashboard Corner Styling Update
+- [x] Mix soft rounded corners (rounded-lg, rounded-xl) with sharp edges
+- [x] Apply rounded-full to icon buttons and avatars
+- [x] Use rounded-lg for internal cards and content areas
+- [x] Keep some elements sharp/square for contrast
+- [x] Add gradient borders with border-gradient style
+- [x] Improve backdrop-blur and glass effects
