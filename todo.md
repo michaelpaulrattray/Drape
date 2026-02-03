@@ -772,3 +772,10 @@
 - [x] Ensure Director's Note section is at very bottom, full width
 - [x] Match overall spacing and alignment from reference
 - [x] Reduced left sidebar thumbnail width from w-24 to w-14
+
+
+## Post-Generation UI Improvements
+- [x] Move chat input bar to overlay bottom of main image container
+- [x] Reduce dead space in workspace
+- [x] Enlarge main image to fill more of the available space (max-h-[calc(100vh-180px)])
+- [x] Adjust spacing between elements for tighter layout (reduced Director's Note padding)

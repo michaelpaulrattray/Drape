@@ -1,0 +1,22 @@
+Post-Generation UI Layout Check - 2026-02-03
+
+Current State:
+- Image is displayed prominently in the center
+- Chat input bar is now positioned at the bottom of the image area (overlaying)
+- "FRONT CLOSE" label visible at bottom left of image
+- Director's Note section at bottom with reduced padding
+- Tool buttons (surgical edit, eraser) on right side of image
+- Reference node area on top right with "ADD REF" placeholder
+- Next Stage button on right side with "Generate Full Body" label
+- Left sidebar shows thumbnail with HEAD label
+
+Layout improvements made:
+1. Chat input now overlays bottom of image container
+2. Image max-height increased to calc(100vh-180px) for larger display
+3. Director's Note section padding reduced from p-5 to p-3/p-4
+4. Reduced gap between elements from gap-6 to gap-3
+
+Remaining observations:
+- Layout matches reference design more closely now
+- Chat input properly overlays the image bottom area
+- Less dead space in the workspace

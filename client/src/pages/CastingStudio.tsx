@@ -2363,8 +2363,8 @@ export default function CastingStudio() {
         </div>
       </aside>
 
-      {/* Right Panel - Image Viewer */}
-      <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative bg-[#050505]">
+        {/* Right Panel - Image Viewer */}
+        <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative bg-[#050505]">
         {/* Background Effects */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-studio-600/10 rounded-full blur-[90px] mix-blend-screen opacity-30"></div>
@@ -2599,7 +2599,7 @@ export default function CastingStudio() {
             )}
 
             {/* Image Display Area */}
-            <div className="flex-1 relative min-h-0 flex items-center justify-center p-4 group">
+            <div className="flex-1 relative min-h-0 flex items-center justify-center p-2 lg:p-4 group">
               {/* Next Stage Button */}
               {nextStage && !genState.isGenerating && (
                 <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4 animate-in fade-in slide-in-from-right-8 duration-700">
@@ -2636,14 +2636,14 @@ export default function CastingStudio() {
               )}
 
               {/* Main Image */}
-              <div className="relative h-full max-w-full flex items-center justify-center select-none">
+              <div className="relative h-full max-w-full flex items-center justify-center select-none pb-16">
                 {currentImageUrl && (
                   <>
                     <img 
                       ref={imageRef}
                       src={currentImageUrl} 
                       alt="Active View" 
-                      className="max-h-full max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black"
+                      className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black"
                     />
                     
                     {/* Masking Canvas */}
@@ -2765,8 +2765,8 @@ export default function CastingStudio() {
                 </div>
               </div>
 
-              {/* Overlaying Chat Input */}
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-lg z-30" onClick={e => e.stopPropagation()}>
+              {/* Overlaying Chat Input - positioned at bottom of image container */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl z-30 px-4" onClick={e => e.stopPropagation()}>
                 {/* Inline Helper Text for Masking */}
                 {isMasking && (
                   <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
@@ -2902,8 +2902,8 @@ export default function CastingStudio() {
 
             {/* Bottom Panel - Director's Note */}
             <div className="w-full bg-studio-950 border-t border-studio-800 flex-shrink-0 z-20">
-              <div className="w-full max-w-[1400px] mx-auto p-5 space-y-6">
-                <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="w-full max-w-[1400px] mx-auto p-3 lg:p-4">
+                <div className="flex flex-col md:flex-row gap-3 items-start">
                   <div className="flex-1 space-y-2 group">
                     <div className="flex items-center justify-between">
                       <h3 className="text-[10px] uppercase font-bold text-studio-500 tracking-widest">
@@ -2938,7 +2938,7 @@ export default function CastingStudio() {
                           : "Technical schema will appear here after generation..."}
                       </pre>
                     ) : (
-                      <p className="text-[11px] font-mono text-studio-400 leading-relaxed max-h-20 overflow-y-auto custom-scrollbar select-text">
+                      <p className="text-[10px] font-mono text-studio-400 leading-relaxed max-h-16 overflow-y-auto custom-scrollbar select-text">
                         {currentMasterPrompt || "Master prompt will appear here after generation..."}
                       </p>
                     )}
