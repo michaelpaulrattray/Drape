@@ -217,9 +217,29 @@ function ServicesMarqueeSection() {
 
   return (
     <section className="border-t border-b border-black/10 bg-zinc-50 py-24 overflow-hidden relative">
-      {/* Grid lines overlay for visual consistency */}
-      <div className="absolute inset-0 grid-lines pointer-events-none" />
-      <div className="px-6 md:px-12 mb-16 md:mb-20">
+      {/* Intelligent Grid Lines - framing content elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Vertical lines at 25%, 50%, 75% - stopping at content boundaries */}
+        <div className="absolute left-[25%] top-0 h-[180px] w-px bg-black/[0.06]" />
+        <div className="absolute left-[50%] top-0 h-[120px] w-px bg-black/[0.06]" />
+        <div className="absolute left-[75%] top-0 h-[180px] w-px bg-black/[0.06]" />
+        
+        {/* Horizontal line under header content */}
+        <div className="absolute left-0 right-0 top-[200px] h-px bg-black/[0.04] hidden md:block" />
+        
+        {/* Bottom grid lines - framing the cards area */}
+        <div className="absolute left-[25%] bottom-0 h-[100px] w-px bg-black/[0.06]" />
+        <div className="absolute left-[75%] bottom-0 h-[100px] w-px bg-black/[0.06]" />
+        
+        {/* Corner accent dots */}
+        <div className="absolute left-[25%] top-[180px] w-1.5 h-1.5 rounded-full bg-sky-500/20 -translate-x-1/2" />
+        <div className="absolute left-[75%] top-[180px] w-1.5 h-1.5 rounded-full bg-sky-500/20 -translate-x-1/2" />
+        
+        {/* Subtle diagonal accent line */}
+        <div className="absolute right-0 top-0 w-[200px] h-px bg-gradient-to-l from-sky-500/10 to-transparent rotate-45 origin-right hidden lg:block" />
+      </div>
+      
+      <div className="px-6 md:px-12 mb-16 md:mb-20 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
           <div>
             <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-sky-500 font-medium mb-6">
@@ -230,7 +250,7 @@ function ServicesMarqueeSection() {
               Solving Problems With <br/><span className="text-zinc-400">Intelligent AI</span>
             </h2>
           </div>
-          <div className="lg:pl-12">
+          <div className="lg:pl-12 lg:border-l lg:border-black/[0.06]">
             <p className="text-lg md:text-xl font-light text-zinc-600 leading-relaxed">
               Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
             </p>
