@@ -947,6 +947,7 @@ export default function CastingStudio() {
   const generateCastingMutation = trpc.generation.castingImage.useMutation();
   const generateFullBodyMutation = trpc.generation.fullBody.useMutation();
   const generateMultiViewMutation = trpc.generation.multiView.useMutation();
+  const generateAllViewsMutation = trpc.generation.generateAllViews.useMutation();
   const iterateMutation = trpc.generation.iterate.useMutation();
   const upscaleMutation = trpc.generation.upscale.useMutation();
 
@@ -1474,48 +1475,73 @@ export default function CastingStudio() {
     }
   };
 
-  // Auto-generate all remaining views after full body
+  // Auto-generate all remaining views after full body - uses batch endpoint like original app
   const handleAutoGenerateAllViews = async () => {
     if (!currentModelId || isAutoGenerating) return;
     
-    setIsAutoGenerating(true);
-    setAutoGenCancelled(false);
-    
-    // Generate side view first (with lock modal)
-    const sideSuccess = await handleGenerateMultiView('side', false);
-    if (!sideSuccess || autoGenCancelled) {
-      setIsAutoGenerating(false);
-      return;
-    }
-    
-    // Small delay between generations
-    await new Promise(r => setTimeout(r, 500));
-    
-    // Generate walking view
-    if (autoGenCancelled) {
-      setIsAutoGenerating(false);
-      return;
-    }
-    const walkSuccess = await handleGenerateMultiView('walk', true);
-    if (!walkSuccess || autoGenCancelled) {
-      setIsAutoGenerating(false);
-      return;
-    }
-    
-    await new Promise(r => setTimeout(r, 500));
-    
-    // Generate back view
-    if (autoGenCancelled) {
-      setIsAutoGenerating(false);
-      return;
-    }
-    const backSuccess = await handleGenerateMultiView('back', true);
-    
-    setIsAutoGenerating(false);
-    
-    if (backSuccess) {
-      toast.success('All views generated! Ready to export.');
-    }
+    // Show lock modal first
+    return new Promise<void>((resolve) => {
+      setLockModal({
+        isOpen: true,
+        title: 'Lock Body & Generate All Views?',
+        message: "This will generate all remaining views (side, walking, back) in parallel. You won't be able to edit the body pose without resetting the entire sheet.",
+        onConfirm: async () => {
+          setLockModal(prev => ({ ...prev, isOpen: false }));
+          
+          setIsAutoGenerating(true);
+          setAutoGenCancelled(false);
+          
+          const totalCost = POINT_COSTS.multiView * 3;
+          if (!pointsData || pointsData.balance < totalCost) {
+            toast.error(`Insufficient points. Need ${totalCost} points for all views.`);
+            setIsAutoGenerating(false);
+            resolve();
+            return;
+          }
+          
+          setGenState({ 
+            isGenerating: true, 
+            currentStep: 'Generating all views (side, walk, back)...', 
+            error: null, 
+            progress: 0, 
+            startTime: Date.now(), 
+            estimatedDuration: 30000 // ~30 seconds for all 3 views in parallel
+          });
+          
+          try {
+            const result = await generateAllViewsMutation.mutateAsync({
+              modelId: currentModelId,
+            });
+            
+            if (result.success && result.views) {
+              // Create all 3 assets at once
+              const newAssets: GeneratedAsset[] = [
+                ...currentAssets.filter(a => !['sideClose', 'sideFull', 'backFull'].includes(a.viewType)),
+                { id: result.views.sideClose.assetId ?? Date.now(), viewType: 'sideClose' as const, storageUrl: result.views.sideClose.imageUrl },
+                { id: result.views.sideFull.assetId ?? Date.now() + 1, viewType: 'sideFull' as const, storageUrl: result.views.sideFull.imageUrl },
+                { id: result.views.backFull.assetId ?? Date.now() + 2, viewType: 'backFull' as const, storageUrl: result.views.backFull.imageUrl },
+              ];
+              
+              setCurrentAssets(newAssets);
+              setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
+              setHistoryIndex((prev) => prev + 1);
+              setActiveView('sideClose'); // Show first new view
+              toast.success('All views generated! Ready to export.');
+              refetchPoints();
+            }
+            
+            setGenState({ isGenerating: false, currentStep: '', error: null });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Generation failed';
+            setGenState({ isGenerating: false, currentStep: '', error: message });
+            toast.error(message);
+          }
+          
+          setIsAutoGenerating(false);
+          resolve();
+        }
+      });
+    });
   };
 
   // Handle iteration/refinement

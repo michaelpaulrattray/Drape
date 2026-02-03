@@ -848,3 +848,12 @@
 - [x] Compare with current implementation - found issue: was generating all 3 views but only using 1
 - [x] Fix: Created generateSingleView function that generates only the requested view
 - [x] Updated aiService to use new single view generation
+
+
+## Verify Thumbnail & Export Workflow
+- [x] Check how multi-view results populate thumbnails in frontend
+- [x] Verify view type mapping (side→sideClose, walk→sideFull, back→backFull)
+- [x] Created batch generateAllViews endpoint that generates all 3 views in parallel
+- [x] Updated frontend to use batch endpoint and populate all thumbnails at once
+- [ ] Ensure export includes all generated views
+- [ ] Check workflow progression after all views are generated

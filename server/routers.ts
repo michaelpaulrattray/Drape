@@ -632,6 +632,116 @@ export const appRouter = router({
         }
       }),
 
+    // Generate all remaining views (side, walk, back) at once - matches original app behavior
+    generateAllViews: protectedProcedure
+      .input(z.object({
+        modelId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const totalCost = POINT_COSTS.multiView * 3; // 3 views
+        const userPoints = await getUserPoints(ctx.user.id);
+        if (!userPoints || userPoints.balance < totalCost) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient points. Need ${totalCost} points for all views.`,
+          });
+        }
+
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        const genResult = await createGeneration({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          type: "multiView",
+          status: "processing",
+          pointsCost: totalCost,
+          metadata: { viewType: "all" },
+        });
+
+        try {
+          const assets = await getModelAssets(input.modelId);
+          const reference = assets.find(a => a.viewType === "frontFull" || a.viewType === "frontClose");
+
+          if (!reference?.storageUrl) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "No reference image found for multi-view generation",
+            });
+          }
+
+          const gender = (model.technicalSchema as any)?.subject?.sex || 'female';
+          
+          // Generate all 3 views in parallel
+          const [sideResult, walkResult, backResult] = await Promise.all([
+            generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'side'),
+            generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'walk'),
+            generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'back'),
+          ]);
+
+          // Deduct points for all 3 views
+          await deductPoints(
+            ctx.user.id,
+            totalCost,
+            "generation",
+            "All views generation (side, walk, back)",
+            `gen-${genResult.generationId}`
+          );
+
+          // Create assets for all 3 views
+          const [sideAsset, walkAsset, backAsset] = await Promise.all([
+            createModelAsset({
+              modelId: input.modelId,
+              viewType: "sideClose",
+              resolution: "1K",
+              storageUrl: sideResult.imageUrl,
+              pointsCost: POINT_COSTS.multiView,
+            }),
+            createModelAsset({
+              modelId: input.modelId,
+              viewType: "sideFull",
+              resolution: "1K",
+              storageUrl: walkResult.imageUrl,
+              pointsCost: POINT_COSTS.multiView,
+            }),
+            createModelAsset({
+              modelId: input.modelId,
+              viewType: "backFull",
+              resolution: "1K",
+              storageUrl: backResult.imageUrl,
+              pointsCost: POINT_COSTS.multiView,
+            }),
+          ]);
+
+          await updateGeneration(genResult.generationId!, {
+            status: "completed",
+            completedAt: new Date(),
+          });
+
+          return {
+            success: true,
+            views: {
+              sideClose: { imageUrl: sideResult.imageUrl, assetId: sideAsset.assetId },
+              sideFull: { imageUrl: walkResult.imageUrl, assetId: walkAsset.assetId },
+              backFull: { imageUrl: backResult.imageUrl, assetId: backAsset.assetId },
+            },
+            pointsCost: totalCost,
+          };
+        } catch (error) {
+          await updateGeneration(genResult.generationId!, {
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown error",
+            completedAt: new Date(),
+          });
+          throw error;
+        }
+      }),
+
     // Iterate/refine a model image
     iterate: protectedProcedure
       .input(z.object({
