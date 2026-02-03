@@ -863,3 +863,26 @@
 - [x] Export function failing to fetch S3 images due to CORS
 - [x] Create server-side image proxy endpoint to fetch images (proxyImage)
 - [x] Update frontend export to use proxy endpoint for ZIP and PDF images
+
+
+## UX Enhancements - Performance Perception
+- [x] Optimistic thumbnail updates - Show placeholder in thumbnail strip when generation starts
+- [x] Progress stages - Break loading into visible stages with rotating tips every 4s
+- [x] Background pre-loading - Pre-load icons and fonts during idle time
+
+## UX Enhancements - Premium Feel
+- [x] Subtle ambient animations - Slow-moving gradient backgrounds in empty state (ambient-gradient, animate-float)
+- [x] Custom cursors - Brush cursor for masking, eraser cursor for eraser tool (cursor-brush, cursor-eraser)
+- [x] Loading variety - Rotate through different loading messages/tips during generation
+
+## UX Enhancements - UI/Styling
+- [x] Micro-interactions - Scale/glow effects on button hovers (hover-scale, hover-glow, active:scale-95)
+- [x] Visual hierarchy - Section indicator dots, left border on content, required field styling
+- [x] Floating action feedback - Pulse animation on Generate button (animate-button-pulse)
+- [x] Toast notifications redesign - Styled toasts with icons, progress bars, slide-in animations
+
+## UX Enhancements - Image Loading
+- [x] Progressive blur-to-sharp loading - blur-loading class with transition to sharp on load
+- [x] Skeleton shimmer effect - skeleton-shimmer animation for loading states
+- [x] Fade-in transition - Opacity 0→1 over 300ms when images load (blur-loading.loaded)
+- [x] Low-res preview first - Blurred placeholder transitioning to full image

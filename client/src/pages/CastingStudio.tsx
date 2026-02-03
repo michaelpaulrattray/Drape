@@ -531,23 +531,26 @@ function CollapsibleSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-studio-800/50 last:border-0">
+    <div className="border-b border-studio-800/50 last:border-0 group/section">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-4 group focus:outline-none select-none"
+        className="w-full flex items-center justify-between py-4 group focus:outline-none select-none hover-scale"
       >
         <div className="flex items-center space-x-3">
+          {/* Section indicator dot */}
+          <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isOpen ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'bg-studio-700 group-hover:bg-studio-500'}`} />
           <h3 className={`text-[10px] uppercase font-bold tracking-widest transition-colors duration-300 ${isOpen ? 'text-white' : 'text-studio-500 group-hover:text-studio-400'}`}>
             {title}
           </h3>
-          {required && <span className="text-studio-700 text-[10px] group-hover:text-studio-500 transition-colors">*</span>}
+          {required && <span className="text-red-500/70 text-[10px] group-hover:text-red-400 transition-colors">*</span>}
         </div>
         <div className={`transform transition-transform duration-300 text-studio-700 group-hover:text-studio-500 ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
       </button>
       <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[3000px] opacity-100 pb-4' : 'max-h-0 opacity-0'}`}>
-        <div className="space-y-4">
+        {/* Section content with subtle background for visual hierarchy */}
+        <div className="space-y-4 pl-4 border-l border-studio-800/30 ml-0.5">
           {children}
         </div>
       </div>
@@ -809,10 +812,31 @@ function ReferenceNode({
   );
 }
 
+// ============ Loading Tips ============
+
+const LOADING_TIPS = [
+  "Analyzing facial structure parameters...",
+  "Rendering skin texture details...",
+  "Calibrating lighting conditions...",
+  "Processing hair strand dynamics...",
+  "Optimizing eye reflections...",
+  "Generating micro-expressions...",
+  "Applying photorealistic shading...",
+  "Fine-tuning color gradients...",
+  "Synthesizing natural imperfections...",
+  "Compositing final render layers...",
+  "Pro tip: Use the eraser tool to remove unwanted elements",
+  "Pro tip: Surgical edit lets you modify specific areas",
+  "Pro tip: Director's Note refines the entire image",
+  "Pro tip: Export includes all views in a ZIP file",
+  "Pro tip: Higher resolution = more detail, more points",
+];
+
 // ============ Elapsed Time Display Component ============
 
 function ElapsedTimeDisplay({ startTime, estimatedDuration }: { startTime: number; estimatedDuration?: number }) {
   const [elapsed, setElapsed] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
   
   useEffect(() => {
     const interval = setInterval(() => {
@@ -820,6 +844,14 @@ function ElapsedTimeDisplay({ startTime, estimatedDuration }: { startTime: numbe
     }, 100);
     return () => clearInterval(interval);
   }, [startTime]);
+  
+  // Rotate tips every 3 seconds
+  useEffect(() => {
+    const tipInterval = setInterval(() => {
+      setTipIndex(prev => (prev + 1) % LOADING_TIPS.length);
+    }, 3000);
+    return () => clearInterval(tipInterval);
+  }, []);
   
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -832,11 +864,16 @@ function ElapsedTimeDisplay({ startTime, estimatedDuration }: { startTime: numbe
   };
   
   return (
-    <div className="text-[10px] font-mono text-studio-400 uppercase tracking-widest">
-      <span>{formatTime(elapsed)}</span>
-      {estimatedDuration && elapsed < estimatedDuration && (
-        <span className="text-studio-600"> / ~{formatTime(estimatedDuration)}</span>
-      )}
+    <div className="text-center space-y-2">
+      <div className="text-[10px] font-mono text-studio-400 uppercase tracking-widest">
+        <span>{formatTime(elapsed)}</span>
+        {estimatedDuration && elapsed < estimatedDuration && (
+          <span className="text-studio-600"> / ~{formatTime(estimatedDuration)}</span>
+        )}
+      </div>
+      <div className="text-[9px] font-mono text-studio-500 max-w-xs mx-auto animate-pulse">
+        {LOADING_TIPS[tipIndex]}
+      </div>
     </div>
   );
 }
@@ -2449,9 +2486,14 @@ export default function CastingStudio() {
         <div className="p-5 border-t border-studio-800 bg-[#080808] mt-auto">
           <button
             data-debug-generate
-            onClick={handleGenerate}
+            onClick={(e) => {
+              // Add pulse animation on click
+              e.currentTarget.classList.add('animate-button-pulse');
+              setTimeout(() => e.currentTarget.classList.remove('animate-button-pulse'), 600);
+              handleGenerate();
+            }}
             disabled={!isFormValid || genState.isGenerating}
-            className="w-full py-4 bg-white hover:bg-studio-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-mono text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)]"
+            className="w-full py-4 bg-white hover:bg-studio-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] hover-scale hover-glow active:scale-95"
           >
             {genState.isGenerating ? (
               <>
@@ -2821,13 +2863,15 @@ export default function CastingStudio() {
                       ref={imageRef}
                       src={currentImageUrl} 
                       alt="Active View" 
-                      className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black" style={{marginTop: '70px'}}
+                      className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black blur-loading" 
+                      style={{marginTop: '70px'}}
+                      onLoad={(e) => e.currentTarget.classList.add('loaded')}
                     />
                     
                     {/* Masking Canvas */}
                     <canvas 
                       ref={canvasRef}
-                      className={`absolute top-0 left-0 cursor-crosshair touch-none ${isMasking ? 'pointer-events-auto z-20' : 'pointer-events-none z-10'}`}
+                      className={`absolute top-0 left-0 touch-none ${isMasking ? 'pointer-events-auto z-20' : 'pointer-events-none z-10'} ${activeTool === 'eraser' ? 'cursor-eraser' : activeTool === 'surgical' ? 'cursor-brush' : 'cursor-crosshair'}`}
                       onPointerDown={handlePointerDown}
                       onPointerMove={handlePointerMove}
                       onPointerUp={handlePointerUp}
@@ -3162,7 +3206,13 @@ export default function CastingStudio() {
           </div>
         ) : (
           /* Empty State */
-          <div className="flex-1 flex items-center justify-center p-8">
+          <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
+            {/* Ambient gradient background animation */}
+            <div className="absolute inset-0 ambient-gradient opacity-30" />
+            <div className="absolute inset-0">
+              <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-float" style={{animationDelay: '0s'}} />
+              <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/3 rounded-full blur-3xl animate-float" style={{animationDelay: '2s'}} />
+            </div>
             <div className="relative z-10 w-full max-w-3xl p-8 flex flex-col items-center justify-center min-h-[500px]">
               <div className="mb-12 text-center space-y-6">
                 <div className="relative inline-block">

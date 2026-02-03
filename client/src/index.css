@@ -370,3 +370,236 @@
     animation-play-state: paused;
   }
 }
+
+
+/* ============ UX ENHANCEMENTS ============ */
+
+/* Skeleton Shimmer Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Ambient Gradient Animation for Empty States */
+@keyframes ambient-gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.ambient-bg {
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 30, 1) 0%,
+    rgba(20, 20, 25, 1) 25%,
+    rgba(25, 20, 30, 1) 50%,
+    rgba(20, 25, 25, 1) 75%,
+    rgba(30, 30, 30, 1) 100%
+  );
+  background-size: 400% 400%;
+  animation: ambient-gradient 20s ease infinite;
+}
+
+/* Pulse Animation for Generate Button */
+@keyframes button-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.animate-button-pulse {
+  animation: button-pulse 0.6s ease-out;
+}
+
+/* Micro-interaction Hover Effects */
+.hover-scale {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-scale:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+.hover-scale:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+.hover-glow:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+}
+
+/* Thumbnail Selection Glow */
+.thumbnail-glow {
+  transition: all 0.3s ease;
+}
+.thumbnail-glow:hover {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+.thumbnail-glow.selected {
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+}
+
+/* Image Fade-in Transition */
+.image-fade-in {
+  opacity: 0;
+  transition: opacity 0.3s ease-out, filter 0.5s ease-out;
+}
+.image-fade-in.loaded {
+  opacity: 1;
+}
+
+/* Blur-to-Sharp Loading Effect */
+.blur-loading {
+  filter: blur(20px);
+  transform: scale(1.05);
+  transition: filter 0.5s ease-out, transform 0.5s ease-out;
+}
+.blur-loading.loaded {
+  filter: blur(0);
+  transform: scale(1);
+}
+
+/* Custom Cursors for Tools */
+.cursor-brush {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8' fill='rgba(200,150,255,0.5)'/%3E%3Ccircle cx='12' cy='12' r='3' fill='white'/%3E%3C/svg%3E") 12 12, crosshair;
+}
+
+.cursor-eraser {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Crect x='4' y='4' width='16' height='16' rx='2' fill='rgba(255,100,100,0.5)'/%3E%3Cline x1='8' y1='8' x2='16' y2='16'/%3E%3Cline x1='16' y1='8' x2='8' y2='16'/%3E%3C/svg%3E") 12 12, crosshair;
+}
+
+.cursor-crosshair {
+  cursor: crosshair;
+}
+
+/* Toast Notification Enhancements */
+.toast-slide-in {
+  animation: toast-slide-in 0.3s ease-out;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Section Divider Gradient */
+.section-divider {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  height: 1px;
+}
+
+/* Preference Section Background Variations */
+.pref-section-alt {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 12px;
+  margin: -12px;
+}
+
+/* Loading Message Typewriter Effect */
+@keyframes typewriter-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.loading-cursor::after {
+  content: '|';
+  animation: typewriter-cursor 0.8s ease-in-out infinite;
+  margin-left: 2px;
+}
+
+/* Optimistic Thumbnail Placeholder */
+.thumbnail-placeholder {
+  background: linear-gradient(
+    135deg,
+    rgba(40, 40, 40, 1) 0%,
+    rgba(30, 30, 30, 1) 50%,
+    rgba(40, 40, 40, 1) 100%
+  );
+  background-size: 200% 200%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Progress Stage Indicator */
+.progress-stage {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-stage::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, white, transparent);
+  animation: progress-sweep 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-sweep {
+  0% { left: -100%; width: 50%; }
+  100% { left: 100%; width: 50%; }
+}
+
+/* Floating Particle Effect for Empty States */
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.6;
+  }
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  animation: float-particle 4s ease-in-out infinite;
+}
+
+.particle:nth-child(2) { animation-delay: 0.5s; left: 20%; top: 30%; }
+.particle:nth-child(3) { animation-delay: 1s; left: 70%; top: 20%; }
+.particle:nth-child(4) { animation-delay: 1.5s; left: 40%; top: 60%; }
+.particle:nth-child(5) { animation-delay: 2s; left: 80%; top: 70%; }
+.particle:nth-child(6) { animation-delay: 2.5s; left: 10%; top: 80%; }
