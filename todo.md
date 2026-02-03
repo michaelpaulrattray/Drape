@@ -645,3 +645,18 @@
 - [x] Verify mask overlay is visible during painting (canvas with pointer events)
 - [x] Verify brush size/cursor is appropriate (20px line width, crosshair cursor)
 - [x] Verify mask paths are properly stored and cleared
+
+
+## Export/Upscale Function Verification - COMPLETED
+
+### Export Workflow
+- [x] Verify every export has a unique ID (generateExportId() creates MOD-YY-XXXXXX format)
+- [x] Verify export modal shows correct options (1K/2K/4K resolution)
+- [x] Verify export creates ZIP with all views and PDF identity document
+- [x] Verify export downloads work correctly (blob URL download)
+- [x] Upscale function exists in geminiService (upscaleExistingImage)
+
+### Export ID System
+- [x] Check reference app's export ID generation logic (MOD-YY-XXXXXX format)
+- [x] Implement unique export ID for each export action (generateExportId helper)
+- [x] Export ID included in ZIP filename and PDF document

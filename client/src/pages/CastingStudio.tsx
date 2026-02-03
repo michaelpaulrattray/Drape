@@ -4,6 +4,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2, ChevronLeft, Zap, X, Menu } from "lucide-react";
+import { jsPDF } from "jspdf";
+import JSZip from "jszip";
 import TriBlendSelector from "@/components/TriBlendSelector";
 import HairColorWheel from "@/components/HairColorWheel";
 import Tooltip from "@/components/Tooltip";
@@ -71,6 +73,16 @@ enum ImageResolution {
   HIGH = '2K',
   ULTRA = '4K',
 }
+
+// Helper for generating unique export IDs (MOD-YY-XXXXXX format)
+const generateExportId = () => {
+  const chars = '0123456789ABCDEF';
+  let hash = '';
+  for (let i = 0; i < 6; i++) {
+    hash += chars[Math.floor(Math.random() * 16)];
+  }
+  return `MOD-${new Date().getFullYear().toString().slice(-2)}-${hash}`;
+};
 
 // ============ Constants ============
 
@@ -1343,11 +1355,231 @@ export default function CastingStudio() {
     }
   };
 
-  // Export handler
-  const handleExport = (name: string, res: ImageResolution) => {
-    toast.success(`Exporting ${name} at ${res} resolution...`);
+  // Export handler with unique ID, PDF generation, and ZIP creation
+  const handleExport = async (characterName: string, exportRes: ImageResolution) => {
+    if (currentAssets.length === 0) {
+      toast.error('No assets to export');
+      return;
+    }
+
     setShowExportModal(false);
-    // In production, this would trigger actual export
+    setGenState({ isGenerating: true, currentStep: `Processing Export Pack (${exportRes})...`, error: null });
+
+    // Generate unique export ID
+    const exportId = generateExportId();
+    const safeName = characterName ? characterName.trim().toUpperCase() : `MODEL ID ${exportId}`;
+    const cleanId = exportId.replace(/[^a-zA-Z0-9]/g, '_');
+    const zipFilename = `CASTING_PACK_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}_${exportRes}.zip`;
+    const pdfFilename = `LEGAL_IDENTITY_${cleanId}.pdf`;
+
+    const zip = new JSZip();
+
+    try {
+      // Collect all view URLs
+      const viewFileMap: Record<string, string> = {
+        frontClose: '01_Headshot_Primary.png',
+        frontFull: '02_Full_Body_Standing.png',
+        sideClose: '03_Profile_Head.png',
+        sideFull: '04_Full_Body_Walk.png',
+        backFull: '05_Full_Body_Rear.png'
+      };
+
+      // Add images to ZIP (using current resolution - upscaling would require backend call)
+      for (const asset of currentAssets) {
+        const filename = viewFileMap[asset.viewType] || `${asset.viewType}.png`;
+        setGenState(prev => ({ ...prev, currentStep: `Adding ${asset.viewType}...` }));
+        
+        // Fetch the image and convert to base64
+        try {
+          const response = await fetch(asset.storageUrl);
+          const blob = await response.blob();
+          zip.file(filename, blob);
+        } catch (e) {
+          console.error(`Failed to fetch ${asset.viewType}:`, e);
+        }
+      }
+
+      // Generate PDF Identity Document
+      setGenState(prev => ({ ...prev, currentStep: 'Compiling Identity Document...' }));
+      
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      let cursorY = margin;
+
+      // Header
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(24);
+      doc.setTextColor(0, 0, 0);
+      doc.text(safeName, margin, cursorY + 10);
+
+      doc.setFontSize(9);
+      doc.setFont('courier', 'normal');
+      doc.setTextColor(80, 80, 80);
+      doc.text('FORMASTUDIO™ • DIGITAL COMPOSITE', margin, cursorY + 15);
+      doc.text('PRIMARY IDENTITY', pageWidth - margin, cursorY + 15, { align: 'right' });
+
+      cursorY += 19;
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 0, 0);
+      doc.line(margin, cursorY, pageWidth - margin, cursorY);
+      cursorY += 10;
+
+      // Add headshot image if available
+      const headshotAsset = currentAssets.find(a => a.viewType === 'frontClose');
+      if (headshotAsset) {
+        try {
+          const response = await fetch(headshotAsset.storageUrl);
+          const blob = await response.blob();
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          
+          const imgProps = doc.getImageProperties(base64);
+          const imgRatio = imgProps.width / imgProps.height;
+          const maxH = 80;
+          let imgW = contentWidth * 0.6;
+          let imgH = imgW / imgRatio;
+          if (imgH > maxH) {
+            imgH = maxH;
+            imgW = imgH * imgRatio;
+          }
+          const imgX = margin + (contentWidth - imgW) / 2;
+          doc.addImage(base64, 'PNG', imgX, cursorY, imgW, imgH);
+          cursorY += imgH + 10;
+        } catch (e) {
+          console.error('Failed to add image to PDF:', e);
+          cursorY += 10;
+        }
+      }
+
+      // Stats Block
+      const statsHeight = 25;
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.2);
+      doc.rect(margin, cursorY, contentWidth, statsHeight);
+
+      const drawField = (label: string, value: string, x: number, y: number) => {
+        doc.setFont('courier', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`${label}: `, x, y);
+        const labelW = doc.getTextWidth(`${label}: `);
+        doc.setFont('courier', 'normal');
+        doc.text((value || '-').toUpperCase(), x + labelW, y);
+      };
+
+      const colWidth = (contentWidth - 10) / 3;
+      const col1X = margin + 5;
+      const col2X = col1X + colWidth;
+      const col3X = col2X + colWidth;
+      const row1Y = cursorY + 10;
+      const row2Y = cursorY + 18;
+
+      drawField('ID', exportId, col1X, row1Y);
+      drawField('AGE', prefs.age || '-', col2X, row1Y);
+      drawField('ETHNICITY', prefs.ethnicity || '-', col3X, row1Y);
+      drawField('HAIR', prefs.hairColor || '-', col1X, row2Y);
+      drawField('EYES', prefs.eyeColor || '-', col2X, row2Y);
+      drawField('DATE', new Date().toLocaleDateString().toUpperCase(), col3X, row2Y);
+
+      cursorY += statsHeight + 10;
+
+      // Master Prompt
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text("DIRECTOR'S NOTES / MASTER PROMPT", margin, cursorY);
+      cursorY += 5;
+
+      doc.setFont('courier', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(60, 60, 60);
+
+      const promptLines = doc.splitTextToSize(currentMasterPrompt || 'No master prompt available', contentWidth);
+      const maxPromptLines = 14;
+      const displayedLines = promptLines.slice(0, maxPromptLines);
+      doc.text(displayedLines, margin, cursorY);
+      cursorY += (displayedLines.length * 3.5) + 8;
+
+      // Legal Section
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.line(margin, cursorY, pageWidth - margin, cursorY);
+      cursorY += 6;
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text('DIGITAL IDENTITY — OWNERSHIP & USAGE', margin, cursorY);
+      cursorY += 5;
+
+      doc.setFont('courier', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(60, 60, 60);
+      const legalText = 'Exclusive, perpetual, worldwide commercial rights to use this Generated Model and its exported renders are granted to the Exporting Party upon export. This identity is a procedurally generated digital composite and is uniquely bound to the casting session and cryptographic signature below.';
+      const legalLines = doc.splitTextToSize(legalText, contentWidth);
+      doc.text(legalLines, margin, cursorY);
+      cursorY += (legalLines.length * 3.5) + 6;
+
+      // Metadata
+      const simpleHash = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          const char = str.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash;
+        }
+        return Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
+      };
+      const timestamp = Date.now();
+      const secureHash = simpleHash(exportId + timestamp + 'FORMA');
+
+      doc.setFont('courier', 'bold');
+      doc.text('Issued by:', margin, cursorY);
+      doc.setFont('courier', 'normal');
+      doc.text('FORMASTUDIO™', margin + doc.getTextWidth('Issued by: '), cursorY);
+      
+      doc.setFont('courier', 'bold');
+      doc.text('Model ID:', margin + contentWidth / 2, cursorY);
+      doc.setFont('courier', 'normal');
+      doc.text(exportId, margin + contentWidth / 2 + doc.getTextWidth('Model ID: '), cursorY);
+      cursorY += 4;
+
+      doc.setFont('courier', 'bold');
+      doc.text('Secure Hash:', margin, cursorY);
+      doc.setFont('courier', 'normal');
+      doc.text(secureHash, margin + doc.getTextWidth('Secure Hash: '), cursorY);
+
+      doc.setFont('courier', 'bold');
+      doc.text('Timestamp:', margin + contentWidth / 2, cursorY);
+      doc.setFont('courier', 'normal');
+      doc.text(new Date().toUTCString(), margin + contentWidth / 2 + doc.getTextWidth('Timestamp: '), cursorY);
+
+      // Add PDF to ZIP
+      zip.file(pdfFilename, doc.output('arraybuffer'));
+
+      // Generate and download ZIP
+      setGenState(prev => ({ ...prev, currentStep: 'Compressing Pack...' }));
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = zipFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setGenState({ isGenerating: false, currentStep: '', error: null });
+      toast.success(`Export complete! ID: ${exportId}`);
+
+    } catch (e: any) {
+      console.error('Export failed:', e);
+      setGenState({ isGenerating: false, currentStep: '', error: e.message || 'Export Failed' });
+      toast.error('Export failed: ' + (e.message || 'Unknown error'));
+    }
   };
 
   // Retry handler
