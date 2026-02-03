@@ -467,13 +467,38 @@ export default function Waitlist() {
             </div>
 
             <div className="mt-auto">
-              <a 
-                href="#waitlist" 
-                className="inline-flex items-center gap-3 px-8 py-4 bg-sky-500 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-sky-500/30 hover:bg-sky-600 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-300"
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (email) {
+                    joinWaitlist.mutate({ email, name: email.split('@')[0] });
+                  }
+                }}
+                className="flex flex-col gap-3 w-full max-w-xs"
               >
-                Get Early Access
-                <ArrowRight className="w-4 h-4" />
-              </a>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="w-full px-4 py-3 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                />
+                <button 
+                  type="submit"
+                  disabled={joinWaitlist.isPending || !email}
+                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-sky-500 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-sky-500/30 hover:bg-sky-600 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+              {submitted && (
+                <p className="mt-3 text-sm text-sky-600 font-medium">You're on the list! Position #{position}</p>
+              )}
+              {alreadyRegistered && (
+                <p className="mt-3 text-sm text-amber-600 font-medium">Already registered! Position #{position}</p>
+              )}
             </div>
           </div>
 
