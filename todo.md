@@ -286,3 +286,46 @@
 ### Testing
 - [x] Profile management unit tests (16 tests)
 - [x] All 49 tests passing
+
+## Phase 4: Casting Studio UI
+
+### Core Casting Studio Page
+- [x] Create CastingStudio page component at /casting-studio route
+- [x] Implement two-panel layout (ControlPanel left, ImageViewer right)
+- [x] Add dark theme styling matching dashboard aesthetic
+
+### Control Panel (Model Creation Wizard)
+- [x] Brand & Style section (6 brand tones, 6 moods)
+- [x] Gender selector (Female, Male, Non-Binary)
+- [x] Age range dropdown
+- [x] Ethnicity chip selector (8 options)
+- [x] Skin tone visual picker (7 colors)
+- [x] Eye color visual grid selector (7 colors)
+- [x] Hair section (10 colors, 5 lengths, 12 styles)
+- [x] Face Details section (features text, reference description)
+- [x] Collapsible sections with expand/collapse animation
+- [x] Form validation for required fields
+
+### Image Viewer & Generation
+- [x] Main image display with loading states
+- [x] Multi-view tabs (Front, Full Body, Side, Back)
+- [x] Undo/Redo history navigation
+- [ ] Iteration/refinement text input with AI enhancement
+- [ ] Reference image upload with drag-and-drop
+
+### Backend Integration
+- [x] Connect to models.create for master prompt generation
+- [x] Connect to generation.castingImage for headshot
+- [x] Connect to generation.fullBody for full body view
+- [x] Connect to generation.multiView for side/back views
+- [x] Integrate points deduction on generation
+- [x] Save generated models to database
+- [x] Display points balance and cost per generation
+
+### Polish & UX
+- [x] Loading animations and progress indicators
+- [x] Error handling with toast notifications
+- [x] Mobile responsive design with collapsible panel
+- [x] All 65 tests passing (including 16 Casting Studio tests)
+- [ ] Mobile-responsive layout
+- [ ] Keyboard shortcuts for common actions

@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Waitlist from "./pages/Waitlist";
+import CastingStudio from "./pages/CastingStudio";
 
 function Router() {
   return (
@@ -16,7 +17,7 @@ function Router() {
       <Route path="/" component={Waitlist} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/casting-studio" component={ComingSoon} />
+      <Route path="/casting-studio" component={CastingStudio} />
       <Route path="/outfit-studio" component={ComingSoon} />
       <Route path="/photo-studio" component={ComingSoon} />
       <Route path="/404" component={NotFound} />
