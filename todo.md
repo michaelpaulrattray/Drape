@@ -428,3 +428,41 @@
 - [x] Added custom-scrollbar CSS class for dark theme scrollbar styling
 - [x] Ensure all options (color wheel, hair, face details) are accessible
 - [x] Verified scrolling works - all sections now accessible
+
+
+## Comprehensive Casting Studio Audit (COMPLETED)
+
+### Phase 1: CSS/Styling Verification
+- [x] Verify studio-* color classes exist in index.css
+- [x] Verify animation classes (animate-in, fade-in, slide-in-from-top-2)
+- [x] Verify custom-scrollbar styling
+- [x] Fix any missing Tailwind utilities
+
+### Phase 2: ControlPanel Options Verification
+- [x] Verify all dropdown options match reference exactly
+- [x] Verify ethnicity count (10 options: Slavic, Nordic, East Asian, South Asian, Afro-Caribbean, West African, Latino, Middle Eastern, Mixed, Polynesian)
+- [x] Verify hair families are gender-specific (Female vs Male options)
+- [x] Verify advanced face options (jawline, cheekbones, cheeks, eye shape, nose, lips)
+- [x] Verify advanced hair options (flyaways, hairline, tuck, fade)
+- [x] Verify Recast button only shows when hasCurrentAsset
+- [x] Added Facial Hair dropdown for Male gender
+
+### Phase 3: ImageViewer Components Verification
+- [x] Verify reference node positioning (top-24 right-12, w-64 h-96)
+- [x] Verify connector line positioning and animation
+- [x] Verify empty state with progress bar and required fields display
+- [x] Verify view thumbnail layout and interactions
+- [x] Added ULTRA (4K) resolution option
+
+### Phase 4: State & Workflow Verification
+- [x] Verify stage progression logic (Headshot → Body → Sheet → Export)
+- [x] Verify downstream clearing when iterating upstream views
+- [x] Verify form validation (7 required fields)
+- [x] Verify retry mechanism stores and retries failed actions
+
+### Phase 5: Final Testing
+- [x] Test full generation flow end-to-end
+- [x] Test all UI interactions
+- [x] Test responsive behavior (sidebar scrolling fixed)
+- [x] Test error handling and retry
+- [x] All 65 tests passing

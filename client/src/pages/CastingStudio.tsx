@@ -69,6 +69,7 @@ type EditTool = 'none' | 'surgical' | 'eraser';
 enum ImageResolution {
   STD = '1K',
   HIGH = '2K',
+  ULTRA = '4K',
 }
 
 // ============ Constants ============
@@ -358,7 +359,7 @@ const ExportModal = ({
             <div className="space-y-2">
               <label className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">Output Quality</label>
               <div className="grid grid-cols-2 gap-2">
-                {[ImageResolution.STD, ImageResolution.HIGH].map(res => (
+                {[ImageResolution.STD, ImageResolution.HIGH, ImageResolution.ULTRA].map(res => (
                   <button
                     key={res}
                     onClick={() => setExportRes(res)}
@@ -1681,7 +1682,14 @@ export default function CastingStudio() {
                 <SelectControl label="Texture" options={HAIR_TEXTURES} value={prefs.hairTexture || ""} onChange={v => updatePref('hairTexture', v)} />
                 <SelectControl label="Fringe" options={HAIR_FRINGES} value={prefs.hairFringe || ""} onChange={v => updatePref('hairFringe', v)} />
                 <SelectControl label="Parting" options={HAIR_PARTINGS} value={prefs.hairParting || ""} onChange={v => updatePref('hairParting', v)} />
-                <SelectControl label="Volume" options={HAIR_VOLUMES} value={prefs.hairVolume || ""} onChange={v => updatePref('hairVolume', v)} />
+              </div>
+              
+              {/* Volume & Facial Hair (Male Only) */}
+              <div className={prefs.gender === 'Male' ? "grid grid-cols-2 gap-4" : ""}>
+                <SelectControl label="Volume & Shape" options={HAIR_VOLUMES} value={prefs.hairVolume || ""} onChange={v => updatePref('hairVolume', v)} />
+                {prefs.gender === 'Male' && (
+                  <SelectControl label="Facial Hair" options={CHAR_OPTIONS.facialHair} value={prefs.facialHair || ""} onChange={v => updatePref('facialHair', v)} />
+                )}
               </div>
 
               {/* Advanced Hair Toggle */}
@@ -1767,7 +1775,7 @@ export default function CastingStudio() {
 
         {/* Resolution Selector */}
         <div className="absolute top-4 right-4 z-40 flex bg-black/50 border border-white/10 rounded-full p-1 backdrop-blur-sm">
-          {[ImageResolution.STD, ImageResolution.HIGH].map(res => (
+          {[ImageResolution.STD, ImageResolution.HIGH, ImageResolution.ULTRA].map(res => (
             <button
               key={res}
               onClick={() => setResolution(res)}
@@ -1780,7 +1788,7 @@ export default function CastingStudio() {
 
         {/* Reference Node */}
         {currentAssets.length > 0 && (
-          <div className="absolute top-24 right-8 z-40 hidden xl:block">
+          <div className="absolute top-24 right-12 z-40 hidden xl:block">
             <ReferenceNode
               image={prefs.referenceImage}
               onSet={(img) => updatePref('referenceImage', img)}

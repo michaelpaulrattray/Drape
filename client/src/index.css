@@ -127,6 +127,69 @@
   scrollbar-color: #444 #1a1a1a;
 }
 
+/* Studio Color Palette for Casting Studio */
+.bg-studio-900 { background-color: #0a0a0a; }
+.bg-studio-800 { background-color: #1a1a1a; }
+.bg-studio-700 { background-color: #2a2a2a; }
+.bg-studio-600 { background-color: #3a3a3a; }
+.bg-studio-500 { background-color: #525252; }
+.bg-studio-400 { background-color: #6b6b6b; }
+.bg-studio-300 { background-color: #a3a3a3; }
+.bg-studio-200 { background-color: #d4d4d4; }
+
+.text-studio-900 { color: #0a0a0a; }
+.text-studio-800 { color: #1a1a1a; }
+.text-studio-700 { color: #2a2a2a; }
+.text-studio-600 { color: #3a3a3a; }
+.text-studio-500 { color: #525252; }
+.text-studio-400 { color: #6b6b6b; }
+.text-studio-300 { color: #a3a3a3; }
+.text-studio-200 { color: #d4d4d4; }
+
+.border-studio-900 { border-color: #0a0a0a; }
+.border-studio-800 { border-color: #1a1a1a; }
+.border-studio-700 { border-color: #2a2a2a; }
+.border-studio-600 { border-color: #3a3a3a; }
+.border-studio-500 { border-color: #525252; }
+.border-studio-400 { border-color: #6b6b6b; }
+.border-studio-300 { border-color: #a3a3a3; }
+.border-studio-200 { border-color: #d4d4d4; }
+
+.ring-studio-800 { --tw-ring-color: #1a1a1a; }
+.ring-studio-700 { --tw-ring-color: #2a2a2a; }
+.ring-studio-600 { --tw-ring-color: #3a3a3a; }
+.ring-studio-500 { --tw-ring-color: #525252; }
+
+.hover\:bg-studio-900:hover { background-color: #0a0a0a; }
+.hover\:bg-studio-800:hover { background-color: #1a1a1a; }
+.hover\:bg-studio-700:hover { background-color: #2a2a2a; }
+.hover\:bg-studio-600:hover { background-color: #3a3a3a; }
+.hover\:bg-studio-500:hover { background-color: #525252; }
+.hover\:bg-studio-400:hover { background-color: #6b6b6b; }
+.hover\:bg-studio-300:hover { background-color: #a3a3a3; }
+.hover\:bg-studio-200:hover { background-color: #d4d4d4; }
+
+.hover\:text-studio-500:hover { color: #525252; }
+.hover\:text-studio-400:hover { color: #6b6b6b; }
+.hover\:text-studio-300:hover { color: #a3a3a3; }
+.hover\:text-studio-200:hover { color: #d4d4d4; }
+
+.hover\:border-studio-700:hover { border-color: #2a2a2a; }
+.hover\:border-studio-600:hover { border-color: #3a3a3a; }
+.hover\:border-studio-500:hover { border-color: #525252; }
+.hover\:border-studio-400:hover { border-color: #6b6b6b; }
+
+.group-hover\:text-studio-500:hover { color: #525252; }
+.group-hover\:text-studio-400:hover { color: #6b6b6b; }
+.group-hover\:text-studio-300:hover { color: #a3a3a3; }
+
+.group-hover\:border-studio-500:hover { border-color: #525252; }
+
+/* Shadow utilities for studio */
+.shadow-studio { box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+.shadow-studio-lg { box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+.shadow-studio-glow { box-shadow: 0 0 25px rgba(255,255,255,0.3); }
+
 /* Grid lines background */
 .grid-lines {
   background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
