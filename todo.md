@@ -189,3 +189,8 @@
 - [x] Keep some elements sharp/square for contrast
 - [x] Add gradient borders with border-gradient style
 - [x] Improve backdrop-blur and glass effects
+
+## Dashboard Default Images
+- [x] Add default cover/banner image for users without custom upload
+- [x] Add default profile picture/avatar for users without custom upload
+- [x] Ensure professional appearance for new users

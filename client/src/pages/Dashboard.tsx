@@ -33,8 +33,14 @@ export default function Dashboard() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  // Default images for users
+  const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=400&fit=crop";
+  const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=face";
 
   // Get points data
   const { data: pointsData } = trpc.points.getBalance.useQuery(
@@ -223,8 +229,12 @@ export default function Dashboard() {
         {/* User Profile */}
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10 backdrop-blur-sm">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neutral-600 to-neutral-800 flex items-center justify-center text-white font-mono text-sm border border-white/10">
-              {user?.name?.charAt(0) || "U"}
+            <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden">
+              <img 
+                src={profileImage || DEFAULT_AVATAR}
+                alt={user?.name || "Profile"}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user?.name || "User"}</p>
@@ -251,7 +261,7 @@ export default function Dashboard() {
             <div 
               className="absolute inset-0 bg-cover bg-center"
               style={{ 
-                backgroundImage: 'url(https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=400&fit=crop)',
+                backgroundImage: `url(${bannerImage || DEFAULT_BANNER})`,
                 filter: 'grayscale(100%) brightness(0.3)'
               }}
             />
@@ -272,7 +282,13 @@ export default function Dashboard() {
               ref={bannerInputRef}
               className="hidden"
               accept="image/*"
-              onChange={(e) => console.log("Banner file:", e.target.files?.[0])}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const url = URL.createObjectURL(file);
+                  setBannerImage(url);
+                }
+              }}
             />
             <button 
               onClick={() => bannerInputRef.current?.click()}
@@ -288,15 +304,25 @@ export default function Dashboard() {
             <div className="flex items-end gap-6">
               {/* Profile Avatar */}
               <div className="relative group/avatar">
-                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-neutral-700 via-neutral-800 to-neutral-900 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-[#0A0A0A] border border-white/10 relative overflow-hidden">
-                  <span className="relative z-10 font-mono">{user?.name?.charAt(0) || "F"}</span>
+                <div className="w-28 h-28 rounded-full ring-4 ring-[#0A0A0A] border border-white/10 relative overflow-hidden">
+                  <img 
+                    src={profileImage || DEFAULT_AVATAR}
+                    alt={user?.name || "Profile"}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <input
                   type="file"
                   ref={profilePicInputRef}
                   className="hidden"
                   accept="image/*"
-                  onChange={(e) => console.log("Profile pic file:", e.target.files?.[0])}
+                  onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const url = URL.createObjectURL(file);
+                    setProfileImage(url);
+                  }
+                }}
                 />
                 <button 
                   onClick={() => profilePicInputRef.current?.click()}
