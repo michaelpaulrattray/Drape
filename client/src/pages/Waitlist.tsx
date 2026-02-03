@@ -399,30 +399,21 @@ export default function Waitlist() {
         </svg>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex md:px-12 z-50 border-b px-6 py-6 relative items-center justify-between border-black/5 bg-zinc-50/80 backdrop-blur-md">
-        <a href="#" className="inline-flex items-center gap-2 font-bold tracking-tighter text-2xl font-geist">
-          <span className="w-6 h-6 rounded flex items-center justify-center text-sm text-white bg-zinc-900">F</span>
-          FORMA
+      {/* Navigation - Inline header with mix-blend-difference */}
+      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center mix-blend-difference text-white pointer-events-none">
+        <a href="#" className="group flex items-center gap-1.5 text-2xl md:text-3xl tracking-tight font-normal pointer-events-auto font-geist">
+          <span className="border-b border-white pb-0.5 group-hover:border-transparent transition-colors duration-300">forma</span>
+          <span>studio</span>
         </a>
 
-        <div className="relative">
-          <button 
-            onClick={() => setNavOpen(!navOpen)} 
-            className="group flex items-center gap-3 px-5 py-2 border transition duration-300 bg-transparent border-black/10 hover:bg-black/5"
+        {/* Desktop Menu */}
+        <div className="flex items-center pointer-events-auto">
+          <a 
+            href="#waitlist" 
+            className="px-5 py-2 rounded-full border border-white/20 hover:bg-white hover:text-black transition-all duration-300 text-sm font-medium uppercase tracking-wide backdrop-blur-sm"
           >
-            <Menu className="w-5 h-5 stroke-[1.5] text-black" />
-            <span className="text-sm font-medium tracking-wide">Studios</span>
-          </button>
-          
-          {navOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 border shadow-2xl py-2 z-50 backdrop-blur-xl bg-white border-black/5">
-              <a href="#" className="block px-6 py-3 text-sm font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-sky-600">Casting Studio</a>
-              <a href="#" className="block px-6 py-3 text-sm font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-sky-600">Outfit Studio</a>
-              <a href="#" className="block px-6 py-3 text-sm font-medium transition-colors tracking-wide border-b text-black/70 hover:bg-black/5 border-black/5 hover:text-sky-600">Photo Studio</a>
-              <a href="#waitlist" className="block px-6 py-3 text-sm font-medium transition-colors tracking-wide text-black/70 hover:bg-black/5 hover:text-sky-600">Get Early Access</a>
-            </div>
-          )}
+            Join Waitlist
+          </a>
         </div>
       </nav>
 
@@ -474,14 +465,13 @@ export default function Waitlist() {
               </div>
             </div>
 
-            <div className="flex gap-12 mt-auto text-xs font-medium tracking-wide text-zinc-600">
-              <a href="#studios" className="flex items-center gap-2 transition-colors hover:text-black">
-                View Studios
-                <ChevronRight className="w-3 h-3" />
-              </a>
-              <a href="#waitlist" className="flex items-center gap-2 transition-colors hover:text-black">
-                Get Access
-                <ChevronRight className="w-3 h-3" />
+            <div className="mt-auto">
+              <a 
+                href="#waitlist" 
+                className="inline-flex items-center gap-3 px-8 py-4 bg-sky-500 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-sky-500/30 hover:bg-sky-600 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-300"
+              >
+                Get Early Access
+                <ArrowRight className="w-4 h-4" />
               </a>
             </div>
           </div>

@@ -4,7 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+// Home page removed - users go directly to dashboard after login
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Waitlist from "./pages/Waitlist";
@@ -14,13 +14,11 @@ function Router() {
     <Switch>
       {/* Waitlist is the main landing page during pre-launch */}
       <Route path="/" component={Waitlist} />
-      <Route path="/app" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/casting-studio" component={ComingSoon} />
       <Route path="/outfit-studio" component={ComingSoon} />
       <Route path="/photo-studio" component={ComingSoon} />
-      <Route path="/settings" component={ComingSoon} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

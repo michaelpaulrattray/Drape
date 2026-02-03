@@ -108,3 +108,12 @@
 - [x] Analyze how other sections frame content with gridlines
 - [x] Design gridlines that stop/frame around content elements in Services Marquee
 - [x] Create visual hierarchy with intentional grid placement
+
+## Header, Hero & Page Cleanup
+- [x] Redesign header to be inline like Spark Labs (mix-blend-difference, logo left, Join Waitlist pill right)
+- [x] Remove hamburger menu and dropdown
+- [x] Remove "View Studios" button from hero section
+- [x] Make "Get Access" button more prominent in hero
+- [x] Remove /app route (users go directly to dashboard)
+- [x] Remove /settings page
+- [x] Update OAuth callback to redirect to /dashboard
