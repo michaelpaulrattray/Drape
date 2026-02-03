@@ -972,60 +972,135 @@ export default function Waitlist() {
           </div>
         </section>
 
-        {/* Waitlist Section */}
-        <section id="waitlist" className="py-24 px-6 md:px-12 border-b border-black/10 bg-white">
-          <div className="max-w-2xl mx-auto text-center">
-            <p className="text-[10px] uppercase flex items-center justify-center gap-3 font-bold text-sky-600 tracking-[0.2em] mb-6">
-              <span className="w-2 h-2 rounded-full bg-sky-600" />
-              Early Access
-            </p>
-            <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-zinc-900 font-geist">
-              Join the Waitlist
-            </h2>
-            <p className="text-lg text-zinc-500 mb-12 max-w-md mx-auto">
-              Be among the first to experience AI-powered fashion photography. 
-              Limited spots available for our beta launch.
-            </p>
-
-            {!submitted && !alreadyRegistered ? (
-              <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto">
-                <Input
-                  type="text"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="border rounded px-4 py-3 text-sm placeholder-zinc-400 focus:outline-none focus:bg-white w-full transition-all bg-zinc-50 border-black/10 text-black focus:border-sky-500"
-                  required
-                />
-                <Input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border rounded px-4 py-3 text-sm placeholder-zinc-400 focus:outline-none focus:bg-white w-full transition-all bg-zinc-50 border-black/10 text-black focus:border-sky-500"
-                  required
-                />
-                <Button 
-                  type="submit" 
-                  disabled={joinWaitlist.isPending}
-                  className="w-full font-semibold text-sm px-6 py-3 rounded transition-colors text-white bg-zinc-900 hover:bg-zinc-800"
-                >
-                  {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
-                </Button>
-              </form>
-            ) : (
-              <div className="text-center p-8 border border-sky-500/20 bg-sky-500/5 rounded">
-                <div className="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center mx-auto mb-4">
-                  <Check className="w-6 h-6 text-white" />
+        {/* Waitlist Section - Redesigned */}
+        <section id="waitlist" className="border-b border-black/10">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            {/* Left: Visual Side */}
+            <div className="relative min-h-[500px] lg:min-h-[700px] overflow-hidden bg-zinc-900">
+              <img 
+                src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2670&auto=format&fit=crop" 
+                alt="Fashion model" 
+                className="w-full h-full object-cover opacity-60 grayscale"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-zinc-900/80 via-zinc-900/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
+              
+              {/* Floating Stats */}
+              <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 z-10">
+                <div className="flex items-end gap-8">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Beta Users</p>
+                    <span className="text-5xl md:text-6xl font-bold tracking-tighter text-white font-geist">847</span>
+                  </div>
+                  <div className="pb-2">
+                    <p className="text-[10px] uppercase tracking-widest text-white/50 mb-1">Launch</p>
+                    <span className="text-xl font-semibold text-white">Q1 2026</span>
+                  </div>
                 </div>
-                <h3 className="text-2xl font-semibold mb-2 text-zinc-900">
-                  {alreadyRegistered ? "You're already on the list!" : "You're on the list!"}
-                </h3>
-                <p className="text-zinc-500">
-                  {position && `You're #${position} in line. We'll be in touch soon.`}
-                </p>
               </div>
-            )}
+              
+              {/* Corner Accent */}
+              <div className="absolute top-8 left-8 md:top-12 md:left-12">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-sky-500 animate-pulse" />
+                  <span className="text-[10px] uppercase tracking-widest text-white/70">Limited Access</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Right: Form Side */}
+            <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-zinc-50 border-l border-black/10">
+              <div className="max-w-md">
+                {/* Section Label */}
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="h-px flex-1 bg-black/10" />
+                  <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-sky-600">Early Access</span>
+                  <div className="h-px flex-1 bg-black/10" />
+                </div>
+                
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-4 text-zinc-900 font-geist">
+                  Reserve Your
+                  <span className="block text-black/30">Studio Access</span>
+                </h2>
+                
+                <p className="text-base text-zinc-500 mb-10 leading-relaxed">
+                  Join the waitlist for exclusive early access to AI-powered fashion photography. 
+                  Be among the first to transform your creative workflow.
+                </p>
+
+                {!submitted && !alreadyRegistered ? (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest text-black/40 mb-2 block">Full Name</label>
+                        <Input
+                          type="text"
+                          placeholder="Enter your name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-zinc-300 focus:outline-none bg-transparent w-full transition-all text-black border-black/10 focus:border-sky-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest text-black/40 mb-2 block">Email Address</label>
+                        <Input
+                          type="email"
+                          placeholder="you@company.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-zinc-300 focus:outline-none bg-transparent w-full transition-all text-black border-black/10 focus:border-sky-500"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="pt-6">
+                      <Button 
+                        type="submit" 
+                        disabled={joinWaitlist.isPending}
+                        className="group w-full font-semibold text-sm px-8 py-4 transition-all duration-300 text-white bg-zinc-900 hover:bg-sky-600 flex items-center justify-center gap-3"
+                      >
+                        {joinWaitlist.isPending ? "Joining..." : (
+                          <>
+                            Get Early Access
+                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    <p className="text-[11px] text-black/30 text-center pt-4">
+                      No spam, ever. Unsubscribe anytime.
+                    </p>
+                  </form>
+                ) : (
+                  <div className="p-8 border-2 border-sky-500/30 bg-sky-500/5">
+                    <div className="w-16 h-16 border-2 border-sky-500 flex items-center justify-center mb-6">
+                      <Check className="w-8 h-8 text-sky-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold tracking-tight mb-2 text-zinc-900 font-geist">
+                      {alreadyRegistered ? "Already Registered" : "You're In"}
+                    </h3>
+                    <p className="text-zinc-500">
+                      {position ? `Position #${position} in queue. We'll notify you soon.` : "We'll be in touch soon."}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Trust Indicators */}
+                <div className="flex items-center gap-6 mt-10 pt-8 border-t border-black/10">
+                  <div className="flex -space-x-2">
+                    <div className="w-8 h-8 rounded-full bg-zinc-300 border-2 border-zinc-50" />
+                    <div className="w-8 h-8 rounded-full bg-zinc-400 border-2 border-zinc-50" />
+                    <div className="w-8 h-8 rounded-full bg-zinc-500 border-2 border-zinc-50" />
+                  </div>
+                  <p className="text-xs text-black/40">
+                    <span className="font-semibold text-black/60">847+ creators</span> already waiting
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
