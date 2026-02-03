@@ -831,3 +831,13 @@
 - [x] Implemented: Frontend sends mask-only PNG (transparent with red strokes)
 - [x] Server composites mask with base image using sharp library
 - [x] No CORS issues since server fetches the base image directly
+
+
+## Responsiveness & Loading State Improvements
+- [x] Add immediate button feedback (disable + spinner on click)
+- [x] Implement optimistic UI updates for faster perceived response
+- [x] Add progress indicators for long operations (generation, iteration)
+- [x] Add skeleton loaders for image placeholders during generation
+- [x] Reduce perceived delay with instant visual feedback (animate-in fade-in)
+- [x] Add subtle animations/transitions for state changes
+- [x] Show estimated time remaining for generation operations (ElapsedTimeDisplay)

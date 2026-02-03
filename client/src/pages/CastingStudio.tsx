@@ -64,6 +64,9 @@ interface GenerationState {
   isGenerating: boolean;
   currentStep: string;
   error: string | null;
+  progress?: number; // 0-100 percentage
+  startTime?: number; // timestamp when generation started
+  estimatedDuration?: number; // estimated duration in ms
 }
 
 type EditTool = 'none' | 'surgical' | 'eraser';
@@ -806,6 +809,38 @@ function ReferenceNode({
   );
 }
 
+// ============ Elapsed Time Display Component ============
+
+function ElapsedTimeDisplay({ startTime, estimatedDuration }: { startTime: number; estimatedDuration?: number }) {
+  const [elapsed, setElapsed] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Date.now() - startTime);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [startTime]);
+  
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes > 0) {
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    return `${seconds}s`;
+  };
+  
+  return (
+    <div className="text-[10px] font-mono text-studio-400 uppercase tracking-widest">
+      <span>{formatTime(elapsed)}</span>
+      {estimatedDuration && elapsed < estimatedDuration && (
+        <span className="text-studio-600"> / ~{formatTime(estimatedDuration)}</span>
+      )}
+    </div>
+  );
+}
+
 // ============ Main Component ============
 
 export default function CastingStudio() {
@@ -1226,7 +1261,7 @@ export default function CastingStudio() {
       return;
     }
 
-    setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null });
+    setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 15000 });
 
     try {
       // Pass ALL preferences directly to backend - no conversion/stripping
@@ -1283,7 +1318,7 @@ export default function CastingStudio() {
       // Debug: Log preferences being sent
       console.log('[CastingStudio] Sending preferences to backend:', JSON.stringify(backendPrefs, null, 2));
 
-      setGenState((prev) => ({ ...prev, currentStep: "Generating casting specification..." }));
+      setGenState((prev) => ({ ...prev, currentStep: "Generating casting specification...", progress: 20 }));
       const modelResult = await createModelMutation.mutateAsync({
         preferences: backendPrefs,
         name: modelName || undefined,
@@ -1293,7 +1328,7 @@ export default function CastingStudio() {
       setCurrentMasterPrompt(modelResult.masterPrompt || "");
       setCurrentTechnicalSchema(modelResult.technicalSchema || null);
 
-      setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot..." }));
+      setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot...", progress: 50 }));
       const imageResult = await generateCastingMutation.mutateAsync({
         modelId: modelResult.modelId!,
         referenceImage: prefs.referenceImage,
@@ -1339,7 +1374,7 @@ export default function CastingStudio() {
           return;
         }
 
-        setGenState({ isGenerating: true, currentStep: "Generating Full Body View...", error: null });
+        setGenState({ isGenerating: true, currentStep: "Generating Full Body View...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 12000 });
 
         try {
           const result = await generateFullBodyMutation.mutateAsync({ modelId: currentModelId });
@@ -1384,7 +1419,7 @@ export default function CastingStudio() {
       }
 
       const viewLabel = viewType === 'walk' ? 'walking' : viewType;
-      setGenState({ isGenerating: true, currentStep: `Generating ${viewLabel} view...`, error: null });
+      setGenState({ isGenerating: true, currentStep: `Generating ${viewLabel} view...`, error: null, progress: 0, startTime: Date.now(), estimatedDuration: 10000 });
 
       try {
         // Map viewType to backend expected value
@@ -1542,7 +1577,7 @@ export default function CastingStudio() {
       return;
     }
 
-    setGenState({ isGenerating: true, currentStep: maskBase64 ? "Applying surgical edit..." : "Iterating...", error: null });
+    setGenState({ isGenerating: true, currentStep: maskBase64 ? "Applying surgical edit..." : "Iterating...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 8000 });
 
     try {
       // Find the asset ID for the current view
@@ -1631,7 +1666,7 @@ export default function CastingStudio() {
     }
 
     setShowExportModal(false);
-    setGenState({ isGenerating: true, currentStep: `Minting Model Identity...`, error: null });
+    setGenState({ isGenerating: true, currentStep: `Minting Model Identity...`, error: null, progress: 0, startTime: Date.now(), estimatedDuration: 5000 });
 
     try {
       // Mint the model on export - this assigns the agencyId and locks the identity
@@ -1642,7 +1677,7 @@ export default function CastingStudio() {
         throw new Error('Failed to mint model - no agencyId returned');
       }
 
-      setGenState({ isGenerating: true, currentStep: `Processing Export Pack (${exportRes})...`, error: null });
+      setGenState({ isGenerating: true, currentStep: `Processing Export Pack (${exportRes})...`, error: null, progress: 30, startTime: genState.startTime, estimatedDuration: 20000 });
 
       const safeName = characterName ? characterName.trim().toUpperCase() : `MODEL ID ${exportId}`;
       const cleanId = exportId.replace(/[^a-zA-Z0-9]/g, '_');
@@ -2661,16 +2696,44 @@ export default function CastingStudio() {
           <div className="w-full h-full flex flex-col relative z-10">
             {/* Loading Overlay */}
             {genState.isGenerating && (
-              <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center space-y-6">
-                <div className="relative w-24 h-24">
-                  <div className="absolute inset-0 border border-studio-800 rounded-full"></div>
-                  <div className="absolute inset-0 border-t border-white rounded-full animate-spin"></div>
+              <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-200">
+                {/* Animated spinner with progress ring */}
+                <div className="relative w-28 h-28">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    {/* Background ring */}
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgb(38,38,38)" strokeWidth="2" />
+                    {/* Progress ring */}
+                    <circle 
+                      cx="50" cy="50" r="45" fill="none" 
+                      stroke="white" strokeWidth="2" 
+                      strokeLinecap="round"
+                      strokeDasharray={`${(genState.progress || 0) * 2.83} 283`}
+                      className="transition-all duration-500 ease-out"
+                    />
+                  </svg>
+                  {/* Inner spinner for activity indication */}
+                  <div className="absolute inset-4 border-t-2 border-white/30 rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
+                  {/* Percentage display */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-mono text-white font-bold">
+                      {genState.progress ? `${Math.round(genState.progress)}%` : ''}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-center space-y-2">
-                  <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em] animate-pulse">Processing</h3>
-                  <p className="text-[10px] font-mono text-studio-500 uppercase tracking-widest">
-                    {genState.currentStep || 'Initializing...'}
-                  </p>
+                <div className="text-center space-y-3">
+                  <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em]">
+                    {genState.currentStep || 'Processing...'}
+                  </h3>
+                  {/* Elapsed time indicator */}
+                  {genState.startTime && (
+                    <ElapsedTimeDisplay startTime={genState.startTime} estimatedDuration={genState.estimatedDuration} />
+                  )}
+                  {/* Pulsing dots for activity */}
+                  <div className="flex justify-center space-x-1">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '150ms'}}></div>
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '300ms'}}></div>
+                  </div>
                 </div>
               </div>
             )}
@@ -3025,16 +3088,38 @@ export default function CastingStudio() {
             </div>
           </div>
         ) : genState.isGenerating ? (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-6">
-            <div className="relative w-24 h-24">
-              <div className="absolute inset-0 border border-studio-800 rounded-full"></div>
-              <div className="absolute inset-0 border-t border-white rounded-full animate-spin"></div>
+          <div className="flex-1 flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-200">
+            {/* Progress ring with percentage */}
+            <div className="relative w-32 h-32">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="rgb(38,38,38)" strokeWidth="2" />
+                <circle 
+                  cx="50" cy="50" r="45" fill="none" 
+                  stroke="white" strokeWidth="2" 
+                  strokeLinecap="round"
+                  strokeDasharray={`${(genState.progress || 0) * 2.83} 283`}
+                  className="transition-all duration-500 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-4 border-t-2 border-white/30 rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xl font-mono text-white font-bold">
+                  {genState.progress ? `${Math.round(genState.progress)}%` : ''}
+                </span>
+              </div>
             </div>
-            <div className="text-center space-y-2">
-              <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em] animate-pulse">Processing</h3>
-              <p className="text-[10px] font-mono text-studio-500 uppercase tracking-widest">
-                {genState.currentStep || 'Initializing...'}
-              </p>
+            <div className="text-center space-y-3">
+              <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em]">
+                {genState.currentStep || 'Processing...'}
+              </h3>
+              {genState.startTime && (
+                <ElapsedTimeDisplay startTime={genState.startTime} estimatedDuration={genState.estimatedDuration} />
+              )}
+              <div className="flex justify-center space-x-1">
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '150ms'}}></div>
+                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '300ms'}}></div>
+              </div>
             </div>
           </div>
         ) : (
