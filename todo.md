@@ -223,3 +223,7 @@
 - [x] Integrate Forma Studio logo throughout website
 - [x] Add automatic white color inversion for dark mode (dashboard)
 - [x] Replace Trusted By section icons with proper SVG files (Instagram, Nike, Meta, Facebook, Shopify, Google Chrome)
+
+## Accent Color Updates
+- [x] Change hero "Get Early Access" button from blue to black
+- [x] Replace all blue accent colors (sky-500, sky-600) with orange accent color from dashboard

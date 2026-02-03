@@ -232,18 +232,18 @@ function ServicesMarqueeSection() {
         <div className="absolute left-[75%] bottom-0 h-[100px] w-px bg-black/[0.06]" />
         
         {/* Corner accent dots */}
-        <div className="absolute left-[25%] top-[180px] w-1.5 h-1.5 rounded-full bg-sky-500/20 -translate-x-1/2" />
-        <div className="absolute left-[75%] top-[180px] w-1.5 h-1.5 rounded-full bg-sky-500/20 -translate-x-1/2" />
+        <div className="absolute left-[25%] top-[180px] w-1.5 h-1.5 rounded-full bg-orange-500/20 -translate-x-1/2" />
+        <div className="absolute left-[75%] top-[180px] w-1.5 h-1.5 rounded-full bg-orange-500/20 -translate-x-1/2" />
         
         {/* Subtle diagonal accent line */}
-        <div className="absolute right-0 top-0 w-[200px] h-px bg-gradient-to-l from-sky-500/10 to-transparent rotate-45 origin-right hidden lg:block" />
+        <div className="absolute right-0 top-0 w-[200px] h-px bg-gradient-to-l from-orange-500/10 to-transparent rotate-45 origin-right hidden lg:block" />
       </div>
       
       <div className="px-6 md:px-12 mb-16 md:mb-20 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
           <div>
-            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-sky-600 tracking-[0.2em] mb-6">
-              <span className="w-2 h-2 rounded-full bg-sky-600" />
+            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange-600 tracking-[0.2em] mb-6">
+              <span className="w-2 h-2 rounded-full bg-orange-600" />
               Services
             </p>
             <h2 className="text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none text-zinc-900 font-geist">
@@ -279,7 +279,7 @@ function ServicesMarqueeSection() {
           {tripleCards.map((card, index) => (
             <div 
               key={index} 
-              className="group relative w-[85vw] md:w-[420px] h-[520px] overflow-hidden border border-black/10 bg-zinc-50 hover:border-sky-500/50 transition-all duration-500 shrink-0"
+              className="group relative w-[85vw] md:w-[420px] h-[520px] overflow-hidden border border-black/10 bg-zinc-50 hover:border-orange-500/50 transition-all duration-500 shrink-0"
             >
               <div className="absolute inset-0 w-full h-full">
                 <img 
@@ -292,7 +292,7 @@ function ServicesMarqueeSection() {
               </div>
               <div className="absolute inset-0 p-8 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
-                  <span className="font-geist text-6xl md:text-7xl font-bold text-zinc-900/10 group-hover:text-sky-500/20 transition-colors duration-500">{card.number}</span>
+                  <span className="font-geist text-6xl md:text-7xl font-bold text-zinc-900/10 group-hover:text-orange-500/20 transition-colors duration-500">{card.number}</span>
                   <div className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-black/10">
                     <ArrowUpRight className="w-5 h-5 text-zinc-900" />
                   </div>
@@ -306,7 +306,7 @@ function ServicesMarqueeSection() {
                   </p>
                   <div className="mt-4 pt-4 border-t border-black/10 flex items-center justify-between">
                     <span className="text-xs uppercase tracking-[0.15em] text-zinc-400">Learn more</span>
-                    <ArrowRight className="w-4 h-4 text-sky-500" />
+                    <ArrowRight className="w-4 h-4 text-orange-500" />
                   </div>
                 </div>
               </div>
@@ -366,7 +366,7 @@ export default function Waitlist() {
   const currentProject = explorationProjects[projectSlide];
 
   return (
-    <div className="min-h-screen relative text-zinc-900 bg-zinc-50 selection:bg-sky-500 selection:text-white overflow-x-hidden">
+    <div className="min-h-screen relative text-zinc-900 bg-zinc-50 selection:bg-orange-500 selection:text-white overflow-x-hidden">
       {/* Background Grid Lines with Animated Neon */}
       <div className="fixed grid-lines pointer-events-none z-0 inset-0 overflow-hidden">
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
@@ -440,34 +440,34 @@ export default function Waitlist() {
           {/* Left Col */}
           <div className="col-span-1 flex flex-col z-20 h-full relative justify-between">
             <div className="mb-16">
-              <p className="text-[10px] uppercase md:text-xs font-semibold tracking-widest mb-2 text-sky-600">
+              <p className="text-[10px] uppercase md:text-xs font-semibold tracking-widest mb-2 text-orange-600">
                 AI-Powered Creative Studio
               </p>
               <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
                 FORMA
-                <span className="text-sky-500 text-6xl align-top">Studio</span>
+                <span className="text-orange-500 text-6xl align-top">Studio</span>
               </h1>
               <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-black/20" />
             </div>
 
             <div className="grid grid-cols-2 gap-8 mb-12">
               <div className="group cursor-pointer">
-                <Camera className="text-4xl mb-4 group-hover:text-sky-600 transition-colors text-zinc-800 w-9 h-9" />
+                <Camera className="text-4xl mb-4 group-hover:text-orange-600 transition-colors text-zinc-800 w-9 h-9" />
                 <h3 className="text-sm font-semibold leading-tight mb-2">
                   AI Model
                   <br />
                   Generation
                 </h3>
-                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-sky-500" />
+                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange-500" />
               </div>
               <div className="group cursor-pointer">
-                <ImageIcon className="text-4xl mb-4 group-hover:text-sky-600 transition-colors text-zinc-800 w-9 h-9" />
+                <ImageIcon className="text-4xl mb-4 group-hover:text-orange-600 transition-colors text-zinc-800 w-9 h-9" />
                 <h3 className="leading-tight text-sm font-semibold mb-2">
                   Campaign
                   <br />
                   Assets
                 </h3>
-                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-sky-500" />
+                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange-500" />
               </div>
             </div>
 
@@ -487,19 +487,19 @@ export default function Waitlist() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="w-full px-4 py-3 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                  className="w-full px-4 py-3 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
                 />
                 <button 
                   type="submit"
                   disabled={joinWaitlist.isPending || !email}
-                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-sky-500 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-sky-500/30 hover:bg-sky-600 hover:shadow-sky-600/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-zinc-900 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-black/30 hover:bg-black hover:shadow-black/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
               {submitted && (
-                <p className="mt-3 text-sm text-sky-600 font-medium">You're on the list! Position #{position}</p>
+                <p className="mt-3 text-sm text-orange-600 font-medium">You're on the list! Position #{position}</p>
               )}
               {alreadyRegistered && (
                 <p className="mt-3 text-sm text-amber-600 font-medium">Already registered! Position #{position}</p>
@@ -764,19 +764,19 @@ export default function Waitlist() {
 
               <div className="grid grid-cols-3 gap-8 pt-8 border-t border-black/10">
                 <div>
-                  <p className="text-[10px] font-bold uppercase mb-1 text-sky-600">
+                  <p className="text-[10px] font-bold uppercase mb-1 text-orange-600">
                     Turnaround
                   </p>
                   <p className="text-2xl font-bold font-mono">24h</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase mb-1 text-sky-600">
+                  <p className="text-[10px] font-bold uppercase mb-1 text-orange-600">
                     Cost
                   </p>
                   <p className="text-2xl font-bold font-mono">-90%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase mb-1 text-sky-600">
+                  <p className="text-[10px] font-bold uppercase mb-1 text-orange-600">
                     Variations
                   </p>
                   <p className="text-2xl font-bold font-mono">∞</p>
@@ -810,7 +810,7 @@ export default function Waitlist() {
             {/* Floating Data Card */}
             <div className="absolute bottom-8 left-8 right-8 md:left-12 md:right-auto md:w-80 backdrop-blur-xl border p-6 z-10 transition-colors duration-300 bg-white/80 border-black/10 hover:bg-white">
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-black/10">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-sky-600">Current Tech</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">Current Tech</span>
                 <Camera className="w-4 h-4 text-zinc-500" />
               </div>
               <div className="space-y-1">
@@ -828,8 +828,8 @@ export default function Waitlist() {
                 <Sparkles className="w-[120px] h-[120px]" />
               </div>
 
-              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-sky-600 tracking-[0.2em] mb-6">
-                <span className="w-2 h-2 rounded-full bg-sky-600" />
+              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange-600 tracking-[0.2em] mb-6">
+                <span className="w-2 h-2 rounded-full bg-orange-600" />
                 Vision
               </p>
               <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter leading-none mb-6 text-zinc-900 font-geist">
@@ -848,14 +848,14 @@ export default function Waitlist() {
               <a href="#" className="group block md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5 p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-sky-600/50 group-hover:text-sky-600">01</span>
+                    <span className="font-mono text-xs transition-colors text-orange-600/50 group-hover:text-orange-600">01</span>
                     <div className="flex flex-col">
                       <h3 className="group-hover:text-black transition-colors text-lg font-medium text-black/80 tracking-tight">Model Creation</h3>
                       <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-black/40">Define characteristics and generate consistent AI models</span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-sky-600/50 group-hover:bg-sky-600/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-sky-600" />
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange-600/50 group-hover:bg-orange-600/10">
+                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange-600" />
                   </div>
                 </div>
               </a>
@@ -864,14 +864,14 @@ export default function Waitlist() {
               <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-sky-600/50 group-hover:text-sky-600">02</span>
+                    <span className="font-mono text-xs transition-colors text-orange-600/50 group-hover:text-orange-600">02</span>
                     <div className="flex flex-col">
                       <h3 className="group-hover:text-black transition-colors text-lg font-medium text-black/80 tracking-tight">Outfit Styling</h3>
                       <span className="group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform group-hover:translate-y-0 text-xs text-black/40 opacity-0 h-0 mt-1 translate-y-2">Generate any outfit on your AI models</span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-sky-600/50 group-hover:bg-sky-600/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-sky-600" />
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange-600/50 group-hover:bg-orange-600/10">
+                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange-600" />
                   </div>
                 </div>
               </a>
@@ -880,14 +880,14 @@ export default function Waitlist() {
               <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-sky-600/50 group-hover:text-sky-600">03</span>
+                    <span className="font-mono text-xs transition-colors text-orange-600/50 group-hover:text-orange-600">03</span>
                     <div className="flex flex-col">
                       <h3 className="text-lg font-medium tracking-tight group-hover:text-black transition-colors text-black/80">Campaign Production</h3>
                       <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-black/40">Full photoshoot generation with lighting control</span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-sky-600/50 group-hover:bg-sky-600/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-sky-600" />
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange-600/50 group-hover:bg-orange-600/10">
+                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange-600" />
                   </div>
                 </div>
               </a>
@@ -912,7 +912,7 @@ export default function Waitlist() {
               
               <div className="relative z-10 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                 <div className="flex items-center gap-4 mb-6">
-                  <span className="px-3 py-1 border text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm border-sky-500/30 bg-sky-500/10 text-sky-600">Featured</span>
+                  <span className="px-3 py-1 border text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm border-orange-500/30 bg-orange-500/10 text-orange-600">Featured</span>
                   <span className="text-xs font-mono tracking-tight text-black/50">FEB 02, 2026</span>
                 </div>
                 
@@ -926,9 +926,9 @@ export default function Waitlist() {
                   where digital innovation meets creative vision.
                 </p>
                 
-                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest transition-colors text-black group-hover:text-sky-600">
+                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest transition-colors text-black group-hover:text-orange-600">
                   Read Full Entry
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center group-hover:text-white transition-all duration-300 border-black/20 group-hover:bg-sky-600 group-hover:border-sky-600">
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center group-hover:text-white transition-all duration-300 border-black/20 group-hover:bg-orange-600 group-hover:border-orange-600">
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
@@ -951,18 +951,18 @@ export default function Waitlist() {
               <div className="flex-1 divide-y divide-black/10">
                 {journalEntries.map((entry, index) => (
                   <a key={index} href="#" className="group block p-8 md:px-12 transition-colors relative overflow-hidden hover:bg-black/5">
-                    <div className="absolute right-0 top-0 bottom-0 w-1 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 bg-sky-500" />
+                    <div className="absolute right-0 top-0 bottom-0 w-1 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 bg-orange-500" />
                     <div className="flex justify-between items-start gap-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-sky-600">{entry.category}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">{entry.category}</span>
                           <span className="w-1 h-1 rounded-full bg-black/20" />
                           <span className="text-[10px] uppercase tracking-widest text-black/40">{entry.type}</span>
                         </div>
                         <h4 className="text-xl md:text-2xl font-semibold mb-2 group-hover:text-black transition-colors text-black/90">{entry.title}</h4>
                         <p className="text-sm group-hover:text-black/70 transition-colors text-black/40">{entry.description}</p>
                       </div>
-                      <div className="flex hidden md:flex transition-colors w-20 h-20 border items-center justify-center bg-black/5 border-black/10 group-hover:bg-sky-100 text-sky-600">
+                      <div className="flex hidden md:flex transition-colors w-20 h-20 border items-center justify-center bg-black/5 border-black/10 group-hover:bg-orange-100 text-orange-600">
                         <Sparkles className="w-6 h-6" />
                       </div>
                     </div>
@@ -1003,7 +1003,7 @@ export default function Waitlist() {
               {/* Corner Accent */}
               <div className="absolute top-8 left-8 md:top-12 md:left-12">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-sky-500 animate-pulse" />
+                  <div className="w-3 h-3 rounded-full bg-orange-500 animate-pulse" />
                   <span className="text-[10px] uppercase tracking-widest text-white/70">Limited Access</span>
                 </div>
               </div>
@@ -1015,7 +1015,7 @@ export default function Waitlist() {
                 {/* Section Label */}
                 <div className="flex items-center gap-4 mb-8">
                   <div className="h-px flex-1 bg-black/10" />
-                  <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-sky-600">Early Access</span>
+                  <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-orange-600">Early Access</span>
                   <div className="h-px flex-1 bg-black/10" />
                 </div>
                 
@@ -1039,7 +1039,7 @@ export default function Waitlist() {
                           placeholder="Enter your name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-zinc-300 focus:outline-none bg-transparent w-full transition-all text-black border-black/10 focus:border-sky-500"
+                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-zinc-300 focus:outline-none bg-transparent w-full transition-all text-black border-black/10 focus:border-orange-500"
                           required
                         />
                       </div>
@@ -1050,7 +1050,7 @@ export default function Waitlist() {
                           placeholder="you@company.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-zinc-300 focus:outline-none bg-transparent w-full transition-all text-black border-black/10 focus:border-sky-500"
+                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-zinc-300 focus:outline-none bg-transparent w-full transition-all text-black border-black/10 focus:border-orange-500"
                           required
                         />
                       </div>
@@ -1060,7 +1060,7 @@ export default function Waitlist() {
                       <Button 
                         type="submit" 
                         disabled={joinWaitlist.isPending}
-                        className="group w-full font-semibold text-sm px-8 py-4 transition-all duration-300 text-white bg-zinc-900 hover:bg-sky-600 flex items-center justify-center gap-3"
+                        className="group w-full font-semibold text-sm px-8 py-4 transition-all duration-300 text-white bg-zinc-900 hover:bg-orange-600 flex items-center justify-center gap-3"
                       >
                         {joinWaitlist.isPending ? "Joining..." : (
                           <>
@@ -1076,9 +1076,9 @@ export default function Waitlist() {
                     </p>
                   </form>
                 ) : (
-                  <div className="p-8 border-2 border-sky-500/30 bg-sky-500/5">
-                    <div className="w-16 h-16 border-2 border-sky-500 flex items-center justify-center mb-6">
-                      <Check className="w-8 h-8 text-sky-600" />
+                  <div className="p-8 border-2 border-orange-500/30 bg-orange-500/5">
+                    <div className="w-16 h-16 border-2 border-orange-500 flex items-center justify-center mb-6">
+                      <Check className="w-8 h-8 text-orange-600" />
                     </div>
                     <h3 className="text-2xl font-bold tracking-tight mb-2 text-zinc-900 font-geist">
                       {alreadyRegistered ? "Already Registered" : "You're In"}
@@ -1161,7 +1161,7 @@ export default function Waitlist() {
                     <input 
                       type="email" 
                       placeholder="Email address" 
-                      className="border rounded px-3 py-2 text-xs placeholder-zinc-400 focus:outline-none focus:bg-white w-full transition-all bg-white border-black/10 text-black focus:border-sky-500"
+                      className="border rounded px-3 py-2 text-xs placeholder-zinc-400 focus:outline-none focus:bg-white w-full transition-all bg-white border-black/10 text-black focus:border-orange-500"
                     />
                     <button type="submit" className="font-semibold text-xs px-4 py-2 rounded transition-colors text-white bg-zinc-900 hover:bg-zinc-800">
                       Join
@@ -1174,10 +1174,10 @@ export default function Waitlist() {
               <div>
                 <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Studios</h4>
                 <ul className="space-y-3 text-sm text-zinc-500">
-                  <li><a href="#" className="transition-colors block hover:text-sky-600">Casting Studio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-sky-600">Outfit Studio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-sky-600">Photo Studio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-sky-600">Campaign Builder</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-orange-600">Casting Studio</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-orange-600">Outfit Studio</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-orange-600">Photo Studio</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-orange-600">Campaign Builder</a></li>
                 </ul>
               </div>
 
@@ -1185,10 +1185,10 @@ export default function Waitlist() {
               <div>
                 <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Company</h4>
                 <ul className="space-y-3 text-sm text-zinc-500">
-                  <li><a href="#" className="transition-colors block hover:text-sky-600">About FormaStudio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-sky-600">Technology</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-sky-600">Case Studies</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-sky-600">Pricing</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-orange-600">About FormaStudio</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-orange-600">Technology</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-orange-600">Case Studies</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-orange-600">Pricing</a></li>
                 </ul>
               </div>
 
@@ -1197,19 +1197,19 @@ export default function Waitlist() {
                 <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Contact</h4>
                 <ul className="space-y-3 text-sm text-zinc-500">
                   <li>
-                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-sky-600">
+                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-orange-600">
                       <MapPin className="w-3.5 h-3.5" />
                       San Francisco, CA
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-sky-600">
+                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-orange-600">
                       <Calendar className="w-3.5 h-3.5" />
                       Book a Demo
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-sky-600">
+                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-orange-600">
                       <Mail className="w-3.5 h-3.5" />
                       hello@formastudio.ai
                     </a>
