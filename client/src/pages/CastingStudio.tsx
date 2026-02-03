@@ -104,21 +104,21 @@ const SKIN_TEXTURES = ["Raw / Standard", "Glass / Perfect", "Freckled", "Texture
 const SKIN_FINISHES = ["Natural", "Matte / Powdered", "Dewy / Sweat", "Oily"];
 
 const EYE_PRESETS = [
-  { label: "Ice", hex: "#c4d6e0" },
-  { label: "Sky", hex: "#8fb6cd" },
-  { label: "Azure", hex: "#4e7bb5" },
-  { label: "Navy", hex: "#283655" },
-  { label: "Grey", hex: "#9baec2" },
-  { label: "Steel", hex: "#687684" },
-  { label: "Mint", hex: "#8caea0" },
-  { label: "Green", hex: "#4f6f46" },
-  { label: "Olive", hex: "#6e7039" },
-  { label: "Hazel", hex: "#947846" },
-  { label: "Amber", hex: "#c49647" },
-  { label: "Honey", hex: "#b89650" },
-  { label: "Brown", hex: "#634e34" },
-  { label: "Dark", hex: "#3b2b22" },
-  { label: "Black", hex: "#1c1c1c" },
+  { label: "Ice", hex: "#c4d6e0", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/vqqDiUXdPHouiNIf.png" },
+  { label: "Sky", hex: "#8fb6cd", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/ugREJGTmZHvGohva.png" },
+  { label: "Azure", hex: "#4e7bb5", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/SrbVePLOZFZeFwZS.png" },
+  { label: "Navy", hex: "#283655", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/IlubwHpACNZdKPpY.png" },
+  { label: "Grey", hex: "#9baec2", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/BXLKpjMgtBPPpNsl.png" },
+  { label: "Steel", hex: "#687684", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/gEYsnjXMHagLDaRN.png" },
+  { label: "Mint", hex: "#8caea0", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/JEqWKitxQAJvcOIv.png" },
+  { label: "Green", hex: "#4f6f46", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/xEpghHNbKukwluSa.png" },
+  { label: "Olive", hex: "#6e7039", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/wUXmPVotKyBuOZvm.png" },
+  { label: "Hazel", hex: "#947846", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/wPHJlTLLFHOIlKCl.png" },
+  { label: "Amber", hex: "#c49647", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/kJEPKFDnnbdYyFno.png" },
+  { label: "Honey", hex: "#b89650", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/ELDsMLehQBRKSxFm.png" },
+  { label: "Brown", hex: "#634e34", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lakRCWMCLaAKsoRC.png" },
+  { label: "Dark", hex: "#3b2b22", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/MiiYEWWDcEbbMeBP.png" },
+  { label: "Black", hex: "#1c1c1c", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/yfPffJwzBtjyLMnc.png" },
 ];
 
 const CHAR_OPTIONS = {
@@ -511,7 +511,7 @@ function VisualEyeGrid({
   selected,
   onSelect,
 }: {
-  options: { label: string; hex: string }[];
+  options: { label: string; hex: string; image?: string }[];
   selected: string;
   onSelect: (val: string) => void;
 }) {
@@ -532,11 +532,21 @@ function VisualEyeGrid({
             `}
             title={opt.label}
           >
-            <div
-              className="absolute inset-0"
-              style={{ background: `radial-gradient(circle at 35% 35%, ${opt.hex} 0%, #151515 80%)` }}
-            />
-            <div className="absolute top-[25%] left-[25%] w-[15%] h-[15%] bg-white rounded-full blur-[1px] opacity-50" />
+            {opt.image ? (
+              <img
+                src={opt.image}
+                alt={opt.label}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <>
+                <div
+                  className="absolute inset-0"
+                  style={{ background: `radial-gradient(circle at 35% 35%, ${opt.hex} 0%, #151515 80%)` }}
+                />
+                <div className="absolute top-[25%] left-[25%] w-[15%] h-[15%] bg-white rounded-full blur-[1px] opacity-50" />
+              </>
+            )}
           </button>
         );
       })}
