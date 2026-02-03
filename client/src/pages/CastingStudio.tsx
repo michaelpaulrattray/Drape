@@ -2659,7 +2659,7 @@ export default function CastingStudio() {
 
                 {/* Tools Bar - positioned at right edge of image */}
                 {!genState.isGenerating && currentAssets.length > 0 && (
-                  <div className="absolute top-1/2 -translate-y-1/2 -right-2 flex flex-col gap-2 z-30 animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-2 flex flex-col gap-2 z-30 animate-in fade-in slide-in-from-right-4 duration-500" style={{marginRight: '15px'}}>
                     {/* Surgical Edit */}
                     {(isIterationAllowed && (!isViewLocked || unlockMode)) && (
                       <ToolButton 
@@ -2748,13 +2748,13 @@ export default function CastingStudio() {
                     }
                   }}
                   className="absolute bottom-4 right-4 z-30 p-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-studio-400 hover:text-white hover:border-white/30 transition-all"
-                  title="Download Image"
+                  title="Download Image" style={{marginBottom: '50px'}}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
 
                 {/* View Label */}
-                <div className="absolute bottom-4 left-4 z-30 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded">
+                <div className="absolute bottom-4 left-4 z-30 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded" style={{marginBottom: '50px'}}>
                   <span className="text-[9px] font-mono uppercase text-white tracking-widest">
                     {activeView === 'frontClose' ? 'FRONT CLOSE' : 
                      activeView === 'frontFull' ? 'FRONT FULL' :
@@ -2766,7 +2766,7 @@ export default function CastingStudio() {
               </div>
 
               {/* Overlaying Chat Input - positioned at bottom of image container */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl z-30 px-4" onClick={e => e.stopPropagation()}>
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl z-30 px-4" onClick={e => e.stopPropagation()} style={{marginBottom: '75px', marginLeft: '20px'}}>
                 {/* Inline Helper Text for Masking */}
                 {isMasking && (
                   <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
