@@ -591,78 +591,80 @@ export default function Waitlist() {
               {/* First set of logos */}
               <div className="flex justify-around items-center w-1/2 gap-12 md:gap-16 px-8">
                 {/* Shopify */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <path d="M15.5 3.5c-.3 0-.5.2-.5.5v.5c-1-.3-2-.5-3-.5s-2 .2-3 .5V4c0-.3-.2-.5-.5-.5S8 3.7 8 4v1c-1.5.7-2.5 2-3 3.5L4 9v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-1-0.5c-.5-1.5-1.5-2.8-3-3.5V4c0-.3-.2-.5-.5-.5z" />
-                  <path d="M12 8v8" />
-                  <path d="M9 12h6" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/VMgDTvhuoCmrtVNs.svg" 
+                  alt="Shopify" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
                 {/* Meta */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" />
-                  <path d="M2 12h20" />
-                  <path d="M12 2c2.5 2.5 4 6 4 10s-1.5 7.5-4 10" />
-                  <path d="M12 2c-2.5 2.5-4 6-4 10s1.5 7.5 4 10" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/jaeoJSKaawVFHFlG.svg" 
+                  alt="Meta" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
                 {/* Facebook */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/zRfOlALORwscPsKB.svg" 
+                  alt="Facebook" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
                 {/* Nike */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <path d="M3 15c2-4 6-8 12-8 2 0 4 .5 6 1.5-4 1-10 4-14 9-1 1.5-2.5 2-4 1.5" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/vjOQMdTaqDkzvcok.svg" 
+                  alt="Nike" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
                 {/* Instagram */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                </svg>
-                {/* Google */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 8v8" />
-                  <path d="M8 12h8" />
-                  <path d="M17 12h-5" />
-                  <path d="M12 7c-2.8 0-5 2.2-5 5s2.2 5 5 5c2.1 0 3.9-1.3 4.6-3.1" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/jdlIGMCEIxKteAHV.svg" 
+                  alt="Instagram" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
+                {/* Google Chrome */}
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/bvpJvTBdFFwkNRCs.svg" 
+                  alt="Google Chrome" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
               </div>
               {/* Duplicate set for seamless loop */}
               <div className="flex justify-around items-center w-1/2 gap-12 md:gap-16 px-8">
                 {/* Shopify */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <path d="M15.5 3.5c-.3 0-.5.2-.5.5v.5c-1-.3-2-.5-3-.5s-2 .2-3 .5V4c0-.3-.2-.5-.5-.5S8 3.7 8 4v1c-1.5.7-2.5 2-3 3.5L4 9v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9l-1-0.5c-.5-1.5-1.5-2.8-3-3.5V4c0-.3-.2-.5-.5-.5z" />
-                  <path d="M12 8v8" />
-                  <path d="M9 12h6" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/VMgDTvhuoCmrtVNs.svg" 
+                  alt="Shopify" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
                 {/* Meta */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" />
-                  <path d="M2 12h20" />
-                  <path d="M12 2c2.5 2.5 4 6 4 10s-1.5 7.5-4 10" />
-                  <path d="M12 2c-2.5 2.5-4 6-4 10s1.5 7.5 4 10" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/jaeoJSKaawVFHFlG.svg" 
+                  alt="Meta" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
                 {/* Facebook */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/zRfOlALORwscPsKB.svg" 
+                  alt="Facebook" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
                 {/* Nike */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <path d="M3 15c2-4 6-8 12-8 2 0 4 .5 6 1.5-4 1-10 4-14 9-1 1.5-2.5 2-4 1.5" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/vjOQMdTaqDkzvcok.svg" 
+                  alt="Nike" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
                 {/* Instagram */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                </svg>
-                {/* Google */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 md:w-10 md:h-10 text-zinc-400 hover:text-zinc-900 transition-colors">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 8v8" />
-                  <path d="M8 12h8" />
-                  <path d="M17 12h-5" />
-                  <path d="M12 7c-2.8 0-5 2.2-5 5s2.2 5 5 5c2.1 0 3.9-1.3 4.6-3.1" />
-                </svg>
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/jdlIGMCEIxKteAHV.svg" 
+                  alt="Instagram" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
+                {/* Google Chrome */}
+                <img 
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/bvpJvTBdFFwkNRCs.svg" 
+                  alt="Google Chrome" 
+                  className="w-8 h-8 md:w-10 md:h-10 opacity-40 hover:opacity-90 transition-opacity grayscale"
+                />
               </div>
             </div>
           </div>

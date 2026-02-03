@@ -222,3 +222,4 @@
 - [x] Update Trusted By section icons to target market brands (Shopify, Meta, Facebook, Nike, Instagram, Google)
 - [x] Integrate Forma Studio logo throughout website
 - [x] Add automatic white color inversion for dark mode (dashboard)
+- [x] Replace Trusted By section icons with proper SVG files (Instagram, Nike, Meta, Facebook, Shopify, Google Chrome)
