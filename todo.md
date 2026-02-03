@@ -886,3 +886,5 @@
 - [x] Skeleton shimmer effect - skeleton-shimmer animation for loading states
 - [x] Fade-in transition - Opacity 0→1 over 300ms when images load (blur-loading.loaded)
 - [x] Low-res preview first - Blurred placeholder transitioning to full image
+- [x] Fix null classList error at line 3284 in CastingStudio.tsx
+- [ ] Fix 'No image generated' API mutation error (added logging to diagnose)

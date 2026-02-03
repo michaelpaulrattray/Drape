@@ -2488,8 +2488,11 @@ export default function CastingStudio() {
             data-debug-generate
             onClick={(e) => {
               // Add pulse animation on click
-              e.currentTarget.classList.add('animate-button-pulse');
-              setTimeout(() => e.currentTarget.classList.remove('animate-button-pulse'), 600);
+              const button = e.currentTarget;
+              button.classList.add('animate-button-pulse');
+              setTimeout(() => {
+                if (button) button.classList.remove('animate-button-pulse');
+              }, 600);
               handleGenerate();
             }}
             disabled={!isFormValid || genState.isGenerating}

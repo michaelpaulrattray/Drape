@@ -368,6 +368,8 @@ export const appRouter = router({
         try {
           // Generate image
           const castingBrand = (model.technicalSchema as any)?.context?.casting_for || 'Generic';
+          console.log('[castingImage] Generating with brand:', castingBrand, 'for model:', input.modelId);
+          
           const result = await generateCastingImage(
             model.masterPrompt,
             {
@@ -377,7 +379,10 @@ export const appRouter = router({
             }
           );
 
+          console.log('[castingImage] Generation result:', { hasImageUrl: !!result.imageUrl, engineUsed: result.engineUsed });
+
           if (!result.imageUrl) {
+            console.error('[castingImage] No image URL returned from generation');
             await updateGeneration(genResult.generationId!, {
               status: "failed",
               errorMessage: "No image generated",
@@ -385,7 +390,7 @@ export const appRouter = router({
             });
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
-              message: "Failed to generate image",
+              message: "No image generated",
             });
           }
 

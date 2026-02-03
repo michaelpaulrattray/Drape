@@ -147,6 +147,13 @@ export async function generateCastingImage(
     maskImage?: string;
   } = {}
 ): Promise<GenerationResult> {
+  console.log('[aiService.generateCastingImage] Starting with options:', {
+    castingBrand: options.castingBrand,
+    frame: options.frame,
+    hasReferenceImage: !!options.referenceImage,
+    mode: options.mode,
+  });
+  
   const result = await gemini.generateCastingImage(
     masterPrompt,
     options.referenceImage,
@@ -161,8 +168,15 @@ export async function generateCastingImage(
     options.maskImage
   );
 
+  console.log('[aiService.generateCastingImage] Result received:', {
+    hasImageUrl: !!result.imageUrl,
+    engineUsed: result.engineUsed,
+  });
+
   // Upload base64 to S3 for persistent storage
   const s3Url = await uploadBase64ToS3(result.imageUrl, "casting");
+
+  console.log('[aiService.generateCastingImage] Uploaded to S3:', s3Url.substring(0, 80) + '...');
 
   return {
     imageUrl: s3Url,
