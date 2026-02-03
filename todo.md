@@ -798,3 +798,12 @@
 - [x] Align chat input bar properly within image bounds (bottom-2, max-w-xl, compact padding)
 - [x] Position download button to align with other elements (bottom-2 right-2)
 - [x] Ensure consistent spacing between overlay elements (all at bottom-2)
+
+
+## Thumbnail Size & Design Enhancement
+- [x] Increase thumbnail width from w-14 to w-20 or larger
+- [x] Improve thumbnail aspect ratio for better visibility
+- [x] Add subtle glow/border effect on hover (ring-2 with shadow glow)
+- [x] Enhance locked placeholder design (added labels, improved styling)
+- [x] Add view type labels with better typography (9px, tracking-widest, gradient bg)
+- [ ] Consider adding thumbnail preview on hover (future enhancement)

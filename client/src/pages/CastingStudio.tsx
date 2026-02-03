@@ -2501,26 +2501,26 @@ export default function CastingStudio() {
 
         {/* Left Vertical Thumbnails Strip */}
         {currentAssets.length > 0 && (
-          <div className="absolute left-4 top-16 bottom-10 z-30 flex flex-col gap-2 w-14 overflow-y-auto no-scrollbar py-2 pointer-events-none">
+          <div className="absolute left-4 top-16 bottom-10 z-30 flex flex-col gap-3 w-20 overflow-y-auto no-scrollbar py-2 pointer-events-none">
             <div className="contents pointer-events-auto">
               {/* HEAD Thumbnail */}
               {currentAssets.find(a => a.viewType === 'frontClose') && (
                 <button 
                   onClick={() => setActiveView('frontClose')}
-                  className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                  className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
                     activeView === 'frontClose' 
-                    ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
-                    : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                    ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
+                    : 'ring-1 ring-studio-700 opacity-70 hover:opacity-100 hover:ring-studio-500 hover:scale-[1.02] hover:shadow-lg'
                   }`}
                 >
                   <img src={currentAssets.find(a => a.viewType === 'frontClose')?.storageUrl} alt="Head" className="w-full h-full object-cover" />
                   {currentAssets.some(a => a.viewType === 'frontFull') && (
-                    <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-md rounded-full p-1 border border-white/10 z-20">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <div className="absolute top-1.5 right-1.5 bg-black/60 backdrop-blur-md rounded-full p-1 border border-white/20 z-20">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     </div>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
-                    <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Head</span>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent py-1.5 px-1">
+                    <span className="text-[9px] font-mono uppercase text-white block text-center tracking-widest font-medium">Head</span>
                   </div>
                 </button>
               )}
@@ -2529,31 +2529,31 @@ export default function CastingStudio() {
               {currentAssets.find(a => a.viewType === 'frontFull') ? (
                 <button 
                   onClick={() => setActiveView('frontFull')}
-                  className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                  className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
                     activeView === 'frontFull' 
-                    ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
-                    : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                    ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
+                    : 'ring-1 ring-studio-700 opacity-70 hover:opacity-100 hover:ring-studio-500 hover:scale-[1.02] hover:shadow-lg'
                   }`}
                 >
                   <img src={currentAssets.find(a => a.viewType === 'frontFull')?.storageUrl} alt="Full" className="w-full h-full object-cover" />
                   {currentAssets.some(a => a.viewType === 'sideClose') && (
-                    <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-md rounded-full p-1 border border-white/10 z-20">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <div className="absolute top-1.5 right-1.5 bg-black/60 backdrop-blur-md rounded-full p-1 border border-white/20 z-20">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     </div>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
-                    <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Full</span>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent py-1.5 px-1">
+                    <span className="text-[9px] font-mono uppercase text-white block text-center tracking-widest font-medium">Full</span>
                   </div>
                 </button>
               ) : (
                 <button 
                   onClick={() => nextStage?.step === 2 && nextStage.action()}
-                  className="w-full aspect-[3/4] bg-black/40 backdrop-blur-sm border border-studio-800 border-dashed hover:border-white hover:bg-studio-900 transition-all flex flex-col items-center justify-center space-y-2 group shadow-lg"
+                  className="w-full aspect-[3/4] bg-studio-950/60 backdrop-blur-sm rounded-sm border border-dashed border-studio-700 hover:border-white hover:bg-studio-900/50 transition-all flex flex-col items-center justify-center space-y-2 group"
                 >
-                  <div className="w-6 h-6 rounded-full border border-studio-600 flex items-center justify-center text-studio-500 group-hover:text-white group-hover:border-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <div className="w-8 h-8 rounded-full border-2 border-studio-600 flex items-center justify-center text-studio-500 group-hover:text-white group-hover:border-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   </div>
-                  <span className="text-[7px] font-mono uppercase text-studio-500 group-hover:text-white tracking-widest text-center px-1">Add Body</span>
+                  <span className="text-[8px] font-mono uppercase text-studio-500 group-hover:text-white tracking-widest text-center px-1 font-medium">Body</span>
                 </button>
               )}
 
@@ -2563,47 +2563,47 @@ export default function CastingStudio() {
                   <>
                     <button 
                       onClick={() => setActiveView('sideClose')}
-                      className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                      className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
                         activeView === 'sideClose' 
-                        ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
-                        : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                        ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
+                        : 'ring-1 ring-studio-700 opacity-70 hover:opacity-100 hover:ring-studio-500 hover:scale-[1.02] hover:shadow-lg'
                       }`}
                     >
                       <img src={currentAssets.find(a => a.viewType === 'sideClose')?.storageUrl} alt="Side" className="w-full h-full object-cover" />
-                      <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
-                        <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Side</span>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent py-1.5 px-1">
+                        <span className="text-[9px] font-mono uppercase text-white block text-center tracking-widest font-medium">Side</span>
                       </div>
                     </button>
                     {currentAssets.find(a => a.viewType === 'sideFull') && (
                       <button 
                         onClick={() => setActiveView('sideFull')}
-                        className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                        className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
                           activeView === 'sideFull' 
-                          ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
-                          : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                          ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
+                          : 'ring-1 ring-studio-700 opacity-70 hover:opacity-100 hover:ring-studio-500 hover:scale-[1.02] hover:shadow-lg'
                         }`}
                       >
                         <img src={currentAssets.find(a => a.viewType === 'sideFull')?.storageUrl} alt="Walk" className="w-full h-full object-cover" />
-                        <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
-                          <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Walk</span>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent py-1.5 px-1">
+                          <span className="text-[9px] font-mono uppercase text-white block text-center tracking-widest font-medium">Walk</span>
                         </div>
                       </button>
                     )}
                     {currentAssets.find(a => a.viewType === 'backFull') && (
                       <button 
                         onClick={() => setActiveView('backFull')}
-                        className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
+                        className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
                           activeView === 'backFull' 
-                          ? 'border-white ring-1 ring-white z-10 scale-[1.02]' 
-                          : 'border-studio-800 hover:border-studio-500 opacity-60 hover:opacity-100 hover:scale-[1.02] bg-black'
+                          ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
+                          : 'ring-1 ring-studio-700 opacity-70 hover:opacity-100 hover:ring-studio-500 hover:scale-[1.02] hover:shadow-lg'
                         }`}
                       >
                         <img src={currentAssets.find(a => a.viewType === 'backFull')?.storageUrl} alt="Back" className="w-full h-full object-cover" />
-                        <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-md rounded-full p-1 border border-white/10 z-20">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <div className="absolute top-1.5 right-1.5 bg-black/60 backdrop-blur-md rounded-full p-1 border border-white/20 z-20">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         </div>
-                        <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1">
-                          <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Back</span>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent py-1.5 px-1">
+                          <span className="text-[9px] font-mono uppercase text-white block text-center tracking-widest font-medium">Back</span>
                         </div>
                       </button>
                     )}
@@ -2611,25 +2611,28 @@ export default function CastingStudio() {
                 ) : (
                   <button 
                     onClick={() => nextStage?.step === 3 && nextStage.action()}
-                    className="w-full aspect-[3/4] bg-black/40 backdrop-blur-sm border border-studio-800 border-dashed hover:border-white hover:bg-studio-900 transition-all flex flex-col items-center justify-center space-y-2 group shadow-lg"
+                    className="w-full aspect-[3/4] bg-studio-950/60 backdrop-blur-sm rounded-sm border border-dashed border-studio-700 hover:border-white hover:bg-studio-900/50 transition-all flex flex-col items-center justify-center space-y-2 group"
                   >
-                    <div className="w-6 h-6 rounded-full border border-studio-600 flex items-center justify-center text-studio-500 group-hover:text-white group-hover:border-white transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <div className="w-8 h-8 rounded-full border-2 border-studio-600 flex items-center justify-center text-studio-500 group-hover:text-white group-hover:border-white transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </div>
-                    <span className="text-[7px] font-mono uppercase text-studio-500 group-hover:text-white tracking-widest text-center px-1">Add Angles</span>
+                    <span className="text-[8px] font-mono uppercase text-studio-500 group-hover:text-white tracking-widest text-center px-1 font-medium">Angles</span>
                   </button>
                 )
               ) : (
                 <>
-                  {/* Locked placeholders */}
-                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
-                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  {/* Locked placeholders with labels */}
+                  <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-studio-800/40 flex flex-col items-center justify-center space-y-1">
+                    <svg className="w-5 h-5 text-studio-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <span className="text-[7px] font-mono uppercase text-studio-700 tracking-wider">Side</span>
                   </div>
-                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
-                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-studio-800/40 flex flex-col items-center justify-center space-y-1">
+                    <svg className="w-5 h-5 text-studio-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <span className="text-[7px] font-mono uppercase text-studio-700 tracking-wider">Walk</span>
                   </div>
-                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
-                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-studio-800/40 flex flex-col items-center justify-center space-y-1">
+                    <svg className="w-5 h-5 text-studio-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <span className="text-[7px] font-mono uppercase text-studio-700 tracking-wider">Back</span>
                   </div>
                 </>
               )}
