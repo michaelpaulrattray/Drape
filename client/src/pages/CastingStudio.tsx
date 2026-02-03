@@ -2704,7 +2704,7 @@ export default function CastingStudio() {
                       ref={imageRef}
                       src={currentImageUrl} 
                       alt="Active View" 
-                      className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black"
+                      className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-studio-800/50 bg-black" style={{marginTop: '70px'}}
                     />
                     
                     {/* Masking Canvas */}
@@ -2809,13 +2809,13 @@ export default function CastingStudio() {
                     }
                   }}
                   className="absolute bottom-2 right-2 z-30 p-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg text-studio-400 hover:text-white hover:border-white/30 transition-all"
-                  title="Download Image"
+                  title="Download Image" style={{marginBottom: '10px'}}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
 
                 {/* View Label */}
-                <div className="absolute bottom-2 left-2 z-30 px-2 py-0.5 bg-black/60 backdrop-blur-md border border-white/10 rounded">
+                <div className="absolute bottom-2 left-2 z-30 px-2 py-0.5 bg-black/60 backdrop-blur-md border border-white/10 rounded" style={{marginBottom: '10px'}}>
                   <span className="text-[9px] font-mono uppercase text-white tracking-widest">
                     {activeView === 'frontClose' ? 'FRONT CLOSE' : 
                      activeView === 'frontFull' ? 'FRONT FULL' :
@@ -2827,7 +2827,7 @@ export default function CastingStudio() {
               </div>
 
               {/* Overlaying Chat Input - positioned at bottom of image container */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full max-w-xl z-30 px-2" onClick={e => e.stopPropagation()}>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full max-w-xl z-30 px-2" onClick={e => e.stopPropagation()} style={{marginBottom: '60px', marginLeft: '10px'}}>
                 {/* Inline Helper Text for Masking */}
                 {isMasking && (
                   <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
