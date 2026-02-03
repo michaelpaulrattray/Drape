@@ -176,6 +176,60 @@ const BODY_TYPES = [
 
 const FACE_SHAPES = ["Oval", "Round", "Square", "Heart", "Diamond", "Random"];
 
+// ============ Debug Utility ============
+
+/**
+ * Generate randomized model preferences for testing/debugging
+ * This utility helps quickly populate the form with valid random values
+ */
+const generateRandomPreferences = (): Partial<ModelPreferences> => {
+  const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+  const pickValue = (arr: { value: string }[]): string => pick(arr).value;
+  const pickLabel = (arr: { label: string; value: string }[]): string => pick(arr).value;
+  
+  // Random gender first as it affects hair options
+  const gender = pick(['Male', 'Female']);
+  const hairFamilies = gender === 'Male' ? HAIR_FAMILIES_MALE : HAIR_FAMILIES_FEMALE;
+  
+  // Generate random vibe that sums to 1
+  const editorial = Math.random();
+  const commercial = Math.random() * (1 - editorial);
+  const runway = 1 - editorial - commercial;
+  
+  return {
+    castingBrand: pickValue(BRAND_OPTIONS),
+    castingVibe: { editorial, commercial, runway },
+    gender,
+    age: String(Math.floor(Math.random() * 20) + 18), // 18-37
+    ethnicity: pick(ETHNICITIES),
+    bodyType: pickLabel(BODY_TYPES),
+    faceShape: pick(FACE_SHAPES.filter(f => f !== 'Random')),
+    skinTone: pickLabel(SKIN_TONES),
+    skinTexture: pick(SKIN_TEXTURES),
+    skinFinish: pick(SKIN_FINISHES),
+    eyeColor: pick(EYE_PRESETS).label,
+    hairColor: pick(['Jet Black', 'Dark Brown', 'Chestnut', 'Auburn', 'Blonde', 'Platinum', 'Copper', 'Silver']),
+    hairStyle: pick(hairFamilies),
+    hairLength: pick(HAIR_LENGTHS),
+    hairTexture: pick(HAIR_TEXTURES),
+    hairFringe: pick(HAIR_FRINGES),
+    hairParting: pick(HAIR_PARTINGS),
+    hairVolume: pick(HAIR_VOLUMES),
+    hairTuck: pick(HAIR_TUCKS),
+    hairFade: gender === 'Male' ? pick(HAIR_FADES) : 'None',
+    facialHair: gender === 'Male' ? pick(CHAR_OPTIONS.facialHair) : '',
+    jawline: pick(CHAR_OPTIONS.jawline),
+    cheekbones: pick(CHAR_OPTIONS.cheekbones),
+    cheeks: pick(CHAR_OPTIONS.cheeks),
+    eyeShape: pick(CHAR_OPTIONS.eyeShape),
+    noseShape: pick(CHAR_OPTIONS.noseShape),
+    lipShape: pick(CHAR_OPTIONS.lipShape),
+    eyebrowStyle: pick(CHAR_OPTIONS.eyebrows),
+    features: '',
+    userPrompt: '',
+  };
+};
+
 const POINT_COSTS = {
   masterPrompt: 2,
   castingImage: 10,
@@ -827,6 +881,49 @@ export default function CastingStudio() {
     setMaskPaths([]);
     setCurrentPath([]);
   }, [activeTool]);
+
+  // Debug utility: Auto-fill form with random preferences and optionally trigger generation
+  const handleDebugFill = (autoGenerate: boolean = false) => {
+    const randomPrefs = generateRandomPreferences();
+    setPrefs(prev => ({ ...prev, ...randomPrefs }));
+    toast.success('Debug: Form populated with random preferences');
+    
+    if (autoGenerate) {
+      // Small delay to allow state to update before triggering generation
+      setTimeout(() => {
+        // The generation will be triggered by the user or the keyboard shortcut
+        toast.info('Debug: Ready to generate - press Generate button or use Ctrl+Shift+G');
+      }, 100);
+    }
+  };
+
+  // Keyboard shortcuts for debug utility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Shift+D: Fill form with random preferences
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        handleDebugFill(false);
+      }
+      // Ctrl+Shift+G: Fill form AND trigger generation
+      if (e.ctrlKey && e.shiftKey && e.key === 'G') {
+        e.preventDefault();
+        const randomPrefs = generateRandomPreferences();
+        setPrefs(prev => ({ ...prev, ...randomPrefs }));
+        toast.success('Debug: Auto-generating model...');
+        // Trigger generation after state update
+        setTimeout(() => {
+          const generateBtn = document.querySelector('[data-debug-generate]') as HTMLButtonElement;
+          if (generateBtn && !generateBtn.disabled) {
+            generateBtn.click();
+          }
+        }, 200);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Sync canvas with image
   const isMasking = activeTool !== 'none';
@@ -2083,6 +2180,7 @@ export default function CastingStudio() {
         {/* Generate Button */}
         <div className="p-5 border-t border-studio-800 bg-[#080808] mt-auto">
           <button
+            data-debug-generate
             onClick={handleGenerate}
             disabled={!isFormValid || genState.isGenerating}
             className="w-full py-4 bg-white hover:bg-studio-200 disabled:opacity-50 disabled:cursor-not-allowed text-black font-mono text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)]"
@@ -2103,6 +2201,43 @@ export default function CastingStudio() {
             <p className="text-[9px] text-studio-600 text-center mt-2 font-mono uppercase tracking-wider">
               Complete required fields to enable casting
             </p>
+          )}
+          
+          {/* Debug Utility Button - Development Only */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-3 pt-3 border-t border-studio-800/50">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleDebugFill(false)}
+                  disabled={genState.isGenerating}
+                  className="flex-1 py-2 px-3 bg-amber-600/20 hover:bg-amber-600/30 disabled:opacity-50 text-amber-500 font-mono text-[9px] uppercase tracking-wider rounded border border-amber-600/30 transition-colors"
+                  title="Ctrl+Shift+D"
+                >
+                  🎲 Random Fill
+                </button>
+                <button
+                  onClick={() => {
+                    const randomPrefs = generateRandomPreferences();
+                    setPrefs(prev => ({ ...prev, ...randomPrefs }));
+                    toast.success('Debug: Auto-generating model...');
+                    setTimeout(() => {
+                      const generateBtn = document.querySelector('[data-debug-generate]') as HTMLButtonElement;
+                      if (generateBtn && !generateBtn.disabled) {
+                        generateBtn.click();
+                      }
+                    }, 200);
+                  }}
+                  disabled={genState.isGenerating}
+                  className="flex-1 py-2 px-3 bg-green-600/20 hover:bg-green-600/30 disabled:opacity-50 text-green-500 font-mono text-[9px] uppercase tracking-wider rounded border border-green-600/30 transition-colors"
+                  title="Ctrl+Shift+G"
+                >
+                  ⚡ Auto Generate
+                </button>
+              </div>
+              <p className="text-[8px] text-studio-600 text-center mt-1.5 font-mono">
+                Debug: Ctrl+Shift+D (fill) | Ctrl+Shift+G (generate)
+              </p>
+            </div>
           )}
         </div>
       </aside>

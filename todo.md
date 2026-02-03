@@ -705,3 +705,10 @@
 - [x] Create registry.verify endpoint to check if model exists and is minted
 - [x] Return identity prompt for injection into other app generations
 - [x] Only return data for 'active' models (not drafts)
+
+## Debug Utility for Casting Studio
+- [x] Create randomized preferences generator function
+- [x] Add debug button to casting studio UI (dev mode only)
+- [x] Auto-populate all form fields with random valid values
+- [x] Auto-trigger model generation after populating form
+- [x] Add keyboard shortcuts: Ctrl+Shift+D (fill) and Ctrl+Shift+G (fill + generate)
