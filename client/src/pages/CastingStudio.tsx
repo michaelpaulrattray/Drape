@@ -2443,7 +2443,7 @@ export default function CastingStudio() {
 
         {/* Left Vertical Thumbnails Strip */}
         {currentAssets.length > 0 && (
-          <div className="absolute left-6 top-24 bottom-10 z-30 flex flex-col gap-3 w-24 overflow-y-auto no-scrollbar py-2 pointer-events-none">
+          <div className="absolute left-4 top-16 bottom-10 z-30 flex flex-col gap-2 w-14 overflow-y-auto no-scrollbar py-2 pointer-events-none">
             <div className="contents pointer-events-auto">
               {/* HEAD Thumbnail */}
               {currentAssets.find(a => a.viewType === 'frontClose') && (
@@ -2657,9 +2657,9 @@ export default function CastingStudio() {
                   </>
                 )}
 
-                {/* Tools Bar */}
+                {/* Tools Bar - positioned at right edge of image */}
                 {!genState.isGenerating && currentAssets.length > 0 && (
-                  <div className="absolute top-1/2 -translate-y-1/2 right-4 flex flex-col gap-3 z-30 animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-2 flex flex-col gap-2 z-30 animate-in fade-in slide-in-from-right-4 duration-500">
                     {/* Surgical Edit */}
                     {(isIterationAllowed && (!isViewLocked || unlockMode)) && (
                       <ToolButton 

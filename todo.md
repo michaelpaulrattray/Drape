@@ -762,3 +762,13 @@
 - [x] Export individual PNG images for each view (all views in ZIP)
 - [x] Generate correct PDF layout with embedded images
 - [x] Fix export packaging/layout to match original app
+
+
+## Post-Generation UI Layout Fixes (Match Reference)
+- [x] Move reference image node higher on right side with dashed border box
+- [x] Position tool buttons on right edge of main image (adjusted to -right-2)
+- [x] Update chat input area to match reference "PAINT AREA TO ERASE" style (shows when eraser active)
+- [x] Position view label badge ("FRONT CLOSE") at bottom left of image
+- [x] Ensure Director's Note section is at very bottom, full width
+- [x] Match overall spacing and alignment from reference
+- [x] Reduced left sidebar thumbnail width from w-24 to w-14
