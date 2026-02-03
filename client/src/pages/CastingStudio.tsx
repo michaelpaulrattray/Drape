@@ -2499,12 +2499,12 @@ export default function CastingStudio() {
           </div>
         )}
 
-        {/* Left Vertical Thumbnails Strip */}
-        {currentAssets.length > 0 && (
+        {/* Left Vertical Thumbnails Strip - Always visible */}
+        {(
           <div className="absolute left-4 top-16 bottom-10 z-30 flex flex-col gap-2 w-14 overflow-y-auto no-scrollbar py-2 pointer-events-none">
             <div className="contents pointer-events-auto">
               {/* HEAD Thumbnail */}
-              {currentAssets.find(a => a.viewType === 'frontClose') && (
+              {currentAssets.find(a => a.viewType === 'frontClose') ? (
                 <button 
                   onClick={() => setActiveView('frontClose')}
                   className={`relative group w-full aspect-[3/4] border transition-all duration-300 overflow-hidden shadow-lg ${
@@ -2523,6 +2523,12 @@ export default function CastingStudio() {
                     <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Head</span>
                   </div>
                 </button>
+              ) : (
+                /* Empty HEAD placeholder */
+                <div className="w-full aspect-[3/4] bg-black/30 border border-dashed border-studio-800 flex flex-col items-center justify-center space-y-1 opacity-40">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-studio-600"><circle cx="12" cy="8" r="4"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg>
+                  <span className="text-[7px] font-mono uppercase text-studio-600 tracking-wider">Head</span>
+                </div>
               )}
 
               {/* ADD BODY / Full Body Thumbnail */}
@@ -2545,7 +2551,7 @@ export default function CastingStudio() {
                     <span className="text-[8px] font-mono uppercase text-white block text-center tracking-wider">Full</span>
                   </div>
                 </button>
-              ) : (
+              ) : currentAssets.find(a => a.viewType === 'frontClose') ? (
                 <button 
                   onClick={() => nextStage?.step === 2 && nextStage.action()}
                   className="w-full aspect-[3/4] bg-black/40 backdrop-blur-sm border border-studio-800 border-dashed hover:border-white hover:bg-studio-900 transition-all flex flex-col items-center justify-center space-y-2 group shadow-lg"
@@ -2555,6 +2561,12 @@ export default function CastingStudio() {
                   </div>
                   <span className="text-[7px] font-mono uppercase text-studio-500 group-hover:text-white tracking-widest text-center px-1">Add Body</span>
                 </button>
+              ) : (
+                /* Empty Full Body placeholder */
+                <div className="w-full aspect-[3/4] bg-black/30 border border-dashed border-studio-800 flex flex-col items-center justify-center space-y-1 opacity-40">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-studio-600"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  <span className="text-[7px] font-mono uppercase text-studio-600 tracking-wider">Full</span>
+                </div>
               )}
 
               {/* Side/Walk/Back Views or Locked Placeholders */}
@@ -2621,15 +2633,18 @@ export default function CastingStudio() {
                 )
               ) : (
                 <>
-                  {/* Locked placeholders */}
-                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
-                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  {/* Locked placeholders - shown when waiting for full body */}
+                  <div className="w-full aspect-[3/4] bg-black/30 border border-dashed border-studio-800 flex flex-col items-center justify-center space-y-1 opacity-30">
+                    <svg className="w-4 h-4 text-studio-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <span className="text-[6px] font-mono uppercase text-studio-700 tracking-wider">Side</span>
                   </div>
-                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
-                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <div className="w-full aspect-[3/4] bg-black/30 border border-dashed border-studio-800 flex flex-col items-center justify-center space-y-1 opacity-30">
+                    <svg className="w-4 h-4 text-studio-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <span className="text-[6px] font-mono uppercase text-studio-700 tracking-wider">Walk</span>
                   </div>
-                  <div className="w-full aspect-[3/4] bg-studio-900/20 backdrop-blur-[1px] border border-studio-800/30 flex items-center justify-center rounded-sm">
-                    <svg className="w-4 h-4 text-studio-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <div className="w-full aspect-[3/4] bg-black/30 border border-dashed border-studio-800 flex flex-col items-center justify-center space-y-1 opacity-30">
+                    <svg className="w-4 h-4 text-studio-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <span className="text-[6px] font-mono uppercase text-studio-700 tracking-wider">Back</span>
                   </div>
                 </>
               )}
@@ -2637,24 +2652,23 @@ export default function CastingStudio() {
           </div>
         )}
 
-        {/* Main Content */}
-        {currentAssets.length > 0 ? (
-          <div className="w-full h-full flex flex-col relative z-10">
-            {/* Loading Overlay */}
-            {genState.isGenerating && (
-              <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center space-y-6">
-                <div className="relative w-24 h-24">
-                  <div className="absolute inset-0 border border-studio-800 rounded-full"></div>
-                  <div className="absolute inset-0 border-t border-white rounded-full animate-spin"></div>
-                </div>
-                <div className="text-center space-y-2">
-                  <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em] animate-pulse">Processing</h3>
-                  <p className="text-[10px] font-mono text-studio-500 uppercase tracking-widest">
-                    {genState.currentStep || 'Initializing...'}
-                  </p>
-                </div>
+        {/* Main Content - Unified Workspace */}
+        <div className="w-full h-full flex flex-col relative z-10">
+          {/* Loading Overlay */}
+          {genState.isGenerating && (
+            <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center space-y-6">
+              <div className="relative w-24 h-24">
+                <div className="absolute inset-0 border border-studio-800 rounded-full"></div>
+                <div className="absolute inset-0 border-t border-white rounded-full animate-spin"></div>
               </div>
-            )}
+              <div className="text-center space-y-2">
+                <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em] animate-pulse">Processing</h3>
+                <p className="text-[10px] font-mono text-studio-500 uppercase tracking-widest">
+                  {genState.currentStep || 'Initializing...'}
+                </p>
+              </div>
+            </div>
+          )}
 
             {/* Image Display Area */}
             <div className="flex-1 relative min-h-0 flex items-center justify-center p-2 lg:p-4 group">
@@ -2695,7 +2709,7 @@ export default function CastingStudio() {
 
               {/* Main Image */}
               <div className="relative h-full max-w-full flex items-center justify-center select-none pb-16">
-                {currentImageUrl && (
+                {currentImageUrl ? (
                   <>
                     <img 
                       ref={imageRef}
@@ -2713,6 +2727,53 @@ export default function CastingStudio() {
                       onPointerUp={handlePointerUp}
                     />
                   </>
+                ) : (
+                  /* Empty State Placeholder */
+                  <div className="flex flex-col items-center justify-center space-y-8 max-w-lg text-center">
+                    {/* Placeholder Frame */}
+                    <div className="relative w-64 h-80 border-2 border-dashed border-studio-700 rounded-lg flex items-center justify-center bg-studio-900/20">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-20 h-20 rounded-full border border-studio-700 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-studio-600">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                          </svg>
+                        </div>
+                      </div>
+                      {/* Corner brackets */}
+                      <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-studio-600" />
+                      <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-studio-600" />
+                      <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-studio-600" />
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-studio-600" />
+                    </div>
+                    
+                    {/* Status Text */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${isFormValid ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse' : 'bg-amber-500'}`} />
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-studio-400">
+                          {isFormValid ? 'Ready to Generate' : 'Configure Model Parameters'}
+                        </span>
+                      </div>
+                      <p className="text-xs font-mono text-studio-500 leading-relaxed">
+                        {isFormValid 
+                          ? 'Click Generate in the left panel to create your first AI model'
+                          : 'Fill in the required fields in the left panel to begin'
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Quick Stats */}
+                    <div className="flex items-center space-x-6 text-studio-600">
+                      <div className="flex items-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        <span className="text-[10px] font-mono">{pointsData?.balance || 0} pts</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[10px] font-mono">Cost: {POINT_COSTS.masterPrompt + POINT_COSTS.castingImage} pts</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {/* Tools Bar - positioned at right edge of image */}
@@ -3005,83 +3066,6 @@ export default function CastingStudio() {
               </div>
             </div>
           </div>
-        ) : genState.isGenerating ? (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-6">
-            <div className="relative w-24 h-24">
-              <div className="absolute inset-0 border border-studio-800 rounded-full"></div>
-              <div className="absolute inset-0 border-t border-white rounded-full animate-spin"></div>
-            </div>
-            <div className="text-center space-y-2">
-              <h3 className="text-sm font-mono text-white uppercase tracking-[0.2em] animate-pulse">Processing</h3>
-              <p className="text-[10px] font-mono text-studio-500 uppercase tracking-widest">
-                {genState.currentStep || 'Initializing...'}
-              </p>
-            </div>
-          </div>
-        ) : (
-          /* Empty State */
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="relative z-10 w-full max-w-3xl p-8 flex flex-col items-center justify-center min-h-[500px]">
-              <div className="mb-12 text-center space-y-6">
-                <div className="relative inline-block">
-                  <h1 className="text-6xl md:text-8xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-studio-800 tracking-tighter select-none opacity-90">
-                    CASTING<br />STUDIO
-                  </h1>
-                  <div className="absolute -top-4 -left-4 w-4 h-4 border-t border-l border-studio-700" />
-                  <div className="absolute -top-4 -right-4 w-4 h-4 border-t border-r border-studio-700" />
-                  <div className="absolute -bottom-4 -left-4 w-4 h-4 border-b border-l border-studio-700" />
-                  <div className="absolute -bottom-4 -right-4 w-4 h-4 border-b border-r border-studio-700" />
-                </div>
-
-                <div className="flex items-center justify-center space-x-4">
-                  <div className="h-px w-8 bg-studio-800" />
-                  <p className="text-[10px] font-mono uppercase tracking-[0.4em] text-studio-500">
-                    AI Model Generation Engine
-                  </p>
-                  <div className="h-px w-8 bg-studio-800" />
-                </div>
-              </div>
-
-              <div className="w-full bg-black/40 backdrop-blur-md border border-studio-800/60 p-1 shadow-2xl">
-                <div className="bg-[#080808] p-8 space-y-6">
-                  <div className="flex justify-between items-end border-b border-studio-800/50 pb-5">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${isFormValid ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse' : 'bg-amber-600'}`} />
-                        <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">System Status</p>
-                      </div>
-                      <p className={`text-sm font-mono uppercase tracking-[0.15em] ${isFormValid ? 'text-white' : 'text-studio-400'}`}>
-                        {isFormValid ? 'Ready for Generation' : 'Awaiting Parameters'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest mb-1">Points Balance</p>
-                      <div className="flex items-end justify-end space-x-1">
-                        <span className="text-2xl font-mono text-white leading-none tracking-tighter">{pointsData?.balance || 0}</span>
-                        <span className="text-xs font-mono text-studio-600 mb-0.5">pts</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">Headshot</p>
-                      <p className="text-sm font-mono text-white">{POINT_COSTS.masterPrompt + POINT_COSTS.castingImage} pts</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">Full Body</p>
-                      <p className="text-sm font-mono text-white">{POINT_COSTS.fullBody} pts</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">Multi-View</p>
-                      <p className="text-sm font-mono text-white">{POINT_COSTS.multiView} pts</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
