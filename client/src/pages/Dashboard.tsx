@@ -130,7 +130,11 @@ export default function Dashboard() {
         <div className="px-6 pt-6 pb-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-none bg-gradient-to-br from-neutral-700 to-neutral-900 flex items-center justify-center border border-white/10">
-              <Aperture className="w-5 h-5 text-white" />
+              <img 
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
+                alt="Forma Studio" 
+                className="w-6 h-6 invert"
+              />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-white tracking-tight">FormaStudio</h1>

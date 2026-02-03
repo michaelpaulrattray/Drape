@@ -402,7 +402,12 @@ export default function Waitlist() {
 
       {/* Navigation - Inline header with mix-blend-difference */}
       <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center mix-blend-difference text-white pointer-events-none">
-        <a href="#" className="group flex items-center gap-1.5 text-2xl md:text-3xl tracking-tight font-normal pointer-events-auto font-geist">
+        <a href="#" className="group flex items-center gap-2 text-2xl md:text-3xl tracking-tight font-normal pointer-events-auto font-geist">
+          <img 
+            src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
+            alt="Forma Studio" 
+            className="w-7 h-7 md:w-8 md:h-8 invert"
+          />
           <span className="border-b border-white pb-0.5 group-hover:border-transparent transition-colors duration-300">forma</span>
           <span>studio</span>
         </a>
@@ -1138,7 +1143,11 @@ export default function Waitlist() {
               {/* Brand & Newsletter */}
               <div className="space-y-6">
                 <a href="#" className="inline-flex items-center gap-2 font-bold tracking-tighter text-2xl font-geist">
-                  <span className="w-6 h-6 rounded flex items-center justify-center text-sm text-white bg-zinc-900">F</span>
+                  <img 
+                    src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
+                    alt="Forma Studio" 
+                    className="w-6 h-6"
+                  />
                   FORMA
                 </a>
                 <p className="text-sm leading-relaxed max-w-xs text-zinc-500">
