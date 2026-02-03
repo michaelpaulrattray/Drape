@@ -1372,9 +1372,9 @@ export default function CastingStudio() {
 
       {/* Left Panel - Control Panel */}
       <aside className={`
-        ${showMobilePanel ? 'fixed inset-0 z-50 pt-16' : 'hidden'}
-        lg:relative lg:block lg:w-[400px] lg:pt-0
-        bg-[#080808] border-r border-studio-800 flex flex-col h-screen overflow-hidden flex-shrink-0
+        ${showMobilePanel ? 'fixed inset-0 z-50 pt-16 flex flex-col' : 'hidden'}
+        lg:relative lg:flex lg:flex-col lg:w-[400px] lg:pt-0
+        bg-[#080808] border-r border-studio-800 h-screen flex-shrink-0
       `}>
         {/* Header */}
         <div className="hidden lg:flex p-4 border-b border-studio-800 items-center justify-between">
@@ -1392,7 +1392,7 @@ export default function CastingStudio() {
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-2 custom-scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-2 custom-scrollbar">
           {/* 1. CASTING BASICS */}
           <CollapsibleSection title="Casting Basics" required>
             <div className="space-y-4 pt-1">

@@ -419,3 +419,12 @@
 - [x] View locking system with unlock mode
 - [x] All 65 tests passing
 
+
+## Bug Fix: Sidebar Scroll Issue (COMPLETED)
+
+- [x] Fix control panel sidebar to enable vertical scrolling
+- [x] Changed aside from lg:block to lg:flex lg:flex-col for proper flex container
+- [x] Added min-h-0 to scrollable content div to enable flex shrinking
+- [x] Added custom-scrollbar CSS class for dark theme scrollbar styling
+- [x] Ensure all options (color wheel, hair, face details) are accessible
+- [x] Verified scrolling works - all sections now accessible
