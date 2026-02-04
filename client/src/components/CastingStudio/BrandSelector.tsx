@@ -1,28 +1,13 @@
 import Tooltip from "@/components/Tooltip";
 import TriBlendSelector from "@/components/TriBlendSelector";
+import { useCastingFormStore } from "@/stores/useCastingFormStore";
+import { type CastingVibe } from "@/constants/casting";
 
 // ============ Types ============
-
-interface CastingVibe {
-  editorial: number;
-  commercial: number;
-  runway: number;
-}
 
 interface BrandOption {
   value: string;
   desc: string;
-}
-
-interface BrandSelectorProps {
-  prefs: {
-    castingBrand?: string;
-    castingVibe?: CastingVibe;
-    gender?: string;
-    age?: string;
-    ethnicity?: string;
-  };
-  updatePref: (key: string, value: string | CastingVibe) => void;
 }
 
 // ============ Constants ============
@@ -46,7 +31,11 @@ const ETHNICITIES = [
 
 // ============ Main Component ============
 
-export function BrandSelector({ prefs, updatePref }: BrandSelectorProps) {
+export function BrandSelector() {
+  // Get state directly from Zustand store
+  const prefs = useCastingFormStore((state) => state.prefs);
+  const updatePref = useCastingFormStore((state) => state.updatePref);
+
   // Ethnicity selection helpers
   const handleEthnicityClick = (eth: string) => {
     const currentStr = prefs.ethnicity || "";

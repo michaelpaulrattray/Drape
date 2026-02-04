@@ -2071,3 +2071,16 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Migrate generation state usage in CastingStudio.tsx
 - [ ] Update ViewTabs, RefinePanel, ToolsBar, DirectorsNote
 - [ ] Verify all generation features work correctly
+
+
+## CastingStudio Refactor - Phase 17: Update Components to Use Zustand Stores Directly
+- [x] Update HairSection to import from useCastingFormStore directly
+- [x] Update SkinSection to import from useCastingFormStore directly
+- [x] Update EyeSection to import from useCastingFormStore directly
+- [x] Update FaceSection to import from useCastingFormStore directly
+- [x] Update BrandSelector to import from useCastingFormStore directly
+- [x] Update PhysiqueSelector to import from useCastingFormStore directly
+- [x] Remove props from CastingStudio.tsx component calls
+- [x] Verify all components work correctly with direct store access
+- [x] Ensure all 149 tests still pass
+- CastingStudio.tsx reduced from 2,338 to 2,318 lines (20 lines removed from prop passing)

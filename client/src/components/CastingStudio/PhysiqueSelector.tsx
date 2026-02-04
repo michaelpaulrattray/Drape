@@ -1,13 +1,10 @@
+import { useCastingFormStore } from "@/stores/useCastingFormStore";
+
 // ============ Types ============
 
 interface BodyType {
   label: string;
   value: string;
-}
-
-interface PhysiqueSelectorProps {
-  selected: string;
-  onSelect: (value: string) => void;
 }
 
 // ============ Constants ============
@@ -32,16 +29,20 @@ const BODY_ICONS: Record<string, React.ReactNode> = {
 
 // ============ Main Component ============
 
-export function PhysiqueSelector({ selected, onSelect }: PhysiqueSelectorProps) {
+export function PhysiqueSelector() {
+  // Get state directly from Zustand store
+  const bodyType = useCastingFormStore((state) => state.prefs.bodyType);
+  const updatePref = useCastingFormStore((state) => state.updatePref);
+
   return (
     <div className="space-y-2 pt-1">
       <div className="grid grid-cols-3 gap-2">
         {BODY_TYPES.map((opt) => {
-          const isSelected = selected === opt.value;
+          const isSelected = bodyType === opt.value;
           return (
             <button
               key={opt.value}
-              onClick={() => onSelect(opt.value)}
+              onClick={() => updatePref('bodyType', opt.value)}
               className={`
                 relative flex flex-col items-center justify-center aspect-[4/3] rounded-lg border transition-all duration-300 group
                 ${isSelected

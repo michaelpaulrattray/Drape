@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { EYE_PRESETS } from "@/constants/casting";
+import { useCastingFormStore } from "@/stores/useCastingFormStore";
 
 // ============ Types ============
 
@@ -6,12 +7,6 @@ interface EyePreset {
   label: string;
   hex: string;
   image?: string;
-}
-
-interface EyeSectionProps {
-  eyePresets: EyePreset[];
-  selected: string;
-  onSelect: (val: string) => void;
 }
 
 // ============ Sub-Components ============
@@ -112,14 +107,18 @@ function VisualEyeGrid({
 
 // ============ Main Component ============
 
-export function EyeSection({ eyePresets, selected, onSelect }: EyeSectionProps) {
+export function EyeSection() {
+  // Get state directly from Zustand store
+  const eyeColor = useCastingFormStore((state) => state.prefs.eyeColor);
+  const updatePref = useCastingFormStore((state) => state.updatePref);
+
   return (
     <div className="space-y-2 pt-1">
       <label className="text-xs font-medium text-subtle block">Eye Color</label>
       <VisualEyeGrid
-        options={eyePresets}
-        selected={selected}
-        onSelect={onSelect}
+        options={EYE_PRESETS}
+        selected={eyeColor || ""}
+        onSelect={(val) => updatePref('eyeColor', val)}
       />
     </div>
   );

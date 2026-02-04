@@ -1833,52 +1833,32 @@ export default function CastingStudio() {
         <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-2 custom-scrollbar">
           {/* 1. CASTING BASICS */}
           <CollapsibleSection title="Casting Basics" required id="section-casting-basics">
-            <BrandSelector
-              prefs={prefs}
-              updatePref={updatePref as (key: string, value: string | CastingVibe) => void}
-            />
+            <BrandSelector />
           </CollapsibleSection>
 
           {/* 2. PHYSIQUE */}
           <CollapsibleSection title="Physique" id="section-physique">
-            <PhysiqueSelector
-              selected={prefs.bodyType || "Slim"}
-              onSelect={(val) => updatePref('bodyType', val)}
-            />
+            <PhysiqueSelector />
           </CollapsibleSection>
 
           {/* 3. FACE STRUCTURE */}
           <CollapsibleSection title="Face Structure">
-            <FaceSection
-              prefs={prefs}
-              updatePref={updatePref}
-            />
+            <FaceSection />
           </CollapsibleSection>
 
           {/* 4. SKIN & COMPLEXION */}
           <CollapsibleSection title="Skin & Complexion" required id="section-skin">
-            <SkinSection
-              prefs={prefs}
-              updatePref={updatePref}
-            />
+            <SkinSection />
           </CollapsibleSection>
 
           {/* 5. EYES */}
           <CollapsibleSection title="Eyes" required id="section-eyes">
-            <EyeSection
-              eyePresets={EYE_PRESETS}
-              selected={prefs.eyeColor || ""}
-              onSelect={(val) => updatePref('eyeColor', val)}
-            />
+            <EyeSection />
           </CollapsibleSection>
 
           {/* 6. HAIR */}
           <CollapsibleSection title="Hair" required id="section-hair">
-            <HairSection
-              prefs={prefs}
-              updatePref={updatePref}
-              currentHairFamilies={currentHairFamilies().map(h => h.name)}
-            />
+            <HairSection />
           </CollapsibleSection>
         </div>
 

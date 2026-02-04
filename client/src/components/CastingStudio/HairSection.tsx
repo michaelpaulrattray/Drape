@@ -1,43 +1,7 @@
 import { useState } from "react";
 import HairColorWheel from "@/components/HairColorWheel";
 import Tooltip from "@/components/Tooltip";
-
-// ============ Types ============
-
-// Hair-related keys from ModelPreferences
-type HairPrefKey = 
-  | 'hairColor' 
-  | 'hairStyle' 
-  | 'hairLength' 
-  | 'hairTexture' 
-  | 'hairFringe' 
-  | 'hairParting' 
-  | 'hairVolume' 
-  | 'hairFlyaways' 
-  | 'hairHairline' 
-  | 'hairTuck' 
-  | 'hairFade' 
-  | 'facialHair';
-
-interface HairSectionProps {
-  prefs: {
-    gender?: string;
-    hairColor?: string;
-    hairStyle?: string;
-    hairLength?: string;
-    hairTexture?: string;
-    hairFringe?: string;
-    hairParting?: string;
-    hairVolume?: string;
-    hairFlyaways?: string;
-    hairHairline?: string;
-    hairTuck?: string;
-    hairFade?: string;
-    facialHair?: string;
-  };
-  updatePref: <K extends HairPrefKey>(key: K, value: string) => void;
-  currentHairFamilies: string[];
-}
+import { useCastingFormStore } from "@/stores/useCastingFormStore";
 
 // ============ Constants ============
 
@@ -95,8 +59,16 @@ function SelectControl({
 
 // ============ Main Component ============
 
-export function HairSection({ prefs, updatePref, currentHairFamilies }: HairSectionProps) {
+export function HairSection() {
   const [showAdvancedHair, setShowAdvancedHair] = useState(false);
+  
+  // Get state directly from Zustand store
+  const prefs = useCastingFormStore((state) => state.prefs);
+  const updatePref = useCastingFormStore((state) => state.updatePref);
+  const currentHairFamilies = useCastingFormStore((state) => state.currentHairFamilies);
+  
+  // Get hair family names for display
+  const hairFamilyNames = currentHairFamilies().map(h => h.name);
 
   return (
     <div className="space-y-5 pt-1">
@@ -113,7 +85,7 @@ export function HairSection({ prefs, updatePref, currentHairFamilies }: HairSect
       <div className="space-y-2">
         <label className="text-xs font-medium text-subtle block">Style Family</label>
         <div className="grid grid-cols-3 gap-2">
-          {currentHairFamilies.map(style => {
+          {hairFamilyNames.map(style => {
             const isSelected = prefs.hairStyle === style;
             return (
               <button

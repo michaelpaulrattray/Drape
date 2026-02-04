@@ -1,4 +1,5 @@
 import Tooltip from "@/components/Tooltip";
+import { useCastingFormStore } from "@/stores/useCastingFormStore";
 
 // ============ Types ============
 
@@ -7,18 +8,6 @@ interface SkinTone {
   value: string;
   base: string;
   shadow: string;
-}
-
-// Skin-related keys from ModelPreferences
-type SkinPrefKey = 'skinTone' | 'skinTexture' | 'skinFinish';
-
-interface SkinSectionProps {
-  prefs: {
-    skinTone?: string;
-    skinTexture?: string;
-    skinFinish?: string;
-  };
-  updatePref: <K extends SkinPrefKey>(key: K, value: string) => void;
 }
 
 // ============ Constants ============
@@ -77,7 +66,11 @@ function SelectControl({
 
 // ============ Main Component ============
 
-export function SkinSection({ prefs, updatePref }: SkinSectionProps) {
+export function SkinSection() {
+  // Get state directly from Zustand store
+  const prefs = useCastingFormStore((state) => state.prefs);
+  const updatePref = useCastingFormStore((state) => state.updatePref);
+
   return (
     <div className="space-y-5 pt-1">
       {/* Skin Tone Visual Picker */}

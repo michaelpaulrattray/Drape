@@ -1,35 +1,6 @@
 import { useState } from "react";
 import Tooltip from "@/components/Tooltip";
-
-// ============ Types ============
-
-// Face-related keys from ModelPreferences
-type FacePrefKey = 
-  | 'faceShape' 
-  | 'eyebrowStyle' 
-  | 'jawline' 
-  | 'cheekbones' 
-  | 'cheeks' 
-  | 'eyeShape' 
-  | 'noseShape' 
-  | 'lipShape'
-  | 'facialHair';
-
-interface FaceSectionProps {
-  prefs: {
-    gender?: string;
-    faceShape?: string;
-    eyebrowStyle?: string;
-    jawline?: string;
-    cheekbones?: string;
-    cheeks?: string;
-    eyeShape?: string;
-    noseShape?: string;
-    lipShape?: string;
-    facialHair?: string;
-  };
-  updatePref: <K extends FacePrefKey>(key: K, value: string) => void;
-}
+import { useCastingFormStore } from "@/stores/useCastingFormStore";
 
 // ============ Constants ============
 
@@ -137,8 +108,12 @@ function SelectControl({
 
 // ============ Main Component ============
 
-export function FaceSection({ prefs, updatePref }: FaceSectionProps) {
+export function FaceSection() {
   const [showAdvancedFace, setShowAdvancedFace] = useState(false);
+  
+  // Get state directly from Zustand store
+  const prefs = useCastingFormStore((state) => state.prefs);
+  const updatePref = useCastingFormStore((state) => state.updatePref);
 
   return (
     <div className="space-y-5 pt-1">
