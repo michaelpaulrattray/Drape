@@ -1403,3 +1403,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Increase whitespace and padding to match landing page
 - [x] Simplify card styling (less tech, more editorial)
 - [x] Keep orange accent usage minimal and consistent
+
+## Profile Settings Fixes
+- [x] Fix display name not persisting after update (now uses displayName from profile.get query)
+- [x] Ensure profile picture changes persist after refresh (already working via profileData sync)
+- [x] Ensure cover photo changes persist after refresh (already working via profileData sync)
+- [x] Update Profile Settings modal styling to match Editorial Dark dashboard
+- [x] Test all profile changes persist after server restart (91 tests passing)

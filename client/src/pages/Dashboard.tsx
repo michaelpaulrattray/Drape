@@ -45,10 +45,13 @@ export default function Dashboard() {
   );
 
   // Get profile data from backend
-  const { data: profileData } = trpc.profile.get.useQuery(
+  const { data: profileData, refetch: refetchProfile } = trpc.profile.get.useQuery(
     undefined,
     { enabled: isAuthenticated }
   );
+
+  // Get the display name (prefer displayName from profile, fallback to user.name)
+  const displayName = profileData?.displayName || profileData?.name || user?.name || "User";
 
   // Sync profile images from backend on load
   useEffect(() => {
@@ -244,7 +247,7 @@ export default function Dashboard() {
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.name || "User"}</p>
+              <p className="text-sm font-medium text-white truncate">{displayName}</p>
               <p className="text-xs text-zinc-500 truncate">{pointsData?.balance || 0} credits</p>
             </div>
             <button 
@@ -340,7 +343,7 @@ export default function Dashboard() {
               
               <div className="flex-1 pb-2">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-semibold text-white tracking-tight">{user?.name || "Creator"}</h1>
+                  <h1 className="text-3xl font-semibold text-white tracking-tight">{displayName}</h1>
                   <span className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 text-xs font-medium border border-orange-500/20">
                     PRO
                   </span>
@@ -474,6 +477,7 @@ export default function Dashboard() {
       <ProfileSettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        onProfileUpdate={() => refetchProfile()}
         user={user}
         profileImage={profileImage}
         bannerImage={bannerImage}

@@ -18,6 +18,7 @@ import {
 interface ProfileSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onProfileUpdate?: () => void;
   user: {
     name?: string | null;
     email?: string | null;
@@ -35,6 +36,7 @@ interface ProfileSettingsModalProps {
 export default function ProfileSettingsModal({
   isOpen,
   onClose,
+  onProfileUpdate,
   user,
   profileImage,
   bannerImage,
@@ -73,6 +75,7 @@ export default function ProfileSettingsModal({
     onSuccess: () => {
       setSuccessMessage("Profile updated successfully!");
       refetchProfile();
+      onProfileUpdate?.();
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: (err) => {
@@ -86,6 +89,7 @@ export default function ProfileSettingsModal({
       onProfileImageChange(data.avatarUrl);
       setSuccessMessage("Avatar updated!");
       refetchProfile();
+      onProfileUpdate?.();
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: (err) => {
@@ -99,6 +103,7 @@ export default function ProfileSettingsModal({
       onBannerImageChange(data.bannerUrl);
       setSuccessMessage("Banner updated!");
       refetchProfile();
+      onProfileUpdate?.();
       setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: (err) => {
@@ -242,12 +247,12 @@ export default function ProfileSettingsModal({
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-2xl max-h-[85vh] bg-[#0A0A0A]/95 border border-white/10 rounded-xl backdrop-blur-xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-2xl max-h-[85vh] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-800">
           <div>
-            <h2 className="text-lg font-semibold text-white">Settings</h2>
-            <p className="text-xs text-neutral-500 font-mono">// Manage your account</p>
+            <h2 className="text-xl font-semibold text-white tracking-tight">Settings</h2>
+            <p className="text-sm text-zinc-500 mt-0.5">Manage your account preferences</p>
           </div>
           <button
             onClick={onClose}
@@ -273,15 +278,15 @@ export default function ProfileSettingsModal({
 
         <div className="flex h-[calc(85vh-80px)]">
           {/* Sidebar Tabs */}
-          <div className="w-48 border-r border-white/10 p-4 space-y-1">
+          <div className="w-52 border-r border-zinc-800 p-5 space-y-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                   activeTab === tab.id
-                    ? "bg-white/5 text-white border border-white/10"
-                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                    ? "bg-zinc-800/50 text-white"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/30"
                 }`}
               >
                 <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-orange-500" : ""}`} />
@@ -296,10 +301,10 @@ export default function ProfileSettingsModal({
               <div className="space-y-6">
                 {/* Banner Upload */}
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-3">
-                    // Cover Image
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                    Cover Image
                   </label>
-                  <div className="relative h-32 rounded-lg overflow-hidden border border-white/10 group">
+                  <div className="relative h-32 rounded-xl overflow-hidden border border-zinc-800 group">
                     <img
                       src={bannerImage || profileData?.bannerUrl || defaultBanner}
                       alt="Cover"
@@ -333,17 +338,17 @@ export default function ProfileSettingsModal({
                       onChange={handleBannerImageUpload}
                     />
                   </div>
-                  <p className="text-xs text-neutral-600 mt-2 font-mono">JPG, PNG or WebP. Max 10MB.</p>
+                  <p className="text-xs text-zinc-500 mt-2">JPG, PNG or WebP. Max 10MB.</p>
                 </div>
 
                 {/* Avatar Upload */}
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-3">
-                    // Profile Picture
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                    Profile Picture
                   </label>
                   <div className="flex items-center gap-4">
                     <div className="relative group">
-                      <div className="w-20 h-20 rounded-full overflow-hidden border border-white/10">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border border-zinc-800">
                         <img
                           src={profileImage || profileData?.avatarUrl || defaultAvatar}
                           alt="Profile"
@@ -370,65 +375,65 @@ export default function ProfileSettingsModal({
                       />
                     </div>
                     <div>
-                      <p className="text-sm text-neutral-300">Upload a new profile picture</p>
-                      <p className="text-xs text-neutral-500 font-mono">JPG, PNG or WebP. Max 5MB.</p>
+                      <p className="text-sm text-zinc-300">Upload a new profile picture</p>
+                      <p className="text-xs text-zinc-500">JPG, PNG or WebP. Max 5MB.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Display Name */}
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">
-                    // Display Name
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">
+                    Display Name
                   </label>
                   <input
                     type="text"
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
                     maxLength={100}
-                    className="w-full bg-white/5 border border-white/10 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all"
                     placeholder="Your display name"
                   />
-                  <p className="text-xs text-neutral-600 mt-1 font-mono">{editedName.length}/100 characters</p>
+                  <p className="text-xs text-zinc-500 mt-1.5">{editedName.length}/100 characters</p>
                 </div>
 
                 {/* Bio */}
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">
-                    // Bio
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">
+                    Bio
                   </label>
                   <textarea
                     value={editedBio}
                     onChange={(e) => setEditedBio(e.target.value)}
                     maxLength={500}
                     rows={3}
-                    className="w-full bg-white/5 border border-white/10 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all resize-none"
                     placeholder="Tell us about yourself..."
                   />
-                  <p className="text-xs text-neutral-600 mt-1 font-mono">{editedBio.length}/500 characters</p>
+                  <p className="text-xs text-zinc-500 mt-1.5">{editedBio.length}/500 characters</p>
                 </div>
 
                 {/* Email (read-only) */}
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">
-                    // Email Address
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">
+                    Email Address
                   </label>
                   <input
                     type="email"
                     value={profileData?.email || user?.email || ""}
                     readOnly
-                    className="w-full bg-white/5 border border-white/10 rounded-md px-4 py-3 text-neutral-400 text-sm cursor-not-allowed"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-500 text-sm cursor-not-allowed"
                   />
-                  <p className="text-xs text-neutral-600 mt-2 font-mono">Email cannot be changed</p>
+                  <p className="text-xs text-zinc-500 mt-1.5">Email cannot be changed</p>
                 </div>
 
                 {/* Storage Usage */}
                 {storageInfo && (
                   <div>
-                    <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">
-                      // Storage Usage
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">
+                      Storage Usage
                     </label>
-                    <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                    <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <HardDrive className="w-4 h-4 text-neutral-400" />
@@ -436,9 +441,9 @@ export default function ProfileSettingsModal({
                             {formatBytes(storageInfo.used)} / {formatBytes(storageInfo.limit)}
                           </span>
                         </div>
-                        <span className="text-xs text-neutral-500 font-mono">{storageInfo.percentage}% used</span>
+                        <span className="text-xs text-zinc-500">{storageInfo.percentage}% used</span>
                       </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                         <div 
                           className={`h-full rounded-full transition-all ${
                             storageInfo.percentage > 90 ? "bg-red-500" : 
@@ -456,7 +461,7 @@ export default function ProfileSettingsModal({
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-6 py-2.5 rounded-md bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+                    className="px-6 py-3 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-all flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
@@ -478,26 +483,26 @@ export default function ProfileSettingsModal({
               <div className="space-y-6">
                 {/* Current Plan */}
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-3">
-                    // Current Plan
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                    Current Plan
                   </label>
-                  <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                  <div className="p-5 rounded-xl bg-zinc-900 border border-zinc-800">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-none bg-orange-500/20 border border-orange-500/30 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
                           <Sparkles className="w-5 h-5 text-orange-400" />
                         </div>
                         <div>
                           <p className="text-white font-medium capitalize">{planTier} Plan</p>
-                          <p className="text-xs text-neutral-500 font-mono">Active subscription</p>
+                          <p className="text-xs text-zinc-500">Active subscription</p>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-none bg-orange-500/20 text-orange-400 text-[10px] font-mono uppercase tracking-wider border border-orange-500/30">
+                      <span className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 text-xs font-medium border border-orange-500/20">
                         {planTier === "free" ? "FREE" : "PRO"}
                       </span>
                     </div>
                     {planTier === "free" && (
-                      <button className="w-full mt-2 px-4 py-2.5 rounded-md bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
+                      <button className="w-full mt-3 px-4 py-3 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-all flex items-center justify-center gap-2">
                         <Sparkles className="w-4 h-4" />
                         Upgrade to Pro
                       </button>
@@ -507,16 +512,16 @@ export default function ProfileSettingsModal({
 
                 {/* Credits Balance */}
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-3">
-                    // Credits Balance
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                    Credits Balance
                   </label>
-                  <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                  <div className="p-5 rounded-xl bg-zinc-900 border border-zinc-800">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-3xl font-bold text-white">{pointsBalance}</p>
-                        <p className="text-xs text-neutral-500 font-mono">Available credits</p>
+                        <p className="text-xs text-zinc-500">Available credits</p>
                       </div>
-                      <button className="px-4 py-2 rounded-md bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2">
+                      <button className="px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm font-medium hover:bg-zinc-700 transition-all flex items-center gap-2">
                         <CreditCard className="w-4 h-4" />
                         Buy Credits
                       </button>
@@ -526,8 +531,8 @@ export default function ProfileSettingsModal({
 
                 {/* Usage History */}
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-3">
-                    // Recent Usage
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                    Recent Usage
                   </label>
                   <div className="space-y-2">
                     {[
@@ -535,18 +540,18 @@ export default function ProfileSettingsModal({
                       { action: "Campaign Export", credits: -5, date: "Yesterday" },
                       { action: "Credits Purchase", credits: 100, date: "3 days ago" },
                     ].map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                      <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800">
                         <div>
                           <p className="text-sm text-white">{item.action}</p>
-                          <p className="text-xs text-neutral-500 font-mono">{item.date}</p>
+                          <p className="text-xs text-zinc-500">{item.date}</p>
                         </div>
-                        <span className={`text-sm font-mono ${item.credits > 0 ? "text-green-400" : "text-neutral-400"}`}>
+                        <span className={`text-sm font-medium ${item.credits > 0 ? "text-green-400" : "text-zinc-400"}`}>
                           {item.credits > 0 ? "+" : ""}{item.credits}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <button className="w-full mt-3 px-4 py-2 rounded-md bg-white/5 border border-white/10 text-neutral-400 text-sm font-medium hover:bg-white/10 hover:text-white transition-colors flex items-center justify-center gap-2">
+                  <button className="w-full mt-3 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-medium hover:bg-zinc-800 hover:text-white transition-all flex items-center justify-center gap-2">
                     View Full History
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -557,8 +562,8 @@ export default function ProfileSettingsModal({
             {activeTab === "notifications" && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-3">
-                    // Email Notifications
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                    Email Notifications
                   </label>
                   <div className="space-y-3">
                     {[
@@ -566,7 +571,7 @@ export default function ProfileSettingsModal({
                       { label: "Weekly digest", description: "Summary of your activity and new features", enabled: false },
                       { label: "Marketing updates", description: "News about FormaStudio and special offers", enabled: false },
                     ].map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10">
+                      <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800">
                         <div>
                           <p className="text-sm text-white">{item.label}</p>
                           <p className="text-xs text-neutral-500">{item.description}</p>
@@ -592,17 +597,17 @@ export default function ProfileSettingsModal({
             {activeTab === "security" && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-3">
-                    // Connected Accounts
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                    Connected Accounts
                   </label>
                   <div className="space-y-3">
                     {[
                       { provider: "Google", connected: true, email: profileData?.email || user?.email },
                       { provider: "Apple", connected: false, email: null },
                     ].map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10">
+                      <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
                             {item.provider === "Google" ? (
                               <svg className="w-5 h-5" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -619,16 +624,16 @@ export default function ProfileSettingsModal({
                           <div>
                             <p className="text-sm text-white">{item.provider}</p>
                             {item.connected ? (
-                              <p className="text-xs text-neutral-500 font-mono">{item.email}</p>
+                              <p className="text-xs text-zinc-500">{item.email}</p>
                             ) : (
                               <p className="text-xs text-neutral-500">Not connected</p>
                             )}
                           </div>
                         </div>
                         <button
-                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                          className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${
                             item.connected
-                              ? "bg-white/5 border border-white/10 text-neutral-400 hover:text-white"
+                              ? "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white"
                               : "bg-orange-500 text-white hover:bg-orange-600"
                           }`}
                         >
@@ -640,12 +645,12 @@ export default function ProfileSettingsModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-neutral-500 uppercase tracking-wider mb-3">
-                    // Danger Zone
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                    Danger Zone
                   </label>
-                  <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <div className="p-5 rounded-xl bg-red-500/5 border border-red-500/20">
                     <p className="text-sm text-red-400 mb-3">Delete your account and all associated data. This action cannot be undone.</p>
-                    <button className="px-4 py-2 rounded-md bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors">
+                    <button className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-all">
                       Delete Account
                     </button>
                   </div>
