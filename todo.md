@@ -1879,3 +1879,19 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Revert grab line opacity to 0.4
 - [x] Revert inter-particle line opacity to 0.3
 - [x] Keep the canvas scaling fix that made particles visible
+
+
+## DNA Helix - White Glow Effect
+- [x] Replace blue progress color with white glow using canvas shadowBlur
+- [x] Apply white glow to lit rungs and endpoint spheres
+- [x] Use white glow throughout including completion state (no green)
+- [x] Add strong shadowBlur effect for luminous appearance
+- [x] Update celebration burst and ripple effects to white glow
+
+
+## DNA Helix - Black Glow Effect (Better Contrast)
+- [x] Replace white glow with black/dark gray for lit rungs
+- [x] Add subtle outer glow effect using shadowBlur
+- [x] Update endpoint spheres to dark with glow
+- [x] Update celebration and ripple effects to dark theme
+- [x] Ensure high contrast on white background

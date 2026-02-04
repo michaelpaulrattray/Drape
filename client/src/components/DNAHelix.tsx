@@ -108,7 +108,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     time: number
   ) => {
     const centerY = height / 2;
-    const progressColor = isComplete ? '34, 197, 94' : '59, 130, 246';
+    const progressColor = '255, 255, 255'; // White glow throughout
 
     // Draw decorative circles
     decorativeCircles.forEach((circle, i) => {
@@ -119,7 +119,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       ctx.beginPath();
       ctx.arc(x, y, circle.radius + pulseOffset, 0, Math.PI * 2);
       ctx.strokeStyle = isComplete 
-        ? `rgba(34, 197, 94, ${circle.opacity})` 
+        ? `rgba(40, 40, 40, ${circle.opacity * 2})` 
         : `rgba(180, 180, 180, ${circle.opacity})`;
       ctx.lineWidth = 1;
       ctx.stroke();
@@ -134,7 +134,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       ctx.moveTo(from.x * width, from.y * height);
       ctx.lineTo(to.x * width, to.y * height);
       ctx.strokeStyle = isComplete 
-        ? 'rgba(34, 197, 94, 0.08)' 
+        ? 'rgba(40, 40, 40, 0.15)' 
         : 'rgba(180, 180, 180, 0.08)';
       ctx.lineWidth = 1;
       ctx.stroke();
@@ -217,7 +217,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       ctx.beginPath();
       ctx.arc(finalX, finalY, dot.size, 0, Math.PI * 2);
       ctx.fillStyle = isComplete 
-        ? `rgba(34, 197, 94, ${dot.opacity})` 
+        ? `rgba(30, 30, 30, ${dot.opacity * 1.5})` 
         : `rgba(120, 120, 120, ${dot.opacity})`;
       ctx.fill();
     });
@@ -236,7 +236,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
           ctx.moveTo(mouse.x!, mouse.y!);
           ctx.lineTo(particle.x, particle.y);
           ctx.strokeStyle = isComplete 
-            ? `rgba(34, 197, 94, ${opacity})` 
+            ? `rgba(30, 30, 30, ${opacity * 1.5})` 
             : `rgba(80, 80, 80, ${opacity})`;
           ctx.lineWidth = 1.5;
           ctx.stroke();
@@ -264,7 +264,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.strokeStyle = isComplete 
-              ? `rgba(34, 197, 94, ${opacity})` 
+              ? `rgba(30, 30, 30, ${opacity * 1.5})` 
               : `rgba(80, 80, 80, ${opacity})`;
             ctx.lineWidth = 1;
             ctx.stroke();
@@ -285,38 +285,49 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
   ) => {
     const depthFactor = 0.3 + (z + 1) * 0.35; // 0.3 to 1.0
 
+    // Save context state for glow effect
+    ctx.save();
+
     // Main rung line
     ctx.beginPath();
     ctx.moveTo(x, y1);
     ctx.lineTo(x, y2);
     
     if (isLit) {
-      ctx.strokeStyle = isComplete 
-        ? `rgba(34, 197, 94, ${depthFactor * 0.8})` 
-        : `rgba(59, 130, 246, ${depthFactor * 0.8})`;
-      ctx.lineWidth = 2 + depthFactor * 1.5;
+      // Black glow effect using shadowBlur for high contrast
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 8 + depthFactor * 6;
+      ctx.strokeStyle = `rgba(30, 30, 30, ${depthFactor * 0.95})`;
+      ctx.lineWidth = 2.5 + depthFactor * 1.5;
     } else {
-      ctx.strokeStyle = `rgba(100, 100, 100, ${depthFactor * 0.6})`;
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(150, 150, 150, ${depthFactor * 0.5})`;
       ctx.lineWidth = 1.5 + depthFactor;
     }
     ctx.stroke();
 
     // Draw endpoint spheres for lit rungs
     if (isLit) {
-      const sphereSize = 3 + depthFactor * 2;
-      const sphereColor = isComplete ? '34, 197, 94' : '59, 130, 246';
+      const sphereSize = 3.5 + depthFactor * 2.5;
+
+      // Black glow spheres
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 10 + depthFactor * 8;
 
       ctx.beginPath();
       ctx.arc(x, y1, sphereSize, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${sphereColor}, ${depthFactor * 0.9})`;
+      ctx.fillStyle = `rgba(20, 20, 20, ${depthFactor * 0.95})`;
       ctx.fill();
 
       ctx.beginPath();
       ctx.arc(x, y2, sphereSize, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${sphereColor}, ${depthFactor * 0.9})`;
+      ctx.fillStyle = `rgba(20, 20, 20, ${depthFactor * 0.95})`;
       ctx.fill();
     }
-  }, [isComplete]);
+
+    // Restore context state
+    ctx.restore();
+  }, []);
 
   // Draw the DNA helix
   const drawDNAHelix = useCallback((
@@ -397,9 +408,8 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
           ctx.beginPath();
           ctx.moveTo(p1.x, p1.y);
           ctx.lineTo(p2.x, p2.y);
-          ctx.strokeStyle = isComplete 
-            ? `rgba(34, 197, 94, ${depthFactor})` 
-            : `rgba(60, 60, 60, ${depthFactor})`;
+          // Keep strands gray - only rungs glow white
+          ctx.strokeStyle = `rgba(60, 60, 60, ${depthFactor})`;
           ctx.lineWidth = 1.5 + depthFactor * 1.5;
           ctx.stroke();
         }
@@ -442,19 +452,17 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       ctx.fillStyle = `rgba(0, 0, 0, ${depthFactor * 0.15})`;
       ctx.fill();
 
-      // Main node
+      // Main node - keep gray (strands don't glow)
       ctx.beginPath();
       ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
-      ctx.fillStyle = isComplete 
-        ? `rgba(34, 197, 94, ${depthFactor * 0.9})` 
-        : `rgba(50, 50, 50, ${depthFactor * 0.9})`;
+      ctx.fillStyle = `rgba(50, 50, 50, ${depthFactor * 0.9})`;
       ctx.fill();
 
       // Highlight for front nodes
       if (node.z > 0.3) {
         ctx.beginPath();
         ctx.arc(node.x - size * 0.3, node.y - size * 0.3, size * 0.3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${depthFactor * 0.4})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${depthFactor * 0.3})`;
         ctx.fill();
       }
     });
@@ -472,10 +480,14 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         const size = (1 - celebrationTime) * 6;
         const opacity = (1 - celebrationTime) * 0.8;
 
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 8;
         ctx.beginPath();
-        ctx.fillStyle = `rgba(34, 197, 94, ${opacity})`;
+        ctx.fillStyle = `rgba(20, 20, 20, ${opacity})`;
         ctx.arc(x, y, size, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
       }
     }
 
@@ -488,11 +500,15 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         const radius = 50 + ripplePhase * 120;
         const opacity = (1 - ripplePhase) * 0.3;
 
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 6;
         ctx.beginPath();
         ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(34, 197, 94, ${opacity})`;
+        ctx.strokeStyle = `rgba(30, 30, 30, ${opacity})`;
         ctx.lineWidth = 1.5 - ripplePhase;
         ctx.stroke();
+        ctx.restore();
       }
     }
   }, [progress, isComplete, showCelebration, drawRung]);
