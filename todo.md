@@ -1732,3 +1732,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix tooltips - updated to light mode (white bg, gray border, charcoal text)
 - [x] Fix debug options - now admin-only in toggleable "Admin Tools" menu
 
+
+## Phase 2.13: Additional Casting Studio UI Fixes
+
+### Issues Reported
+- [x] Fix age slider track - changed to #C1CBD8 (darker blue-gray) with 6px height
+- [x] Fix iris images - added white background to container, inset images 8% for clean look
+- [x] Fix hair color wheel - increased swatch size to 40px, added py-3 padding, increased spacing

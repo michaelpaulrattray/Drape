@@ -300,13 +300,13 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
              <div className="bg-gray-100 border border-gray-200 p-0.5 rounded-full flex relative">
                   <button
                     onClick={() => { userInteractedRef.current = true; setActiveTab('Dyed'); }}
-                    className={`px-8 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all duration-300 ${activeTab === 'Dyed' ? 'bg-slate-accent text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`px-8 py-2 rounded-full text-xs font-medium transition-all duration-300 ${activeTab === 'Dyed' ? 'bg-slate-accent text-white shadow-sm' : 'text-subtle hover:text-charcoal'}`}
                   >
                     Dyed
                   </button>
                   <button
                     onClick={() => { userInteractedRef.current = true; setActiveTab('Natural'); }}
-                    className={`px-8 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all duration-300 ${activeTab === 'Natural' ? 'bg-slate-accent text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`px-8 py-2 rounded-full text-xs font-medium transition-all duration-300 ${activeTab === 'Natural' ? 'bg-slate-accent text-white shadow-sm' : 'text-subtle hover:text-charcoal'}`}
                   >
                     Natural
                   </button>
@@ -323,22 +323,22 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
         </div>
 
         {/* Swatches */}
-        <div className="overflow-x-auto no-scrollbar pb-2">
-            <div className="flex space-x-2.5 px-1">
+        <div className="overflow-x-auto no-scrollbar py-3">
+            <div className="flex space-x-3 px-2">
                 {colors.map((c, i) => (
                     <button
                         key={c.label}
                         onClick={() => { userInteractedRef.current = true; setSelectedIndex(i); }}
-                        className={`flex flex-col items-center space-y-1 group min-w-[40px]`}
+                        className={`flex flex-col items-center space-y-1.5 group min-w-[48px]`}
                     >
-                        <div className={`w-8 h-8 rounded-full border transition-all duration-200 ${selectedIndex === i ? 'border-slate-accent scale-110 ring-2 ring-slate-accent/30' : 'border-gray-300 group-hover:border-slate-accent'}`} style={{ backgroundColor: c.hex }}>
+                        <div className={`w-10 h-10 rounded-full border-2 transition-all duration-200 ${selectedIndex === i ? 'border-slate-accent scale-110 ring-2 ring-slate-accent/30 shadow-md' : 'border-gray-300 group-hover:border-slate-accent'}`} style={{ backgroundColor: c.hex }}>
                             {selectedIndex === i && (
                                 <div className="w-full h-full flex items-center justify-center">
-                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={(['#FFFFFF', '#EBEBE1', '#FDEEF4', '#E5E4E2'].includes(c.hex)) ? 'black' : 'white'} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={(['#FFFFFF', '#EBEBE1', '#FDEEF4', '#E5E4E2'].includes(c.hex)) ? 'black' : 'white'} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 </div>
                             )}
                         </div>
-                        <span className={`text-[8px] font-mono uppercase tracking-tight w-full text-center truncate ${selectedIndex === i ? 'text-obsidian font-bold' : 'text-gray-500'}`}>
+                        <span className={`text-[9px] font-medium w-full text-center truncate ${selectedIndex === i ? 'text-obsidian font-semibold' : 'text-subtle'}`}>
                             {c.label.split(' ')[0]}
                         </span>
                     </button>
@@ -347,20 +347,20 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
         </div>
 
         {/* Tone Controls (Replaces Intensity) */}
-        <div className="space-y-3 pt-2 border-t border-gray-200">
+        <div className="space-y-3 pt-3 border-t border-gray-200">
             <div className="flex justify-between items-center">
-                 <span className="text-[9px] font-mono uppercase text-gray-500 tracking-wider">
+                 <span className="text-xs font-medium text-subtle">
                     Tone
                  </span>
-                 <span className="text-[9px] font-mono text-obsidian tracking-widest uppercase">{tone === 'Cool' ? 'Cool (Ash)' : tone}</span>
+                 <span className="text-xs font-semibold text-obsidian">{tone === 'Cool' ? 'Cool (Ash)' : tone}</span>
             </div>
             
-            <div className="flex bg-gray-100 p-0.5 rounded border border-gray-200">
+            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
                 {['Warm', 'Neutral', 'Cool'].map((t) => (
                     <button
                         key={t}
                         onClick={() => { userInteractedRef.current = true; setTone(t as any); }}
-                        className={`flex-1 py-1.5 rounded-sm text-[9px] font-mono uppercase tracking-widest transition-all ${tone === t ? 'bg-slate-accent text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`flex-1 py-2 rounded-md text-xs font-medium transition-all ${tone === t ? 'bg-slate-accent text-white shadow-sm' : 'text-subtle hover:text-charcoal'}`}
                     >
                         {t === 'Cool' ? 'Cool / Ash' : t}
                     </button>

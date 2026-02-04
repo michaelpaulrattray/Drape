@@ -370,9 +370,9 @@ input[type="range"].slider-slate {
   cursor: pointer;
 }
 input[type="range"].slider-slate::-webkit-slider-track {
-  background: #E4EBF1;
-  height: 4px;
-  border-radius: 2px;
+  background: #C1CBD8;
+  height: 6px;
+  border-radius: 3px;
 }
 input[type="range"].slider-slate::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -391,9 +391,9 @@ input[type="range"].slider-slate::-webkit-slider-thumb:hover {
   transform: scale(1.1);
 }
 input[type="range"].slider-slate::-moz-range-track {
-  background: #E4EBF1;
-  height: 4px;
-  border-radius: 2px;
+  background: #C1CBD8;
+  height: 6px;
+  border-radius: 3px;
 }
 input[type="range"].slider-slate::-moz-range-thumb {
   width: 16px;

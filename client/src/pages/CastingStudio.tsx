@@ -659,10 +659,10 @@ function VisualEyeGrid({
             key={opt.label}
             onClick={() => onSelect(opt.label)}
             className={`
-              relative w-full aspect-square rounded-full border-2 transition-all duration-200 group overflow-hidden
+              relative w-full aspect-square rounded-full border-2 transition-all duration-200 group overflow-hidden bg-white
               ${isSelected
                 ? 'border-slate-accent ring-2 ring-slate-accent/30 scale-110 z-10 shadow-md'
-                : 'border-transparent hover:border-slate-accent/50 hover:scale-105'
+                : 'border-gray-100 hover:border-slate-accent/50 hover:scale-105'
               }
             `}
             title={opt.label}
@@ -671,7 +671,7 @@ function VisualEyeGrid({
               <img
                 src={opt.image}
                 alt={opt.label}
-                className="absolute inset-0 w-full h-full object-cover rounded-full"
+                className="absolute inset-[8%] w-[84%] h-[84%] object-contain rounded-full"
               />
             ) : (
               <>
