@@ -121,21 +121,21 @@ const SKIN_TEXTURES = ["Raw / Standard", "Glass / Perfect", "Freckled", "Texture
 const SKIN_FINISHES = ["Natural", "Matte / Powdered", "Dewy / Sweat", "Oily"];
 
 const EYE_PRESETS = [
-  { label: "Ice", hex: "#c4d6e0", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/vqqDiUXdPHouiNIf.png" },
-  { label: "Sky", hex: "#8fb6cd", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/ugREJGTmZHvGohva.png" },
-  { label: "Azure", hex: "#4e7bb5", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/SrbVePLOZFZeFwZS.png" },
-  { label: "Navy", hex: "#283655", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/IlubwHpACNZdKPpY.png" },
-  { label: "Grey", hex: "#9baec2", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/BXLKpjMgtBPPpNsl.png" },
-  { label: "Steel", hex: "#687684", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/gEYsnjXMHagLDaRN.png" },
-  { label: "Mint", hex: "#8caea0", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/JEqWKitxQAJvcOIv.png" },
-  { label: "Green", hex: "#4f6f46", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/xEpghHNbKukwluSa.png" },
-  { label: "Olive", hex: "#6e7039", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/wUXmPVotKyBuOZvm.png" },
-  { label: "Hazel", hex: "#947846", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/wPHJlTLLFHOIlKCl.png" },
-  { label: "Amber", hex: "#c49647", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/kJEPKFDnnbdYyFno.png" },
-  { label: "Honey", hex: "#b89650", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/ELDsMLehQBRKSxFm.png" },
-  { label: "Brown", hex: "#634e34", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lakRCWMCLaAKsoRC.png" },
-  { label: "Dark", hex: "#3b2b22", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/MiiYEWWDcEbbMeBP.png" },
-  { label: "Black", hex: "#1c1c1c", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/yfPffJwzBtjyLMnc.png" },
+  { label: "Ice", hex: "#c4d6e0", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/awhMLmxIrioToOtD.png" },
+  { label: "Sky", hex: "#8fb6cd", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/FlseOhpRliuvMbYW.png" },
+  { label: "Azure", hex: "#4e7bb5", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/jDkDZBaWyRxXoXzg.png" },
+  { label: "Navy", hex: "#283655", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/hyHYQcABgigtfLTG.png" },
+  { label: "Grey", hex: "#9baec2", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/IliNZctazjBbuArn.png" },
+  { label: "Steel", hex: "#687684", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/zRTUErdEfWCDvpZi.png" },
+  { label: "Mint", hex: "#8caea0", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sWJWzVFBwmzmBmLc.png" },
+  { label: "Green", hex: "#4f6f46", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/GXpXcfyjyKJwqBiI.png" },
+  { label: "Olive", hex: "#6e7039", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/yIVGalpveKoMCBbA.png" },
+  { label: "Hazel", hex: "#947846", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lsZyCJPxdNyQUukh.png" },
+  { label: "Amber", hex: "#c49647", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/xdyXDoAPMTDZsHEG.png" },
+  { label: "Honey", hex: "#b89650", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/fCZhpeTDeAOFaWmt.png" },
+  { label: "Brown", hex: "#634e34", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lAEQjgHkMacXaXgt.png" },
+  { label: "Dark", hex: "#3b2b22", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/UCJxxqEDBlsmVOvD.png" },
+  { label: "Black", hex: "#1c1c1c", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/ZNXIoifWUSilVbcZ.png" },
 ];
 
 const CHAR_OPTIONS = {
@@ -659,10 +659,10 @@ function VisualEyeGrid({
             key={opt.label}
             onClick={() => onSelect(opt.label)}
             className={`
-              relative w-full aspect-square rounded-full border-2 transition-all duration-200 group overflow-hidden bg-white
+              relative w-14 h-14 rounded-full border-2 transition-all duration-200 group overflow-hidden
               ${isSelected
                 ? 'border-slate-accent ring-2 ring-slate-accent/30 scale-110 z-10 shadow-md'
-                : 'border-gray-100 hover:border-slate-accent/50 hover:scale-105'
+                : 'border-gray-200 hover:border-slate-accent/50 hover:scale-105'
               }
             `}
             title={opt.label}
@@ -671,7 +671,7 @@ function VisualEyeGrid({
               <img
                 src={opt.image}
                 alt={opt.label}
-                className="absolute inset-[8%] w-[84%] h-[84%] object-contain rounded-full"
+                className="absolute inset-0 w-full h-full object-cover rounded-full"
               />
             ) : (
               <>

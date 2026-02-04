@@ -1739,3 +1739,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix age slider track - changed to #C1CBD8 (darker blue-gray) with 6px height
 - [x] Fix iris images - added white background to container, inset images 8% for clean look
 - [x] Fix hair color wheel - increased swatch size to 40px, added py-3 padding, increased spacing
+
+### Eye Preset Images Update
+- [x] Replace eye preset images with new transparent PNGs
+- [x] Upload all 15 eye images to S3 (ice, sky, azure, navy, grey, steel, mint, green, olive, hazel, amber, honey, brown, dark, black)
+- [x] Update CastingStudio.tsx with new S3 URLs
+- [x] Increase eye image size in the UI (w-14 h-14 = 56px)
