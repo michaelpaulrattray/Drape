@@ -662,7 +662,7 @@ function VisualEyeGrid({
         key={opt.label}
         onClick={() => onSelect(opt.label)}
         className={`
-          relative flex-shrink-0 w-12 h-12 rounded-full transition-all duration-200 group overflow-hidden
+          relative flex-shrink-0 w-16 h-16 rounded-full transition-all duration-200 group overflow-hidden
           ${isSelected
             ? 'ring-2 ring-slate-accent ring-offset-2 ring-offset-white scale-110 z-10'
             : 'hover:scale-105 opacity-80 hover:opacity-100'

@@ -1777,3 +1777,6 @@ The entry and configuration files are properly set up with several enhancements 
 ### Eye Color Selector Horizontal Scroller
 - [x] Convert eye color selector from 4-column grid to 2-row horizontal scroller
 - [x] Save vertical space in the UI (w-12 h-12 = 48px per iris, 2 rows with gap-2)
+
+### Increase Iris Image Size
+- [x] Increase iris images from 48px (w-12 h-12) to 64px (w-16 h-16)
