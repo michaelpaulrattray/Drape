@@ -180,14 +180,20 @@ function Header() {
 
 function LogoMarquee() {
   return (
-    <div className="relative overflow-hidden py-6 border-y border-black/10">
+    <div 
+      className="relative overflow-hidden flex-1"
+      style={{
+        maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)'
+      }}
+    >
       <div className="flex animate-marquee">
         {[...clientLogos, ...clientLogos, ...clientLogos, ...clientLogos].map((logo, index) => (
           <div
             key={index}
             className="flex items-center justify-center min-w-[120px] px-8 grayscale opacity-50 hover:opacity-100 hover:grayscale-0 transition-all duration-300"
           >
-            <span className="text-2xl font-bold text-black/40">{logo.name}</span>
+            <span className="text-xl font-semibold text-black/40">{logo.name}</span>
           </div>
         ))}
       </div>
@@ -214,20 +220,23 @@ function HeroSection() {
           </div>
         </div>
 
-        {/* Logo Marquee */}
-        <LogoMarquee />
-
-        {/* Trust Badge */}
-        <div className="flex items-center justify-end gap-4 py-6">
-          <div className="flex items-center gap-1">
-            {[...Array(5)].map((_, i) => (
-              <svg key={i} className="w-4 h-4 text-black fill-current" viewBox="0 0 20 20">
-                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-              </svg>
-            ))}
-            <span className="ml-2 text-sm font-medium">4.9/5</span>
+        {/* Logo Marquee + Trust Badge - Inline */}
+        <div className="flex items-center gap-6 py-6 border-y border-black/10">
+          {/* Logo Marquee with gradient fades */}
+          <LogoMarquee />
+          
+          {/* Trust Badge - Right aligned */}
+          <div className="flex items-center gap-4 shrink-0 pl-4">
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <svg key={i} className="w-3.5 h-3.5 text-black/60 fill-current" viewBox="0 0 20 20">
+                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                </svg>
+              ))}
+              <span className="ml-1.5 text-sm font-medium text-black/80">4.9/5</span>
+            </div>
+            <span className="text-sm text-black/50">Trusted by <span className="font-medium text-black/70">100+</span> businesses</span>
           </div>
-          <span className="text-sm text-black/50">Trusted by 100+ businesses</span>
         </div>
 
         {/* Hero Image */}

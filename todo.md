@@ -2206,3 +2206,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Description paragraph: right-aligned at same level as stats
 - [x] Video block: add "Play Showreel" label below play button
 - [x] Overall layout: more horizontal spread
+
+
+## Hero Logo Marquee Fix
+- [x] Make logo marquee and trust badge inline (same row)
+- [x] Add gradient fade on left edge of marquee
+- [x] Add gradient fade on right edge of marquee
+- [x] Trust badge right-aligned on same line
