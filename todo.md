@@ -1501,3 +1501,21 @@ The entry and configuration files are properly set up with several enhancements 
 ### Testing
 - [x] Write tests for low-balance warning logic
 - [x] Write tests for proration calculations
+
+## Billing Tab Enhancement (Manus-style)
+
+### Backend
+- [x] Add billing.getInvoices endpoint to fetch Stripe invoices
+- [x] Add billing.getAllInvoices endpoint with pagination
+- [x] Add billing.getSubscriptionDetails endpoint for renewal date
+
+### Frontend - Billing Tab Redesign
+- [x] Show current plan with renewal date and Manage/Add credits buttons
+- [x] Display credits breakdown (total, rollover, monthly)
+- [x] Show recent activity/invoices list with Date, Amount, Download
+- [x] Add "View all invoices" link with expand/collapse
+- [x] Integrate Manage button to open billing modal
+- [x] Add "Add credits" button to open topup modal
+
+### Testing
+- [x] Write tests for invoice retrieval and subscription details

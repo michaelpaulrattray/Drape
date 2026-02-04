@@ -444,3 +444,109 @@ export function calculateCreditAdjustment(
   
   return proratedCredits;
 }
+
+
+/**
+ * Get invoices for a customer
+ */
+export async function getCustomerInvoices(
+  customerId: string,
+  limit: number = 10
+): Promise<{
+  invoices: Array<{
+    id: string;
+    date: Date;
+    amount: number;
+    status: string;
+    pdfUrl: string | null;
+    hostedUrl: string | null;
+    description: string | null;
+  }>;
+  hasMore: boolean;
+}> {
+  try {
+    const invoices = await stripe.invoices.list({
+      customer: customerId,
+      limit: limit + 1, // Fetch one extra to check if there are more
+    });
+
+    const hasMore = invoices.data.length > limit;
+    const invoiceData = invoices.data.slice(0, limit).map((invoice) => ({
+      id: invoice.id,
+      date: new Date((invoice.created || 0) * 1000),
+      amount: invoice.amount_paid || 0,
+      status: invoice.status || "unknown",
+      pdfUrl: invoice.invoice_pdf || null,
+      hostedUrl: invoice.hosted_invoice_url || null,
+      description: invoice.description || (invoice.lines?.data?.[0]?.description || null),
+    }));
+
+    return {
+      invoices: invoiceData,
+      hasMore,
+    };
+  } catch (error) {
+    console.error(`[Stripe] Failed to fetch invoices for customer ${customerId}:`, error);
+    return {
+      invoices: [],
+      hasMore: false,
+    };
+  }
+}
+
+/**
+ * Get all invoices for a customer (paginated)
+ */
+export async function getAllCustomerInvoices(
+  customerId: string,
+  startingAfter?: string
+): Promise<{
+  invoices: Array<{
+    id: string;
+    date: Date;
+    amount: number;
+    status: string;
+    pdfUrl: string | null;
+    hostedUrl: string | null;
+    description: string | null;
+  }>;
+  hasMore: boolean;
+  nextCursor: string | null;
+}> {
+  try {
+    const params: Stripe.InvoiceListParams = {
+      customer: customerId,
+      limit: 25,
+    };
+    
+    if (startingAfter) {
+      params.starting_after = startingAfter;
+    }
+
+    const invoices = await stripe.invoices.list(params);
+
+    const invoiceData = invoices.data.map((invoice) => ({
+      id: invoice.id,
+      date: new Date((invoice.created || 0) * 1000),
+      amount: invoice.amount_paid || 0,
+      status: invoice.status || "unknown",
+      pdfUrl: invoice.invoice_pdf || null,
+      hostedUrl: invoice.hosted_invoice_url || null,
+      description: invoice.description || (invoice.lines?.data?.[0]?.description || null),
+    }));
+
+    return {
+      invoices: invoiceData,
+      hasMore: invoices.has_more,
+      nextCursor: invoices.data.length > 0 ? invoices.data[invoices.data.length - 1].id : null,
+    };
+  } catch (error) {
+    console.error(`[Stripe] Failed to fetch all invoices for customer ${customerId}:`, error);
+    return {
+      invoices: [],
+      hasMore: false,
+      nextCursor: null,
+    };
+  }
+}
+

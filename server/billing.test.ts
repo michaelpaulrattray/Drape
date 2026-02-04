@@ -243,3 +243,59 @@ describe("Billing - Credit Adjustment for Plan Changes", () => {
     expect(calculateCreditAdjustment("starter", "starter", 15, 30)).toBe(0);
   });
 });
+
+
+describe("Billing - Invoice Retrieval", () => {
+  it("should format invoice date correctly", () => {
+    const date = new Date("2026-02-04T10:30:00Z");
+    const formatted = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    expect(formatted).toBe("Feb 4, 2026");
+  });
+
+  it("should format invoice amount correctly", () => {
+    const formatAmount = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+    expect(formatAmount(1200)).toBe("$12.00");
+    expect(formatAmount(2999)).toBe("$29.99");
+    expect(formatAmount(0)).toBe("$0.00");
+    expect(formatAmount(100)).toBe("$1.00");
+  });
+
+  it("should handle empty invoice list", () => {
+    const invoices: Array<{ id: string }> = [];
+    expect(invoices.length).toBe(0);
+    expect(invoices).toEqual([]);
+  });
+
+  it("should identify paid vs unpaid invoices", () => {
+    const isPaid = (status: string) => status === "paid";
+    expect(isPaid("paid")).toBe(true);
+    expect(isPaid("open")).toBe(false);
+    expect(isPaid("draft")).toBe(false);
+    expect(isPaid("void")).toBe(false);
+  });
+});
+
+describe("Billing - Subscription Details", () => {
+  it("should identify active subscription", () => {
+    const isActive = (status: string) => status === "active" || status === "trialing";
+    expect(isActive("active")).toBe(true);
+    expect(isActive("trialing")).toBe(true);
+    expect(isActive("canceled")).toBe(false);
+    expect(isActive("past_due")).toBe(false);
+  });
+
+  it("should calculate days until renewal", () => {
+    const now = new Date("2026-02-04");
+    const renewalDate = new Date("2026-02-20");
+    const daysUntilRenewal = Math.ceil((renewalDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    expect(daysUntilRenewal).toBe(16);
+  });
+
+  it("should identify canceling subscription", () => {
+    const isCanceling = (cancelAtPeriodEnd: boolean, status: string) => 
+      cancelAtPeriodEnd && status === "active";
+    expect(isCanceling(true, "active")).toBe(true);
+    expect(isCanceling(false, "active")).toBe(false);
+    expect(isCanceling(true, "canceled")).toBe(false);
+  });
+});

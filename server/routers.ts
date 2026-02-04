@@ -28,6 +28,8 @@ import {
   calculateProration,
   updateSubscriptionPlan,
   calculateCreditAdjustment,
+  getCustomerInvoices,
+  getAllCustomerInvoices,
 } from "./stripeService";
 import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
 import { PLAN_TIERS } from "../drizzle/schema";
@@ -1685,6 +1687,77 @@ export const appRouter = router({
           creditAdjustment,
         };
       }),
+
+    // Get recent invoices
+    getInvoices: protectedProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(50).optional().default(5),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const subscription = await getSubscriptionByUserId(ctx.user.id);
+        
+        if (!subscription?.stripeCustomerId) {
+          return {
+            invoices: [],
+            hasMore: false,
+          };
+        }
+
+        const result = await getCustomerInvoices(
+          subscription.stripeCustomerId,
+          input?.limit || 5
+        );
+
+        return result;
+      }),
+
+    // Get all invoices with pagination
+    getAllInvoices: protectedProcedure
+      .input(z.object({
+        cursor: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const subscription = await getSubscriptionByUserId(ctx.user.id);
+        
+        if (!subscription?.stripeCustomerId) {
+          return {
+            invoices: [],
+            hasMore: false,
+            nextCursor: null,
+          };
+        }
+
+        const result = await getAllCustomerInvoices(
+          subscription.stripeCustomerId,
+          input?.cursor
+        );
+
+        return result;
+      }),
+
+    // Get subscription details with renewal date
+    getSubscriptionDetails: protectedProcedure.query(async ({ ctx }) => {
+      const subscription = await getSubscriptionByUserId(ctx.user.id);
+      
+      if (!subscription?.stripeSubscriptionId) {
+        return null;
+      }
+
+      const details = await getSubscriptionDetails(subscription.stripeSubscriptionId);
+      
+      if (!details) {
+        return null;
+      }
+
+      return {
+        planTier: subscription.planTier,
+        renewalDate: details.currentPeriodEnd,
+        status: details.status,
+        cancelAtPeriodEnd: details.cancelAtPeriodEnd,
+        currentPeriodStart: details.currentPeriodStart,
+        currentPeriodEnd: details.currentPeriodEnd,
+      };
+    }),
 
     // Change subscription plan with proration
     changePlan: protectedProcedure
