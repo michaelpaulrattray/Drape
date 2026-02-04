@@ -1745,3 +1745,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Upload all 15 eye images to S3 (ice, sky, azure, navy, grey, steel, mint, green, olive, hazel, amber, honey, brown, dark, black)
 - [x] Update CastingStudio.tsx with new S3 URLs
 - [x] Increase eye image size in the UI (w-14 h-14 = 56px)
+
+### Iris Image Size and Style Update
+- [x] Increase iris image size (w-12 h-12 = 48px with scale-125 on select)
+- [x] Remove border ring around iris images - now standalone with ring only on selection
