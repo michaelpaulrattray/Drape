@@ -14,6 +14,7 @@ import { CreditTopupModal } from "@/components/CreditTopupModal";
 import { DNAHelix } from "@/components/DNAHelix";
 import { HairSection } from "@/components/CastingStudio/HairSection";
 import { EyeSection } from "@/components/CastingStudio/EyeSection";
+import { SkinSection } from "@/components/CastingStudio/SkinSection";
 
 // ============ Types ============
 
@@ -2261,41 +2262,10 @@ export default function CastingStudio() {
 
           {/* 4. SKIN & COMPLEXION */}
           <CollapsibleSection title="Skin & Complexion" required id="section-skin">
-            <div className="space-y-5 pt-1">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-subtle block">Skin Tone</label>
-                <div className="flex gap-2">
-                  {SKIN_TONES.map(tone => {
-                    const isSelected = prefs.skinTone === tone.value;
-                    return (
-                      <button
-                        key={tone.label}
-                        onClick={() => updatePref('skinTone', tone.value)}
-                        className={`
-                          relative flex-1 aspect-square rounded-lg border-2 transition-all duration-300 group overflow-hidden
-                          ${isSelected
-                            ? 'border-white ring-1 ring-white scale-105 z-10'
-                            : 'border-transparent hover:border-slate-accent hover:scale-105'
-                          }
-                        `}
-                        title={tone.label}
-                      >
-                        <div
-                          className="absolute inset-0"
-                          style={{ background: `linear-gradient(145deg, ${tone.base} 0%, ${tone.shadow} 100%)` }}
-                        />
-                        <div className="absolute top-1 left-1 w-2 h-2 bg-white/30 rounded-full blur-[2px]" />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <SelectControl label="Texture" options={SKIN_TEXTURES} value={prefs.skinTexture || ""} onChange={v => updatePref('skinTexture', v)} tooltip="Skin surface quality" />
-                <SelectControl label="Finish" options={SKIN_FINISHES} value={prefs.skinFinish || ""} onChange={v => updatePref('skinFinish', v)} tooltip="Skin shine level" />
-              </div>
-            </div>
+            <SkinSection
+              prefs={prefs}
+              updatePref={updatePref}
+            />
           </CollapsibleSection>
 
           {/* 5. EYES */}
