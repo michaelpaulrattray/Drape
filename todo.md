@@ -1961,3 +1961,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Import and use BrandSelector in CastingStudio.tsx
 - [x] Verify all brand and vibe options work correctly
 - [x] Ensure all 149 tests still pass
+
+
+## CastingStudio Refactor - Phase 6: PhysiqueSelector Extraction
+- [x] Analyze PhysiqueSelector code boundaries in CastingStudio.tsx
+- [x] Create client/src/components/CastingStudio/PhysiqueSelector.tsx
+- [x] Define PhysiqueSelectorProps interface with required props
+- [x] Extract Physique collapsible section JSX to new component
+- [x] Import and use PhysiqueSelector in CastingStudio.tsx
+- [x] Verify all body type options work correctly
+- [x] Ensure all 149 tests still pass

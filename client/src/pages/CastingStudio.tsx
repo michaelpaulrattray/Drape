@@ -17,6 +17,7 @@ import { EyeSection } from "@/components/CastingStudio/EyeSection";
 import { SkinSection } from "@/components/CastingStudio/SkinSection";
 import { FaceSection } from "@/components/CastingStudio/FaceSection";
 import { BrandSelector } from "@/components/CastingStudio/BrandSelector";
+import { PhysiqueSelector } from "@/components/CastingStudio/PhysiqueSelector";
 
 // ============ Types ============
 
@@ -2048,35 +2049,10 @@ export default function CastingStudio() {
 
           {/* 2. PHYSIQUE */}
           <CollapsibleSection title="Physique" id="section-physique">
-            <div className="space-y-2 pt-1">
-              <div className="grid grid-cols-3 gap-2">
-                {BODY_TYPES.map((opt) => {
-                  const isSelected = prefs.bodyType === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => updatePref('bodyType', opt.value)}
-                      className={`
-                        relative flex flex-col items-center justify-center aspect-[4/3] rounded-lg border transition-all duration-300 group
-                        ${isSelected
-                          ? 'border-white bg-slate-accent shadow-[0_0_15px_rgba(255,255,255,0.1)] z-10'
-                          : 'border-gray-200 bg-gray-50/40 text-subtle hover:bg-slate-accent hover:text-gray-700 hover:border-slate-accent'
-                        }
-                      `}
-                    >
-                      <div className={`mb-2 transition-transform duration-300 ${isSelected ? 'text-obsidian scale-110' : 'text-current group-hover:scale-105'}`}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill={isSelected ? "currentColor" : "none"} stroke="currentColor" strokeWidth={isSelected ? "0" : "1.5"}>
-                          {BODY_ICONS[opt.value]}
-                        </svg>
-                      </div>
-                      <span className={`text-[10px] font-medium ${isSelected ? 'text-obsidian' : 'text-current'}`}>
-                        {opt.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <PhysiqueSelector
+              selected={prefs.bodyType || "Slim"}
+              onSelect={(val) => updatePref('bodyType', val)}
+            />
           </CollapsibleSection>
 
           {/* 3. FACE STRUCTURE */}
