@@ -425,150 +425,151 @@ export default function Waitlist() {
 
       {/* Main Content */}
       <main className="z-10 relative">
-        {/* Hero Section */}
-        <section className="md:pt-24 md:pb-32 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-0 border-b px-6 pt-16 pb-20 relative border-black/10">
-          {/* Abstract Video Background */}
-          <video 
-            src="https://cdn.coverr.co/videos/coverr-shadows-of-leaves-on-a-wall-3536/1080p.mp4" 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            className="z-10 opacity-[0.08] w-full h-full object-cover absolute inset-0"
-          />
-          
-          {/* Left Col */}
-          <div className="col-span-1 flex flex-col z-20 h-full relative justify-between">
-            <div className="mb-16">
-              <p className="text-[10px] uppercase md:text-xs font-semibold tracking-widest mb-2 text-orange-600">
-                AI-Powered Creative Studio
-              </p>
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
-                FORMA
-                <span className="text-orange-500 text-6xl align-top">Studio</span>
-              </h1>
-              <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-black/20" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-8 mb-12">
-              <div className="group cursor-pointer">
-                <Camera className="text-4xl mb-4 group-hover:text-orange-600 transition-colors text-zinc-800 w-9 h-9" />
-                <h3 className="text-sm font-semibold leading-tight mb-2">
-                  AI Model
-                  <br />
-                  Generation
-                </h3>
-                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange-500" />
-              </div>
-              <div className="group cursor-pointer">
-                <ImageIcon className="text-4xl mb-4 group-hover:text-orange-600 transition-colors text-zinc-800 w-9 h-9" />
-                <h3 className="leading-tight text-sm font-semibold mb-2">
-                  Campaign
-                  <br />
-                  Assets
-                </h3>
-                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange-500" />
-              </div>
-            </div>
-
-            <div className="mt-auto">
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (email) {
-                    joinWaitlist.mutate({ email, name: email.split('@')[0] });
-                  }
-                }}
-                className="flex flex-col gap-3 w-full max-w-xs"
-              >
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                  className="w-full px-4 py-3 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
-                />
-                <button 
-                  type="submit"
-                  disabled={joinWaitlist.isPending || !email}
-                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-zinc-900 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-black/30 hover:bg-black hover:shadow-black/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-              {submitted && (
-                <p className="mt-3 text-sm text-orange-600 font-medium">You're on the list! Position #{position}</p>
-              )}
-              {alreadyRegistered && (
-                <p className="mt-3 text-sm text-amber-600 font-medium">Already registered! Position #{position}</p>
-              )}
+        {/* Editorial Hero Section */}
+        <section className="min-h-screen relative border-b border-black/10">
+          {/* Top Bar */}
+          <div className="absolute top-0 left-0 right-0 z-30 px-6 md:px-12 py-6 flex items-center justify-between">
+            <span className="hidden md:block text-xs tracking-[0.3em] uppercase text-zinc-400">
+              "AI-Powered Creative Studio"
+            </span>
+            <div className="text-right">
+              <div className="text-xs text-zinc-300 leading-none">20</div>
+              <div className="text-xs text-zinc-300 leading-none">26</div>
             </div>
           </div>
 
-          {/* Center Visual (Carousel) */}
-          <div className="col-span-1 md:col-span-2 flex md:py-0 pt-10 pb-10 relative items-center justify-center">
-            <div className="aspect-[3/4] group overflow-hidden md:aspect-auto md:h-[600px] w-full relative">
-              {/* Slider Track */}
-              <div 
-                className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform w-full h-full"
-                style={{ transform: `translateX(-${heroSlide * 100}%)` }}
-              >
-                {heroSlides.map((slide, index) => (
-                  <div key={index} className="flex-shrink-0 z-10 w-full h-full relative">
-                    <img 
-                      src={slide.image} 
-                      alt={slide.title} 
-                      className="w-full h-full object-cover grayscale contrast-125"
-                    />
-                    <div className="bg-gradient-to-t via-transparent to-transparent z-10 absolute inset-0 from-zinc-900/50" />
-                    <div className="absolute bottom-0 left-0 p-8 transform transition-transform duration-500 group-hover:-translate-y-2">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="px-2 py-0.5 rounded border text-[10px] font-mono uppercase backdrop-blur-md border-white/20 bg-white/10 text-white">
-                          {slide.tag}
-                        </span>
+          {/* Main Content Grid */}
+          <div className="min-h-screen flex items-center">
+            <div className="w-full px-6 md:px-12 py-24 md:py-32">
+              <div className="grid grid-cols-12 gap-4 md:gap-8 items-center">
+                
+                {/* Left Column - Image Card + Metadata */}
+                <div className="col-span-12 md:col-span-5 lg:col-span-4 relative">
+                  {/* Floating Image Card */}
+                  <div className="relative">
+                    {/* Vertical text */}
+                    <div className="absolute -left-8 top-1/2 -translate-y-1/2 hidden lg:block">
+                      <span className="text-xs tracking-[0.2em] text-zinc-400 [writing-mode:vertical-lr] rotate-180">
+                        AI Model Generation ®
+                      </span>
+                    </div>
+                    
+                    {/* Image card */}
+                    <div className="relative w-full max-w-[280px] mx-auto md:mx-0">
+                      <div className="aspect-[3/4] rounded-lg overflow-hidden shadow-2xl">
+                        <img
+                          src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg"
+                          alt="AI Fashion Model"
+                          className="w-full h-full object-cover grayscale contrast-110 hover:grayscale-0 transition-all duration-700"
+                        />
                       </div>
-                      <h3 className="text-2xl font-semibold tracking-tight mb-1 text-white font-geist">{slide.title}</h3>
-                      <p className="text-sm line-clamp-1 text-white/70">{slide.description}</p>
+                      {/* Number overlay */}
+                      <span className="absolute -top-4 -right-4 md:top-4 md:-right-8 text-6xl md:text-8xl font-geist font-bold text-zinc-200/60 select-none">
+                        01
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Navigation Overlay */}
-              <div className="flex gap-3 z-20 absolute right-8 bottom-8 items-center">
-                <div className="px-3 py-1.5 rounded-full backdrop-blur-xl border text-xs font-mono mr-2 shadow-lg bg-black/80 border-white/10 text-white">
-                  <span>{String(heroSlide + 1).padStart(2, '0')}</span>
-                  <span className="mx-1 text-white/30">/</span>
-                  {String(heroSlides.length).padStart(2, '0')}
+                  
+                  {/* Description text */}
+                  <div className="mt-8 md:mt-12 max-w-[280px] mx-auto md:mx-0">
+                    <p className="text-xs md:text-sm text-zinc-500 leading-relaxed">
+                      FormaStudio is an AI-powered creative platform bridging the gap between fashion and technology. Cast AI models, style outfits, and generate campaign-ready visuals.
+                    </p>
+                    <div className="mt-4 flex items-center gap-4 text-xs text-zinc-400">
+                      <span>Hand crafted by</span>
+                      <span className="w-8 h-px bg-zinc-300" />
+                      <span className="font-medium text-zinc-600">FormaStudio</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={prevHeroSlide}
-                    className="w-10 h-10 rounded-full border backdrop-blur-xl flex items-center justify-center transition-all duration-300 group/btn shadow-lg border-white/10 bg-black/50 text-white hover:bg-white hover:text-black"
+                
+                {/* Center/Right Column - Typography + Hero Image */}
+                <div className="col-span-12 md:col-span-7 lg:col-span-8 relative">
+                  {/* Large Typography */}
+                  <div className="relative z-10 mb-8 md:mb-0 md:absolute md:left-0 md:top-1/2 md:-translate-y-1/2 md:z-20">
+                    <h1 className="font-geist font-bold tracking-tighter leading-[0.85]">
+                      <span className="block text-6xl sm:text-7xl md:text-8xl lg:text-[10rem] xl:text-[12rem] text-zinc-900">
+                        Forma
+                      </span>
+                      <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[8rem] xl:text-[10rem] text-orange-500 -mt-2 md:-mt-6">
+                        Studio
+                      </span>
+                    </h1>
+                  </div>
+                  
+                  {/* Hero Image - Right side */}
+                  <div className="relative md:ml-auto md:w-[60%] lg:w-[55%]">
+                    <div className="aspect-[3/4] md:aspect-[4/5] rounded-lg overflow-hidden">
+                      <img
+                        src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp"
+                        alt="Fashion Editorial"
+                        className="w-full h-full object-cover object-top grayscale contrast-125"
+                      />
+                    </div>
+                    
+                    {/* Stats overlay */}
+                    <div className="absolute top-4 right-4 text-right hidden md:block">
+                      <div className="text-xs text-zinc-400 mb-1">Volume</div>
+                      <div className="text-xs text-zinc-600">382 —— Traded</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Bottom Section - CTA + Footer Info */}
+              <div className="mt-12 md:mt-16 grid grid-cols-12 gap-4 md:gap-8 items-end">
+                {/* CTA Section */}
+                <div className="col-span-12 md:col-span-6 lg:col-span-5">
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (email) {
+                        joinWaitlist.mutate({ email, name: email.split('@')[0] });
+                      }
+                    }}
+                    className="flex flex-col sm:flex-row items-start sm:items-center gap-3"
                   >
-                    <ArrowLeft className="w-[18px] h-[18px] group-hover/btn:-translate-x-0.5 transition-transform" strokeWidth={1.5} />
-                  </button>
-                  <button 
-                    onClick={nextHeroSlide}
-                    className="w-10 h-10 rounded-full border backdrop-blur-xl flex items-center justify-center transition-all duration-300 group/btn shadow-lg border-white/10 bg-black/50 text-white hover:bg-white hover:text-black"
-                  >
-                    <ArrowRight className="w-[18px] h-[18px] group-hover/btn:translate-x-0.5 transition-transform" strokeWidth={1.5} />
-                  </button>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      required
+                      className="w-full sm:w-auto px-4 py-3.5 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all rounded-full"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={joinWaitlist.isPending || !email}
+                      className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-zinc-900 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-black/20 hover:bg-black hover:shadow-black/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
+                  {submitted && (
+                    <p className="mt-3 text-sm text-orange-600 font-medium">You're on the list! Position #{position}</p>
+                  )}
+                  {alreadyRegistered && (
+                    <p className="mt-3 text-sm text-amber-600 font-medium">Already registered! Position #{position}</p>
+                  )}
+                </div>
+                
+                {/* Footer text */}
+                <div className="col-span-12 md:col-span-6 lg:col-span-7">
+                  <div className="flex items-end justify-between">
+                    <span className="text-4xl md:text-5xl font-geist font-bold text-zinc-200">003.</span>
+                    <p className="text-xs text-zinc-400 max-w-xs text-right hidden md:block">
+                      A simple garment for a complex global problem to solve or survive in the dystopia we live in. Reimagining a world where we can explore new ideas and technologies.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Right Col */}
-          <div className="col-span-1 flex flex-col md:items-end z-20 md:pt-0 h-full pt-8 relative items-start pl-6 md:pl-0">
-            <p className="text-[10px] uppercase font-semibold text-zinc-400 tracking-widest mb-1">
-              Creators Waiting:
-            </p>
-            <span className="text-6xl md:text-8xl font-bold tracking-tighter text-zinc-900 font-geist">
-              847
-            </span>
+          
+          {/* Decorative elements */}
+          <div className="absolute bottom-8 left-6 md:left-12 text-xs text-zinc-400 hidden md:block">
+            <span className="tracking-[0.2em]">ALL RIGHTS RESERVED ®</span>
           </div>
         </section>
 

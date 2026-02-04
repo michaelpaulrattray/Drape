@@ -2118,3 +2118,22 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Redesign iris selection to remove large ring and black circle
 - Implemented Option B (Inset Shadow): shadow-[inset_0_0_0_3px_rgba(0,0,0,0.7)] scale-105
 - Inset shadow overlays on the iris image, eliminating white gap between iris and border
+
+
+## Homepage Hero Redesign - Editorial Style
+- [ ] Redesign hero to match reference: asymmetric layout, large typography, fashion/tech aesthetic
+- [ ] Light/cream background with dark text
+- [ ] Large "Dreamers" style headline
+- [ ] Asymmetric image placement with overlapping elements
+- [ ] Editorial typography with mixed sizes
+- [ ] Subtle metadata/stats scattered around
+- [ ] Maintain waitlist email capture functionality
+
+
+## Waitlist Hero Redesign - Editorial Style
+- [x] Replace Waitlist.tsx hero section with editorial design
+- [x] Implement asymmetric layout with large typography
+- [x] Add fashion/tech aesthetic matching reference image
+- [x] Keep existing sections below hero (Services, Journal, Footer)
+- [x] Ensure mobile responsiveness
+- Features: 12-column grid, overlapping image card with "01" number, massive "Forma Studio" typography, vertical text, metadata scattered around, email CTA at bottom
