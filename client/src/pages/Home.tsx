@@ -369,7 +369,7 @@ function WorkSection() {
             <a
               key={index}
               href="#"
-              className="group block rounded-2xl overflow-hidden transition-all duration-300 hover:bg-black"
+              className="group block rounded-2xl overflow-hidden transition-all duration-300 bg-[#EBEBEB] hover:bg-black"
             >
               {/* Image Container with zoom effect */}
               <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2 group-hover:m-0 transition-all duration-300">

@@ -2245,3 +2245,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add image zoom effect on card hover
 - [x] Add black background/border on card hover
 - [x] Update card info layout (name, description, year)
+
+
+## Card Background Color Fix
+- [x] Update project card default background to #EBEBEB
