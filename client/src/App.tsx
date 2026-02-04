@@ -4,7 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-// Home page removed - users go directly to dashboard after login
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Waitlist from "./pages/Waitlist";
@@ -13,8 +13,9 @@ import CastingStudio from "./pages/CastingStudio";
 function Router() {
   return (
     <Switch>
-      {/* Waitlist is the main landing page during pre-launch */}
-      <Route path="/" component={Waitlist} />
+      {/* New Kanso-style Home page */}
+      <Route path="/" component={Home} />
+      <Route path="/waitlist" component={Waitlist} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/casting-studio" component={CastingStudio} />

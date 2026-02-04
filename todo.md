@@ -2159,3 +2159,42 @@ The entry and configuration files are properly set up with several enhancements 
   - [x] Update background to bg-canvas
   - [x] Add neumorphic shadows and rounded corners to cards
   - [x] Update grid lines to use border color
+
+
+## New Home.tsx Page (Kanso Template Replication)
+
+- [ ] Create Home.tsx file with base structure
+- [ ] Header: Sticky navigation with logo, nav links, CTA button
+- [ ] Hero: Large wordmark, tagline, logo marquee, trust badges, hero image
+- [ ] About Section (01): Two-tone headline, stats row, video block
+- [ ] Selected Work Section (02): Project grid with hover effects
+- [ ] Why Us Section (03): Bento grid with testimonial, feature cards, brand statement
+- [ ] Services Section (04): Dark background, service categories with numbers
+- [ ] Process Section (05): Split layout with 4-step accordion
+- [ ] Pricing Section (06): Toggle, dark pricing card, features list
+- [ ] Testimonials Section (07): Dark carousel with navigation
+- [ ] FAQ Section (08): Accordion with 7 questions
+- [ ] Blog Section (09): Three blog cards
+- [ ] Footer: Dark background, large wordmark, newsletter, links
+- [ ] Mobile responsive optimization
+- [ ] Update App.tsx routing for new Home page
+
+
+## New Home.tsx Page (Kanso Template Replication)
+- [x] Header with sticky navigation (Forma® logo, nav links, Start a project CTA)
+- [x] Hero section with large "Forma®" wordmark
+- [x] Logo marquee with client names (Shopify, Meta, Nike, Instagram, Google, Vogue)
+- [x] Trust badge (4.9/5 rating, 100+ businesses)
+- [x] About section (01) with two-tone headline and stats row
+- [x] Video block with play button
+- [x] Selected Work section (02) with 6 project cards
+- [x] Why Us section (03) with bento grid layout
+- [x] Services section (04) dark background with 4 service categories
+- [x] Process section (05) with 4-step workflow
+- [x] Pricing section (06) with Monthly/Project toggle
+- [x] Testimonials section (07) dark background with 3 cards
+- [x] FAQ section (08) with 7 accordion items
+- [x] Blog section (09) with 3 article cards
+- [x] Footer with large "Forma® Studio" wordmark, newsletter signup, links grid
+- [x] Mobile responsive navigation with hamburger menu
+- [x] Routing: Home at /, Waitlist moved to /waitlist
