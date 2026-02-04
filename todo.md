@@ -1410,3 +1410,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Ensure cover photo changes persist after refresh (already working via profileData sync)
 - [x] Update Profile Settings modal styling to match Editorial Dark dashboard
 - [x] Test all profile changes persist after server restart (91 tests passing)
+
+## Dashboard Profile Editing Fixes
+- [x] Fix direct profile picture edits on dashboard not persisting after refresh (added upload mutations)
+- [x] Fix direct cover photo edits on dashboard not persisting after refresh (added upload mutations)
+- [x] Fix flash of default profile content on page refresh (wait for profileLoading, use initial fallback)
+- [x] Optimize profile image loading speed (show preview immediately, upload in background)

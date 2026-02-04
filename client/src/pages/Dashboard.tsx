@@ -34,9 +34,9 @@ export default function Dashboard() {
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  // Default images for users
-  const DEFAULT_BANNER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=400&fit=crop";
-  const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=face";
+  // Default images for users - use empty string to avoid flash of stock photos
+  const DEFAULT_BANNER = "";
+  const DEFAULT_AVATAR = "";
 
   // Get points data
   const { data: pointsData } = trpc.points.getBalance.useQuery(
@@ -45,27 +45,32 @@ export default function Dashboard() {
   );
 
   // Get profile data from backend
-  const { data: profileData, refetch: refetchProfile } = trpc.profile.get.useQuery(
+  const { data: profileData, refetch: refetchProfile, isLoading: profileLoading } = trpc.profile.get.useQuery(
     undefined,
     { enabled: isAuthenticated }
   );
 
+  // Upload mutations for direct dashboard edits
+  const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
+    onSuccess: () => refetchProfile(),
+  });
+  const uploadBannerMutation = trpc.profile.uploadBanner.useMutation({
+    onSuccess: () => refetchProfile(),
+  });
+
   // Get the display name (prefer displayName from profile, fallback to user.name)
   const displayName = profileData?.displayName || profileData?.name || user?.name || "User";
 
-  // Sync profile images from backend on load
+  // Sync profile images from backend on load - always update when profileData changes
   useEffect(() => {
     if (profileData) {
-      if (profileData.avatarUrl && !profileImage) {
-        setProfileImage(profileData.avatarUrl);
-      }
-      if (profileData.bannerUrl && !bannerImage) {
-        setBannerImage(profileData.bannerUrl);
-      }
+      // Always sync from backend to ensure persistence
+      setProfileImage(profileData.avatarUrl || null);
+      setBannerImage(profileData.bannerUrl || null);
     }
   }, [profileData]);
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-3">
@@ -239,12 +244,20 @@ export default function Dashboard() {
         {/* User Profile */}
         <div className="p-4 border-t border-zinc-800/60">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/50 hover:bg-zinc-900 transition-colors">
-            <div className="w-10 h-10 rounded-full border border-zinc-700 overflow-hidden">
-              <img 
-                src={profileImage || DEFAULT_AVATAR}
-                alt={user?.name || "Profile"}
-                className="w-full h-full object-cover"
-              />
+            <div className="w-10 h-10 rounded-full border border-zinc-700 overflow-hidden bg-zinc-800">
+              {profileImage ? (
+                <img 
+                  src={profileImage}
+                  alt={user?.name || "Profile"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-700 to-zinc-800">
+                  <span className="text-sm font-semibold text-zinc-500">
+                    {(displayName || 'U').charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{displayName}</p>
@@ -276,10 +289,10 @@ export default function Dashboard() {
           <div className="h-56 relative overflow-hidden group">
             {/* Background Image */}
             <div 
-              className="absolute inset-0 bg-cover bg-center"
+              className={`absolute inset-0 bg-cover bg-center ${!bannerImage ? 'bg-gradient-to-br from-zinc-800 to-zinc-900' : ''}`}
               style={{ 
-                backgroundImage: `url(${bannerImage || DEFAULT_BANNER})`,
-                filter: 'grayscale(80%) brightness(0.35)'
+                backgroundImage: bannerImage ? `url(${bannerImage})` : 'none',
+                filter: bannerImage ? 'grayscale(80%) brightness(0.35)' : 'none'
               }}
             />
             {/* Gradient Overlay */}
@@ -290,12 +303,31 @@ export default function Dashboard() {
               type="file"
               ref={bannerInputRef}
               className="hidden"
-              accept="image/*"
-              onChange={(e) => {
+              accept="image/jpeg,image/png,image/webp"
+              onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
+                  // Show preview immediately
                   const url = URL.createObjectURL(file);
                   setBannerImage(url);
+                  
+                  // Upload to backend
+                  const reader = new FileReader();
+                  reader.onload = async () => {
+                    const base64 = (reader.result as string).split(',')[1];
+                    try {
+                      await uploadBannerMutation.mutateAsync({
+                        base64Data: base64,
+                        mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
+                        fileSize: file.size,
+                      });
+                    } catch (error) {
+                      console.error('Failed to upload banner:', error);
+                      // Revert to previous image on error
+                      refetchProfile();
+                    }
+                  };
+                  reader.readAsDataURL(file);
                 }
               }}
             />
@@ -313,25 +345,52 @@ export default function Dashboard() {
             <div className="flex items-end gap-6">
               {/* Profile Avatar */}
               <div className="relative group/avatar">
-                <div className="w-28 h-28 rounded-2xl ring-4 ring-zinc-950 border border-zinc-800 relative overflow-hidden shadow-2xl">
-                  <img 
-                    src={profileImage || DEFAULT_AVATAR}
-                    alt={user?.name || "Profile"}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-28 h-28 rounded-2xl ring-4 ring-zinc-950 border border-zinc-800 relative overflow-hidden shadow-2xl bg-zinc-800">
+                  {profileImage ? (
+                    <img 
+                      src={profileImage}
+                      alt={user?.name || "Profile"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-700 to-zinc-800">
+                      <span className="text-3xl font-semibold text-zinc-500">
+                        {(displayName || 'U').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <input
                   type="file"
                   ref={profilePicInputRef}
                   className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const url = URL.createObjectURL(file);
-                    setProfileImage(url);
-                  }
-                }}
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Show preview immediately
+                      const url = URL.createObjectURL(file);
+                      setProfileImage(url);
+                      
+                      // Upload to backend
+                      const reader = new FileReader();
+                      reader.onload = async () => {
+                        const base64 = (reader.result as string).split(',')[1];
+                        try {
+                          await uploadAvatarMutation.mutateAsync({
+                            base64Data: base64,
+                            mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
+                            fileSize: file.size,
+                          });
+                        } catch (error) {
+                          console.error('Failed to upload avatar:', error);
+                          // Revert to previous image on error
+                          refetchProfile();
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
                 />
                 <button 
                   onClick={() => profilePicInputRef.current?.click()}
