@@ -187,7 +187,7 @@ export default function Dashboard() {
         {/* Logo */}
         <div className="px-6 pt-6 pb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-slate-accent flex items-center justify-center">
               <img 
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
                 alt="Forma Studio" 
@@ -215,10 +215,10 @@ export default function Dashboard() {
                     : "text-subtle hover:text-obsidian hover:bg-gray-50"
                 }`}
               >
-                <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-gray-900" : ""}`} />
+                <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-slate-accent" : ""}`} />
                 <span className="text-sm font-medium">{item.label}</span>
                 {activeNav === item.id && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-gray-900" />
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-slate-accent" />
                 )}
               </button>
             ))}
@@ -240,7 +240,7 @@ export default function Dashboard() {
                       : "text-subtle hover:text-obsidian hover:bg-gray-50"
                   }`}
                 >
-                  <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-gray-900" : ""}`} />
+                  <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-slate-accent" : ""}`} />
                   <span className="text-sm font-medium">{item.label}</span>
                 </button>
               ))}
@@ -446,7 +446,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-3 pb-2">
                 <button 
                   onClick={() => setIsTopupOpen(true)}
-                  className="group px-5 py-2.5 rounded-full bg-gray-900 text-white text-sm font-medium hover:bg-black transition-all flex items-center gap-2 shadow-lg"
+                  className="group px-5 py-2.5 rounded-full btn-slate text-sm font-medium transition-all flex items-center gap-2 shadow-lg"
                 >
                   <Sparkles className="w-4 h-4" />
                   Get Credits
@@ -479,7 +479,7 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-semibold text-obsidian tracking-tight mb-1">Recent Work</h2>
                 <p className="text-sm text-subtle">Your latest creations</p>
               </div>
-              <button className="flex items-center gap-2 text-sm font-medium text-white hover:bg-black transition-colors group px-5 py-2.5 rounded-full bg-gray-900">
+              <button className="flex items-center gap-2 text-sm font-medium text-white transition-colors group px-5 py-2.5 rounded-full btn-slate">
                 View all
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
@@ -525,13 +525,13 @@ export default function Dashboard() {
                 <div className="group premium-card rounded-2xl p-6 cursor-pointer relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-gray-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-gray-900 group-hover:border-gray-900 transition-colors">
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-slate-accent group-hover:border-slate-accent transition-colors">
                     <Camera className="w-6 h-6 text-subtle group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="text-obsidian font-semibold mb-2 tracking-tight text-lg">Create New Model</h3>
                   <p className="text-sm text-subtle">Design and cast AI models for your campaigns</p>
                   
-                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-gray-900 group-hover:border-gray-900">
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-slate-accent group-hover:border-slate-accent">
                     <ArrowRight className="w-4 h-4 text-subtle group-hover:text-white" />
                   </div>
                 </div>
@@ -540,13 +540,13 @@ export default function Dashboard() {
                 <div className="group premium-card rounded-2xl p-6 cursor-pointer relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-gray-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-gray-900 group-hover:border-gray-900 transition-colors">
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-slate-accent group-hover:border-slate-accent transition-colors">
                     <Shirt className="w-6 h-6 text-subtle group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="text-obsidian font-semibold mb-2 tracking-tight text-lg">Style Outfits</h3>
                   <p className="text-sm text-subtle">Dress your models with curated fashion</p>
                   
-                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-gray-900 group-hover:border-gray-900">
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-slate-accent group-hover:border-slate-accent">
                     <ArrowRight className="w-4 h-4 text-subtle group-hover:text-white" />
                   </div>
                 </div>
@@ -555,13 +555,13 @@ export default function Dashboard() {
                 <div className="group premium-card rounded-2xl p-6 cursor-pointer relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-gray-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-gray-900 group-hover:border-gray-900 transition-colors">
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-slate-accent group-hover:border-slate-accent transition-colors">
                     <Image className="w-6 h-6 text-subtle group-hover:text-white transition-colors" />
                   </div>
                   <h3 className="text-obsidian font-semibold mb-2 tracking-tight text-lg">Generate Campaign</h3>
                   <p className="text-sm text-subtle">Create stunning campaign visuals</p>
                   
-                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-gray-900 group-hover:border-gray-900">
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-slate-accent group-hover:border-slate-accent">
                     <ArrowRight className="w-4 h-4 text-subtle group-hover:text-white" />
                   </div>
                 </div>

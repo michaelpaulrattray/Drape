@@ -136,7 +136,7 @@ function BillingTabContent({
                 onClose();
                 onOpenTopup?.();
               }}
-              className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-black transition-all"
+              className="px-4 py-2 rounded-lg btn-slate text-sm font-medium transition-all"
             >
               Add credits
             </button>
@@ -189,7 +189,7 @@ function BillingTabContent({
             onClose();
             onOpenBilling?.();
           }}
-          className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-black transition-all flex items-center justify-center gap-2"
+          className="w-full px-4 py-3 rounded-xl btn-slate text-sm font-medium transition-all flex items-center justify-center gap-2"
         >
           <Sparkles className="w-4 h-4" />
           Upgrade Plan
@@ -341,7 +341,7 @@ function UsageTabContent() {
               onClick={() => setPeriod(days)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                 period === days
-                  ? "bg-gray-900 text-white shadow-sm"
+                  ? "bg-slate-accent text-white shadow-sm"
                   : "text-gray-500 hover:text-gray-900"
               }`}
             >
@@ -764,7 +764,7 @@ export default function ProfileSettingsModal({
                     : "text-subtle hover:text-obsidian hover:bg-white/50"
                 }`}
               >
-                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-gray-900" : ""}`} />
+                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-slate-accent" : ""}`} />
                 {tab.label}
               </button>
             ))}
@@ -942,7 +942,7 @@ export default function ProfileSettingsModal({
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-6 py-3 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-black transition-all flex items-center gap-2 disabled:opacity-50"
+                    className="px-6 py-3 rounded-xl btn-slate text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
@@ -993,7 +993,7 @@ export default function ProfileSettingsModal({
                         </div>
                         <button
                           className={`w-12 h-6 rounded-full transition-colors relative ${
-                            item.enabled ? "bg-gray-900" : "bg-gray-200"
+                            item.enabled ? "bg-slate-accent" : "bg-gray-200"
                           }`}
                         >
                           <div
@@ -1049,7 +1049,7 @@ export default function ProfileSettingsModal({
                           className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${
                             item.connected
                               ? "bg-white border border-gray-200 text-charcoal hover:bg-gray-50"
-                              : "bg-gray-900 text-white hover:bg-black"
+                              : "btn-slate"
                           }`}
                         >
                           {item.connected ? "Disconnect" : "Connect"}

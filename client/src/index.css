@@ -133,9 +133,9 @@
   mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
 }
 
-/* Canvas background for light mode */
+/* Canvas background for light mode - with subtle blue tint */
 .bg-canvas {
-  background-color: #FAFAFA;
+  background-color: #F8F9FB;
 }
 
 /* Obsidian text color */
@@ -152,6 +152,126 @@
 /* Border colors */
 .border-light {
   border-color: #E5E5E5;
+}
+
+/* ============ SOFT BLUE-GRAY PALETTE ============ */
+/* Inspired by neumorphic design - distinctive FormaStudio look */
+
+/* Primary accent - Slate blue-gray */
+.bg-slate-accent {
+  background-color: #6E7F8D;
+}
+.bg-slate-accent-hover:hover {
+  background-color: #5D6E7C;
+}
+.text-slate-accent {
+  color: #6E7F8D;
+}
+.border-slate-accent {
+  border-color: #6E7F8D;
+}
+
+/* Secondary accent - Soft blue-gray */
+.bg-mist {
+  background-color: #929FB5;
+}
+.bg-mist-hover:hover {
+  background-color: #8290A6;
+}
+.text-mist {
+  color: #929FB5;
+}
+.border-mist {
+  border-color: #929FB5;
+}
+
+/* Tertiary - Light muted blue */
+.bg-cloud {
+  background-color: #C1CBD8;
+}
+.text-cloud {
+  color: #C1CBD8;
+}
+.border-cloud {
+  border-color: #C1CBD8;
+}
+
+/* Neumorphic backgrounds */
+.bg-neumorphic {
+  background-color: #EFF2F9;
+}
+.bg-neumorphic-light {
+  background-color: #F1F3F6;
+}
+
+/* Neumorphic shadow utilities */
+.shadow-neumorphic {
+  box-shadow: 
+    5px 5px 10px rgba(22, 27, 29, 0.08),
+    -5px -5px 10px rgba(250, 251, 255, 1);
+}
+.shadow-neumorphic-sm {
+  box-shadow: 
+    3px 3px 6px rgba(22, 27, 29, 0.06),
+    -3px -3px 6px rgba(250, 251, 255, 1);
+}
+.shadow-neumorphic-lg {
+  box-shadow: 
+    10px 10px 20px rgba(22, 27, 29, 0.1),
+    -10px -10px 20px rgba(250, 251, 255, 1);
+}
+.shadow-neumorphic-inset {
+  box-shadow: 
+    inset 3px 3px 6px rgba(22, 27, 29, 0.06),
+    inset -3px -3px 6px rgba(250, 251, 255, 1);
+}
+
+/* Soft card with blue-gray tint */
+.card-soft {
+  background: #FFFFFF;
+  border: 1px solid #E4EBF1;
+  box-shadow: 0 2px 8px rgba(110, 127, 141, 0.08);
+  transition: all 0.3s ease;
+}
+.card-soft:hover {
+  box-shadow: 0 4px 16px rgba(110, 127, 141, 0.12);
+  border-color: #C1CBD8;
+}
+
+/* Button with slate accent */
+.btn-slate {
+  background-color: #6E7F8D;
+  color: white;
+  transition: all 0.2s ease;
+}
+.btn-slate:hover {
+  background-color: #5D6E7C;
+  box-shadow: 0 4px 12px rgba(110, 127, 141, 0.25);
+}
+.btn-slate:active {
+  transform: scale(0.98);
+}
+
+/* Button with mist accent (secondary) */
+.btn-mist {
+  background-color: #929FB5;
+  color: white;
+  transition: all 0.2s ease;
+}
+.btn-mist:hover {
+  background-color: #8290A6;
+}
+
+/* Outline button with slate accent */
+.btn-slate-outline {
+  background-color: transparent;
+  border: 1px solid #6E7F8D;
+  color: #6E7F8D;
+  transition: all 0.2s ease;
+}
+.btn-slate-outline:hover {
+  background-color: #6E7F8D;
+  color: white;
 }
 
 /* Dark theme scrollbar for Casting Studio */

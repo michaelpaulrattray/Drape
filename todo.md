@@ -1638,3 +1638,25 @@ The entry and configuration files are properly set up with several enhancements 
 ### Testing
 - [x] Verify no orange colors remain in dashboard UI
 - [x] Ensure visual consistency across all dashboard components
+
+
+## Phase 2.7: Dashboard Button & UI Restyle (Soft Blue-Gray Palette)
+
+### Color Palette Update
+- [x] Define new soft blue-gray color palette based on inspiration images
+- [x] Update CSS variables in index.css with new palette
+- [x] Replace dark gray-900 buttons with softer blue-gray accent
+
+### Button Styling
+- [x] Restyle primary buttons with new accent color (#6E7F8D slate)
+- [x] Add subtle neumorphic shadows for depth
+- [x] Update hover states to complement new palette
+
+### UI Elements
+- [x] Update cards and containers with soft shadows
+- [x] Ensure text contrast meets accessibility standards
+- [x] Apply consistent styling across all dashboard components
+
+### Testing
+- [x] Verify visual consistency across dashboard
+- [x] Test accessibility contrast ratios
