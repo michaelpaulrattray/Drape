@@ -24,6 +24,49 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
+import { Loader2 } from "lucide-react";
+
+// Image compression utility
+async function compressImage(file: File, maxWidth: number, maxHeight: number, quality: number = 0.8): Promise<{ base64: string; mimeType: string; size: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      // Calculate new dimensions while maintaining aspect ratio
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
+      }
+      
+      // Create canvas and draw resized image
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to base64
+      const mimeType = 'image/jpeg'; // Always compress to JPEG for smaller size
+      const dataUrl = canvas.toDataURL(mimeType, quality);
+      const base64 = dataUrl.split(',')[1];
+      const size = Math.ceil((base64.length * 3) / 4); // Approximate byte size
+      
+      resolve({ base64, mimeType, size });
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
@@ -31,6 +74,8 @@ export default function Dashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -310,30 +355,40 @@ export default function Dashboard() {
                   // Show preview immediately
                   const url = URL.createObjectURL(file);
                   setBannerImage(url);
+                  setIsUploadingBanner(true);
                   
-                  // Upload to backend
-                  const reader = new FileReader();
-                  reader.onload = async () => {
-                    const base64 = (reader.result as string).split(',')[1];
-                    try {
-                      await uploadBannerMutation.mutateAsync({
-                        base64Data: base64,
-                        mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
-                        fileSize: file.size,
-                      });
-                    } catch (error) {
-                      console.error('Failed to upload banner:', error);
-                      // Revert to previous image on error
-                      refetchProfile();
-                    }
-                  };
-                  reader.readAsDataURL(file);
+                  try {
+                    // Compress image before upload (max 1920x600 for banner)
+                    const compressed = await compressImage(file, 1920, 600, 0.85);
+                    
+                    await uploadBannerMutation.mutateAsync({
+                      base64Data: compressed.base64,
+                      mimeType: compressed.mimeType as "image/jpeg" | "image/png" | "image/webp",
+                      fileSize: compressed.size,
+                    });
+                  } catch (error) {
+                    console.error('Failed to upload banner:', error);
+                    // Revert to previous image on error
+                    refetchProfile();
+                  } finally {
+                    setIsUploadingBanner(false);
+                  }
                 }
               }}
             />
+            {/* Upload progress overlay */}
+            {isUploadingBanner && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/90 border border-zinc-700">
+                  <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
+                  <span className="text-sm text-white">Uploading...</span>
+                </div>
+              </div>
+            )}
             <button 
               onClick={() => bannerInputRef.current?.click()}
-              className="absolute top-6 right-10 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white/20 border border-white/10"
+              disabled={isUploadingBanner}
+              className="absolute top-6 right-10 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white/20 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload className="w-3.5 h-3.5" />
               Change Cover
@@ -359,6 +414,12 @@ export default function Dashboard() {
                       </span>
                     </div>
                   )}
+                  {/* Upload progress overlay */}
+                  {isUploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+                    </div>
+                  )}
                 </div>
                 <input
                   type="file"
@@ -371,32 +432,33 @@ export default function Dashboard() {
                       // Show preview immediately
                       const url = URL.createObjectURL(file);
                       setProfileImage(url);
+                      setIsUploadingAvatar(true);
                       
-                      // Upload to backend
-                      const reader = new FileReader();
-                      reader.onload = async () => {
-                        const base64 = (reader.result as string).split(',')[1];
-                        try {
-                          await uploadAvatarMutation.mutateAsync({
-                            base64Data: base64,
-                            mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
-                            fileSize: file.size,
-                          });
-                        } catch (error) {
-                          console.error('Failed to upload avatar:', error);
-                          // Revert to previous image on error
-                          refetchProfile();
-                        }
-                      };
-                      reader.readAsDataURL(file);
+                      try {
+                        // Compress image before upload (max 400x400 for avatar)
+                        const compressed = await compressImage(file, 400, 400, 0.85);
+                        
+                        await uploadAvatarMutation.mutateAsync({
+                          base64Data: compressed.base64,
+                          mimeType: compressed.mimeType as "image/jpeg" | "image/png" | "image/webp",
+                          fileSize: compressed.size,
+                        });
+                      } catch (error) {
+                        console.error('Failed to upload avatar:', error);
+                        // Revert to previous image on error
+                        refetchProfile();
+                      } finally {
+                        setIsUploadingAvatar(false);
+                      }
                     }
                   }}
                 />
                 <button 
                   onClick={() => profilePicInputRef.current?.click()}
-                  className="absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity border border-zinc-700"
+                  disabled={isUploadingAvatar}
+                  className="absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity border border-zinc-700 disabled:opacity-100"
                 >
-                  <Upload className="w-6 h-6 text-white" />
+                  {!isUploadingAvatar && <Upload className="w-6 h-6 text-white" />}
                 </button>
               </div>
               

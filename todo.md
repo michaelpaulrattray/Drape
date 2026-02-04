@@ -1416,3 +1416,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix direct cover photo edits on dashboard not persisting after refresh (added upload mutations)
 - [x] Fix flash of default profile content on page refresh (wait for profileLoading, use initial fallback)
 - [x] Optimize profile image loading speed (show preview immediately, upload in background)
+
+## Dashboard Upload Improvements
+- [x] Implement subtle loading spinner for avatar upload progress
+- [x] Implement subtle loading spinner for banner upload progress
+- [x] Add client-side image compression before uploading to reduce file sizes (avatar: 400x400, banner: 1920x600)
