@@ -20,6 +20,7 @@ import { BrandSelector } from "@/components/CastingStudio/BrandSelector";
 import { PhysiqueSelector } from "@/components/CastingStudio/PhysiqueSelector";
 import { ViewTabs, RefinePanel, ToolsBar } from "@/components/CastingStudio/ImageViewer";
 import { DirectorsNote } from "@/components/CastingStudio/DirectorsNote";
+import { InlineError, useRetryHandler } from "@/components/ErrorBoundary";
 import {
   BRAND_OPTIONS,
   ETHNICITIES,
@@ -2040,23 +2041,35 @@ export default function CastingStudio() {
           </div>
         )}
 
-        {/* Error Display */}
+        {/* Error Display with Retry */}
         {genState.error && (
           <div className="absolute inset-0 z-50 flex items-center justify-center p-8 bg-white/90 backdrop-blur-sm">
-            <div className="max-w-md w-full border border-red-900/50 bg-red-950/20 p-8 text-center space-y-4">
-              <div className="w-16 h-16 mx-auto border border-red-900 rounded-full flex items-center justify-center text-red-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div className="max-w-md w-full border border-red-200 bg-white rounded-xl p-8 text-center space-y-4 shadow-2xl">
+              <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
               <div>
-                <h3 className="text-red-500 font-semibold text-base mb-2">System Malfunction</h3>
-                <p className="text-red-400/70 text-sm leading-relaxed">
+                <h3 className="text-red-700 font-semibold text-lg mb-2">Generation Failed</h3>
+                <p className="text-red-600/80 text-sm leading-relaxed mb-2">
                   {genState.error}
                 </p>
+                <p className="text-gray-500 text-xs">
+                  This might be due to high demand or a temporary issue. Please try again.
+                </p>
+              </div>
+              <div className="flex gap-3 justify-center pt-2">
                 <button 
                   onClick={handleRetry}
-                  className="mt-6 px-6 py-2.5 bg-red-900/50 hover:bg-red-800 text-red-100 text-sm font-medium rounded-lg border border-red-800 transition-colors"
+                  className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
                 >
-                  Retry Casting
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                  Retry Generation
+                </button>
+                <button 
+                  onClick={() => setGenState(prev => ({ ...prev, error: null }))}
+                  className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                >
+                  Dismiss
                 </button>
               </div>
             </div>
