@@ -1615,3 +1615,26 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Ensure all tabs in user popout match light theme palette
 - [x] Remove orange buttons and dark background accents in cards
 - [x] Apply consistent gray/white color scheme across all tabs
+
+
+## Phase 2.6: Remove Orange Accents from Dashboard
+
+### Dashboard Page
+- [x] Audit Dashboard.tsx for orange color classes - NONE FOUND (already monochromatic)
+- [x] Replace orange accents with monochromatic alternatives (gray-900, charcoal, obsidian)
+- [x] Update any orange hover states to gray variants
+
+### Profile Settings Modal
+- [x] Remove any remaining orange buttons or accents (generation badge, activity icon)
+- [x] Ensure all tabs use consistent gray color scheme
+
+### Billing & Credit Modals
+- [x] Replace orange discount badges with gray or green alternatives (already done in Phase 2.5)
+- [x] Update any orange CTAs to gray-900 (already done in Phase 2.5)
+
+### Low Balance Warning
+- [x] Restyle orange warning to use amber palette (maintains urgency)
+
+### Testing
+- [x] Verify no orange colors remain in dashboard UI
+- [x] Ensure visual consistency across all dashboard components

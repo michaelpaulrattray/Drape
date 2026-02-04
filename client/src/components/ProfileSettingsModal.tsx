@@ -313,7 +313,7 @@ function UsageTabContent() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "generation": return "text-orange-600";
+      case "generation": return "text-gray-700";
       case "purchase": return "text-green-600";
       case "bonus": return "text-blue-600";
       case "refund": return "text-amber-600";
@@ -355,7 +355,7 @@ function UsageTabContent() {
       <div className="grid grid-cols-3 gap-4">
         <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
           <div className="flex items-center gap-2 mb-2">
-            <Activity className="w-4 h-4 text-orange-500" />
+            <Activity className="w-4 h-4 text-gray-600" />
             <span className="text-xs text-gray-500 uppercase">Credits Used</span>
           </div>
           {isLoadingStats ? (

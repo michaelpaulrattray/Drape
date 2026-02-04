@@ -42,7 +42,7 @@ export function LowBalanceBanner({
         isCritical 
           ? "bg-red-500/10 border-red-500/30 text-red-400"
           : isVeryLow
-          ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+          ? "bg-amber-500/10 border-amber-500/30 text-amber-500"
           : "bg-amber-500/10 border-amber-500/30 text-amber-400"
       }`}
     >
@@ -51,7 +51,7 @@ export function LowBalanceBanner({
           isCritical 
             ? "bg-red-500/20"
             : isVeryLow
-            ? "bg-orange-500/20"
+            ? "bg-amber-500/20"
             : "bg-amber-500/20"
         }`}>
           <AlertTriangle className="w-4 h-4" />
@@ -81,7 +81,7 @@ export function LowBalanceBanner({
             isCritical
               ? "bg-red-500 hover:bg-red-600 text-white"
               : isVeryLow
-              ? "bg-orange-500 hover:bg-orange-600 text-white"
+              ? "bg-amber-500 hover:bg-amber-600 text-black"
               : "bg-amber-500 hover:bg-amber-600 text-black"
           }`}
         >
