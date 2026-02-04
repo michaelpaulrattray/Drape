@@ -719,21 +719,21 @@ export default function ProfileSettingsModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-2xl max-h-[85vh] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-2xl max-h-[85vh] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-800">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-semibold text-white tracking-tight">Settings</h2>
-            <p className="text-sm text-zinc-500 mt-0.5">Manage your account preferences</p>
+            <h2 className="text-xl font-semibold text-obsidian tracking-tight">Settings</h2>
+            <p className="text-sm text-subtle mt-0.5">Manage your account preferences</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-full text-gray-400 hover:text-obsidian hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -755,54 +755,54 @@ export default function ProfileSettingsModal({
 
         <div className="flex h-[calc(85vh-80px)]">
           {/* Sidebar Tabs */}
-          <div className="w-52 border-r border-zinc-800 p-5 space-y-1">
+          <div className="w-52 border-r border-gray-200 p-5 space-y-1 bg-gray-50">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                   activeTab === tab.id
-                    ? "bg-zinc-800/50 text-white"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/30"
+                    ? "bg-white text-obsidian shadow-sm border border-gray-200"
+                    : "text-subtle hover:text-obsidian hover:bg-white/50"
                 }`}
               >
-                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-orange-500" : ""}`} />
+                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-gray-900" : ""}`} />
                 {tab.label}
               </button>
             ))}
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-6" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex-1 overflow-y-auto p-6 bg-white" style={{ scrollbarWidth: 'none' }}>
             {activeTab === "profile" && (
               <div className="space-y-6">
                 {/* Banner Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                  <label className="block text-sm font-medium text-charcoal mb-3">
                     Cover Image
                   </label>
-                  <div className="relative h-32 rounded-xl overflow-hidden border border-zinc-800 group">
+                  <div className="relative h-32 rounded-xl overflow-hidden border border-gray-200 group">
                     <img
                       src={bannerImage || profileData?.bannerUrl || defaultBanner}
                       alt="Cover"
                       className="w-full h-full object-cover"
-                      style={{ filter: 'grayscale(100%) brightness(0.4)' }}
+                      style={{ filter: 'grayscale(50%) brightness(0.8)' }}
                     />
                     {/* Loading overlay */}
                     {isUploadingBanner && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/90 border border-zinc-700">
-                          <div className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
-                          <span className="text-sm text-white">Uploading...</span>
+                      <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-lg">
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+                          <span className="text-sm text-obsidian">Uploading...</span>
                         </div>
                       </div>
                     )}
                     {/* Hover overlay */}
                     {!isUploadingBanner && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <button
                           onClick={() => bannerInputRef.current?.click()}
-                          className="px-4 py-2 rounded-md bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"
+                          className="px-4 py-2 rounded-md bg-white/90 border border-gray-200 text-obsidian text-sm font-medium hover:bg-white transition-colors flex items-center gap-2"
                         >
                           <Upload className="w-4 h-4" />
                           Change Cover
@@ -817,17 +817,17 @@ export default function ProfileSettingsModal({
                       onChange={handleBannerImageUpload}
                     />
                   </div>
-                  <p className="text-xs text-zinc-500 mt-2">JPG, PNG or WebP. Max 10MB.</p>
+                  <p className="text-xs text-subtle mt-2">JPG, PNG or WebP. Max 10MB.</p>
                 </div>
 
                 {/* Avatar Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                  <label className="block text-sm font-medium text-charcoal mb-3">
                     Profile Picture
                   </label>
                   <div className="flex items-center gap-4">
                     <div className="relative group">
-                      <div className="w-20 h-20 rounded-full overflow-hidden border border-zinc-800">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border border-gray-200">
                         <img
                           src={profileImage || profileData?.avatarUrl || defaultAvatar}
                           alt="Profile"
@@ -835,8 +835,8 @@ export default function ProfileSettingsModal({
                         />
                         {/* Loading overlay */}
                         {isUploadingAvatar && (
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                            <div className="w-6 h-6 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+                          <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                            <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
                           </div>
                         )}
                       </div>
@@ -844,7 +844,7 @@ export default function ProfileSettingsModal({
                       {!isUploadingAvatar && (
                         <button
                           onClick={() => profilePicInputRef.current?.click()}
-                          className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                         >
                           <Upload className="w-5 h-5 text-white" />
                         </button>
@@ -858,15 +858,15 @@ export default function ProfileSettingsModal({
                       />
                     </div>
                     <div>
-                      <p className="text-sm text-zinc-300">Upload a new profile picture</p>
-                      <p className="text-xs text-zinc-500">JPG, PNG or WebP. Max 5MB.</p>
+                      <p className="text-sm text-charcoal">Upload a new profile picture</p>
+                      <p className="text-xs text-subtle">JPG, PNG or WebP. Max 5MB.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Display Name */}
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-2">
+                  <label className="block text-sm font-medium text-charcoal mb-2">
                     Display Name
                   </label>
                   <input
@@ -874,15 +874,15 @@ export default function ProfileSettingsModal({
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
                     maxLength={100}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-obsidian text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/20 transition-all"
                     placeholder="Your display name"
                   />
-                  <p className="text-xs text-zinc-500 mt-1.5">{editedName.length}/100 characters</p>
+                  <p className="text-xs text-subtle mt-1.5">{editedName.length}/100 characters</p>
                 </div>
 
                 {/* Bio */}
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-2">
+                  <label className="block text-sm font-medium text-charcoal mb-2">
                     Bio
                   </label>
                   <textarea
@@ -890,47 +890,47 @@ export default function ProfileSettingsModal({
                     onChange={(e) => setEditedBio(e.target.value)}
                     maxLength={500}
                     rows={3}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all resize-none"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-obsidian text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/20 transition-all resize-none"
                     placeholder="Tell us about yourself..."
                   />
-                  <p className="text-xs text-zinc-500 mt-1.5">{editedBio.length}/500 characters</p>
+                  <p className="text-xs text-subtle mt-1.5">{editedBio.length}/500 characters</p>
                 </div>
 
                 {/* Email (read-only) */}
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-2">
+                  <label className="block text-sm font-medium text-charcoal mb-2">
                     Email Address
                   </label>
                   <input
                     type="email"
                     value={profileData?.email || user?.email || ""}
                     readOnly
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-500 text-sm cursor-not-allowed"
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-subtle text-sm cursor-not-allowed"
                   />
-                  <p className="text-xs text-zinc-500 mt-1.5">Email cannot be changed</p>
+                  <p className="text-xs text-subtle mt-1.5">Email cannot be changed</p>
                 </div>
 
                 {/* Storage Usage */}
                 {storageInfo && (
                   <div>
-                    <label className="block text-sm font-medium text-zinc-400 mb-2">
+                    <label className="block text-sm font-medium text-charcoal mb-2">
                       Storage Usage
                     </label>
-                    <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+                    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <HardDrive className="w-4 h-4 text-neutral-400" />
-                          <span className="text-sm text-white">
+                          <HardDrive className="w-4 h-4 text-subtle" />
+                          <span className="text-sm text-obsidian">
                             {formatBytes(storageInfo.used)} / {formatBytes(storageInfo.limit)}
                           </span>
                         </div>
-                        <span className="text-xs text-zinc-500">{storageInfo.percentage}% used</span>
+                        <span className="text-xs text-subtle">{storageInfo.percentage}% used</span>
                       </div>
-                      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div 
                           className={`h-full rounded-full transition-all ${
                             storageInfo.percentage > 90 ? "bg-red-500" : 
-                            storageInfo.percentage > 70 ? "bg-orange-500" : "bg-green-500"
+                            storageInfo.percentage > 70 ? "bg-amber-500" : "bg-green-500"
                           }`}
                           style={{ width: `${storageInfo.percentage}%` }}
                         />
@@ -944,7 +944,7 @@ export default function ProfileSettingsModal({
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-6 py-3 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-all flex items-center gap-2 disabled:opacity-50"
+                    className="px-6 py-3 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-black transition-all flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
@@ -979,7 +979,7 @@ export default function ProfileSettingsModal({
             {activeTab === "notifications" && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                  <label className="block text-sm font-medium text-charcoal mb-3">
                     Email Notifications
                   </label>
                   <div className="space-y-3">
@@ -988,18 +988,18 @@ export default function ProfileSettingsModal({
                       { label: "Weekly digest", description: "Summary of your activity and new features", enabled: false },
                       { label: "Marketing updates", description: "News about FormaStudio and special offers", enabled: false },
                     ].map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+                      <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
                         <div>
-                          <p className="text-sm text-white">{item.label}</p>
-                          <p className="text-xs text-neutral-500">{item.description}</p>
+                          <p className="text-sm text-obsidian">{item.label}</p>
+                          <p className="text-xs text-subtle">{item.description}</p>
                         </div>
                         <button
                           className={`w-12 h-6 rounded-full transition-colors relative ${
-                            item.enabled ? "bg-orange-500" : "bg-white/10"
+                            item.enabled ? "bg-gray-900" : "bg-gray-200"
                           }`}
                         >
                           <div
-                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
                               item.enabled ? "left-7" : "left-1"
                             }`}
                           />
@@ -1014,7 +1014,7 @@ export default function ProfileSettingsModal({
             {activeTab === "security" && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                  <label className="block text-sm font-medium text-charcoal mb-3">
                     Connected Accounts
                   </label>
                   <div className="space-y-3">
@@ -1022,9 +1022,9 @@ export default function ProfileSettingsModal({
                       { provider: "Google", connected: true, email: profileData?.email || user?.email },
                       { provider: "Apple", connected: false, email: null },
                     ].map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+                      <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
                             {item.provider === "Google" ? (
                               <svg className="w-5 h-5" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -1033,25 +1033,25 @@ export default function ProfileSettingsModal({
                                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                               </svg>
                             ) : (
-                              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                              <svg className="w-5 h-5 text-obsidian" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                               </svg>
                             )}
                           </div>
                           <div>
-                            <p className="text-sm text-white">{item.provider}</p>
+                            <p className="text-sm text-obsidian">{item.provider}</p>
                             {item.connected ? (
-                              <p className="text-xs text-zinc-500">{item.email}</p>
+                              <p className="text-xs text-subtle">{item.email}</p>
                             ) : (
-                              <p className="text-xs text-neutral-500">Not connected</p>
+                              <p className="text-xs text-subtle">Not connected</p>
                             )}
                           </div>
                         </div>
                         <button
                           className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${
                             item.connected
-                              ? "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white"
-                              : "bg-orange-500 text-white hover:bg-orange-600"
+                              ? "bg-white border border-gray-200 text-charcoal hover:bg-gray-50"
+                              : "bg-gray-900 text-white hover:bg-black"
                           }`}
                         >
                           {item.connected ? "Disconnect" : "Connect"}
@@ -1062,12 +1062,12 @@ export default function ProfileSettingsModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-3">
+                  <label className="block text-sm font-medium text-charcoal mb-3">
                     Danger Zone
                   </label>
-                  <div className="p-5 rounded-xl bg-red-500/5 border border-red-500/20">
-                    <p className="text-sm text-red-400 mb-3">Delete your account and all associated data. This action cannot be undone.</p>
-                    <button className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-all">
+                  <div className="p-5 rounded-xl bg-red-50 border border-red-200">
+                    <p className="text-sm text-red-600 mb-3">Delete your account and all associated data. This action cannot be undone.</p>
+                    <button className="px-4 py-2.5 rounded-xl bg-red-100 border border-red-200 text-red-600 text-sm font-medium hover:bg-red-200 transition-all">
                       Delete Account
                     </button>
                   </div>

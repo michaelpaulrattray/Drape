@@ -1536,3 +1536,44 @@ The entry and configuration files are properly set up with several enhancements 
 
 ### Testing
 - [x] Write tests for usage data aggregation (13 new tests)
+
+## Dashboard Light Mode Restyle
+
+### Global Theme
+- [ ] Update index.css with light mode color palette (canvas #FAFAFA, surface #FFFFFF, obsidian #111111)
+- [ ] Add Plus Jakarta Sans font for modern typography
+- [ ] Create premium-card class with subtle shadows and borders
+- [ ] Update ThemeProvider to use light mode as default
+
+### Dashboard.tsx
+- [ ] Restyle sidebar with light background and subtle borders
+- [ ] Update cards with premium-card styling (white bg, soft shadows)
+- [ ] Change text colors to obsidian/charcoal/subtle palette
+- [ ] Add technical-grid background pattern
+- [ ] Update buttons with light mode styling
+
+### Modals and Components
+- [ ] Update ProfileSettingsModal for light mode
+- [ ] Update BillingModal and CreditTopupModal for light mode
+- [ ] Ensure all modals have consistent light styling
+
+## Dashboard Light Mode Restyle
+
+### Global Theme
+- [x] Update index.css with light mode color palette
+- [x] Change theme to light mode (warm gray/cream background)
+- [x] Add custom color tokens (obsidian, charcoal, subtle, cream, etc.)
+- [x] Update scrollbar and selection styles for light mode
+
+### Dashboard.tsx
+- [x] Restyle header with light mode colors
+- [x] Update sidebar navigation for light mode
+- [x] Restyle model cards with light backgrounds and subtle shadows
+- [x] Update empty states and loading skeletons
+- [x] Apply monochromatic/grayscale aesthetic from mood board
+
+### ProfileSettingsModal
+- [x] Update modal container and backdrop for light mode
+- [x] Restyle sidebar tabs with light mode colors
+- [x] Update form fields (inputs, textareas) for light mode
+- [x] Update notifications and security tabs for light mode

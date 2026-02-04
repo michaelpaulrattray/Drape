@@ -48,55 +48,55 @@
   --font-space: "Space Grotesk", monospace;
 }
 
-/* LUMEN Light Theme - Default */
+/* FORMA STUDIO Light Theme - Inspired by Oravia/Technical Design */
 :root {
-  --radius: 0;
-  /* Zinc-50 based light theme */
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0.005 285.823);
-  /* Card */
+  --radius: 0.5rem;
+  /* Canvas-based light theme - #FAFAFA base */
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.145 0 0);
+  /* Card - Pure white with subtle depth */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0.005 285.823);
+  --card-foreground: oklch(0.145 0 0);
   /* Popover */
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0.005 285.823);
-  /* Primary - black for light theme */
-  --primary: oklch(0.145 0.005 285.823);
-  --primary-foreground: oklch(0.985 0 0);
-  /* Secondary */
-  --secondary: oklch(0.96 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  /* Muted */
-  --muted: oklch(0.96 0.001 286.375);
-  --muted-foreground: oklch(0.556 0.016 285.938);
-  /* Accent - sky blue */
-  --accent: oklch(0.685 0.169 237.323);
-  --accent-foreground: oklch(0.985 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  /* Primary - Obsidian black */
+  --primary: oklch(0.145 0 0);
+  --primary-foreground: oklch(0.98 0 0);
+  /* Secondary - Subtle gray */
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.35 0 0);
+  /* Muted - For subtle text */
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  /* Accent - Obsidian with subtle warmth */
+  --accent: oklch(0.25 0.01 60);
+  --accent-foreground: oklch(0.98 0 0);
   /* Destructive */
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  /* Borders and inputs */
-  --border: oklch(0 0 0 / 10%);
-  --input: oklch(0 0 0 / 8%);
-  --ring: oklch(0.685 0.169 237.323 / 50%);
-  /* Chart colors */
-  --chart-1: oklch(0.7 0.15 200);
-  --chart-2: oklch(0.65 0.18 250);
-  --chart-3: oklch(0.6 0.2 300);
-  --chart-4: oklch(0.55 0.15 150);
-  --chart-5: oklch(0.75 0.12 100);
-  /* Sidebar */
-  --sidebar: oklch(0.98 0 0);
-  --sidebar-foreground: oklch(0.145 0.005 285.823);
-  --sidebar-primary: oklch(0.145 0.005 285.823);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.96 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.145 0.005 285.823);
-  --sidebar-border: oklch(0 0 0 / 10%);
-  --sidebar-ring: oklch(0.145 0.005 285.823 / 30%);
+  --destructive-foreground: oklch(0.98 0 0);
+  /* Borders and inputs - Very subtle */
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.92 0 0);
+  --ring: oklch(0.145 0 0 / 30%);
+  /* Chart colors - Monochrome palette */
+  --chart-1: oklch(0.3 0 0);
+  --chart-2: oklch(0.45 0 0);
+  --chart-3: oklch(0.6 0 0);
+  --chart-4: oklch(0.75 0 0);
+  --chart-5: oklch(0.85 0 0);
+  /* Sidebar - Clean white */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.145 0 0);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.96 0 0);
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: oklch(0.145 0 0 / 20%);
 }
 
-/* Custom scrollbar - LUMEN style */
+/* Custom scrollbar - Light mode style */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -104,8 +104,54 @@
   background: #fafafa;
 }
 ::-webkit-scrollbar-thumb {
-  background: #38bdf8;
+  background: #d4d4d4;
   border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* Premium Card - Oravia inspired */
+.premium-card {
+  background: #FFFFFF;
+  border: 1px solid #EAEAEA;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02), 0 8px 16px -4px rgba(0,0,0,0.04);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.premium-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.03), 0 12px 24px -6px rgba(0,0,0,0.06);
+  border-color: #D4D4D4;
+}
+
+/* Technical Grid Background */
+.technical-grid {
+  background-size: 40px 40px;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+}
+
+/* Canvas background for light mode */
+.bg-canvas {
+  background-color: #FAFAFA;
+}
+
+/* Obsidian text color */
+.text-obsidian {
+  color: #111111;
+}
+.text-charcoal {
+  color: #333333;
+}
+.text-subtle {
+  color: #737373;
+}
+
+/* Border colors */
+.border-light {
+  border-color: #E5E5E5;
 }
 
 /* Dark theme scrollbar for Casting Studio */
@@ -233,9 +279,9 @@
     font-family: 'Space Grotesk', monospace;
   }
   
-  /* Selection highlight - sky blue */
+  /* Selection highlight - obsidian */
   ::selection {
-    background: #38bdf8;
+    background: #111111;
     color: white;
   }
 }
