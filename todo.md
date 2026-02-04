@@ -1853,3 +1853,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Integrate progress tracking - rungs light up blue as sections complete
 - [x] Add green celebration effect when sequence is complete
 - [x] Ensure smooth animation performance
+
+
+## DNA Helix - Enhance Particle Visibility
+- [x] Increase background particle size and opacity to match reference
+- [x] Make decorative circles more visible with higher opacity
+- [x] Ensure mouse grab effect lines are more prominent
+- [x] Increase particle count for denser effect

@@ -44,7 +44,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>(0);
   const timeRef = useRef<number>(0);
-  const mouseRef = useRef<{ x: number | null; y: number | null; radius: number }>({ x: null, y: null, radius: 120 });
+  const mouseRef = useRef<{ x: number | null; y: number | null; radius: number }>({ x: null, y: null, radius: 150 });
   const backgroundDotsRef = useRef<BackgroundDot[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const [prevProgress, setPrevProgress] = useState(progress);
@@ -80,8 +80,8 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         vy: 0,
         baseX: Math.random(),
         baseY: Math.random(),
-        size: 1 + Math.random() * 3,
-        opacity: 0.1 + Math.random() * 0.25,
+        size: 2 + Math.random() * 4,
+        opacity: 0.25 + Math.random() * 0.35,
         speed: 0.0002 + Math.random() * 0.0005
       });
     }
@@ -230,15 +230,15 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < mouse.radius) {
-          const opacity = (1 - dist / mouse.radius) * 0.4;
+          const opacity = (1 - dist / mouse.radius) * 0.7;
 
           ctx.beginPath();
           ctx.moveTo(mouse.x!, mouse.y!);
           ctx.lineTo(particle.x, particle.y);
           ctx.strokeStyle = isComplete 
             ? `rgba(34, 197, 94, ${opacity})` 
-            : `rgba(100, 100, 100, ${opacity})`;
-          ctx.lineWidth = 1;
+            : `rgba(80, 80, 80, ${opacity})`;
+          ctx.lineWidth = 1.5;
           ctx.stroke();
         }
       });
@@ -258,15 +258,15 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
           const dy = p1.y - p2.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 80) {
-            const opacity = (1 - dist / 80) * 0.25;
+          if (dist < 100) {
+            const opacity = (1 - dist / 100) * 0.5;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.strokeStyle = isComplete 
               ? `rgba(34, 197, 94, ${opacity})` 
-              : `rgba(100, 100, 100, ${opacity})`;
-            ctx.lineWidth = 0.5;
+              : `rgba(80, 80, 80, ${opacity})`;
+            ctx.lineWidth = 1;
             ctx.stroke();
           }
         }
@@ -508,7 +508,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
 
     // Initialize background dots
     if (backgroundDotsRef.current.length === 0) {
-      backgroundDotsRef.current = generateBackgroundDots(80);
+      backgroundDotsRef.current = generateBackgroundDots(120);
     }
 
     const resize = () => {
