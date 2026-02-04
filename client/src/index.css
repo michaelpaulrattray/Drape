@@ -362,6 +362,53 @@
   background-size: 25% 100%;
 }
 
+/* Custom range slider for light mode */
+input[type="range"].slider-slate {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"].slider-slate::-webkit-slider-track {
+  background: #E4EBF1;
+  height: 4px;
+  border-radius: 2px;
+}
+input[type="range"].slider-slate::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6E7F8D;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  margin-top: -6px;
+  transition: all 0.15s ease;
+}
+input[type="range"].slider-slate::-webkit-slider-thumb:hover {
+  background: #5D6E7C;
+  transform: scale(1.1);
+}
+input[type="range"].slider-slate::-moz-range-track {
+  background: #E4EBF1;
+  height: 4px;
+  border-radius: 2px;
+}
+input[type="range"].slider-slate::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6E7F8D;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  transition: all 0.15s ease;
+}
+input[type="range"].slider-slate::-moz-range-thumb:hover {
+  background: #5D6E7C;
+  transform: scale(1.1);
+}
+
 /* Text outline utility */
 .text-outline {
   -webkit-text-stroke: 1px rgba(0,0,0,0.2);

@@ -651,7 +651,7 @@ function VisualEyeGrid({
   onSelect: (val: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="grid grid-cols-5 gap-3">
       {options.map(opt => {
         const isSelected = selected === opt.label;
         return (
@@ -659,10 +659,10 @@ function VisualEyeGrid({
             key={opt.label}
             onClick={() => onSelect(opt.label)}
             className={`
-              relative w-full aspect-square rounded-full border transition-all duration-200 group overflow-hidden
+              relative w-full aspect-square rounded-full border-2 transition-all duration-200 group overflow-hidden
               ${isSelected
-                ? 'border-white ring-1 ring-white scale-110 z-10'
-                : 'border-gray-200 hover:border-slate-accent hover:scale-105 opacity-80 hover:opacity-100'
+                ? 'border-slate-accent ring-2 ring-slate-accent/30 scale-110 z-10 shadow-md'
+                : 'border-transparent hover:border-slate-accent/50 hover:scale-105'
               }
             `}
             title={opt.label}
@@ -671,15 +671,15 @@ function VisualEyeGrid({
               <img
                 src={opt.image}
                 alt={opt.label}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover rounded-full"
               />
             ) : (
               <>
                 <div
-                  className="absolute inset-0"
-                  style={{ background: `radial-gradient(circle at 35% 35%, ${opt.hex} 0%, #151515 80%)` }}
+                  className="absolute inset-0 rounded-full"
+                  style={{ background: `radial-gradient(circle at 35% 35%, ${opt.hex} 0%, #2a2a2a 80%)` }}
                 />
-                <div className="absolute top-[25%] left-[25%] w-[15%] h-[15%] bg-white rounded-full blur-[1px] opacity-50" />
+                <div className="absolute top-[25%] left-[25%] w-[15%] h-[15%] bg-white rounded-full blur-[1px] opacity-60" />
               </>
             )}
           </button>
@@ -2147,7 +2147,7 @@ export default function CastingStudio() {
                   step="1"
                   value={prefs.age || "23"}
                   onChange={(e) => updatePref('age', e.target.value)}
-                  className="w-full h-1 bg-slate-accent rounded-full appearance-none cursor-pointer accent-white hover:accent-studio-300 focus:outline-none"
+                  className="w-full slider-slate focus:outline-none"
                 />
               </div>
 
@@ -2422,41 +2422,44 @@ export default function CastingStudio() {
             </p>
           )}
           
-          {/* Debug Utility Button - Development Only */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-3 pt-3 border-t border-gray-200/50">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleDebugFill(false)}
-                  disabled={genState.isGenerating}
-                  className="flex-1 py-2 px-3 bg-amber-600/20 hover:bg-amber-600/30 disabled:opacity-50 text-amber-500 text-xs font-medium rounded-lg border border-amber-600/30 transition-colors"
-                  title="Ctrl+Shift+D"
-                >
-                  🎲 Random Fill
-                </button>
-                <button
-                  onClick={() => {
-                    const randomPrefs = generateRandomPreferences();
-                    setPrefs(prev => ({ ...prev, ...randomPrefs }));
-                    toast.success('Debug: Auto-generating model...');
-                    setTimeout(() => {
-                      const generateBtn = document.querySelector('[data-debug-generate]') as HTMLButtonElement;
-                      if (generateBtn && !generateBtn.disabled) {
-                        generateBtn.click();
-                      }
-                    }, 200);
-                  }}
-                  disabled={genState.isGenerating}
-                  className="flex-1 py-2 px-3 bg-green-600/20 hover:bg-green-600/30 disabled:opacity-50 text-green-500 text-xs font-medium rounded-lg border border-green-600/30 transition-colors"
-                  title="Ctrl+Shift+G"
-                >
-                  ⚡ Auto Generate
-                </button>
+          {/* Admin Tools - Only visible to admins */}
+          {user?.role === 'admin' && (
+            <details className="mt-3 pt-3 border-t border-gray-100 group">
+              <summary className="text-xs text-subtle cursor-pointer hover:text-charcoal transition-colors flex items-center gap-1.5 select-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-90"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                Admin Tools
+              </summary>
+              <div className="mt-2 space-y-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleDebugFill(false)}
+                    disabled={genState.isGenerating}
+                    className="flex-1 py-1.5 px-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 text-subtle hover:text-charcoal text-xs font-medium rounded-md border border-gray-200 transition-colors"
+                    title="Ctrl+Shift+D"
+                  >
+                    Random Fill
+                  </button>
+                  <button
+                    onClick={() => {
+                      const randomPrefs = generateRandomPreferences();
+                      setPrefs(prev => ({ ...prev, ...randomPrefs }));
+                      toast.success('Auto-generating model...');
+                      setTimeout(() => {
+                        const generateBtn = document.querySelector('[data-debug-generate]') as HTMLButtonElement;
+                        if (generateBtn && !generateBtn.disabled) {
+                          generateBtn.click();
+                        }
+                      }, 200);
+                    }}
+                    disabled={genState.isGenerating}
+                    className="flex-1 py-1.5 px-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 text-subtle hover:text-charcoal text-xs font-medium rounded-md border border-gray-200 transition-colors"
+                    title="Ctrl+Shift+G"
+                  >
+                    Auto Generate
+                  </button>
+                </div>
               </div>
-              <p className="text-[10px] text-subtle text-center mt-1.5">
-                Debug: Ctrl+Shift+D (fill) | Ctrl+Shift+G (generate)
-              </p>
-            </div>
+            </details>
           )}
         </div>
       </aside>
@@ -2498,7 +2501,7 @@ export default function CastingStudio() {
             <button
               key={res}
               onClick={() => setResolution(res)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${resolution === res ? 'bg-white text-black' : 'text-charcoal hover:text-obsidian'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${resolution === res ? 'bg-slate-accent text-white shadow-sm' : 'text-charcoal hover:text-obsidian hover:bg-gray-100'}`}
             >
               {res}
             </button>

@@ -32,14 +32,14 @@ const Tooltip: React.FC<TooltipProps> = ({ content }) => {
         ref={triggerRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="relative inline-block ml-1.5 align-middle group text-studio-500 hover:text-studio-300 cursor-help transition-colors"
+        className="relative inline-block ml-1.5 align-middle group text-subtle hover:text-charcoal cursor-help transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
       </div>
 
       {isVisible && createPortal(
         <div 
-            className="fixed z-[100] w-48 p-3 bg-studio-900 border border-studio-700 text-[10px] text-studio-200 rounded shadow-2xl pointer-events-none leading-relaxed tracking-wide font-sans animate-in fade-in duration-200"
+            className="fixed z-[100] w-48 p-3 bg-white border border-gray-200 text-xs text-charcoal rounded-lg shadow-lg pointer-events-none leading-relaxed font-sans animate-in fade-in duration-200"
             style={{ 
                 top: position.top, 
                 left: position.left,
@@ -48,7 +48,7 @@ const Tooltip: React.FC<TooltipProps> = ({ content }) => {
         >
           {content}
           {/* Downward Arrow */}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-studio-700"></div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-gray-200"></div>
         </div>,
         document.body
       )}

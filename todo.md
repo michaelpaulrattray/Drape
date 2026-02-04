@@ -1722,3 +1722,13 @@ The entry and configuration files are properly set up with several enhancements 
 ### Testing
 - [x] Verify visual consistency across both sections
 - [x] Test all interactive elements still work correctly
+
+## Phase 2.12: Casting Studio UI Polish
+
+### Issues Reported
+- [x] Fix resolution selector (1K/2K/4K) - now uses slate-accent background for selected state
+- [x] Fix eye color grid - increased gap, removed grey bg, added slate-accent selection ring
+- [x] Fix age slider thumb - added custom slider-slate class with visible slate thumb
+- [x] Fix tooltips - updated to light mode (white bg, gray border, charcoal text)
+- [x] Fix debug options - now admin-only in toggleable "Admin Tools" menu
+
