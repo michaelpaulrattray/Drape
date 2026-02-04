@@ -349,11 +349,17 @@ function WorkSection() {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <SectionLabel label="Selected Work" number="02" />
 
-        <div className="flex items-end justify-between mb-12">
-          <h2 className="text-3xl font-bold text-black">Selected Work.</h2>
-          <a href="#" className="inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors">
+        {/* Header with subtext and button */}
+        <div className="flex items-start justify-between mb-16">
+          <div>
+            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-black mb-4">Selected Work.</h2>
+            <p className="text-black/50 text-sm max-w-sm leading-relaxed">
+              A curated selection of projects that reflect our commitment to simplicity and purposeful design.
+            </p>
+          </div>
+          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 border border-black/20 text-sm text-black rounded-full hover:bg-black hover:text-white transition-all">
             View all projects
-            <ArrowRight className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
           </a>
         </div>
 
@@ -363,22 +369,23 @@ function WorkSection() {
             <a
               key={index}
               href="#"
-              className="group relative aspect-[4/3] rounded-2xl overflow-hidden bg-black/5"
+              className="group block rounded-2xl overflow-hidden transition-all duration-300 hover:bg-black"
             >
-              <img
-                src={project.image}
-                alt={project.name}
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-white">{project.name}</h3>
-                    <p className="text-sm text-white/70">{project.category}</p>
-                  </div>
-                  <span className="text-sm text-white/50">{project.year}</span>
+              {/* Image Container with zoom effect */}
+              <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2 group-hover:m-0 transition-all duration-300">
+                <img
+                  src={project.image}
+                  alt={project.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+              </div>
+              {/* Info Bar */}
+              <div className="flex items-center justify-between p-4 pt-3">
+                <div>
+                  <h3 className="text-base font-semibold text-black group-hover:text-white transition-colors">{project.name}</h3>
+                  <p className="text-sm text-black/50 group-hover:text-white/60 transition-colors">{project.category}</p>
                 </div>
+                <span className="text-sm text-black/40 group-hover:text-white/50 transition-colors">{project.year}</span>
               </div>
             </a>
           ))}

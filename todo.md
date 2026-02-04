@@ -2236,3 +2236,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Ensure single smooth scrolling row
 - [x] Add proper spacing between stat items
 - [x] Reduce header/headline font size to match Kanso
+
+
+## Selected Work Section Update
+- [x] Increase header font size and set font-weight 500
+- [x] Add subtext paragraph below header
+- [x] Update "View all projects" button with + icon
+- [x] Add image zoom effect on card hover
+- [x] Add black background/border on card hover
+- [x] Update card info layout (name, description, year)
