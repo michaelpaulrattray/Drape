@@ -11,6 +11,7 @@ import HairColorWheel from "@/components/HairColorWheel";
 import Tooltip from "@/components/Tooltip";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/components/LowBalanceWarning";
 import { CreditTopupModal } from "@/components/CreditTopupModal";
+import { DNAHelix } from "@/components/DNAHelix";
 
 // ============ Types ============
 
@@ -1284,6 +1285,37 @@ export default function CastingStudio() {
       !!prefs.hairColor &&
       !!prefs.hairStyle
     );
+  }, [prefs]);
+
+  // Calculate form completion progress for DNA helix animation
+  const formProgress = useMemo(() => {
+    let completed = 0;
+    const totalFields = 12; // 6 sections with 2 rungs each
+    
+    // Section 1: Casting basics (brand, vibe) - 2 rungs
+    if (prefs.castingBrand) completed += 1;
+    if (prefs.castingVibe && (prefs.castingVibe.editorial > 0 || prefs.castingVibe.commercial > 0 || prefs.castingVibe.runway > 0)) completed += 1;
+    
+    // Section 2: Identity (gender, age, ethnicity) - 2 rungs
+    if (prefs.gender) completed += 1;
+    if (prefs.age && prefs.ethnicity) completed += 1;
+    
+    // Section 3: Physique (body type, face shape) - 2 rungs
+    if (prefs.bodyType) completed += 1;
+    if (prefs.faceShape) completed += 1;
+    
+    // Section 4: Skin (tone, texture, finish) - 2 rungs
+    if (prefs.skinTone) completed += 1;
+    if (prefs.skinTexture || prefs.skinFinish) completed += 1;
+    
+    // Section 5: Eyes (color) - 2 rungs
+    if (prefs.eyeColor) completed += 2;
+    
+    // Section 6: Hair (color, style) - 2 rungs
+    if (prefs.hairColor) completed += 1;
+    if (prefs.hairStyle) completed += 1;
+    
+    return Math.round((completed / totalFields) * 100);
   }, [prefs]);
 
   // Update preference helper
@@ -3163,45 +3195,31 @@ export default function CastingStudio() {
             </div>
           </div>
         ) : (
-          /* Empty State */
-          <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
-            {/* Ambient gradient background animation */}
-            <div className="absolute inset-0 ambient-gradient opacity-30" />
+          /* Empty State - DNA Helix Progress Visualization */
+          <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden bg-gradient-to-b from-gray-50 to-white">
+            {/* Subtle ambient background */}
             <div className="absolute inset-0">
-              <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-float" style={{animationDelay: '0s'}} />
-              <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/3 rounded-full blur-3xl animate-float" style={{animationDelay: '2s'}} />
+              <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gray-100/50 rounded-full blur-3xl" />
+              <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gray-100/30 rounded-full blur-3xl" />
             </div>
-            <div className="relative z-10 w-full max-w-3xl p-8 flex flex-col items-center justify-center min-h-[500px]">
-              <div className="mb-12 text-center space-y-6">
-                <div className="relative inline-block">
-                  <h1 className="text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-slate-accent to-gray-400 tracking-tight select-none opacity-90">
-                    CASTING<br />STUDIO
-                  </h1>
-                  <div className="absolute -top-4 -left-4 w-4 h-4 border-t border-l border-gray-300" />
-                  <div className="absolute -top-4 -right-4 w-4 h-4 border-t border-r border-gray-300" />
-                  <div className="absolute -bottom-4 -left-4 w-4 h-4 border-b border-l border-gray-300" />
-                  <div className="absolute -bottom-4 -right-4 w-4 h-4 border-b border-r border-gray-300" />
-                </div>
-
-                <div className="flex items-center justify-center space-x-4">
-                  <div className="h-px w-8 bg-slate-accent" />
-                  <p className="text-xs font-medium text-subtle tracking-wide">
-                    AI Model Generation Engine
-                  </p>
-                  <div className="h-px w-8 bg-slate-accent" />
-                </div>
+            
+            <div className="relative z-10 w-full max-w-4xl p-8 flex flex-col items-center justify-center min-h-[500px]">
+              {/* DNA Helix Visualization */}
+              <div className="w-full mb-8">
+                <DNAHelix progress={formProgress} className="mx-auto" />
               </div>
 
-              <div className="w-full bg-gray-100/80 backdrop-blur-md border border-gray-200/60 p-1 shadow-2xl">
-                <div className="bg-white p-8 space-y-6">
-                  <div className="flex justify-between items-end border-b border-gray-200/50 pb-5">
+              {/* Status Card */}
+              <div className="w-full max-w-xl bg-white/90 backdrop-blur-md border border-gray-200/60 p-1 shadow-xl rounded-lg">
+                <div className="bg-white p-6 space-y-5 rounded-md">
+                  <div className="flex justify-between items-end border-b border-gray-200/50 pb-4">
                     <div className="space-y-1.5">
                       <div className="flex items-center space-x-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${isFormValid ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse' : 'bg-amber-600'}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${isFormValid ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse' : 'bg-amber-500'}`} />
                         <p className="text-xs font-medium text-subtle">System Status</p>
                       </div>
                       <p className={`text-sm font-medium ${isFormValid ? 'text-obsidian' : 'text-charcoal'}`}>
-                        {isFormValid ? 'Ready for Generation' : 'Awaiting Parameters'}
+                        {isFormValid ? 'Sequence Complete — Ready for Generation' : 'Sequencing Model DNA...'}
                       </p>
                     </div>
                     <div className="text-right">
