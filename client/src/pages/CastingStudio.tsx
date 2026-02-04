@@ -1792,6 +1792,14 @@ export default function CastingStudio() {
   };
 
   // AI prompt enhancement
+  // DEV NOTE: If you see "Property 'enhance' does not exist on type" error here,
+  // this is usually a stale TypeScript cache / language server issue.
+  // The router procedure exists in server/routers.ts under generation.enhance.
+  // Resolution steps (try in order):
+  //   1. Restart TypeScript server (VS Code: Cmd/Ctrl+Shift+P → "TypeScript: Restart TS Server")
+  //   2. Restart dev server: pnpm dev (or webdev_restart_server)
+  //   3. Clear node_modules/.cache and restart
+  // Verify with: pnpm exec tsc --noEmit (should pass if router is correct)
   const enhanceMutation = trpc.generation.enhance.useMutation();
   
   const handleEnhance = async () => {

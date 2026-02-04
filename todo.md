@@ -1906,3 +1906,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Add staggered reveal for rungs during entrance
 - [ ] Add fade-in for particles during entrance
 - [ ] Ensure entrance animation only plays once on page load
+
+
+## TypeScript Cache Issue Documentation
+- [x] Add dev note near generation.enhance callsite documenting stale TS cache issue
+- [x] Include steps to resolve: restart TS server, restart dev server, re-run typegen
