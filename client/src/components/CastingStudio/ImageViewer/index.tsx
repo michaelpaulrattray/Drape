@@ -5,3 +5,5 @@ export { ViewTabs } from './ViewTabs';
 export type { ViewType, GeneratedAsset } from './ViewTabs';
 
 export { RefinePanel } from './RefinePanel';
+
+export { ToolsBar } from './ToolsBar';
