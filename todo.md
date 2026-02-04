@@ -1749,3 +1749,9 @@ The entry and configuration files are properly set up with several enhancements 
 ### Iris Image Size and Style Update
 - [x] Increase iris image size (w-12 h-12 = 48px with scale-125 on select)
 - [x] Remove border ring around iris images - now standalone with ring only on selection
+
+### Fix Iris Image Size to Match Original App
+- [x] Match original app sizing: w-full aspect-square (not fixed w-11 h-11)
+- [x] Use grid-cols-5 gap-2 layout
+- [x] Updated border styling for light theme (border-gray-200 unselected, border-slate-accent selected)
+- [x] Selected state: border-slate-accent ring-1 ring-slate-accent scale-110 z-10
