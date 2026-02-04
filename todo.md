@@ -1765,3 +1765,11 @@ The entry and configuration files are properly set up with several enhancements 
 
 ### Age Slider Track Color Update
 - [x] Changed slider track from blue-grey (#5A6A7A) to neutral grey (#D1D5DB)
+
+### Tone & Energy Component Font Consistency
+- [x] Ensure Tone & Energy component fonts/styles match rest of control panel
+- [x] Changed header from text-sm text-gray-900 to text-xs font-medium text-subtle
+- [x] Changed description from font-mono to regular text-subtle/70
+- [x] Changed triangle labels from font-bold text-gray-600 to font-semibold text-subtle
+- [x] Changed readout text from font-mono to regular with text-subtle/text-obsidian
+- [x] Changed preset chips from font-mono to regular with text-subtle/text-obsidian

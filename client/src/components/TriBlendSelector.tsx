@@ -166,12 +166,12 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
   ];
 
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden font-sans select-none">
+    <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden select-none">
         {/* 1. Header */}
         <div className="px-5 pt-5 pb-2 flex justify-between items-start">
             <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-0.5">Tone & Energy</h3>
-                <p className="text-[10px] text-gray-500 font-mono tracking-tight">Blend between Commercial, Editorial and Runway.</p>
+                <h3 className="text-xs font-medium text-subtle mb-0.5">Tone & Energy</h3>
+                <p className="text-[10px] text-subtle/70">Blend between Commercial, Editorial and Runway.</p>
             </div>
             <Tooltip content="Adjust the visual weight of the output. Editorial adds avant-garde distortion. Commercial adds warmth/smile. Runway adds intensity/stare." />
         </div>
@@ -189,9 +189,9 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                 // Removed onPointerLeave to allow dragging outside bounds while captured
             >
                 {/* Labels */}
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-600 uppercase tracking-widest pointer-events-none z-10">Editorial</span>
-                <span className="absolute bottom-2 -left-2 text-[9px] font-bold text-gray-600 uppercase tracking-widest pointer-events-none z-10">Commercial</span>
-                <span className="absolute bottom-2 -right-2 text-[9px] font-bold text-gray-600 uppercase tracking-widest pointer-events-none z-10">Runway</span>
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-subtle uppercase tracking-wider pointer-events-none z-10">Editorial</span>
+                <span className="absolute bottom-2 -left-2 text-[9px] font-semibold text-subtle uppercase tracking-wider pointer-events-none z-10">Commercial</span>
+                <span className="absolute bottom-2 -right-2 text-[9px] font-semibold text-subtle uppercase tracking-wider pointer-events-none z-10">Runway</span>
 
                 {/* VISUAL LAYER (SVG) - Background */}
                 <svg 
@@ -249,12 +249,12 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
         <div className="bg-gray-50 border-t border-gray-200 p-5 space-y-4">
             
             <div className="text-center space-y-1">
-                <div className="text-xs text-gray-900">
-                    <span className="text-gray-500 font-mono uppercase tracking-wide">Selected: </span>
-                    <span className="font-bold tracking-wide">{dominant}</span>
-                    {Math.max(value.editorial, value.commercial, value.runway) > 0.6 && <span className="text-gray-500 text-[10px] ml-1">(Dominant)</span>}
+                <div className="text-xs text-obsidian">
+                    <span className="text-subtle uppercase tracking-wide">Selected: </span>
+                    <span className="font-semibold">{dominant}</span>
+                    {Math.max(value.editorial, value.commercial, value.runway) > 0.6 && <span className="text-subtle text-[10px] ml-1">(Dominant)</span>}
                 </div>
-                <div className="text-[9px] font-mono text-gray-500 tracking-wider">
+                <div className="text-[9px] text-subtle tracking-wider">
                     C {Math.round(value.commercial * 100)}% • E {Math.round(value.editorial * 100)}% • R {Math.round(value.runway * 100)}%
                 </div>
             </div>
@@ -265,15 +265,15 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                     { label: "Editorial", val: value.editorial },
                     { label: "Runway", val: value.runway }
                 ].map((item) => (
-                    <div key={item.label} className="flex items-center space-x-3 text-[10px] font-mono uppercase tracking-wider">
-                        <span className="w-16 text-gray-500 text-right">{item.label}</span>
+                    <div key={item.label} className="flex items-center space-x-3 text-[10px] uppercase tracking-wide">
+                        <span className="w-16 text-subtle text-right font-medium">{item.label}</span>
                         <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                             <div 
                                 className="h-full bg-slate-accent transition-all duration-300 ease-out" 
                                 style={{ width: `${item.val * 100}%` }}
                             ></div>
                         </div>
-                        <span className="w-8 text-gray-900 text-right">{Math.round(item.val * 100)}%</span>
+                        <span className="w-8 text-obsidian text-right font-medium">{Math.round(item.val * 100)}%</span>
                     </div>
                 ))}
             </div>
@@ -290,10 +290,10 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                             key={p.label}
                             onClick={() => onChange(p.w)}
                             className={`
-                                px-3 py-1.5 rounded-full text-[9px] font-mono uppercase tracking-wider border transition-all
+                                px-3 py-1.5 rounded-full text-[9px] uppercase tracking-wide border transition-all
                                 ${isActive 
-                                    ? 'bg-slate-accent text-white border-slate-accent shadow-sm font-bold' 
-                                    : 'bg-transparent text-gray-500 border-gray-300 hover:border-slate-accent hover:text-gray-700'
+                                    ? 'bg-slate-accent text-white border-slate-accent shadow-sm font-semibold' 
+                                    : 'bg-transparent text-subtle border-gray-300 hover:border-slate-accent hover:text-obsidian font-medium'
                                 }
                             `}
                         >
