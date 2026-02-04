@@ -133,6 +133,55 @@
   mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
 }
 
+/* Geometric Mesh Background - Network/Particle Aesthetic */
+.geometric-mesh {
+  position: relative;
+}
+.geometric-mesh::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+  background-image:
+    /* Primary grid */
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    /* Diagonal mesh lines */
+    linear-gradient(45deg, transparent 48%, rgba(0, 0, 0, 0.015) 49%, rgba(0, 0, 0, 0.015) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(0, 0, 0, 0.015) 49%, rgba(0, 0, 0, 0.015) 51%, transparent 52%),
+    /* Dot pattern at intersections */
+    radial-gradient(circle at center, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size:
+    60px 60px,
+    60px 60px,
+    30px 30px,
+    30px 30px,
+    60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 70%);
+}
+.geometric-mesh > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Subtle node points for mesh */
+.mesh-nodes {
+  position: relative;
+}
+.mesh-nodes::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.3;
+  background-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 70% 50% at 50% 40%, black 10%, transparent 60%);
+}
+
 /* Canvas background for light mode */
 .bg-canvas {
   background-color: #FAFAFA;

@@ -1592,3 +1592,42 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update chart area to light theme with gray bars
 - [x] Restyle transaction table to match light modal design
 - [x] Fix period selector buttons to light theme
+
+
+## Geometric Mesh Background & Modal Light Mode
+
+### Dashboard Background
+- [ ] Add subtle geometric mesh/grid pattern overlay
+- [ ] Use CSS for performance (no image assets)
+- [ ] Ensure pattern is subtle and doesn't interfere with content
+
+### BillingModal Light Mode
+- [ ] Update modal container to light background
+- [ ] Restyle plan cards with light colors
+- [ ] Update buttons and text colors
+- [ ] Fix confirmation dialog styling
+
+### CreditTopupModal Light Mode
+- [ ] Update modal container to light background
+- [ ] Restyle credit package cards
+- [ ] Update buttons and text colors
+
+
+## Geometric Mesh Background & Modal Light Mode (COMPLETED)
+
+### Geometric Mesh Background
+- [x] Add CSS for geometric mesh pattern (dots + lines)
+- [x] Create mesh-nodes class for animated particles
+- [x] Apply geometric-mesh class to Dashboard container
+
+### BillingModal Light Mode
+- [x] Update backdrop to lighter opacity
+- [x] Change modal background to white
+- [x] Update text colors to gray-900/gray-500
+- [x] Restyle plan cards with light backgrounds
+- [x] Update buttons to gray-900 primary
+
+### CreditTopupModal Light Mode
+- [x] Update modal background to white
+- [x] Restyle credit package cards
+- [x] Update text and icon colors for light mode
