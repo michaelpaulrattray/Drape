@@ -373,22 +373,20 @@ export default function Waitlist() {
       </div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center bg-canvas/80 backdrop-blur-md border-b border-border">
-        <a href="#" className="group flex items-center gap-2 text-2xl md:text-3xl tracking-tight font-normal font-geist text-obsidian">
+      <nav className="fixed top-0 left-0 w-full z-50 px-4 py-3 md:px-8 md:py-4 flex justify-between items-center bg-canvas/80 backdrop-blur-md border-b border-border">
+        <a href="#" className="group">
           <img 
             src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
             alt="Forma Studio" 
-            className="w-7 h-7 md:w-8 md:h-8"
+            className="w-7 h-7 md:w-8 md:h-8 transition-transform group-hover:scale-105"
           />
-          <span className="border-b border-obsidian pb-0.5 group-hover:border-transparent transition-colors duration-300">forma</span>
-          <span className="text-charcoal">studio</span>
         </a>
 
         {/* Desktop Menu */}
         <div className="flex items-center pointer-events-auto">
           <a 
             href="#waitlist" 
-            className="btn-slate px-5 py-2.5 rounded-lg text-sm font-medium uppercase tracking-wide"
+            className="btn-slate px-4 py-2 rounded-lg text-sm font-medium uppercase tracking-wide"
           >
             Join Waitlist
           </a>
@@ -398,7 +396,7 @@ export default function Waitlist() {
       {/* Main Content */}
       <main className="z-10 relative">
         {/* Hero Section */}
-        <section className="md:pt-32 md:pb-32 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-0 border-b px-6 pt-24 pb-20 relative border-border bg-studio-950">
+        <section className="md:pt-24 md:pb-32 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-0 border-b px-6 pt-20 pb-20 relative border-border bg-studio-950">
           
           {/* Left Col */}
           <div className="col-span-1 flex flex-col z-20 h-full relative justify-between">
