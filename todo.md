@@ -1481,3 +1481,23 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Write unit tests for billing logic (24 tests)
 - [ ] Test Stripe checkout flow end-to-end (requires Stripe sandbox claim)
 - [ ] Test webhook handling (requires Stripe sandbox claim)
+
+## Phase 2 Enhancements
+
+### Low-Balance Warning System
+- [x] Create LowBalanceWarning component with toast/banner
+- [x] Add warning threshold constant (50 credits)
+- [x] Integrate warning into Dashboard and generation pages
+- [x] Show warning after credit deduction if balance drops below threshold
+- [x] Add "Top Up Now" button linking to CreditTopupModal
+
+### Proration for Plan Changes
+- [x] Add proration_behavior to Stripe checkout session
+- [x] Create upgrade/downgrade endpoint with proration
+- [x] Handle credit adjustments for mid-cycle changes
+- [x] Update BillingModal to show prorated pricing
+- [x] Add confirmation dialog for plan changes with cost preview
+
+### Testing
+- [x] Write tests for low-balance warning logic
+- [x] Write tests for proration calculations

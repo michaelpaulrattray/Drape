@@ -25,6 +25,9 @@ import {
   reactivateSubscription,
   calculateRolloverCredits,
   getMonthlyCredits,
+  calculateProration,
+  updateSubscriptionPlan,
+  calculateCreditAdjustment,
 } from "./stripeService";
 import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
 import { PLAN_TIERS } from "../drizzle/schema";
@@ -1458,6 +1461,7 @@ export const appRouter = router({
           currentPeriodEnd: null,
           canUpgrade: true,
           canManage: false,
+          hasSubscription: false,
         };
       }
 
@@ -1474,6 +1478,7 @@ export const appRouter = router({
         canUpgrade: subscription.planTier !== "studio" && subscription.planTier !== "enterprise",
         canManage: !!subscription.stripeSubscriptionId,
         stripeCustomerId: subscription.stripeCustomerId,
+        hasSubscription: !!subscription.stripeSubscriptionId && subscription.subscriptionStatus === "active",
       };
     }),
 
@@ -1629,6 +1634,133 @@ export const appRouter = router({
 
       return { success: true, message: "Subscription reactivated." };
     }),
+
+    // Preview proration for plan change
+    previewPlanChange: protectedProcedure
+      .input(z.object({
+        newPlan: z.enum(["starter", "pro", "studio"]),
+      }))
+      .query(async ({ ctx, input }) => {
+        const subscription = await getSubscriptionByUserId(ctx.user.id);
+        
+        if (!subscription?.stripeSubscriptionId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No active subscription found. Please subscribe first.",
+          });
+        }
+
+        const proration = await calculateProration(
+          subscription.stripeSubscriptionId,
+          input.newPlan
+        );
+
+        if (!proration) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to calculate proration.",
+          });
+        }
+
+        // Calculate credit adjustment
+        const currentPlan = subscription.planTier || "free";
+        const creditAdjustment = calculateCreditAdjustment(
+          currentPlan,
+          input.newPlan,
+          proration.daysRemaining,
+          proration.totalDays
+        );
+
+        return {
+          currentPlan,
+          newPlan: input.newPlan,
+          isUpgrade: proration.isUpgrade,
+          proratedAmount: proration.proratedAmount,
+          immediateCharge: proration.immediateCharge,
+          creditBalance: proration.creditBalance,
+          currentPlanPrice: proration.currentPlanPrice,
+          newPlanPrice: proration.newPlanPrice,
+          daysRemaining: proration.daysRemaining,
+          totalDays: proration.totalDays,
+          creditAdjustment,
+        };
+      }),
+
+    // Change subscription plan with proration
+    changePlan: protectedProcedure
+      .input(z.object({
+        newPlan: z.enum(["starter", "pro", "studio"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const subscription = await getSubscriptionByUserId(ctx.user.id);
+        
+        if (!subscription?.stripeSubscriptionId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No active subscription found. Please subscribe first.",
+          });
+        }
+
+        // Calculate proration first to get credit adjustment
+        const proration = await calculateProration(
+          subscription.stripeSubscriptionId,
+          input.newPlan
+        );
+
+        if (!proration) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to calculate proration.",
+          });
+        }
+
+        // Update the subscription in Stripe
+        const result = await updateSubscriptionPlan(
+          subscription.stripeSubscriptionId,
+          input.newPlan,
+          ctx.user.id
+        );
+
+        if (!result.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: result.error || "Failed to change plan.",
+          });
+        }
+
+        // Calculate and apply credit adjustment for upgrades
+        const currentPlan = subscription.planTier || "free";
+        const creditAdjustment = calculateCreditAdjustment(
+          currentPlan,
+          input.newPlan,
+          proration.daysRemaining,
+          proration.totalDays
+        );
+
+        if (creditAdjustment > 0) {
+          // Add prorated credits for upgrade
+          await addCredits(
+            ctx.user.id,
+            creditAdjustment,
+            "bonus",
+            `Prorated credits for upgrade to ${input.newPlan}`
+          );
+        }
+
+        // Update local subscription record
+        await updateUserSubscription(ctx.user.id, {
+          planTier: input.newPlan,
+        });
+
+        return {
+          success: true,
+          message: proration.isUpgrade
+            ? `Upgraded to ${input.newPlan}! ${creditAdjustment} bonus credits added.`
+            : `Downgraded to ${input.newPlan}. Changes take effect at next billing cycle.`,
+          proratedAmount: result.proratedAmount,
+          creditAdjustment,
+        };
+      }),
   }),
 });
 

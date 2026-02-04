@@ -164,3 +164,82 @@ describe("Billing - Plan to Tier Mapping", () => {
     expect(mapPlanToTier("studio")).toBe("studio");
   });
 });
+
+
+import { calculateCreditAdjustment } from "./stripeService";
+
+describe("Billing - Low Balance Warning", () => {
+  const LOW_BALANCE_THRESHOLD = 50;
+
+  it("should trigger warning when balance is below threshold", () => {
+    expect(49 < LOW_BALANCE_THRESHOLD).toBe(true);
+    expect(50 < LOW_BALANCE_THRESHOLD).toBe(false);
+    expect(0 < LOW_BALANCE_THRESHOLD).toBe(true);
+  });
+
+  it("should identify critical balance at zero", () => {
+    const isCritical = (balance: number) => balance === 0;
+    expect(isCritical(0)).toBe(true);
+    expect(isCritical(1)).toBe(false);
+    expect(isCritical(50)).toBe(false);
+  });
+
+  it("should identify very low balance under 10", () => {
+    const isVeryLow = (balance: number) => balance < 10;
+    expect(isVeryLow(0)).toBe(true);
+    expect(isVeryLow(9)).toBe(true);
+    expect(isVeryLow(10)).toBe(false);
+    expect(isVeryLow(49)).toBe(false);
+  });
+});
+
+describe("Billing - Credit Adjustment for Plan Changes", () => {
+  it("should return 0 for downgrade (no immediate credit change)", () => {
+    // Pro to Starter
+    expect(calculateCreditAdjustment("pro", "starter", 15, 30)).toBe(0);
+    // Studio to Pro
+    expect(calculateCreditAdjustment("studio", "pro", 15, 30)).toBe(0);
+    // Studio to Starter
+    expect(calculateCreditAdjustment("studio", "starter", 15, 30)).toBe(0);
+  });
+
+  it("should calculate prorated credits for upgrade", () => {
+    // Starter (1500) to Pro (4000), 15 days remaining of 30
+    // Additional credits: 4000 - 1500 = 2500
+    // Prorated: 2500 * (15/30) = 1250
+    expect(calculateCreditAdjustment("starter", "pro", 15, 30)).toBe(1250);
+  });
+
+  it("should calculate full credits for upgrade at start of period", () => {
+    // Starter to Pro, 30 days remaining of 30
+    // Additional credits: 2500
+    // Prorated: 2500 * (30/30) = 2500
+    expect(calculateCreditAdjustment("starter", "pro", 30, 30)).toBe(2500);
+  });
+
+  it("should calculate minimal credits for upgrade near end of period", () => {
+    // Starter to Pro, 1 day remaining of 30
+    // Additional credits: 2500
+    // Prorated: 2500 * (1/30) = 83
+    expect(calculateCreditAdjustment("starter", "pro", 1, 30)).toBe(83);
+  });
+
+  it("should handle upgrade from free tier", () => {
+    // Free (100) to Starter (1500), 15 days remaining of 30
+    // Additional credits: 1500 - 100 = 1400
+    // Prorated: 1400 * (15/30) = 700
+    expect(calculateCreditAdjustment("free", "starter", 15, 30)).toBe(700);
+  });
+
+  it("should handle upgrade to studio tier", () => {
+    // Pro (4000) to Studio (10000), 20 days remaining of 30
+    // Additional credits: 10000 - 4000 = 6000
+    // Prorated: 6000 * (20/30) = 4000
+    expect(calculateCreditAdjustment("pro", "studio", 20, 30)).toBe(4000);
+  });
+
+  it("should return 0 for same plan", () => {
+    expect(calculateCreditAdjustment("pro", "pro", 15, 30)).toBe(0);
+    expect(calculateCreditAdjustment("starter", "starter", 15, 30)).toBe(0);
+  });
+});

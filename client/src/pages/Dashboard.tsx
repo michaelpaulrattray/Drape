@@ -26,6 +26,7 @@ import { useState, useRef, useEffect } from "react";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
 import { BillingModal } from "@/components/BillingModal";
 import { CreditTopupModal } from "@/components/CreditTopupModal";
+import { LowBalanceBanner, LOW_BALANCE_THRESHOLD } from "@/components/LowBalanceWarning";
 import { Loader2, Coins } from "lucide-react";
 
 // Image compression utility
@@ -495,6 +496,14 @@ export default function Dashboard() {
 
         {/* Content Area */}
         <div className="p-10 pt-8 space-y-12">
+          {/* Low Balance Warning */}
+          {creditsData && creditsData.balance < LOW_BALANCE_THRESHOLD && (
+            <LowBalanceBanner
+              balance={creditsData.balance}
+              onTopUp={() => setIsTopupOpen(true)}
+            />
+          )}
+
           {/* Recent Work Section */}
           <div>
             <div className="flex items-center justify-between mb-8">

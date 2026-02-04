@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Check, Zap, Crown, Building2, Sparkles, Loader2 } from "lucide-react";
+import { X, Check, Zap, Crown, Building2, Sparkles, Loader2, ArrowRight, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -8,11 +8,28 @@ interface BillingModalProps {
   onClose: () => void;
 }
 
+interface PlanChangePreview {
+  currentPlan: string;
+  newPlan: string;
+  isUpgrade: boolean;
+  proratedAmount: number;
+  immediateCharge: number;
+  creditBalance: number;
+  currentPlanPrice: number;
+  newPlanPrice: number;
+  daysRemaining: number;
+  totalDays: number;
+  creditAdjustment: number;
+}
+
 export function BillingModal({ isOpen, onClose }: BillingModalProps) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [confirmingPlan, setConfirmingPlan] = useState<string | null>(null);
+  const [planPreview, setPlanPreview] = useState<PlanChangePreview | null>(null);
 
   const { data: plans } = trpc.billing.getPlans.useQuery();
-  const { data: status } = trpc.billing.getStatus.useQuery();
+  const { data: status, refetch: refetchStatus } = trpc.billing.getStatus.useQuery();
+  const utils = trpc.useUtils();
   
   const createSubscriptionCheckout = trpc.billing.createSubscriptionCheckout.useMutation({
     onSuccess: (data) => {
@@ -33,11 +50,53 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
     },
   });
 
+  const changePlan = trpc.billing.changePlan.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setConfirmingPlan(null);
+      setPlanPreview(null);
+      refetchStatus();
+      utils.credits.getBalance.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      setConfirmingPlan(null);
+    },
+  });
+
   if (!isOpen) return null;
 
-  const handleSubscribe = (plan: "starter" | "pro" | "studio") => {
+  const handleSubscribe = async (plan: "starter" | "pro" | "studio") => {
+    const currentPlan = status?.planTier || "free";
+    
+    // If user has no subscription, go to checkout
+    if (currentPlan === "free" || !status?.hasSubscription) {
+      setLoadingPlan(plan);
+      createSubscriptionCheckout.mutate({ plan });
+      return;
+    }
+    
+    // If user has a subscription, show plan change confirmation
     setLoadingPlan(plan);
-    createSubscriptionCheckout.mutate({ plan });
+    try {
+      const preview = await utils.billing.previewPlanChange.fetch({ newPlan: plan });
+      setPlanPreview(preview);
+      setConfirmingPlan(plan);
+    } catch (error) {
+      toast.error("Failed to preview plan change");
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  const handleConfirmPlanChange = () => {
+    if (!confirmingPlan) return;
+    changePlan.mutate({ newPlan: confirmingPlan as "starter" | "pro" | "studio" });
+  };
+
+  const handleCancelPlanChange = () => {
+    setConfirmingPlan(null);
+    setPlanPreview(null);
   };
 
   const handleManageSubscription = () => {
@@ -61,7 +120,131 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
     return `$${(cents / 100).toFixed(0)}`;
   };
 
+  const formatPriceCents = (cents: number) => {
+    return `$${(cents / 100).toFixed(2)}`;
+  };
+
   const currentPlan = status?.planTier || "free";
+
+  // Plan Change Confirmation Dialog
+  if (confirmingPlan && planPreview) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div 
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={handleCancelPlanChange}
+        />
+        
+        <div className="relative w-full max-w-md mx-4 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className={`p-3 rounded-xl ${planPreview.isUpgrade ? "bg-green-500/20" : "bg-amber-500/20"}`}>
+              {planPreview.isUpgrade ? (
+                <ArrowRight className="w-6 h-6 text-green-400" />
+              ) : (
+                <AlertCircle className="w-6 h-6 text-amber-400" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white">
+                {planPreview.isUpgrade ? "Upgrade" : "Downgrade"} to {confirmingPlan.charAt(0).toUpperCase() + confirmingPlan.slice(1)}
+              </h3>
+              <p className="text-sm text-zinc-400">
+                {planPreview.daysRemaining} days remaining in current period
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            {/* Price Change */}
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-zinc-400">Current Plan</span>
+                <span className="text-white font-medium capitalize">
+                  {planPreview.currentPlan} ({formatPrice(planPreview.currentPlanPrice)}/mo)
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400">New Plan</span>
+                <span className="text-white font-medium capitalize">
+                  {planPreview.newPlan} ({formatPrice(planPreview.newPlanPrice)}/mo)
+                </span>
+              </div>
+            </div>
+
+            {/* Proration Details */}
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+              {planPreview.isUpgrade ? (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-zinc-400">Prorated charge today</span>
+                    <span className="text-white font-medium">
+                      {formatPriceCents(planPreview.immediateCharge)}
+                    </span>
+                  </div>
+                  {planPreview.creditAdjustment > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400">Bonus credits</span>
+                      <span className="text-green-400 font-medium">
+                        +{planPreview.creditAdjustment} credits
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-zinc-400">Credit to account</span>
+                    <span className="text-green-400 font-medium">
+                      {formatPriceCents(planPreview.creditBalance)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-500 mt-2">
+                    Credit will be applied to your next invoice. Changes take effect immediately.
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Warning for downgrade */}
+            {!planPreview.isUpgrade && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <p className="text-sm text-amber-400">
+                  Your monthly credit allocation will decrease. Unused credits from your current plan will roll over based on your new plan's rollover percentage.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleCancelPlanChange}
+              className="flex-1 py-3 rounded-xl font-medium bg-white/10 hover:bg-white/20 text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmPlanChange}
+              disabled={changePlan.isPending}
+              className={`flex-1 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+                planPreview.isUpgrade
+                  ? "bg-green-500 hover:bg-green-600 text-white"
+                  : "bg-amber-500 hover:bg-amber-600 text-black"
+              }`}
+            >
+              {changePlan.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                `Confirm ${planPreview.isUpgrade ? "Upgrade" : "Downgrade"}`
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -120,6 +303,9 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
             const isCurrentPlan = currentPlan === plan.id;
             const isLoading = loadingPlan === plan.id;
             const isPro = plan.id === "pro";
+            const isUpgrade = currentPlan === "free" || 
+              (currentPlan === "starter" && (plan.id === "pro" || plan.id === "studio")) ||
+              (currentPlan === "pro" && plan.id === "studio");
 
             return (
               <div
@@ -180,6 +366,8 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
                     </>
                   ) : isCurrentPlan ? (
                     "Current Plan"
+                  ) : status?.hasSubscription ? (
+                    isUpgrade ? "Upgrade" : "Downgrade"
                   ) : (
                     "Subscribe"
                   )}

@@ -284,3 +284,163 @@ export function calculateRolloverCredits(
 export function getMonthlyCredits(planTier: PlanTier): number {
   return PLAN_TIERS[planTier].monthlyCredits;
 }
+
+
+/**
+ * Calculate prorated amount for plan change
+ * Returns the amount in cents that will be charged/credited
+ */
+export async function calculateProration(
+  subscriptionId: string,
+  newPlan: SubscriptionPlan
+): Promise<{
+  proratedAmount: number;
+  isUpgrade: boolean;
+  immediateCharge: number;
+  creditBalance: number;
+  newPlanPrice: number;
+  currentPlanPrice: number;
+  daysRemaining: number;
+  totalDays: number;
+} | null> {
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // Get current plan from metadata
+    const currentPlan = subscription.metadata.plan as SubscriptionPlan | undefined;
+    if (!currentPlan) {
+      console.error("[Stripe] No current plan found in subscription metadata");
+      return null;
+    }
+
+    // Get pricing
+    const currentPlanPrice = SUBSCRIPTION_PRODUCTS[currentPlan].priceInCents;
+    const newPlanPrice = SUBSCRIPTION_PRODUCTS[newPlan].priceInCents;
+    
+    // Calculate time remaining in current period
+    const periodStart = (subscription as any).current_period_start || Math.floor(Date.now() / 1000);
+    const periodEnd = (subscription as any).current_period_end || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+    const now = Math.floor(Date.now() / 1000);
+    
+    const totalDays = Math.ceil((periodEnd - periodStart) / (24 * 60 * 60));
+    const daysRemaining = Math.max(0, Math.ceil((periodEnd - now) / (24 * 60 * 60)));
+    
+    // Calculate prorated amounts
+    const dailyCurrentRate = currentPlanPrice / totalDays;
+    const dailyNewRate = newPlanPrice / totalDays;
+    
+    const unusedValue = Math.floor(dailyCurrentRate * daysRemaining);
+    const newPeriodCost = Math.floor(dailyNewRate * daysRemaining);
+    
+    const proratedAmount = newPeriodCost - unusedValue;
+    const isUpgrade = newPlanPrice > currentPlanPrice;
+    
+    return {
+      proratedAmount,
+      isUpgrade,
+      immediateCharge: isUpgrade ? proratedAmount : 0,
+      creditBalance: !isUpgrade ? Math.abs(proratedAmount) : 0,
+      newPlanPrice,
+      currentPlanPrice,
+      daysRemaining,
+      totalDays,
+    };
+  } catch (error) {
+    console.error(`[Stripe] Failed to calculate proration for ${subscriptionId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Update subscription to a new plan with proration
+ */
+export async function updateSubscriptionPlan(
+  subscriptionId: string,
+  newPlan: SubscriptionPlan,
+  userId: number
+): Promise<{
+  success: boolean;
+  proratedAmount?: number;
+  error?: string;
+}> {
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // Get the current subscription item
+    const items = (subscription as any).items?.data;
+    if (!items || items.length === 0) {
+      return { success: false, error: "No subscription items found" };
+    }
+    
+    const subscriptionItemId = items[0].id;
+    const newProduct = SUBSCRIPTION_PRODUCTS[newPlan];
+    
+    // Create a new price for the plan
+    const price = await stripe.prices.create({
+      currency: "usd",
+      unit_amount: newProduct.priceInCents,
+      recurring: {
+        interval: newProduct.interval,
+      },
+      product_data: {
+        name: newProduct.name,
+      },
+    });
+
+    // Update the subscription with proration
+    await stripe.subscriptions.update(subscriptionId, {
+      items: [
+        {
+          id: subscriptionItemId,
+          price: price.id,
+        },
+      ],
+      proration_behavior: "create_prorations",
+      metadata: {
+        userId: userId.toString(),
+        plan: newPlan,
+      },
+    });
+
+    // Calculate the prorated amount for logging
+    const proration = await calculateProration(subscriptionId, newPlan);
+    
+    console.log(`[Stripe] Updated subscription ${subscriptionId} to ${newPlan} with proration`);
+    return {
+      success: true,
+      proratedAmount: proration?.proratedAmount || 0,
+    };
+  } catch (error) {
+    console.error(`[Stripe] Failed to update subscription ${subscriptionId}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update subscription",
+    };
+  }
+}
+
+/**
+ * Calculate credit adjustment for plan change
+ * When upgrading: add the difference in monthly credits immediately
+ * When downgrading: no immediate credit change (takes effect next billing cycle)
+ */
+export function calculateCreditAdjustment(
+  currentPlan: PlanTier,
+  newPlan: PlanTier,
+  daysRemaining: number,
+  totalDays: number
+): number {
+  const currentCredits = PLAN_TIERS[currentPlan].monthlyCredits;
+  const newCredits = PLAN_TIERS[newPlan].monthlyCredits;
+  
+  if (newCredits <= currentCredits) {
+    // Downgrade: no immediate credit change
+    return 0;
+  }
+  
+  // Upgrade: prorate the additional credits
+  const additionalCredits = newCredits - currentCredits;
+  const proratedCredits = Math.floor(additionalCredits * (daysRemaining / totalDays));
+  
+  return proratedCredits;
+}

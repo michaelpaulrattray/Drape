@@ -9,6 +9,8 @@ import JSZip from "jszip";
 import TriBlendSelector from "@/components/TriBlendSelector";
 import HairColorWheel from "@/components/HairColorWheel";
 import Tooltip from "@/components/Tooltip";
+import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/components/LowBalanceWarning";
+import { CreditTopupModal } from "@/components/CreditTopupModal";
 
 // ============ Types ============
 
@@ -976,11 +978,23 @@ export default function CastingStudio() {
   // Auto-generation state
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [autoGenCancelled, setAutoGenCancelled] = useState(false);
+  
+  // Credit top-up modal state
+  const [isTopupOpen, setIsTopupOpen] = useState(false);
 
   // Points data
   const { data: creditsData, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
+  
+  // Helper to refetch credits and show low balance warning
+  const refetchCreditsWithWarning = async () => {
+    const result = await refetchCredits();
+    const newBalance = result.data?.balance;
+    if (newBalance !== undefined && newBalance < LOW_BALANCE_THRESHOLD) {
+      showLowBalanceToast(newBalance, () => setIsTopupOpen(true));
+    }
+  };
 
   // Mutations
   const createModelMutation = trpc.models.create.useMutation();
@@ -1387,7 +1401,7 @@ export default function CastingStudio() {
         setHistoryIndex(0);
         setActiveView("frontClose");
         toast.success("Model generated successfully!");
-        refetchCredits();
+        refetchCreditsWithWarning();
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -1433,7 +1447,7 @@ export default function CastingStudio() {
             setHistoryIndex((prev) => prev + 1);
             setActiveView("frontFull");
             toast.success("Full body generated!");
-            refetchCredits();
+            refetchCreditsWithWarning();
           }
 
           setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -1484,7 +1498,7 @@ export default function CastingStudio() {
           setHistoryIndex((prev) => prev + 1);
           setActiveView(viewKey);
           toast.success(`${viewLabel} view generated!`);
-          refetchCredits();
+          refetchCreditsWithWarning();
         }
 
         setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -1568,7 +1582,7 @@ export default function CastingStudio() {
               setHistoryIndex((prev) => prev + 1);
               setActiveView('sideClose'); // Show first new view
               toast.success('All views generated! Ready to export.');
-              refetchCredits();
+              refetchCreditsWithWarning();
             }
             
             setGenState({ isGenerating: false, currentStep: '', error: null });
@@ -1686,7 +1700,7 @@ export default function CastingStudio() {
         }
         
         toast.success("Iteration complete!");
-        refetchCredits();
+        refetchCreditsWithWarning();
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -3170,6 +3184,13 @@ export default function CastingStudio() {
           </div>
         )}
       </main>
+
+      {/* Credit Top-up Modal */}
+      <CreditTopupModal
+        isOpen={isTopupOpen}
+        onClose={() => setIsTopupOpen(false)}
+        currentBalance={creditsData?.balance || 0}
+      />
     </div>
   );
 }
