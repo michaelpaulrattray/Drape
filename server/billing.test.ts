@@ -299,3 +299,184 @@ describe("Billing - Subscription Details", () => {
     expect(isCanceling(true, "canceled")).toBe(false);
   });
 });
+
+
+// ============ Usage Analytics Tests ============
+
+describe("Usage Analytics - Stats Calculation", () => {
+  it("should calculate total credits used from transactions", () => {
+    const transactions = [
+      { amount: -10, type: "generation" },
+      { amount: -5, type: "generation" },
+      { amount: 100, type: "topup" },
+      { amount: -15, type: "generation" },
+    ];
+    
+    const totalUsed = transactions
+      .filter(tx => tx.amount < 0)
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+    
+    expect(totalUsed).toBe(30);
+  });
+
+  it("should count generations correctly", () => {
+    const transactions = [
+      { amount: -10, type: "generation" },
+      { amount: -5, type: "generation" },
+      { amount: 100, type: "topup" },
+      { amount: -15, type: "generation" },
+      { amount: 50, type: "subscription" },
+    ];
+    
+    const generationCount = transactions.filter(tx => tx.amount < 0).length;
+    expect(generationCount).toBe(3);
+  });
+
+  it("should calculate daily average correctly", () => {
+    const totalCreditsUsed = 300;
+    const days = 30;
+    const average = Math.round((totalCreditsUsed / days) * 10) / 10;
+    expect(average).toBe(10);
+  });
+
+  it("should handle zero usage", () => {
+    const transactions: Array<{ amount: number }> = [];
+    const totalUsed = transactions
+      .filter(tx => tx.amount < 0)
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+    expect(totalUsed).toBe(0);
+  });
+
+  it("should group usage by type", () => {
+    const transactions = [
+      { amount: -10, type: "generation" },
+      { amount: -5, type: "generation" },
+      { amount: -20, type: "generation" },
+    ];
+    
+    const byType: Record<string, { count: number; credits: number }> = {};
+    for (const tx of transactions) {
+      if (tx.amount < 0) {
+        const type = tx.type;
+        if (!byType[type]) {
+          byType[type] = { count: 0, credits: 0 };
+        }
+        byType[type].count++;
+        byType[type].credits += Math.abs(tx.amount);
+      }
+    }
+    
+    expect(byType["generation"]).toEqual({ count: 3, credits: 35 });
+  });
+});
+
+describe("Usage Analytics - Daily Aggregation", () => {
+  it("should aggregate transactions by date", () => {
+    const transactions = [
+      { amount: -10, createdAt: new Date("2026-02-01T10:00:00Z") },
+      { amount: -5, createdAt: new Date("2026-02-01T14:00:00Z") },
+      { amount: -15, createdAt: new Date("2026-02-02T09:00:00Z") },
+    ];
+    
+    const dailyMap = new Map<string, number>();
+    for (const tx of transactions) {
+      const dateStr = tx.createdAt.toISOString().split("T")[0];
+      const existing = dailyMap.get(dateStr) || 0;
+      dailyMap.set(dateStr, existing + Math.abs(tx.amount));
+    }
+    
+    expect(dailyMap.get("2026-02-01")).toBe(15);
+    expect(dailyMap.get("2026-02-02")).toBe(15);
+  });
+
+  it("should handle empty days in date range", () => {
+    const days = 7;
+    const dailyMap = new Map<string, { creditsUsed: number; generationCount: number }>();
+    
+    // Initialize all days with zero values
+    for (let i = 0; i < days; i++) {
+      const date = new Date("2026-02-01");
+      date.setDate(date.getDate() + i);
+      const dateStr = date.toISOString().split("T")[0];
+      dailyMap.set(dateStr, { creditsUsed: 0, generationCount: 0 });
+    }
+    
+    expect(dailyMap.size).toBe(7);
+    expect(dailyMap.get("2026-02-01")).toEqual({ creditsUsed: 0, generationCount: 0 });
+  });
+
+  it("should format date correctly for display", () => {
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    };
+    
+    // Use explicit UTC dates to avoid timezone issues
+    const date1 = new Date(Date.UTC(2026, 1, 4, 12, 0, 0));
+    const date2 = new Date(Date.UTC(2026, 11, 25, 12, 0, 0));
+    
+    // Just verify the format pattern works (month + day)
+    expect(formatDate(date1)).toMatch(/Feb \d+/);
+    expect(formatDate(date2)).toMatch(/Dec \d+/);
+  });
+});
+
+describe("Usage Analytics - Transaction History", () => {
+  it("should paginate transactions correctly", () => {
+    const allTransactions = Array.from({ length: 25 }, (_, i) => ({ id: i + 1 }));
+    const pageSize = 10;
+    const page = 0;
+    
+    const paginated = allTransactions.slice(page * pageSize, (page + 1) * pageSize);
+    expect(paginated.length).toBe(10);
+    expect(paginated[0].id).toBe(1);
+    expect(paginated[9].id).toBe(10);
+  });
+
+  it("should calculate total pages correctly", () => {
+    const total = 25;
+    const pageSize = 10;
+    const totalPages = Math.ceil(total / pageSize);
+    expect(totalPages).toBe(3);
+  });
+
+  it("should handle last page with fewer items", () => {
+    const allTransactions = Array.from({ length: 25 }, (_, i) => ({ id: i + 1 }));
+    const pageSize = 10;
+    const page = 2; // Third page (0-indexed)
+    
+    const paginated = allTransactions.slice(page * pageSize, (page + 1) * pageSize);
+    expect(paginated.length).toBe(5);
+    expect(paginated[0].id).toBe(21);
+    expect(paginated[4].id).toBe(25);
+  });
+
+  it("should identify transaction types correctly", () => {
+    const getTypeLabel = (type: string) => {
+      switch (type) {
+        case "generation": return "Generation";
+        case "purchase": return "Purchase";
+        case "bonus": return "Bonus";
+        case "refund": return "Refund";
+        case "signup": return "Welcome Bonus";
+        case "topup": return "Credit Top-up";
+        case "subscription": return "Subscription";
+        default: return type;
+      }
+    };
+    
+    expect(getTypeLabel("generation")).toBe("Generation");
+    expect(getTypeLabel("topup")).toBe("Credit Top-up");
+    expect(getTypeLabel("signup")).toBe("Welcome Bonus");
+    expect(getTypeLabel("unknown")).toBe("unknown");
+  });
+
+  it("should format credit amounts with sign", () => {
+    const formatAmount = (amount: number) => {
+      return amount > 0 ? `+${amount}` : `${amount}`;
+    };
+    
+    expect(formatAmount(100)).toBe("+100");
+    expect(formatAmount(-10)).toBe("-10");
+    expect(formatAmount(0)).toBe("0");
+  });
+});

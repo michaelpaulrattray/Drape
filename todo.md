@@ -1519,3 +1519,20 @@ The entry and configuration files are properly set up with several enhancements 
 
 ### Testing
 - [x] Write tests for invoice retrieval and subscription details
+
+## Usage Tab Feature
+
+### Backend
+- [x] Add usage.getHistory endpoint to fetch credit transactions
+- [x] Add usage.getStats endpoint for consumption summary
+- [x] Add usage.getDailyUsage endpoint for chart data
+
+### Frontend - Usage Tab
+- [x] Add "Usage" tab to ProfileSettingsModal navigation
+- [x] Create UsageTabContent component with chart and history
+- [x] Show daily credit consumption bar chart
+- [x] Display generation history with type, credits used, date
+- [x] Add period selector (7d, 30d, 90d)
+
+### Testing
+- [x] Write tests for usage data aggregation (13 new tests)

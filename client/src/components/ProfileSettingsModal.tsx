@@ -18,6 +18,9 @@ import {
   Loader2,
   ExternalLink,
   RefreshCw,
+  BarChart3,
+  TrendingUp,
+  Activity,
 } from "lucide-react";
 
 interface ProfileSettingsModalProps {
@@ -266,6 +269,246 @@ function BillingTabContent({
   );
 }
 
+// Usage Tab Content Component
+function UsageTabContent() {
+  const [period, setPeriod] = useState<7 | 30 | 90>(30);
+  const [historyPage, setHistoryPage] = useState(0);
+  const pageSize = 10;
+
+  // Fetch usage stats
+  const { data: stats, isLoading: isLoadingStats } = trpc.usage.getStats.useQuery({ days: period });
+
+  // Fetch daily usage for chart
+  const { data: dailyUsage, isLoading: isLoadingDaily } = trpc.usage.getDailyUsage.useQuery({ days: period });
+
+  // Fetch transaction history
+  const { data: historyData, isLoading: isLoadingHistory } = trpc.usage.getHistory.useQuery({
+    limit: pageSize,
+    offset: historyPage * pageSize,
+  });
+
+  const formatDate = (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  const formatFullDate = (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case "generation": return "Generation";
+      case "purchase": return "Purchase";
+      case "bonus": return "Bonus";
+      case "refund": return "Refund";
+      case "signup": return "Welcome Bonus";
+      case "topup": return "Credit Top-up";
+      case "subscription": return "Subscription";
+      default: return type;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "generation": return "text-orange-400";
+      case "purchase": return "text-green-400";
+      case "bonus": return "text-blue-400";
+      case "refund": return "text-amber-400";
+      case "signup": return "text-purple-400";
+      case "topup": return "text-green-400";
+      case "subscription": return "text-cyan-400";
+      default: return "text-zinc-400";
+    }
+  };
+
+  // Calculate max for chart scaling
+  const maxCredits = dailyUsage ? Math.max(...dailyUsage.map(d => d.creditsUsed), 1) : 1;
+
+  const totalPages = historyData ? Math.ceil(historyData.total / pageSize) : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Period Selector */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white">Usage Analytics</h3>
+        <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg">
+          {([7, 30, 90] as const).map((days) => (
+            <button
+              key={days}
+              onClick={() => setPeriod(days)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                period === days
+                  ? "bg-orange-500 text-white"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              {days}d
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="w-4 h-4 text-orange-400" />
+            <span className="text-xs text-zinc-500 uppercase">Credits Used</span>
+          </div>
+          {isLoadingStats ? (
+            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+          ) : (
+            <p className="text-2xl font-bold text-white">{stats?.totalCreditsUsed.toLocaleString() || 0}</p>
+          )}
+        </div>
+        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span className="text-xs text-zinc-500 uppercase">Generations</span>
+          </div>
+          {isLoadingStats ? (
+            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+          ) : (
+            <p className="text-2xl font-bold text-white">{stats?.totalGenerations.toLocaleString() || 0}</p>
+          )}
+        </div>
+        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs text-zinc-500 uppercase">Daily Avg</span>
+          </div>
+          {isLoadingStats ? (
+            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+          ) : (
+            <p className="text-2xl font-bold text-white">{stats?.averagePerDay || 0}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Usage Chart */}
+      <div>
+        <label className="block text-sm font-medium text-zinc-400 mb-3">Daily Usage</label>
+        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+          {isLoadingDaily ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+            </div>
+          ) : dailyUsage && dailyUsage.length > 0 ? (
+            <div className="h-32">
+              {/* Simple bar chart */}
+              <div className="flex items-end justify-between h-full gap-1">
+                {dailyUsage.map((day, idx) => {
+                  const height = maxCredits > 0 ? (day.creditsUsed / maxCredits) * 100 : 0;
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center group relative">
+                      <div
+                        className="w-full bg-orange-500/80 rounded-t transition-all hover:bg-orange-400"
+                        style={{ height: `${Math.max(height, 2)}%` }}
+                      />
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
+                        <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-xs whitespace-nowrap">
+                          <p className="text-white font-medium">{day.creditsUsed} credits</p>
+                          <p className="text-zinc-400">{formatDate(day.date)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* X-axis labels */}
+              <div className="flex justify-between mt-2 text-xs text-zinc-500">
+                <span>{formatDate(dailyUsage[0]?.date || new Date())}</span>
+                <span>{formatDate(dailyUsage[dailyUsage.length - 1]?.date || new Date())}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-zinc-500 text-sm">
+              No usage data yet
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Transaction History */}
+      <div>
+        <label className="block text-sm font-medium text-zinc-400 mb-3">Transaction History</label>
+        {isLoadingHistory ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+          </div>
+        ) : historyData && historyData.transactions.length > 0 ? (
+          <>
+            <div className="rounded-xl border border-zinc-800 overflow-hidden">
+              {/* Table Header */}
+              <div className="grid grid-cols-4 gap-4 px-4 py-3 bg-zinc-900/50 border-b border-zinc-800">
+                <span className="text-xs font-medium text-zinc-500 uppercase">Type</span>
+                <span className="text-xs font-medium text-zinc-500 uppercase">Description</span>
+                <span className="text-xs font-medium text-zinc-500 uppercase text-right">Credits</span>
+                <span className="text-xs font-medium text-zinc-500 uppercase text-right">Date</span>
+              </div>
+
+              {/* Transaction Rows */}
+              {historyData.transactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-zinc-800 last:border-b-0 hover:bg-zinc-900/30 transition-colors"
+                >
+                  <span className={`text-sm font-medium ${getTypeColor(tx.type)}`}>
+                    {getTypeLabel(tx.type)}
+                  </span>
+                  <span className="text-sm text-zinc-400 truncate" title={tx.description || undefined}>
+                    {tx.description || "—"}
+                  </span>
+                  <span className={`text-sm font-medium text-right ${
+                    tx.amount > 0 ? "text-green-400" : "text-zinc-400"
+                  }`}>
+                    {tx.amount > 0 ? "+" : ""}{tx.amount}
+                  </span>
+                  <span className="text-sm text-zinc-500 text-right">
+                    {formatFullDate(tx.createdAt)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-sm text-zinc-500">
+                  Showing {historyPage * pageSize + 1}-{Math.min((historyPage + 1) * pageSize, historyData.total)} of {historyData.total}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setHistoryPage(p => Math.max(0, p - 1))}
+                    disabled={historyPage === 0}
+                    className="px-3 py-1.5 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-700 transition-all"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setHistoryPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={historyPage >= totalPages - 1}
+                    className="px-3 py-1.5 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-700 transition-all"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-8 text-zinc-500 text-sm">
+            No transactions yet
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ProfileSettingsModal({
   isOpen,
   onClose,
@@ -282,7 +525,7 @@ export default function ProfileSettingsModal({
   onOpenBilling,
   onOpenTopup,
 }: ProfileSettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "billing" | "notifications" | "security">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "usage" | "billing" | "notifications" | "security">("profile");
   const [editedName, setEditedName] = useState(user?.name || "");
   const [editedBio, setEditedBio] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -466,6 +709,7 @@ export default function ProfileSettingsModal({
 
   const tabs = [
     { id: "profile" as const, label: "Profile", icon: User },
+    { id: "usage" as const, label: "Usage", icon: BarChart3 },
     { id: "billing" as const, label: "Billing & Plan", icon: CreditCard },
     { id: "notifications" as const, label: "Notifications", icon: Bell },
     { id: "security" as const, label: "Security", icon: Shield },
@@ -716,6 +960,10 @@ export default function ProfileSettingsModal({
                   </button>
                 </div>
               </div>
+            )}
+
+            {activeTab === "usage" && (
+              <UsageTabContent />
             )}
 
             {activeTab === "billing" && (

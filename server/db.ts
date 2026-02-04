@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, gte, lt, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -879,4 +879,212 @@ export async function getSubscriptionByUserId(userId: number) {
     .limit(1);
 
   return result.length > 0 ? result[0] : null;
+}
+
+
+/**
+ * Get credit transaction history with pagination
+ */
+export async function getCreditHistory(
+  userId: number,
+  limit: number = 20,
+  offset: number = 0
+): Promise<{
+  transactions: Array<{
+    id: number;
+    amount: number;
+    type: string;
+    description: string | null;
+    referenceId: string | null;
+    balanceAfter: number;
+    engineUsed: string | null;
+    createdAt: Date;
+  }>;
+  total: number;
+}> {
+  const db = await getDb();
+  if (!db) {
+    return { transactions: [], total: 0 };
+  }
+
+  try {
+    // Get transactions with pagination
+    const transactions = await db
+      .select({
+        id: creditTransactions.id,
+        amount: creditTransactions.amount,
+        type: creditTransactions.type,
+        description: creditTransactions.description,
+        referenceId: creditTransactions.referenceId,
+        balanceAfter: creditTransactions.balanceAfter,
+        engineUsed: creditTransactions.engineUsed,
+        createdAt: creditTransactions.createdAt,
+      })
+      .from(creditTransactions)
+      .where(eq(creditTransactions.userId, userId))
+      .orderBy(desc(creditTransactions.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Get total count
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(creditTransactions)
+      .where(eq(creditTransactions.userId, userId));
+
+    const total = countResult[0]?.count || 0;
+
+    return { transactions, total };
+  } catch (error) {
+    console.error("[Database] Failed to get credit history:", error);
+    return { transactions: [], total: 0 };
+  }
+}
+
+/**
+ * Get usage statistics for a user
+ */
+export async function getUsageStats(
+  userId: number,
+  days: number = 30
+): Promise<{
+  totalCreditsUsed: number;
+  totalGenerations: number;
+  averagePerDay: number;
+  byType: Record<string, { count: number; credits: number }>;
+}> {
+  const db = await getDb();
+  if (!db) {
+    return {
+      totalCreditsUsed: 0,
+      totalGenerations: 0,
+      averagePerDay: 0,
+      byType: {},
+    };
+  }
+
+  try {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Get all transactions in the period
+    const transactions = await db
+      .select({
+        amount: creditTransactions.amount,
+        type: creditTransactions.type,
+        createdAt: creditTransactions.createdAt,
+      })
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.userId, userId),
+          gte(creditTransactions.createdAt, startDate)
+        )
+      );
+
+    // Calculate stats
+    let totalCreditsUsed = 0;
+    let totalGenerations = 0;
+    const byType: Record<string, { count: number; credits: number }> = {};
+
+    for (const tx of transactions) {
+      // Only count negative amounts (usage)
+      if (tx.amount < 0) {
+        totalCreditsUsed += Math.abs(tx.amount);
+        totalGenerations++;
+
+        const type = tx.type;
+        if (!byType[type]) {
+          byType[type] = { count: 0, credits: 0 };
+        }
+        byType[type].count++;
+        byType[type].credits += Math.abs(tx.amount);
+      }
+    }
+
+    const averagePerDay = days > 0 ? totalCreditsUsed / days : 0;
+
+    return {
+      totalCreditsUsed,
+      totalGenerations,
+      averagePerDay: Math.round(averagePerDay * 10) / 10,
+      byType,
+    };
+  } catch (error) {
+    console.error("[Database] Failed to get usage stats:", error);
+    return {
+      totalCreditsUsed: 0,
+      totalGenerations: 0,
+      averagePerDay: 0,
+      byType: {},
+    };
+  }
+}
+
+/**
+ * Get daily usage data for charts
+ */
+export async function getDailyUsage(
+  userId: number,
+  days: number = 30
+): Promise<Array<{
+  date: string;
+  creditsUsed: number;
+  generationCount: number;
+}>> {
+  const db = await getDb();
+  if (!db) {
+    return [];
+  }
+
+  try {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    // Get all transactions in the period
+    const transactions = await db
+      .select({
+        amount: creditTransactions.amount,
+        createdAt: creditTransactions.createdAt,
+      })
+      .from(creditTransactions)
+      .where(
+        and(
+          eq(creditTransactions.userId, userId),
+          gte(creditTransactions.createdAt, startDate),
+          lt(creditTransactions.amount, 0) // Only usage (negative amounts)
+        )
+      )
+      .orderBy(asc(creditTransactions.createdAt));
+
+    // Group by date
+    const dailyMap = new Map<string, { creditsUsed: number; generationCount: number }>();
+
+    // Initialize all days with zero values
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - (days - 1 - i));
+      const dateStr = date.toISOString().split("T")[0];
+      dailyMap.set(dateStr, { creditsUsed: 0, generationCount: 0 });
+    }
+
+    // Aggregate transactions by date
+    for (const tx of transactions) {
+      const dateStr = new Date(tx.createdAt).toISOString().split("T")[0];
+      const existing = dailyMap.get(dateStr) || { creditsUsed: 0, generationCount: 0 };
+      existing.creditsUsed += Math.abs(tx.amount);
+      existing.generationCount++;
+      dailyMap.set(dateStr, existing);
+    }
+
+    // Convert to array
+    return Array.from(dailyMap.entries()).map(([date, data]) => ({
+      date,
+      creditsUsed: data.creditsUsed,
+      generationCount: data.generationCount,
+    }));
+  } catch (error) {
+    console.error("[Database] Failed to get daily usage:", error);
+    return [];
+  }
 }
