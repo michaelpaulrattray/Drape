@@ -2116,4 +2116,5 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Eye Color/Iris Selection Styling
 - [x] Redesign iris selection to remove large ring and black circle
-- Implemented Option A (Dark Border): border-2 border-obsidian ring-2 ring-obsidian/50 shadow-lg (matches skin tone picker)
+- Implemented Option B (Inset Shadow): shadow-[inset_0_0_0_3px_rgba(0,0,0,0.7)] scale-105
+- Inset shadow overlays on the iris image, eliminating white gap between iris and border

@@ -34,7 +34,7 @@ function VisualEyeGrid({
         className={`
           relative flex-shrink-0 w-16 h-16 rounded-full transition-all duration-200 group overflow-hidden
           ${isSelected
-            ? 'border-2 border-obsidian ring-2 ring-obsidian/50 scale-110 z-10 shadow-lg'
+            ? 'shadow-[inset_0_0_0_3px_rgba(0,0,0,0.7)] scale-105 z-10'
             : 'hover:scale-105 opacity-80 hover:opacity-100'
           }
         `}
