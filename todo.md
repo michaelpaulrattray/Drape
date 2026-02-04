@@ -1860,3 +1860,22 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Make decorative circles more visible with higher opacity
 - [x] Ensure mouse grab effect lines are more prominent
 - [x] Increase particle count for denser effect
+
+
+## DNA Helix - Debug Particle Rendering Issue
+- [ ] Investigate why particles are not appearing on screen
+- [ ] Check if particles are being drawn but outside visible area
+- [ ] Check if there's a z-index or layering issue
+- [ ] Verify the drawBackgroundElements function is being called
+- [ ] Fix the particle rendering issue
+
+
+## DNA Helix - Revert Particle Settings to Original
+- [x] Revert particle size back to original (1-4px)
+- [x] Revert particle opacity back to original (0.1-0.35)
+- [x] Revert particle color back to original lighter gray (120,120,120)
+- [x] Revert particle count to 80
+- [x] Revert mouse radius to 120px
+- [x] Revert grab line opacity to 0.4
+- [x] Revert inter-particle line opacity to 0.3
+- [x] Keep the canvas scaling fix that made particles visible
