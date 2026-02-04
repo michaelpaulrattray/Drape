@@ -1786,3 +1786,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Upload texture to S3 (https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/XvNvHbhiiaEqOOfX.png)
 - [x] Update HairColorWheel component to apply texture overlay using CSS blend modes
 - [x] Applied to both wheel segments (SVG pattern + overlay blend) and swatches (backgroundBlendMode: overlay)
+
+### Hair Color Swatches Scrollable
+- [x] Make the bottom circle selectors (hair color swatches) scrollable/draggable
+- [x] Enable horizontal scrolling with overflow-x-auto
+- [x] Add drag support with cursor-grab/active:cursor-grabbing

@@ -341,8 +341,31 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
             {renderWheel()}
         </div>
 
-        {/* Swatches */}
-        <div className="overflow-x-auto no-scrollbar py-3">
+        {/* Swatches - Scrollable/Draggable */}
+        <div 
+            className="overflow-x-auto no-scrollbar py-3 cursor-grab active:cursor-grabbing"
+            onMouseDown={(e) => {
+                const container = e.currentTarget;
+                const startX = e.pageX - container.offsetLeft;
+                const scrollLeft = container.scrollLeft;
+                let isDraggingSwatch = false;
+                
+                const handleMouseMove = (moveEvent: MouseEvent) => {
+                    isDraggingSwatch = true;
+                    const x = moveEvent.pageX - container.offsetLeft;
+                    const walk = (x - startX) * 2;
+                    container.scrollLeft = scrollLeft - walk;
+                };
+                
+                const handleMouseUp = () => {
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                };
+                
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            }}
+        >
             <div className="flex space-x-3 px-2">
                 {colors.map((c, i) => (
                     <button
