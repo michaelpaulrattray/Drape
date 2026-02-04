@@ -1701,3 +1701,24 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix scrollbar styling (updated custom-scrollbar to light theme)
 - [x] Fix tone selector under hairstyles (updated HairColorWheel to light mode)
 - [x] Fix cast model button visibility (changed to slate-accent background)
+
+## Phase 2.11: Align Casting Studio Styling with Dashboard
+
+### Typography
+- [x] Audit font families used in Casting Studio vs Dashboard
+- [x] Align heading styles and weights (removed font-mono, added font-medium/font-semibold)
+- [x] Standardize body text and label styling (text-xs, text-sm instead of pixel values)
+
+### Buttons
+- [x] Replace mono/uppercase button styles with dashboard button patterns
+- [x] Apply btn-slate class where appropriate
+- [x] Standardize hover states and transitions
+
+### Components
+- [x] Align card/panel styling with dashboard cards
+- [x] Standardize select dropdowns and form inputs
+- [x] Apply consistent border radius and shadows (rounded-lg)
+
+### Testing
+- [x] Verify visual consistency across both sections
+- [x] Test all interactive elements still work correctly

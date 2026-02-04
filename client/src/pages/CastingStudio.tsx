@@ -379,11 +379,11 @@ const StageLockModal = ({
   return (
     <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white border border-gray-300 p-6 max-w-sm w-full shadow-2xl space-y-4">
-        <h3 className="text-sm font-mono uppercase text-obsidian font-bold tracking-widest">{title}</h3>
-        <p className="text-xs font-mono text-charcoal leading-relaxed">{message}</p>
+        <h3 className="text-base font-semibold text-obsidian tracking-tight">{title}</h3>
+        <p className="text-sm text-charcoal leading-relaxed">{message}</p>
         <div className="flex space-x-2 pt-2">
-          <button onClick={onCancel} className="flex-1 py-2 border border-gray-200 text-charcoal hover:text-obsidian hover:border-slate-accent text-[10px] uppercase font-mono tracking-widest transition-colors">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2 bg-white text-black hover:bg-gray-100 text-[10px] uppercase font-mono tracking-widest transition-colors font-bold">Confirm</button>
+          <button onClick={onCancel} className="flex-1 py-2.5 border border-gray-200 text-charcoal hover:text-obsidian hover:border-slate-accent text-sm font-medium rounded-lg transition-colors">Cancel</button>
+          <button onClick={onConfirm} className="flex-1 py-2.5 bg-slate-accent text-white hover:bg-[#5D6E7C] text-sm font-medium rounded-lg transition-colors">Confirm</button>
         </div>
       </div>
     </div>
@@ -468,15 +468,15 @@ const ExportModal = ({
           </button>
           
           <div className="space-y-2">
-            <h2 className="text-2xl font-mono text-obsidian uppercase tracking-tighter">Identity Card</h2>
-            <p className="text-xs font-mono text-subtle leading-relaxed">
+            <h2 className="text-2xl font-semibold text-obsidian tracking-tight">Identity Card</h2>
+            <p className="text-sm text-subtle leading-relaxed">
               Assign a unique identity to finalize this casting session and export your character pack.
             </p>
           </div>
 
           <div className="space-y-6">
             <div className="space-y-2 group">
-              <label className="text-[9px] font-mono text-subtle uppercase tracking-widest group-focus-within:text-obsidian transition-colors">Model Name</label>
+              <label className="text-xs font-medium text-subtle group-focus-within:text-obsidian transition-colors">Model Name</label>
               <input 
                 autoFocus
                 type="text" 
@@ -484,18 +484,18 @@ const ExportModal = ({
                 onChange={e => setCharacterName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && characterName) onExport(characterName, exportRes); }}
                 placeholder="ENTER NAME"
-                className="w-full bg-transparent border-b border-gray-300 text-xl font-mono text-obsidian py-2 focus:outline-none focus:border-white placehhover:text-slate-accent uppercase tracking-wider transition-colors"
+                className="w-full bg-transparent border-b border-gray-300 text-xl font-medium text-obsidian py-2 focus:outline-none focus:border-slate-accent placeholder:text-subtle transition-colors"
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-[9px] font-mono text-subtle uppercase tracking-widest">Output Quality</label>
+              <label className="text-xs font-medium text-subtle">Output Quality</label>
               <div className="grid grid-cols-2 gap-2">
                 {[ImageResolution.STD, ImageResolution.HIGH, ImageResolution.ULTRA].map(res => (
                   <button
                     key={res}
                     onClick={() => setExportRes(res)}
-                    className={`py-2 text-[10px] font-mono uppercase tracking-widest border transition-all ${
+                    className={`py-2.5 text-xs font-medium border rounded-lg transition-all ${
                       exportRes === res 
                         ? 'border-white bg-white text-black font-bold'
                         : 'border-gray-200 text-subtle hover:border-slate-accent'
@@ -510,7 +510,7 @@ const ExportModal = ({
 
           <button
             onClick={() => onExport(characterName || 'Unknown Model', exportRes)}
-            className="w-full py-3 bg-white text-black font-mono text-xs uppercase tracking-widest hover:bg-gray-100 transition-colors font-bold"
+            className="w-full py-3 bg-slate-accent text-white text-sm font-medium rounded-lg hover:bg-[#5D6E7C] transition-colors"
           >
             Export Character Pack
           </button>
@@ -544,10 +544,10 @@ function CollapsibleSection({
         <div className="flex items-center space-x-3">
           {/* Section indicator dot */}
           <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isOpen ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'bg-slate-accent group-hover:bg-slate-accent'}`} />
-          <h3 className={`text-[10px] uppercase font-bold tracking-widest transition-colors duration-300 ${isOpen ? 'text-obsidian' : 'text-subtle group-hover:text-charcoal'}`}>
+          <h3 className={`text-xs font-semibold tracking-tight transition-colors duration-300 ${isOpen ? 'text-obsidian' : 'text-subtle group-hover:text-charcoal'}`}>
             {title}
           </h3>
-          {required && <span className="text-red-500/70 text-[10px] group-hover:text-red-400 transition-colors">*</span>}
+          {required && <span className="text-red-500/70 text-xs group-hover:text-red-400 transition-colors">*</span>}
         </div>
         <div className={`transform transition-transform duration-300 text-gray-400 group-hover:text-subtle ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -579,14 +579,14 @@ function SelectControl({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center">
-        <label className="text-[9px] uppercase font-mono text-subtle tracking-wider">{label}</label>
+        <label className="text-xs font-medium text-subtle">{label}</label>
         {tooltip && <Tooltip content={tooltip} />}
       </div>
       <div className="relative group">
         <select
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-200 text-gray-700 text-[10px] font-mono py-2 pl-2 pr-6 rounded-sm focus:border-white focus:outline-none appearance-none cursor-pointer hover:border-slate-accent transition-colors"
+          className="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm py-2.5 pl-3 pr-8 rounded-lg focus:border-slate-accent focus:outline-none appearance-none cursor-pointer hover:border-slate-accent transition-colors"
         >
           <option value="" className="bg-gray-50 text-subtle">Auto / Random</option>
           {options.map(opt => (
@@ -633,7 +633,7 @@ function VisualOptionGrid({
                 {icons?.[opt] || <circle cx="12" cy="12" r="8" />}
               </svg>
             </div>
-            <span className="text-[8px] font-mono uppercase tracking-wide leading-none text-center">{opt}</span>
+            <span className="text-[10px] font-medium leading-none text-center">{opt}</span>
           </button>
         );
       })}
@@ -771,7 +771,7 @@ function ReferenceNode({
         {disabled ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <span className="text-[10px] font-mono uppercase tracking-widest">Locked</span>
+            <span className="text-xs font-medium text-subtle">Locked</span>
           </div>
         ) : image ? (
           <div className="relative w-full h-full group/image">
@@ -784,7 +784,7 @@ function ReferenceNode({
               >
                 <X className="w-5 h-5" />
               </button>
-              <span className="text-[10px] font-mono font-bold uppercase text-obsidian tracking-widest drop-shadow-md">Remove</span>
+              <span className="text-xs font-medium text-obsidian drop-shadow-md">Remove</span>
             </div>
           </div>
         ) : (
@@ -797,10 +797,10 @@ function ReferenceNode({
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
             </div>
             <div className="text-center">
-              <span className="block text-xs font-mono uppercase font-bold tracking-widest mb-1">
+              <span className="block text-sm font-medium mb-1">
                 {isDragging ? 'Drop Here' : 'Add Ref'}
               </span>
-              <span className="block text-[9px] font-mono text-gray-400">
+              <span className="block text-xs text-gray-400">
                 {isDragging ? 'Release to Set' : 'Drag & Drop / Click'}
               </span>
             </div>
@@ -870,13 +870,13 @@ function ElapsedTimeDisplay({ startTime, estimatedDuration }: { startTime: numbe
   
   return (
     <div className="text-center space-y-2">
-      <div className="text-[10px] font-mono text-charcoal uppercase tracking-widest">
+      <div className="text-xs font-medium text-charcoal">
         <span>{formatTime(elapsed)}</span>
         {estimatedDuration && elapsed < estimatedDuration && (
           <span className="text-subtle"> / ~{formatTime(estimatedDuration)}</span>
         )}
       </div>
-      <div className="text-[9px] font-mono text-subtle max-w-xs mx-auto animate-pulse">
+      <div className="text-xs font-medium text-subtle max-w-xs mx-auto animate-pulse">
         {LOADING_TIPS[tipIndex]}
       </div>
     </div>
@@ -2028,12 +2028,12 @@ export default function CastingStudio() {
           className="flex items-center gap-2 text-subtle hover:text-obsidian transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span className="text-xs font-mono uppercase">Back</span>
+          <span className="text-sm font-medium">Back</span>
         </button>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-obsidian" />
-            <span className="text-sm font-mono text-obsidian">{creditsData?.balance || 0}</span>
+            <span className="text-sm font-medium text-obsidian">{creditsData?.balance || 0}</span>
           </div>
           <button
             onClick={() => setShowMobilePanel(!showMobilePanel)}
@@ -2057,11 +2057,11 @@ export default function CastingStudio() {
             className="flex items-center gap-2 text-subtle hover:text-obsidian transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="text-xs font-mono uppercase">Back</span>
+            <span className="text-sm font-medium">Back</span>
           </button>
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-obsidian" />
-            <span className="text-sm font-mono text-obsidian">{creditsData?.balance || 0}</span>
+            <span className="text-xs font-medium text-obsidian">{creditsData?.balance || 0}</span>
           </div>
         </div>
 
@@ -2073,7 +2073,7 @@ export default function CastingStudio() {
               {/* Brand Selector */}
               <div className="space-y-1.5">
                 <div className="flex items-center">
-                  <label className="text-[9px] uppercase font-mono text-subtle tracking-wider">Casting For</label>
+                  <label className="text-xs font-medium text-subtle">Casting For</label>
                   <Tooltip content="Sets the brand archetype. Affects face structure, attitude, and styling." />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -2089,8 +2089,8 @@ export default function CastingStudio() {
                         }
                       `}
                     >
-                      <span className="text-[10px] font-mono uppercase font-bold tracking-wide">{opt.value}</span>
-                      <span className="text-[8px] font-mono text-subtle tracking-tight leading-none mt-1 opacity-80">{opt.desc}</span>
+                      <span className="text-xs font-semibold">{opt.value}</span>
+                      <span className="text-[10px] text-subtle leading-none mt-1 opacity-80">{opt.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -2106,7 +2106,7 @@ export default function CastingStudio() {
 
               {/* Gender */}
               <div className="space-y-1.5">
-                <label className="text-[9px] uppercase font-mono text-subtle tracking-wider">Gender</label>
+                <label className="text-xs font-medium text-subtle">Gender</label>
                 <div className="flex bg-gray-50 p-0.5 rounded border border-gray-200">
                   {[
                     { label: 'Female', value: 'Female', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M12 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" /><path d="M12 14v7" /><path d="M9 18h6" /></svg> },
@@ -2119,7 +2119,7 @@ export default function CastingStudio() {
                         key={opt.value}
                         onClick={() => updatePref('gender', opt.value)}
                         className={`
-                          flex-1 py-2 text-[9px] font-mono uppercase tracking-wide rounded-sm transition-all flex items-center justify-center gap-2
+                          flex-1 py-2.5 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2
                           ${isActive
                             ? 'bg-slate-accent text-obsidian shadow-sm'
                             : 'text-subtle hover:text-gray-700 hover:bg-slate-accent'
@@ -2137,8 +2137,8 @@ export default function CastingStudio() {
               {/* Age Slider */}
               <div className="space-y-2">
                 <div className="flex justify-between items-end">
-                  <label className="text-[9px] uppercase font-mono text-subtle tracking-wider">Age</label>
-                  <span className="text-[10px] font-mono text-obsidian font-bold">{prefs.age || 23} Years</span>
+                  <label className="text-xs font-medium text-subtle">Age</label>
+                  <span className="text-xs font-semibold text-obsidian">{prefs.age || 23} Years</span>
                 </div>
                 <input
                   type="range"
@@ -2154,8 +2154,8 @@ export default function CastingStudio() {
               {/* Ethnicity Grid */}
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between items-end">
-                  <label className="text-[9px] uppercase font-mono text-subtle tracking-wider">Ethnicity</label>
-                  <span className="text-[9px] font-mono text-subtle tracking-tight">
+                  <label className="text-xs font-medium text-subtle">Ethnicity</label>
+                  <span className="text-xs text-subtle">
                     {prefs.ethnicity ? (prefs.ethnicity === 'Mixed' ? 'Mixed' : 'Max 2') : 'Auto'}
                   </span>
                 </div>
@@ -2174,7 +2174,7 @@ export default function CastingStudio() {
                           }
                         `}
                       >
-                        <span className="text-[9px] font-mono uppercase tracking-widest leading-none">{eth}</span>
+                        <span className="text-xs font-medium leading-none">{eth}</span>
                         <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)] scale-100' : 'bg-slate-accent scale-0'}`} />
                       </button>
                     );
@@ -2207,7 +2207,7 @@ export default function CastingStudio() {
                           {BODY_ICONS[opt.value]}
                         </svg>
                       </div>
-                      <span className={`text-[8px] font-mono uppercase tracking-widest ${isSelected ? 'text-obsidian font-bold' : 'text-current'}`}>
+                      <span className={`text-[10px] font-medium ${isSelected ? 'text-obsidian' : 'text-current'}`}>
                         {opt.label}
                       </span>
                     </button>
@@ -2221,7 +2221,7 @@ export default function CastingStudio() {
           <CollapsibleSection title="Face Structure">
             <div className="space-y-5 pt-1">
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-mono text-subtle tracking-wider block">Face Shape</label>
+                <label className="text-xs font-medium text-subtle block">Face Shape</label>
                 <VisualOptionGrid
                   options={FACE_SHAPES}
                   selected={prefs.faceShape || "Oval"}
@@ -2231,7 +2231,7 @@ export default function CastingStudio() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-mono text-subtle tracking-wider block">Eyebrow Style</label>
+                <label className="text-xs font-medium text-subtle block">Eyebrow Style</label>
                 <VisualOptionGrid
                   options={CHAR_OPTIONS.eyebrows}
                   selected={prefs.eyebrowStyle || ""}
@@ -2242,7 +2242,7 @@ export default function CastingStudio() {
               {/* Advanced Face Toggle */}
               <button
                 onClick={() => setShowAdvancedFace(!showAdvancedFace)}
-                className="w-full flex items-center justify-between py-2 text-[9px] font-mono text-subtle hover:text-obsidian uppercase tracking-wider border-t border-gray-200"
+                className="w-full flex items-center justify-between py-2.5 text-xs font-medium text-subtle hover:text-obsidian border-t border-gray-200 transition-colors"
               >
                 <span>Advanced Features</span>
                 <span className="text-lg leading-none">{showAdvancedFace ? '−' : '+'}</span>
@@ -2268,7 +2268,7 @@ export default function CastingStudio() {
           <CollapsibleSection title="Skin & Complexion" required>
             <div className="space-y-5 pt-1">
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-mono text-subtle tracking-wider block">Skin Tone</label>
+                <label className="text-xs font-medium text-subtle block">Skin Tone</label>
                 <div className="flex gap-2">
                   {SKIN_TONES.map(tone => {
                     const isSelected = prefs.skinTone === tone.value;
@@ -2306,7 +2306,7 @@ export default function CastingStudio() {
           {/* 5. EYES */}
           <CollapsibleSection title="Eyes" required>
             <div className="space-y-2 pt-1">
-              <label className="text-[9px] uppercase font-mono text-subtle tracking-wider block">Eye Color</label>
+              <label className="text-xs font-medium text-subtle block">Eye Color</label>
               <VisualEyeGrid
                 options={EYE_PRESETS}
                 selected={prefs.eyeColor || ""}
@@ -2319,7 +2319,7 @@ export default function CastingStudio() {
           <CollapsibleSection title="Hair" required>
             <div className="space-y-5 pt-1">
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-mono text-subtle tracking-wider block">Hair Color</label>
+                <label className="text-xs font-medium text-subtle block">Hair Color</label>
                 <HairColorWheel
                   currentColor={prefs.hairColor || ""}
                   onColorSelect={(val: string) => updatePref('hairColor', val)}
@@ -2327,7 +2327,7 @@ export default function CastingStudio() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] uppercase font-mono text-subtle tracking-wider block">Style Family</label>
+                <label className="text-xs font-medium text-subtle block">Style Family</label>
                 <div className="grid grid-cols-3 gap-2">
                   {currentHairFamilies.map(style => {
                     const isSelected = prefs.hairStyle === style;
@@ -2336,7 +2336,7 @@ export default function CastingStudio() {
                         key={style}
                         onClick={() => updatePref('hairStyle', style)}
                         className={`
-                          px-2 py-2 rounded-sm border text-[8px] font-mono uppercase tracking-wide transition-all
+                          px-3 py-2.5 rounded-lg border text-xs font-medium transition-all
                           ${isSelected
                             ? 'bg-slate-accent border-white text-obsidian'
                             : 'bg-gray-50 border-gray-200 text-subtle hover:border-slate-accent hover:text-gray-700'
@@ -2368,7 +2368,7 @@ export default function CastingStudio() {
               {/* Advanced Hair Toggle */}
               <button
                 onClick={() => setShowAdvancedHair(!showAdvancedHair)}
-                className="w-full flex items-center justify-between py-2 text-[9px] font-mono text-subtle hover:text-obsidian uppercase tracking-wider border-t border-gray-200"
+                className="w-full flex items-center justify-between py-2.5 text-xs font-medium text-subtle hover:text-obsidian border-t border-gray-200 transition-colors"
               >
                 <span>Advanced Styling</span>
                 <span className="text-lg leading-none">{showAdvancedHair ? '−' : '+'}</span>
@@ -2402,7 +2402,7 @@ export default function CastingStudio() {
               handleGenerate();
             }}
             disabled={!isFormValid || genState.isGenerating}
-            className="w-full py-4 bg-slate-accent hover:bg-[#5D6E7C] disabled:opacity-50 disabled:cursor-not-allowed text-white font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover-scale active:scale-95"
+            className="w-full py-4 bg-slate-accent hover:bg-[#5D6E7C] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-all flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover-scale active:scale-95"
           >
             {genState.isGenerating ? (
               <>
@@ -2417,7 +2417,7 @@ export default function CastingStudio() {
             )}
           </button>
           {!isFormValid && (
-            <p className="text-[9px] text-subtle text-center mt-2 font-mono uppercase tracking-wider">
+            <p className="text-xs text-subtle text-center mt-2">
               Complete required fields to enable casting
             </p>
           )}
@@ -2429,7 +2429,7 @@ export default function CastingStudio() {
                 <button
                   onClick={() => handleDebugFill(false)}
                   disabled={genState.isGenerating}
-                  className="flex-1 py-2 px-3 bg-amber-600/20 hover:bg-amber-600/30 disabled:opacity-50 text-amber-500 font-mono text-[9px] uppercase tracking-wider rounded border border-amber-600/30 transition-colors"
+                  className="flex-1 py-2 px-3 bg-amber-600/20 hover:bg-amber-600/30 disabled:opacity-50 text-amber-500 text-xs font-medium rounded-lg border border-amber-600/30 transition-colors"
                   title="Ctrl+Shift+D"
                 >
                   🎲 Random Fill
@@ -2447,13 +2447,13 @@ export default function CastingStudio() {
                     }, 200);
                   }}
                   disabled={genState.isGenerating}
-                  className="flex-1 py-2 px-3 bg-green-600/20 hover:bg-green-600/30 disabled:opacity-50 text-green-500 font-mono text-[9px] uppercase tracking-wider rounded border border-green-600/30 transition-colors"
+                  className="flex-1 py-2 px-3 bg-green-600/20 hover:bg-green-600/30 disabled:opacity-50 text-green-500 text-xs font-medium rounded-lg border border-green-600/30 transition-colors"
                   title="Ctrl+Shift+G"
                 >
                   ⚡ Auto Generate
                 </button>
               </div>
-              <p className="text-[8px] text-subtle text-center mt-1.5 font-mono">
+              <p className="text-[10px] text-subtle text-center mt-1.5">
                 Debug: Ctrl+Shift+D (fill) | Ctrl+Shift+G (generate)
               </p>
             </div>
@@ -2498,7 +2498,7 @@ export default function CastingStudio() {
             <button
               key={res}
               onClick={() => setResolution(res)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-mono font-bold transition-all ${resolution === res ? 'bg-white text-black' : 'text-charcoal hover:text-obsidian'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${resolution === res ? 'bg-white text-black' : 'text-charcoal hover:text-obsidian'}`}
             >
               {res}
             </button>
@@ -2524,13 +2524,13 @@ export default function CastingStudio() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               </div>
               <div>
-                <h3 className="text-red-500 font-mono uppercase tracking-widest text-sm mb-2">System Malfunction</h3>
-                <p className="text-red-400/70 font-mono text-xs leading-relaxed">
+                <h3 className="text-red-500 font-semibold text-base mb-2">System Malfunction</h3>
+                <p className="text-red-400/70 text-sm leading-relaxed">
                   {genState.error}
                 </p>
                 <button 
                   onClick={handleRetry}
-                  className="mt-6 px-6 py-2 bg-red-900/50 hover:bg-red-800 text-red-100 font-mono text-xs uppercase tracking-widest border border-red-800 transition-colors"
+                  className="mt-6 px-6 py-2.5 bg-red-900/50 hover:bg-red-800 text-red-100 text-sm font-medium rounded-lg border border-red-800 transition-colors"
                 >
                   Retry Casting
                 </button>
@@ -2560,7 +2560,7 @@ export default function CastingStudio() {
                     </div>
                   )}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                    <span className="text-[9px] font-mono uppercase text-obsidian block text-center tracking-widest font-medium">Head</span>
+                    <span className="text-[10px] font-medium text-white block text-center">Head</span>
                   </div>
                 </button>
               )}
@@ -2582,7 +2582,7 @@ export default function CastingStudio() {
                     </div>
                   )}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                    <span className="text-[9px] font-mono uppercase text-obsidian block text-center tracking-widest font-medium">Full</span>
+                    <span className="text-[10px] font-medium text-white block text-center">Full</span>
                   </div>
                 </button>
               ) : (
@@ -2593,7 +2593,7 @@ export default function CastingStudio() {
                   <div className="w-8 h-8 rounded-full border-2 border-slate-accent flex items-center justify-center text-subtle group-hover:text-obsidian group-hover:border-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   </div>
-                  <span className="text-[8px] font-mono uppercase text-subtle group-hover:text-obsidian tracking-widest text-center px-1 font-medium">Body</span>
+                  <span className="text-[10px] font-medium text-subtle group-hover:text-obsidian text-center px-1">Body</span>
                 </button>
               )}
 
@@ -2611,7 +2611,7 @@ export default function CastingStudio() {
                     >
                       <img src={currentAssets.find(a => a.viewType === 'sideClose')?.storageUrl} alt="Side" className="w-full h-full object-cover" />
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                        <span className="text-[9px] font-mono uppercase text-obsidian block text-center tracking-widest font-medium">Side</span>
+                        <span className="text-[10px] font-medium text-white block text-center">Side</span>
                       </div>
                     </button>
                     {currentAssets.find(a => a.viewType === 'sideFull') && (
@@ -2625,7 +2625,7 @@ export default function CastingStudio() {
                       >
                         <img src={currentAssets.find(a => a.viewType === 'sideFull')?.storageUrl} alt="Walk" className="w-full h-full object-cover" />
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                          <span className="text-[9px] font-mono uppercase text-obsidian block text-center tracking-widest font-medium">Walk</span>
+                          <span className="text-[10px] font-medium text-white block text-center">Walk</span>
                         </div>
                       </button>
                     )}
@@ -2643,7 +2643,7 @@ export default function CastingStudio() {
                           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-obsidian/80"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                         </div>
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                          <span className="text-[9px] font-mono uppercase text-obsidian block text-center tracking-widest font-medium">Back</span>
+                          <span className="text-[10px] font-medium text-white block text-center">Back</span>
                         </div>
                       </button>
                     )}
@@ -2656,7 +2656,7 @@ export default function CastingStudio() {
                     <div className="w-8 h-8 rounded-full border-2 border-slate-accent flex items-center justify-center text-subtle group-hover:text-obsidian group-hover:border-white transition-colors">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </div>
-                    <span className="text-[8px] font-mono uppercase text-subtle group-hover:text-obsidian tracking-widest text-center px-1 font-medium">Angles</span>
+                    <span className="text-[10px] font-medium text-subtle group-hover:text-obsidian text-center px-1">Angles</span>
                   </button>
                 )
               ) : (
@@ -2664,15 +2664,15 @@ export default function CastingStudio() {
                   {/* Locked placeholders with labels */}
                   <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-gray-200/40 flex flex-col items-center justify-center space-y-1">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <span className="text-[7px] font-mono uppercase text-gray-400 tracking-wider">Side</span>
+                    <span className="text-[10px] font-medium text-gray-400">Side</span>
                   </div>
                   <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-gray-200/40 flex flex-col items-center justify-center space-y-1">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <span className="text-[7px] font-mono uppercase text-gray-400 tracking-wider">Walk</span>
+                    <span className="text-[10px] font-medium text-gray-400">Walk</span>
                   </div>
                   <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-gray-200/40 flex flex-col items-center justify-center space-y-1">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <span className="text-[7px] font-mono uppercase text-gray-400 tracking-wider">Back</span>
+                    <span className="text-[10px] font-medium text-gray-400">Back</span>
                   </div>
                 </>
               )}
@@ -2704,13 +2704,13 @@ export default function CastingStudio() {
                   <div className="absolute inset-4 border-t-2 border-white/30 rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
                   {/* Percentage display */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-mono text-obsidian font-bold">
+                    <span className="text-lg font-semibold text-obsidian">
                       {genState.progress ? `${Math.round(genState.progress)}%` : ''}
                     </span>
                   </div>
                 </div>
                 <div className="text-center space-y-3">
-                  <h3 className="text-sm font-mono text-obsidian uppercase tracking-[0.2em]">
+                  <h3 className="text-sm font-medium text-obsidian">
                     {genState.currentStep || 'Processing...'}
                   </h3>
                   {/* Elapsed time indicator */}
@@ -2739,11 +2739,11 @@ export default function CastingStudio() {
                           <div key={i} className={`h-1 w-3 rounded-full ${i + 1 < nextStage.step ? 'bg-white' : i + 1 === nextStage.step ? 'bg-white animate-pulse' : 'bg-slate-accent'}`}></div>
                         ))}
                       </div>
-                      <h4 className="text-[9px] font-mono uppercase tracking-widest">
+                      <h4 className="text-xs font-medium">
                         {nextStage.step > nextStage.total ? 'Workflow Complete' : isAutoGenerating ? 'Auto-Generating' : 'Next Stage'}
                       </h4>
                     </div>
-                    <p className="text-xs font-mono font-bold text-obsidian uppercase tracking-wider">{nextStage.label}</p>
+                    <p className="text-sm font-semibold text-obsidian">{nextStage.label}</p>
                   </div>
                   {!isAutoGenerating ? (
                     <button
@@ -2758,7 +2758,7 @@ export default function CastingStudio() {
                       onClick={() => setAutoGenCancelled(true)}
                       className="group relative px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center justify-center hover:bg-red-500/30 transition-all duration-300"
                     >
-                      <span className="text-[10px] font-mono text-red-400 uppercase tracking-wider">Cancel</span>
+                      <span className="text-xs font-medium text-red-400">Cancel</span>
                     </button>
                   )}
                 </div>
@@ -2837,7 +2837,7 @@ export default function CastingStudio() {
                       ) : (
                         <svg className="w-3 h-3 text-red-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z" /><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" /><path d="M2 2l7.586 7.586" /><circle cx="11" cy="11" r="2" /></svg>
                       )}
-                      <span className={`text-[10px] font-mono uppercase tracking-wider ${activeTool === 'eraser' ? 'text-purple-300' : 'text-red-300'}`}>
+                      <span className={`text-xs font-medium ${activeTool === 'eraser' ? 'text-purple-500' : 'text-red-500'}`}>
                         {activeTool === 'eraser' ? 'Magic Eraser' : 'Surgical Edit'}
                       </span>
                     </div>
@@ -2849,7 +2849,7 @@ export default function CastingStudio() {
                   <div className="absolute top-4 left-4 z-20 animate-in fade-in duration-300">
                     <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-gray-200 flex items-center space-x-2 shadow-lg">
                       <svg className="w-3 h-3 text-charcoal" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                      <span className="text-[10px] font-mono uppercase text-gray-700 tracking-wider">
+                      <span className="text-xs font-medium text-gray-700">
                         {activeView === 'backFull' ? "Consistency Lock" : "Locked Source"}
                       </span>
                     </div>
@@ -2886,7 +2886,7 @@ export default function CastingStudio() {
 
                 {/* View Label */}
                 <div className="absolute bottom-2 left-2 z-30 px-2 py-0.5 bg-white/80 backdrop-blur-md border border-gray-200 rounded" style={{marginBottom: '10px'}}>
-                  <span className="text-[9px] font-mono uppercase text-obsidian tracking-widest">
+                  <span className="text-xs font-medium text-obsidian">
                     {activeView === 'frontClose' ? 'FRONT CLOSE' : 
                      activeView === 'frontFull' ? 'FRONT FULL' :
                      activeView === 'sideClose' ? 'SIDE CLOSE' :
@@ -2902,11 +2902,11 @@ export default function CastingStudio() {
                 {isMasking && (
                   <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
                     <div className="flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur-md rounded border border-gray-200 shadow-lg">
-                      <span className={`text-[9px] font-mono font-bold ${activeTool === 'eraser' ? 'text-purple-400' : 'text-red-400'}`}>
+                      <span className={`text-xs font-medium ${activeTool === 'eraser' ? 'text-purple-500' : 'text-red-500'}`}>
                         {maskPaths.length === 0 ? "STEP 01" : "STEP 02"}
                       </span>
                       <span className="w-px h-2 bg-white/20"></span>
-                      <span className="text-[9px] font-mono text-gray-700 uppercase tracking-wide">
+                      <span className="text-xs font-medium text-gray-700">
                         {maskPaths.length === 0 
                           ? "Paint Target Area" 
                           : (activeTool === 'eraser' ? "Click Erase Button" : "Describe Edit & Generate")
@@ -2932,7 +2932,7 @@ export default function CastingStudio() {
                   {/* Input Area */}
                   {activeTool === 'eraser' ? (
                     <div className="flex-1 px-2 py-1.5 min-h-[28px] flex items-center">
-                      <span className="text-xs font-mono text-purple-300/50 uppercase tracking-widest">
+                      <span className="text-xs font-medium text-purple-400/50">
                         {maskPaths.length === 0 ? "Paint Area to Erase" : "Ready to Erase"}
                       </span>
                     </div>
@@ -2940,7 +2940,7 @@ export default function CastingStudio() {
                     <div className="flex-1 flex items-center justify-between px-2 py-1">
                       <div className="flex items-center space-x-2 text-charcoal select-none">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <span className="text-xs font-mono uppercase tracking-widest">Locked</span>
+                        <span className="text-xs font-medium">Locked</span>
                         <Tooltip content={
                           activeView === 'backFull' 
                           ? "Editing this finalized view may break visual consistency with the rest of the character pack."
@@ -2949,7 +2949,7 @@ export default function CastingStudio() {
                       </div>
                       <button 
                         onClick={() => setUnlockMode(true)}
-                        className="text-[9px] font-mono uppercase tracking-widest text-subtle hover:text-obsidian transition-colors border-b border-dashed border-gray-300 hover:border-white pb-0.5"
+                        className="text-xs font-medium text-subtle hover:text-obsidian transition-colors border-b border-dashed border-gray-300 hover:border-white pb-0.5"
                       >
                         Unlock to Edit
                       </button>
@@ -2957,7 +2957,7 @@ export default function CastingStudio() {
                   ) : !isIterationAllowed ? (
                     <div className="flex-1 px-2 py-1 flex items-center space-x-2 text-subtle select-none">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                      <span className="text-xs font-mono uppercase tracking-widest">Locked Angle</span>
+                      <span className="text-xs font-medium">Locked Angle</span>
                       <Tooltip content="To maintain consistency, only the Headshot, Front Full Body, and Back View can be iterated with text. Use Magic Eraser for corrections." />
                     </div>
                   ) : (
@@ -2981,7 +2981,7 @@ export default function CastingStudio() {
                           : `Iterate on ${activeView.replace(/([A-Z])/g, ' $1').toLowerCase()}...`
                       }
                       rows={1}
-                      className={`flex-1 bg-transparent border-none text-xs placeholder:text-subtle focus:outline-none focus:ring-0 px-2 py-1.5 font-mono resize-none custom-scrollbar min-h-[28px] max-h-[200px] ${isViewLocked ? 'text-amber-100 placeholder:text-amber-500/50' : isEnhancing ? 'text-subtle animate-pulse' : 'text-obsidian'}`}
+                      className={`flex-1 bg-transparent border-none text-sm placeholder:text-subtle focus:outline-none focus:ring-0 px-2 py-1.5 resize-none custom-scrollbar min-h-[28px] max-h-[200px] ${isViewLocked ? 'text-amber-100 placeholder:text-amber-500/50' : isEnhancing ? 'text-subtle animate-pulse' : 'text-obsidian'}`}
                     />
                   )}
                   
@@ -3043,7 +3043,7 @@ export default function CastingStudio() {
                       <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button 
                           onClick={() => setShowSchema(!showSchema)}
-                          className="text-[9px] uppercase font-mono text-charcoal hover:text-obsidian transition-colors"
+                          className="text-xs font-medium text-charcoal hover:text-obsidian transition-colors"
                         >
                           {showSchema ? "View Description" : "View Technical Schema"}
                         </button>
@@ -3056,20 +3056,20 @@ export default function CastingStudio() {
                             setIsCopied(true);
                             setTimeout(() => setIsCopied(false), 2000);
                           }}
-                          className={`text-[9px] uppercase font-mono transition-colors ${isCopied ? 'text-green-500' : 'text-charcoal hover:text-obsidian'}`}
+                          className={`text-xs font-medium transition-colors ${isCopied ? 'text-green-500' : 'text-charcoal hover:text-obsidian'}`}
                         >
                           {isCopied ? "Copied" : "Copy"}
                         </button>
                       </div>
                     </div>
                     {showSchema ? (
-                      <pre className="text-[10px] font-mono text-charcoal leading-relaxed max-h-32 overflow-y-auto custom-scrollbar select-text bg-gray-100/30 p-3 rounded border border-gray-200">
+                      <pre className="text-xs text-charcoal leading-relaxed max-h-32 overflow-y-auto custom-scrollbar select-text bg-gray-100/30 p-3 rounded border border-gray-200">
                         {currentTechnicalSchema 
                           ? JSON.stringify(currentTechnicalSchema, null, 2) 
                           : "Technical schema will appear here after generation..."}
                       </pre>
                     ) : (
-                      <p className="text-[10px] font-mono text-charcoal leading-relaxed max-h-16 overflow-y-auto custom-scrollbar select-text">
+                      <p className="text-xs text-charcoal leading-relaxed max-h-16 overflow-y-auto custom-scrollbar select-text">
                         {currentMasterPrompt || "Master prompt will appear here after generation..."}
                       </p>
                     )}
@@ -3094,13 +3094,13 @@ export default function CastingStudio() {
               </svg>
               <div className="absolute inset-4 border-t-2 border-white/30 rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xl font-mono text-obsidian font-bold">
+                <span className="text-xl font-semibold text-obsidian">
                   {genState.progress ? `${Math.round(genState.progress)}%` : ''}
                 </span>
               </div>
             </div>
             <div className="text-center space-y-3">
-              <h3 className="text-sm font-mono text-obsidian uppercase tracking-[0.2em]">
+              <h3 className="text-sm font-medium text-obsidian">
                 {genState.currentStep || 'Processing...'}
               </h3>
               {genState.startTime && (
@@ -3125,7 +3125,7 @@ export default function CastingStudio() {
             <div className="relative z-10 w-full max-w-3xl p-8 flex flex-col items-center justify-center min-h-[500px]">
               <div className="mb-12 text-center space-y-6">
                 <div className="relative inline-block">
-                  <h1 className="text-6xl md:text-8xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-b from-slate-accent to-gray-400 tracking-tighter select-none opacity-90">
+                  <h1 className="text-6xl md:text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-slate-accent to-gray-400 tracking-tight select-none opacity-90">
                     CASTING<br />STUDIO
                   </h1>
                   <div className="absolute -top-4 -left-4 w-4 h-4 border-t border-l border-gray-300" />
@@ -3136,7 +3136,7 @@ export default function CastingStudio() {
 
                 <div className="flex items-center justify-center space-x-4">
                   <div className="h-px w-8 bg-slate-accent" />
-                  <p className="text-[10px] font-mono uppercase tracking-[0.4em] text-subtle">
+                  <p className="text-xs font-medium text-subtle tracking-wide">
                     AI Model Generation Engine
                   </p>
                   <div className="h-px w-8 bg-slate-accent" />
@@ -3149,33 +3149,33 @@ export default function CastingStudio() {
                     <div className="space-y-1.5">
                       <div className="flex items-center space-x-2">
                         <div className={`w-1.5 h-1.5 rounded-full ${isFormValid ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse' : 'bg-amber-600'}`} />
-                        <p className="text-[9px] font-mono text-subtle uppercase tracking-widest">System Status</p>
+                        <p className="text-xs font-medium text-subtle">System Status</p>
                       </div>
-                      <p className={`text-sm font-mono uppercase tracking-[0.15em] ${isFormValid ? 'text-obsidian' : 'text-charcoal'}`}>
+                      <p className={`text-sm font-medium ${isFormValid ? 'text-obsidian' : 'text-charcoal'}`}>
                         {isFormValid ? 'Ready for Generation' : 'Awaiting Parameters'}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[9px] font-mono text-subtle uppercase tracking-widest mb-1">Credits Balance</p>
+                      <p className="text-xs font-medium text-subtle mb-1">Credits Balance</p>
                       <div className="flex items-end justify-end space-x-1">
-                        <span className="text-2xl font-mono text-obsidian leading-none tracking-tighter">{creditsData?.balance || 0}</span>
-                        <span className="text-xs font-mono text-subtle mb-0.5">pts</span>
+                        <span className="text-2xl font-semibold text-obsidian leading-none">{creditsData?.balance || 0}</span>
+                        <span className="text-xs font-medium text-subtle mb-0.5">pts</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div className="space-y-1">
-                      <p className="text-[9px] font-mono text-subtle uppercase tracking-widest">Headshot</p>
-                      <p className="text-sm font-mono text-obsidian">{CREDIT_COSTS.masterPrompt + CREDIT_COSTS.castingImage} pts</p>
+                      <p className="text-xs font-medium text-subtle">Headshot</p>
+                      <p className="text-sm font-semibold text-obsidian">{CREDIT_COSTS.masterPrompt + CREDIT_COSTS.castingImage} pts</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[9px] font-mono text-subtle uppercase tracking-widest">Full Body</p>
-                      <p className="text-sm font-mono text-obsidian">{CREDIT_COSTS.fullBody} pts</p>
+                      <p className="text-xs font-medium text-subtle">Full Body</p>
+                      <p className="text-sm font-semibold text-obsidian">{CREDIT_COSTS.fullBody} pts</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[9px] font-mono text-subtle uppercase tracking-widest">Multi-View</p>
-                      <p className="text-sm font-mono text-obsidian">{CREDIT_COSTS.multiView} pts</p>
+                      <p className="text-xs font-medium text-subtle">Multi-View</p>
+                      <p className="text-sm font-semibold text-obsidian">{CREDIT_COSTS.multiView} pts</p>
                     </div>
                   </div>
                 </div>
