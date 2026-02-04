@@ -2283,3 +2283,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Card 2: Avatar/clients card + testimonial card below
 - [x] Card 3: 3 stacked feature cards with icons
 - [x] Card 4: Tall dark silhouette card with "Design with intent"
+
+
+## Why Us Section Card Structure Fix
+- [x] Card 1: #EBEBEB outer container with 2 inner cards (dark image + white bullet list)
+- [x] Card 2: #EBEBEB background with avatars/rating at top, testimonial at bottom (single card)
+- [x] Card 3: #EBEBEB outer container with 3 white module cards inside
+- [x] Card 4: Keep as-is (dark silhouette card)
