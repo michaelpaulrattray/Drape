@@ -2213,3 +2213,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add gradient fade on left edge of marquee
 - [x] Add gradient fade on right edge of marquee
 - [x] Trust badge right-aligned on same line
+
+
+## About Section + Global Font Fix
+- [x] Add Inter font via Google Fonts CDN (already present)
+- [x] Set Inter as global font in index.css (already configured)
+- [x] Change headline font-weight from bold to medium (500)
+- [x] Convert stats to scrolling marquee with gradient fades
+- [x] Make stats marquee and description inline (same row)
+- [x] Add "sans-serif" pill badge below headline

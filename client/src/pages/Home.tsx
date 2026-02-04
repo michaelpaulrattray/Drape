@@ -13,12 +13,12 @@ const clientLogos = [
   { name: "Vogue" },
 ];
 
-const stats = [
-  { value: "15", suffix: "+", label: "Years of Experience" },
-  { value: "140", suffix: "+", label: "Projects completed" },
-  { value: "100", suffix: "+", label: "Happy clients" },
-  { value: "97", suffix: "%", label: "Customer satisfaction" },
-  { value: "6", suffix: "", label: "Industry awards" },
+const statsMarqueeItems = [
+  "15+ Years of Experience",
+  "140+ Projects completed",
+  "100+ Customer satisfaction rate",
+  "97% Customer satisfaction rate",
+  "6 Industry awards",
 ];
 
 const projects = [
@@ -261,34 +261,57 @@ function SectionLabel({ label, number }: { label: string; number: string }) {
   );
 }
 
+function StatsMarquee() {
+  // Create repeated items for seamless loop
+  const repeatedStats = [...statsMarqueeItems, ...statsMarqueeItems, ...statsMarqueeItems, ...statsMarqueeItems];
+  
+  return (
+    <div 
+      className="relative overflow-hidden flex-1"
+      style={{
+        maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)'
+      }}
+    >
+      <div className="flex animate-marquee whitespace-nowrap">
+        {repeatedStats.map((stat, index) => (
+          <span key={index} className="flex items-center text-sm text-black/50">
+            <span className="px-4">{stat}</span>
+            <span className="text-black/30">/</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AboutSection() {
   return (
     <section id="about" className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <SectionLabel label="About us" number="01" />
 
-        {/* Two-tone Headline - Kanso Style */}
-        <h2 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.1] tracking-tight mb-12">
+        {/* Two-tone Headline - Kanso Style with font-medium */}
+        <h2 className="text-[clamp(2rem,5vw,4rem)] font-medium leading-[1.1] tracking-tight mb-8">
           <span className="text-black">We're a design studio focused on creating</span>
           <br />
           <span className="text-gray-400">simple, purposeful, and elegant solutions.</span>
         </h2>
 
-        {/* Stats Row + Description - Horizontal Layout */}
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8 mb-16">
-          {/* Stats - Single Line with Separators */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-black/50">
-            <span>15+ Years of Experience</span>
-            <span className="text-black/30">/</span>
-            <span>140+ Projects completed</span>
-            <span className="text-black/30">/</span>
-            <span>100+ Customer satisfaction rate</span>
-            <span className="text-black/30">/</span>
-            <span>97% Customer retention</span>
-          </div>
+        {/* Sans-serif pill badge */}
+        <div className="mb-12">
+          <span className="inline-block px-3 py-1 text-xs text-black/60 border border-black/20 rounded-full">
+            sans-serif
+          </span>
+        </div>
 
-          {/* Description - Right Aligned */}
-          <p className="lg:max-w-sm text-sm text-black/60 leading-relaxed lg:text-right">
+        {/* Stats Marquee + Description - Inline Layout */}
+        <div className="flex items-center gap-6 py-4 border-y border-black/10 mb-16">
+          {/* Stats Marquee with gradient fades */}
+          <StatsMarquee />
+          
+          {/* Description - Right aligned */}
+          <p className="shrink-0 max-w-xs text-sm text-black/60 leading-relaxed text-right">
             Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
           </p>
         </div>
