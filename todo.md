@@ -1780,3 +1780,9 @@ The entry and configuration files are properly set up with several enhancements 
 
 ### Increase Iris Image Size
 - [x] Increase iris images from 48px (w-12 h-12) to 64px (w-16 h-16)
+
+### Hair Color Wheel Texture Overlay
+- [x] Generate grayscale hair texture image (vertical strands with highlights)
+- [x] Upload texture to S3 (https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/XvNvHbhiiaEqOOfX.png)
+- [x] Update HairColorWheel component to apply texture overlay using CSS blend modes
+- [x] Applied to both wheel segments (SVG pattern + overlay blend) and swatches (backgroundBlendMode: overlay)

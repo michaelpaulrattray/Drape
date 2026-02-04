@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
+// Hair texture overlay image for realistic hair appearance
+const HAIR_TEXTURE_URL = 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/XvNvHbhiiaEqOOfX.png';
+
 interface ColorOption {
   label: string;
   hex: string;
@@ -241,12 +244,28 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
 
                 return (
                     <g key={color.label}>
+                        <defs>
+                            <pattern id={`hair-texture-${i}`} patternUnits="userSpaceOnUse" width="40" height="40">
+                                <image href={HAIR_TEXTURE_URL} width="40" height="40" preserveAspectRatio="xMidYMid slice" />
+                            </pattern>
+                            <clipPath id={`segment-clip-${i}`}>
+                                <path d={`M ${x4} ${y4} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 0 0 ${x4} ${y4} Z`} />
+                            </clipPath>
+                        </defs>
+                        {/* Base color */}
                         <path 
                             d={`M ${x4} ${y4} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 0 0 ${x4} ${y4} Z`}
                             fill={color.hex}
                             stroke={isSelected ? "white" : "rgba(255,255,255,0.1)"}
                             strokeWidth={isSelected ? 2 : 1}
                             className="transition-all duration-200"
+                        />
+                        {/* Hair texture overlay */}
+                        <path 
+                            d={`M ${x4} ${y4} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 0 0 ${x4} ${y4} Z`}
+                            fill={`url(#hair-texture-${i})`}
+                            style={{ mixBlendMode: 'overlay', opacity: 0.6 }}
+                            className="pointer-events-none"
                         />
                         {showLabel && (
                             <text 
@@ -331,7 +350,15 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
                         onClick={() => { userInteractedRef.current = true; setSelectedIndex(i); }}
                         className={`flex flex-col items-center space-y-1.5 group min-w-[48px]`}
                     >
-                        <div className={`w-10 h-10 rounded-full border-2 transition-all duration-200 ${selectedIndex === i ? 'border-slate-accent scale-110 ring-2 ring-slate-accent/30 shadow-md' : 'border-gray-300 group-hover:border-slate-accent'}`} style={{ backgroundColor: c.hex }}>
+                        <div 
+                            className={`w-10 h-10 rounded-full border-2 transition-all duration-200 overflow-hidden ${selectedIndex === i ? 'border-slate-accent scale-110 ring-2 ring-slate-accent/30 shadow-md' : 'border-gray-300 group-hover:border-slate-accent'}`} 
+                            style={{ 
+                                backgroundColor: c.hex,
+                                backgroundImage: `url(${HAIR_TEXTURE_URL})`,
+                                backgroundSize: 'cover',
+                                backgroundBlendMode: 'overlay'
+                            }}
+                        >
                             {selectedIndex === i && (
                                 <div className="w-full h-full flex items-center justify-center">
                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={(['#FFFFFF', '#EBEBE1', '#FDEEF4', '#E5E4E2'].includes(c.hex)) ? 'black' : 'white'} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
