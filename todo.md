@@ -2222,3 +2222,17 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Convert stats to scrolling marquee with gradient fades
 - [x] Make stats marquee and description inline (same row)
 - [x] Add "sans-serif" pill badge below headline
+
+
+## About Section Refinements
+- [x] Remove "sans-serif" pill badge
+- [x] Bold numbers in stats, lighter text for labels
+- [x] Remove border lines from stats row
+- [x] Adjust spacing on stats row
+
+
+## Stats Marquee & Header Fix
+- [x] Fix stats marquee overlapping/garbled text
+- [x] Ensure single smooth scrolling row
+- [x] Add proper spacing between stat items
+- [x] Reduce header/headline font size to match Kanso

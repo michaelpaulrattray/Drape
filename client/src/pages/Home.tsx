@@ -14,11 +14,11 @@ const clientLogos = [
 ];
 
 const statsMarqueeItems = [
-  "15+ Years of Experience",
-  "140+ Projects completed",
-  "100+ Customer satisfaction rate",
-  "97% Customer satisfaction rate",
-  "6 Industry awards",
+  { value: "97%", label: "Customer satisfaction rate" },
+  { value: "6", label: "Industry awards" },
+  { value: "15+", label: "Years of Experience" },
+  { value: "140+", label: "Projects completed" },
+  { value: "100+", label: "Customer satisfaction rate" },
 ];
 
 const projects = [
@@ -262,24 +262,38 @@ function SectionLabel({ label, number }: { label: string; number: string }) {
 }
 
 function StatsMarquee() {
-  // Create repeated items for seamless loop
-  const repeatedStats = [...statsMarqueeItems, ...statsMarqueeItems, ...statsMarqueeItems, ...statsMarqueeItems];
+  // Create two sets for seamless loop
+  const statsSet = [...statsMarqueeItems, ...statsMarqueeItems];
   
   return (
     <div 
       className="relative overflow-hidden flex-1"
       style={{
-        maskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)'
+        maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)'
       }}
     >
-      <div className="flex animate-marquee whitespace-nowrap">
-        {repeatedStats.map((stat, index) => (
-          <span key={index} className="flex items-center text-sm text-black/50">
-            <span className="px-4">{stat}</span>
-            <span className="text-black/30">/</span>
-          </span>
-        ))}
+      <div className="flex animate-marquee">
+        {/* First set */}
+        <div className="flex shrink-0 items-center whitespace-nowrap">
+          {statsSet.map((stat, index) => (
+            <span key={index} className="flex items-center text-sm mx-3">
+              <span className="font-semibold text-black/70">{stat.value}</span>
+              <span className="text-black/40 ml-1.5">{stat.label}</span>
+              <span className="text-black/30 ml-3">/</span>
+            </span>
+          ))}
+        </div>
+        {/* Duplicate set for seamless loop */}
+        <div className="flex shrink-0 items-center whitespace-nowrap">
+          {statsSet.map((stat, index) => (
+            <span key={`dup-${index}`} className="flex items-center text-sm mx-3">
+              <span className="font-semibold text-black/70">{stat.value}</span>
+              <span className="text-black/40 ml-1.5">{stat.label}</span>
+              <span className="text-black/30 ml-3">/</span>
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -291,22 +305,15 @@ function AboutSection() {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <SectionLabel label="About us" number="01" />
 
-        {/* Two-tone Headline - Kanso Style with font-medium */}
-        <h2 className="text-[clamp(2rem,5vw,4rem)] font-medium leading-[1.1] tracking-tight mb-8">
+        {/* Two-tone Headline - Kanso Style with font-medium, smaller size */}
+        <h2 className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-tight mb-12">
           <span className="text-black">We're a design studio focused on creating</span>
           <br />
           <span className="text-gray-400">simple, purposeful, and elegant solutions.</span>
         </h2>
 
-        {/* Sans-serif pill badge */}
-        <div className="mb-12">
-          <span className="inline-block px-3 py-1 text-xs text-black/60 border border-black/20 rounded-full">
-            sans-serif
-          </span>
-        </div>
-
         {/* Stats Marquee + Description - Inline Layout */}
-        <div className="flex items-center gap-6 py-4 border-y border-black/10 mb-16">
+        <div className="flex items-center gap-6 py-6 mb-16">
           {/* Stats Marquee with gradient fades */}
           <StatsMarquee />
           
