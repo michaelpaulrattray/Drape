@@ -1577,3 +1577,18 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Restyle sidebar tabs with light mode colors
 - [x] Update form fields (inputs, textareas) for light mode
 - [x] Update notifications and security tabs for light mode
+
+
+## Dashboard Color Contrast Fixes
+
+### Profile Header
+- [x] Change display name text to white for readability on dark banner
+- [x] Update PRO badge to use white/obsidian instead of dark blue
+- [x] Ensure credits text is readable (white with drop shadow)
+- [x] Add dark gradient overlay on banner for text contrast
+
+### Usage Tab in Modal
+- [x] Restyle stats cards to light backgrounds (gray-50)
+- [x] Update chart area to light theme with gray bars
+- [x] Restyle transaction table to match light modal design
+- [x] Fix period selector buttons to light theme

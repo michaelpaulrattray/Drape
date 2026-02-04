@@ -312,14 +312,14 @@ function UsageTabContent() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "generation": return "text-orange-400";
-      case "purchase": return "text-green-400";
-      case "bonus": return "text-blue-400";
-      case "refund": return "text-amber-400";
-      case "signup": return "text-purple-400";
-      case "topup": return "text-green-400";
-      case "subscription": return "text-cyan-400";
-      default: return "text-zinc-400";
+      case "generation": return "text-orange-600";
+      case "purchase": return "text-green-600";
+      case "bonus": return "text-blue-600";
+      case "refund": return "text-amber-600";
+      case "signup": return "text-purple-600";
+      case "topup": return "text-green-600";
+      case "subscription": return "text-cyan-600";
+      default: return "text-gray-500";
     }
   };
 
@@ -332,16 +332,16 @@ function UsageTabContent() {
     <div className="space-y-6">
       {/* Period Selector */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Usage Analytics</h3>
-        <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg">
+        <h3 className="text-lg font-semibold text-obsidian">Usage Analytics</h3>
+        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
           {([7, 30, 90] as const).map((days) => (
             <button
               key={days}
               onClick={() => setPeriod(days)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                 period === days
-                  ? "bg-orange-500 text-white"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "text-gray-500 hover:text-gray-900"
               }`}
             >
               {days}d
@@ -352,48 +352,48 @@ function UsageTabContent() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
           <div className="flex items-center gap-2 mb-2">
-            <Activity className="w-4 h-4 text-orange-400" />
-            <span className="text-xs text-zinc-500 uppercase">Credits Used</span>
+            <Activity className="w-4 h-4 text-orange-500" />
+            <span className="text-xs text-gray-500 uppercase">Credits Used</span>
           </div>
           {isLoadingStats ? (
-            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           ) : (
-            <p className="text-2xl font-bold text-white">{stats?.totalCreditsUsed.toLocaleString() || 0}</p>
+            <p className="text-2xl font-bold text-obsidian">{stats?.totalCreditsUsed.toLocaleString() || 0}</p>
           )}
         </div>
-        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
           <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span className="text-xs text-zinc-500 uppercase">Generations</span>
+            <Sparkles className="w-4 h-4 text-purple-500" />
+            <span className="text-xs text-gray-500 uppercase">Generations</span>
           </div>
           {isLoadingStats ? (
-            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           ) : (
-            <p className="text-2xl font-bold text-white">{stats?.totalGenerations.toLocaleString() || 0}</p>
+            <p className="text-2xl font-bold text-obsidian">{stats?.totalGenerations.toLocaleString() || 0}</p>
           )}
         </div>
-        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs text-zinc-500 uppercase">Daily Avg</span>
+            <TrendingUp className="w-4 h-4 text-cyan-500" />
+            <span className="text-xs text-gray-500 uppercase">Daily Avg</span>
           </div>
           {isLoadingStats ? (
-            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           ) : (
-            <p className="text-2xl font-bold text-white">{stats?.averagePerDay || 0}</p>
+            <p className="text-2xl font-bold text-obsidian">{stats?.averagePerDay || 0}</p>
           )}
         </div>
       </div>
 
       {/* Usage Chart */}
       <div>
-        <label className="block text-sm font-medium text-zinc-400 mb-3">Daily Usage</label>
-        <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800">
+        <label className="block text-sm font-medium text-charcoal mb-3">Daily Usage</label>
+        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
           {isLoadingDaily ? (
             <div className="flex items-center justify-center h-32">
-              <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
             </div>
           ) : dailyUsage && dailyUsage.length > 0 ? (
             <div className="h-32">
@@ -404,14 +404,14 @@ function UsageTabContent() {
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center group relative">
                       <div
-                        className="w-full bg-orange-500/80 rounded-t transition-all hover:bg-orange-400"
+                        className="w-full bg-gray-800 rounded-t transition-all hover:bg-gray-700"
                         style={{ height: `${Math.max(height, 2)}%` }}
                       />
                       {/* Tooltip */}
                       <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
-                        <div className="bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-xs whitespace-nowrap">
+                        <div className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg">
                           <p className="text-white font-medium">{day.creditsUsed} credits</p>
-                          <p className="text-zinc-400">{formatDate(day.date)}</p>
+                          <p className="text-gray-400">{formatDate(day.date)}</p>
                         </div>
                       </div>
                     </div>
@@ -419,13 +419,13 @@ function UsageTabContent() {
                 })}
               </div>
               {/* X-axis labels */}
-              <div className="flex justify-between mt-2 text-xs text-zinc-500">
+              <div className="flex justify-between mt-2 text-xs text-gray-500">
                 <span>{formatDate(dailyUsage[0]?.date || new Date())}</span>
                 <span>{formatDate(dailyUsage[dailyUsage.length - 1]?.date || new Date())}</span>
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-zinc-500 text-sm">
+            <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
               No usage data yet
             </div>
           )}
@@ -434,40 +434,40 @@ function UsageTabContent() {
 
       {/* Transaction History */}
       <div>
-        <label className="block text-sm font-medium text-zinc-400 mb-3">Transaction History</label>
+        <label className="block text-sm font-medium text-charcoal mb-3">Transaction History</label>
         {isLoadingHistory ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
           </div>
         ) : historyData && historyData.transactions.length > 0 ? (
           <>
-            <div className="rounded-xl border border-zinc-800 overflow-hidden">
+            <div className="rounded-xl border border-gray-200 overflow-hidden">
               {/* Table Header */}
-              <div className="grid grid-cols-4 gap-4 px-4 py-3 bg-zinc-900/50 border-b border-zinc-800">
-                <span className="text-xs font-medium text-zinc-500 uppercase">Type</span>
-                <span className="text-xs font-medium text-zinc-500 uppercase">Description</span>
-                <span className="text-xs font-medium text-zinc-500 uppercase text-right">Credits</span>
-                <span className="text-xs font-medium text-zinc-500 uppercase text-right">Date</span>
+              <div className="grid grid-cols-4 gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <span className="text-xs font-medium text-gray-500 uppercase">Type</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">Description</span>
+                <span className="text-xs font-medium text-gray-500 uppercase text-right">Credits</span>
+                <span className="text-xs font-medium text-gray-500 uppercase text-right">Date</span>
               </div>
 
               {/* Transaction Rows */}
               {historyData.transactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-zinc-800 last:border-b-0 hover:bg-zinc-900/30 transition-colors"
+                  className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors bg-white"
                 >
                   <span className={`text-sm font-medium ${getTypeColor(tx.type)}`}>
                     {getTypeLabel(tx.type)}
                   </span>
-                  <span className="text-sm text-zinc-400 truncate" title={tx.description || undefined}>
+                  <span className="text-sm text-gray-600 truncate" title={tx.description || undefined}>
                     {tx.description || "—"}
                   </span>
                   <span className={`text-sm font-medium text-right ${
-                    tx.amount > 0 ? "text-green-400" : "text-zinc-400"
+                    tx.amount > 0 ? "text-green-600" : "text-gray-500"
                   }`}>
                     {tx.amount > 0 ? "+" : ""}{tx.amount}
                   </span>
-                  <span className="text-sm text-zinc-500 text-right">
+                  <span className="text-sm text-gray-500 text-right">
                     {formatFullDate(tx.createdAt)}
                   </span>
                 </div>
@@ -477,21 +477,21 @@ function UsageTabContent() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between mt-4">
-                <span className="text-sm text-zinc-500">
+                <span className="text-sm text-gray-500">
                   Showing {historyPage * pageSize + 1}-{Math.min((historyPage + 1) * pageSize, historyData.total)} of {historyData.total}
                 </span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setHistoryPage(p => Math.max(0, p - 1))}
                     disabled={historyPage === 0}
-                    className="px-3 py-1.5 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-700 transition-all"
+                    className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setHistoryPage(p => Math.min(totalPages - 1, p + 1))}
                     disabled={historyPage >= totalPages - 1}
-                    className="px-3 py-1.5 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-700 transition-all"
+                    className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
                   >
                     Next
                   </button>
@@ -500,7 +500,7 @@ function UsageTabContent() {
             )}
           </>
         ) : (
-          <div className="text-center py-8 text-zinc-500 text-sm">
+          <div className="text-center py-8 text-gray-500 text-sm">
             No transactions yet
           </div>
         )}

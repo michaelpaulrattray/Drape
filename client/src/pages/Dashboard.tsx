@@ -322,7 +322,7 @@ export default function Dashboard() {
                 filter: bannerImage ? 'grayscale(50%) brightness(0.9)' : 'none'
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-canvas/30 to-canvas" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             
             <input
               type="file"
@@ -434,13 +434,13 @@ export default function Dashboard() {
               
               <div className="flex-1 pb-2">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-semibold text-obsidian tracking-tight">{displayName}</h1>
-                  <span className="px-3 py-1 rounded-full bg-gray-900 text-white text-xs font-medium">
-                    PRO
+                  <h1 className="text-3xl font-semibold text-white tracking-tight drop-shadow-md">{displayName}</h1>
+                  <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-obsidian text-xs font-medium shadow-sm">
+                    {creditsData?.planTier?.toUpperCase() || "FREE"}
                   </span>
                 </div>
-                <p className="text-subtle text-sm">
-                  {creditsData?.balance || 0} credits · {creditsData?.planTier || "free"} plan
+                <p className="text-white/80 text-sm drop-shadow-sm">
+                  {creditsData?.balance?.toLocaleString() || 0} credits
                 </p>
               </div>
               <div className="flex items-center gap-3 pb-2">
