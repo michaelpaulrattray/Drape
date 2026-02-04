@@ -279,11 +279,11 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
                         <circle cx={px} cy={py} r="10" fill={currentSelection.hex} />
                         
                         <g transform={`translate(${px}, ${py - 30})`}>
-                           <rect x="-60" y="-22" width="120" height="24" rx="4" fill="#1a1a1a" className="drop-shadow-md" stroke="#333" />
-                           <text x="0" y="-6" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" className="font-mono uppercase tracking-wide">
+                           <rect x="-60" y="-22" width="120" height="24" rx="4" fill="white" className="drop-shadow-md" stroke="#d1d5db" />
+                           <text x="0" y="-6" textAnchor="middle" fill="#1a1a1a" fontSize="10" fontWeight="bold" className="font-mono uppercase tracking-wide">
                               {currentSelection.label}
                            </text>
-                           <path d="M -5 2 L 0 7 L 5 2 Z" fill="#1a1a1a" />
+                           <path d="M -5 2 L 0 7 L 5 2 Z" fill="white" />
                         </g>
                     </g>
                 );
@@ -297,16 +297,16 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
         
         {/* Tabs */}
         <div className="flex justify-center">
-             <div className="bg-studio-900 border border-studio-800 p-0.5 rounded-full flex relative">
+             <div className="bg-gray-100 border border-gray-200 p-0.5 rounded-full flex relative">
                   <button
                     onClick={() => { userInteractedRef.current = true; setActiveTab('Dyed'); }}
-                    className={`px-8 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all duration-300 ${activeTab === 'Dyed' ? 'bg-studio-700 text-white shadow-sm' : 'text-studio-500 hover:text-studio-300'}`}
+                    className={`px-8 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all duration-300 ${activeTab === 'Dyed' ? 'bg-slate-accent text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                   >
                     Dyed
                   </button>
                   <button
                     onClick={() => { userInteractedRef.current = true; setActiveTab('Natural'); }}
-                    className={`px-8 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all duration-300 ${activeTab === 'Natural' ? 'bg-studio-700 text-white shadow-sm' : 'text-studio-500 hover:text-studio-300'}`}
+                    className={`px-8 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all duration-300 ${activeTab === 'Natural' ? 'bg-slate-accent text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                   >
                     Natural
                   </button>
@@ -331,14 +331,14 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
                         onClick={() => { userInteractedRef.current = true; setSelectedIndex(i); }}
                         className={`flex flex-col items-center space-y-1 group min-w-[40px]`}
                     >
-                        <div className={`w-8 h-8 rounded-full border transition-all duration-200 ${selectedIndex === i ? 'border-white scale-110' : 'border-transparent group-hover:border-studio-500'}`} style={{ backgroundColor: c.hex }}>
+                        <div className={`w-8 h-8 rounded-full border transition-all duration-200 ${selectedIndex === i ? 'border-slate-accent scale-110 ring-2 ring-slate-accent/30' : 'border-gray-300 group-hover:border-slate-accent'}`} style={{ backgroundColor: c.hex }}>
                             {selectedIndex === i && (
                                 <div className="w-full h-full flex items-center justify-center">
                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={(['#FFFFFF', '#EBEBE1', '#FDEEF4', '#E5E4E2'].includes(c.hex)) ? 'black' : 'white'} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 </div>
                             )}
                         </div>
-                        <span className={`text-[8px] font-mono uppercase tracking-tight w-full text-center truncate ${selectedIndex === i ? 'text-white' : 'text-studio-600'}`}>
+                        <span className={`text-[8px] font-mono uppercase tracking-tight w-full text-center truncate ${selectedIndex === i ? 'text-obsidian font-bold' : 'text-gray-500'}`}>
                             {c.label.split(' ')[0]}
                         </span>
                     </button>
@@ -347,20 +347,20 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
         </div>
 
         {/* Tone Controls (Replaces Intensity) */}
-        <div className="space-y-3 pt-2 border-t border-studio-800">
+        <div className="space-y-3 pt-2 border-t border-gray-200">
             <div className="flex justify-between items-center">
-                 <span className="text-[9px] font-mono uppercase text-studio-500 tracking-wider">
+                 <span className="text-[9px] font-mono uppercase text-gray-500 tracking-wider">
                     Tone
                  </span>
-                 <span className="text-[9px] font-mono text-white tracking-widest uppercase">{tone === 'Cool' ? 'Cool (Ash)' : tone}</span>
+                 <span className="text-[9px] font-mono text-obsidian tracking-widest uppercase">{tone === 'Cool' ? 'Cool (Ash)' : tone}</span>
             </div>
             
-            <div className="flex bg-studio-900 p-0.5 rounded border border-studio-800">
+            <div className="flex bg-gray-100 p-0.5 rounded border border-gray-200">
                 {['Warm', 'Neutral', 'Cool'].map((t) => (
                     <button
                         key={t}
                         onClick={() => { userInteractedRef.current = true; setTone(t as any); }}
-                        className={`flex-1 py-1.5 rounded-sm text-[9px] font-mono uppercase tracking-widest transition-all ${tone === t ? 'bg-studio-700 text-white shadow-sm' : 'text-studio-500 hover:text-studio-300'}`}
+                        className={`flex-1 py-1.5 rounded-sm text-[9px] font-mono uppercase tracking-widest transition-all ${tone === t ? 'bg-slate-accent text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         {t === 'Cool' ? 'Cool / Ash' : t}
                     </button>

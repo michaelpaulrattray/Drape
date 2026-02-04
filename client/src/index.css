@@ -274,23 +274,23 @@
   color: white;
 }
 
-/* Dark theme scrollbar for Casting Studio */
+/* Light theme scrollbar for Casting Studio */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: #f3f4f6;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #444;
+  background: #c1cbd8;
   border-radius: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: #929fb5;
 }
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #444 #1a1a1a;
+  scrollbar-color: #c1cbd8 #f3f4f6;
 }
 
 /* Studio Color Palette for Casting Studio */

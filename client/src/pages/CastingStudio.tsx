@@ -2402,7 +2402,7 @@ export default function CastingStudio() {
               handleGenerate();
             }}
             disabled={!isFormValid || genState.isGenerating}
-            className="w-full py-4 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-black font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center space-x-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] hover-scale hover-glow active:scale-95"
+            className="w-full py-4 bg-slate-accent hover:bg-[#5D6E7C] disabled:opacity-50 disabled:cursor-not-allowed text-white font-mono text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover-scale active:scale-95"
           >
             {genState.isGenerating ? (
               <>

@@ -1694,3 +1694,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Verify visual consistency with dashboard
 - [x] Test all interactive features still work correctly
 - [x] Verify mobile responsiveness
+
+## Phase 2.10: Fix Remaining Dark Elements in Casting Studio
+
+### Issues Reported
+- [x] Fix scrollbar styling (updated custom-scrollbar to light theme)
+- [x] Fix tone selector under hairstyles (updated HairColorWheel to light mode)
+- [x] Fix cast model button visibility (changed to slate-accent background)
