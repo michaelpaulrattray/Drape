@@ -2143,3 +2143,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Move "Forma Studio" title to be left-aligned below the left image card
 - [x] Match Dreamers reference layout positioning
 - Title now flows: Image Card -> "01" overlay -> "Forma Studio" title -> Description text
+
+
+## Hero Section Fix - Match Dreamers Reference Exactly
+- [x] Hero image extends edge-to-edge (no right padding)
+- [x] Full viewport height (100vh)
+- [x] Title positioned to the right of left image card (not below)
+- [x] "01" number positioned upper-right of left image card
+- [x] Stats/metadata in middle-right area
+- Hero image now uses absolute positioning with left offset, gradient fade on left edge for smooth blend
