@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 
 interface DNAHelixProps {
   progress: number; // 0-100
@@ -16,6 +16,20 @@ const SECTION_THRESHOLDS = [
 ];
 
 export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [prevProgress, setPrevProgress] = useState(progress);
+
+  // Trigger celebration when progress reaches 100
+  useEffect(() => {
+    if (progress >= 100 && prevProgress < 100) {
+      setShowCelebration(true);
+      // Reset celebration after animation completes
+      const timer = setTimeout(() => setShowCelebration(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    setPrevProgress(progress);
+  }, [progress, prevProgress]);
+
   // Calculate which rungs should be lit based on progress
   const litRungs = useMemo(() => {
     const rungs: boolean[] = [];
@@ -26,6 +40,14 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     }
     return rungs;
   }, [progress]);
+
+  // Find the active rung (the next one to be filled)
+  const activeRungIndex = useMemo(() => {
+    for (let i = 0; i < 12; i++) {
+      if (!litRungs[i]) return i;
+    }
+    return -1; // All complete
+  }, [litRungs]);
 
   const isComplete = progress >= 100;
   const isDormant = progress === 0;
@@ -45,12 +67,25 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     return p;
   }, []);
 
+  // Generate celebration burst particles
+  const celebrationParticles = useMemo(() => {
+    const p = [];
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2;
+      p.push({
+        angle,
+        delay: Math.random() * 0.3,
+        speed: 80 + Math.random() * 60,
+      });
+    }
+    return p;
+  }, []);
+
   // Calculate helix points for smooth sine wave
   const helixPoints = useMemo(() => {
     const points: { x: number; y: number; phase: number }[] = [];
     const numPoints = 12;
     const width = 600;
-    const height = 80;
     const startX = 100;
     
     for (let i = 0; i < numPoints; i++) {
@@ -64,6 +99,51 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
 
   return (
     <div className={`relative w-full ${className}`}>
+      {/* CSS for custom animations */}
+      <style>{`
+        @keyframes activePulse {
+          0%, 100% { 
+            transform: scale(1);
+            filter: drop-shadow(0 0 0px rgba(59, 130, 246, 0));
+          }
+          50% { 
+            transform: scale(1.3);
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+          }
+        }
+        @keyframes celebrationBurst {
+          0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(var(--tx), var(--ty)) scale(0);
+            opacity: 0;
+          }
+        }
+        @keyframes celebrationGlow {
+          0% { filter: drop-shadow(0 0 0px rgba(34, 197, 94, 0)); }
+          50% { filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.8)); }
+          100% { filter: drop-shadow(0 0 0px rgba(34, 197, 94, 0)); }
+        }
+        @keyframes celebrationText {
+          0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+          20% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+          40% { transform: translateX(-50%) scale(1); opacity: 1; }
+          100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+        .active-rung {
+          animation: activePulse 1.5s ease-in-out infinite;
+          transform-origin: center;
+        }
+        .celebration-glow {
+          animation: celebrationGlow 1s ease-out;
+        }
+        .celebration-text {
+          animation: celebrationText 0.6s ease-out forwards;
+        }
+      `}</style>
+
       <svg
         viewBox="0 0 800 200"
         className="w-full h-auto"
@@ -79,7 +159,16 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
           
           {/* Glow filter for complete state */}
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          
+          {/* Active pulse glow filter */}
+          <filter id="activeGlow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
@@ -124,9 +213,9 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
                 cx={particle.cx}
                 cy={particle.cy}
                 r={particle.r}
-                fill="#9ca3af"
+                fill={isComplete ? "#22c55e" : "#9ca3af"}
                 opacity={shouldShow ? 0.4 : 0.1}
-                className="transition-opacity duration-500"
+                className="transition-all duration-500"
               >
                 <animate
                   attributeName="cy"
@@ -148,7 +237,10 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         </g>
 
         {/* DNA Double Helix Structure */}
-        <g filter={isComplete ? "url(#glow)" : "url(#shadow)"}>
+        <g 
+          filter={isComplete ? "url(#glow)" : "url(#shadow)"}
+          className={showCelebration ? 'celebration-glow' : ''}
+        >
           {/* Back strand (sine wave going down) */}
           <path
             d={`M ${helixPoints.map((p, i) => {
@@ -156,7 +248,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
               return `${i === 0 ? 'M' : 'L'} ${p.x} ${y}`;
             }).join(' ')}`}
             fill="none"
-            stroke={isDormant ? "#d1d5db" : "#6b7280"}
+            stroke={isDormant ? "#d1d5db" : (isComplete ? "#22c55e" : "#6b7280")}
             strokeWidth="2"
             strokeLinecap="round"
             className="transition-all duration-500"
@@ -170,7 +262,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
               return `${i === 0 ? 'M' : 'L'} ${p.x} ${y}`;
             }).join(' ')}`}
             fill="none"
-            stroke={isDormant ? "#d1d5db" : "#374151"}
+            stroke={isDormant ? "#d1d5db" : (isComplete ? "#16a34a" : "#374151")}
             strokeWidth="2.5"
             strokeLinecap="round"
             className="transition-all duration-500"
@@ -182,10 +274,15 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
             const y1 = 100 + Math.sin(point.phase) * 35;
             const y2 = 100 - Math.sin(point.phase) * 35;
             const isLit = litRungs[i];
-            const isActive = i === Math.floor((progress / 100) * 12);
+            const isActive = i === activeRungIndex && !isComplete;
             
             // Determine which sphere is in front based on phase
             const frontIsTop = Math.cos(point.phase) > 0;
+            
+            // Colors based on state
+            const litColor = isComplete ? "#16a34a" : "#1f2937";
+            const litColorSecondary = isComplete ? "#22c55e" : "#4b5563";
+            const activeColor = "#3b82f6"; // Blue for active
             
             return (
               <g key={i}>
@@ -195,11 +292,26 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
                   y1={y1}
                   x2={point.x}
                   y2={y2}
-                  stroke={isLit ? "#9ca3af" : "#e5e7eb"}
-                  strokeWidth={isLit ? "1.5" : "1"}
-                  opacity={isDormant ? 0.2 : (isLit ? 0.7 : 0.4)}
+                  stroke={isActive ? activeColor : (isLit ? (isComplete ? "#86efac" : "#9ca3af") : "#e5e7eb")}
+                  strokeWidth={isActive ? "2" : (isLit ? "1.5" : "1")}
+                  opacity={isDormant ? 0.2 : (isActive ? 0.9 : (isLit ? 0.7 : 0.4))}
                   className="transition-all duration-300"
                 />
+                
+                {/* Active rung glow effect */}
+                {isActive && (
+                  <g filter="url(#activeGlow)">
+                    <line
+                      x1={point.x}
+                      y1={y1}
+                      x2={point.x}
+                      y2={y2}
+                      stroke={activeColor}
+                      strokeWidth="3"
+                      opacity="0.3"
+                    />
+                  </g>
+                )}
                 
                 {/* Base pair spheres - render order based on 3D position */}
                 {frontIsTop ? (
@@ -208,28 +320,32 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
                     <circle
                       cx={point.x}
                       cy={y1}
-                      r={isLit ? 7 : 5}
-                      fill={isLit ? "#4b5563" : "#d1d5db"}
-                      opacity={isDormant ? 0.3 : (isLit ? 0.9 : 0.5)}
-                      className={`transition-all duration-300 ${isActive ? 'animate-pulse' : ''}`}
+                      r={isActive ? 9 : (isLit ? 7 : 5)}
+                      fill={isActive ? activeColor : (isLit ? litColorSecondary : "#d1d5db")}
+                      opacity={isDormant ? 0.3 : (isActive ? 1 : (isLit ? 0.9 : 0.5))}
+                      className={`transition-all duration-300 ${isActive ? 'active-rung' : ''}`}
+                      style={{ transformOrigin: `${point.x}px ${y1}px` }}
                     />
                     {/* Front sphere (top) */}
                     <circle
                       cx={point.x}
                       cy={y2}
-                      r={isLit ? 8 : 6}
-                      fill={isLit ? "#1f2937" : "#9ca3af"}
-                      opacity={isDormant ? 0.3 : (isLit ? 1 : 0.6)}
-                      className={`transition-all duration-300 ${isActive ? 'animate-pulse' : ''}`}
+                      r={isActive ? 10 : (isLit ? 8 : 6)}
+                      fill={isActive ? activeColor : (isLit ? litColor : "#9ca3af")}
+                      opacity={isDormant ? 0.3 : (isActive ? 1 : (isLit ? 1 : 0.6))}
+                      className={`transition-all duration-300 ${isActive ? 'active-rung' : ''}`}
+                      style={{ transformOrigin: `${point.x}px ${y2}px` }}
                     />
                     {/* Highlight on front sphere */}
-                    {isLit && !isDormant && (
+                    {(isLit || isActive) && !isDormant && (
                       <circle
                         cx={point.x - 2}
                         cy={y2 - 2}
-                        r={2}
+                        r={isActive ? 3 : 2}
                         fill="white"
-                        opacity={0.4}
+                        opacity={isActive ? 0.6 : 0.4}
+                        className={isActive ? 'active-rung' : ''}
+                        style={{ transformOrigin: `${point.x - 2}px ${y2 - 2}px` }}
                       />
                     )}
                   </>
@@ -239,28 +355,32 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
                     <circle
                       cx={point.x}
                       cy={y2}
-                      r={isLit ? 7 : 5}
-                      fill={isLit ? "#4b5563" : "#d1d5db"}
-                      opacity={isDormant ? 0.3 : (isLit ? 0.9 : 0.5)}
-                      className={`transition-all duration-300 ${isActive ? 'animate-pulse' : ''}`}
+                      r={isActive ? 9 : (isLit ? 7 : 5)}
+                      fill={isActive ? activeColor : (isLit ? litColorSecondary : "#d1d5db")}
+                      opacity={isDormant ? 0.3 : (isActive ? 1 : (isLit ? 0.9 : 0.5))}
+                      className={`transition-all duration-300 ${isActive ? 'active-rung' : ''}`}
+                      style={{ transformOrigin: `${point.x}px ${y2}px` }}
                     />
                     {/* Front sphere (bottom) */}
                     <circle
                       cx={point.x}
                       cy={y1}
-                      r={isLit ? 8 : 6}
-                      fill={isLit ? "#1f2937" : "#9ca3af"}
-                      opacity={isDormant ? 0.3 : (isLit ? 1 : 0.6)}
-                      className={`transition-all duration-300 ${isActive ? 'animate-pulse' : ''}`}
+                      r={isActive ? 10 : (isLit ? 8 : 6)}
+                      fill={isActive ? activeColor : (isLit ? litColor : "#9ca3af")}
+                      opacity={isDormant ? 0.3 : (isActive ? 1 : (isLit ? 1 : 0.6))}
+                      className={`transition-all duration-300 ${isActive ? 'active-rung' : ''}`}
+                      style={{ transformOrigin: `${point.x}px ${y1}px` }}
                     />
                     {/* Highlight on front sphere */}
-                    {isLit && !isDormant && (
+                    {(isLit || isActive) && !isDormant && (
                       <circle
                         cx={point.x - 2}
                         cy={y1 - 2}
-                        r={2}
+                        r={isActive ? 3 : 2}
                         fill="white"
-                        opacity={0.4}
+                        opacity={isActive ? 0.6 : 0.4}
+                        className={isActive ? 'active-rung' : ''}
+                        style={{ transformOrigin: `${point.x - 2}px ${y1 - 2}px` }}
                       />
                     )}
                   </>
@@ -273,38 +393,78 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         {/* Outer decorative circles (molecular nodes) */}
         <g opacity={isDormant ? 0.1 : 0.3} className="transition-opacity duration-500">
           {/* Left side nodes */}
-          <circle cx="60" cy="60" r="15" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
-          <circle cx="40" cy="100" r="20" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
-          <circle cx="70" cy="150" r="12" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
+          <circle cx="60" cy="60" r="15" fill="none" stroke={isComplete ? "#86efac" : "#d1d5db"} strokeWidth="0.5" />
+          <circle cx="40" cy="100" r="20" fill="none" stroke={isComplete ? "#86efac" : "#d1d5db"} strokeWidth="0.5" />
+          <circle cx="70" cy="150" r="12" fill="none" stroke={isComplete ? "#86efac" : "#d1d5db"} strokeWidth="0.5" />
           
           {/* Right side nodes */}
-          <circle cx="740" cy="50" r="18" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
-          <circle cx="760" cy="110" r="14" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
-          <circle cx="730" cy="160" r="22" fill="none" stroke="#d1d5db" strokeWidth="0.5" />
+          <circle cx="740" cy="50" r="18" fill="none" stroke={isComplete ? "#86efac" : "#d1d5db"} strokeWidth="0.5" />
+          <circle cx="760" cy="110" r="14" fill="none" stroke={isComplete ? "#86efac" : "#d1d5db"} strokeWidth="0.5" />
+          <circle cx="730" cy="160" r="22" fill="none" stroke={isComplete ? "#86efac" : "#d1d5db"} strokeWidth="0.5" />
           
           {/* Small dots */}
-          <circle cx="55" cy="45" r="2" fill="#9ca3af" opacity={progress > 20 ? 0.6 : 0.2} />
-          <circle cx="30" cy="85" r="1.5" fill="#9ca3af" opacity={progress > 40 ? 0.6 : 0.2} />
-          <circle cx="80" cy="130" r="2.5" fill="#9ca3af" opacity={progress > 60 ? 0.6 : 0.2} />
-          <circle cx="750" cy="70" r="2" fill="#9ca3af" opacity={progress > 30 ? 0.6 : 0.2} />
-          <circle cx="770" cy="130" r="1.5" fill="#9ca3af" opacity={progress > 50 ? 0.6 : 0.2} />
-          <circle cx="720" cy="145" r="3" fill="#9ca3af" opacity={progress > 80 ? 0.6 : 0.2} />
+          <circle cx="55" cy="45" r="2" fill={isComplete ? "#22c55e" : "#9ca3af"} opacity={progress > 20 ? 0.6 : 0.2} />
+          <circle cx="30" cy="85" r="1.5" fill={isComplete ? "#22c55e" : "#9ca3af"} opacity={progress > 40 ? 0.6 : 0.2} />
+          <circle cx="80" cy="130" r="2.5" fill={isComplete ? "#22c55e" : "#9ca3af"} opacity={progress > 60 ? 0.6 : 0.2} />
+          <circle cx="750" cy="70" r="2" fill={isComplete ? "#22c55e" : "#9ca3af"} opacity={progress > 30 ? 0.6 : 0.2} />
+          <circle cx="770" cy="130" r="1.5" fill={isComplete ? "#22c55e" : "#9ca3af"} opacity={progress > 50 ? 0.6 : 0.2} />
+          <circle cx="720" cy="145" r="3" fill={isComplete ? "#22c55e" : "#9ca3af"} opacity={progress > 80 ? 0.6 : 0.2} />
         </g>
 
-        {/* Completion celebration effect */}
+        {/* Celebration burst particles */}
+        {showCelebration && (
+          <g>
+            {celebrationParticles.map((particle, i) => {
+              const tx = Math.cos(particle.angle) * particle.speed;
+              const ty = Math.sin(particle.angle) * particle.speed;
+              return (
+                <circle
+                  key={i}
+                  cx="400"
+                  cy="100"
+                  r={3 + Math.random() * 3}
+                  fill="#22c55e"
+                  style={{
+                    '--tx': `${tx}px`,
+                    '--ty': `${ty}px`,
+                    animation: `celebrationBurst 1s ease-out ${particle.delay}s forwards`,
+                  } as React.CSSProperties}
+                />
+              );
+            })}
+          </g>
+        )}
+
+        {/* Completion ripple effect */}
         {isComplete && (
           <g>
-            <circle cx="400" cy="100" r="150" fill="none" stroke="#374151" strokeWidth="0.5" opacity="0.3">
+            <circle cx="400" cy="100" r="150" fill="none" stroke="#22c55e" strokeWidth="1" opacity="0.4">
               <animate
                 attributeName="r"
-                values="100;200;100"
+                values="80;180;80"
                 dur="3s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                values="0.4;0;0.4"
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            </circle>
+            <circle cx="400" cy="100" r="120" fill="none" stroke="#22c55e" strokeWidth="0.5" opacity="0.3">
+              <animate
+                attributeName="r"
+                values="60;150;60"
+                dur="3s"
+                begin="0.5s"
                 repeatCount="indefinite"
               />
               <animate
                 attributeName="opacity"
                 values="0.3;0;0.3"
                 dur="3s"
+                begin="0.5s"
                 repeatCount="indefinite"
               />
             </circle>
@@ -315,9 +475,9 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       {/* Progress indicator text */}
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
         <span className={`text-xs font-mono tracking-wider transition-all duration-300 ${
-          isComplete ? 'text-gray-700' : 'text-gray-400'
-        }`}>
-          {isComplete ? 'SEQUENCE COMPLETE' : `SEQUENCING... ${Math.round(progress)}%`}
+          isComplete ? 'text-green-600 font-semibold' : 'text-gray-400'
+        } ${showCelebration ? 'celebration-text' : ''}`}>
+          {isComplete ? '✓ SEQUENCE COMPLETE' : `SEQUENCING... ${Math.round(progress)}%`}
         </span>
       </div>
     </div>
