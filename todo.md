@@ -1393,3 +1393,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Implement all 7 pages: Cover, Composite Card, Character Sheet, Director's Notes, Certificate, Technical Appendix, Legal
 - [x] Update frontend export function to use new PDF generation
 - [x] Test PDF export with real model data (6 unit tests passing)
+
+## Editorial Dark Dashboard Redesign
+- [x] Remove monospace tech labels ([01/08] // SYS.INIT style)
+- [x] Unify typography with Geist font throughout
+- [x] Soften glass morphism (reduce blur, subtler borders)
+- [x] Replace gradient borders with simple 1px muted gray borders
+- [x] Match border-radius values with landing page (rounded-xl)
+- [x] Increase whitespace and padding to match landing page
+- [x] Simplify card styling (less tech, more editorial)
+- [x] Keep orange accent usage minimal and consistent

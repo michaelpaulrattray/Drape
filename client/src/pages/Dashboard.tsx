@@ -20,7 +20,6 @@ import {
   Scale,
   Gift,
   Upload,
-  Aperture,
   Settings,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -65,8 +64,11 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#0A0A0A]">
-        <div className="animate-pulse text-neutral-500 font-mono text-sm">// LOADING...</div>
+      <div className="h-screen w-screen flex items-center justify-center bg-zinc-950">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-zinc-500 text-sm">Loading...</span>
+        </div>
       </div>
     );
   }
@@ -131,32 +133,34 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="h-screen w-screen flex bg-[#0A0A0A] text-white overflow-hidden selection:bg-orange-500/30 font-sans">
-      {/* Abstract Landscape Background */}
+    <div className="h-screen w-screen flex bg-zinc-950 text-white overflow-hidden selection:bg-orange-500/30">
+      {/* Subtle Background */}
       <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black" />
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.08] grayscale"
-          style={{ backgroundImage: 'url(https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/wnAIJHqYRuNunYpg.png)' }}
+          className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+            backgroundSize: '32px 32px'
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-[#0A0A0A]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-transparent to-[#0A0A0A]" />
       </div>
       
-      {/* Sidebar - Glass Morphism */}
-      <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-white/10 bg-black/40 backdrop-blur-xl relative z-10">
+      {/* Sidebar - Editorial Dark */}
+      <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-zinc-800/60 bg-zinc-950/80 backdrop-blur-sm relative z-10">
         {/* Logo */}
         <div className="px-6 pt-6 pb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-none bg-gradient-to-br from-neutral-700 to-neutral-900 flex items-center justify-center border border-white/10">
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
               <img 
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
                 alt="Forma Studio" 
-                className="w-6 h-6 invert"
+                className="w-5 h-5 invert opacity-90"
               />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-white tracking-tight">FormaStudio</h1>
-              <p className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest">// CREATIVE SUITE</p>
+              <p className="text-xs text-zinc-500">Creative Suite</p>
             </div>
           </div>
         </div>
@@ -165,19 +169,18 @@ export default function Dashboard() {
         <div className="flex-1 overflow-y-auto px-4 space-y-8 pb-6" style={{ scrollbarWidth: 'none' }}>
           {/* Home Section */}
           <nav className="space-y-1">
-            {homeNavItems.map((item, idx) => (
+            {homeNavItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveNav(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   activeNav === item.id
-                    ? "bg-white/5 border border-white/10"
-                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
                 }`}
               >
-                <span className="font-mono text-[10px] text-neutral-600">[0{idx + 1}]</span>
-                <item.icon className={`w-4 h-4 ${activeNav === item.id ? "text-orange-500" : ""}`} />
-                <span className={`text-sm ${activeNav === item.id ? "text-white" : ""}`}>{item.label}</span>
+                <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-orange-500" : ""}`} />
+                <span className="text-sm font-medium">{item.label}</span>
                 {activeNav === item.id && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />
                 )}
@@ -187,23 +190,22 @@ export default function Dashboard() {
 
           {/* Tools Section */}
           <div>
-            <h3 className="px-4 text-[10px] font-mono text-neutral-600 uppercase tracking-widest mb-3">
-              // TOOLS
+            <h3 className="px-4 text-xs font-medium text-zinc-600 uppercase tracking-wider mb-3">
+              Studios
             </h3>
             <nav className="space-y-1">
-              {toolsNavItems.map((item, idx) => (
+              {toolsNavItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveNav(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all group ${
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
                     activeNav === item.id
-                      ? "bg-white/5 border border-white/10"
-                      : "text-neutral-400 hover:text-white hover:bg-white/5"
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-400 hover:text-white hover:bg-zinc-900/50"
                   }`}
                 >
-                  <span className="font-mono text-[10px] text-neutral-600">[0{idx + 5}]</span>
-                  <item.icon className={`w-4 h-4 ${activeNav === item.id ? "text-orange-500" : ""}`} />
-                  <span className="text-sm">{item.label}</span>
+                  <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-orange-500" : ""}`} />
+                  <span className="text-sm font-medium">{item.label}</span>
                 </button>
               ))}
             </nav>
@@ -211,17 +213,17 @@ export default function Dashboard() {
 
           {/* Resources */}
           <div>
-            <h3 className="px-4 text-[10px] font-mono text-neutral-600 uppercase tracking-widest mb-3">
-              // RESOURCES
+            <h3 className="px-4 text-xs font-medium text-zinc-600 uppercase tracking-wider mb-3">
+              Resources
             </h3>
             <nav className="space-y-1">
               {resources.map((resource, idx) => (
                 <button
                   key={idx}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/5 transition-all group"
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-900/50 transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    <resource.icon className="w-4 h-4" />
+                    <resource.icon className="w-[18px] h-[18px]" />
                     <span className="text-sm">{resource.name}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -232,9 +234,9 @@ export default function Dashboard() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10 backdrop-blur-sm">
-            <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden">
+        <div className="p-4 border-t border-zinc-800/60">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/50 hover:bg-zinc-900 transition-colors">
+            <div className="w-10 h-10 rounded-full border border-zinc-700 overflow-hidden">
               <img 
                 src={profileImage || DEFAULT_AVATAR}
                 alt={user?.name || "Profile"}
@@ -243,18 +245,18 @@ export default function Dashboard() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user?.name || "User"}</p>
-              <p className="text-[10px] text-neutral-500 font-mono truncate">{pointsData?.balance || 0} CREDITS</p>
+              <p className="text-xs text-zinc-500 truncate">{pointsData?.balance || 0} credits</p>
             </div>
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="text-neutral-500 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"
+              className="text-zinc-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-zinc-800"
               title="Settings"
             >
               <Settings className="w-4 h-4" />
             </button>
             <button 
               onClick={() => logout()}
-              className="text-neutral-500 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-white/5"
+              className="text-zinc-500 hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-zinc-800"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -264,26 +266,21 @@ export default function Dashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto relative z-10" style={{ scrollbarWidth: 'none' }}>
+      <main className="flex-1 overflow-y-auto relative" style={{ scrollbarWidth: 'thin' }}>
         {/* Header with Profile Banner */}
         <div className="relative">
-          {/* Banner - Glass Morphism Style */}
+          {/* Banner - Simplified */}
           <div className="h-56 relative overflow-hidden group">
-            {/* Background Image with Blur */}
+            {/* Background Image */}
             <div 
               className="absolute inset-0 bg-cover bg-center"
               style={{ 
                 backgroundImage: `url(${bannerImage || DEFAULT_BANNER})`,
-                filter: 'grayscale(100%) brightness(0.3)'
+                filter: 'grayscale(80%) brightness(0.35)'
               }}
             />
-            {/* Glass Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-[#0A0A0A] backdrop-blur-sm" />
-            
-            {/* Top Label */}
-            <div className="absolute top-6 left-10 flex items-center gap-4">
-              <span className="font-mono text-[10px] text-neutral-500 uppercase tracking-widest">[01/01] // DASHBOARD</span>
-            </div>
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/50 to-zinc-950" />
             
             {/* Edit Banner Button */}
             <input
@@ -301,19 +298,19 @@ export default function Dashboard() {
             />
             <button 
               onClick={() => bannerInputRef.current?.click()}
-              className="absolute top-6 right-10 px-3 py-2 rounded-full bg-white text-neutral-900 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-neutral-100"
+              className="absolute top-6 right-10 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white/20 border border-white/10"
             >
-              <Upload className="w-3.5 h-3.5 text-orange-500" />
-              CHANGE COVER
+              <Upload className="w-3.5 h-3.5" />
+              Change Cover
             </button>
           </div>
 
-          {/* Profile Info - Glass Card */}
+          {/* Profile Info */}
           <div className="absolute bottom-0 left-0 right-0 px-10 pb-6">
             <div className="flex items-end gap-6">
               {/* Profile Avatar */}
               <div className="relative group/avatar">
-                <div className="w-28 h-28 rounded-full ring-4 ring-[#0A0A0A] border border-white/10 relative overflow-hidden">
+                <div className="w-28 h-28 rounded-2xl ring-4 ring-zinc-950 border border-zinc-800 relative overflow-hidden shadow-2xl">
                   <img 
                     src={profileImage || DEFAULT_AVATAR}
                     alt={user?.name || "Profile"}
@@ -335,7 +332,7 @@ export default function Dashboard() {
                 />
                 <button 
                   onClick={() => profilePicInputRef.current?.click()}
-                  className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity border border-white/10"
+                  className="absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity border border-zinc-700"
                 >
                   <Upload className="w-6 h-6 text-white" />
                 </button>
@@ -344,23 +341,23 @@ export default function Dashboard() {
               <div className="flex-1 pb-2">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl font-semibold text-white tracking-tight">{user?.name || "Creator"}</h1>
-                  <span className="px-2.5 py-1 rounded-none bg-orange-500/20 text-orange-400 text-[10px] font-mono uppercase tracking-wider border border-orange-500/30">
+                  <span className="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 text-xs font-medium border border-orange-500/20">
                     PRO
                   </span>
                 </div>
-                <p className="text-neutral-500 text-sm font-mono">
-                  {pointsData?.balance || 0} credits • {pointsData?.planTier || "free"} plan
+                <p className="text-zinc-400 text-sm">
+                  {pointsData?.balance || 0} credits · {pointsData?.planTier || "free"} plan
                 </p>
               </div>
               <div className="flex items-center gap-3 pb-2">
-                <button className="group px-5 py-2.5 rounded-full bg-white text-neutral-900 text-sm font-medium hover:bg-neutral-100 transition-all flex items-center gap-2 shadow-lg shadow-white/10">
+                <button className="group px-5 py-2.5 rounded-full bg-white text-zinc-900 text-sm font-medium hover:bg-zinc-100 transition-all flex items-center gap-2 shadow-lg">
                   <Sparkles className="w-4 h-4 text-orange-500" />
                   Get Credits
                 </button>
-                <button className="p-2.5 rounded-full bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors backdrop-blur-sm">
+                <button className="p-2.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors">
                   <Bell className="w-5 h-5" />
                 </button>
-                <button className="p-2.5 rounded-full bg-white/5 border border-white/10 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors backdrop-blur-sm">
+                <button className="p-2.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors">
                   <Search className="w-5 h-5" />
                 </button>
               </div>
@@ -372,46 +369,41 @@ export default function Dashboard() {
         <div className="p-10 pt-8 space-y-12">
           {/* Recent Work Section */}
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-8">
               <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">[02/03]</span>
-                  <h2 className="text-2xl font-semibold text-white tracking-tight">Recent Work</h2>
-                </div>
-                <p className="text-sm text-neutral-500 font-mono pl-12">// Your latest creations</p>
+                <h2 className="text-2xl font-semibold text-white tracking-tight mb-1">Recent Work</h2>
+                <p className="text-sm text-zinc-500">Your latest creations</p>
               </div>
-              <button className="flex items-center gap-2 text-sm font-medium text-neutral-900 hover:text-black transition-colors group px-4 py-2 rounded-full bg-white hover:bg-neutral-100">
+              <button className="flex items-center gap-2 text-sm font-medium text-zinc-900 hover:text-black transition-colors group px-5 py-2.5 rounded-full bg-white hover:bg-zinc-100">
                 View all
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1 text-orange-500" />
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {recentWork.map((item, idx) => (
                 <div key={idx} className="group cursor-pointer">
-                  <div className="relative aspect-video rounded-lg overflow-hidden mb-3 border border-white/10 bg-white/5 backdrop-blur-sm">
+                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4 border border-zinc-800 bg-zinc-900">
                     <img
                       src={item.thumbnail}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500 grayscale group-hover:grayscale-0"
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                       alt={item.title}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <span className="absolute bottom-2 right-2 px-2 py-1 rounded-none bg-black/70 text-[10px] text-white font-mono backdrop-blur-sm border border-white/10">
+                    <span className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-black/60 text-xs text-white font-medium backdrop-blur-sm">
                       {item.duration}
                     </span>
-                    {/* Hover overlay with orange accent */}
-                    <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange-500/50 rounded-lg transition-colors" />
+                    {/* Hover border */}
+                    <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange-500/40 rounded-xl transition-colors" />
                   </div>
-                  <div className="flex gap-3 items-start">
-                    <div className="flex-1">
-                      <h3 className="text-sm font-medium text-neutral-200 leading-snug group-hover:text-white mb-1.5 line-clamp-2 transition-colors">
-                        {item.title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-[10px] text-neutral-600 font-mono">
-                        <span>{item.views}</span>
-                        <span className="text-orange-500">•</span>
-                        <span>{item.time}</span>
-                      </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-zinc-200 leading-snug group-hover:text-white mb-2 line-clamp-2 transition-colors">
+                      {item.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      <span>{item.views}</span>
+                      <span className="text-orange-500">·</span>
+                      <span>{item.time}</span>
                     </div>
                   </div>
                 </div>
@@ -419,59 +411,56 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick Actions - Glass Cards */}
+          {/* Quick Actions */}
           <div>
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="font-mono text-[10px] text-neutral-600 uppercase tracking-widest">[03/03]</span>
-                <h2 className="text-2xl font-semibold text-white tracking-tight">Quick Actions</h2>
-              </div>
-              <p className="text-sm text-neutral-500 font-mono pl-12">// Start creating</p>
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-white tracking-tight mb-1">Quick Actions</h2>
+              <p className="text-sm text-zinc-500">Start creating</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link href="/casting-studio">
-                <div className="group rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:border-orange-500/30 hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
-                  {/* Clip animation inspired accent */}
-                  <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-zinc-700 hover:bg-zinc-900 transition-all cursor-pointer relative overflow-hidden">
+                  {/* Subtle hover accent */}
+                  <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-none bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
-                    <Camera className="w-6 h-6 text-neutral-400 group-hover:text-orange-400 transition-colors" />
+                  <div className="w-14 h-14 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-5 group-hover:border-orange-500/30 transition-colors">
+                    <Camera className="w-6 h-6 text-zinc-400 group-hover:text-orange-400 transition-colors" />
                   </div>
-                  <h3 className="text-white font-semibold mb-1 tracking-tight">Create New Model</h3>
-                  <p className="text-sm text-neutral-500 font-mono text-[11px]">// Design and cast AI models</p>
+                  <h3 className="text-white font-semibold mb-2 tracking-tight text-lg">Create New Model</h3>
+                  <p className="text-sm text-zinc-500">Design and cast AI models for your campaigns</p>
                   
                   {/* Arrow indicator */}
-                  <div className="absolute bottom-6 right-6 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:border-orange-500/30">
                     <ArrowRight className="w-4 h-4 text-orange-400" />
                   </div>
                 </div>
               </Link>
               <Link href="/wardrobe-studio">
-                <div className="group rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:border-orange-500/30 hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-zinc-700 hover:bg-zinc-900 transition-all cursor-pointer relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-none bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
-                    <Shirt className="w-6 h-6 text-neutral-400 group-hover:text-orange-400 transition-colors" />
+                  <div className="w-14 h-14 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-5 group-hover:border-orange-500/30 transition-colors">
+                    <Shirt className="w-6 h-6 text-zinc-400 group-hover:text-orange-400 transition-colors" />
                   </div>
-                  <h3 className="text-white font-semibold mb-1 tracking-tight">Style Outfits</h3>
-                  <p className="text-sm text-neutral-500 font-mono text-[11px]">// Dress your models</p>
+                  <h3 className="text-white font-semibold mb-2 tracking-tight text-lg">Style Outfits</h3>
+                  <p className="text-sm text-zinc-500">Dress your models with curated fashion</p>
                   
-                  <div className="absolute bottom-6 right-6 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:border-orange-500/30">
                     <ArrowRight className="w-4 h-4 text-orange-400" />
                   </div>
                 </div>
               </Link>
               <Link href="/photo-studio">
-                <div className="group rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:border-orange-500/30 hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-zinc-700 hover:bg-zinc-900 transition-all cursor-pointer relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-none bg-neutral-800 border border-white/10 flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-colors">
-                    <Image className="w-6 h-6 text-neutral-400 group-hover:text-orange-400 transition-colors" />
+                  <div className="w-14 h-14 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-5 group-hover:border-orange-500/30 transition-colors">
+                    <Image className="w-6 h-6 text-zinc-400 group-hover:text-orange-400 transition-colors" />
                   </div>
-                  <h3 className="text-white font-semibold mb-1 tracking-tight">Generate Campaign</h3>
-                  <p className="text-sm text-neutral-500 font-mono text-[11px]">// Create stunning visuals</p>
+                  <h3 className="text-white font-semibold mb-2 tracking-tight text-lg">Generate Campaign</h3>
+                  <p className="text-sm text-zinc-500">Create stunning campaign visuals</p>
                   
-                  <div className="absolute bottom-6 right-6 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:border-orange-500/30">
                     <ArrowRight className="w-4 h-4 text-orange-400" />
                   </div>
                 </div>
