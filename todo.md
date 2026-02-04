@@ -2265,3 +2265,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Slow down background transition to 500ms
 - [x] Slow down text scroll animation to 500ms
 - [x] Slow down image zoom to 700ms
+
+
+## Black Color Change to #121212
+- [x] Replace all bg-black with bg-[#121212]
+- [x] Replace all text-black with text-[#121212]
+- [x] Replace all hover:bg-black with hover:bg-[#121212]
+- [x] Replace all border-black with border-[#121212]

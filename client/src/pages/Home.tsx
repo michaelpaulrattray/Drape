@@ -120,27 +120,27 @@ function Header() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl font-bold tracking-tight text-black">Forma®</span>
+            <span className="text-2xl font-bold tracking-tight text-[#121212]">Forma®</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#about" className="text-sm text-black/70 hover:text-black transition-colors">About</a>
-            <a href="#work" className="text-sm text-black/70 hover:text-black transition-colors">Work</a>
-            <a href="#services" className="text-sm text-black/70 hover:text-black transition-colors">Services</a>
-            <a href="#pricing" className="text-sm text-black/70 hover:text-black transition-colors">Pricing</a>
-            <a href="#blog" className="text-sm text-black/70 hover:text-black transition-colors">Blog</a>
+            <a href="#about" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">About</a>
+            <a href="#work" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">Work</a>
+            <a href="#services" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">Services</a>
+            <a href="#pricing" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">Pricing</a>
+            <a href="#blog" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">Blog</a>
           </nav>
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
             <Link
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white text-sm font-medium rounded-full hover:bg-black/90 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors"
             >
               Start a project
             </Link>
-            <button className="w-10 h-10 flex items-center justify-center rounded-full border border-black/10 hover:bg-black/5 transition-colors">
+            <button className="w-10 h-10 flex items-center justify-center rounded-full border border-[#121212]/10 hover:bg-[#121212]/5 transition-colors">
               <Plus className="w-4 h-4" />
             </button>
           </div>
@@ -156,16 +156,16 @@ function Header() {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-20 left-0 right-0 bg-white border-t border-black/10 shadow-lg">
+          <div className="md:hidden absolute top-20 left-0 right-0 bg-white border-t border-[#121212]/10 shadow-lg">
             <nav className="flex flex-col p-6 gap-4">
-              <a href="#about" className="text-lg text-black/70 hover:text-black transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</a>
-              <a href="#work" className="text-lg text-black/70 hover:text-black transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Work</a>
-              <a href="#services" className="text-lg text-black/70 hover:text-black transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Services</a>
-              <a href="#pricing" className="text-lg text-black/70 hover:text-black transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
-              <a href="#blog" className="text-lg text-black/70 hover:text-black transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
+              <a href="#about" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</a>
+              <a href="#work" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Work</a>
+              <a href="#services" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Services</a>
+              <a href="#pricing" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+              <a href="#blog" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
               <Link
                 href="/waitlist"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-black/90 transition-colors mt-4"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors mt-4"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Start a project
@@ -193,7 +193,7 @@ function LogoMarquee() {
             key={index}
             className="flex items-center justify-center min-w-[120px] px-8 grayscale opacity-50 hover:opacity-100 hover:grayscale-0 transition-all duration-300"
           >
-            <span className="text-xl font-semibold text-black/40">{logo.name}</span>
+            <span className="text-xl font-semibold text-[#121212]/40">{logo.name}</span>
           </div>
         ))}
       </div>
@@ -208,20 +208,20 @@ function HeroSection() {
         {/* Main Hero Content */}
         <div className="pt-16 pb-8">
           {/* Large Wordmark */}
-          <h1 className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-black">
+          <h1 className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#121212]">
             Forma®
           </h1>
           
           {/* Tagline */}
           <div className="mt-8 max-w-md ml-auto text-right">
-            <p className="text-lg text-black/60 leading-relaxed">
+            <p className="text-lg text-[#121212]/60 leading-relaxed">
               Forma is an AI studio crafting refined model identities and photorealistic campaign assets.
             </p>
           </div>
         </div>
 
         {/* Logo Marquee + Trust Badge - Inline */}
-        <div className="flex items-center gap-6 py-6 border-y border-black/10">
+        <div className="flex items-center gap-6 py-6 border-y border-[#121212]/10">
           {/* Logo Marquee with gradient fades */}
           <LogoMarquee />
           
@@ -229,18 +229,18 @@ function HeroSection() {
           <div className="flex items-center gap-4 shrink-0 pl-4">
             <div className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-3.5 h-3.5 text-black/60 fill-current" viewBox="0 0 20 20">
+                <svg key={i} className="w-3.5 h-3.5 text-[#121212]/60 fill-current" viewBox="0 0 20 20">
                   <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                 </svg>
               ))}
-              <span className="ml-1.5 text-sm font-medium text-black/80">4.9/5</span>
+              <span className="ml-1.5 text-sm font-medium text-[#121212]/80">4.9/5</span>
             </div>
-            <span className="text-sm text-black/50">Trusted by <span className="font-medium text-black/70">100+</span> businesses</span>
+            <span className="text-sm text-[#121212]/50">Trusted by <span className="font-medium text-[#121212]/70">100+</span> businesses</span>
           </div>
         </div>
 
         {/* Hero Image */}
-        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-black/5">
+        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#121212]/5">
           <img
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=80"
             alt="AI Generated Model"
@@ -255,8 +255,8 @@ function HeroSection() {
 function SectionLabel({ label, number }: { label: string; number: string }) {
   return (
     <div className="flex items-center justify-between mb-12">
-      <span className="text-sm text-black/40 tracking-wide">/ {label}</span>
-      <span className="text-sm text-black/40">({number})</span>
+      <span className="text-sm text-[#121212]/40 tracking-wide">/ {label}</span>
+      <span className="text-sm text-[#121212]/40">({number})</span>
     </div>
   );
 }
@@ -278,9 +278,9 @@ function StatsMarquee() {
         <div className="flex shrink-0 items-center whitespace-nowrap">
           {statsSet.map((stat, index) => (
             <span key={index} className="flex items-center text-sm mx-3">
-              <span className="font-semibold text-black/70">{stat.value}</span>
-              <span className="text-black/40 ml-1.5">{stat.label}</span>
-              <span className="text-black/30 ml-3">/</span>
+              <span className="font-semibold text-[#121212]/70">{stat.value}</span>
+              <span className="text-[#121212]/40 ml-1.5">{stat.label}</span>
+              <span className="text-[#121212]/30 ml-3">/</span>
             </span>
           ))}
         </div>
@@ -288,9 +288,9 @@ function StatsMarquee() {
         <div className="flex shrink-0 items-center whitespace-nowrap">
           {statsSet.map((stat, index) => (
             <span key={`dup-${index}`} className="flex items-center text-sm mx-3">
-              <span className="font-semibold text-black/70">{stat.value}</span>
-              <span className="text-black/40 ml-1.5">{stat.label}</span>
-              <span className="text-black/30 ml-3">/</span>
+              <span className="font-semibold text-[#121212]/70">{stat.value}</span>
+              <span className="text-[#121212]/40 ml-1.5">{stat.label}</span>
+              <span className="text-[#121212]/30 ml-3">/</span>
             </span>
           ))}
         </div>
@@ -307,7 +307,7 @@ function AboutSection() {
 
         {/* Two-tone Headline - Kanso Style with font-medium, smaller size */}
         <h2 className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-tight mb-12">
-          <span className="text-black">We're a design studio focused on creating</span>
+          <span className="text-[#121212]">We're a design studio focused on creating</span>
           <br />
           <span className="text-gray-400">simple, purposeful, and elegant solutions.</span>
         </h2>
@@ -318,7 +318,7 @@ function AboutSection() {
           <StatsMarquee />
           
           {/* Description - Right aligned */}
-          <p className="shrink-0 max-w-xs text-sm text-black/60 leading-relaxed text-right">
+          <p className="shrink-0 max-w-xs text-sm text-[#121212]/60 leading-relaxed text-right">
             Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
           </p>
         </div>
@@ -333,7 +333,7 @@ function AboutSection() {
           {/* Play Button + Label */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <button className="w-16 h-16 rounded-full bg-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
-              <Play className="w-6 h-6 text-black fill-black ml-0.5" />
+              <Play className="w-6 h-6 text-[#121212] fill-[#121212] ml-0.5" />
             </button>
             <span className="mt-4 text-white text-sm font-medium">Play Showreel</span>
           </div>
@@ -352,12 +352,12 @@ function WorkSection() {
         {/* Header with subtext and button */}
         <div className="flex items-start justify-between mb-16">
           <div>
-            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-black mb-4">Selected Work.</h2>
-            <p className="text-black/50 text-sm max-w-sm leading-relaxed">
+            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-[#121212] mb-4">Selected Work.</h2>
+            <p className="text-[#121212]/50 text-sm max-w-sm leading-relaxed">
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
-          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 border border-black/20 text-sm text-black rounded-full hover:bg-black hover:text-white transition-all">
+          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#121212]/20 text-sm text-[#121212] rounded-full hover:bg-[#121212] hover:text-white transition-all">
             View all projects
             <Plus className="w-4 h-4" />
           </a>
@@ -369,7 +369,7 @@ function WorkSection() {
             <a
               key={index}
               href="#"
-              className="group block rounded-2xl overflow-hidden transition-all duration-500 bg-[#EBEBEB] hover:bg-black"
+              className="group block rounded-2xl overflow-hidden transition-all duration-500 bg-[#EBEBEB] hover:bg-[#121212]"
             >
               {/* Image Container with zoom effect - border stays constant */}
               <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
@@ -384,18 +384,18 @@ function WorkSection() {
                 <div className="overflow-hidden">
                   {/* Project Name - stacked text */}
                   <div className="relative h-6 overflow-hidden">
-                    <h3 className="text-base font-semibold text-black transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
+                    <h3 className="text-base font-semibold text-[#121212] transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
                     <h3 className="text-base font-semibold text-white absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
                   </div>
                   {/* Category - stacked text */}
                   <div className="relative h-5 overflow-hidden">
-                    <p className="text-sm text-black/50 transition-transform duration-500 group-hover:-translate-y-full">{project.category}</p>
+                    <p className="text-sm text-[#121212]/50 transition-transform duration-500 group-hover:-translate-y-full">{project.category}</p>
                     <p className="text-sm text-white/60 absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.category}</p>
                   </div>
                 </div>
                 {/* Year - stacked text */}
                 <div className="relative h-5 overflow-hidden">
-                  <span className="text-sm text-black/40 block transition-transform duration-500 group-hover:-translate-y-full">{project.year}</span>
+                  <span className="text-sm text-[#121212]/40 block transition-transform duration-500 group-hover:-translate-y-full">{project.year}</span>
                   <span className="text-sm text-white/50 absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.year}</span>
                 </div>
               </div>
@@ -415,14 +415,14 @@ function WhyUsSection() {
 
         {/* Two-tone Headline */}
         <h2 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.1] mb-16">
-          <span className="text-black">We cut through noise to create designs that are </span>
-          <span className="text-black/30">thoughtful, timeless, and impactful.</span>
+          <span className="text-[#121212]">We cut through noise to create designs that are </span>
+          <span className="text-[#121212]/30">thoughtful, timeless, and impactful.</span>
         </h2>
 
         {/* Bento Grid */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Tall Card */}
-          <div className="lg:row-span-2 relative rounded-2xl overflow-hidden bg-black p-8 flex flex-col justify-between min-h-[500px]">
+          <div className="lg:row-span-2 relative rounded-2xl overflow-hidden bg-[#121212] p-8 flex flex-col justify-between min-h-[500px]">
             <div>
               <h3 className="text-2xl font-bold text-white mb-4">Purposeful Design for Modern Brands.</h3>
               <p className="text-white/60 text-sm">© 2025</p>
@@ -433,7 +433,7 @@ function WhyUsSection() {
               className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale"
             />
             <div className="relative z-10">
-              <a href="/waitlist" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-black text-sm font-medium rounded-full hover:bg-white/90 transition-colors">
+              <a href="/waitlist" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#121212] text-sm font-medium rounded-full hover:bg-white/90 transition-colors">
                 Get started
                 <Plus className="w-4 h-4" />
               </a>
@@ -445,26 +445,26 @@ function WhyUsSection() {
             {/* Feature Pills */}
             <div className="flex flex-wrap gap-2">
               {["Collaborative Approach", "Quick turnaround", "Clear Communication", "Consistent Quality", "Reliable Support"].map((feature, i) => (
-                <span key={i} className="px-4 py-2 bg-black/5 rounded-full text-sm text-black/70">
+                <span key={i} className="px-4 py-2 bg-[#121212]/5 rounded-full text-sm text-[#121212]/70">
                   {feature}
                 </span>
               ))}
             </div>
 
             {/* Testimonial Card */}
-            <div className="bg-white rounded-2xl border border-black/10 p-6">
+            <div className="bg-white rounded-2xl border border-[#121212]/10 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-3 h-3 text-black fill-current" viewBox="0 0 20 20">
+                    <svg key={i} className="w-3 h-3 text-[#121212] fill-current" viewBox="0 0 20 20">
                       <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                     </svg>
                   ))}
                 </div>
-                <span className="text-xs text-black/50">4.9/5</span>
+                <span className="text-xs text-[#121212]/50">4.9/5</span>
               </div>
-              <p className="text-sm text-black/50 mb-4">100+ Happy clients worldwide</p>
-              <blockquote className="text-black/80 mb-6">
+              <p className="text-sm text-[#121212]/50 mb-4">100+ Happy clients worldwide</p>
+              <blockquote className="text-[#121212]/80 mb-6">
                 "Forma understood our brand better than we did. Their ability to find the essential and express it simply is what sets them apart."
               </blockquote>
               <div className="flex items-center gap-3">
@@ -474,8 +474,8 @@ function WhyUsSection() {
                   className="w-10 h-10 rounded-full object-cover"
                 />
                 <div>
-                  <p className="text-sm font-medium text-black">Sofia Ford</p>
-                  <p className="text-xs text-black/50">Founder</p>
+                  <p className="text-sm font-medium text-[#121212]">Sofia Ford</p>
+                  <p className="text-xs text-[#121212]/50">Founder</p>
                 </div>
               </div>
             </div>
@@ -489,21 +489,21 @@ function WhyUsSection() {
               { icon: "📐", title: "Scalable Design", desc: "We create systems that grow with your brand and stay effective over time." },
               { icon: "🕐", title: "24/7 Dedicated Support", desc: "We're always here when you need us, ready to answer questions, provide updates." },
             ].map((feature, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-black/10 p-6">
+              <div key={i} className="bg-white rounded-2xl border border-[#121212]/10 p-6">
                 <span className="text-2xl mb-4 block">{feature.icon}</span>
-                <h4 className="font-bold text-black mb-2">{feature.title}</h4>
-                <p className="text-sm text-black/60">{feature.desc}</p>
+                <h4 className="font-bold text-[#121212] mb-2">{feature.title}</h4>
+                <p className="text-sm text-[#121212]/60">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Brand Statement */}
-        <div className="mt-6 bg-black/5 rounded-2xl p-8 flex items-center justify-between">
+        <div className="mt-6 bg-[#121212]/5 rounded-2xl p-8 flex items-center justify-between">
           <div>
-            <span className="text-2xl font-bold text-black">Forma®</span>
-            <p className="text-black/50 mt-2">Design with intent.</p>
-            <p className="text-black/30 text-sm">No excess, no fluff.</p>
+            <span className="text-2xl font-bold text-[#121212]">Forma®</span>
+            <p className="text-[#121212]/50 mt-2">Design with intent.</p>
+            <p className="text-[#121212]/30 text-sm">No excess, no fluff.</p>
           </div>
         </div>
       </div>
@@ -515,7 +515,7 @@ function ServicesSection() {
   const [activeService, setActiveService] = useState(0);
 
   return (
-    <section id="services" className="py-24 bg-black text-white">
+    <section id="services" className="py-24 bg-[#121212] text-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <div className="flex items-center justify-between mb-12">
           <span className="text-sm text-white/40 tracking-wide">/ Services</span>
@@ -552,7 +552,7 @@ function ServicesSection() {
 
         <a
           href="#pricing"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:bg-white/90 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#121212] text-sm font-medium rounded-full hover:bg-white/90 transition-colors"
         >
           See pricing
           <Plus className="w-4 h-4" />
@@ -574,12 +574,12 @@ function ProcessSection() {
             <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8">
               Our process is simple, purposeful, and adaptable.
             </h2>
-            <p className="text-black/60 mb-8">
+            <p className="text-[#121212]/60 mb-8">
               We believe great design is a result of clarity, collaboration, and craft.
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-black/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors"
             >
               Let's talk
               <Plus className="w-4 h-4" />
@@ -589,12 +589,12 @@ function ProcessSection() {
           {/* Right - Steps */}
           <div className="space-y-6">
             {processSteps.map((step, index) => (
-              <div key={index} className="border-b border-black/10 pb-6">
+              <div key={index} className="border-b border-[#121212]/10 pb-6">
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-bold text-black">{step.title}</h3>
-                  <span className="text-sm text-black/30">{step.number}</span>
+                  <h3 className="text-xl font-bold text-[#121212]">{step.title}</h3>
+                  <span className="text-sm text-[#121212]/30">{step.number}</span>
                 </div>
-                <p className="text-black/60">{step.description}</p>
+                <p className="text-[#121212]/60">{step.description}</p>
               </div>
             ))}
           </div>
@@ -612,7 +612,7 @@ function PricingSection() {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <SectionLabel label="Pricing Plans" number="06" />
 
-        <p className="text-black/60 mb-8 max-w-xl">
+        <p className="text-[#121212]/60 mb-8 max-w-xl">
           Flexible pricing designed to match your creative needs and scale with your brand.
         </p>
 
@@ -621,7 +621,7 @@ function PricingSection() {
           <button
             onClick={() => setBillingType("monthly")}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              billingType === "monthly" ? "bg-black text-white" : "bg-black/5 text-black/60 hover:bg-black/10"
+              billingType === "monthly" ? "bg-[#121212] text-white" : "bg-[#121212]/5 text-[#121212]/60 hover:bg-[#121212]/10"
             }`}
           >
             Monthly
@@ -629,7 +629,7 @@ function PricingSection() {
           <button
             onClick={() => setBillingType("project")}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              billingType === "project" ? "bg-black text-white" : "bg-black/5 text-black/60 hover:bg-black/10"
+              billingType === "project" ? "bg-[#121212] text-white" : "bg-[#121212]/5 text-[#121212]/60 hover:bg-[#121212]/10"
             }`}
           >
             Project based
@@ -638,7 +638,7 @@ function PricingSection() {
 
         {/* Pricing Card */}
         <div className="grid lg:grid-cols-2 gap-8">
-          <div className="bg-black text-white rounded-2xl p-8">
+          <div className="bg-[#121212] text-white rounded-2xl p-8">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <span className="text-sm text-white/50">Subscription</span>
@@ -659,22 +659,22 @@ function PricingSection() {
           </div>
 
           <div>
-            <h4 className="text-sm font-medium text-black/50 mb-4">What's included:</h4>
+            <h4 className="text-sm font-medium text-[#121212]/50 mb-4">What's included:</h4>
             <ul className="space-y-3 mb-8">
               {pricingFeatures.map((feature, i) => (
-                <li key={i} className="flex items-center gap-3 text-black/70">
-                  <span className="w-2 h-2 rounded-full bg-black" />
+                <li key={i} className="flex items-center gap-3 text-[#121212]/70">
+                  <span className="w-2 h-2 rounded-full bg-[#121212]" />
                   {feature}
                 </li>
               ))}
             </ul>
             <div className="mb-8">
-              <span className="text-sm text-black/50">Estimated delivery:</span>
-              <p className="text-2xl font-bold text-black">48 hours</p>
+              <span className="text-sm text-[#121212]/50">Estimated delivery:</span>
+              <p className="text-2xl font-bold text-[#121212]">48 hours</p>
             </div>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-black/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors"
             >
               Get started
               <Plus className="w-4 h-4" />
@@ -690,7 +690,7 @@ function TestimonialsSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   return (
-    <section className="py-24 bg-black text-white">
+    <section className="py-24 bg-[#121212] text-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <div className="flex items-center justify-between mb-12">
           <span className="text-sm text-white/40 tracking-wide">/ Testimonials</span>
@@ -774,12 +774,12 @@ function FAQSection() {
             <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8">
               Wondering How We Work?
             </h2>
-            <p className="text-black/60 mb-8">
+            <p className="text-[#121212]/60 mb-8">
               Answers to common questions about our process, services, and how we work.
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-black/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors"
             >
               Contact us
               <Plus className="w-4 h-4" />
@@ -789,21 +789,21 @@ function FAQSection() {
           {/* Right - Accordion */}
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="border-b border-black/10">
+              <div key={index} className="border-b border-[#121212]/10">
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
                   className="w-full flex items-center justify-between py-4 text-left"
                 >
-                  <span className="font-medium text-black">{index + 1}. {faq.question}</span>
+                  <span className="font-medium text-[#121212]">{index + 1}. {faq.question}</span>
                   <Plus
-                    className={`w-5 h-5 text-black/50 transition-transform ${
+                    className={`w-5 h-5 text-[#121212]/50 transition-transform ${
                       openIndex === index ? "rotate-45" : ""
                     }`}
                   />
                 </button>
                 {openIndex === index && (
                   <div className="pb-4">
-                    <p className="text-black/60">{faq.answer}</p>
+                    <p className="text-[#121212]/60">{faq.answer}</p>
                   </div>
                 )}
               </div>
@@ -823,10 +823,10 @@ function BlogSection() {
 
         <div className="flex items-end justify-between mb-12">
           <div>
-            <h2 className="text-3xl font-bold text-black mb-4">Latest insights from our blog.</h2>
-            <p className="text-black/60">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
+            <h2 className="text-3xl font-bold text-[#121212] mb-4">Latest insights from our blog.</h2>
+            <p className="text-[#121212]/60">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
-          <a href="#" className="hidden md:inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors">
+          <a href="#" className="hidden md:inline-flex items-center gap-2 text-sm text-[#121212]/60 hover:text-[#121212] transition-colors">
             View all articles
             <ArrowRight className="w-4 h-4" />
           </a>
@@ -840,26 +840,26 @@ function BlogSection() {
               href="#"
               className="group"
             >
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-black/5 mb-4 relative">
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#121212]/5 mb-4 relative">
                 <img
                   src={post.image}
                   alt={post.title}
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                 />
-                <span className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-black">
+                <span className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-[#121212]">
                   {post.category}
                 </span>
               </div>
-              <span className="text-sm text-black/50">{post.date}</span>
-              <h3 className="text-lg font-bold text-black mt-2 mb-2 group-hover:text-black/70 transition-colors">
+              <span className="text-sm text-[#121212]/50">{post.date}</span>
+              <h3 className="text-lg font-bold text-[#121212] mt-2 mb-2 group-hover:text-[#121212]/70 transition-colors">
                 {post.title}
               </h3>
-              <p className="text-sm text-black/60 line-clamp-2">{post.excerpt}</p>
+              <p className="text-sm text-[#121212]/60 line-clamp-2">{post.excerpt}</p>
             </a>
           ))}
         </div>
 
-        <a href="#" className="md:hidden inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors mt-8">
+        <a href="#" className="md:hidden inline-flex items-center gap-2 text-sm text-[#121212]/60 hover:text-[#121212] transition-colors mt-8">
           View all articles
           <ArrowRight className="w-4 h-4" />
         </a>
@@ -870,7 +870,7 @@ function BlogSection() {
 
 function Footer() {
   return (
-    <footer className="py-24 bg-black text-white">
+    <footer className="py-24 bg-[#121212] text-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         {/* Large Wordmark */}
         <h2 className="text-[clamp(3rem,10vw,8rem)] font-bold tracking-tighter mb-16">
@@ -904,7 +904,7 @@ function Footer() {
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-white text-black font-medium rounded-full hover:bg-white/90 transition-colors"
+                className="px-6 py-3 bg-white text-[#121212] font-medium rounded-full hover:bg-white/90 transition-colors"
               >
                 Sign up
               </button>
