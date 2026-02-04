@@ -369,14 +369,14 @@ function WorkSection() {
             <a
               key={index}
               href="#"
-              className="group block rounded-2xl overflow-hidden transition-all duration-300 bg-[#EBEBEB] hover:bg-black"
+              className="group block rounded-2xl overflow-hidden transition-all duration-500 bg-[#EBEBEB] hover:bg-black"
             >
               {/* Image Container with zoom effect - border stays constant */}
               <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
                 <img
                   src={project.image}
                   alt={project.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
               </div>
               {/* Info Bar with text replacement scroll animation */}
@@ -384,19 +384,19 @@ function WorkSection() {
                 <div className="overflow-hidden">
                   {/* Project Name - stacked text */}
                   <div className="relative h-6 overflow-hidden">
-                    <h3 className="text-base font-semibold text-black transition-transform duration-300 group-hover:-translate-y-full">{project.name}</h3>
-                    <h3 className="text-base font-semibold text-white absolute top-full left-0 transition-transform duration-300 group-hover:-translate-y-full">{project.name}</h3>
+                    <h3 className="text-base font-semibold text-black transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
+                    <h3 className="text-base font-semibold text-white absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
                   </div>
                   {/* Category - stacked text */}
                   <div className="relative h-5 overflow-hidden">
-                    <p className="text-sm text-black/50 transition-transform duration-300 group-hover:-translate-y-full">{project.category}</p>
-                    <p className="text-sm text-white/60 absolute top-full left-0 transition-transform duration-300 group-hover:-translate-y-full">{project.category}</p>
+                    <p className="text-sm text-black/50 transition-transform duration-500 group-hover:-translate-y-full">{project.category}</p>
+                    <p className="text-sm text-white/60 absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.category}</p>
                   </div>
                 </div>
                 {/* Year - stacked text */}
                 <div className="relative h-5 overflow-hidden">
-                  <span className="text-sm text-black/40 block transition-transform duration-300 group-hover:-translate-y-full">{project.year}</span>
-                  <span className="text-sm text-white/50 absolute top-full left-0 transition-transform duration-300 group-hover:-translate-y-full">{project.year}</span>
+                  <span className="text-sm text-black/40 block transition-transform duration-500 group-hover:-translate-y-full">{project.year}</span>
+                  <span className="text-sm text-white/50 absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.year}</span>
                 </div>
               </div>
             </a>

@@ -2259,3 +2259,9 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Text Replacement Scroll Animation
 - [x] Add stacked text (black/white) with scroll-up replacement effect on hover
+
+
+## Slower Card Hover Animations
+- [x] Slow down background transition to 500ms
+- [x] Slow down text scroll animation to 500ms
+- [x] Slow down image zoom to 700ms
