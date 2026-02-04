@@ -86,7 +86,7 @@ export function SkinSection() {
                 className={`
                   relative flex-1 aspect-square rounded-lg border-2 transition-all duration-300 group overflow-hidden
                   ${isSelected
-                    ? 'border-white ring-1 ring-white scale-105 z-10'
+                    ? 'border-obsidian ring-2 ring-obsidian/50 scale-105 z-10 shadow-lg'
                     : 'border-transparent hover:border-slate-accent hover:scale-105'
                   }
                 `}

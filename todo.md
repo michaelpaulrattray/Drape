@@ -2107,3 +2107,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Verify all components work correctly with direct store access
 - [x] Ensure all 149 tests still pass
 - CastingStudio.tsx reduced from 2,317 to 2,299 lines (18 lines removed from prop passing)
+
+
+## Bug Fix: Skin Tone Selection Visibility
+- [x] Improve visual feedback for selected skin tone (hard to see selection against background)
+- Changed from white border to dark border (border-obsidian ring-2 ring-obsidian/50) with shadow-lg
