@@ -2112,3 +2112,8 @@ The entry and configuration files are properly set up with several enhancements 
 ## Bug Fix: Skin Tone Selection Visibility
 - [x] Improve visual feedback for selected skin tone (hard to see selection against background)
 - Changed from white border to dark border (border-obsidian ring-2 ring-obsidian/50) with shadow-lg
+
+
+## Bug Fix: Eye Color/Iris Selection Styling
+- [x] Redesign iris selection to remove large ring and black circle
+- Implemented Option B (Glow Effect): ring-4 ring-white/60 with shadow-[0_0_12px_rgba(0,0,0,0.3)]
