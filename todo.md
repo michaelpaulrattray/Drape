@@ -2272,3 +2272,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Replace all text-black with text-[#121212]
 - [x] Replace all hover:bg-black with hover:bg-[#121212]
 - [x] Replace all border-black with border-[#121212]
+
+
+## Why Us Section Complete Restructure
+- [x] Reduce title size to match About section
+- [x] Set title font-weight to 500
+- [x] Change secondary text color to #757575
+- [x] Restructure to 4-column bento grid
+- [x] Card 1: Dark building image card + bullet list card below
+- [x] Card 2: Avatar/clients card + testimonial card below
+- [x] Card 3: 3 stacked feature cards with icons
+- [x] Card 4: Tall dark silhouette card with "Design with intent"

@@ -413,97 +413,126 @@ function WhyUsSection() {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <SectionLabel label="Why us" number="03" />
 
-        {/* Two-tone Headline */}
-        <h2 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.1] mb-16">
+        {/* Two-tone Headline - smaller size, font-weight 500 */}
+        <h2 className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-16">
           <span className="text-[#121212]">We cut through noise to create designs that are </span>
-          <span className="text-[#121212]/30">thoughtful, timeless, and impactful.</span>
+          <span className="text-[#757575]">thoughtful, timeless, and impactful.</span>
         </h2>
 
-        {/* Bento Grid */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - Tall Card */}
-          <div className="lg:row-span-2 relative rounded-2xl overflow-hidden bg-[#121212] p-8 flex flex-col justify-between min-h-[500px]">
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-4">Purposeful Design for Modern Brands.</h3>
-              <p className="text-white/60 text-sm">© 2025</p>
+        {/* 4-Column Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Column 1 - Two stacked cards */}
+          <div className="flex flex-col gap-4">
+            {/* Top: Dark card with building image */}
+            <div className="relative rounded-2xl overflow-hidden bg-[#121212] min-h-[280px] flex flex-col justify-between">
+              <img
+                src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80"
+                alt="Architecture"
+                className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale"
+              />
+              <div className="relative z-10 p-6">
+                <h3 className="text-xl font-semibold text-white leading-tight">Purposeful Design<br />for Modern Brands.</h3>
+                <p className="text-white/50 text-xs mt-2">© 2025</p>
+              </div>
+              <div className="relative z-10 p-6 pt-0">
+                <a href="/waitlist" className="inline-flex items-center gap-2 px-4 py-2 bg-white/90 text-[#121212] text-sm font-medium rounded-full hover:bg-white transition-colors">
+                  Get started
+                  <Plus className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
-            <img
-              src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80"
-              alt="Design"
-              className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale"
-            />
-            <div className="relative z-10">
-              <a href="/waitlist" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#121212] text-sm font-medium rounded-full hover:bg-white/90 transition-colors">
-                Get started
-                <Plus className="w-4 h-4" />
-              </a>
+            {/* Bottom: Bullet list card */}
+            <div className="bg-[#F5F5F5] rounded-2xl p-5">
+              <ul className="space-y-2.5">
+                {["Collaborative Approach", "Quick turnaround", "Clear Communication", "Consistent Quality", "Reliable Support"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2.5 text-sm text-[#121212]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#121212]"></span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 
-          {/* Center Column */}
-          <div className="space-y-6">
-            {/* Feature Pills */}
-            <div className="flex flex-wrap gap-2">
-              {["Collaborative Approach", "Quick turnaround", "Clear Communication", "Consistent Quality", "Reliable Support"].map((feature, i) => (
-                <span key={i} className="px-4 py-2 bg-[#121212]/5 rounded-full text-sm text-[#121212]/70">
-                  {feature}
-                </span>
-              ))}
-            </div>
-
-            {/* Testimonial Card */}
-            <div className="bg-white rounded-2xl border border-[#121212]/10 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-3 h-3 text-[#121212] fill-current" viewBox="0 0 20 20">
-                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                    </svg>
+          {/* Column 2 - Two stacked cards */}
+          <div className="flex flex-col gap-4">
+            {/* Top: Clients/avatars card */}
+            <div className="bg-[#F5F5F5] rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex -space-x-2">
+                  {["photo-1494790108377-be9c29b29330", "photo-1507003211169-0a1dd7228f2d", "photo-1438761681033-6461ffad8d80", "photo-1472099645785-5658abf4ff4e"].map((id, i) => (
+                    <img
+                      key={i}
+                      src={`https://images.unsplash.com/${id}?w=100&q=80`}
+                      alt="Client"
+                      className="w-9 h-9 rounded-full border-2 border-[#F5F5F5] object-cover"
+                    />
                   ))}
                 </div>
-                <span className="text-xs text-[#121212]/50">4.9/5</span>
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="text-[#121212]">4.9/5</span>
+                  <svg className="w-3.5 h-3.5 text-[#121212] fill-current" viewBox="0 0 20 20">
+                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                  </svg>
+                </div>
               </div>
-              <p className="text-sm text-[#121212]/50 mb-4">100+ Happy clients worldwide</p>
-              <blockquote className="text-[#121212]/80 mb-6">
-                "Forma understood our brand better than we did. Their ability to find the essential and express it simply is what sets them apart."
+              <p className="text-sm"><span className="font-semibold text-[#121212]">100+</span> <span className="text-[#757575]">Happy clients worldwide</span></p>
+            </div>
+            {/* Bottom: Testimonial card */}
+            <div className="bg-[#F5F5F5] rounded-2xl p-5 flex-1">
+              <div className="flex items-center gap-0.5 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-3 h-3 text-[#121212] fill-current" viewBox="0 0 20 20">
+                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                  </svg>
+                ))}
+              </div>
+              <blockquote className="text-sm text-[#121212] leading-relaxed mb-4">
+                "Kanso understood our brand better than we did. Their ability to find the essential and express it simply is what sets them apart."
               </blockquote>
               <div className="flex items-center gap-3">
                 <img
                   src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80"
                   alt="Sofia Ford"
-                  className="w-10 h-10 rounded-full object-cover"
+                  className="w-9 h-9 rounded-full object-cover"
                 />
                 <div>
                   <p className="text-sm font-medium text-[#121212]">Sofia Ford</p>
-                  <p className="text-xs text-[#121212]/50">Founder</p>
+                  <p className="text-xs text-[#757575]">Founder</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Feature Cards */}
+          {/* Column 3 - Three stacked feature cards */}
+          <div className="flex flex-col gap-4">
             {[
-              { icon: "⚡", title: "Streamlined Process", desc: "Our focused, step-by-step approach saves time and keeps projects moving smoothly." },
-              { icon: "📐", title: "Scalable Design", desc: "We create systems that grow with your brand and stay effective over time." },
-              { icon: "🕐", title: "24/7 Dedicated Support", desc: "We're always here when you need us, ready to answer questions, provide updates." },
+              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, title: "Streamlined Process", desc: "Our focused, step-by-step approach saves time and keeps projects moving smoothly." },
+              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>, title: "Scalable Design", desc: "We create systems that grow with your brand and stay effective over time." },
+              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "24/7 Dedicated Support", desc: "We're always here when you need us, ready to answer questions, provide updates." },
             ].map((feature, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-[#121212]/10 p-6">
-                <span className="text-2xl mb-4 block">{feature.icon}</span>
-                <h4 className="font-bold text-[#121212] mb-2">{feature.title}</h4>
-                <p className="text-sm text-[#121212]/60">{feature.desc}</p>
+              <div key={i} className="bg-[#F5F5F5] rounded-2xl p-5 flex-1">
+                <div className="text-[#121212] mb-3">{feature.icon}</div>
+                <h4 className="font-semibold text-[#121212] text-sm mb-1.5">{feature.title}</h4>
+                <p className="text-xs text-[#757575] leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Brand Statement */}
-        <div className="mt-6 bg-[#121212]/5 rounded-2xl p-8 flex items-center justify-between">
-          <div>
-            <span className="text-2xl font-bold text-[#121212]">Forma®</span>
-            <p className="text-[#121212]/50 mt-2">Design with intent.</p>
-            <p className="text-[#121212]/30 text-sm">No excess, no fluff.</p>
+          {/* Column 4 - Tall dark card with silhouette */}
+          <div className="relative rounded-2xl overflow-hidden bg-[#121212] min-h-[500px] md:min-h-full flex flex-col justify-between">
+            <img
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80"
+              alt="Silhouette"
+              className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale"
+            />
+            <div className="relative z-10 p-6 text-right">
+              <span className="text-white/80 text-sm font-medium">Forma®</span>
+            </div>
+            <div className="relative z-10 p-6">
+              <h3 className="text-2xl font-semibold text-white leading-tight">Design with intent.</h3>
+              <p className="text-white/60 text-sm mt-1">No excess, no fluff.</p>
+            </div>
           </div>
         </div>
       </div>
