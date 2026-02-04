@@ -83,8 +83,8 @@ export default function Dashboard() {
   const DEFAULT_BANNER = "";
   const DEFAULT_AVATAR = "";
 
-  // Get points data
-  const { data: pointsData } = trpc.points.getBalance.useQuery(
+  // Get credits data
+  const { data: creditsData } = trpc.credits.getBalance.useQuery(
     undefined,
     { enabled: isAuthenticated }
   );
@@ -306,7 +306,7 @@ export default function Dashboard() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{displayName}</p>
-              <p className="text-xs text-zinc-500 truncate">{pointsData?.balance || 0} credits</p>
+              <p className="text-xs text-zinc-500 truncate">{creditsData?.balance || 0} credits</p>
             </div>
             <button 
               onClick={() => setIsSettingsOpen(true)}
@@ -470,7 +470,7 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <p className="text-zinc-400 text-sm">
-                  {pointsData?.balance || 0} credits · {pointsData?.planTier || "free"} plan
+                  {creditsData?.balance || 0} credits · {creditsData?.planTier || "free"} plan
                 </p>
               </div>
               <div className="flex items-center gap-3 pb-2">
@@ -604,8 +604,8 @@ export default function Dashboard() {
         bannerImage={bannerImage}
         onProfileImageChange={setProfileImage}
         onBannerImageChange={setBannerImage}
-        pointsBalance={pointsData?.balance || 0}
-        planTier={pointsData?.planTier || "free"}
+        creditsBalance={creditsData?.balance || 0}
+        planTier={creditsData?.planTier || "free"}
         defaultAvatar={DEFAULT_AVATAR}
         defaultBanner={DEFAULT_BANNER}
       />

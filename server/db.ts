@@ -1,6 +1,11 @@
 import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, points, pointTransactions, InsertPoints, InsertPointTransaction } from "../drizzle/schema";
+import { 
+  InsertUser, users, 
+  credits, creditTransactions, InsertCredits, InsertCreditTransaction,
+  // Legacy aliases for backward compatibility
+  points, pointTransactions, InsertPoints, InsertPointTransaction 
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -100,51 +105,60 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// ============ Points System Functions ============
+// ============ Credits System Functions ============
 
-const INITIAL_POINTS = 100;
+const INITIAL_CREDITS = 100; // Free tier starting credits
 
-export async function initializeUserPoints(userId: number): Promise<void> {
+export async function initializeUserCredits(userId: number): Promise<void> {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot initialize points: database not available");
+    console.warn("[Database] Cannot initialize credits: database not available");
     return;
   }
 
   try {
-    // Create points record
-    await db.insert(points).values({
+    // Create credits record
+    await db.insert(credits).values({
       userId,
-      balance: INITIAL_POINTS,
+      balance: INITIAL_CREDITS,
       planTier: "free",
+      creditsPurchased: 0,
+      creditsUsed: 0,
+      rolloverCredits: 0,
     });
 
     // Record the signup bonus transaction
-    await db.insert(pointTransactions).values({
+    await db.insert(creditTransactions).values({
       userId,
-      amount: INITIAL_POINTS,
+      amount: INITIAL_CREDITS,
       type: "signup",
-      description: "Welcome bonus - free points for new users",
-      balanceAfter: INITIAL_POINTS,
+      description: "Welcome bonus - free credits for new users",
+      balanceAfter: INITIAL_CREDITS,
     });
   } catch (error) {
-    console.error("[Database] Failed to initialize user points:", error);
+    console.error("[Database] Failed to initialize user credits:", error);
     throw error;
   }
 }
 
-export async function getUserPoints(userId: number) {
+// Legacy alias
+export const initializeUserPoints = initializeUserCredits;
+
+export async function getUserCredits(userId: number) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get points: database not available");
+    console.warn("[Database] Cannot get credits: database not available");
     return null;
   }
 
-  const result = await db.select().from(points).where(eq(points.userId, userId)).limit(1);
+  const result = await db.select().from(credits).where(eq(credits.userId, userId)).limit(1);
   return result.length > 0 ? result[0] : null;
 }
 
-export async function getPointTransactions(userId: number, limit: number = 20) {
+// Legacy alias
+export const getUserPoints = getUserCredits;
+
+export async function getCreditTransactions(userId: number, limit: number = 20) {
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot get transactions: database not available");
@@ -153,18 +167,22 @@ export async function getPointTransactions(userId: number, limit: number = 20) {
 
   return await db
     .select()
-    .from(pointTransactions)
-    .where(eq(pointTransactions.userId, userId))
-    .orderBy(desc(pointTransactions.createdAt))
+    .from(creditTransactions)
+    .where(eq(creditTransactions.userId, userId))
+    .orderBy(desc(creditTransactions.createdAt))
     .limit(limit);
 }
 
-export async function deductPoints(
+// Legacy alias
+export const getPointTransactions = getCreditTransactions;
+
+export async function deductCredits(
   userId: number,
   amount: number,
-  type: "generation" | "purchase" | "bonus" | "refund" | "signup",
+  type: "generation" | "purchase" | "bonus" | "refund" | "signup" | "topup" | "subscription",
   description: string,
-  referenceId?: string
+  referenceId?: string,
+  engineUsed?: string
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
   const db = await getDb();
   if (!db) {
@@ -173,41 +191,49 @@ export async function deductPoints(
 
   try {
     // Get current balance
-    const userPoints = await getUserPoints(userId);
-    if (!userPoints) {
-      return { success: false, error: "User points not found" };
+    const userCredits = await getUserCredits(userId);
+    if (!userCredits) {
+      return { success: false, error: "User credits not found" };
     }
 
-    if (userPoints.balance < amount) {
-      return { success: false, error: "Insufficient points" };
+    if (userCredits.balance < amount) {
+      return { success: false, error: "Insufficient credits" };
     }
 
-    const newBalance = userPoints.balance - amount;
+    const newBalance = userCredits.balance - amount;
+    const newCreditsUsed = (userCredits.creditsUsed || 0) + amount;
 
-    // Update balance
-    await db.update(points).set({ balance: newBalance }).where(eq(points.userId, userId));
+    // Update balance and track usage
+    await db.update(credits).set({ 
+      balance: newBalance,
+      creditsUsed: newCreditsUsed,
+    }).where(eq(credits.userId, userId));
 
-    // Record transaction
-    await db.insert(pointTransactions).values({
+    // Record transaction with engine info
+    await db.insert(creditTransactions).values({
       userId,
       amount: -amount,
       type,
       description,
       referenceId,
       balanceAfter: newBalance,
+      engineUsed: engineUsed || null,
     });
 
     return { success: true, newBalance };
   } catch (error) {
-    console.error("[Database] Failed to deduct points:", error);
-    return { success: false, error: "Failed to deduct points" };
+    console.error("[Database] Failed to deduct credits:", error);
+    return { success: false, error: "Failed to deduct credits" };
   }
 }
 
-export async function addPoints(
+// Legacy alias
+export const deductPoints = deductCredits;
+
+export async function addCredits(
   userId: number,
   amount: number,
-  type: "generation" | "purchase" | "bonus" | "refund" | "signup",
+  type: "generation" | "purchase" | "bonus" | "refund" | "signup" | "topup" | "subscription",
   description: string,
   referenceId?: string
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
@@ -218,18 +244,25 @@ export async function addPoints(
 
   try {
     // Get current balance
-    const userPoints = await getUserPoints(userId);
-    if (!userPoints) {
-      return { success: false, error: "User points not found" };
+    const userCredits = await getUserCredits(userId);
+    if (!userCredits) {
+      return { success: false, error: "User credits not found" };
     }
 
-    const newBalance = userPoints.balance + amount;
+    const newBalance = userCredits.balance + amount;
+    const isPurchase = type === "purchase" || type === "topup" || type === "subscription";
+    const newCreditsPurchased = isPurchase 
+      ? (userCredits.creditsPurchased || 0) + amount 
+      : userCredits.creditsPurchased;
 
-    // Update balance
-    await db.update(points).set({ balance: newBalance }).where(eq(points.userId, userId));
+    // Update balance and track purchases
+    await db.update(credits).set({ 
+      balance: newBalance,
+      creditsPurchased: newCreditsPurchased,
+    }).where(eq(credits.userId, userId));
 
     // Record transaction
-    await db.insert(pointTransactions).values({
+    await db.insert(creditTransactions).values({
       userId,
       amount,
       type,
@@ -240,10 +273,13 @@ export async function addPoints(
 
     return { success: true, newBalance };
   } catch (error) {
-    console.error("[Database] Failed to add points:", error);
-    return { success: false, error: "Failed to add points" };
+    console.error("[Database] Failed to add credits:", error);
+    return { success: false, error: "Failed to add credits" };
   }
 }
+
+// Legacy alias
+export const addPoints = addCredits;
 
 
 // ============ Waitlist Functions ============

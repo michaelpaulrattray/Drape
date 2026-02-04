@@ -4,13 +4,13 @@ import type { TrpcContext } from "./_core/context";
 
 // Mock the database functions
 vi.mock("./db", () => ({
-  getUserPoints: vi.fn(),
-  getPointTransactions: vi.fn(),
-  deductPoints: vi.fn(),
-  addPoints: vi.fn(),
+  getUserCredits: vi.fn(),
+  getCreditTransactions: vi.fn(),
+  deductCredits: vi.fn(),
+  addCredits: vi.fn(),
 }));
 
-import { getUserPoints, getPointTransactions, deductPoints, addPoints } from "./db";
+import { getUserCredits, getCreditTransactions, deductCredits, addCredits } from "./db";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -40,48 +40,50 @@ function createAuthContext(): TrpcContext {
   };
 }
 
-describe("points.getBalance", () => {
+describe("credits.getBalance", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns user points balance", async () => {
-    const mockPoints = {
+  it("returns user credits balance", async () => {
+    const mockCredits = {
       id: 1,
       userId: 1,
       balance: 100,
+      totalEarned: 100,
+      totalSpent: 0,
       planTier: "free" as const,
       planExpiresAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    vi.mocked(getUserPoints).mockResolvedValue(mockPoints);
+    vi.mocked(getUserCredits).mockResolvedValue(mockCredits);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    const result = await caller.points.getBalance();
+    const result = await caller.credits.getBalance();
 
     expect(result).toEqual({
       balance: 100,
       planTier: "free",
       planExpiresAt: null,
     });
-    expect(getUserPoints).toHaveBeenCalledWith(1);
+    expect(getUserCredits).toHaveBeenCalledWith(1);
   });
 
-  it("throws error when points record not found", async () => {
-    vi.mocked(getUserPoints).mockResolvedValue(null);
+  it("throws error when credits record not found", async () => {
+    vi.mocked(getUserCredits).mockResolvedValue(null);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    await expect(caller.points.getBalance()).rejects.toThrow("Points record not found");
+    await expect(caller.credits.getBalance()).rejects.toThrow("Credits record not found");
   });
 });
 
-describe("points.getTransactions", () => {
+describe("credits.getTransactions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -100,77 +102,79 @@ describe("points.getTransactions", () => {
       },
     ];
 
-    vi.mocked(getPointTransactions).mockResolvedValue(mockTransactions);
+    vi.mocked(getCreditTransactions).mockResolvedValue(mockTransactions);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    const result = await caller.points.getTransactions({ limit: 20 });
+    const result = await caller.credits.getTransactions({ limit: 20 });
 
     expect(result).toEqual(mockTransactions);
-    expect(getPointTransactions).toHaveBeenCalledWith(1, 20);
+    expect(getCreditTransactions).toHaveBeenCalledWith(1, 20);
   });
 });
 
-describe("points.deduct", () => {
+describe("credits.deduct", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("deducts points successfully", async () => {
-    vi.mocked(deductPoints).mockResolvedValue({ success: true, newBalance: 90 });
+  it("deducts credits successfully", async () => {
+    vi.mocked(deductCredits).mockResolvedValue({ success: true, newBalance: 90 });
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    const result = await caller.points.deduct({
+    const result = await caller.credits.deduct({
       amount: 10,
       type: "generation",
       description: "Model generation",
     });
 
     expect(result).toEqual({ success: true, newBalance: 90 });
-    expect(deductPoints).toHaveBeenCalledWith(1, 10, "generation", "Model generation", undefined);
+    expect(deductCredits).toHaveBeenCalledWith(1, 10, "generation", "Model generation", undefined, undefined);
   });
 
-  it("throws error when insufficient points", async () => {
-    vi.mocked(deductPoints).mockResolvedValue({ success: false, error: "Insufficient points" });
+  it("throws error when insufficient credits", async () => {
+    vi.mocked(deductCredits).mockResolvedValue({ success: false, error: "Insufficient credits" });
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
     await expect(
-      caller.points.deduct({
+      caller.credits.deduct({
         amount: 1000,
         type: "generation",
         description: "Model generation",
       })
-    ).rejects.toThrow("Insufficient points");
+    ).rejects.toThrow("Insufficient credits");
   });
 });
 
-describe("points.checkBalance", () => {
+describe("credits.checkBalance", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns true when user has enough points", async () => {
-    const mockPoints = {
+  it("returns true when user has enough credits", async () => {
+    const mockCredits = {
       id: 1,
       userId: 1,
       balance: 100,
+      totalEarned: 100,
+      totalSpent: 0,
       planTier: "free" as const,
       planExpiresAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    vi.mocked(getUserPoints).mockResolvedValue(mockPoints);
+    vi.mocked(getUserCredits).mockResolvedValue(mockCredits);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    const result = await caller.points.checkBalance({ required: 50 });
+    const result = await caller.credits.checkBalance({ required: 50 });
 
     expect(result).toEqual({
       hasEnough: true,
@@ -179,23 +183,25 @@ describe("points.checkBalance", () => {
     });
   });
 
-  it("returns false when user has insufficient points", async () => {
-    const mockPoints = {
+  it("returns false when user has insufficient credits", async () => {
+    const mockCredits = {
       id: 1,
       userId: 1,
       balance: 30,
+      totalEarned: 100,
+      totalSpent: 70,
       planTier: "free" as const,
       planExpiresAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    vi.mocked(getUserPoints).mockResolvedValue(mockPoints);
+    vi.mocked(getUserCredits).mockResolvedValue(mockCredits);
 
     const ctx = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
-    const result = await caller.points.checkBalance({ required: 50 });
+    const result = await caller.credits.checkBalance({ required: 50 });
 
     expect(result).toEqual({
       hasEnough: false,

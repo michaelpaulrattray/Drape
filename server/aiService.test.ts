@@ -1,25 +1,46 @@
 import { describe, it, expect, vi } from "vitest";
-import { POINT_COSTS } from "./aiService";
+import { CREDIT_COSTS, calculateCreditCost } from "./aiService";
 
 /**
  * Tests for AI Service module
  * Note: Full integration tests require mocking the LLM and image generation APIs
  */
 
-describe("AI Service - Point Costs", () => {
-  it("should have correct point costs defined", () => {
-    expect(POINT_COSTS.castingImage).toBe(12);
-    expect(POINT_COSTS.fullBody).toBe(8);
-    expect(POINT_COSTS.multiView).toBe(15);
-    expect(POINT_COSTS.iterate).toBe(5);
-    expect(POINT_COSTS.upscale).toBe(3);
+describe("AI Service - Credit Costs", () => {
+  it("should have correct credit costs defined", () => {
+    expect(CREDIT_COSTS.castingImage).toBe(7);
+    expect(CREDIT_COSTS.fullBody).toBe(6);
+    expect(CREDIT_COSTS.multiView).toBe(6);
+    expect(CREDIT_COSTS.iterate).toBe(7);
+    expect(CREDIT_COSTS.upscale).toBe(6);
   });
 
   it("should have all generation types with positive costs", () => {
-    Object.entries(POINT_COSTS).forEach(([type, cost]) => {
+    const actionCosts = {
+      castingImage: CREDIT_COSTS.castingImage,
+      fullBody: CREDIT_COSTS.fullBody,
+      multiView: CREDIT_COSTS.multiView,
+      iterate: CREDIT_COSTS.iterate,
+      upscale: CREDIT_COSTS.upscale,
+    };
+    Object.entries(actionCosts).forEach(([type, cost]) => {
       expect(cost).toBeGreaterThan(0);
       expect(typeof cost).toBe("number");
     });
+  });
+
+  it("should have flash multiplier for fallback discount", () => {
+    expect(CREDIT_COSTS.flashMultiplier).toBe(0.5);
+  });
+
+  it("should calculate credit cost with flash fallback discount", () => {
+    // Pro model - full cost
+    const proCost = calculateCreditCost(CREDIT_COSTS.castingImage, "gemini-3-pro-image-preview");
+    expect(proCost).toBe(7);
+
+    // Flash model - 50% discount
+    const flashCost = calculateCreditCost(CREDIT_COSTS.castingImage, "gemini-2.5-flash-image");
+    expect(flashCost).toBe(4); // 7 * 0.5 = 3.5, rounded up to 4
   });
 });
 

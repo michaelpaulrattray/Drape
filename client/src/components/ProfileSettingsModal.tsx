@@ -27,7 +27,7 @@ interface ProfileSettingsModalProps {
   bannerImage: string | null;
   onProfileImageChange: (url: string) => void;
   onBannerImageChange: (url: string) => void;
-  pointsBalance: number;
+  creditsBalance: number;
   planTier: string;
   defaultAvatar: string;
   defaultBanner: string;
@@ -42,7 +42,7 @@ export default function ProfileSettingsModal({
   bannerImage,
   onProfileImageChange,
   onBannerImageChange,
-  pointsBalance,
+  creditsBalance,
   planTier,
   defaultAvatar,
   defaultBanner,
@@ -522,7 +522,7 @@ export default function ProfileSettingsModal({
                   <div className="p-5 rounded-xl bg-zinc-900 border border-zinc-800">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-3xl font-bold text-white">{pointsBalance}</p>
+                        <p className="text-3xl font-bold text-white">{creditsBalance}</p>
                         <p className="text-xs text-zinc-500">Available credits</p>
                       </div>
                       <button className="px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm font-medium hover:bg-zinc-700 transition-all flex items-center gap-2">

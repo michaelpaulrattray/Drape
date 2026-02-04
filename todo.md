@@ -1426,3 +1426,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Replace confirmation banner with loading spinner for avatar upload
 - [x] Replace confirmation banner with loading spinner for banner upload
 - [x] Match the smooth loading experience from dashboard uploads
+
+## Credits System - Phase 1: Foundation
+- [x] Audit current points system implementation
+- [x] Create credit cost constants (Initial: 7, Edit: 7, Eraser: 7, Body: 6, Angles: 18, Upscale: 6, Export: 30)
+- [x] Update database schema - rename points to credits, add tracking fields (totalEarned, totalSpent)
+- [x] Update backend routers - rename all point references to credits
+- [x] Update deduction logic with new credit costs per action
+- [x] Add Flash fallback detection with 50% credit cost reduction (calculateCreditCost helper)
+- [x] Update all frontend UI - rename points to credits throughout
+- [x] Test credit deductions work correctly (95 tests passing)

@@ -3,7 +3,10 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { 
-  getUserPoints, getPointTransactions, deductPoints, addPoints, addToWaitlist, getWaitlistCount,
+  getUserCredits, getCreditTransactions, deductCredits, addCredits,
+  // Legacy aliases
+  getUserPoints, getPointTransactions, deductPoints, addPoints,
+  addToWaitlist, getWaitlistCount,
   createModel, getModelById, getUserModels, updateModel, deleteModel, mintModel,
   createModelAsset, getModelAssets,
   createGeneration, updateGeneration, getUserGenerations,
@@ -13,7 +16,7 @@ import {
 import { storagePut, storageDelete } from "./storage";
 import {
   generateMasterPrompt, generateCastingImage, generateFullBody, generateRemainingViews,
-  iterateModel, enhanceUserPrompt, upscaleImage, POINT_COSTS, ModelPreferences, ImageResolution
+  iterateModel, enhanceUserPrompt, upscaleImage, CREDIT_COSTS, POINT_COSTS, calculateCreditCost, ModelPreferences, ImageResolution
 } from "./aiService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -31,49 +34,55 @@ export const appRouter = router({
     }),
   }),
 
-  points: router({
+  // Credits system (aliased as 'points' for backward compatibility)
+  credits: router({
     getBalance: protectedProcedure.query(async ({ ctx }) => {
-      const userPoints = await getUserPoints(ctx.user.id);
-      if (!userPoints) {
+      const userCredits = await getUserCredits(ctx.user.id);
+      if (!userCredits) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Points record not found",
+          message: "Credits record not found",
         });
       }
       return {
-        balance: userPoints.balance,
-        planTier: userPoints.planTier,
-        planExpiresAt: userPoints.planExpiresAt,
+        balance: userCredits.balance,
+        planTier: userCredits.planTier,
+        planExpiresAt: userCredits.planExpiresAt,
+        creditsPurchased: userCredits.creditsPurchased,
+        creditsUsed: userCredits.creditsUsed,
+        rolloverCredits: userCredits.rolloverCredits,
       };
     }),
 
     getTransactions: protectedProcedure
       .input(z.object({ limit: z.number().min(1).max(100).default(20) }).optional())
       .query(async ({ ctx, input }) => {
-        const transactions = await getPointTransactions(ctx.user.id, input?.limit ?? 20);
+        const transactions = await getCreditTransactions(ctx.user.id, input?.limit ?? 20);
         return transactions;
       }),
 
     deduct: protectedProcedure
       .input(z.object({
         amount: z.number().positive(),
-        type: z.enum(["generation", "purchase", "bonus", "refund", "signup"]),
+        type: z.enum(["generation", "purchase", "bonus", "refund", "signup", "topup", "subscription"]),
         description: z.string(),
         referenceId: z.string().optional(),
+        engineUsed: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const result = await deductPoints(
+        const result = await deductCredits(
           ctx.user.id,
           input.amount,
           input.type,
           input.description,
-          input.referenceId
+          input.referenceId,
+          input.engineUsed
         );
         
         if (!result.success) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: result.error || "Failed to deduct points",
+            message: result.error || "Failed to deduct credits",
           });
         }
         
@@ -83,12 +92,12 @@ export const appRouter = router({
     add: protectedProcedure
       .input(z.object({
         amount: z.number().positive(),
-        type: z.enum(["generation", "purchase", "bonus", "refund", "signup"]),
+        type: z.enum(["generation", "purchase", "bonus", "refund", "signup", "topup", "subscription"]),
         description: z.string(),
         referenceId: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const result = await addPoints(
+        const result = await addCredits(
           ctx.user.id,
           input.amount,
           input.type,
@@ -99,7 +108,7 @@ export const appRouter = router({
         if (!result.success) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: result.error || "Failed to add points",
+            message: result.error || "Failed to add credits",
           });
         }
         
@@ -109,13 +118,54 @@ export const appRouter = router({
     checkBalance: protectedProcedure
       .input(z.object({ required: z.number().positive() }))
       .query(async ({ ctx, input }) => {
-        const userPoints = await getUserPoints(ctx.user.id);
-        if (!userPoints) {
+        const userCredits = await getUserCredits(ctx.user.id);
+        if (!userCredits) {
           return { hasEnough: false, balance: 0, required: input.required };
         }
         return {
-          hasEnough: userPoints.balance >= input.required,
-          balance: userPoints.balance,
+          hasEnough: userCredits.balance >= input.required,
+          balance: userCredits.balance,
+          required: input.required,
+        };
+      }),
+      
+    // Get credit costs for UI display
+    getCosts: publicProcedure.query(() => {
+      return CREDIT_COSTS;
+    }),
+  }),
+  
+  // Legacy alias for backward compatibility
+  points: router({
+    getBalance: protectedProcedure.query(async ({ ctx }) => {
+      const userCredits = await getUserCredits(ctx.user.id);
+      if (!userCredits) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Credits record not found",
+        });
+      }
+      return {
+        balance: userCredits.balance,
+        planTier: userCredits.planTier,
+        planExpiresAt: userCredits.planExpiresAt,
+      };
+    }),
+    getTransactions: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20) }).optional())
+      .query(async ({ ctx, input }) => {
+        return await getCreditTransactions(ctx.user.id, input?.limit ?? 20);
+      }),
+    checkBalance: protectedProcedure
+      .input(z.object({ required: z.number().positive() }))
+      .query(async ({ ctx, input }) => {
+        const userCredits = await getUserCredits(ctx.user.id);
+        if (!userCredits) {
+          return { hasEnough: false, balance: 0, required: input.required };
+        }
+        return {
+          hasEnough: userCredits.balance >= input.required,
+          balance: userCredits.balance,
           required: input.required,
         };
       }),

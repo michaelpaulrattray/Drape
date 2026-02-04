@@ -49,15 +49,37 @@ export interface GenerationResult {
   engineUsed?: string;
 }
 
-// ============ Point Costs ============
+// ============ Credit Costs ============
+// 1 credit ≈ $0.01 | Pro model costs, Flash fallback = 50% cost
 
-export const POINT_COSTS = {
-  castingImage: 12,  // Headshot generation
-  fullBody: 8,       // Full body from headshot
-  multiView: 15,     // Side + Back views
-  iterate: 5,        // Iteration/refinement
-  upscale: 3,        // Upscale existing image
+export const CREDIT_COSTS = {
+  // Generation costs (Pro model)
+  castingImage: 7,   // Initial headshot generation (Text Pro + Image Pro)
+  fullBody: 6,       // Full body from headshot (Image Pro)
+  multiView: 6,      // Single view: side/walk/back (Image Pro)
+  allViews: 18,      // All 3 views at once (Image Pro x3)
+  iterate: 7,        // Surgical edit / iteration (Text Pro + Image Pro)
+  eraser: 7,         // Magic eraser (Text Pro + Image Pro)
+  upscale: 6,        // Upscale existing image (Image Pro)
+  exportPack: 30,    // Full export pack (Image Pro x5)
+  
+  // Flash fallback multiplier (50% of Pro cost)
+  flashMultiplier: 0.5,
 };
+
+// Legacy alias for backward compatibility during migration
+export const POINT_COSTS = CREDIT_COSTS;
+
+/**
+ * Calculate actual credit cost based on engine used
+ * Flash fallback gets 50% discount
+ */
+export function calculateCreditCost(baseCost: number, engineUsed?: string): number {
+  if (engineUsed && engineUsed.includes('flash')) {
+    return Math.ceil(baseCost * CREDIT_COSTS.flashMultiplier);
+  }
+  return baseCost;
+}
 
 // ============ Helper Functions ============
 

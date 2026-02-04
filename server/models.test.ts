@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { POINT_COSTS } from "./aiService";
+import { CREDIT_COSTS } from "./aiService";
 
 /**
  * Tests for Model and Generation endpoints
@@ -93,38 +93,46 @@ describe("Model Creation - Validation", () => {
   });
 });
 
-describe("Point Cost Calculations", () => {
-  it("should have correct point costs defined", () => {
-    // Verify all point costs are defined
-    expect(POINT_COSTS.castingImage).toBe(12);
-    expect(POINT_COSTS.fullBody).toBe(8);
-    expect(POINT_COSTS.multiView).toBe(15);
-    expect(POINT_COSTS.iterate).toBe(5);
-    expect(POINT_COSTS.upscale).toBe(3);
+describe("Credit Cost Calculations", () => {
+  it("should have correct credit costs defined", () => {
+    // Verify all credit costs are defined (1 credit ≈ $0.01)
+    expect(CREDIT_COSTS.castingImage).toBe(7);
+    expect(CREDIT_COSTS.fullBody).toBe(6);
+    expect(CREDIT_COSTS.multiView).toBe(6);
+    expect(CREDIT_COSTS.iterate).toBe(7);
+    expect(CREDIT_COSTS.upscale).toBe(6);
   });
 
   it("should calculate total cost for full model generation", () => {
-    // Casting image + full body + 2 multi-views
+    // Casting image + full body + 3 multi-views
     const totalCost =
-      POINT_COSTS.castingImage +
-      POINT_COSTS.fullBody +
-      POINT_COSTS.multiView * 2;
+      CREDIT_COSTS.castingImage +
+      CREDIT_COSTS.fullBody +
+      CREDIT_COSTS.multiView * 3;
 
-    expect(totalCost).toBe(12 + 8 + 15 * 2); // 50 points
+    expect(totalCost).toBe(7 + 6 + 6 * 3); // 31 credits
   });
 
   it("should calculate cost for minimal model (just headshot)", () => {
-    const minimalCost = POINT_COSTS.castingImage;
-    expect(minimalCost).toBe(12);
+    const minimalCost = CREDIT_COSTS.castingImage;
+    expect(minimalCost).toBe(7);
   });
 
   it("should calculate cost for iteration workflow", () => {
     // Generate image + 3 iterations
     const iterationCost =
-      POINT_COSTS.castingImage +
-      POINT_COSTS.iterate * 3;
+      CREDIT_COSTS.castingImage +
+      CREDIT_COSTS.iterate * 3;
 
-    expect(iterationCost).toBe(12 + 5 * 3); // 27 points
+    expect(iterationCost).toBe(7 + 7 * 3); // 28 credits
+  });
+
+  it("should apply flash fallback discount", () => {
+    // Flash model costs 50% of Pro model
+    const proCost = CREDIT_COSTS.castingImage;
+    const flashCost = Math.ceil(proCost * CREDIT_COSTS.flashMultiplier);
+    
+    expect(flashCost).toBe(4); // 7 * 0.5 = 3.5, rounded up to 4
   });
 });
 

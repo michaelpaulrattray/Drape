@@ -266,7 +266,7 @@ export default function Home() {
                   <div className="w-24 h-24 rounded-full glass-button flex items-center justify-center mx-auto mb-6">
                     <Sparkles className="w-12 h-12 text-yellow-400" />
                   </div>
-                  <p className="text-2xl font-instrument mb-2">100 Free Points</p>
+                  <p className="text-2xl font-instrument mb-2">100 Free Credits</p>
                   <p className="text-muted-foreground text-sm">
                     Start creating today with free credits
                   </p>

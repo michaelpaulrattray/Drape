@@ -233,12 +233,15 @@ const generateRandomPreferences = (): Partial<ModelPreferences> => {
   };
 };
 
-const POINT_COSTS = {
-  masterPrompt: 2,
-  castingImage: 10,
-  fullBody: 8,
-  multiView: 15,
-  iteration: 5,
+// Credit costs for each action (1 credit ≈ $0.01)
+const CREDIT_COSTS = {
+  masterPrompt: 0,      // Included with castingImage
+  castingImage: 7,      // Initial headshot generation
+  fullBody: 6,          // Full body from headshot
+  multiView: 6,         // Single view: side/walk/back
+  iteration: 7,         // Surgical edit / iteration
+  eraser: 7,            // Magic eraser
+  upscale: 6,           // Upscale existing image
 };
 
 // ============ SVG Icons ============
@@ -829,7 +832,7 @@ const LOADING_TIPS = [
   "Pro tip: Surgical edit lets you modify specific areas",
   "Pro tip: Director's Note refines the entire image",
   "Pro tip: Export includes all views in a ZIP file",
-  "Pro tip: Higher resolution = more detail, more points",
+  "Pro tip: Higher resolution = more detail, more credits",
 ];
 
 // ============ Elapsed Time Display Component ============
@@ -975,7 +978,7 @@ export default function CastingStudio() {
   const [autoGenCancelled, setAutoGenCancelled] = useState(false);
 
   // Points data
-  const { data: pointsData, refetch: refetchPoints } = trpc.points.getBalance.useQuery(undefined, {
+  const { data: creditsData, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
@@ -1294,9 +1297,9 @@ export default function CastingStudio() {
       return;
     }
 
-    const totalCost = POINT_COSTS.masterPrompt + POINT_COSTS.castingImage;
-    if (!pointsData || pointsData.balance < totalCost) {
-      toast.error(`Insufficient points. Need ${totalCost} points.`);
+    const totalCost = CREDIT_COSTS.masterPrompt + CREDIT_COSTS.castingImage;
+    if (!creditsData || creditsData.balance < totalCost) {
+      toast.error(`Insufficient credits. Need ${totalCost} points.`);
       return;
     }
 
@@ -1384,7 +1387,7 @@ export default function CastingStudio() {
         setHistoryIndex(0);
         setActiveView("frontClose");
         toast.success("Model generated successfully!");
-        refetchPoints();
+        refetchCredits();
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -1408,8 +1411,8 @@ export default function CastingStudio() {
       onConfirm: async () => {
         setLockModal(prev => ({ ...prev, isOpen: false }));
         
-        if (!pointsData || pointsData.balance < POINT_COSTS.fullBody) {
-          toast.error(`Insufficient points. Need ${POINT_COSTS.fullBody} points.`);
+        if (!creditsData || creditsData.balance < CREDIT_COSTS.fullBody) {
+          toast.error(`Insufficient credits. Need ${CREDIT_COSTS.fullBody} points.`);
           return;
         }
 
@@ -1430,7 +1433,7 @@ export default function CastingStudio() {
             setHistoryIndex((prev) => prev + 1);
             setActiveView("frontFull");
             toast.success("Full body generated!");
-            refetchPoints();
+            refetchCredits();
           }
 
           setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -1451,8 +1454,8 @@ export default function CastingStudio() {
     const skipLockModal = viewType === 'walk' || viewType === 'back' || isAutoGen;
     
     const doGenerate = async (): Promise<boolean> => {
-      if (!pointsData || pointsData.balance < POINT_COSTS.multiView) {
-        toast.error(`Insufficient points. Need ${POINT_COSTS.multiView} points.`);
+      if (!creditsData || creditsData.balance < CREDIT_COSTS.multiView) {
+        toast.error(`Insufficient credits. Need ${CREDIT_COSTS.multiView} points.`);
         setIsAutoGenerating(false);
         return false;
       }
@@ -1481,7 +1484,7 @@ export default function CastingStudio() {
           setHistoryIndex((prev) => prev + 1);
           setActiveView(viewKey);
           toast.success(`${viewLabel} view generated!`);
-          refetchPoints();
+          refetchCredits();
         }
 
         setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -1529,9 +1532,9 @@ export default function CastingStudio() {
           setIsAutoGenerating(true);
           setAutoGenCancelled(false);
           
-          const totalCost = POINT_COSTS.multiView * 3;
-          if (!pointsData || pointsData.balance < totalCost) {
-            toast.error(`Insufficient points. Need ${totalCost} points for all views.`);
+          const totalCost = CREDIT_COSTS.multiView * 3;
+          if (!creditsData || creditsData.balance < totalCost) {
+            toast.error(`Insufficient credits. Need ${totalCost} credits for all views.`);
             setIsAutoGenerating(false);
             resolve();
             return;
@@ -1565,7 +1568,7 @@ export default function CastingStudio() {
               setHistoryIndex((prev) => prev + 1);
               setActiveView('sideClose'); // Show first new view
               toast.success('All views generated! Ready to export.');
-              refetchPoints();
+              refetchCredits();
             }
             
             setGenState({ isGenerating: false, currentStep: '', error: null });
@@ -1636,8 +1639,8 @@ export default function CastingStudio() {
   const performIteration = async (prompt: string, maskBase64?: string) => {
     if (!currentModelId) return;
 
-    if (!pointsData || pointsData.balance < POINT_COSTS.iteration) {
-      toast.error(`Insufficient points. Need ${POINT_COSTS.iteration} points.`);
+    if (!creditsData || creditsData.balance < CREDIT_COSTS.iteration) {
+      toast.error(`Insufficient credits. Need ${CREDIT_COSTS.iteration} points.`);
       return;
     }
 
@@ -1683,7 +1686,7 @@ export default function CastingStudio() {
         }
         
         toast.success("Iteration complete!");
-        refetchPoints();
+        refetchCredits();
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -2016,7 +2019,7 @@ export default function CastingStudio() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-white" />
-            <span className="text-sm font-mono text-white">{pointsData?.balance || 0}</span>
+            <span className="text-sm font-mono text-white">{creditsData?.balance || 0}</span>
           </div>
           <button
             onClick={() => setShowMobilePanel(!showMobilePanel)}
@@ -2044,7 +2047,7 @@ export default function CastingStudio() {
           </button>
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-white" />
-            <span className="text-sm font-mono text-white">{pointsData?.balance || 0}</span>
+            <span className="text-sm font-mono text-white">{creditsData?.balance || 0}</span>
           </div>
         </div>
 
@@ -3139,9 +3142,9 @@ export default function CastingStudio() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest mb-1">Points Balance</p>
+                      <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest mb-1">Credits Balance</p>
                       <div className="flex items-end justify-end space-x-1">
-                        <span className="text-2xl font-mono text-white leading-none tracking-tighter">{pointsData?.balance || 0}</span>
+                        <span className="text-2xl font-mono text-white leading-none tracking-tighter">{creditsData?.balance || 0}</span>
                         <span className="text-xs font-mono text-studio-600 mb-0.5">pts</span>
                       </div>
                     </div>
@@ -3150,15 +3153,15 @@ export default function CastingStudio() {
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div className="space-y-1">
                       <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">Headshot</p>
-                      <p className="text-sm font-mono text-white">{POINT_COSTS.masterPrompt + POINT_COSTS.castingImage} pts</p>
+                      <p className="text-sm font-mono text-white">{CREDIT_COSTS.masterPrompt + CREDIT_COSTS.castingImage} pts</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">Full Body</p>
-                      <p className="text-sm font-mono text-white">{POINT_COSTS.fullBody} pts</p>
+                      <p className="text-sm font-mono text-white">{CREDIT_COSTS.fullBody} pts</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[9px] font-mono text-studio-500 uppercase tracking-widest">Multi-View</p>
-                      <p className="text-sm font-mono text-white">{POINT_COSTS.multiView} pts</p>
+                      <p className="text-sm font-mono text-white">{CREDIT_COSTS.multiView} pts</p>
                     </div>
                   </div>
                 </div>

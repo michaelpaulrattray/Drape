@@ -29,37 +29,57 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Points table for tracking user balances and subscription tiers.
+ * Credits table for tracking user balances and subscription tiers.
+ * Note: Database table name remains "points" for backward compatibility.
  */
-export const points = mysqlTable("points", {
+export const credits = mysqlTable("points", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
   balance: int("balance").notNull().default(100),
-  planTier: mysqlEnum("planTier", ["free", "pro", "enterprise"]).default("free").notNull(),
+  planTier: mysqlEnum("planTier", ["free", "starter", "pro", "studio", "enterprise"]).default("free").notNull(),
   planExpiresAt: timestamp("planExpiresAt"),
+  // Track credits purchased vs earned for analytics
+  creditsPurchased: int("creditsPurchased").default(0).notNull(),
+  creditsUsed: int("creditsUsed").default(0).notNull(),
+  // Rollover tracking
+  rolloverCredits: int("rolloverCredits").default(0).notNull(),
+  lastRefreshAt: timestamp("lastRefreshAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type Points = typeof points.$inferSelect;
-export type InsertPoints = typeof points.$inferInsert;
+export type Credits = typeof credits.$inferSelect;
+export type InsertCredits = typeof credits.$inferInsert;
+
+// Legacy aliases for backward compatibility during migration
+export const points = credits;
+export type Points = Credits;
+export type InsertPoints = InsertCredits;
 
 /**
- * Point transactions table for tracking all point movements.
+ * Credit transactions table for tracking all credit movements.
+ * Note: Database table name remains "point_transactions" for backward compatibility.
  */
-export const pointTransactions = mysqlTable("point_transactions", {
+export const creditTransactions = mysqlTable("point_transactions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   amount: int("amount").notNull(),
-  type: mysqlEnum("type", ["generation", "purchase", "bonus", "refund", "signup"]).notNull(),
+  type: mysqlEnum("type", ["generation", "purchase", "bonus", "refund", "signup", "topup", "subscription"]).notNull(),
   description: text("description"),
   referenceId: varchar("referenceId", { length: 64 }),
   balanceAfter: int("balanceAfter").notNull(),
+  // Track which engine was used (for Flash fallback pricing)
+  engineUsed: varchar("engineUsed", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type PointTransaction = typeof pointTransactions.$inferSelect;
-export type InsertPointTransaction = typeof pointTransactions.$inferInsert;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type InsertCreditTransaction = typeof creditTransactions.$inferInsert;
+
+// Legacy aliases
+export const pointTransactions = creditTransactions;
+export type PointTransaction = CreditTransaction;
+export type InsertPointTransaction = InsertCreditTransaction;
 
 /**
  * Waitlist table for capturing early access signups.

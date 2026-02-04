@@ -63,33 +63,39 @@ vi.mock("./storage", () => ({
 }));
 
 // Import after mocks
-import { POINT_COSTS } from "./aiService";
+import { CREDIT_COSTS } from "./aiService";
 import type { ModelPreferences } from "./aiService";
 
-describe("AI Service - Point Costs", () => {
-  it("should have correct point costs defined", () => {
-    expect(POINT_COSTS.castingImage).toBe(12);
-    expect(POINT_COSTS.fullBody).toBe(8);
-    expect(POINT_COSTS.multiView).toBe(15);
-    expect(POINT_COSTS.iterate).toBe(5);
-    expect(POINT_COSTS.upscale).toBe(3);
+describe("AI Service - Credit Costs", () => {
+  it("should have correct credit costs defined", () => {
+    expect(CREDIT_COSTS.castingImage).toBe(7);
+    expect(CREDIT_COSTS.fullBody).toBe(6);
+    expect(CREDIT_COSTS.multiView).toBe(6);
+    expect(CREDIT_COSTS.iterate).toBe(7);
+    expect(CREDIT_COSTS.upscale).toBe(6);
   });
 
-  it("should have total initial generation cost of 12 points", () => {
-    const totalInitialCost = POINT_COSTS.castingImage;
-    expect(totalInitialCost).toBe(12);
+  it("should have total initial generation cost of 7 credits", () => {
+    const totalInitialCost = CREDIT_COSTS.castingImage;
+    expect(totalInitialCost).toBe(7);
   });
 
   it("should calculate full model generation cost", () => {
-    // Headshot + full body + side + back
-    const fullCost = POINT_COSTS.castingImage + POINT_COSTS.fullBody + POINT_COSTS.multiView * 2;
-    expect(fullCost).toBe(12 + 8 + 15 * 2); // 50 points
+    // Headshot + full body + 3 views
+    const fullCost = CREDIT_COSTS.castingImage + CREDIT_COSTS.fullBody + CREDIT_COSTS.multiView * 3;
+    expect(fullCost).toBe(7 + 6 + 6 * 3); // 31 credits
   });
 
   it("should calculate iteration workflow cost", () => {
     // Headshot + 3 iterations
-    const iterationCost = POINT_COSTS.castingImage + POINT_COSTS.iterate * 3;
-    expect(iterationCost).toBe(12 + 5 * 3); // 27 points
+    const iterationCost = CREDIT_COSTS.castingImage + CREDIT_COSTS.iterate * 3;
+    expect(iterationCost).toBe(7 + 7 * 3); // 28 credits
+  });
+
+  it("should apply flash fallback discount", () => {
+    const proCost = CREDIT_COSTS.castingImage;
+    const flashCost = Math.ceil(proCost * CREDIT_COSTS.flashMultiplier);
+    expect(flashCost).toBe(4); // 7 * 0.5 = 3.5, rounded up
   });
 });
 

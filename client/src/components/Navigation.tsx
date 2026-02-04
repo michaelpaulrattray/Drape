@@ -23,8 +23,8 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
   const [location] = useLocation();
   const loginUrl = getLoginUrl();
 
-  // Get points balance if authenticated
-  const { data: pointsData } = trpc.points.getBalance.useQuery(undefined, {
+  // Get credits balance if authenticated
+  const { data: creditsData } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
@@ -74,11 +74,11 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
             <div className="hidden md:flex items-center gap-4">
               {isAuthenticated ? (
                 <>
-                  {/* Points Display */}
+                  {/* Credits Display */}
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass-button">
                     <Sparkles className="w-4 h-4 text-yellow-400" />
                     <span className="text-sm font-medium">
-                      {pointsData?.balance ?? 0}
+                      {creditsData?.balance ?? 0}
                     </span>
                   </div>
 
@@ -189,10 +189,10 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
                 {isAuthenticated ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Points</span>
+                      <span className="text-muted-foreground">Credits</span>
                       <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-yellow-400" />
-                        <span className="font-medium">{pointsData?.balance ?? 0}</span>
+                        <span className="font-medium">{creditsData?.balance ?? 0}</span>
                       </div>
                     </div>
                     <Link href="/dashboard">
