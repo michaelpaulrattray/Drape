@@ -87,10 +87,9 @@ export default function ProfileSettingsModal({
   const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
     onSuccess: (data) => {
       onProfileImageChange(data.avatarUrl);
-      setSuccessMessage("Avatar updated!");
       refetchProfile();
       onProfileUpdate?.();
-      setTimeout(() => setSuccessMessage(null), 3000);
+      // No success message - the spinner stopping is feedback enough
     },
     onError: (err) => {
       setError(err.message);
@@ -101,10 +100,9 @@ export default function ProfileSettingsModal({
   const uploadBannerMutation = trpc.profile.uploadBanner.useMutation({
     onSuccess: (data) => {
       onBannerImageChange(data.bannerUrl);
-      setSuccessMessage("Banner updated!");
       refetchProfile();
       onProfileUpdate?.();
-      setTimeout(() => setSuccessMessage(null), 3000);
+      // No success message - the spinner stopping is feedback enough
     },
     onError: (err) => {
       setError(err.message);
@@ -311,25 +309,27 @@ export default function ProfileSettingsModal({
                       className="w-full h-full object-cover"
                       style={{ filter: 'grayscale(100%) brightness(0.4)' }}
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        onClick={() => bannerInputRef.current?.click()}
-                        disabled={isUploadingBanner}
-                        className="px-4 py-2 rounded-md bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2 disabled:opacity-50"
-                      >
-                        {isUploadingBanner ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Uploading...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-4 h-4" />
-                            Change Cover
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    {/* Loading overlay */}
+                    {isUploadingBanner && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/90 border border-zinc-700">
+                          <div className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+                          <span className="text-sm text-white">Uploading...</span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Hover overlay */}
+                    {!isUploadingBanner && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          onClick={() => bannerInputRef.current?.click()}
+                          className="px-4 py-2 rounded-md bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Change Cover
+                        </button>
+                      </div>
+                    )}
                     <input
                       type="file"
                       ref={bannerInputRef}
@@ -354,18 +354,22 @@ export default function ProfileSettingsModal({
                           alt="Profile"
                           className="w-full h-full object-cover"
                         />
-                      </div>
-                      <button
-                        onClick={() => profilePicInputRef.current?.click()}
-                        disabled={isUploadingAvatar}
-                        className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:opacity-50"
-                      >
-                        {isUploadingAvatar ? (
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <Upload className="w-5 h-5 text-white" />
+                        {/* Loading overlay */}
+                        {isUploadingAvatar && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <div className="w-6 h-6 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+                          </div>
                         )}
-                      </button>
+                      </div>
+                      {/* Hover overlay - only show when not uploading */}
+                      {!isUploadingAvatar && (
+                        <button
+                          onClick={() => profilePicInputRef.current?.click()}
+                          className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        >
+                          <Upload className="w-5 h-5 text-white" />
+                        </button>
+                      )}
                       <input
                         type="file"
                         ref={profilePicInputRef}

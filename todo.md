@@ -1421,3 +1421,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Implement subtle loading spinner for avatar upload progress
 - [x] Implement subtle loading spinner for banner upload progress
 - [x] Add client-side image compression before uploading to reduce file sizes (avatar: 400x400, banner: 1920x600)
+
+## Profile Settings Modal Upload UX
+- [x] Replace confirmation banner with loading spinner for avatar upload
+- [x] Replace confirmation banner with loading spinner for banner upload
+- [x] Match the smooth loading experience from dashboard uploads
