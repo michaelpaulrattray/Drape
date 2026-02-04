@@ -12,6 +12,7 @@ import Tooltip from "@/components/Tooltip";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/components/LowBalanceWarning";
 import { CreditTopupModal } from "@/components/CreditTopupModal";
 import { DNAHelix } from "@/components/DNAHelix";
+import { HairSection } from "@/components/CastingStudio/HairSection";
 
 // ============ Types ============
 
@@ -998,7 +999,6 @@ export default function CastingStudio() {
   // UI state
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [showAdvancedFace, setShowAdvancedFace] = useState(false);
-  const [showAdvancedHair, setShowAdvancedHair] = useState(false);
   const [refineInput, setRefineInput] = useState("");
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [unlockMode, setUnlockMode] = useState(false);
@@ -2405,74 +2405,11 @@ export default function CastingStudio() {
 
           {/* 6. HAIR */}
           <CollapsibleSection title="Hair" required id="section-hair">
-            <div className="space-y-5 pt-1">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-subtle block">Hair Color</label>
-                <HairColorWheel
-                  currentColor={prefs.hairColor || ""}
-                  onColorSelect={(val: string) => updatePref('hairColor', val)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-subtle block">Style Family</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {currentHairFamilies.map(style => {
-                    const isSelected = prefs.hairStyle === style;
-                    return (
-                      <button
-                        key={style}
-                        onClick={() => updatePref('hairStyle', style)}
-                        className={`
-                          px-3 py-2.5 rounded-lg border text-xs font-medium transition-all
-                          ${isSelected
-                            ? 'bg-slate-accent border-white text-obsidian'
-                            : 'bg-gray-50 border-gray-200 text-subtle hover:border-slate-accent hover:text-gray-700'
-                          }
-                        `}
-                      >
-                        {style}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <SelectControl label="Length" options={HAIR_LENGTHS} value={prefs.hairLength || ""} onChange={v => updatePref('hairLength', v)} />
-                <SelectControl label="Texture" options={HAIR_TEXTURES} value={prefs.hairTexture || ""} onChange={v => updatePref('hairTexture', v)} />
-                <SelectControl label="Fringe" options={HAIR_FRINGES} value={prefs.hairFringe || ""} onChange={v => updatePref('hairFringe', v)} />
-                <SelectControl label="Parting" options={HAIR_PARTINGS} value={prefs.hairParting || ""} onChange={v => updatePref('hairParting', v)} />
-              </div>
-              
-              {/* Volume & Facial Hair (Male Only) */}
-              <div className={prefs.gender === 'Male' ? "grid grid-cols-2 gap-4" : ""}>
-                <SelectControl label="Volume & Shape" options={HAIR_VOLUMES} value={prefs.hairVolume || ""} onChange={v => updatePref('hairVolume', v)} />
-                {prefs.gender === 'Male' && (
-                  <SelectControl label="Facial Hair" options={CHAR_OPTIONS.facialHair} value={prefs.facialHair || ""} onChange={v => updatePref('facialHair', v)} />
-                )}
-              </div>
-
-              {/* Advanced Hair Toggle */}
-              <button
-                onClick={() => setShowAdvancedHair(!showAdvancedHair)}
-                className="w-full flex items-center justify-between py-2.5 text-xs font-medium text-subtle hover:text-obsidian border-t border-gray-200 transition-colors"
-              >
-                <span>Advanced Styling</span>
-                <span className="text-lg leading-none">{showAdvancedHair ? '−' : '+'}</span>
-              </button>
-
-              {showAdvancedHair && (
-                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200 pb-2">
-                  <SelectControl label="Flyaways" options={["None", "Natural", "Intentional"]} value={prefs.hairFlyaways || ""} onChange={v => updatePref('hairFlyaways', v)} />
-                  <SelectControl label="Hairline" options={["Natural", "Clean"]} value={prefs.hairHairline || ""} onChange={v => updatePref('hairHairline', v)} />
-                  <SelectControl label="Tuck" options={HAIR_TUCKS} value={prefs.hairTuck || ""} onChange={v => updatePref('hairTuck', v)} />
-                  {(prefs.gender === 'Male' || prefs.hairStyle?.includes('Fade') || prefs.hairStyle?.includes('Buzz')) && (
-                    <SelectControl label="Fade / Taper" options={HAIR_FADES} value={prefs.hairFade || ""} onChange={v => updatePref('hairFade', v)} />
-                  )}
-                </div>
-              )}
-            </div>
+            <HairSection
+              prefs={prefs}
+              updatePref={updatePref}
+              currentHairFamilies={currentHairFamilies}
+            />
           </CollapsibleSection>
         </div>
 
