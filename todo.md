@@ -1816,3 +1816,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Integrate with CastingStudio form validation state
 - [x] Replace current CASTING STUDIO hero section with DNA component
 - [x] Ensure responsive sizing for different screen sizes
+
+## DNA Helix Cleanup
+- [x] Remove status card component below DNA helix (System Status, Credits Balance, pricing info)

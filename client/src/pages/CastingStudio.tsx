@@ -3205,47 +3205,8 @@ export default function CastingStudio() {
             
             <div className="relative z-10 w-full max-w-4xl p-8 flex flex-col items-center justify-center min-h-[500px]">
               {/* DNA Helix Visualization */}
-              <div className="w-full mb-8">
+              <div className="w-full">
                 <DNAHelix progress={formProgress} className="mx-auto" />
-              </div>
-
-              {/* Status Card */}
-              <div className="w-full max-w-xl bg-white/90 backdrop-blur-md border border-gray-200/60 p-1 shadow-xl rounded-lg">
-                <div className="bg-white p-6 space-y-5 rounded-md">
-                  <div className="flex justify-between items-end border-b border-gray-200/50 pb-4">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${isFormValid ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse' : 'bg-amber-500'}`} />
-                        <p className="text-xs font-medium text-subtle">System Status</p>
-                      </div>
-                      <p className={`text-sm font-medium ${isFormValid ? 'text-obsidian' : 'text-charcoal'}`}>
-                        {isFormValid ? 'Sequence Complete — Ready for Generation' : 'Sequencing Model DNA...'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-medium text-subtle mb-1">Credits Balance</p>
-                      <div className="flex items-end justify-end space-x-1">
-                        <span className="text-2xl font-semibold text-obsidian leading-none">{creditsData?.balance || 0}</span>
-                        <span className="text-xs font-medium text-subtle mb-0.5">pts</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-subtle">Headshot</p>
-                      <p className="text-sm font-semibold text-obsidian">{CREDIT_COSTS.masterPrompt + CREDIT_COSTS.castingImage} pts</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-subtle">Full Body</p>
-                      <p className="text-sm font-semibold text-obsidian">{CREDIT_COSTS.fullBody} pts</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-subtle">Multi-View</p>
-                      <p className="text-sm font-semibold text-obsidian">{CREDIT_COSTS.multiView} pts</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
