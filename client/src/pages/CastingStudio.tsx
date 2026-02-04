@@ -18,6 +18,7 @@ import { SkinSection } from "@/components/CastingStudio/SkinSection";
 import { FaceSection } from "@/components/CastingStudio/FaceSection";
 import { BrandSelector } from "@/components/CastingStudio/BrandSelector";
 import { PhysiqueSelector } from "@/components/CastingStudio/PhysiqueSelector";
+import { ViewTabs, RefinePanel } from "@/components/CastingStudio/ImageViewer";
 
 // ============ Types ============
 
@@ -2245,145 +2246,12 @@ export default function CastingStudio() {
         )}
 
         {/* Left Vertical Thumbnails Strip */}
-        {currentAssets.length > 0 && (
-          <div className="absolute left-4 top-16 bottom-10 z-30 flex flex-col gap-3 w-20 overflow-y-auto no-scrollbar py-2 pointer-events-none">
-            <div className="contents pointer-events-auto">
-              {/* HEAD Thumbnail */}
-              {currentAssets.find(a => a.viewType === 'frontClose') && (
-                <button 
-                  onClick={() => setActiveView('frontClose')}
-                  className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
-                    activeView === 'frontClose' 
-                    ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
-                    : 'ring-1 ring-gray-300 opacity-70 hover:opacity-100 hover:ring-slate-accent hover:scale-[1.02] hover:shadow-lg'
-                  }`}
-                >
-                  <img src={currentAssets.find(a => a.viewType === 'frontClose')?.storageUrl} alt="Head" className="w-full h-full object-cover" />
-                  {currentAssets.some(a => a.viewType === 'frontFull') && (
-                    <div className="absolute top-1.5 right-1.5 bg-white/80 backdrop-blur-md rounded-full p-1 border border-gray-300 z-20">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-obsidian/80"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                    <span className="text-[10px] font-medium text-white block text-center">Head</span>
-                  </div>
-                </button>
-              )}
-
-              {/* ADD BODY / Full Body Thumbnail */}
-              {currentAssets.find(a => a.viewType === 'frontFull') ? (
-                <button 
-                  onClick={() => setActiveView('frontFull')}
-                  className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
-                    activeView === 'frontFull' 
-                    ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
-                    : 'ring-1 ring-gray-300 opacity-70 hover:opacity-100 hover:ring-slate-accent hover:scale-[1.02] hover:shadow-lg'
-                  }`}
-                >
-                  <img src={currentAssets.find(a => a.viewType === 'frontFull')?.storageUrl} alt="Full" className="w-full h-full object-cover" />
-                  {currentAssets.some(a => a.viewType === 'sideClose') && (
-                    <div className="absolute top-1.5 right-1.5 bg-white/80 backdrop-blur-md rounded-full p-1 border border-gray-300 z-20">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-obsidian/80"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                    <span className="text-[10px] font-medium text-white block text-center">Full</span>
-                  </div>
-                </button>
-              ) : (
-                <button 
-                  onClick={() => nextStage?.step === 2 && nextStage.action()}
-                  className="w-full aspect-[3/4] bg-studio-950/60 backdrop-blur-sm rounded-sm border border-dashed border-gray-300 hover:border-white hover:bg-gray-50/50 transition-all flex flex-col items-center justify-center space-y-2 group"
-                >
-                  <div className="w-8 h-8 rounded-full border-2 border-slate-accent flex items-center justify-center text-subtle group-hover:text-obsidian group-hover:border-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                  </div>
-                  <span className="text-[10px] font-medium text-subtle group-hover:text-obsidian text-center px-1">Body</span>
-                </button>
-              )}
-
-              {/* Side/Walk/Back Views or Locked Placeholders */}
-              {currentAssets.find(a => a.viewType === 'frontFull') ? (
-                currentAssets.find(a => a.viewType === 'sideClose') ? (
-                  <>
-                    <button 
-                      onClick={() => setActiveView('sideClose')}
-                      className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
-                        activeView === 'sideClose' 
-                        ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
-                        : 'ring-1 ring-gray-300 opacity-70 hover:opacity-100 hover:ring-slate-accent hover:scale-[1.02] hover:shadow-lg'
-                      }`}
-                    >
-                      <img src={currentAssets.find(a => a.viewType === 'sideClose')?.storageUrl} alt="Side" className="w-full h-full object-cover" />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                        <span className="text-[10px] font-medium text-white block text-center">Side</span>
-                      </div>
-                    </button>
-                    {currentAssets.find(a => a.viewType === 'sideFull') && (
-                      <button 
-                        onClick={() => setActiveView('sideFull')}
-                        className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
-                          activeView === 'sideFull' 
-                          ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
-                          : 'ring-1 ring-gray-300 opacity-70 hover:opacity-100 hover:ring-slate-accent hover:scale-[1.02] hover:shadow-lg'
-                        }`}
-                      >
-                        <img src={currentAssets.find(a => a.viewType === 'sideFull')?.storageUrl} alt="Walk" className="w-full h-full object-cover" />
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                          <span className="text-[10px] font-medium text-white block text-center">Walk</span>
-                        </div>
-                      </button>
-                    )}
-                    {currentAssets.find(a => a.viewType === 'backFull') && (
-                      <button 
-                        onClick={() => setActiveView('backFull')}
-                        className={`relative group w-full aspect-[3/4] rounded-sm transition-all duration-300 overflow-hidden ${
-                          activeView === 'backFull' 
-                          ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.3)] z-10 scale-[1.03]' 
-                          : 'ring-1 ring-gray-300 opacity-70 hover:opacity-100 hover:ring-slate-accent hover:scale-[1.02] hover:shadow-lg'
-                        }`}
-                      >
-                        <img src={currentAssets.find(a => a.viewType === 'backFull')?.storageUrl} alt="Back" className="w-full h-full object-cover" />
-                        <div className="absolute top-1.5 right-1.5 bg-white/80 backdrop-blur-md rounded-full p-1 border border-gray-300 z-20">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-obsidian/80"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        </div>
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-                          <span className="text-[10px] font-medium text-white block text-center">Back</span>
-                        </div>
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <button 
-                    onClick={() => nextStage?.step === 3 && nextStage.action()}
-                    className="w-full aspect-[3/4] bg-studio-950/60 backdrop-blur-sm rounded-sm border border-dashed border-gray-300 hover:border-white hover:bg-gray-50/50 transition-all flex flex-col items-center justify-center space-y-2 group"
-                  >
-                    <div className="w-8 h-8 rounded-full border-2 border-slate-accent flex items-center justify-center text-subtle group-hover:text-obsidian group-hover:border-white transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    </div>
-                    <span className="text-[10px] font-medium text-subtle group-hover:text-obsidian text-center px-1">Angles</span>
-                  </button>
-                )
-              ) : (
-                <>
-                  {/* Locked placeholders with labels */}
-                  <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-gray-200/40 flex flex-col items-center justify-center space-y-1">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <span className="text-[10px] font-medium text-gray-400">Side</span>
-                  </div>
-                  <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-gray-200/40 flex flex-col items-center justify-center space-y-1">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <span className="text-[10px] font-medium text-gray-400">Walk</span>
-                  </div>
-                  <div className="w-full aspect-[3/4] bg-studio-950/40 backdrop-blur-[1px] rounded-sm border border-gray-200/40 flex flex-col items-center justify-center space-y-1">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    <span className="text-[10px] font-medium text-gray-400">Back</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+        <ViewTabs
+          currentAssets={currentAssets}
+          activeView={activeView}
+          setActiveView={setActiveView}
+          nextStage={nextStage}
+        />
 
         {/* Main Content */}
         {currentAssets.length > 0 ? (
@@ -2602,138 +2470,23 @@ export default function CastingStudio() {
               </div>
 
               {/* Overlaying Chat Input - positioned at bottom of image container */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full max-w-xl z-30 px-2" onClick={e => e.stopPropagation()} style={{marginBottom: '60px', marginLeft: '10px'}}>
-                {/* Inline Helper Text for Masking */}
-                {isMasking && (
-                  <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur-md rounded border border-gray-200 shadow-lg">
-                      <span className={`text-xs font-medium ${activeTool === 'eraser' ? 'text-purple-500' : 'text-red-500'}`}>
-                        {maskPaths.length === 0 ? "STEP 01" : "STEP 02"}
-                      </span>
-                      <span className="w-px h-2 bg-white/20"></span>
-                      <span className="text-xs font-medium text-gray-700">
-                        {maskPaths.length === 0 
-                          ? "Paint Target Area" 
-                          : (activeTool === 'eraser' ? "Click Erase Button" : "Describe Edit & Generate")
-                        }
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div className={`mx-1 bg-white/90 backdrop-blur-md border rounded-full shadow-xl flex items-center p-1 transition-all focus-within:ring-1 focus-within:ring-white/20 ${isViewLocked && !unlockMode && activeTool !== 'eraser' ? 'border-gray-300 opacity-90' : 'border-gray-200'}`}>
-                  {/* Regenerate Button */}
-                  <button
-                    onClick={handleGenerate}
-                    disabled={(isViewLocked && !unlockMode) || !isIterationAllowed}
-                    className={`flex-shrink-0 p-1.5 transition-colors ${isViewLocked && !unlockMode ? 'text-subtle cursor-not-allowed' : 'text-charcoal hover:text-obsidian'}`}
-                    title="Regenerate with Current Settings"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
-                  </button>
-
-                  <div className="w-px h-4 bg-white/10 mx-1"></div>
-
-                  {/* Input Area */}
-                  {activeTool === 'eraser' ? (
-                    <div className="flex-1 px-2 py-1.5 min-h-[28px] flex items-center">
-                      <span className="text-xs font-medium text-purple-400/50">
-                        {maskPaths.length === 0 ? "Paint Area to Erase" : "Ready to Erase"}
-                      </span>
-                    </div>
-                  ) : isViewLocked && !unlockMode ? (
-                    <div className="flex-1 flex items-center justify-between px-2 py-1">
-                      <div className="flex items-center space-x-2 text-charcoal select-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <span className="text-xs font-medium">Locked</span>
-                        <Tooltip content={
-                          activeView === 'backFull' 
-                          ? "Editing this finalized view may break visual consistency with the rest of the character pack."
-                          : "This view is the source for downstream assets (Full Body, Angles). Editing it will reset them."
-                        } />
-                      </div>
-                      <button 
-                        onClick={() => setUnlockMode(true)}
-                        className="text-xs font-medium text-subtle hover:text-obsidian transition-colors border-b border-dashed border-gray-300 hover:border-white pb-0.5"
-                      >
-                        Unlock to Edit
-                      </button>
-                    </div>
-                  ) : !isIterationAllowed ? (
-                    <div className="flex-1 px-2 py-1 flex items-center space-x-2 text-subtle select-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                      <span className="text-xs font-medium">Locked Angle</span>
-                      <Tooltip content="To maintain consistency, only the Headshot, Front Full Body, and Back View can be iterated with text. Use Magic Eraser for corrections." />
-                    </div>
-                  ) : (
-                    <textarea 
-                      ref={textAreaRef}
-                      value={refineInput}
-                      onChange={(e) => setRefineInput(e.target.value)}
-                      disabled={isEnhancing} 
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey && !isEnhancing) {
-                          e.preventDefault();
-                          handleRefineSubmit();
-                        }
-                      }}
-                      placeholder={
-                        isEnhancing ? "Optimizing instruction with AI..." :
-                        isViewLocked 
-                        ? (activeView === 'backFull' ? "WARNING: MAKING CHANGES TO THIS IMAGE COULD RUIN CHARACTER CONSISTENCY..." : "Editing will reset downstream assets...")
-                        : activeTool === 'surgical' 
-                          ? `Describe change for masked area (e.g. 'Add scar')...` 
-                          : `Iterate on ${activeView.replace(/([A-Z])/g, ' $1').toLowerCase()}...`
-                      }
-                      rows={1}
-                      className={`flex-1 bg-transparent border-none text-sm placeholder:text-subtle focus:outline-none focus:ring-0 px-2 py-1.5 resize-none custom-scrollbar min-h-[28px] max-h-[200px] ${isViewLocked ? 'text-amber-100 placeholder:text-amber-500/50' : isEnhancing ? 'text-subtle animate-pulse' : 'text-obsidian'}`}
-                    />
-                  )}
-                  
-                  {/* Enhance button */}
-                  {((!isViewLocked || unlockMode) && isIterationAllowed && activeTool !== 'eraser') && (
-                    <button
-                      onClick={handleEnhance}
-                      disabled={!refineInput.trim() || isEnhancing}
-                      className="flex-shrink-0 p-1.5 text-charcoal hover:text-obsidian disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      title="Enhance Prompt (AI)"
-                    >
-                      {isEnhancing ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h0"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>
-                      )}
-                    </button>
-                  )}
-
-                  {/* Submit button */}
-                  {activeTool === 'eraser' ? (
-                    <button 
-                      onClick={handleRefineSubmit}
-                      disabled={maskPaths.length === 0}
-                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${maskPaths.length > 0 ? 'bg-purple-500 text-obsidian hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-slate-accent text-subtle cursor-not-allowed'}`}
-                    >
-                      Erase
-                    </button>
-                  ) : activeTool === 'surgical' ? (
-                    <button 
-                      onClick={handleRefineSubmit}
-                      disabled={maskPaths.length === 0 || !refineInput.trim() || (isViewLocked && !unlockMode)}
-                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${(maskPaths.length > 0 && refineInput.trim()) ? 'bg-red-500 text-obsidian hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-slate-accent text-subtle cursor-not-allowed'}`}
-                    >
-                      Apply
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={handleRefineSubmit}
-                      disabled={!refineInput.trim() || (isViewLocked && !unlockMode) || !isIterationAllowed}
-                      className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${(isViewLocked && !unlockMode) || !isIterationAllowed ? 'bg-slate-accent text-subtle cursor-not-allowed' : 'bg-white text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'}`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </button>
-                  )}
-                </div>
-              </div>
+              <RefinePanel
+                activeTool={activeTool}
+                maskPathsCount={maskPaths.length}
+                isMasking={isMasking}
+                activeView={activeView}
+                isViewLocked={isViewLocked}
+                unlockMode={unlockMode}
+                setUnlockMode={setUnlockMode}
+                isIterationAllowed={isIterationAllowed}
+                refineInput={refineInput}
+                setRefineInput={setRefineInput}
+                isEnhancing={isEnhancing}
+                textAreaRef={textAreaRef}
+                handleGenerate={handleGenerate}
+                handleEnhance={handleEnhance}
+                handleRefineSubmit={handleRefineSubmit}
+              />
             </div>
 
             {/* Bottom Panel - Director's Note */}

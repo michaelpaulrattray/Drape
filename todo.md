@@ -1971,3 +1971,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Import and use PhysiqueSelector in CastingStudio.tsx
 - [x] Verify all body type options work correctly
 - [x] Ensure all 149 tests still pass
+
+
+## CastingStudio Refactor - Phase 7: ImageViewer Extraction (Incremental)
+- [x] Analyze ImageViewer code boundaries in CastingStudio.tsx
+- [x] Create client/src/components/CastingStudio/ImageViewer/ directory structure
+- [x] Extract ViewTabs.tsx (view switching: frontClose, frontFull, sideClose, backFull) - ~200 lines
+- [x] MaskCanvas - kept inline due to tight coupling with canvas refs and state
+- [x] Extract RefinePanel.tsx (text input + enhance button) - ~250 lines
+- [x] Create ImageViewer/index.tsx barrel export
+- [x] Integrate ImageViewer components into CastingStudio.tsx
+- [x] Verify all image viewing and generation features work correctly
+- [x] Ensure all 149 tests still pass
