@@ -2023,3 +2023,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Import and use useGenerationState in CastingStudio.tsx (DEFERRED - high complexity)
 - [ ] Verify all generation features work correctly (DEFERRED)
 - [x] Ensure all 149 tests still pass
+
+## CastingStudio Refactor - Phase 12: Move Constants to Shared File
+- [x] Analyze constants in CastingStudio.tsx
+- [x] Create client/src/constants/casting.ts (~180 lines)
+- [x] Move all casting constants to shared file (BRAND_OPTIONS, ETHNICITIES, SKIN_*, EYE_PRESETS, CHAR_OPTIONS, HAIR_*, BODY_TYPES, FACE_SHAPES, CREDIT_COSTS)
+- [x] Move shared types to constants file (CastingVibe, ModelPreferences, GeneratedAsset, GenerationState, EditTool, ImageResolution)
+- [x] Update CastingStudio.tsx imports to use shared constants
+- [x] Remove duplicate constant/type definitions from main file (~143 lines removed)
+- [x] Verify all functionality works correctly
+- [x] Ensure all 149 tests still pass
