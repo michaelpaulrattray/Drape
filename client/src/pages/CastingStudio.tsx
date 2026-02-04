@@ -19,6 +19,7 @@ import { FaceSection } from "@/components/CastingStudio/FaceSection";
 import { BrandSelector } from "@/components/CastingStudio/BrandSelector";
 import { PhysiqueSelector } from "@/components/CastingStudio/PhysiqueSelector";
 import { ViewTabs, RefinePanel, ToolsBar } from "@/components/CastingStudio/ImageViewer";
+import { DirectorsNote } from "@/components/CastingStudio/DirectorsNote";
 
 // ============ Types ============
 
@@ -863,8 +864,6 @@ export default function CastingStudio() {
   const [modelName, setModelName] = useState("");
   const [currentMasterPrompt, setCurrentMasterPrompt] = useState<string>("");
   const [currentTechnicalSchema, setCurrentTechnicalSchema] = useState<Record<string, any> | null>(null);
-  const [showSchema, setShowSchema] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
 
   // History for undo/redo
   const [history, setHistory] = useState<GeneratedAsset[][]>([]);
@@ -2409,51 +2408,10 @@ export default function CastingStudio() {
             </div>
 
             {/* Bottom Panel - Director's Note */}
-            <div className="w-full bg-studio-950 border-t border-gray-200 flex-shrink-0 z-20">
-              <div className="w-full max-w-[1400px] mx-auto p-3 lg:p-4">
-                <div className="flex flex-col md:flex-row gap-3 items-start">
-                  <div className="flex-1 space-y-2 group">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[10px] uppercase font-bold text-subtle tracking-widest">
-                        {showSchema ? "Technical Schema" : "Director's Note"}
-                      </h3>
-                      <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button 
-                          onClick={() => setShowSchema(!showSchema)}
-                          className="text-xs font-medium text-charcoal hover:text-obsidian transition-colors"
-                        >
-                          {showSchema ? "View Description" : "View Technical Schema"}
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const content = showSchema 
-                              ? JSON.stringify(currentTechnicalSchema, null, 2) 
-                              : currentMasterPrompt;
-                            navigator.clipboard.writeText(content);
-                            setIsCopied(true);
-                            setTimeout(() => setIsCopied(false), 2000);
-                          }}
-                          className={`text-xs font-medium transition-colors ${isCopied ? 'text-green-500' : 'text-charcoal hover:text-obsidian'}`}
-                        >
-                          {isCopied ? "Copied" : "Copy"}
-                        </button>
-                      </div>
-                    </div>
-                    {showSchema ? (
-                      <pre className="text-xs text-charcoal leading-relaxed max-h-32 overflow-y-auto custom-scrollbar select-text bg-gray-100/30 p-3 rounded border border-gray-200">
-                        {currentTechnicalSchema 
-                          ? JSON.stringify(currentTechnicalSchema, null, 2) 
-                          : "Technical schema will appear here after generation..."}
-                      </pre>
-                    ) : (
-                      <p className="text-xs text-charcoal leading-relaxed max-h-16 overflow-y-auto custom-scrollbar select-text">
-                        {currentMasterPrompt || "Master prompt will appear here after generation..."}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <DirectorsNote
+              masterPrompt={currentMasterPrompt}
+              technicalSchema={currentTechnicalSchema}
+            />
           </div>
         ) : genState.isGenerating ? (
           <div className="flex-1 flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-200">

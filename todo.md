@@ -1993,3 +1993,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove unused ToolButton component from main file
 - [x] Verify all tool buttons work correctly
 - [x] Ensure all 149 tests still pass
+
+## CastingStudio Refactor - Phase 9: DirectorsNote Extraction
+- [x] Analyze DirectorsNote code boundaries in CastingStudio.tsx
+- [x] Create client/src/components/CastingStudio/DirectorsNote.tsx (~70 lines)
+- [x] Define DirectorsNoteProps interface with required props
+- [x] Extract Bottom Panel JSX to new component (master prompt, schema toggle, copy button)
+- [x] Import and use DirectorsNote in CastingStudio.tsx
+- [x] Remove unused showSchema and isCopied states from main file
+- [x] Verify master prompt display and schema toggle work correctly
+- [x] Ensure all 149 tests still pass
