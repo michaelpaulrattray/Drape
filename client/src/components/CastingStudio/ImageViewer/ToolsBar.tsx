@@ -1,17 +1,15 @@
 import React from 'react';
+import { useCastingGenerationStore } from '@/stores/useCastingGenerationStore';
+import { useCastingUIStore } from '@/stores/useCastingUIStore';
 
 // ============ Types ============
 
 type EditTool = 'none' | 'surgical' | 'eraser';
 
 interface ToolsBarProps {
-  activeTool: EditTool;
-  setActiveTool: (tool: EditTool) => void;
-  isGenerating: boolean;
-  hasAssets: boolean;
+  // Computed values still passed as props (depend on activeView and currentAssets)
   isIterationAllowed: boolean;
   isViewLocked: boolean;
-  unlockMode: boolean;
   hasDownstreamDependencies: boolean;
   isMasking: boolean;
 }
@@ -106,17 +104,17 @@ const ToolModeBadge = ({ activeTool }: { activeTool: EditTool }) => (
 // ============ Main Component ============
 
 export function ToolsBar({
-  activeTool,
-  setActiveTool,
-  isGenerating,
-  hasAssets,
   isIterationAllowed,
   isViewLocked,
-  unlockMode,
   hasDownstreamDependencies,
   isMasking,
 }: ToolsBarProps) {
-  const showToolsBar = !isGenerating && hasAssets;
+  // Get state from Zustand stores
+  const genState = useCastingGenerationStore((state) => state.genState);
+  const currentAssets = useCastingGenerationStore((state) => state.currentAssets);
+  const { activeTool, setActiveTool, unlockMode } = useCastingUIStore();
+
+  const showToolsBar = !genState.isGenerating && currentAssets.length > 0;
   const showSurgicalEdit = isIterationAllowed && (!isViewLocked || unlockMode);
   const showMagicEraser = !hasDownstreamDependencies || unlockMode;
 

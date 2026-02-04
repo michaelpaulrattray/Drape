@@ -2029,9 +2029,6 @@ export default function CastingStudio() {
 
         {/* Left Vertical Thumbnails Strip */}
         <ViewTabs
-          currentAssets={currentAssets}
-          activeView={activeView}
-          setActiveView={setActiveView}
           nextStage={nextStage}
         />
 
@@ -2145,13 +2142,8 @@ export default function CastingStudio() {
 
                 {/* Tools Bar and Tool Mode Badge */}
                 <ToolsBar
-                  activeTool={activeTool}
-                  setActiveTool={setActiveTool}
-                  isGenerating={genState.isGenerating}
-                  hasAssets={currentAssets.length > 0}
                   isIterationAllowed={isIterationAllowed}
                   isViewLocked={isViewLocked}
-                  unlockMode={unlockMode}
                   hasDownstreamDependencies={hasDownstreamDependencies}
                   isMasking={isMasking}
                 />
@@ -2210,17 +2202,10 @@ export default function CastingStudio() {
 
               {/* Overlaying Chat Input - positioned at bottom of image container */}
               <RefinePanel
-                activeTool={activeTool}
                 maskPathsCount={maskPaths.length}
                 isMasking={isMasking}
-                activeView={activeView}
                 isViewLocked={isViewLocked}
-                unlockMode={unlockMode}
-                setUnlockMode={setUnlockMode}
                 isIterationAllowed={isIterationAllowed}
-                refineInput={refineInput}
-                setRefineInput={setRefineInput}
-                isEnhancing={isEnhancing}
                 textAreaRef={textAreaRef}
                 handleGenerate={handleGenerate}
                 handleEnhance={handleEnhance}
@@ -2229,10 +2214,7 @@ export default function CastingStudio() {
             </div>
 
             {/* Bottom Panel - Director's Note */}
-            <DirectorsNote
-              masterPrompt={currentMasterPrompt}
-              technicalSchema={currentTechnicalSchema}
-            />
+            <DirectorsNote />
           </div>
         ) : genState.isGenerating ? (
           <div className="flex-1 flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-200">

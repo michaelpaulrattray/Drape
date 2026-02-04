@@ -1,25 +1,20 @@
 import { useState } from 'react';
-
-// ============ Types ============
-
-interface DirectorsNoteProps {
-  masterPrompt: string;
-  technicalSchema: Record<string, any> | null;
-}
+import { useCastingGenerationStore } from '@/stores/useCastingGenerationStore';
 
 // ============ Main Component ============
 
-export function DirectorsNote({
-  masterPrompt,
-  technicalSchema,
-}: DirectorsNoteProps) {
+export function DirectorsNote() {
+  // Get state from Zustand store
+  const currentMasterPrompt = useCastingGenerationStore((state) => state.currentMasterPrompt);
+  const currentTechnicalSchema = useCastingGenerationStore((state) => state.currentTechnicalSchema);
+
   const [showSchema, setShowSchema] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopy = () => {
     const content = showSchema 
-      ? JSON.stringify(technicalSchema, null, 2) 
-      : masterPrompt;
+      ? JSON.stringify(currentTechnicalSchema, null, 2) 
+      : currentMasterPrompt;
     navigator.clipboard.writeText(content);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
@@ -54,13 +49,13 @@ export function DirectorsNote({
             {/* Content display */}
             {showSchema ? (
               <pre className="text-xs text-charcoal leading-relaxed max-h-32 overflow-y-auto custom-scrollbar select-text bg-gray-100/30 p-3 rounded border border-gray-200">
-                {technicalSchema 
-                  ? JSON.stringify(technicalSchema, null, 2) 
+                {currentTechnicalSchema 
+                  ? JSON.stringify(currentTechnicalSchema, null, 2) 
                   : "Technical schema will appear here after generation..."}
               </pre>
             ) : (
               <p className="text-xs text-charcoal leading-relaxed max-h-16 overflow-y-auto custom-scrollbar select-text">
-                {masterPrompt || "Master prompt will appear here after generation..."}
+                {currentMasterPrompt || "Master prompt will appear here after generation..."}
               </p>
             )}
           </div>

@@ -1,3 +1,6 @@
+import { useCastingGenerationStore } from '@/stores/useCastingGenerationStore';
+import { useCastingUIStore } from '@/stores/useCastingUIStore';
+
 // ============ Types ============
 
 export type ViewType = 'frontClose' | 'frontFull' | 'sideClose' | 'sideFull' | 'backFull';
@@ -16,9 +19,6 @@ interface NextStage {
 }
 
 interface ViewTabsProps {
-  currentAssets: GeneratedAsset[];
-  activeView: string;
-  setActiveView: (view: string) => void;
   nextStage: NextStage | null;
 }
 
@@ -107,7 +107,11 @@ const LockedPlaceholder = ({ label }: LockedPlaceholderProps) => (
 
 // ============ Main Component ============
 
-export function ViewTabs({ currentAssets, activeView, setActiveView, nextStage }: ViewTabsProps) {
+export function ViewTabs({ nextStage }: ViewTabsProps) {
+  // Get state from Zustand stores
+  const currentAssets = useCastingGenerationStore((state) => state.currentAssets);
+  const { activeView, setActiveView } = useCastingUIStore();
+
   const getAsset = (viewType: ViewType) => currentAssets.find(a => a.viewType === viewType);
   const hasAsset = (viewType: ViewType) => currentAssets.some(a => a.viewType === viewType);
 

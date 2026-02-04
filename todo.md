@@ -2096,3 +2096,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Verify all generation features work correctly
 - [x] Ensure all 149 tests still pass
 - CastingStudio.tsx reduced from 2,318 to 2,317 lines (minimal reduction due to state-only migration)
+
+
+## CastingStudio Refactor - Phase 19: Update ImageViewer & DirectorsNote to Use Stores
+- [x] Update ViewTabs to import from useCastingGenerationStore (currentAssets) and useCastingUIStore (activeView)
+- [x] Update RefinePanel to import from useCastingUIStore (activeView, activeTool, refineInput, isEnhancing, unlockMode)
+- [x] Update ToolsBar to import from useCastingGenerationStore (genState, currentAssets) and useCastingUIStore (activeTool, unlockMode)
+- [x] Update DirectorsNote to import from useCastingGenerationStore (currentMasterPrompt, currentTechnicalSchema)
+- [x] Remove props from CastingStudio.tsx component calls
+- [x] Verify all components work correctly with direct store access
+- [x] Ensure all 149 tests still pass
+- CastingStudio.tsx reduced from 2,317 to 2,299 lines (18 lines removed from prop passing)

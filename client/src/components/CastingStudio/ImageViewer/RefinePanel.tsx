@@ -1,31 +1,25 @@
 import { RefObject } from 'react';
 import { Loader2 } from 'lucide-react';
 import Tooltip from '@/components/Tooltip';
+import { useCastingUIStore } from '@/stores/useCastingUIStore';
 
 // ============ Types ============
 
 type EditTool = 'none' | 'surgical' | 'eraser';
 
 interface RefinePanelProps {
-  // Tool state
-  activeTool: EditTool;
+  // Tool state (still passed as props due to local drawing state)
   maskPathsCount: number;
   isMasking: boolean;
   
-  // View state
-  activeView: string;
+  // View state (computed values still passed as props)
   isViewLocked: boolean;
-  unlockMode: boolean;
-  setUnlockMode: (value: boolean) => void;
   isIterationAllowed: boolean;
   
-  // Input state
-  refineInput: string;
-  setRefineInput: (value: string) => void;
-  isEnhancing: boolean;
+  // Refs (must be passed as props)
   textAreaRef: RefObject<HTMLTextAreaElement | null>;
   
-  // Actions
+  // Actions (handlers still in parent due to tRPC mutations)
   handleGenerate: () => void;
   handleEnhance: () => void;
   handleRefineSubmit: () => void;
@@ -68,22 +62,26 @@ const EnhanceButton = ({ onClick, disabled, isEnhancing }: { onClick: () => void
 // ============ Main Component ============
 
 export function RefinePanel({
-  activeTool,
   maskPathsCount,
   isMasking,
-  activeView,
   isViewLocked,
-  unlockMode,
-  setUnlockMode,
   isIterationAllowed,
-  refineInput,
-  setRefineInput,
-  isEnhancing,
   textAreaRef,
   handleGenerate,
   handleEnhance,
   handleRefineSubmit,
 }: RefinePanelProps) {
+  // Get UI state from Zustand store
+  const {
+    activeView,
+    activeTool,
+    refineInput,
+    setRefineInput,
+    isEnhancing,
+    unlockMode,
+    setUnlockMode,
+  } = useCastingUIStore();
+
   const isLocked = isViewLocked && !unlockMode;
   const hasMask = maskPathsCount > 0;
 
