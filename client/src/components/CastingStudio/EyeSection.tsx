@@ -1,15 +1,8 @@
-import { useRef } from "react";
+import { EYE_PRESETS, type EyePreset } from "@/constants/casting";
 
 // ============ Types ============
 
-interface EyePreset {
-  label: string;
-  hex: string;
-  image?: string;
-}
-
 interface EyeSectionProps {
-  eyePresets: EyePreset[];
   selected: string;
   onSelect: (val: string) => void;
 }
@@ -21,7 +14,7 @@ function VisualEyeGrid({
   selected,
   onSelect,
 }: {
-  options: EyePreset[];
+  options: typeof EYE_PRESETS;
   selected: string;
   onSelect: (val: string) => void;
 }) {
@@ -30,7 +23,7 @@ function VisualEyeGrid({
   const row1 = options.slice(0, midPoint);
   const row2 = options.slice(midPoint);
 
-  const renderOption = (opt: EyePreset) => {
+  const renderOption = (opt: typeof EYE_PRESETS[number]) => {
     const isSelected = selected === opt.label;
     return (
       <button
@@ -112,12 +105,12 @@ function VisualEyeGrid({
 
 // ============ Main Component ============
 
-export function EyeSection({ eyePresets, selected, onSelect }: EyeSectionProps) {
+export function EyeSection({ selected, onSelect }: EyeSectionProps) {
   return (
     <div className="space-y-2 pt-1">
       <label className="text-xs font-medium text-subtle block">Eye Color</label>
       <VisualEyeGrid
-        options={eyePresets}
+        options={EYE_PRESETS}
         selected={selected}
         onSelect={onSelect}
       />

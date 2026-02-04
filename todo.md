@@ -2043,3 +2043,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Enhanced error display in CastingStudio with retry and dismiss buttons
 - [x] Verify error handling works correctly
 - [x] Ensure all 149 tests still pass
+
+## CastingStudio Refactor - Phase 14: Update Extracted Components to Use Shared Constants
+- [x] Update HairSection to import from @/constants/casting (removed ~40 lines of local constants)
+- [x] Update SkinSection to import from @/constants/casting (removed ~15 lines of local constants)
+- [x] Update EyeSection to import from @/constants/casting (removed eyePresets prop, now uses shared EYE_PRESETS)
+- [x] Update FaceSection to import from @/constants/casting (removed ~20 lines of local constants)
+- [x] Update BrandSelector to import from @/constants/casting (removed ~20 lines of local constants)
+- [x] Update PhysiqueSelector to import from @/constants/casting (removed ~10 lines of local constants)
+- [x] Remove duplicate constant definitions from extracted components
+- [x] Verify all functionality works correctly
+- [x] Ensure all 149 tests still pass

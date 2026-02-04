@@ -1,25 +1,13 @@
-// ============ Types ============
+import { BODY_TYPES } from "@/constants/casting";
 
-interface BodyType {
-  label: string;
-  value: string;
-}
+// ============ Types ============
 
 interface PhysiqueSelectorProps {
   selected: string;
   onSelect: (value: string) => void;
 }
 
-// ============ Constants ============
-
-const BODY_TYPES: BodyType[] = [
-  { label: "Ultra Thin", value: "Ultra Thin" },
-  { label: "Slim", value: "Slim" },
-  { label: "Athletic", value: "Athletic" },
-  { label: "Muscular", value: "Muscular" },
-  { label: "Curvy", value: "Curvy" },
-  { label: "Petite", value: "Petite" },
-];
+// ============ Constants (UI-specific SVG icons, not shared) ============
 
 const BODY_ICONS: Record<string, React.ReactNode> = {
   "Ultra Thin": <path d="M12 2C10 2 9 4 9 5C9 7 8 10 9 13C10 16 9 19 9 22H15C15 19 14 16 15 13C16 10 15 7 15 5C15 4 14 2 12 2Z" />,

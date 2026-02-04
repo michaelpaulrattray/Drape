@@ -1894,7 +1894,6 @@ export default function CastingStudio() {
           {/* 5. EYES */}
           <CollapsibleSection title="Eyes" required id="section-eyes">
             <EyeSection
-              eyePresets={EYE_PRESETS}
               selected={prefs.eyeColor || ""}
               onSelect={(val) => updatePref('eyeColor', val)}
             />

@@ -1,18 +1,12 @@
 import Tooltip from "@/components/Tooltip";
 import TriBlendSelector from "@/components/TriBlendSelector";
+import {
+  BRAND_OPTIONS,
+  ETHNICITIES,
+  type CastingVibe,
+} from "@/constants/casting";
 
 // ============ Types ============
-
-interface CastingVibe {
-  editorial: number;
-  commercial: number;
-  runway: number;
-}
-
-interface BrandOption {
-  value: string;
-  desc: string;
-}
 
 interface BrandSelectorProps {
   prefs: {
@@ -24,25 +18,6 @@ interface BrandSelectorProps {
   };
   updatePref: (key: string, value: string | CastingVibe) => void;
 }
-
-// ============ Constants ============
-
-const BRAND_OPTIONS: BrandOption[] = [
-  { value: "Gucci", desc: "Eclectic / Quirky" },
-  { value: "Prada", desc: "Intellectual / Severe" },
-  { value: "Saint Laurent", desc: "Heroin Chic / Edgy" },
-  { value: "Balenciaga", desc: "Brutalist / Street" },
-  { value: "Miu Miu", desc: "Subversive / Youthful" },
-  { value: "Versace", desc: "Glamour / Bombshell" },
-  { value: "Zara", desc: "Trendy / Polished" },
-  { value: "Social Media", desc: "Creator / Authentic" },
-];
-
-const ETHNICITIES = [
-  "Slavic", "Nordic", "East Asian", "South Asian",
-  "Afro-Caribbean", "West African", "Latino",
-  "Middle Eastern", "Mixed", "Polynesian"
-];
 
 // ============ Main Component ============
 
