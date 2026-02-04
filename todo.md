@@ -1592,3 +1592,26 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update chart area to light theme with gray bars
 - [x] Restyle transaction table to match light modal design
 - [x] Fix period selector buttons to light theme
+
+
+## Phase 2.5: Billing & Modal Enhancements
+
+### Annual Billing Toggle
+- [x] Add annual billing toggle to BillingModal with 17% discount
+- [x] Update pricing display to show monthly vs annual rates
+- [x] Calculate and display annual savings
+
+### Light Mode Modal Updates
+- [x] Update BillingModal to light mode (white backgrounds, gray-900 text)
+- [x] Update CreditTopupModal to light mode styling
+- [x] Ensure all modal dialogs match the new light theme palette
+
+### Profile Settings Modal Improvements
+- [x] Add image compression utility to Profile Settings modal (match dashboard compression)
+- [x] Show instant preview in modal while uploading (like dashboard does)
+- [x] Replace inline error banner with toast notification for cleaner UX
+
+### User Popout Light Theme
+- [x] Ensure all tabs in user popout match light theme palette
+- [x] Remove orange buttons and dark background accents in cards
+- [x] Apply consistent gray/white color scheme across all tabs

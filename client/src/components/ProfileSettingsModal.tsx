@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+import { compressImage, AVATAR_COMPRESSION, BANNER_COMPRESSION } from "@/lib/imageUtils";
 import {
   X,
   User,
@@ -11,7 +13,6 @@ import {
   Check,
   ChevronRight,
   Sparkles,
-  AlertCircle,
   HardDrive,
   Download,
   Calendar,
@@ -101,19 +102,19 @@ function BillingTabContent({
 
   return (
     <div className="space-y-6">
-      {/* Current Plan Card - Manus Style */}
-      <div className="p-5 rounded-xl bg-zinc-900 border border-zinc-800">
+      {/* Current Plan Card - Light Theme */}
+      <div className="p-5 rounded-xl bg-gray-50 border border-gray-200">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">{getPlanLabel(planTier)}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{getPlanLabel(planTier)}</h3>
             {subscriptionDetails?.renewalDate && (
-              <p className="text-sm text-zinc-500 flex items-center gap-1.5 mt-1">
+              <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-1">
                 <Calendar className="w-3.5 h-3.5" />
                 Renewal date {formatDate(subscriptionDetails.renewalDate)}
               </p>
             )}
             {subscriptionDetails?.cancelAtPeriodEnd && (
-              <p className="text-sm text-amber-400 mt-1">
+              <p className="text-sm text-amber-600 mt-1">
                 Cancels at end of billing period
               </p>
             )}
@@ -125,7 +126,7 @@ function BillingTabContent({
                   onClose();
                   onOpenBilling?.();
                 }}
-                className="px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm font-medium hover:bg-zinc-700 transition-all"
+                className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all"
               >
                 Manage
               </button>
@@ -135,7 +136,7 @@ function BillingTabContent({
                 onClose();
                 onOpenTopup?.();
               }}
-              className="px-4 py-2 rounded-lg bg-white text-zinc-900 text-sm font-medium hover:bg-zinc-100 transition-all"
+              className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-black transition-all"
             >
               Add credits
             </button>
@@ -143,24 +144,24 @@ function BillingTabContent({
         </div>
 
         {/* Credits Breakdown */}
-        <div className="space-y-3 pt-4 border-t border-zinc-800">
+        <div className="space-y-3 pt-4 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-orange-400" />
-              <span className="text-sm text-zinc-400">Credits</span>
+              <Sparkles className="w-4 h-4 text-gray-600" />
+              <span className="text-sm text-gray-500">Credits</span>
             </div>
-            <span className="text-lg font-semibold text-white">{creditsBalance.toLocaleString()}</span>
+            <span className="text-lg font-semibold text-gray-900">{creditsBalance.toLocaleString()}</span>
           </div>
           
           {billingStatus && planTier !== "free" && (
             <>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500">Rollover credits</span>
-                <span className="text-zinc-400">{(billingStatus.rolloverCredits || 0).toLocaleString()}</span>
+                <span className="text-gray-500">Rollover credits</span>
+                <span className="text-gray-700">{(billingStatus.rolloverCredits || 0).toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500">Monthly credits</span>
-                <span className="text-zinc-400">
+                <span className="text-gray-500">Monthly credits</span>
+                <span className="text-gray-700">
                   {((billingStatus.creditsPurchased || 0) - (billingStatus.rolloverCredits || 0)).toLocaleString()}
                 </span>
               </div>
@@ -168,12 +169,12 @@ function BillingTabContent({
           )}
 
           {planTier !== "free" && subscriptionDetails?.renewalDate && (
-            <div className="flex items-center justify-between text-sm pt-2 border-t border-zinc-800">
+            <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
               <div className="flex items-center gap-2">
-                <RefreshCw className="w-4 h-4 text-zinc-500" />
-                <span className="text-zinc-500">Monthly credit refresh</span>
+                <RefreshCw className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-500">Monthly credit refresh</span>
               </div>
-              <span className="text-zinc-400">
+              <span className="text-gray-700">
                 Refreshes on {formatDate(subscriptionDetails.renewalDate)}
               </span>
             </div>
@@ -188,7 +189,7 @@ function BillingTabContent({
             onClose();
             onOpenBilling?.();
           }}
-          className="w-full px-4 py-3 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+          className="w-full px-4 py-3 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-black transition-all flex items-center justify-center gap-2"
         >
           <Sparkles className="w-4 h-4" />
           Upgrade Plan
@@ -212,32 +213,32 @@ function BillingTabContent({
 
         {(isLoadingInvoices || isLoadingAllInvoices) ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
           </div>
         ) : invoices && invoices.length > 0 ? (
-          <div className="rounded-xl border border-zinc-800 overflow-hidden">
+          <div className="rounded-xl border border-gray-200 overflow-hidden">
             {/* Table Header */}
-            <div className="grid grid-cols-3 gap-4 px-4 py-3 bg-zinc-900/50 border-b border-zinc-800">
-              <span className="text-xs font-medium text-zinc-500 uppercase">Date</span>
-              <span className="text-xs font-medium text-zinc-500 uppercase">Amount</span>
-              <span className="text-xs font-medium text-zinc-500 uppercase text-right"></span>
+            <div className="grid grid-cols-3 gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <span className="text-xs font-medium text-gray-500 uppercase">Date</span>
+              <span className="text-xs font-medium text-gray-500 uppercase">Amount</span>
+              <span className="text-xs font-medium text-gray-500 uppercase text-right"></span>
             </div>
             
             {/* Invoice Rows */}
             {invoices.map((invoice) => (
               <div
                 key={invoice.id}
-                className="grid grid-cols-3 gap-4 px-4 py-3 border-b border-zinc-800 last:border-b-0 hover:bg-zinc-900/30 transition-colors"
+                className="grid grid-cols-3 gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors bg-white"
               >
-                <span className="text-sm text-white">{formatDate(invoice.date)}</span>
-                <span className="text-sm text-white">{formatAmount(invoice.amount)}</span>
+                <span className="text-sm text-gray-900">{formatDate(invoice.date)}</span>
+                <span className="text-sm text-gray-900">{formatAmount(invoice.amount)}</span>
                 <div className="flex justify-end">
                   {invoice.pdfUrl ? (
                     <a
                       href={invoice.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+                      className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
                     >
                       Download
                       <Download className="w-3.5 h-3.5" />
@@ -247,20 +248,20 @@ function BillingTabContent({
                       href={invoice.hostedUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+                      className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
                     >
                       View
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   ) : (
-                    <span className="text-sm text-zinc-600">—</span>
+                    <span className="text-sm text-gray-400">—</span>
                   )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-zinc-500 text-sm">
+          <div className="text-center py-8 text-gray-500 text-sm">
             No invoices yet
           </div>
         )}
@@ -404,14 +405,14 @@ function UsageTabContent() {
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center group relative">
                       <div
-                        className="w-full bg-gray-800 rounded-t transition-all hover:bg-gray-700"
+                        className="w-full bg-gray-400 rounded-t transition-all hover:bg-gray-500"
                         style={{ height: `${Math.max(height, 2)}%` }}
                       />
                       {/* Tooltip */}
                       <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
-                        <div className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg">
-                          <p className="text-white font-medium">{day.creditsUsed} credits</p>
-                          <p className="text-gray-400">{formatDate(day.date)}</p>
+                        <div className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg">
+                          <p className="text-gray-900 font-medium">{day.creditsUsed} credits</p>
+                          <p className="text-gray-500">{formatDate(day.date)}</p>
                         </div>
                       </div>
                     </div>
@@ -531,8 +532,10 @@ export default function ProfileSettingsModal({
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Local preview URLs for instant feedback
+  const [localAvatarPreview, setLocalAvatarPreview] = useState<string | null>(null);
+  const [localBannerPreview, setLocalBannerPreview] = useState<string | null>(null);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -551,40 +554,38 @@ export default function ProfileSettingsModal({
   // Mutations
   const updateProfileMutation = trpc.profile.update.useMutation({
     onSuccess: () => {
-      setSuccessMessage("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
       refetchProfile();
       onProfileUpdate?.();
-      setTimeout(() => setSuccessMessage(null), 3000);
     },
     onError: (err) => {
-      setError(err.message);
-      setTimeout(() => setError(null), 5000);
+      toast.error(err.message);
     },
   });
 
   const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
     onSuccess: (data) => {
       onProfileImageChange(data.avatarUrl);
+      setLocalAvatarPreview(null); // Clear local preview, use server URL
       refetchProfile();
       onProfileUpdate?.();
-      // No success message - the spinner stopping is feedback enough
     },
     onError: (err) => {
-      setError(err.message);
-      setTimeout(() => setError(null), 5000);
+      toast.error(err.message);
+      setLocalAvatarPreview(null); // Clear failed preview
     },
   });
 
   const uploadBannerMutation = trpc.profile.uploadBanner.useMutation({
     onSuccess: (data) => {
       onBannerImageChange(data.bannerUrl);
+      setLocalBannerPreview(null); // Clear local preview, use server URL
       refetchProfile();
       onProfileUpdate?.();
-      // No success message - the spinner stopping is feedback enough
     },
     onError: (err) => {
-      setError(err.message);
-      setTimeout(() => setError(null), 5000);
+      toast.error(err.message);
+      setLocalBannerPreview(null); // Clear failed preview
     },
   });
 
@@ -606,7 +607,6 @@ export default function ProfileSettingsModal({
 
   const handleSave = async () => {
     setIsSaving(true);
-    setError(null);
     try {
       await updateProfileMutation.mutateAsync({
         displayName: editedName || undefined,
@@ -621,40 +621,42 @@ export default function ProfileSettingsModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (5MB max)
+    // Validate file size (5MB max for original)
     if (file.size > 5 * 1024 * 1024) {
-      setError("Avatar file size must be under 5MB");
+      toast.error("Avatar file size must be under 5MB");
       return;
     }
 
     // Validate file type
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Avatar must be a JPG, PNG, or WebP image");
+      toast.error("Avatar must be a JPG, PNG, or WebP image");
       return;
     }
 
+    // Show instant preview
+    const previewUrl = URL.createObjectURL(file);
+    setLocalAvatarPreview(previewUrl);
     setIsUploadingAvatar(true);
-    setError(null);
 
     try {
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        await uploadAvatarMutation.mutateAsync({
-          base64Data: base64,
-          mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
-          fileSize: file.size,
-        });
-        setIsUploadingAvatar(false);
-      };
-      reader.onerror = () => {
-        setError("Failed to read file");
-        setIsUploadingAvatar(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
+      // Compress image before upload
+      const compressed = await compressImage(
+        file,
+        AVATAR_COMPRESSION.maxWidth,
+        AVATAR_COMPRESSION.maxHeight,
+        AVATAR_COMPRESSION.quality
+      );
+
+      await uploadAvatarMutation.mutateAsync({
+        base64Data: compressed.base64,
+        mimeType: compressed.mimeType as "image/jpeg" | "image/png" | "image/webp",
+        fileSize: compressed.size,
+      });
+    } catch (err) {
+      // Error already handled by mutation onError
+    } finally {
       setIsUploadingAvatar(false);
+      URL.revokeObjectURL(previewUrl);
     }
   };
 
@@ -662,40 +664,42 @@ export default function ProfileSettingsModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (10MB max)
+    // Validate file size (10MB max for original)
     if (file.size > 10 * 1024 * 1024) {
-      setError("Banner file size must be under 10MB");
+      toast.error("Banner file size must be under 10MB");
       return;
     }
 
     // Validate file type
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Banner must be a JPG, PNG, or WebP image");
+      toast.error("Banner must be a JPG, PNG, or WebP image");
       return;
     }
 
+    // Show instant preview
+    const previewUrl = URL.createObjectURL(file);
+    setLocalBannerPreview(previewUrl);
     setIsUploadingBanner(true);
-    setError(null);
 
     try {
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        await uploadBannerMutation.mutateAsync({
-          base64Data: base64,
-          mimeType: file.type as "image/jpeg" | "image/png" | "image/webp",
-          fileSize: file.size,
-        });
-        setIsUploadingBanner(false);
-      };
-      reader.onerror = () => {
-        setError("Failed to read file");
-        setIsUploadingBanner(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
+      // Compress image before upload
+      const compressed = await compressImage(
+        file,
+        BANNER_COMPRESSION.maxWidth,
+        BANNER_COMPRESSION.maxHeight,
+        BANNER_COMPRESSION.quality
+      );
+
+      await uploadBannerMutation.mutateAsync({
+        base64Data: compressed.base64,
+        mimeType: compressed.mimeType as "image/jpeg" | "image/png" | "image/webp",
+        fileSize: compressed.size,
+      });
+    } catch (err) {
+      // Error already handled by mutation onError
+    } finally {
       setIsUploadingBanner(false);
+      URL.revokeObjectURL(previewUrl);
     }
   };
 
@@ -739,13 +743,7 @@ export default function ProfileSettingsModal({
           </button>
         </div>
 
-        {/* Error/Success Messages */}
-        {error && (
-          <div className="mx-6 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400" />
-            <p className="text-sm text-red-400">{error}</p>
-          </div>
-        )}
+        {/* Success Messages - Errors now use toast notifications */}
         {successMessage && (
           <div className="mx-6 mt-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
             <Check className="w-4 h-4 text-green-400" />
@@ -783,7 +781,7 @@ export default function ProfileSettingsModal({
                   </label>
                   <div className="relative h-32 rounded-xl overflow-hidden border border-gray-200 group">
                     <img
-                      src={bannerImage || profileData?.bannerUrl || defaultBanner}
+                      src={localBannerPreview || bannerImage || profileData?.bannerUrl || defaultBanner}
                       alt="Cover"
                       className="w-full h-full object-cover"
                       style={{ filter: 'grayscale(50%) brightness(0.8)' }}
@@ -829,7 +827,7 @@ export default function ProfileSettingsModal({
                     <div className="relative group">
                       <div className="w-20 h-20 rounded-full overflow-hidden border border-gray-200">
                         <img
-                          src={profileImage || profileData?.avatarUrl || defaultAvatar}
+                          src={localAvatarPreview || profileImage || profileData?.avatarUrl || defaultAvatar}
                           alt="Profile"
                           className="w-full h-full object-cover"
                         />

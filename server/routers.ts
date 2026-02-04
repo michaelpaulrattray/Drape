@@ -1490,6 +1490,7 @@ export const appRouter = router({
     createSubscriptionCheckout: protectedProcedure
       .input(z.object({
         plan: z.enum(["starter", "pro", "studio"]),
+        interval: z.enum(["monthly", "annual"]).optional().default("monthly"),
       }))
       .mutation(async ({ ctx, input }) => {
         // Get user info
@@ -1522,7 +1523,8 @@ export const appRouter = router({
           input.plan,
           `${baseUrl}/dashboard?billing=success`,
           `${baseUrl}/dashboard?billing=canceled`,
-          ctx.user.id
+          ctx.user.id,
+          input.interval
         );
 
         return { checkoutUrl };

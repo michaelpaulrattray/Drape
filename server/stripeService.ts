@@ -56,9 +56,22 @@ export async function createSubscriptionCheckoutSession(
   plan: SubscriptionPlan,
   successUrl: string,
   cancelUrl: string,
-  userId: number
+  userId: number,
+  interval: "monthly" | "annual" = "monthly"
 ): Promise<string> {
   const product = SUBSCRIPTION_PRODUCTS[plan];
+  
+  // Calculate price based on interval
+  // Annual billing gets 17% discount
+  const isAnnual = interval === "annual";
+  const monthlyPrice = product.priceInCents;
+  const unitAmount = isAnnual 
+    ? Math.round(monthlyPrice * 12 * 0.83) // 17% off annual
+    : monthlyPrice;
+  const billingInterval = isAnnual ? "year" : "month";
+  const planName = isAnnual 
+    ? `${product.name} (Annual)` 
+    : product.name;
   
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
@@ -69,12 +82,12 @@ export async function createSubscriptionCheckoutSession(
         price_data: {
           currency: "usd",
           product_data: {
-            name: product.name,
+            name: planName,
             description: product.description,
           },
-          unit_amount: product.priceInCents,
+          unit_amount: unitAmount,
           recurring: {
-            interval: product.interval,
+            interval: billingInterval,
           },
         },
         quantity: 1,
@@ -85,17 +98,19 @@ export async function createSubscriptionCheckoutSession(
     metadata: {
       userId: userId.toString(),
       plan,
+      interval,
       type: "subscription",
     },
     subscription_data: {
       metadata: {
         userId: userId.toString(),
         plan,
+        interval,
       },
     },
   });
 
-  console.log(`[Stripe] Created subscription checkout session ${session.id} for plan ${plan}`);
+  console.log(`[Stripe] Created ${interval} subscription checkout session ${session.id} for plan ${plan}`);
   return session.url!;
 }
 
