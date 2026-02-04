@@ -2249,3 +2249,9 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Card Background Color Fix
 - [x] Update project card default background to #EBEBEB
+
+
+## Card Hover Effect Updates
+- [x] Keep border/padding constant on hover (no margin change)
+- [x] Only zoom the image inside container
+- [x] Add scroll-up animation for text info bar

@@ -371,16 +371,16 @@ function WorkSection() {
               href="#"
               className="group block rounded-2xl overflow-hidden transition-all duration-300 bg-[#EBEBEB] hover:bg-black"
             >
-              {/* Image Container with zoom effect */}
-              <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2 group-hover:m-0 transition-all duration-300">
+              {/* Image Container with zoom effect - border stays constant */}
+              <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
                 <img
                   src={project.image}
                   alt={project.name}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
               </div>
-              {/* Info Bar */}
-              <div className="flex items-center justify-between p-4 pt-3">
+              {/* Info Bar with scroll-up animation */}
+              <div className="flex items-center justify-between p-4 pt-3 translate-y-2 opacity-80 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                 <div>
                   <h3 className="text-base font-semibold text-black group-hover:text-white transition-colors">{project.name}</h3>
                   <p className="text-sm text-black/50 group-hover:text-white/60 transition-colors">{project.category}</p>
