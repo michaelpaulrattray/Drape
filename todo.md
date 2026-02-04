@@ -2137,3 +2137,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Keep existing sections below hero (Services, Journal, Footer)
 - [x] Ensure mobile responsiveness
 - Features: 12-column grid, overlapping image card with "01" number, massive "Forma Studio" typography, vertical text, metadata scattered around, email CTA at bottom
+
+
+## Hero Title Repositioning
+- [x] Move "Forma Studio" title to be left-aligned below the left image card
+- [x] Match Dreamers reference layout positioning
+- Title now flows: Image Card -> "01" overlay -> "Forma Studio" title -> Description text

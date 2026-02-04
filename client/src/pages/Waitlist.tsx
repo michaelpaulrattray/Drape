@@ -443,8 +443,8 @@ export default function Waitlist() {
             <div className="w-full px-6 md:px-12 py-24 md:py-32">
               <div className="grid grid-cols-12 gap-4 md:gap-8 items-center">
                 
-                {/* Left Column - Image Card + Metadata */}
-                <div className="col-span-12 md:col-span-5 lg:col-span-4 relative">
+                {/* Left Column - Image Card + Title */}
+                <div className="col-span-12 md:col-span-5 lg:col-span-5 relative">
                   {/* Floating Image Card */}
                   <div className="relative">
                     {/* Vertical text */}
@@ -470,8 +470,20 @@ export default function Waitlist() {
                     </div>
                   </div>
                   
+                  {/* Large Typography - Below image, left aligned */}
+                  <div className="mt-8 md:mt-12">
+                    <h1 className="font-geist font-bold tracking-tighter leading-[0.85]">
+                      <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl text-zinc-900">
+                        Forma
+                      </span>
+                      <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-orange-500 -mt-1 md:-mt-2">
+                        Studio
+                      </span>
+                    </h1>
+                  </div>
+                  
                   {/* Description text */}
-                  <div className="mt-8 md:mt-12 max-w-[280px] mx-auto md:mx-0">
+                  <div className="mt-6 md:mt-8 max-w-[320px]">
                     <p className="text-xs md:text-sm text-zinc-500 leading-relaxed">
                       FormaStudio is an AI-powered creative platform bridging the gap between fashion and technology. Cast AI models, style outfits, and generate campaign-ready visuals.
                     </p>
@@ -483,22 +495,10 @@ export default function Waitlist() {
                   </div>
                 </div>
                 
-                {/* Center/Right Column - Typography + Hero Image */}
-                <div className="col-span-12 md:col-span-7 lg:col-span-8 relative">
-                  {/* Large Typography */}
-                  <div className="relative z-10 mb-8 md:mb-0 md:absolute md:left-0 md:top-1/2 md:-translate-y-1/2 md:z-20">
-                    <h1 className="font-geist font-bold tracking-tighter leading-[0.85]">
-                      <span className="block text-6xl sm:text-7xl md:text-8xl lg:text-[10rem] xl:text-[12rem] text-zinc-900">
-                        Forma
-                      </span>
-                      <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[8rem] xl:text-[10rem] text-orange-500 -mt-2 md:-mt-6">
-                        Studio
-                      </span>
-                    </h1>
-                  </div>
-                  
-                  {/* Hero Image - Right side */}
-                  <div className="relative md:ml-auto md:w-[60%] lg:w-[55%]">
+                {/* Right Column - Hero Image */}
+                <div className="col-span-12 md:col-span-7 lg:col-span-7 relative">
+                  {/* Hero Image */}
+                  <div className="relative md:ml-auto">
                     <div className="aspect-[3/4] md:aspect-[4/5] rounded-lg overflow-hidden">
                       <img
                         src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp"
