@@ -2084,3 +2084,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Verify all components work correctly with direct store access
 - [x] Ensure all 149 tests still pass
 - CastingStudio.tsx reduced from 2,338 to 2,318 lines (20 lines removed from prop passing)
+
+
+## CastingStudio Refactor - Phase 18: Generation Store (Option B - State Only)
+- [x] Create client/src/stores/useCastingGenerationStore.ts
+- [x] Define generation state: genState, currentModelId, currentAssets, currentMasterPrompt, currentTechnicalSchema
+- [x] Define history state: history, historyIndex with undo/redo helpers
+- [x] Add computed selectors: getCurrentImageUrl, canUndo, canRedo
+- [x] Integrate store into CastingStudio.tsx (replace useState hooks)
+- [x] Update handlers to use store setters (pushHistory helper for history management)
+- [x] Verify all generation features work correctly
+- [x] Ensure all 149 tests still pass
+- CastingStudio.tsx reduced from 2,318 to 2,317 lines (minimal reduction due to state-only migration)

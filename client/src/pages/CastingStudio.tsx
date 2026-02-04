@@ -23,6 +23,7 @@ import { DirectorsNote } from "@/components/CastingStudio/DirectorsNote";
 import { InlineError, useRetryHandler } from "@/components/ErrorBoundary";
 import { useCastingUIStore } from "@/stores/useCastingUIStore";
 import { useCastingFormStore, DEFAULT_PREFERENCES } from "@/stores/useCastingFormStore";
+import { useCastingGenerationStore } from "@/stores/useCastingGenerationStore";
 import {
   BRAND_OPTIONS,
   ETHNICITIES,
@@ -685,16 +686,27 @@ export default function CastingStudio() {
     resetForm,
   } = useCastingFormStore();
 
-  // Generation state
-  const [genState, setGenState] = useState<GenerationState>({
-    isGenerating: false,
-    currentStep: "",
-    error: null,
-  });
-
-  // Current model state
-  const [currentModelId, setCurrentModelId] = useState<number | null>(null);
-  const [currentAssets, setCurrentAssets] = useState<GeneratedAsset[]>([]);
+  // Generation state from Zustand store
+  const {
+    genState,
+    setGenState,
+    currentModelId,
+    setCurrentModelId,
+    currentAssets,
+    setCurrentAssets,
+    currentMasterPrompt,
+    setCurrentMasterPrompt,
+    currentTechnicalSchema,
+    setCurrentTechnicalSchema,
+    history,
+    setHistory,
+    historyIndex,
+    setHistoryIndex,
+    pushHistory,
+    canUndo,
+    canRedo,
+    getCurrentImageUrl,
+  } = useCastingGenerationStore();
   // UI state from Zustand store
   const {
     activeView,
@@ -723,12 +735,6 @@ export default function CastingStudio() {
     autoGenCancelled,
     setAutoGenCancelled,
   } = useCastingUIStore();
-  const [currentMasterPrompt, setCurrentMasterPrompt] = useState<string>("");
-  const [currentTechnicalSchema, setCurrentTechnicalSchema] = useState<Record<string, any> | null>(null);
-
-  // History for undo/redo
-  const [history, setHistory] = useState<GeneratedAsset[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -1030,11 +1036,8 @@ export default function CastingStudio() {
 
 
 
-  // Get current image URL
-  const currentImageUrl = useMemo(() => {
-    const asset = currentAssets.find((a) => a.viewType === activeView);
-    return asset?.storageUrl || null;
-  }, [currentAssets, activeView]);
+  // Get current image URL from Zustand store
+  const currentImageUrl = getCurrentImageUrl(activeView);
 
   // Check if can generate specific views
   const canGenerateFullBody = currentAssets.some((a) => a.viewType === "frontClose");
@@ -1153,6 +1156,7 @@ export default function CastingStudio() {
           storageUrl: imageResult.imageUrl,
         };
         setCurrentAssets([newAsset]);
+        // Reset history with first entry
         setHistory([[newAsset]]);
         setHistoryIndex(0);
         setActiveView("frontClose");
@@ -1199,8 +1203,7 @@ export default function CastingStudio() {
             };
             const newAssets = [...currentAssets.filter((a) => a.viewType !== "frontFull"), newAsset];
             setCurrentAssets(newAssets);
-            setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
-            setHistoryIndex((prev) => prev + 1);
+            pushHistory(newAssets);
             setActiveView("frontFull");
             toast.success("Full body generated!");
             refetchCreditsWithWarning();
@@ -1250,8 +1253,7 @@ export default function CastingStudio() {
           };
           const newAssets = [...currentAssets.filter((a) => a.viewType !== viewKey), newAsset];
           setCurrentAssets(newAssets);
-          setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
-          setHistoryIndex((prev) => prev + 1);
+          pushHistory(newAssets);
           setActiveView(viewKey);
           toast.success(`${viewLabel} view generated!`);
           refetchCreditsWithWarning();
@@ -1334,8 +1336,7 @@ export default function CastingStudio() {
               ];
               
               setCurrentAssets(newAssets);
-              setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
-              setHistoryIndex((prev) => prev + 1);
+              pushHistory(newAssets);
               setActiveView('sideClose'); // Show first new view
               toast.success('All views generated! Ready to export.');
               refetchCreditsWithWarning();
@@ -1447,8 +1448,7 @@ export default function CastingStudio() {
         
         newAssets = [...newAssets.filter((a) => a.viewType !== activeView), newAsset];
         setCurrentAssets(newAssets);
-        setHistory((prev) => [...prev.slice(0, historyIndex + 1), newAssets]);
-        setHistoryIndex((prev) => prev + 1);
+        pushHistory(newAssets);
         
         // Update master prompt if returned from iteration
         if (result.masterPrompt) {
@@ -1666,21 +1666,20 @@ export default function CastingStudio() {
     handleGenerate();
   };
 
-  // Undo/Redo
-  const canUndo = historyIndex > 0;
-  const canRedo = historyIndex < history.length - 1;
-
+  // Undo/Redo - canUndo and canRedo are now from Zustand store
   const handleUndo = () => {
-    if (canUndo) {
-      setHistoryIndex((prev) => prev - 1);
-      setCurrentAssets(history[historyIndex - 1]);
+    if (canUndo()) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setCurrentAssets(history[newIndex]);
     }
   };
 
   const handleRedo = () => {
-    if (canRedo) {
-      setHistoryIndex((prev) => prev + 1);
-      setCurrentAssets(history[historyIndex + 1]);
+    if (canRedo()) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setCurrentAssets(history[newIndex]);
     }
   };
 
@@ -1953,7 +1952,7 @@ export default function CastingStudio() {
         <div className="absolute top-4 left-4 z-40 flex items-center space-x-2">
           <button 
             onClick={handleUndo} 
-            disabled={!canUndo || genState.isGenerating} 
+            disabled={!canUndo() || genState.isGenerating} 
             className="p-2.5 bg-white/70 hover:bg-slate-accent disabled:opacity-30 disabled:hover:bg-white/70 text-obsidian rounded-full border border-gray-200 backdrop-blur-sm transition-all"
             title="Undo"
           >
@@ -1961,7 +1960,7 @@ export default function CastingStudio() {
           </button>
           <button 
             onClick={handleRedo} 
-            disabled={!canRedo || genState.isGenerating} 
+            disabled={!canRedo() || genState.isGenerating} 
             className="p-2.5 bg-white/70 hover:bg-slate-accent disabled:opacity-30 disabled:hover:bg-white/70 text-obsidian rounded-full border border-gray-200 backdrop-blur-sm transition-all"
             title="Redo"
           >
