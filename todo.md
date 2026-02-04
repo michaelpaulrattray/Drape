@@ -1759,3 +1759,9 @@ The entry and configuration files are properly set up with several enhancements 
 ### Iris Image Final Polish
 - [x] Remove visible border from iris images (borderless like original)
 - [x] Change to grid-cols-4 for larger individual iris images
+
+### Age Slider Track Visibility Fix
+- [x] Make age slider track darker/more visible against white background (changed from #C1CBD8 to #8A9AAB)
+
+### Age Slider Track Color Update
+- [x] Changed slider track from blue-grey (#5A6A7A) to neutral grey (#D1D5DB)
