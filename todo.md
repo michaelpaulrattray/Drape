@@ -2198,3 +2198,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Footer with large "Forma® Studio" wordmark, newsletter signup, links grid
 - [x] Mobile responsive navigation with hamburger menu
 - [x] Routing: Home at /, Waitlist moved to /waitlist
+
+
+## About Section (01) Fix - Match Kanso Template
+- [x] Two-tone headline: first line black, second line gray
+- [x] Stats row: horizontal single line with "/" separators (not grid)
+- [x] Description paragraph: right-aligned at same level as stats
+- [x] Video block: add "Play Showreel" label below play button
+- [x] Overall layout: more horizontal spread

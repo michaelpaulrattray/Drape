@@ -258,49 +258,45 @@ function AboutSection() {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <SectionLabel label="About us" number="01" />
 
-        {/* Two-tone Headline */}
-        <h2 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.1] mb-16">
-          <span className="text-black">We're an AI studio focused on creating </span>
-          <span className="text-black/30">simple, purposeful, and photorealistic solutions.</span>
+        {/* Two-tone Headline - Kanso Style */}
+        <h2 className="text-[clamp(2rem,5vw,4rem)] font-bold leading-[1.1] tracking-tight mb-12">
+          <span className="text-black">We're a design studio focused on creating</span>
+          <br />
+          <span className="text-gray-400">simple, purposeful, and elegant solutions.</span>
         </h2>
 
-        {/* Stats Row */}
-        <div className="flex flex-wrap gap-8 mb-16 pb-16 border-b border-black/10">
-          {stats.map((stat, index) => (
-            <div key={index} className="flex items-baseline gap-1">
-              <span className="text-4xl font-bold text-black">{stat.value}</span>
-              <span className="text-2xl font-bold text-black">{stat.suffix}</span>
-              <span className="text-sm text-black/50 ml-2">{stat.label}</span>
-              {index < stats.length - 1 && <span className="text-black/20 ml-8">/</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* Video Block */}
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="relative aspect-video rounded-2xl overflow-hidden bg-black/5">
-            <img
-              src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80"
-              alt="Showreel"
-              className="w-full h-full object-cover grayscale contrast-110"
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <button className="w-20 h-20 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform">
-                <Play className="w-8 h-8 text-black fill-black ml-1" />
-              </button>
-            </div>
-            <div className="absolute bottom-6 left-6 text-white text-sm">
-              Play Showreel
-            </div>
-            <div className="absolute bottom-6 right-6 text-white/60 text-sm">
-              © 2025 Forma
-            </div>
+        {/* Stats Row + Description - Horizontal Layout */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8 mb-16">
+          {/* Stats - Single Line with Separators */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-black/50">
+            <span>15+ Years of Experience</span>
+            <span className="text-black/30">/</span>
+            <span>140+ Projects completed</span>
+            <span className="text-black/30">/</span>
+            <span>100+ Customer satisfaction rate</span>
+            <span className="text-black/30">/</span>
+            <span>97% Customer retention</span>
           </div>
 
-          <div>
-            <p className="text-xl text-black/70 leading-relaxed">
-              Our studio is dedicated to crafting clean, purposeful AI-generated assets that cut through the noise. We believe in the power of technology to transform creative workflows.
-            </p>
+          {/* Description - Right Aligned */}
+          <p className="lg:max-w-sm text-sm text-black/60 leading-relaxed lg:text-right">
+            Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
+          </p>
+        </div>
+
+        {/* Video Block - Full Width */}
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-200">
+          <img
+            src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
+            alt="Showreel"
+            className="w-full h-full object-cover grayscale contrast-110"
+          />
+          {/* Play Button + Label */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <button className="w-16 h-16 rounded-full bg-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
+              <Play className="w-6 h-6 text-black fill-black ml-0.5" />
+            </button>
+            <span className="mt-4 text-white text-sm font-medium">Play Showreel</span>
           </div>
         </div>
       </div>
