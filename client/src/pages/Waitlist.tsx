@@ -425,142 +425,150 @@ export default function Waitlist() {
 
       {/* Main Content */}
       <main className="z-10 relative">
-        {/* Editorial Hero Section - Dreamers Style */}
-        <section className="min-h-[85vh] lg:min-h-[90vh] relative bg-[#ededed] border-b border-black/10">
-          {/* Top micro-elements */}
-          <div className="absolute top-0 left-0 right-0 z-20 px-6 md:px-12 lg:px-16 py-6 flex items-center justify-between">
-            <span className="text-[10px] md:text-xs tracking-[0.3em] uppercase text-zinc-500 font-medium">
-              FORMASTUDIO
-            </span>
-            <span className="hidden md:block text-[10px] tracking-[0.3em] uppercase text-zinc-400">
-              "AI-POWERED CREATIVE STUDIO"
-            </span>
-            <div className="text-right">
-              <div className="text-[10px] text-zinc-400 leading-none">20</div>
-              <div className="text-[10px] text-zinc-400 leading-none">26</div>
+        {/* Hero Section */}
+        <section className="md:pt-24 md:pb-32 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-0 border-b px-6 pt-16 pb-20 relative border-black/10">
+          {/* Abstract Video Background */}
+          <video 
+            src="https://cdn.coverr.co/videos/coverr-shadows-of-leaves-on-a-wall-3536/1080p.mp4" 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            className="z-10 opacity-[0.08] w-full h-full object-cover absolute inset-0"
+          />
+          
+          {/* Left Col */}
+          <div className="col-span-1 flex flex-col z-20 h-full relative justify-between">
+            <div className="mb-16">
+              <p className="text-[10px] uppercase md:text-xs font-semibold tracking-widest mb-2 text-orange-600">
+                AI-Powered Creative Studio
+              </p>
+              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
+                FORMA
+                <span className="text-orange-500 text-6xl align-top">Studio</span>
+              </h1>
+              <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-black/20" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 mb-12">
+              <div className="group cursor-pointer">
+                <Camera className="text-4xl mb-4 group-hover:text-orange-600 transition-colors text-zinc-800 w-9 h-9" />
+                <h3 className="text-sm font-semibold leading-tight mb-2">
+                  AI Model
+                  <br />
+                  Generation
+                </h3>
+                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange-500" />
+              </div>
+              <div className="group cursor-pointer">
+                <ImageIcon className="text-4xl mb-4 group-hover:text-orange-600 transition-colors text-zinc-800 w-9 h-9" />
+                <h3 className="leading-tight text-sm font-semibold mb-2">
+                  Campaign
+                  <br />
+                  Assets
+                </h3>
+                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange-500" />
+              </div>
+            </div>
+
+            <div className="mt-auto">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (email) {
+                    joinWaitlist.mutate({ email, name: email.split('@')[0] });
+                  }
+                }}
+                className="flex flex-col gap-3 w-full max-w-xs"
+              >
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="w-full px-4 py-3 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                />
+                <button 
+                  type="submit"
+                  disabled={joinWaitlist.isPending || !email}
+                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-zinc-900 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-black/30 hover:bg-black hover:shadow-black/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+              {submitted && (
+                <p className="mt-3 text-sm text-orange-600 font-medium">You're on the list! Position #{position}</p>
+              )}
+              {alreadyRegistered && (
+                <p className="mt-3 text-sm text-amber-600 font-medium">Already registered! Position #{position}</p>
+              )}
             </div>
           </div>
-          
-          {/* Main Content Container */}
-          <div className="max-w-[1400px] mx-auto px-6 md:px-12 lg:px-16 pt-20 pb-16 h-full">
-            <div className="grid grid-cols-12 gap-4 md:gap-6 lg:gap-8 h-full items-center">
-              
-              {/* Left Content Area - 7 columns */}
-              <div className="col-span-12 lg:col-span-7 relative">
-                {/* Vertical spine text - left edge */}
-                <div className="absolute -left-4 md:-left-8 top-0 bottom-0 hidden lg:flex items-center">
-                  <span className="text-[10px] tracking-[0.2em] text-zinc-400 [writing-mode:vertical-lr] rotate-180">
-                    AI Model Generation ®
-                  </span>
-                </div>
-                
-                {/* Inset Image Block */}
-                <div className="relative mb-6 md:mb-8">
-                  <div className="w-[160px] md:w-[180px] lg:w-[200px] aspect-[3/4] rounded-sm overflow-hidden">
-                    <img
-                      src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg"
-                      alt="AI Fashion Model"
-                      className="w-full h-full object-cover grayscale contrast-110 hover:grayscale-0 transition-all duration-700"
+
+          {/* Center Visual (Carousel) */}
+          <div className="col-span-1 md:col-span-2 flex md:py-0 pt-10 pb-10 relative items-center justify-center">
+            <div className="aspect-[3/4] group overflow-hidden md:aspect-auto md:h-[600px] w-full relative">
+              {/* Slider Track */}
+              <div 
+                className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform w-full h-full"
+                style={{ transform: `translateX(-${heroSlide * 100}%)` }}
+              >
+                {heroSlides.map((slide, index) => (
+                  <div key={index} className="flex-shrink-0 z-10 w-full h-full relative">
+                    <img 
+                      src={slide.image} 
+                      alt={slide.title} 
+                      className="w-full h-full object-cover grayscale contrast-125"
                     />
-                  </div>
-                  {/* 01 overlay - top right of inset image */}
-                  <span className="absolute -top-2 left-[170px] md:left-[190px] lg:left-[210px] text-5xl md:text-6xl lg:text-7xl font-geist font-bold text-zinc-900/90 select-none">
-                    01
-                  </span>
-                  {/* Stats near 01 */}
-                  <div className="absolute top-2 left-[250px] md:left-[280px] lg:left-[300px] hidden md:block">
-                    <div className="text-[10px] text-zinc-500">
-                      <span className="text-zinc-700">382</span>
-                      <span className="mx-2">——</span>
-                      <span>Volume</span>
-                    </div>
-                    <div className="text-[10px] text-zinc-500 mt-1">
-                      <span className="mx-2">——</span>
-                      <span>Traded</span>
+                    <div className="bg-gradient-to-t via-transparent to-transparent z-10 absolute inset-0 from-zinc-900/50" />
+                    <div className="absolute bottom-0 left-0 p-8 transform transition-transform duration-500 group-hover:-translate-y-2">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="px-2 py-0.5 rounded border text-[10px] font-mono uppercase backdrop-blur-md border-white/20 bg-white/10 text-white">
+                          {slide.tag}
+                        </span>
+                      </div>
+                      <h3 className="text-2xl font-semibold tracking-tight mb-1 text-white font-geist">{slide.title}</h3>
+                      <p className="text-sm line-clamp-1 text-white/70">{slide.description}</p>
                     </div>
                   </div>
+                ))}
+              </div>
+
+              {/* Navigation Overlay */}
+              <div className="flex gap-3 z-20 absolute right-8 bottom-8 items-center">
+                <div className="px-3 py-1.5 rounded-full backdrop-blur-xl border text-xs font-mono mr-2 shadow-lg bg-black/80 border-white/10 text-white">
+                  <span>{String(heroSlide + 1).padStart(2, '0')}</span>
+                  <span className="mx-1 text-white/30">/</span>
+                  {String(heroSlides.length).padStart(2, '0')}
                 </div>
-                
-                {/* Big Headline - Below inset image */}
-                <h1 className="font-geist font-extrabold tracking-[-0.04em] leading-[0.95]">
-                  <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] xl:text-[6.5rem] text-zinc-900">
-                    Forma
-                  </span>
-                  <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-[4.5rem] xl:text-[5.5rem] text-orange-500 -mt-1 md:-mt-2">
-                    Studio
-                  </span>
-                </h1>
-                
-                {/* Microcopy below headline */}
-                <div className="mt-6 md:mt-8 max-w-[300px]">
-                  <p className="text-[11px] md:text-xs text-zinc-500 leading-relaxed">
-                    FormaStudio is an AI-powered creative platform bridging the gap between fashion and technology. Cast AI models, style outfits, and generate campaign-ready visuals.
-                  </p>
-                  <div className="mt-4 flex items-center gap-3 text-[10px] text-zinc-400">
-                    <span>Hand crafted by</span>
-                    <span className="w-6 h-px bg-zinc-300" />
-                    <span className="font-medium text-zinc-600">FormaStudio</span>
-                  </div>
-                </div>
-                
-                {/* CTA Section */}
-                <div className="mt-8 md:mt-10">
-                  <form 
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (email) {
-                        joinWaitlist.mutate({ email, name: email.split('@')[0] });
-                      }
-                    }}
-                    className="flex flex-col sm:flex-row items-start sm:items-center gap-3"
+                <div className="flex gap-2">
+                  <button 
+                    onClick={prevHeroSlide}
+                    className="w-10 h-10 rounded-full border backdrop-blur-xl flex items-center justify-center transition-all duration-300 group/btn shadow-lg border-white/10 bg-black/50 text-white hover:bg-white hover:text-black"
                   >
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      required
-                      className="w-full sm:w-auto px-4 py-3 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all rounded-full"
-                    />
-                    <button 
-                      type="submit"
-                      disabled={joinWaitlist.isPending || !email}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-zinc-900 text-white font-semibold text-xs uppercase tracking-wider rounded-full shadow-lg shadow-black/20 hover:bg-black hover:shadow-black/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                    >
-                      {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </form>
-                  {submitted && (
-                    <p className="mt-3 text-sm text-orange-600 font-medium">You're on the list! Position #{position}</p>
-                  )}
-                  {alreadyRegistered && (
-                    <p className="mt-3 text-sm text-amber-600 font-medium">Already registered! Position #{position}</p>
-                  )}
-                </div>
-              </div>
-              
-              {/* Right Image Area - 5 columns */}
-              <div className="col-span-12 lg:col-span-5 relative hidden lg:block">
-                <div className="relative h-[70vh] max-h-[600px]">
-                  <img
-                    src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp"
-                    alt="Fashion Editorial"
-                    className="w-full h-full object-cover object-top grayscale contrast-125"
-                  />
+                    <ArrowLeft className="w-[18px] h-[18px] group-hover/btn:-translate-x-0.5 transition-transform" strokeWidth={1.5} />
+                  </button>
+                  <button 
+                    onClick={nextHeroSlide}
+                    className="w-10 h-10 rounded-full border backdrop-blur-xl flex items-center justify-center transition-all duration-300 group/btn shadow-lg border-white/10 bg-black/50 text-white hover:bg-white hover:text-black"
+                  >
+                    <ArrowRight className="w-[18px] h-[18px] group-hover/btn:translate-x-0.5 transition-transform" strokeWidth={1.5} />
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Bottom decorative elements */}
-          <div className="absolute bottom-6 left-6 md:left-12 lg:left-16">
-            <span className="text-4xl md:text-5xl lg:text-6xl font-geist font-bold text-zinc-300/60">003.</span>
-          </div>
-          <div className="absolute bottom-6 right-6 md:right-12 lg:right-16 hidden md:block">
-            <p className="text-[10px] text-zinc-400 max-w-[200px] text-right leading-relaxed">
-              A simple garment for a complex global problem to solve or survive in the dystopia we live in.
+
+          {/* Right Col */}
+          <div className="col-span-1 flex flex-col md:items-end z-20 md:pt-0 h-full pt-8 relative items-start pl-6 md:pl-0">
+            <p className="text-[10px] uppercase font-semibold text-zinc-400 tracking-widest mb-1">
+              Creators Waiting:
             </p>
+            <span className="text-6xl md:text-8xl font-bold tracking-tighter text-zinc-900 font-geist">
+              847
+            </span>
           </div>
         </section>
 
