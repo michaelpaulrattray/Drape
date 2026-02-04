@@ -177,8 +177,11 @@ export default function Dashboard() {
     },
   ];
 
-  return (<>
-    <div className="h-screen w-screen flex bg-canvas text-obsidian overflow-hidden selection:bg-gray-900/20 geometric-mesh">
+  return (
+    <div className="h-screen w-screen flex bg-canvas text-obsidian overflow-hidden selection:bg-gray-900/20">
+      {/* Technical Grid Background */}
+      <div className="fixed inset-0 technical-grid pointer-events-none z-0" />
+      
       {/* Sidebar - Clean Light */}
       <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-light bg-white relative z-10">
         {/* Logo */}
@@ -586,22 +589,18 @@ export default function Dashboard() {
         onOpenTopup={() => setIsTopupOpen(true)}
       />
 
-    </div>
-    
-    {/* Modals - Outside main flex container for proper overlay positioning */}
-    {isBillingOpen && (
+      {/* Billing Modal */}
       <BillingModal
         isOpen={isBillingOpen}
         onClose={() => setIsBillingOpen(false)}
       />
-    )}
 
-    {isTopupOpen && (
+      {/* Credit Top-up Modal */}
       <CreditTopupModal
         isOpen={isTopupOpen}
         onClose={() => setIsTopupOpen(false)}
         currentBalance={creditsData?.balance || 0}
       />
-    )}
-  </>);
+    </div>
+  );
 }

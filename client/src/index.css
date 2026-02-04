@@ -133,33 +133,6 @@
   mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
 }
 
-/* Geometric Mesh Background - Network/Particle Aesthetic */
-.geometric-mesh {
-  position: relative;
-}
-.geometric-mesh::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 1;
-  background-image:
-    /* Primary grid - more visible */
-    linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
-    /* Dot pattern at intersections */
-    radial-gradient(circle at center, rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px);
-  background-size:
-    80px 80px,
-    80px 80px,
-    80px 80px;
-}
-.geometric-mesh > * {
-  position: relative;
-  z-index: 1;
-}
-
 /* Canvas background for light mode */
 .bg-canvas {
   background-color: #FAFAFA;
