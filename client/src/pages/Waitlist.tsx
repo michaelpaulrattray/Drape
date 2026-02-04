@@ -426,107 +426,85 @@ export default function Waitlist() {
       {/* Main Content */}
       <main className="z-10 relative">
         {/* Editorial Hero Section - Dreamers Style */}
-        <section className="h-screen relative border-b border-black/10 overflow-hidden">
-          {/* Hero Background Image - Edge to Edge */}
-          <div className="absolute inset-0 md:left-[45%] lg:left-[40%]">
-            <img
-              src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp"
-              alt="Fashion Editorial"
-              className="w-full h-full object-cover object-top grayscale contrast-125"
-            />
-            {/* Gradient fade on left edge */}
-            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-zinc-50 to-transparent" />
+        <section className="min-h-[85vh] lg:min-h-[90vh] relative bg-[#ededed] border-b border-black/10">
+          {/* Top micro-elements */}
+          <div className="absolute top-0 left-0 right-0 z-20 px-6 md:px-12 lg:px-16 py-6 flex items-center justify-between">
+            <span className="text-[10px] md:text-xs tracking-[0.3em] uppercase text-zinc-500 font-medium">
+              FORMASTUDIO
+            </span>
+            <span className="hidden md:block text-[10px] tracking-[0.3em] uppercase text-zinc-400">
+              "AI-POWERED CREATIVE STUDIO"
+            </span>
+            <div className="text-right">
+              <div className="text-[10px] text-zinc-400 leading-none">20</div>
+              <div className="text-[10px] text-zinc-400 leading-none">26</div>
+            </div>
           </div>
           
-          {/* Content Overlay */}
-          <div className="relative h-full z-10">
-            {/* Top Bar */}
-            <div className="absolute top-0 left-0 right-0 z-30 px-6 md:px-12 py-6 flex items-center justify-between">
-              <span className="hidden md:block text-xs tracking-[0.3em] uppercase text-zinc-400">
-                "AI-Powered Creative Studio"
-              </span>
-              <div className="text-right">
-                <div className="text-xs text-zinc-300 leading-none">20</div>
-                <div className="text-xs text-zinc-300 leading-none">26</div>
-              </div>
-            </div>
-            
-            {/* Main Content */}
-            <div className="h-full flex items-center">
-              <div className="w-full px-6 md:px-12">
-                <div className="flex flex-col md:flex-row md:items-start gap-8 md:gap-12">
-                  
-                  {/* Left Side - Image Card */}
-                  <div className="relative flex-shrink-0">
-                    {/* Vertical text */}
-                    <div className="absolute -left-8 top-1/2 -translate-y-1/2 hidden lg:block">
-                      <span className="text-xs tracking-[0.2em] text-zinc-400 [writing-mode:vertical-lr] rotate-180">
-                        AI Model Generation ®
-                      </span>
-                    </div>
-                    
-                    {/* Image card with 01 overlay */}
-                    <div className="relative">
-                      <div className="w-[200px] md:w-[220px] lg:w-[240px] aspect-[3/4] rounded-lg overflow-hidden shadow-2xl bg-zinc-100">
-                        <img
-                          src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg"
-                          alt="AI Fashion Model"
-                          className="w-full h-full object-cover grayscale contrast-110 hover:grayscale-0 transition-all duration-700"
-                        />
-                      </div>
-                      {/* Number overlay - positioned to upper right */}
-                      <span className="absolute -top-2 -right-12 md:-right-16 text-5xl md:text-7xl font-geist font-bold text-zinc-300/80 select-none">
-                        01
-                      </span>
-                    </div>
+          {/* Main Content Container */}
+          <div className="max-w-[1400px] mx-auto px-6 md:px-12 lg:px-16 pt-20 pb-16 h-full">
+            <div className="grid grid-cols-12 gap-4 md:gap-6 lg:gap-8 h-full items-center">
+              
+              {/* Left Content Area - 7 columns */}
+              <div className="col-span-12 lg:col-span-7 relative">
+                {/* Vertical spine text - left edge */}
+                <div className="absolute -left-4 md:-left-8 top-0 bottom-0 hidden lg:flex items-center">
+                  <span className="text-[10px] tracking-[0.2em] text-zinc-400 [writing-mode:vertical-lr] rotate-180">
+                    AI Model Generation ®
+                  </span>
+                </div>
+                
+                {/* Inset Image Block */}
+                <div className="relative mb-6 md:mb-8">
+                  <div className="w-[160px] md:w-[180px] lg:w-[200px] aspect-[3/4] rounded-sm overflow-hidden">
+                    <img
+                      src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/1445aeb2-ddb4-4e4d-a151-c96381893f07_1600w.jpg"
+                      alt="AI Fashion Model"
+                      className="w-full h-full object-cover grayscale contrast-110 hover:grayscale-0 transition-all duration-700"
+                    />
                   </div>
-                  
-                  {/* Center - Title + Stats */}
-                  <div className="flex-1 flex flex-col justify-center">
-                    {/* Stats - positioned above title on desktop */}
-                    <div className="hidden md:flex items-center gap-8 mb-4 text-xs text-zinc-400">
-                      <div>
-                        <span className="text-zinc-600">382</span>
-                        <span className="mx-2">——</span>
-                        <span>Volume</span>
-                      </div>
-                      <div>
-                        <span className="mx-2">——</span>
-                        <span>Traded</span>
-                      </div>
+                  {/* 01 overlay - top right of inset image */}
+                  <span className="absolute -top-2 left-[170px] md:left-[190px] lg:left-[210px] text-5xl md:text-6xl lg:text-7xl font-geist font-bold text-zinc-900/90 select-none">
+                    01
+                  </span>
+                  {/* Stats near 01 */}
+                  <div className="absolute top-2 left-[250px] md:left-[280px] lg:left-[300px] hidden md:block">
+                    <div className="text-[10px] text-zinc-500">
+                      <span className="text-zinc-700">382</span>
+                      <span className="mx-2">——</span>
+                      <span>Volume</span>
                     </div>
-                    
-                    {/* Large Title */}
-                    <h1 className="font-geist font-bold tracking-tighter leading-[0.85]">
-                      <span className="block text-6xl sm:text-7xl md:text-8xl lg:text-[9rem] xl:text-[11rem] text-zinc-900">
-                        Forma
-                      </span>
-                      <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[7rem] xl:text-[9rem] text-orange-500 -mt-2 md:-mt-4">
-                        Studio
-                      </span>
-                    </h1>
-                    
-                    {/* Description text */}
-                    <div className="mt-6 md:mt-8 max-w-[320px]">
-                      <p className="text-xs md:text-sm text-zinc-500 leading-relaxed">
-                        FormaStudio is an AI-powered creative platform bridging the gap between fashion and technology. Cast AI models, style outfits, and generate campaign-ready visuals.
-                      </p>
-                      <div className="mt-4 flex items-center gap-4 text-xs text-zinc-400">
-                        <span>Hand crafted by</span>
-                        <span className="w-8 h-px bg-zinc-300" />
-                        <span className="font-medium text-zinc-600">FormaStudio</span>
-                      </div>
+                    <div className="text-[10px] text-zinc-500 mt-1">
+                      <span className="mx-2">——</span>
+                      <span>Traded</span>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-            
-            {/* Bottom Section - CTA + Footer */}
-            <div className="absolute bottom-8 left-0 right-0 px-6 md:px-12">
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                
+                {/* Big Headline - Below inset image */}
+                <h1 className="font-geist font-extrabold tracking-[-0.04em] leading-[0.95]">
+                  <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] xl:text-[6.5rem] text-zinc-900">
+                    Forma
+                  </span>
+                  <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-[4.5rem] xl:text-[5.5rem] text-orange-500 -mt-1 md:-mt-2">
+                    Studio
+                  </span>
+                </h1>
+                
+                {/* Microcopy below headline */}
+                <div className="mt-6 md:mt-8 max-w-[300px]">
+                  <p className="text-[11px] md:text-xs text-zinc-500 leading-relaxed">
+                    FormaStudio is an AI-powered creative platform bridging the gap between fashion and technology. Cast AI models, style outfits, and generate campaign-ready visuals.
+                  </p>
+                  <div className="mt-4 flex items-center gap-3 text-[10px] text-zinc-400">
+                    <span>Hand crafted by</span>
+                    <span className="w-6 h-px bg-zinc-300" />
+                    <span className="font-medium text-zinc-600">FormaStudio</span>
+                  </div>
+                </div>
+                
                 {/* CTA Section */}
-                <div>
+                <div className="mt-8 md:mt-10">
                   <form 
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -542,15 +520,15 @@ export default function Waitlist() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email"
                       required
-                      className="w-full sm:w-auto px-4 py-3.5 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all rounded-full"
+                      className="w-full sm:w-auto px-4 py-3 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all rounded-full"
                     />
                     <button 
                       type="submit"
                       disabled={joinWaitlist.isPending || !email}
-                      className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-zinc-900 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-black/20 hover:bg-black hover:shadow-black/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-zinc-900 text-white font-semibold text-xs uppercase tracking-wider rounded-full shadow-lg shadow-black/20 hover:bg-black hover:shadow-black/30 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >
                       {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </form>
                   {submitted && (
@@ -560,21 +538,29 @@ export default function Waitlist() {
                     <p className="mt-3 text-sm text-amber-600 font-medium">Already registered! Position #{position}</p>
                   )}
                 </div>
-                
-                {/* Footer text */}
-                <div className="hidden md:flex items-end gap-8">
-                  <span className="text-4xl md:text-5xl font-geist font-bold text-zinc-200">003.</span>
-                  <p className="text-xs text-zinc-400 max-w-xs text-right">
-                    A simple garment for a complex global problem to solve or survive in the dystopia we live in. Reimagining a world where we can explore new ideas and technologies.
-                  </p>
+              </div>
+              
+              {/* Right Image Area - 5 columns */}
+              <div className="col-span-12 lg:col-span-5 relative hidden lg:block">
+                <div className="relative h-[70vh] max-h-[600px]">
+                  <img
+                    src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/feb67f29-4bdc-4631-af01-58eb137bfb45_1600w.webp"
+                    alt="Fashion Editorial"
+                    className="w-full h-full object-cover object-top grayscale contrast-125"
+                  />
                 </div>
               </div>
             </div>
-            
-            {/* Decorative elements */}
-            <div className="absolute bottom-8 right-6 md:right-12 text-xs text-zinc-400 hidden md:block">
-              <span className="tracking-[0.2em]">ALL RIGHTS RESERVED ®</span>
-            </div>
+          </div>
+          
+          {/* Bottom decorative elements */}
+          <div className="absolute bottom-6 left-6 md:left-12 lg:left-16">
+            <span className="text-4xl md:text-5xl lg:text-6xl font-geist font-bold text-zinc-300/60">003.</span>
+          </div>
+          <div className="absolute bottom-6 right-6 md:right-12 lg:right-16 hidden md:block">
+            <p className="text-[10px] text-zinc-400 max-w-[200px] text-right leading-relaxed">
+              A simple garment for a complex global problem to solve or survive in the dystopia we live in.
+            </p>
           </div>
         </section>
 

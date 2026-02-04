@@ -2152,3 +2152,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] "01" number positioned upper-right of left image card
 - [x] Stats/metadata in middle-right area
 - Hero image now uses absolute positioning with left offset, gradient fade on left edge for smooth blend
+
+
+## Hero Section Complete Rebuild - Following Detailed Spec
+- [x] Light warm-grey background (#ededed)
+- [x] 12-column grid: left 7 cols content, right 5 cols image
+- [x] Hero image contained on right side (not bleeding)
+- [x] Title below left image card in white space (not overlapping hero)
+- [x] Inset image 160-220px wide with "01" overlay
+- [x] Vertical side labels (editorial spine text)
+- [x] Micro-elements: top nav labels, stats, crafted by line
+- Layout matches Dreamers reference: clean separation between content and hero image
