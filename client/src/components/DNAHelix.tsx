@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface DNAHelixProps {
   progress: number; // 0-100
@@ -7,35 +7,23 @@ interface DNAHelixProps {
 
 // Section labels for tooltips
 const SECTION_LABELS = [
-  { name: 'Casting Basics', shortName: 'Basics' },
-  { name: 'Casting Basics', shortName: 'Basics' },
-  { name: 'Identity', shortName: 'Identity' },
-  { name: 'Identity', shortName: 'Identity' },
-  { name: 'Physique', shortName: 'Physique' },
-  { name: 'Physique', shortName: 'Physique' },
-  { name: 'Skin', shortName: 'Skin' },
-  { name: 'Skin', shortName: 'Skin' },
-  { name: 'Eyes', shortName: 'Eyes' },
-  { name: 'Eyes', shortName: 'Eyes' },
-  { name: 'Hair', shortName: 'Hair' },
-  { name: 'Hair', shortName: 'Hair' },
-];
-
-// Progress thresholds for each section (6 sections, 2 rungs each = 12 rungs total)
-const SECTION_THRESHOLDS = [
-  { name: 'basics', threshold: 16.67 },
-  { name: 'identity', threshold: 33.33 },
-  { name: 'physique', threshold: 50 },
-  { name: 'skin', threshold: 66.67 },
-  { name: 'eyes', threshold: 83.33 },
-  { name: 'hair', threshold: 100 },
+  'Casting Basics',
+  'Identity',
+  'Physique',
+  'Skin',
+  'Eyes',
+  'Hair',
 ];
 
 export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number>(0);
+  const timeRef = useRef<number>(0);
   const [showCelebration, setShowCelebration] = useState(false);
   const [prevProgress, setPrevProgress] = useState(progress);
-  const [hoveredRung, setHoveredRung] = useState<number | null>(null);
 
+  // Trigger celebration when progress reaches 100
   useEffect(() => {
     if (progress >= 100 && prevProgress < 100) {
       setShowCelebration(true);
@@ -45,603 +33,368 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     setPrevProgress(progress);
   }, [progress, prevProgress]);
 
-  const litRungs = useMemo(() => {
-    const rungs: boolean[] = [];
-    for (let i = 0; i < 12; i++) {
-      const sectionIndex = Math.floor(i / 2);
-      const threshold = SECTION_THRESHOLDS[sectionIndex].threshold;
-      rungs.push(progress >= threshold * ((i % 2 === 0) ? 0.5 : 1));
-    }
-    return rungs;
-  }, [progress]);
-
-  const activeRungIndex = useMemo(() => {
-    for (let i = 0; i < 12; i++) {
-      if (!litRungs[i]) return i;
-    }
-    return -1;
-  }, [litRungs]);
-
   const isComplete = progress >= 100;
-  const isDormant = progress === 0;
 
-  // Generate MORE particles with better distribution
-  const particles = useMemo(() => {
-    const p = [];
-    // Main floating particles - increased from 20 to 60
-    for (let i = 0; i < 60; i++) {
-      p.push({
-        cx: 20 + Math.random() * 760,
-        cy: 10 + Math.random() * 180,
-        r: 1 + Math.random() * 4,
-        delay: Math.random() * 4,
-        duration: 2 + Math.random() * 3,
-        type: 'float' as const,
-      });
-    }
-    return p;
-  }, []);
+  // Draw the DNA helix
+  const draw = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const centerY = height / 2;
+    const numPoints = 90;
+    const amplitude = height * 0.18;
+    const wavelength = width * 0.7;
+    const startX = width * 0.15;
+    const time = timeRef.current;
 
-  // Generate network connection nodes around the helix
-  const networkNodes = useMemo(() => {
-    const nodes: { cx: number; cy: number; r: number; connections: number[] }[] = [];
-    // Left side network
-    for (let i = 0; i < 12; i++) {
-      nodes.push({
-        cx: 20 + Math.random() * 60,
-        cy: 20 + (i / 11) * 160,
-        r: 2 + Math.random() * 4,
-        connections: [],
-      });
-    }
-    // Right side network
-    for (let i = 0; i < 12; i++) {
-      nodes.push({
-        cx: 720 + Math.random() * 60,
-        cy: 20 + (i / 11) * 160,
-        r: 2 + Math.random() * 4,
-        connections: [],
-      });
-    }
-    // Top scattered
-    for (let i = 0; i < 8; i++) {
-      nodes.push({
-        cx: 100 + Math.random() * 600,
-        cy: 5 + Math.random() * 30,
-        r: 1.5 + Math.random() * 3,
-        connections: [],
-      });
-    }
-    // Bottom scattered
-    for (let i = 0; i < 8; i++) {
-      nodes.push({
-        cx: 100 + Math.random() * 600,
-        cy: 165 + Math.random() * 30,
-        r: 1.5 + Math.random() * 3,
-        connections: [],
-      });
-    }
-    return nodes;
-  }, []);
+    ctx.clearRect(0, 0, width, height);
 
-  // Generate connection lines between network nodes
-  const networkLines = useMemo(() => {
-    const lines: { x1: number; y1: number; x2: number; y2: number }[] = [];
-    networkNodes.forEach((node, i) => {
-      // Connect to 1-3 nearby nodes
-      const numConnections = 1 + Math.floor(Math.random() * 3);
-      for (let j = 0; j < numConnections; j++) {
-        const targetIndex = Math.floor(Math.random() * networkNodes.length);
-        if (targetIndex !== i) {
-          const target = networkNodes[targetIndex];
-          const dist = Math.sqrt(Math.pow(node.cx - target.cx, 2) + Math.pow(node.cy - target.cy, 2));
-          if (dist < 200) { // Only connect nearby nodes
-            lines.push({
-              x1: node.cx,
-              y1: node.cy,
-              x2: target.cx,
-              y2: target.cy,
-            });
-          }
+    // Calculate progress-based colors
+    const progressFactor = progress / 100;
+    const baseColor = isComplete ? '34, 197, 94' : '0, 0, 0'; // Green when complete, black otherwise
+    const accentColor = isComplete ? '134, 239, 172' : '107, 114, 128'; // Light green or gray
+
+    // Draw particle storm with interconnected network
+    const numStormParticles = 120;
+    const stormCenterX = width * 0.5;
+    const stormCenterY = height * 0.5;
+    const stormParticles: { x: number; y: number; size: number; opacity: number }[] = [];
+
+    for (let i = 0; i < numStormParticles; i++) {
+      const angle = (time * 0.2 + i * 0.1) % (Math.PI * 2);
+      const distance = 40 + (i % 50) * 6;
+      const wave = Math.sin(time + i * 0.2) * 25;
+      
+      const x = stormCenterX + Math.cos(angle) * distance + wave;
+      const y = stormCenterY + Math.sin(angle) * (distance * 0.5) + Math.sin(time * 2 + i) * 12;
+      
+      const size = 1 + Math.random() * 2;
+      const baseOpacity = 0.15 + Math.abs(Math.sin(time + i)) * 0.25;
+      const opacity = baseOpacity * (0.3 + progressFactor * 0.7);
+      
+      stormParticles.push({ x, y, size, opacity });
+    }
+
+    // Draw connector lines between nearby storm particles
+    for (let i = 0; i < stormParticles.length; i++) {
+      const p1 = stormParticles[i];
+      for (let j = i + 1; j < stormParticles.length; j++) {
+        const p2 = stormParticles[j];
+        const dx = p1.x - p2.x;
+        const dy = p1.y - p2.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 80) {
+          const lineOpacity = (1 - distance / 80) * 0.1 * (0.3 + progressFactor * 0.7);
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = isComplete 
+            ? `rgba(134, 239, 172, ${lineOpacity})` 
+            : `rgba(156, 163, 175, ${lineOpacity})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
         }
       }
+    }
+
+    // Draw storm particles
+    stormParticles.forEach((particle, i) => {
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fillStyle = isComplete 
+        ? `rgba(34, 197, 94, ${particle.opacity})` 
+        : `rgba(107, 114, 128, ${particle.opacity})`;
+      ctx.fill();
+      
+      if (i % 10 === 0) {
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = isComplete 
+          ? `rgba(34, 197, 94, ${particle.opacity * 0.5})` 
+          : `rgba(156, 163, 175, ${particle.opacity * 0.5})`;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
     });
-    return lines;
-  }, [networkNodes]);
 
-  // Decorative circles (molecular rings)
-  const decorativeCircles = useMemo(() => {
-    const circles = [];
-    // Left side
-    for (let i = 0; i < 6; i++) {
-      circles.push({
-        cx: 30 + Math.random() * 50,
-        cy: 20 + Math.random() * 160,
-        r: 10 + Math.random() * 25,
-      });
-    }
-    // Right side
-    for (let i = 0; i < 6; i++) {
-      circles.push({
-        cx: 720 + Math.random() * 50,
-        cy: 20 + Math.random() * 160,
-        r: 10 + Math.random() * 25,
-      });
-    }
-    return circles;
-  }, []);
-
-  const celebrationParticles = useMemo(() => {
-    const p = [];
-    for (let i = 0; i < 36; i++) {
-      const angle = (i / 36) * Math.PI * 2;
-      p.push({
-        angle,
-        delay: Math.random() * 0.4,
-        speed: 60 + Math.random() * 80,
-      });
-    }
-    return p;
-  }, []);
-
-  // Calculate helix points with more density
-  const helixPoints = useMemo(() => {
-    const points: { x: number; y: number; phase: number }[] = [];
-    const numPoints = 24; // Increased for smoother curve
-    const width = 560;
-    const startX = 120;
+    // Background scattered particles
+    const numBgParticles = 60;
+    const bgParticles: { x: number; y: number; size: number; opacity: number }[] = [];
     
-    for (let i = 0; i < numPoints; i++) {
-      const t = i / (numPoints - 1);
-      const x = startX + t * width;
-      const phase = t * Math.PI * 4; // 2 full rotations
-      points.push({ x, y: 100, phase });
+    for (let i = 0; i < numBgParticles; i++) {
+      const x = (width * 0.08) + (i / numBgParticles) * width * 0.84;
+      const y = height * 0.15 + Math.sin(time + i * 0.5) * height * 0.7;
+      const size = 1 + Math.random() * 1.5;
+      const opacity = (0.1 + Math.abs(Math.sin(time * 0.5 + i)) * 0.2) * (0.3 + progressFactor * 0.7);
+      
+      bgParticles.push({ x, y, size, opacity });
     }
-    return points;
-  }, []);
 
-  // Main rung points (12 for progress tracking)
-  const mainRungPoints = useMemo(() => {
-    const points: { x: number; y: number; phase: number; index: number }[] = [];
-    const numPoints = 12;
-    const width = 560;
-    const startX = 120;
-    
-    for (let i = 0; i < numPoints; i++) {
-      const t = i / (numPoints - 1);
-      const x = startX + t * width;
-      const phase = t * Math.PI * 4;
-      points.push({ x, y: 100, phase, index: i });
+    // Draw connector lines for background particles
+    for (let i = 0; i < bgParticles.length; i++) {
+      const p1 = bgParticles[i];
+      for (let j = i + 1; j < Math.min(i + 5, bgParticles.length); j++) {
+        const p2 = bgParticles[j];
+        const dx = p1.x - p2.x;
+        const dy = p1.y - p2.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) {
+          const lineOpacity = (1 - distance / 120) * 0.06 * (0.3 + progressFactor * 0.7);
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = isComplete 
+            ? `rgba(134, 239, 172, ${lineOpacity})` 
+            : `rgba(203, 213, 224, ${lineOpacity})`;
+          ctx.lineWidth = 0.4;
+          ctx.stroke();
+        }
+      }
     }
-    return points;
-  }, []);
+
+    // Draw background particles
+    bgParticles.forEach(particle => {
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fillStyle = isComplete 
+        ? `rgba(134, 239, 172, ${particle.opacity})` 
+        : `rgba(156, 163, 175, ${particle.opacity})`;
+      ctx.fill();
+    });
+
+    // Molecular circles
+    const circles = [
+      { x: width * 0.12, y: height * 0.25 },
+      { x: width * 0.22, y: height * 0.72 },
+      { x: width * 0.78, y: height * 0.28 },
+      { x: width * 0.88, y: height * 0.68 }
+    ];
+
+    circles.forEach((circle, i) => {
+      const radius = 15 + Math.sin(time + i * 0.5) * 4;
+      const circleOpacity = 0.1 + progressFactor * 0.1;
+      
+      ctx.beginPath();
+      ctx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = isComplete 
+        ? `rgba(134, 239, 172, ${circleOpacity})` 
+        : `rgba(203, 213, 224, ${circleOpacity})`;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.arc(circle.x, circle.y, radius * 0.6, 0, Math.PI * 2);
+      ctx.strokeStyle = isComplete 
+        ? `rgba(34, 197, 94, ${circleOpacity * 0.7})` 
+        : `rgba(226, 232, 240, ${circleOpacity * 0.7})`;
+      ctx.lineWidth = 0.4;
+      ctx.stroke();
+    });
+
+    // Draw DNA helix strands
+    for (let strand = 0; strand < 2; strand++) {
+      const phaseOffset = strand * Math.PI + time;
+      const points: { x: number; y: number; z: number }[] = [];
+
+      // Generate points for this strand
+      for (let i = 0; i < numPoints; i++) {
+        const t = (i / numPoints) * 3 * Math.PI * 2;
+        const x = startX + (i / numPoints) * wavelength;
+        const y = centerY + Math.sin(t + phaseOffset) * amplitude;
+        const z = Math.cos(t + phaseOffset);
+        points.push({ x, y, z });
+      }
+
+      // Draw connecting lines between points (strand curve)
+      ctx.beginPath();
+      ctx.strokeStyle = isComplete 
+        ? `rgba(34, 197, 94, 0.6)` 
+        : `rgba(${baseColor}, 0.5)`;
+      ctx.lineWidth = 2.5;
+      
+      points.forEach((point, i) => {
+        if (i === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.stroke();
+
+      // Draw particles at each point on the strand
+      points.forEach((point) => {
+        const size = 2 + Math.abs(point.z) * 2;
+        const opacity = 0.4 + Math.abs(point.z) * 0.4;
+
+        ctx.beginPath();
+        ctx.fillStyle = isComplete 
+          ? `rgba(34, 197, 94, ${opacity})` 
+          : `rgba(${baseColor}, ${opacity})`;
+        ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Glow effect for front particles
+        if (point.z > 0.3) {
+          ctx.shadowBlur = 6;
+          ctx.shadowColor = isComplete 
+            ? `rgba(34, 197, 94, ${opacity * 0.6})` 
+            : `rgba(${baseColor}, ${opacity * 0.4})`;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      });
+    }
+
+    // Draw base pair connections (rungs)
+    const numBasePairs = 30;
+    const litRungs = Math.floor((progress / 100) * numBasePairs);
+    
+    for (let i = 0; i < numBasePairs; i++) {
+      const t = (i / numBasePairs) * 3 * Math.PI * 2 + time;
+      const x = startX + (i / numBasePairs) * wavelength;
+      const y1 = centerY + Math.sin(t) * amplitude;
+      const y2 = centerY + Math.sin(t + Math.PI) * amplitude;
+      const z = Math.cos(t);
+
+      const isLit = i < litRungs;
+      const baseOpacity = 0.4 + Math.abs(z) * 0.4;
+      const opacity = isLit ? baseOpacity : baseOpacity * 0.3;
+      
+      // Draw the rung line
+      ctx.beginPath();
+      ctx.strokeStyle = isLit 
+        ? (isComplete ? `rgba(34, 197, 94, ${opacity})` : `rgba(59, 130, 246, ${opacity})`)
+        : `rgba(${baseColor}, ${opacity * 0.5})`;
+      ctx.lineWidth = isLit ? 2.5 : 1.5;
+      ctx.moveTo(x, y1);
+      ctx.lineTo(x, y2);
+      ctx.stroke();
+
+      // Draw larger spheres at rung endpoints for lit rungs
+      if (isLit) {
+        const sphereSize = 4 + Math.abs(z) * 2;
+        const sphereColor = isComplete ? '34, 197, 94' : '59, 130, 246';
+        
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${sphereColor}, ${opacity})`;
+        ctx.arc(x, y1, sphereSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${sphereColor}, ${opacity})`;
+        ctx.arc(x, y2, sphereSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight effect
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
+        ctx.arc(x - 1, y1 - 1, sphereSize * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
+        ctx.arc(x - 1, y2 - 1, sphereSize * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Celebration effect - burst particles
+    if (showCelebration) {
+      const celebrationTime = (Date.now() % 3000) / 3000;
+      const numBurstParticles = 36;
+      
+      for (let i = 0; i < numBurstParticles; i++) {
+        const angle = (i / numBurstParticles) * Math.PI * 2;
+        const distance = celebrationTime * 150;
+        const x = width / 2 + Math.cos(angle) * distance;
+        const y = height / 2 + Math.sin(angle) * distance;
+        const size = (1 - celebrationTime) * 6;
+        const opacity = (1 - celebrationTime) * 0.8;
+        
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(34, 197, 94, ${opacity})`;
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Completion ripple effect
+    if (isComplete) {
+      const rippleTime = (Date.now() % 3000) / 3000;
+      
+      for (let r = 0; r < 3; r++) {
+        const ripplePhase = (rippleTime + r * 0.33) % 1;
+        const radius = 50 + ripplePhase * 120;
+        const opacity = (1 - ripplePhase) * 0.3;
+        
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(34, 197, 94, ${opacity})`;
+        ctx.lineWidth = 1.5 - ripplePhase;
+        ctx.stroke();
+      }
+    }
+  }, [progress, isComplete, showCelebration]);
+
+  // Animation loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resize = () => {
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      ctx.scale(dpr, dpr);
+    };
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    const animate = () => {
+      timeRef.current += 0.008;
+      const rect = container.getBoundingClientRect();
+      draw(ctx, rect.width, rect.height);
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationRef.current);
+    };
+  }, [draw]);
+
+  // Calculate which section is active
+  const activeSection = Math.min(Math.floor((progress / 100) * 6), 5);
+  const sectionProgress = progress > 0 ? SECTION_LABELS[activeSection] : 'Not Started';
 
   return (
-    <div className={`relative w-full ${className}`}>
-      <style>{`
-        @keyframes activePulse {
-          0%, 100% { 
-            transform: scale(1);
-            filter: drop-shadow(0 0 0px rgba(59, 130, 246, 0));
-          }
-          50% { 
-            transform: scale(1.4);
-            filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8));
-          }
-        }
-        @keyframes floatParticle {
-          0%, 100% { opacity: 0.3; transform: translateY(0); }
-          50% { opacity: 0.7; transform: translateY(-8px); }
-        }
-        @keyframes celebrationBurst {
-          0% { transform: translate(0, 0) scale(1); opacity: 1; }
-          100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
-        }
-        @keyframes celebrationGlow {
-          0% { filter: drop-shadow(0 0 0px rgba(34, 197, 94, 0)); }
-          50% { filter: drop-shadow(0 0 25px rgba(34, 197, 94, 0.9)); }
-          100% { filter: drop-shadow(0 0 0px rgba(34, 197, 94, 0)); }
-        }
-        @keyframes networkPulse {
-          0%, 100% { opacity: 0.15; }
-          50% { opacity: 0.35; }
-        }
-        .active-rung {
-          animation: activePulse 1.2s ease-in-out infinite;
-          transform-origin: center;
-        }
-        .celebration-glow {
-          animation: celebrationGlow 1.2s ease-out;
-        }
-        .network-line {
-          animation: networkPulse 3s ease-in-out infinite;
-        }
-        .dna-tooltip {
-          pointer-events: none;
-          transition: opacity 0.2s ease;
-        }
-      `}</style>
-
-      <svg
-        viewBox="0 0 800 200"
-        className="w-full h-auto"
-        style={{ maxHeight: '300px' }}
-      >
-        <defs>
-          <linearGradient id="litGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#374151" />
-            <stop offset="50%" stopColor="#1f2937" />
-            <stop offset="100%" stopColor="#374151" />
-          </linearGradient>
-          
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          
-          <filter id="activeGlow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="5" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="1" stdDeviation="1" floodOpacity="0.15" />
-          </filter>
-        </defs>
-
-        {/* Network connection lines - molecular network effect */}
-        <g className={`transition-opacity duration-700 ${isDormant ? 'opacity-5' : 'opacity-100'}`}>
-          {networkLines.map((line, i) => {
-            const progressFactor = Math.min(1, progress / 50);
-            return (
-              <line
-                key={`net-line-${i}`}
-                x1={line.x1}
-                y1={line.y1}
-                x2={line.x2}
-                y2={line.y2}
-                stroke={isComplete ? "#86efac" : "#d1d5db"}
-                strokeWidth="0.5"
-                opacity={0.1 + progressFactor * 0.2}
-                className="network-line"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              />
-            );
-          })}
-        </g>
-
-        {/* Decorative molecular circles */}
-        <g className={`transition-opacity duration-500 ${isDormant ? 'opacity-5' : 'opacity-30'}`}>
-          {decorativeCircles.map((circle, i) => (
-            <circle
-              key={`deco-${i}`}
-              cx={circle.cx}
-              cy={circle.cy}
-              r={circle.r}
-              fill="none"
-              stroke={isComplete ? "#86efac" : "#d1d5db"}
-              strokeWidth="0.5"
-              opacity={0.3 + (progress / 100) * 0.4}
-            />
-          ))}
-        </g>
-
-        {/* Network nodes */}
-        <g className={`transition-opacity duration-500 ${isDormant ? 'opacity-10' : 'opacity-100'}`}>
-          {networkNodes.map((node, i) => {
-            const shouldShow = progress > (i / networkNodes.length) * 80;
-            return (
-              <g key={`node-${i}`}>
-                <circle
-                  cx={node.cx}
-                  cy={node.cy}
-                  r={node.r}
-                  fill={isComplete ? "#22c55e" : "#6b7280"}
-                  opacity={shouldShow ? 0.6 : 0.15}
-                  className="transition-all duration-500"
-                />
-                {/* Outer ring for some nodes */}
-                {node.r > 3 && (
-                  <circle
-                    cx={node.cx}
-                    cy={node.cy}
-                    r={node.r + 4}
-                    fill="none"
-                    stroke={isComplete ? "#86efac" : "#9ca3af"}
-                    strokeWidth="0.5"
-                    opacity={shouldShow ? 0.4 : 0.1}
-                  />
-                )}
-              </g>
-            );
-          })}
-        </g>
-
-        {/* Floating particles - MORE visible */}
-        <g className={`${isDormant ? 'opacity-10' : 'opacity-100'} transition-opacity duration-500`}>
-          {particles.map((particle, i) => {
-            const shouldShow = progress > (i / particles.length) * 100;
-            return (
-              <circle
-                key={`particle-${i}`}
-                cx={particle.cx}
-                cy={particle.cy}
-                r={particle.r}
-                fill={isComplete ? "#22c55e" : "#4b5563"}
-                opacity={shouldShow ? 0.5 : 0.15}
-                className="transition-all duration-500"
-              >
-                <animate
-                  attributeName="cy"
-                  values={`${particle.cy};${particle.cy - 12};${particle.cy}`}
-                  dur={`${particle.duration}s`}
-                  begin={`${particle.delay}s`}
-                  repeatCount="indefinite"
-                />
-                <animate
-                  attributeName="opacity"
-                  values={shouldShow ? "0.4;0.7;0.4" : "0.1;0.2;0.1"}
-                  dur={`${particle.duration}s`}
-                  begin={`${particle.delay}s`}
-                  repeatCount="indefinite"
-                />
-              </circle>
-            );
-          })}
-        </g>
-
-        {/* DNA Double Helix Structure */}
-        <g 
-          filter={isComplete ? "url(#glow)" : "url(#shadow)"}
-          className={showCelebration ? 'celebration-glow' : ''}
-        >
-          {/* Back strand - smooth curve */}
-          <path
-            d={`M ${helixPoints.map((p, i) => {
-              const y = 100 + Math.sin(p.phase) * 40;
-              return `${i === 0 ? 'M' : 'L'} ${p.x} ${y}`;
-            }).join(' ')}`}
-            fill="none"
-            stroke={isDormant ? "#d1d5db" : (isComplete ? "#22c55e" : "#6b7280")}
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="transition-all duration-500"
-            opacity={isDormant ? 0.2 : 0.5}
-          />
-
-          {/* Front strand - smooth curve */}
-          <path
-            d={`M ${helixPoints.map((p, i) => {
-              const y = 100 - Math.sin(p.phase) * 40;
-              return `${i === 0 ? 'M' : 'L'} ${p.x} ${y}`;
-            }).join(' ')}`}
-            fill="none"
-            stroke={isDormant ? "#d1d5db" : (isComplete ? "#16a34a" : "#374151")}
-            strokeWidth="3"
-            strokeLinecap="round"
-            className="transition-all duration-500"
-            opacity={isDormant ? 0.2 : 0.7}
-          />
-
-          {/* All rungs (vertical lines connecting strands) */}
-          {helixPoints.map((point, i) => {
-            const y1 = 100 + Math.sin(point.phase) * 40;
-            const y2 = 100 - Math.sin(point.phase) * 40;
-            const progressIndex = Math.floor((i / helixPoints.length) * 12);
-            const isLit = litRungs[Math.min(progressIndex, 11)];
-            
-            return (
-              <line
-                key={`rung-${i}`}
-                x1={point.x}
-                y1={y1}
-                x2={point.x}
-                y2={y2}
-                stroke={isLit ? (isComplete ? "#86efac" : "#9ca3af") : "#e5e7eb"}
-                strokeWidth={isLit ? "1.5" : "1"}
-                opacity={isDormant ? 0.15 : (isLit ? 0.6 : 0.3)}
-                className="transition-all duration-300"
-              />
-            );
-          })}
-
-          {/* Main base pair spheres (12 for progress tracking) */}
-          {mainRungPoints.map((point, i) => {
-            const y1 = 100 + Math.sin(point.phase) * 40;
-            const y2 = 100 - Math.sin(point.phase) * 40;
-            const isLit = litRungs[i];
-            const isActive = i === activeRungIndex && !isComplete;
-            const frontIsTop = Math.cos(point.phase) > 0;
-            
-            const litColor = isComplete ? "#16a34a" : "#1f2937";
-            const litColorSecondary = isComplete ? "#22c55e" : "#4b5563";
-            const activeColor = "#3b82f6";
-            
-            const sectionLabel = SECTION_LABELS[i];
-            const status = isLit ? 'Complete' : (isActive ? 'In Progress' : 'Pending');
-            
-            return (
-              <g 
-                key={`main-${i}`}
-                onMouseEnter={() => setHoveredRung(i)}
-                onMouseLeave={() => setHoveredRung(null)}
-                style={{ cursor: 'pointer' }}
-              >
-                {/* Connecting line for main rungs - thicker */}
-                <line
-                  x1={point.x}
-                  y1={y1}
-                  x2={point.x}
-                  y2={y2}
-                  stroke={isActive ? activeColor : (isLit ? (isComplete ? "#86efac" : "#6b7280") : "#d1d5db")}
-                  strokeWidth={isActive ? "2.5" : (isLit ? "2" : "1.5")}
-                  opacity={isDormant ? 0.2 : (isActive ? 0.9 : (isLit ? 0.8 : 0.4))}
-                  className="transition-all duration-300"
-                />
-                
-                {/* Active glow effect */}
-                {isActive && (
-                  <g filter="url(#activeGlow)">
-                    <line
-                      x1={point.x}
-                      y1={y1}
-                      x2={point.x}
-                      y2={y2}
-                      stroke={activeColor}
-                      strokeWidth="4"
-                      opacity="0.4"
-                    />
-                  </g>
-                )}
-                
-                {/* Base pair spheres */}
-                {frontIsTop ? (
-                  <>
-                    <circle
-                      cx={point.x}
-                      cy={y1}
-                      r={isActive ? 10 : (isLit ? 8 : 6)}
-                      fill={isActive ? activeColor : (isLit ? litColorSecondary : "#d1d5db")}
-                      opacity={isDormant ? 0.2 : (isActive ? 1 : (isLit ? 0.9 : 0.4))}
-                      className={`transition-all duration-300 ${isActive ? 'active-rung' : ''}`}
-                      style={{ transformOrigin: `${point.x}px ${y1}px` }}
-                    />
-                    <circle
-                      cx={point.x}
-                      cy={y2}
-                      r={isActive ? 11 : (isLit ? 9 : 7)}
-                      fill={isActive ? activeColor : (isLit ? litColor : "#9ca3af")}
-                      opacity={isDormant ? 0.2 : (isActive ? 1 : (isLit ? 1 : 0.5))}
-                      className={`transition-all duration-300 ${isActive ? 'active-rung' : ''}`}
-                      style={{ transformOrigin: `${point.x}px ${y2}px` }}
-                    />
-                    {(isLit || isActive) && !isDormant && (
-                      <circle
-                        cx={point.x - 2}
-                        cy={y2 - 2}
-                        r={isActive ? 3.5 : 2.5}
-                        fill="white"
-                        opacity={isActive ? 0.7 : 0.5}
-                      />
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <circle
-                      cx={point.x}
-                      cy={y2}
-                      r={isActive ? 10 : (isLit ? 8 : 6)}
-                      fill={isActive ? activeColor : (isLit ? litColorSecondary : "#d1d5db")}
-                      opacity={isDormant ? 0.2 : (isActive ? 1 : (isLit ? 0.9 : 0.4))}
-                      className={`transition-all duration-300 ${isActive ? 'active-rung' : ''}`}
-                      style={{ transformOrigin: `${point.x}px ${y2}px` }}
-                    />
-                    <circle
-                      cx={point.x}
-                      cy={y1}
-                      r={isActive ? 11 : (isLit ? 9 : 7)}
-                      fill={isActive ? activeColor : (isLit ? litColor : "#9ca3af")}
-                      opacity={isDormant ? 0.2 : (isActive ? 1 : (isLit ? 1 : 0.5))}
-                      className={`transition-all duration-300 ${isActive ? 'active-rung' : ''}`}
-                      style={{ transformOrigin: `${point.x}px ${y1}px` }}
-                    />
-                    {(isLit || isActive) && !isDormant && (
-                      <circle
-                        cx={point.x - 2}
-                        cy={y1 - 2}
-                        r={isActive ? 3.5 : 2.5}
-                        fill="white"
-                        opacity={isActive ? 0.7 : 0.5}
-                      />
-                    )}
-                  </>
-                )}
-
-                {/* Tooltip */}
-                {hoveredRung === i && (
-                  <g className="dna-tooltip">
-                    <rect
-                      x={point.x - 50}
-                      y={y2 < y1 ? y2 - 35 : y1 - 35}
-                      width="100"
-                      height="28"
-                      rx="4"
-                      fill="#1f2937"
-                      opacity="0.95"
-                    />
-                    <text
-                      x={point.x}
-                      y={y2 < y1 ? y2 - 17 : y1 - 17}
-                      textAnchor="middle"
-                      fill="white"
-                      fontSize="10"
-                      fontWeight="500"
-                    >
-                      {sectionLabel.name} - {status}
-                    </text>
-                  </g>
-                )}
-              </g>
-            );
-          })}
-        </g>
-
-        {/* Celebration burst particles */}
-        {showCelebration && (
-          <g>
-            {celebrationParticles.map((particle, i) => {
-              const tx = Math.cos(particle.angle) * particle.speed;
-              const ty = Math.sin(particle.angle) * particle.speed;
-              return (
-                <circle
-                  key={`celeb-${i}`}
-                  cx="400"
-                  cy="100"
-                  r={3 + Math.random() * 4}
-                  fill="#22c55e"
-                  style={{
-                    '--tx': `${tx}px`,
-                    '--ty': `${ty}px`,
-                    animation: `celebrationBurst 1.2s ease-out ${particle.delay}s forwards`,
-                  } as React.CSSProperties}
-                />
-              );
-            })}
-          </g>
-        )}
-
-        {/* Completion ripple effect */}
-        {isComplete && (
-          <g>
-            <circle cx="400" cy="100" r="150" fill="none" stroke="#22c55e" strokeWidth="1.5" opacity="0.5">
-              <animate attributeName="r" values="60;200;60" dur="3s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.5;0;0.5" dur="3s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="400" cy="100" r="120" fill="none" stroke="#22c55e" strokeWidth="1" opacity="0.4">
-              <animate attributeName="r" values="40;170;40" dur="3s" begin="0.5s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.4;0;0.4" dur="3s" begin="0.5s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="400" cy="100" r="90" fill="none" stroke="#86efac" strokeWidth="0.5" opacity="0.3">
-              <animate attributeName="r" values="30;140;30" dur="3s" begin="1s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.3;0;0.3" dur="3s" begin="1s" repeatCount="indefinite" />
-            </circle>
-          </g>
-        )}
-      </svg>
-
+    <div ref={containerRef} className={`relative w-full ${className}`} style={{ minHeight: '280px' }}>
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full"
+        style={{ minHeight: '280px' }}
+      />
+      
       {/* Progress indicator text */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
         <span className={`text-xs font-mono tracking-wider transition-all duration-300 ${
           isComplete ? 'text-green-600 font-semibold' : 'text-gray-400'
         } ${showCelebration ? 'scale-110' : ''}`}>
           {isComplete ? '✓ SEQUENCE COMPLETE' : `SEQUENCING... ${Math.round(progress)}%`}
         </span>
+        {!isComplete && progress > 0 && (
+          <div className="text-[10px] text-gray-500 mt-0.5">
+            {sectionProgress}
+          </div>
+        )}
       </div>
     </div>
   );
