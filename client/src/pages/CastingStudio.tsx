@@ -15,6 +15,7 @@ import { DNAHelix } from "@/components/DNAHelix";
 import { HairSection } from "@/components/CastingStudio/HairSection";
 import { EyeSection } from "@/components/CastingStudio/EyeSection";
 import { SkinSection } from "@/components/CastingStudio/SkinSection";
+import { FaceSection } from "@/components/CastingStudio/FaceSection";
 
 // ============ Types ============
 
@@ -906,7 +907,7 @@ export default function CastingStudio() {
 
   // UI state
   const [showMobilePanel, setShowMobilePanel] = useState(false);
-  const [showAdvancedFace, setShowAdvancedFace] = useState(false);
+
   const [refineInput, setRefineInput] = useState("");
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [unlockMode, setUnlockMode] = useState(false);
@@ -2215,49 +2216,10 @@ export default function CastingStudio() {
 
           {/* 3. FACE STRUCTURE */}
           <CollapsibleSection title="Face Structure">
-            <div className="space-y-5 pt-1">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-subtle block">Face Shape</label>
-                <VisualOptionGrid
-                  options={FACE_SHAPES}
-                  selected={prefs.faceShape || "Oval"}
-                  onSelect={(val) => updatePref('faceShape', val)}
-                  icons={FACE_ICONS}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-subtle block">Eyebrow Style</label>
-                <VisualOptionGrid
-                  options={CHAR_OPTIONS.eyebrows}
-                  selected={prefs.eyebrowStyle || ""}
-                  onSelect={(val) => updatePref('eyebrowStyle', val)}
-                />
-              </div>
-
-              {/* Advanced Face Toggle */}
-              <button
-                onClick={() => setShowAdvancedFace(!showAdvancedFace)}
-                className="w-full flex items-center justify-between py-2.5 text-xs font-medium text-subtle hover:text-obsidian border-t border-gray-200 transition-colors"
-              >
-                <span>Advanced Features</span>
-                <span className="text-lg leading-none">{showAdvancedFace ? '−' : '+'}</span>
-              </button>
-
-              {showAdvancedFace && (
-                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200 pb-2">
-                  <SelectControl label="Jawline" options={CHAR_OPTIONS.jawline} value={prefs.jawline || ""} onChange={v => updatePref('jawline', v)} />
-                  <SelectControl label="Cheekbones" options={CHAR_OPTIONS.cheekbones} value={prefs.cheekbones || ""} onChange={v => updatePref('cheekbones', v)} />
-                  <SelectControl label="Cheeks" options={CHAR_OPTIONS.cheeks} value={prefs.cheeks || ""} onChange={v => updatePref('cheeks', v)} />
-                  <SelectControl label="Eye Shape" options={CHAR_OPTIONS.eyeShape} value={prefs.eyeShape || ""} onChange={v => updatePref('eyeShape', v)} />
-                  <SelectControl label="Nose" options={CHAR_OPTIONS.noseShape} value={prefs.noseShape || ""} onChange={v => updatePref('noseShape', v)} />
-                  <SelectControl label="Lips" options={CHAR_OPTIONS.lipShape} value={prefs.lipShape || ""} onChange={v => updatePref('lipShape', v)} />
-                  {prefs.gender === 'Male' && (
-                    <SelectControl label="Facial Hair" options={CHAR_OPTIONS.facialHair} value={prefs.facialHair || ""} onChange={v => updatePref('facialHair', v)} />
-                  )}
-                </div>
-              )}
-            </div>
+            <FaceSection
+              prefs={prefs}
+              updatePref={updatePref}
+            />
           </CollapsibleSection>
 
           {/* 4. SKIN & COMPLEXION */}
