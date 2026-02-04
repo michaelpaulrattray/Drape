@@ -5,7 +5,31 @@ interface DNAHelixProps {
   className?: string;
 }
 
-// Section labels for tooltips
+interface BackgroundDot {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  baseX: number;
+  baseY: number;
+  size: number;
+  opacity: number;
+  speed: number;
+}
+
+interface DecorativeCircle {
+  x: number;
+  y: number;
+  radius: number;
+  opacity: number;
+}
+
+interface ConnectionLine {
+  from: number;
+  to: number;
+}
+
+// Section labels for progress display
 const SECTION_LABELS = [
   'Casting Basics',
   'Identity',
@@ -20,8 +44,49 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>(0);
   const timeRef = useRef<number>(0);
+  const mouseRef = useRef<{ x: number | null; y: number | null; radius: number }>({ x: null, y: null, radius: 120 });
+  const backgroundDotsRef = useRef<BackgroundDot[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const [prevProgress, setPrevProgress] = useState(progress);
+
+  // Decorative circles (like in reference image)
+  const decorativeCircles: DecorativeCircle[] = [
+    { x: 0.08, y: 0.25, radius: 60, opacity: 0.12 },
+    { x: 0.15, y: 0.35, radius: 40, opacity: 0.08 },
+    { x: 0.12, y: 0.70, radius: 50, opacity: 0.10 },
+    { x: 0.88, y: 0.30, radius: 55, opacity: 0.10 },
+    { x: 0.92, y: 0.45, radius: 35, opacity: 0.07 },
+    { x: 0.85, y: 0.68, radius: 45, opacity: 0.09 },
+    { x: 0.78, y: 0.22, radius: 30, opacity: 0.06 },
+    { x: 0.22, y: 0.78, radius: 38, opacity: 0.08 },
+  ];
+
+  // Molecular connection lines between some circles
+  const connectionLines: ConnectionLine[] = [
+    { from: 0, to: 1 },
+    { from: 1, to: 2 },
+    { from: 3, to: 4 },
+    { from: 4, to: 5 },
+  ];
+
+  // Generate background dots
+  const generateBackgroundDots = useCallback((count: number): BackgroundDot[] => {
+    const dots: BackgroundDot[] = [];
+    for (let i = 0; i < count; i++) {
+      dots.push({
+        x: Math.random(),
+        y: Math.random(),
+        vx: 0,
+        vy: 0,
+        baseX: Math.random(),
+        baseY: Math.random(),
+        size: 1 + Math.random() * 3,
+        opacity: 0.1 + Math.random() * 0.25,
+        speed: 0.0002 + Math.random() * 0.0005
+      });
+    }
+    return dots;
+  }, []);
 
   // Trigger celebration when progress reaches 100
   useEffect(() => {
@@ -35,272 +100,370 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
 
   const isComplete = progress >= 100;
 
-  // Draw the DNA helix
-  const draw = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  // Draw background elements
+  const drawBackgroundElements = useCallback((
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    time: number
+  ) => {
     const centerY = height / 2;
-    const numPoints = 90;
-    const amplitude = height * 0.18;
-    const wavelength = width * 0.7;
-    const startX = width * 0.15;
-    const time = timeRef.current;
+    const progressColor = isComplete ? '34, 197, 94' : '59, 130, 246';
 
-    ctx.clearRect(0, 0, width, height);
+    // Draw decorative circles
+    decorativeCircles.forEach((circle, i) => {
+      const x = circle.x * width;
+      const y = circle.y * height;
+      const pulseOffset = Math.sin(time * 0.5 + i) * 3;
 
-    // Calculate progress-based colors
-    const progressFactor = progress / 100;
-    const baseColor = isComplete ? '34, 197, 94' : '0, 0, 0'; // Green when complete, black otherwise
-    const accentColor = isComplete ? '134, 239, 172' : '107, 114, 128'; // Light green or gray
+      ctx.beginPath();
+      ctx.arc(x, y, circle.radius + pulseOffset, 0, Math.PI * 2);
+      ctx.strokeStyle = isComplete 
+        ? `rgba(34, 197, 94, ${circle.opacity})` 
+        : `rgba(180, 180, 180, ${circle.opacity})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
 
-    // Draw particle storm with interconnected network
-    const numStormParticles = 120;
-    const stormCenterX = width * 0.5;
-    const stormCenterY = height * 0.5;
-    const stormParticles: { x: number; y: number; size: number; opacity: number }[] = [];
+    // Draw connection lines between circles
+    connectionLines.forEach(line => {
+      const from = decorativeCircles[line.from];
+      const to = decorativeCircles[line.to];
 
-    for (let i = 0; i < numStormParticles; i++) {
-      const angle = (time * 0.2 + i * 0.1) % (Math.PI * 2);
-      const distance = 40 + (i % 50) * 6;
-      const wave = Math.sin(time + i * 0.2) * 25;
-      
-      const x = stormCenterX + Math.cos(angle) * distance + wave;
-      const y = stormCenterY + Math.sin(angle) * (distance * 0.5) + Math.sin(time * 2 + i) * 12;
-      
-      const size = 1 + Math.random() * 2;
-      const baseOpacity = 0.15 + Math.abs(Math.sin(time + i)) * 0.25;
-      const opacity = baseOpacity * (0.3 + progressFactor * 0.7);
-      
-      stormParticles.push({ x, y, size, opacity });
+      ctx.beginPath();
+      ctx.moveTo(from.x * width, from.y * height);
+      ctx.lineTo(to.x * width, to.y * height);
+      ctx.strokeStyle = isComplete 
+        ? 'rgba(34, 197, 94, 0.08)' 
+        : 'rgba(180, 180, 180, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Store particle positions for grab lines
+    const particlePositions: { x: number; y: number; size: number; opacity: number }[] = [];
+    const mouse = mouseRef.current;
+
+    // Draw and update scattered dots with physics
+    backgroundDotsRef.current.forEach((dot, i) => {
+      let px = dot.x * width;
+      let py = dot.y * height;
+
+      // Gravitational pull toward the helix center
+      const helixCenterX = width / 2;
+      const dxHelix = helixCenterX - px;
+      const dyHelix = centerY - py;
+      const distToHelix = Math.sqrt(dxHelix * dxHelix + dyHelix * dyHelix);
+
+      // Only apply gravity if particle is not too close to helix
+      if (distToHelix > 80) {
+        const gravityStrength = 0.00003;
+        dot.vx += (dxHelix / distToHelix) * gravityStrength * distToHelix;
+        dot.vy += (dyHelix / distToHelix) * gravityStrength * distToHelix * 0.5;
+      } else {
+        // Gentle orbit around helix when close
+        const orbitSpeed = 0.0008;
+        dot.vx += dyHelix * orbitSpeed;
+        dot.vy -= dxHelix * orbitSpeed * 0.3;
+      }
+
+      // Mouse grab/attract effect
+      if (mouse.x !== null && mouse.y !== null) {
+        const dxMouse = mouse.x - px;
+        const dyMouse = mouse.y - py;
+        const distToMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
+
+        if (distToMouse < mouse.radius) {
+          const force = (mouse.radius - distToMouse) / mouse.radius;
+          const attractStrength = 0.02;
+          dot.vx += (dxMouse / distToMouse) * force * attractStrength;
+          dot.vy += (dyMouse / distToMouse) * force * attractStrength;
+        }
+      }
+
+      // Gentle return to base position (very subtle)
+      const baseX = dot.baseX * width;
+      const baseY = dot.baseY * height;
+      dot.vx += (baseX - px) * 0.0001;
+      dot.vy += (baseY - py) * 0.0001;
+
+      // Apply velocity with damping
+      dot.vx *= 0.98;
+      dot.vy *= 0.98;
+
+      dot.x += dot.vx / width;
+      dot.y += dot.vy / height;
+
+      // Keep particles in bounds
+      if (dot.x < 0) { dot.x = 0; dot.vx *= -0.5; }
+      if (dot.x > 1) { dot.x = 1; dot.vx *= -0.5; }
+      if (dot.y < 0) { dot.y = 0; dot.vy *= -0.5; }
+      if (dot.y > 1) { dot.y = 1; dot.vy *= -0.5; }
+
+      // Update positions
+      px = dot.x * width;
+      py = dot.y * height;
+
+      // Subtle floating movement on top of physics
+      const offsetX = Math.sin(time * dot.speed * 1000 + i) * 2;
+      const offsetY = Math.cos(time * dot.speed * 800 + i * 0.5) * 2;
+
+      const finalX = px + offsetX;
+      const finalY = py + offsetY;
+
+      particlePositions.push({ x: finalX, y: finalY, size: dot.size, opacity: dot.opacity });
+
+      // Draw the dot
+      ctx.beginPath();
+      ctx.arc(finalX, finalY, dot.size, 0, Math.PI * 2);
+      ctx.fillStyle = isComplete 
+        ? `rgba(34, 197, 94, ${dot.opacity})` 
+        : `rgba(120, 120, 120, ${dot.opacity})`;
+      ctx.fill();
+    });
+
+    // Draw grab effect lines from mouse to nearby particles
+    if (mouse.x !== null && mouse.y !== null) {
+      particlePositions.forEach(particle => {
+        const dx = mouse.x! - particle.x;
+        const dy = mouse.y! - particle.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < mouse.radius) {
+          const opacity = (1 - dist / mouse.radius) * 0.4;
+
+          ctx.beginPath();
+          ctx.moveTo(mouse.x!, mouse.y!);
+          ctx.lineTo(particle.x, particle.y);
+          ctx.strokeStyle = isComplete 
+            ? `rgba(34, 197, 94, ${opacity})` 
+            : `rgba(100, 100, 100, ${opacity})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      });
+
+      // Draw lines between particles that are near the mouse
+      const nearbyParticles = particlePositions.filter(p => {
+        const dx = mouse.x! - p.x;
+        const dy = mouse.y! - p.y;
+        return Math.sqrt(dx * dx + dy * dy) < mouse.radius;
+      });
+
+      for (let i = 0; i < nearbyParticles.length; i++) {
+        for (let j = i + 1; j < nearbyParticles.length; j++) {
+          const p1 = nearbyParticles[i];
+          const p2 = nearbyParticles[j];
+          const dx = p1.x - p2.x;
+          const dy = p1.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 80) {
+            const opacity = (1 - dist / 80) * 0.25;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = isComplete 
+              ? `rgba(34, 197, 94, ${opacity})` 
+              : `rgba(100, 100, 100, ${opacity})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+    }
+  }, [isComplete, decorativeCircles, connectionLines]);
+
+  // Draw a single rung
+  const drawRung = useCallback((
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y1: number,
+    y2: number,
+    z: number,
+    isLit: boolean
+  ) => {
+    const depthFactor = 0.3 + (z + 1) * 0.35; // 0.3 to 1.0
+
+    // Main rung line
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x, y2);
+    
+    if (isLit) {
+      ctx.strokeStyle = isComplete 
+        ? `rgba(34, 197, 94, ${depthFactor * 0.8})` 
+        : `rgba(59, 130, 246, ${depthFactor * 0.8})`;
+      ctx.lineWidth = 2 + depthFactor * 1.5;
+    } else {
+      ctx.strokeStyle = `rgba(100, 100, 100, ${depthFactor * 0.6})`;
+      ctx.lineWidth = 1.5 + depthFactor;
+    }
+    ctx.stroke();
+
+    // Draw endpoint spheres for lit rungs
+    if (isLit) {
+      const sphereSize = 3 + depthFactor * 2;
+      const sphereColor = isComplete ? '34, 197, 94' : '59, 130, 246';
+
+      ctx.beginPath();
+      ctx.arc(x, y1, sphereSize, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${sphereColor}, ${depthFactor * 0.9})`;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(x, y2, sphereSize, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${sphereColor}, ${depthFactor * 0.9})`;
+      ctx.fill();
+    }
+  }, [isComplete]);
+
+  // Draw the DNA helix
+  const drawDNAHelix = useCallback((
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    time: number
+  ) => {
+    const centerY = height / 2;
+
+    // DNA parameters
+    const helixLength = width * 0.7;
+    const startX = (width - helixLength) / 2;
+    const amplitude = 50; // Vertical wave amplitude
+    const frequency = 2.5; // Number of complete rotations
+    const numPoints = 100;
+    const numRungs = 25;
+
+    // Calculate progress-based lit rungs
+    const litRungs = Math.floor((progress / 100) * numRungs);
+
+    // Calculate points for both strands
+    const strand1Points: { x: number; y: number; z: number; angle: number }[] = [];
+    const strand2Points: { x: number; y: number; z: number; angle: number }[] = [];
+
+    for (let i = 0; i <= numPoints; i++) {
+      const t = i / numPoints;
+      const x = startX + t * helixLength;
+      const angle = t * frequency * Math.PI * 2 + time;
+
+      // Strand 1 (front/back alternating)
+      const y1 = centerY + Math.sin(angle) * amplitude;
+      const z1 = Math.cos(angle); // depth (-1 to 1)
+
+      // Strand 2 (opposite phase)
+      const y2 = centerY + Math.sin(angle + Math.PI) * amplitude;
+      const z2 = Math.cos(angle + Math.PI);
+
+      strand1Points.push({ x, y: y1, z: z1, angle });
+      strand2Points.push({ x, y: y2, z: z2, angle: angle + Math.PI });
     }
 
-    // Draw connector lines between nearby storm particles
-    for (let i = 0; i < stormParticles.length; i++) {
-      const p1 = stormParticles[i];
-      for (let j = i + 1; j < stormParticles.length; j++) {
-        const p2 = stormParticles[j];
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+    // Draw rungs (base pairs) - need to draw back ones first
+    const rungData: { x: number; y1: number; y2: number; z: number; index: number }[] = [];
+    for (let i = 0; i < numRungs; i++) {
+      const t = (i + 0.5) / numRungs;
+      const x = startX + t * helixLength;
+      const angle = t * frequency * Math.PI * 2 + time;
+
+      const y1 = centerY + Math.sin(angle) * amplitude;
+      const y2 = centerY + Math.sin(angle + Math.PI) * amplitude;
+      const z = Math.cos(angle);
+
+      rungData.push({ x, y1, y2, z, index: i });
+    }
+
+    // Sort rungs by depth (draw back to front)
+    rungData.sort((a, b) => a.z - b.z);
+
+    // Draw back rungs first
+    rungData.forEach(rung => {
+      if (rung.z < 0) {
+        drawRung(ctx, rung.x, rung.y1, rung.y2, rung.z, rung.index < litRungs);
+      }
+    });
+
+    // Draw strands (back parts first)
+    const drawStrandParts = (points: typeof strand1Points, isBack: boolean) => {
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const shouldDraw = isBack ? (p1.z < 0 && p2.z < 0) : (p1.z >= 0 || p2.z >= 0);
         
-        if (distance < 80) {
-          const lineOpacity = (1 - distance / 80) * 0.1 * (0.3 + progressFactor * 0.7);
+        if (shouldDraw) {
+          const avgZ = (p1.z + p2.z) / 2;
+          const depthFactor = 0.25 + (avgZ + 1) * 0.375;
+
           ctx.beginPath();
           ctx.moveTo(p1.x, p1.y);
           ctx.lineTo(p2.x, p2.y);
           ctx.strokeStyle = isComplete 
-            ? `rgba(134, 239, 172, ${lineOpacity})` 
-            : `rgba(156, 163, 175, ${lineOpacity})`;
-          ctx.lineWidth = 0.5;
+            ? `rgba(34, 197, 94, ${depthFactor})` 
+            : `rgba(60, 60, 60, ${depthFactor})`;
+          ctx.lineWidth = 1.5 + depthFactor * 1.5;
           ctx.stroke();
         }
       }
+    };
+
+    // Draw back parts of both strands
+    drawStrandParts(strand1Points, true);
+    drawStrandParts(strand2Points, true);
+
+    // Draw front parts of both strands
+    drawStrandParts(strand1Points, false);
+    drawStrandParts(strand2Points, false);
+
+    // Draw front rungs
+    rungData.forEach(rung => {
+      if (rung.z >= 0) {
+        drawRung(ctx, rung.x, rung.y1, rung.y2, rung.z, rung.index < litRungs);
+      }
+    });
+
+    // Draw nodes on strands
+    const allNodes: { x: number; y: number; z: number }[] = [];
+    const nodeInterval = 4;
+    for (let i = 0; i < strand1Points.length; i += nodeInterval) {
+      allNodes.push(strand1Points[i]);
+      allNodes.push(strand2Points[i]);
     }
 
-    // Draw storm particles
-    stormParticles.forEach((particle, i) => {
+    // Sort by depth (draw back to front)
+    allNodes.sort((a, b) => a.z - b.z);
+
+    allNodes.forEach(node => {
+      const depthFactor = 0.3 + (node.z + 1) * 0.35;
+      const size = 2.5 + depthFactor * 3;
+
+      // Shadow for depth
       ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      ctx.fillStyle = isComplete 
-        ? `rgba(34, 197, 94, ${particle.opacity})` 
-        : `rgba(107, 114, 128, ${particle.opacity})`;
+      ctx.arc(node.x + 1, node.y + 1, size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0, 0, 0, ${depthFactor * 0.15})`;
       ctx.fill();
-      
-      if (i % 10 === 0) {
-        ctx.shadowBlur = 4;
-        ctx.shadowColor = isComplete 
-          ? `rgba(34, 197, 94, ${particle.opacity * 0.5})` 
-          : `rgba(156, 163, 175, ${particle.opacity * 0.5})`;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-    });
 
-    // Background scattered particles
-    const numBgParticles = 60;
-    const bgParticles: { x: number; y: number; size: number; opacity: number }[] = [];
-    
-    for (let i = 0; i < numBgParticles; i++) {
-      const x = (width * 0.08) + (i / numBgParticles) * width * 0.84;
-      const y = height * 0.15 + Math.sin(time + i * 0.5) * height * 0.7;
-      const size = 1 + Math.random() * 1.5;
-      const opacity = (0.1 + Math.abs(Math.sin(time * 0.5 + i)) * 0.2) * (0.3 + progressFactor * 0.7);
-      
-      bgParticles.push({ x, y, size, opacity });
-    }
-
-    // Draw connector lines for background particles
-    for (let i = 0; i < bgParticles.length; i++) {
-      const p1 = bgParticles[i];
-      for (let j = i + 1; j < Math.min(i + 5, bgParticles.length); j++) {
-        const p2 = bgParticles[j];
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance < 120) {
-          const lineOpacity = (1 - distance / 120) * 0.06 * (0.3 + progressFactor * 0.7);
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.strokeStyle = isComplete 
-            ? `rgba(134, 239, 172, ${lineOpacity})` 
-            : `rgba(203, 213, 224, ${lineOpacity})`;
-          ctx.lineWidth = 0.4;
-          ctx.stroke();
-        }
-      }
-    }
-
-    // Draw background particles
-    bgParticles.forEach(particle => {
+      // Main node
       ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
       ctx.fillStyle = isComplete 
-        ? `rgba(134, 239, 172, ${particle.opacity})` 
-        : `rgba(156, 163, 175, ${particle.opacity})`;
+        ? `rgba(34, 197, 94, ${depthFactor * 0.9})` 
+        : `rgba(50, 50, 50, ${depthFactor * 0.9})`;
       ctx.fill();
-    });
 
-    // Molecular circles
-    const circles = [
-      { x: width * 0.12, y: height * 0.25 },
-      { x: width * 0.22, y: height * 0.72 },
-      { x: width * 0.78, y: height * 0.28 },
-      { x: width * 0.88, y: height * 0.68 }
-    ];
-
-    circles.forEach((circle, i) => {
-      const radius = 15 + Math.sin(time + i * 0.5) * 4;
-      const circleOpacity = 0.1 + progressFactor * 0.1;
-      
-      ctx.beginPath();
-      ctx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = isComplete 
-        ? `rgba(134, 239, 172, ${circleOpacity})` 
-        : `rgba(203, 213, 224, ${circleOpacity})`;
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-      
-      ctx.beginPath();
-      ctx.arc(circle.x, circle.y, radius * 0.6, 0, Math.PI * 2);
-      ctx.strokeStyle = isComplete 
-        ? `rgba(34, 197, 94, ${circleOpacity * 0.7})` 
-        : `rgba(226, 232, 240, ${circleOpacity * 0.7})`;
-      ctx.lineWidth = 0.4;
-      ctx.stroke();
-    });
-
-    // Draw DNA helix strands
-    for (let strand = 0; strand < 2; strand++) {
-      const phaseOffset = strand * Math.PI + time;
-      const points: { x: number; y: number; z: number }[] = [];
-
-      // Generate points for this strand
-      for (let i = 0; i < numPoints; i++) {
-        const t = (i / numPoints) * 3 * Math.PI * 2;
-        const x = startX + (i / numPoints) * wavelength;
-        const y = centerY + Math.sin(t + phaseOffset) * amplitude;
-        const z = Math.cos(t + phaseOffset);
-        points.push({ x, y, z });
-      }
-
-      // Draw connecting lines between points (strand curve)
-      ctx.beginPath();
-      ctx.strokeStyle = isComplete 
-        ? `rgba(34, 197, 94, 0.6)` 
-        : `rgba(${baseColor}, 0.5)`;
-      ctx.lineWidth = 2.5;
-      
-      points.forEach((point, i) => {
-        if (i === 0) {
-          ctx.moveTo(point.x, point.y);
-        } else {
-          ctx.lineTo(point.x, point.y);
-        }
-      });
-      ctx.stroke();
-
-      // Draw particles at each point on the strand
-      points.forEach((point) => {
-        const size = 2 + Math.abs(point.z) * 2;
-        const opacity = 0.4 + Math.abs(point.z) * 0.4;
-
+      // Highlight for front nodes
+      if (node.z > 0.3) {
         ctx.beginPath();
-        ctx.fillStyle = isComplete 
-          ? `rgba(34, 197, 94, ${opacity})` 
-          : `rgba(${baseColor}, ${opacity})`;
-        ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Glow effect for front particles
-        if (point.z > 0.3) {
-          ctx.shadowBlur = 6;
-          ctx.shadowColor = isComplete 
-            ? `rgba(34, 197, 94, ${opacity * 0.6})` 
-            : `rgba(${baseColor}, ${opacity * 0.4})`;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-      });
-    }
-
-    // Draw base pair connections (rungs)
-    const numBasePairs = 30;
-    const litRungs = Math.floor((progress / 100) * numBasePairs);
-    
-    for (let i = 0; i < numBasePairs; i++) {
-      const t = (i / numBasePairs) * 3 * Math.PI * 2 + time;
-      const x = startX + (i / numBasePairs) * wavelength;
-      const y1 = centerY + Math.sin(t) * amplitude;
-      const y2 = centerY + Math.sin(t + Math.PI) * amplitude;
-      const z = Math.cos(t);
-
-      const isLit = i < litRungs;
-      const baseOpacity = 0.4 + Math.abs(z) * 0.4;
-      const opacity = isLit ? baseOpacity : baseOpacity * 0.3;
-      
-      // Draw the rung line
-      ctx.beginPath();
-      ctx.strokeStyle = isLit 
-        ? (isComplete ? `rgba(34, 197, 94, ${opacity})` : `rgba(59, 130, 246, ${opacity})`)
-        : `rgba(${baseColor}, ${opacity * 0.5})`;
-      ctx.lineWidth = isLit ? 2.5 : 1.5;
-      ctx.moveTo(x, y1);
-      ctx.lineTo(x, y2);
-      ctx.stroke();
-
-      // Draw larger spheres at rung endpoints for lit rungs
-      if (isLit) {
-        const sphereSize = 4 + Math.abs(z) * 2;
-        const sphereColor = isComplete ? '34, 197, 94' : '59, 130, 246';
-        
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(${sphereColor}, ${opacity})`;
-        ctx.arc(x, y1, sphereSize, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(${sphereColor}, ${opacity})`;
-        ctx.arc(x, y2, sphereSize, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Highlight effect
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
-        ctx.arc(x - 1, y1 - 1, sphereSize * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.5})`;
-        ctx.arc(x - 1, y2 - 1, sphereSize * 0.4, 0, Math.PI * 2);
+        ctx.arc(node.x - size * 0.3, node.y - size * 0.3, size * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${depthFactor * 0.4})`;
         ctx.fill();
       }
-    }
+    });
 
     // Celebration effect - burst particles
     if (showCelebration) {
       const celebrationTime = (Date.now() % 3000) / 3000;
       const numBurstParticles = 36;
-      
+
       for (let i = 0; i < numBurstParticles; i++) {
         const angle = (i / numBurstParticles) * Math.PI * 2;
         const distance = celebrationTime * 150;
@@ -308,7 +471,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         const y = height / 2 + Math.sin(angle) * distance;
         const size = (1 - celebrationTime) * 6;
         const opacity = (1 - celebrationTime) * 0.8;
-        
+
         ctx.beginPath();
         ctx.fillStyle = `rgba(34, 197, 94, ${opacity})`;
         ctx.arc(x, y, size, 0, Math.PI * 2);
@@ -319,12 +482,12 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     // Completion ripple effect
     if (isComplete) {
       const rippleTime = (Date.now() % 3000) / 3000;
-      
+
       for (let r = 0; r < 3; r++) {
         const ripplePhase = (rippleTime + r * 0.33) % 1;
         const radius = 50 + ripplePhase * 120;
         const opacity = (1 - ripplePhase) * 0.3;
-        
+
         ctx.beginPath();
         ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(34, 197, 94, ${opacity})`;
@@ -332,7 +495,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         ctx.stroke();
       }
     }
-  }, [progress, isComplete, showCelebration]);
+  }, [progress, isComplete, showCelebration, drawRung]);
 
   // Animation loop
   useEffect(() => {
@@ -342,6 +505,11 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Initialize background dots
+    if (backgroundDotsRef.current.length === 0) {
+      backgroundDotsRef.current = generateBackgroundDots(80);
+    }
 
     const resize = () => {
       const rect = container.getBoundingClientRect();
@@ -353,13 +521,30 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       ctx.scale(dpr, dpr);
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current.x = e.clientX - rect.left;
+      mouseRef.current.y = e.clientY - rect.top;
+    };
+
+    const handleMouseLeave = () => {
+      mouseRef.current.x = null;
+      mouseRef.current.y = null;
+    };
+
     resize();
     window.addEventListener('resize', resize);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
 
     const animate = () => {
-      timeRef.current += 0.008;
       const rect = container.getBoundingClientRect();
-      draw(ctx, rect.width, rect.height);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      drawBackgroundElements(ctx, rect.width, rect.height, timeRef.current);
+      drawDNAHelix(ctx, rect.width, rect.height, timeRef.current);
+
+      timeRef.current += 0.008; // Slow rotation
       animationRef.current = requestAnimationFrame(animate);
     };
 
@@ -367,9 +552,11 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
 
     return () => {
       window.removeEventListener('resize', resize);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
       cancelAnimationFrame(animationRef.current);
     };
-  }, [draw]);
+  }, [generateBackgroundDots, drawBackgroundElements, drawDNAHelix]);
 
   // Calculate which section is active
   const activeSection = Math.min(Math.floor((progress / 100) * 6), 5);
@@ -379,10 +566,10 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     <div ref={containerRef} className={`relative w-full ${className}`} style={{ minHeight: '280px' }}>
       <canvas
         ref={canvasRef}
-        className="w-full h-full"
+        className="w-full h-full cursor-crosshair"
         style={{ minHeight: '280px' }}
       />
-      
+
       {/* Progress indicator text */}
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
         <span className={`text-xs font-mono tracking-wider transition-all duration-300 ${
