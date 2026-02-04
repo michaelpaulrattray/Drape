@@ -674,7 +674,8 @@ function VisualEyeGrid({
           <img
             src={opt.image}
             alt={opt.label}
-            className="absolute inset-0 w-full h-full object-cover rounded-full"
+            className="absolute inset-0 w-full h-full object-cover rounded-full pointer-events-none"
+            draggable={false}
           />
         ) : (
           <>
@@ -690,34 +691,44 @@ function VisualEyeGrid({
   };
 
   return (
-    <div 
-      className="overflow-x-auto scrollbar-hide -mx-2 px-2 cursor-grab active:cursor-grabbing"
-      onMouseDown={(e) => {
-        const container = e.currentTarget;
-        const startX = e.pageX - container.offsetLeft;
-        const scrollLeft = container.scrollLeft;
-        
-        const handleMouseMove = (moveEvent: MouseEvent) => {
-          const x = moveEvent.pageX - container.offsetLeft;
-          const walk = (x - startX) * 2;
-          container.scrollLeft = scrollLeft - walk;
-        };
-        
-        const handleMouseUp = () => {
-          document.removeEventListener('mousemove', handleMouseMove);
-          document.removeEventListener('mouseup', handleMouseUp);
-        };
-        
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-      }}
-    >
-      <div className="flex flex-col gap-2 min-w-max py-1">
-        <div className="flex gap-2">
-          {row1.map(renderOption)}
-        </div>
-        <div className="flex gap-2">
-          {row2.map(renderOption)}
+    <div className="relative -mx-2">
+      {/* Left fade indicator */}
+      <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+      {/* Right fade indicator */}
+      <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+      
+      <div 
+        className="overflow-hidden px-2 cursor-grab active:cursor-grabbing select-none"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          const container = e.currentTarget;
+          const startX = e.pageX - container.offsetLeft;
+          const scrollLeft = container.scrollLeft;
+          
+          const handleMouseMove = (moveEvent: MouseEvent) => {
+            moveEvent.preventDefault();
+            const x = moveEvent.pageX - container.offsetLeft;
+            const walk = (x - startX) * 2;
+            container.scrollLeft = scrollLeft - walk;
+          };
+          
+          const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+          };
+          
+          document.addEventListener('mousemove', handleMouseMove);
+          document.addEventListener('mouseup', handleMouseUp);
+        }}
+        style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        <div className="flex flex-col gap-2 min-w-max py-1">
+          <div className="flex gap-2">
+            {row1.map(renderOption)}
+          </div>
+          <div className="flex gap-2">
+            {row2.map(renderOption)}
+          </div>
         </div>
       </div>
     </div>

@@ -1796,3 +1796,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add scrollable/draggable functionality to eye color selector
 - [x] Match hair color wheel styling with cursor-grab/active:cursor-grabbing
 - [x] Maintain consistency between both selectors
+
+### Eye/Hair Selector Improvements
+- [x] Remove scroll from eye color selector - drag only (overflow: hidden)
+- [x] Prevent text/image selection during drag (select-none, e.preventDefault)
+- [x] Prevent image dragging (draggable={false}, pointer-events-none)
+- [x] Add gradient fade indicators on left/right edges of eye selector
+- [x] Add gradient fade indicators on left/right edges of hair selector
