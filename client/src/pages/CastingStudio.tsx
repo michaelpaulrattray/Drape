@@ -1717,6 +1717,7 @@ export default function CastingStudio() {
   // Export handler with unique ID, PDF generation, and ZIP creation
   // Mint mutation for minting model on export
   const mintMutation = trpc.generation.mint.useMutation();
+  const generatePdfMutation = trpc.generation.generatePdf.useMutation();
 
   const handleExport = async (characterName: string, exportRes: ImageResolution) => {
     if (currentAssets.length === 0) {
@@ -1811,164 +1812,52 @@ export default function CastingStudio() {
         }
       }
 
-      // Generate PDF Identity Document
-      setGenState(prev => ({ ...prev, currentStep: 'Compiling Identity Document...' }));
+      // Generate Premium 7-Page PDF Identity Document via server
+      setGenState(prev => ({ ...prev, currentStep: 'Generating Premium Identity Document...' }));
       
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      const contentWidth = pageWidth - (margin * 2);
-      let cursorY = margin;
-
-      // Header
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(24);
-      doc.setTextColor(0, 0, 0);
-      doc.text(safeName, margin, cursorY + 10);
-
-      doc.setFontSize(9);
-      doc.setFont('courier', 'normal');
-      doc.setTextColor(80, 80, 80);
-      doc.text('FORMASTUDIO™ • DIGITAL COMPOSITE', margin, cursorY + 15);
-      doc.text('PRIMARY IDENTITY', pageWidth - margin, cursorY + 15, { align: 'right' });
-
-      cursorY += 19;
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 0, 0);
-      doc.line(margin, cursorY, pageWidth - margin, cursorY);
-      cursorY += 10;
-
-      // Add headshot image if available
-      const headshotAsset = currentAssets.find(a => a.viewType === 'frontClose');
-      if (headshotAsset) {
-        try {
-          const headshotProxy = await proxyImageMutation.mutateAsync({ imageUrl: headshotAsset.storageUrl });
-          if (headshotProxy.success && headshotProxy.base64) {
-            const base64 = headshotProxy.base64;
-            const imgProps = doc.getImageProperties(base64);
-            const imgRatio = imgProps.width / imgProps.height;
-            const maxH = 80;
-            let imgW = contentWidth * 0.6;
-            let imgH = imgW / imgRatio;
-            if (imgH > maxH) {
-              imgH = maxH;
-              imgW = imgH * imgRatio;
+      // Collect image base64 data for PDF
+      const pdfImages: { headshot?: string; fullBody?: string; profile?: string; walk?: string; back?: string } = {};
+      
+      const viewTypeMap: Record<string, keyof typeof pdfImages> = {
+        'frontClose': 'headshot',
+        'frontFull': 'fullBody',
+        'sideClose': 'profile',
+        'sideFull': 'walk',
+        'backFull': 'back',
+      };
+      
+      for (const asset of currentAssets) {
+        const pdfKey = viewTypeMap[asset.viewType];
+        if (pdfKey) {
+          try {
+            const proxyResult = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
+            if (proxyResult.success && proxyResult.base64) {
+              pdfImages[pdfKey] = proxyResult.base64;
             }
-            const imgX = margin + (contentWidth - imgW) / 2;
-            doc.addImage(base64, 'PNG', imgX, cursorY, imgW, imgH);
-            cursorY += imgH + 10;
+          } catch (e) {
+            console.error(`Failed to proxy image for ${asset.viewType}:`, e);
           }
-        } catch (e) {
-          console.error('Failed to add image to PDF:', e);
-          cursorY += 10;
         }
       }
-
-      // Stats Block
-      const statsHeight = 25;
-      doc.setDrawColor(200, 200, 200);
-      doc.setLineWidth(0.2);
-      doc.rect(margin, cursorY, contentWidth, statsHeight);
-
-      const drawField = (label: string, value: string, x: number, y: number) => {
-        doc.setFont('courier', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`${label}: `, x, y);
-        const labelW = doc.getTextWidth(`${label}: `);
-        doc.setFont('courier', 'normal');
-        doc.text((value || '-').toUpperCase(), x + labelW, y);
-      };
-
-      const colWidth = (contentWidth - 10) / 3;
-      const col1X = margin + 5;
-      const col2X = col1X + colWidth;
-      const col3X = col2X + colWidth;
-      const row1Y = cursorY + 10;
-      const row2Y = cursorY + 18;
-
-      drawField('ID', exportId, col1X, row1Y);
-      drawField('AGE', prefs.age || '-', col2X, row1Y);
-      drawField('ETHNICITY', prefs.ethnicity || '-', col3X, row1Y);
-      drawField('HAIR', prefs.hairColor || '-', col1X, row2Y);
-      drawField('EYES', prefs.eyeColor || '-', col2X, row2Y);
-      drawField('DATE', new Date().toLocaleDateString().toUpperCase(), col3X, row2Y);
-
-      cursorY += statsHeight + 10;
-
-      // Master Prompt
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      doc.text("DIRECTOR'S NOTES / MASTER PROMPT", margin, cursorY);
-      cursorY += 5;
-
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(60, 60, 60);
-
-      const promptLines = doc.splitTextToSize(currentMasterPrompt || 'No master prompt available', contentWidth);
-      const maxPromptLines = 14;
-      const displayedLines = promptLines.slice(0, maxPromptLines);
-      doc.text(displayedLines, margin, cursorY);
-      cursorY += (displayedLines.length * 3.5) + 8;
-
-      // Legal Section
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.5);
-      doc.line(margin, cursorY, pageWidth - margin, cursorY);
-      cursorY += 6;
-
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      doc.text('DIGITAL IDENTITY — OWNERSHIP & USAGE', margin, cursorY);
-      cursorY += 5;
-
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(60, 60, 60);
-      const legalText = 'Exclusive, perpetual, worldwide commercial rights to use this Generated Model and its exported renders are granted to the Exporting Party upon export. This identity is a procedurally generated digital composite and is uniquely bound to the casting session and cryptographic signature below.';
-      const legalLines = doc.splitTextToSize(legalText, contentWidth);
-      doc.text(legalLines, margin, cursorY);
-      cursorY += (legalLines.length * 3.5) + 6;
-
-      // Metadata
-      const simpleHash = (str: string) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-          const char = str.charCodeAt(i);
-          hash = ((hash << 5) - hash) + char;
-          hash = hash & hash;
-        }
-        return Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
-      };
-      const timestamp = Date.now();
-      const secureHash = simpleHash(exportId + timestamp + 'FORMA');
-
-      doc.setFont('courier', 'bold');
-      doc.text('Issued by:', margin, cursorY);
-      doc.setFont('courier', 'normal');
-      doc.text('FORMASTUDIO™', margin + doc.getTextWidth('Issued by: '), cursorY);
       
-      doc.setFont('courier', 'bold');
-      doc.text('Model ID:', margin + contentWidth / 2, cursorY);
-      doc.setFont('courier', 'normal');
-      doc.text(exportId, margin + contentWidth / 2 + doc.getTextWidth('Model ID: '), cursorY);
-      cursorY += 4;
-
-      doc.setFont('courier', 'bold');
-      doc.text('Secure Hash:', margin, cursorY);
-      doc.setFont('courier', 'normal');
-      doc.text(secureHash, margin + doc.getTextWidth('Secure Hash: '), cursorY);
-
-      doc.setFont('courier', 'bold');
-      doc.text('Timestamp:', margin + contentWidth / 2, cursorY);
-      doc.setFont('courier', 'normal');
-      doc.text(new Date().toUTCString(), margin + contentWidth / 2 + doc.getTextWidth('Timestamp: '), cursorY);
-
-      // Add PDF to ZIP
-      zip.file(pdfFilename, doc.output('arraybuffer'));
+      // Generate PDF on server
+      const pdfResult = await generatePdfMutation.mutateAsync({
+        modelId: currentModelId,
+        modelName: safeName,
+        images: pdfImages,
+      });
+      
+      if (!pdfResult.success || !pdfResult.pdfBase64) {
+        throw new Error('Failed to generate PDF');
+      }
+      
+      // Convert base64 PDF to ArrayBuffer and add to ZIP
+      const pdfBinaryString = atob(pdfResult.pdfBase64);
+      const pdfBytes = new Uint8Array(pdfBinaryString.length);
+      for (let i = 0; i < pdfBinaryString.length; i++) {
+        pdfBytes[i] = pdfBinaryString.charCodeAt(i);
+      }
+      zip.file(pdfFilename, pdfBytes);
 
       // Generate and download ZIP
       setGenState(prev => ({ ...prev, currentStep: 'Compressing Pack...' }));

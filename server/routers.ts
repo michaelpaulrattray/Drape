@@ -17,6 +17,7 @@ import {
 } from "./aiService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { generatePremiumIdentityPdf, PdfModelData } from "./pdfService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -977,6 +978,93 @@ export const appRouter = router({
             enhancedPrompt: input.prompt,
           };
         }
+      }),
+
+    // Generate premium identity PDF document
+    generatePdf: protectedProcedure
+      .input(z.object({
+        modelId: z.number(),
+        modelName: z.string(),
+        images: z.object({
+          headshot: z.string().optional(),
+          fullBody: z.string().optional(),
+          profile: z.string().optional(),
+          walk: z.string().optional(),
+          back: z.string().optional(),
+        }),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get the model
+        const model = await getModelById(input.modelId);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        if (model.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Get user info for owner details
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Extract preferences from technical schema
+        const techSchema = model.technicalSchema as any || {};
+        const prefs = {
+          gender: techSchema.subject?.gender,
+          age: techSchema.subject?.age,
+          ethnicity: techSchema.subject?.ethnicity,
+          bodyType: techSchema.subject?.body_type,
+          skinTone: techSchema.subject?.skin_tone || techSchema.skin?.tone,
+          skinTexture: techSchema.skin?.texture,
+          skinFinish: techSchema.skin?.finish,
+          eyeColor: techSchema.subject?.eye_color,
+          hairColor: techSchema.subject?.hair_color,
+          hairStyle: techSchema.subject?.hair_style || techSchema.hair?.style,
+          hairLength: techSchema.subject?.hair_length,
+          hairTexture: techSchema.hair?.texture,
+          hairVolume: techSchema.hair?.volume,
+          hairFringe: techSchema.hair?.fringe,
+          hairParting: techSchema.hair?.parting,
+          hairFlyaways: techSchema.hair?.flyaways,
+          faceShape: techSchema.face?.shape,
+          jawline: techSchema.face?.jawline,
+          cheekbones: techSchema.face?.cheekbones,
+          cheeks: techSchema.face?.cheeks,
+          eyeShape: techSchema.face?.eye_shape,
+          noseShape: techSchema.face?.nose_shape,
+          lipShape: techSchema.face?.lip_shape,
+          eyebrowStyle: techSchema.face?.eyebrow_style,
+          castingBrand: techSchema.context?.casting_for,
+          castingVibe: techSchema.context?.vibe_blend,
+        };
+
+        // Prepare PDF data
+        const pdfData: PdfModelData = {
+          modelName: input.modelName || model.name || 'Unnamed Model',
+          agencyId: model.agencyId || `MOD-${new Date().getFullYear().toString().slice(-2)}-DRAFT`,
+          sessionId: `SES-${model.id}`,
+          createdAt: model.createdAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          mintedAt: model.mintedAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          ownerName: user.displayName || user.name || 'Unknown',
+          ownerId: user.openId,
+          masterPrompt: model.masterPrompt || 'No master prompt available',
+          preferences: prefs,
+          images: input.images,
+        };
+
+        // Generate PDF
+        const pdfBuffer = await generatePremiumIdentityPdf(pdfData);
+        
+        // Convert to base64 for transfer
+        const base64Pdf = Buffer.from(pdfBuffer).toString('base64');
+        
+        return {
+          success: true,
+          pdfBase64: base64Pdf,
+          filename: `IDENTITY_${model.agencyId || 'DRAFT'}.pdf`,
+        };
       }),
 
     // Mint model on export - assigns agencyId and locks identity
