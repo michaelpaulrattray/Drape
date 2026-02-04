@@ -177,11 +177,8 @@ export default function Dashboard() {
     },
   ];
 
-  return (
+  return (<>
     <div className="h-screen w-screen flex bg-canvas text-obsidian overflow-hidden selection:bg-gray-900/20 geometric-mesh">
-      {/* Geometric Mesh Background - Network/Particle Aesthetic */}
-      <div className="fixed inset-0 mesh-nodes pointer-events-none z-0" />
-      
       {/* Sidebar - Clean Light */}
       <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-light bg-white relative z-10">
         {/* Logo */}
@@ -589,18 +586,22 @@ export default function Dashboard() {
         onOpenTopup={() => setIsTopupOpen(true)}
       />
 
-      {/* Billing Modal */}
+    </div>
+    
+    {/* Modals - Outside main flex container for proper overlay positioning */}
+    {isBillingOpen && (
       <BillingModal
         isOpen={isBillingOpen}
         onClose={() => setIsBillingOpen(false)}
       />
+    )}
 
-      {/* Credit Top-up Modal */}
+    {isTopupOpen && (
       <CreditTopupModal
         isOpen={isTopupOpen}
         onClose={() => setIsTopupOpen(false)}
         currentBalance={creditsData?.balance || 0}
       />
-    </div>
-  );
+    )}
+  </>);
 }

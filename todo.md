@@ -1631,3 +1631,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update modal background to white
 - [x] Restyle credit package cards
 - [x] Update text and icon colors for light mode
+
+
+## Bug Fixes - Modal Positioning & Mesh Background
+
+- [x] Fix CreditTopupModal appearing as sidebar instead of centered overlay
+- [x] Fix BillingModal appearing as sidebar instead of centered overlay  
+- [x] Make geometric mesh background visible on dashboard
