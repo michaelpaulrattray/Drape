@@ -11,8 +11,23 @@ import {
   createModelAsset, getModelAssets,
   createGeneration, updateGeneration, getUserGenerations,
   updateUserProfile, getUserById, getUserStorageInfo, updateUserStorageUsed,
-  deleteModelWithAssetKeys, getModelByAgencyId
+  deleteModelWithAssetKeys, getModelByAgencyId,
+  // Billing functions
+  updateUserSubscription, getSubscriptionByUserId, refreshMonthlyCredits, addTopupCredits
 } from "./db";
+import {
+  getOrCreateStripeCustomer,
+  createSubscriptionCheckoutSession,
+  createTopupCheckoutSession,
+  createCustomerPortalSession,
+  getSubscriptionDetails,
+  cancelSubscription,
+  reactivateSubscription,
+  calculateRolloverCredits,
+  getMonthlyCredits,
+} from "./stripeService";
+import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
+import { PLAN_TIERS } from "../drizzle/schema";
 import { storagePut, storageDelete } from "./storage";
 import {
   generateMasterPrompt, generateCastingImage, generateFullBody, generateRemainingViews,
@@ -1405,6 +1420,215 @@ export const appRouter = router({
           mintedAt: model.status === 'active' ? model.mintedAt : null,
         };
       }),
+  }),
+
+  // ============ Billing & Subscription ============
+  billing: router({
+    // Get available pricing plans
+    getPlans: publicProcedure.query(() => {
+      return {
+        subscriptions: Object.entries(SUBSCRIPTION_PRODUCTS).map(([key, plan]) => ({
+          id: key as SubscriptionPlan,
+          name: plan.name,
+          description: plan.description,
+          priceInCents: plan.priceInCents,
+          credits: plan.credits,
+          features: plan.features,
+          interval: plan.interval,
+        })),
+        topups: Object.entries(CREDIT_TOPUP_PRODUCTS).map(([key, pkg]) => ({
+          id: key as CreditTopupPackage,
+          name: pkg.name,
+          description: pkg.description,
+          priceInCents: pkg.priceInCents,
+          credits: pkg.credits,
+        })),
+        tiers: PLAN_TIERS,
+      };
+    }),
+
+    // Get current user's subscription status
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
+      const subscription = await getSubscriptionByUserId(ctx.user.id);
+      if (!subscription) {
+        return {
+          planTier: "free" as const,
+          balance: 0,
+          subscriptionStatus: null,
+          currentPeriodEnd: null,
+          canUpgrade: true,
+          canManage: false,
+        };
+      }
+
+      return {
+        planTier: subscription.planTier,
+        balance: subscription.balance,
+        creditsPurchased: subscription.creditsPurchased,
+        creditsUsed: subscription.creditsUsed,
+        rolloverCredits: subscription.rolloverCredits,
+        subscriptionStatus: subscription.subscriptionStatus,
+        currentPeriodStart: subscription.currentPeriodStart,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        lastRefreshAt: subscription.lastRefreshAt,
+        canUpgrade: subscription.planTier !== "studio" && subscription.planTier !== "enterprise",
+        canManage: !!subscription.stripeSubscriptionId,
+        stripeCustomerId: subscription.stripeCustomerId,
+      };
+    }),
+
+    // Create checkout session for subscription
+    createSubscriptionCheckout: protectedProcedure
+      .input(z.object({
+        plan: z.enum(["starter", "pro", "studio"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get user info
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Get or create Stripe customer
+        const subscription = await getSubscriptionByUserId(ctx.user.id);
+        const customerId = await getOrCreateStripeCustomer(
+          ctx.user.id,
+          user.email || `user-${ctx.user.id}@formastudio.app`,
+          user.displayName || user.name || undefined,
+          subscription?.stripeCustomerId
+        );
+
+        // Save customer ID if new
+        if (!subscription?.stripeCustomerId) {
+          await updateUserSubscription(ctx.user.id, { stripeCustomerId: customerId });
+        }
+
+        // Create checkout session
+        const baseUrl = process.env.NODE_ENV === "production" 
+          ? "https://formastudio.app" 
+          : "http://localhost:3000";
+        
+        const checkoutUrl = await createSubscriptionCheckoutSession(
+          customerId,
+          input.plan,
+          `${baseUrl}/dashboard?billing=success`,
+          `${baseUrl}/dashboard?billing=canceled`,
+          ctx.user.id
+        );
+
+        return { checkoutUrl };
+      }),
+
+    // Create checkout session for credit top-up
+    createTopupCheckout: protectedProcedure
+      .input(z.object({
+        packageId: z.enum(["small", "medium", "large", "xl"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get user info
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Get or create Stripe customer
+        const subscription = await getSubscriptionByUserId(ctx.user.id);
+        const customerId = await getOrCreateStripeCustomer(
+          ctx.user.id,
+          user.email || `user-${ctx.user.id}@formastudio.app`,
+          user.displayName || user.name || undefined,
+          subscription?.stripeCustomerId
+        );
+
+        // Save customer ID if new
+        if (!subscription?.stripeCustomerId) {
+          await updateUserSubscription(ctx.user.id, { stripeCustomerId: customerId });
+        }
+
+        // Create checkout session
+        const baseUrl = process.env.NODE_ENV === "production" 
+          ? "https://formastudio.app" 
+          : "http://localhost:3000";
+        
+        const checkoutUrl = await createTopupCheckoutSession(
+          customerId,
+          input.packageId,
+          `${baseUrl}/dashboard?topup=success`,
+          `${baseUrl}/dashboard?topup=canceled`,
+          ctx.user.id
+        );
+
+        return { checkoutUrl };
+      }),
+
+    // Create customer portal session for subscription management
+    createPortalSession: protectedProcedure.mutation(async ({ ctx }) => {
+      const subscription = await getSubscriptionByUserId(ctx.user.id);
+      
+      if (!subscription?.stripeCustomerId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No billing account found. Please subscribe to a plan first.",
+        });
+      }
+
+      const baseUrl = process.env.NODE_ENV === "production" 
+        ? "https://formastudio.app" 
+        : "http://localhost:3000";
+
+      const portalUrl = await createCustomerPortalSession(
+        subscription.stripeCustomerId,
+        `${baseUrl}/dashboard`
+      );
+
+      return { portalUrl };
+    }),
+
+    // Cancel subscription (at period end)
+    cancelSubscription: protectedProcedure.mutation(async ({ ctx }) => {
+      const subscription = await getSubscriptionByUserId(ctx.user.id);
+      
+      if (!subscription?.stripeSubscriptionId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No active subscription found.",
+        });
+      }
+
+      const success = await cancelSubscription(subscription.stripeSubscriptionId);
+      
+      if (!success) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to cancel subscription.",
+        });
+      }
+
+      return { success: true, message: "Subscription will be canceled at the end of the billing period." };
+    }),
+
+    // Reactivate canceled subscription
+    reactivateSubscription: protectedProcedure.mutation(async ({ ctx }) => {
+      const subscription = await getSubscriptionByUserId(ctx.user.id);
+      
+      if (!subscription?.stripeSubscriptionId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No subscription found.",
+        });
+      }
+
+      const success = await reactivateSubscription(subscription.stripeSubscriptionId);
+      
+      if (!success) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to reactivate subscription.",
+        });
+      }
+
+      return { success: true, message: "Subscription reactivated." };
+    }),
   }),
 });
 

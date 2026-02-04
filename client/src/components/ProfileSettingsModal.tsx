@@ -31,6 +31,8 @@ interface ProfileSettingsModalProps {
   planTier: string;
   defaultAvatar: string;
   defaultBanner: string;
+  onOpenBilling?: () => void;
+  onOpenTopup?: () => void;
 }
 
 export default function ProfileSettingsModal({
@@ -46,6 +48,8 @@ export default function ProfileSettingsModal({
   planTier,
   defaultAvatar,
   defaultBanner,
+  onOpenBilling,
+  onOpenTopup,
 }: ProfileSettingsModalProps) {
   const [activeTab, setActiveTab] = useState<"profile" | "billing" | "notifications" | "security">("profile");
   const [editedName, setEditedName] = useState(user?.name || "");
@@ -505,10 +509,16 @@ export default function ProfileSettingsModal({
                         {planTier === "free" ? "FREE" : "PRO"}
                       </span>
                     </div>
-                    {planTier === "free" && (
-                      <button className="w-full mt-3 px-4 py-3 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-all flex items-center justify-center gap-2">
+                    {planTier !== "studio" && planTier !== "enterprise" && (
+                      <button 
+                        onClick={() => {
+                          onClose();
+                          onOpenBilling?.();
+                        }}
+                        className="w-full mt-3 px-4 py-3 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+                      >
                         <Sparkles className="w-4 h-4" />
-                        Upgrade to Pro
+                        {planTier === "free" ? "Upgrade Plan" : "Change Plan"}
                       </button>
                     )}
                   </div>
@@ -525,7 +535,13 @@ export default function ProfileSettingsModal({
                         <p className="text-3xl font-bold text-white">{creditsBalance}</p>
                         <p className="text-xs text-zinc-500">Available credits</p>
                       </div>
-                      <button className="px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm font-medium hover:bg-zinc-700 transition-all flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          onClose();
+                          onOpenTopup?.();
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm font-medium hover:bg-zinc-700 transition-all flex items-center gap-2"
+                      >
                         <CreditCard className="w-4 h-4" />
                         Buy Credits
                       </button>

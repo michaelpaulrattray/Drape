@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { handleStripeWebhook } from "../webhooks";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -35,6 +36,29 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  
+  // Stripe webhook endpoint (must use raw body)
+  app.post(
+    "/api/webhooks/stripe",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      const signature = req.headers["stripe-signature"] as string;
+      
+      if (!signature) {
+        res.status(400).json({ error: "Missing stripe-signature header" });
+        return;
+      }
+
+      const result = await handleStripeWebhook(req.body, signature);
+      
+      if (result.success) {
+        res.status(200).json({ received: true, message: result.message });
+      } else {
+        res.status(400).json({ error: result.message });
+      }
+    }
+  );
+  
   // tRPC API
   app.use(
     "/api/trpc",

@@ -1436,3 +1436,48 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add Flash fallback detection with 50% credit cost reduction (calculateCreditCost helper)
 - [x] Update all frontend UI - rename points to credits throughout
 - [x] Test credit deductions work correctly (95 tests passing)
+
+## Credits System - Phase 2: Plan Tiers & Billing
+- [ ] Define plan tiers in database (Free: 100, Starter: 1500, Pro: 4000, Studio: 10000)
+- [ ] Add Stripe integration via webdev_add_feature
+- [ ] Create subscription products in Stripe (Starter $12, Pro $29, Studio $59)
+- [ ] Create credit top-up products in Stripe (100 credits = $1.50)
+- [ ] Implement subscription checkout endpoint
+- [ ] Implement credit purchase endpoint
+- [ ] Add monthly credit refresh logic with rollover
+- [ ] Create upgrade/downgrade subscription flow
+- [ ] Build billing UI in Profile Settings modal
+- [ ] Add plan badge display on dashboard
+- [ ] Test all billing flows
+
+
+## Phase 2: Plan Tiers & Billing
+
+### Stripe Integration
+- [x] Create stripeService.ts with checkout session creation
+- [x] Create customer portal session function
+- [x] Create webhook handler for Stripe events
+- [x] Handle checkout.session.completed event
+- [x] Handle customer.subscription.updated event
+- [x] Handle customer.subscription.deleted event
+- [x] Handle invoice.payment_succeeded event
+- [x] Handle invoice.payment_failed event
+
+### Backend Endpoints
+- [x] Add billing router to routers.ts
+- [x] Create billing.createCheckoutSession endpoint
+- [x] Create billing.createPortalSession endpoint
+- [x] Create billing.getSubscriptionStatus endpoint
+- [x] Create billing.getPricingPlans endpoint
+- [x] Add subscription update functions to db.ts
+
+### Frontend UI
+- [x] Create BillingModal component with pricing cards
+- [x] Create CreditTopupModal component
+- [x] Add upgrade buttons to Profile Settings
+- [ ] Add low balance warning with top-up prompt
+
+### Testing
+- [x] Write unit tests for billing logic (24 tests)
+- [ ] Test Stripe checkout flow end-to-end (requires Stripe sandbox claim)
+- [ ] Test webhook handling (requires Stripe sandbox claim)

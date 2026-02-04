@@ -24,7 +24,9 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
-import { Loader2 } from "lucide-react";
+import { BillingModal } from "@/components/BillingModal";
+import { CreditTopupModal } from "@/components/CreditTopupModal";
+import { Loader2, Coins } from "lucide-react";
 
 // Image compression utility
 async function compressImage(file: File, maxWidth: number, maxHeight: number, quality: number = 0.8): Promise<{ base64: string; mimeType: string; size: number }> {
@@ -76,6 +78,8 @@ export default function Dashboard() {
   const [bannerImage, setBannerImage] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isBillingOpen, setIsBillingOpen] = useState(false);
+  const [isTopupOpen, setIsTopupOpen] = useState(false);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -608,6 +612,21 @@ export default function Dashboard() {
         planTier={creditsData?.planTier || "free"}
         defaultAvatar={DEFAULT_AVATAR}
         defaultBanner={DEFAULT_BANNER}
+        onOpenBilling={() => setIsBillingOpen(true)}
+        onOpenTopup={() => setIsTopupOpen(true)}
+      />
+
+      {/* Billing Modal */}
+      <BillingModal
+        isOpen={isBillingOpen}
+        onClose={() => setIsBillingOpen(false)}
+      />
+
+      {/* Credit Top-up Modal */}
+      <CreditTopupModal
+        isOpen={isTopupOpen}
+        onClose={() => setIsTopupOpen(false)}
+        currentBalance={creditsData?.balance || 0}
       />
     </div>
   );

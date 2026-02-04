@@ -747,3 +747,136 @@ export async function deleteModelWithAssetKeys(modelId: number): Promise<{
     return { success: false, assetKeys: [], error: "Failed to delete model" };
   }
 }
+
+
+// ============ Subscription & Billing Functions ============
+
+import { PlanTier } from "../drizzle/schema";
+
+export async function updateUserSubscription(
+  userId: number,
+  data: {
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string | null;
+    subscriptionStatus?: "active" | "canceled" | "past_due" | "unpaid" | "trialing" | null;
+    planTier?: PlanTier;
+    planExpiresAt?: Date | null;
+    currentPeriodStart?: Date | null;
+    currentPeriodEnd?: Date | null;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    await db.update(credits).set(data).where(eq(credits.userId, userId));
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to update subscription:", error);
+    return { success: false, error: "Failed to update subscription" };
+  }
+}
+
+export async function getUserByStripeCustomerId(stripeCustomerId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(credits)
+    .where(eq(credits.stripeCustomerId, stripeCustomerId))
+    .limit(1);
+  
+  if (result.length === 0) return null;
+  
+  // Get the user record
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, result[0].userId))
+    .limit(1);
+  
+  return user.length > 0 ? { ...user[0], credits: result[0] } : null;
+}
+
+export async function refreshMonthlyCredits(
+  userId: number,
+  monthlyCredits: number,
+  rolloverCredits: number
+): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+  const db = await getDb();
+  if (!db) {
+    return { success: false, error: "Database not available" };
+  }
+
+  try {
+    const userCredits = await getUserCredits(userId);
+    if (!userCredits) {
+      return { success: false, error: "User credits not found" };
+    }
+
+    const newBalance = monthlyCredits + rolloverCredits;
+
+    await db.update(credits).set({
+      balance: newBalance,
+      rolloverCredits: rolloverCredits,
+      lastRefreshAt: new Date(),
+    }).where(eq(credits.userId, userId));
+
+    // Record the subscription credit transaction
+    await db.insert(creditTransactions).values({
+      userId,
+      amount: monthlyCredits,
+      type: "subscription",
+      description: `Monthly credit refresh (${monthlyCredits} credits + ${rolloverCredits} rollover)`,
+      balanceAfter: newBalance,
+    });
+
+    return { success: true, newBalance };
+  } catch (error) {
+    console.error("[Database] Failed to refresh monthly credits:", error);
+    return { success: false, error: "Failed to refresh credits" };
+  }
+}
+
+export async function addTopupCredits(
+  userId: number,
+  credits: number,
+  referenceId: string
+): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+  return addCredits(
+    userId,
+    credits,
+    "topup",
+    `Credit top-up: ${credits} credits`,
+    referenceId
+  );
+}
+
+export async function getSubscriptionByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select({
+      planTier: credits.planTier,
+      planExpiresAt: credits.planExpiresAt,
+      stripeCustomerId: credits.stripeCustomerId,
+      stripeSubscriptionId: credits.stripeSubscriptionId,
+      subscriptionStatus: credits.subscriptionStatus,
+      currentPeriodStart: credits.currentPeriodStart,
+      currentPeriodEnd: credits.currentPeriodEnd,
+      balance: credits.balance,
+      creditsPurchased: credits.creditsPurchased,
+      creditsUsed: credits.creditsUsed,
+      rolloverCredits: credits.rolloverCredits,
+      lastRefreshAt: credits.lastRefreshAt,
+    })
+    .from(credits)
+    .where(eq(credits.userId, userId))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : null;
+}

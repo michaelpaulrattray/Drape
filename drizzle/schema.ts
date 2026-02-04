@@ -29,6 +29,19 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * Plan tier configuration with credit allocations
+ */
+export const PLAN_TIERS = {
+  free: { name: 'Free', monthlyCredits: 100, price: 0, rolloverPercent: 0 },
+  starter: { name: 'Starter', monthlyCredits: 1500, price: 1200, rolloverPercent: 50 }, // $12/month in cents
+  pro: { name: 'Pro', monthlyCredits: 4000, price: 2900, rolloverPercent: 75 }, // $29/month
+  studio: { name: 'Studio', monthlyCredits: 10000, price: 5900, rolloverPercent: 100 }, // $59/month
+  enterprise: { name: 'Enterprise', monthlyCredits: 50000, price: 0, rolloverPercent: 100 }, // Custom pricing
+} as const;
+
+export type PlanTier = keyof typeof PLAN_TIERS;
+
+/**
  * Credits table for tracking user balances and subscription tiers.
  * Note: Database table name remains "points" for backward compatibility.
  */
@@ -38,6 +51,12 @@ export const credits = mysqlTable("points", {
   balance: int("balance").notNull().default(100),
   planTier: mysqlEnum("planTier", ["free", "starter", "pro", "studio", "enterprise"]).default("free").notNull(),
   planExpiresAt: timestamp("planExpiresAt"),
+  // Stripe subscription tracking
+  stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
+  subscriptionStatus: mysqlEnum("subscriptionStatus", ["active", "canceled", "past_due", "unpaid", "trialing"]),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
   // Track credits purchased vs earned for analytics
   creditsPurchased: int("creditsPurchased").default(0).notNull(),
   creditsUsed: int("creditsUsed").default(0).notNull(),
