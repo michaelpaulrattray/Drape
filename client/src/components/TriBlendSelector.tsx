@@ -166,12 +166,12 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
   ];
 
   return (
-    <div className="w-full bg-[#121212] border border-studio-800 rounded-2xl shadow-xl overflow-hidden font-sans select-none">
+    <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden font-sans select-none">
         {/* 1. Header */}
         <div className="px-5 pt-5 pb-2 flex justify-between items-start">
             <div>
-                <h3 className="text-sm font-medium text-white mb-0.5">Tone & Energy</h3>
-                <p className="text-[10px] text-studio-500 font-mono tracking-tight">Blend between Commercial, Editorial and Runway.</p>
+                <h3 className="text-sm font-medium text-gray-900 mb-0.5">Tone & Energy</h3>
+                <p className="text-[10px] text-gray-500 font-mono tracking-tight">Blend between Commercial, Editorial and Runway.</p>
             </div>
             <Tooltip content="Adjust the visual weight of the output. Editorial adds avant-garde distortion. Commercial adds warmth/smile. Runway adds intensity/stare." />
         </div>
@@ -189,9 +189,9 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                 // Removed onPointerLeave to allow dragging outside bounds while captured
             >
                 {/* Labels */}
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold text-studio-400 uppercase tracking-widest pointer-events-none z-10">Editorial</span>
-                <span className="absolute bottom-2 -left-2 text-[9px] font-bold text-studio-400 uppercase tracking-widest pointer-events-none z-10">Commercial</span>
-                <span className="absolute bottom-2 -right-2 text-[9px] font-bold text-studio-400 uppercase tracking-widest pointer-events-none z-10">Runway</span>
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold text-gray-600 uppercase tracking-widest pointer-events-none z-10">Editorial</span>
+                <span className="absolute bottom-2 -left-2 text-[9px] font-bold text-gray-600 uppercase tracking-widest pointer-events-none z-10">Commercial</span>
+                <span className="absolute bottom-2 -right-2 text-[9px] font-bold text-gray-600 uppercase tracking-widest pointer-events-none z-10">Runway</span>
 
                 {/* VISUAL LAYER (SVG) - Background */}
                 <svg 
@@ -201,8 +201,8 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                 >
                     <defs>
                         <linearGradient id="tri-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#2a2a2a" stopOpacity="0.5" />
-                            <stop offset="100%" stopColor="#1a1a1a" stopOpacity="0.1" />
+                            <stop offset="0%" stopColor="#e5e7eb" stopOpacity="0.8" />
+                            <stop offset="100%" stopColor="#f3f4f6" stopOpacity="0.4" />
                         </linearGradient>
                     </defs>
 
@@ -210,13 +210,13 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                     <path 
                         d={`M${A.x},${A.y} L${B.x},${B.y} L${C.x},${C.y} Z`} 
                         fill="url(#tri-grad)" 
-                        stroke="#333" 
+                        stroke="#d1d5db" 
                         strokeWidth="2"
                         strokeLinejoin="round"
                     />
 
                     {/* Internal Grid (Dashed) */}
-                    <g stroke="#333" strokeWidth="1" strokeDasharray="3 3" opacity="0.4">
+                    <g stroke="#d1d5db" strokeWidth="1" strokeDasharray="3 3" opacity="0.6">
                         <line x1={A.x} y1={A.y} x2={(B.x + C.x) / 2} y2={B.y} />
                         <line x1={B.x} y1={B.y} x2={(A.x + C.x) / 2} y2={(A.y + C.y) / 2} />
                         <line x1={C.x} y1={C.y} x2={(A.x + B.x) / 2} y2={(A.y + B.y) / 2} />
@@ -224,7 +224,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
 
                     {/* Live Connectors */}
                     {isDragging && (
-                        <g stroke="white" strokeWidth="0.5" opacity="0.2">
+                        <g stroke="#6E7F8D" strokeWidth="0.5" opacity="0.4">
                             <line x1={pos.x} y1={pos.y} x2={A.x} y2={A.y} />
                             <line x1={pos.x} y1={pos.y} x2={B.x} y2={B.y} />
                             <line x1={pos.x} y1={pos.y} x2={C.x} y2={C.y} />
@@ -234,7 +234,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
 
                 {/* PUCK LAYER (DOM) - Centered Overlay */}
                 <div
-                    className={`absolute w-4 h-4 bg-white rounded-full pointer-events-none shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-transform duration-75 ease-out ${isDragging ? 'scale-125' : 'scale-100'}`}
+                    className={`absolute w-4 h-4 bg-slate-accent rounded-full pointer-events-none shadow-[0_0_10px_rgba(110,127,141,0.5)] transition-transform duration-75 ease-out ${isDragging ? 'scale-125' : 'scale-100'}`}
                     style={{
                         left: `${(pos.x / WIDTH) * 100}%`,
                         top: `${(pos.y / HEIGHT) * 100}%`,
@@ -246,15 +246,15 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
         </div>
 
         {/* 3. Readout & Bars */}
-        <div className="bg-[#0a0a0a] border-t border-studio-800 p-5 space-y-4">
+        <div className="bg-gray-50 border-t border-gray-200 p-5 space-y-4">
             
             <div className="text-center space-y-1">
-                <div className="text-xs text-white">
-                    <span className="text-studio-500 font-mono uppercase tracking-wide">Selected: </span>
+                <div className="text-xs text-gray-900">
+                    <span className="text-gray-500 font-mono uppercase tracking-wide">Selected: </span>
                     <span className="font-bold tracking-wide">{dominant}</span>
-                    {Math.max(value.editorial, value.commercial, value.runway) > 0.6 && <span className="text-studio-500 text-[10px] ml-1">(Dominant)</span>}
+                    {Math.max(value.editorial, value.commercial, value.runway) > 0.6 && <span className="text-gray-500 text-[10px] ml-1">(Dominant)</span>}
                 </div>
-                <div className="text-[9px] font-mono text-studio-500 tracking-wider">
+                <div className="text-[9px] font-mono text-gray-500 tracking-wider">
                     C {Math.round(value.commercial * 100)}% • E {Math.round(value.editorial * 100)}% • R {Math.round(value.runway * 100)}%
                 </div>
             </div>
@@ -266,20 +266,20 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                     { label: "Runway", val: value.runway }
                 ].map((item) => (
                     <div key={item.label} className="flex items-center space-x-3 text-[10px] font-mono uppercase tracking-wider">
-                        <span className="w-16 text-studio-500 text-right">{item.label}</span>
-                        <div className="flex-1 h-1.5 bg-studio-800 rounded-full overflow-hidden">
+                        <span className="w-16 text-gray-500 text-right">{item.label}</span>
+                        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                             <div 
-                                className="h-full bg-white transition-all duration-300 ease-out" 
+                                className="h-full bg-slate-accent transition-all duration-300 ease-out" 
                                 style={{ width: `${item.val * 100}%` }}
                             ></div>
                         </div>
-                        <span className="w-8 text-white text-right">{Math.round(item.val * 100)}%</span>
+                        <span className="w-8 text-gray-900 text-right">{Math.round(item.val * 100)}%</span>
                     </div>
                 ))}
             </div>
             
             {/* 4. Preset Chips */}
-            <div className="pt-2 border-t border-studio-800/50 flex flex-wrap gap-2 justify-center">
+            <div className="pt-2 border-t border-gray-200/50 flex flex-wrap gap-2 justify-center">
                 {presets.map((p) => {
                     const isActive = Math.abs(p.w.editorial - value.editorial) < 0.05 && 
                                      Math.abs(p.w.commercial - value.commercial) < 0.05 &&
@@ -292,8 +292,8 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                             className={`
                                 px-3 py-1.5 rounded-full text-[9px] font-mono uppercase tracking-wider border transition-all
                                 ${isActive 
-                                    ? 'bg-white text-black border-white shadow-sm font-bold' 
-                                    : 'bg-transparent text-studio-500 border-studio-800 hover:border-studio-600 hover:text-studio-300'
+                                    ? 'bg-slate-accent text-white border-slate-accent shadow-sm font-bold' 
+                                    : 'bg-transparent text-gray-500 border-gray-300 hover:border-slate-accent hover:text-gray-700'
                                 }
                             `}
                         >

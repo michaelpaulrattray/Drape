@@ -1672,3 +1672,25 @@ The entry and configuration files are properly set up with several enhancements 
 ### Testing
 - [x] Verify visual consistency with dashboard
 - [x] Test responsive design on mobile
+
+## Phase 2.9: Casting Studio Light Mode Restyle
+
+### Background & Container Updates
+- [x] Replace dark backgrounds (zinc-900, zinc-800) with light backgrounds (white, gray-50, canvas)
+- [x] Update container borders from dark to light (gray-200, gray-300)
+- [x] Apply card-soft neumorphic styling where appropriate
+
+### Text & Icon Colors
+- [x] Replace white/light text with dark text (obsidian, charcoal, gray-900)
+- [x] Update icon colors from white to slate-accent or gray-700
+- [x] Ensure proper contrast ratios for accessibility
+
+### Button & Interactive Elements
+- [x] Replace dark buttons with btn-slate styling
+- [x] Update hover states to use slate-accent colors
+- [x] Ensure consistent styling with dashboard buttons
+
+### Testing
+- [x] Verify visual consistency with dashboard
+- [x] Test all interactive features still work correctly
+- [x] Verify mobile responsiveness
