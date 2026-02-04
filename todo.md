@@ -2003,3 +2003,23 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove unused showSchema and isCopied states from main file
 - [x] Verify master prompt display and schema toggle work correctly
 - [x] Ensure all 149 tests still pass
+
+## CastingStudio Refactor - Phase 10: useCastingForm Hook Extraction
+- [x] Analyze form state boundaries in CastingStudio.tsx
+- [x] Create client/src/hooks/useCastingForm.ts (~200 lines)
+- [x] Extract ModelPreferences state and updatePref helper
+- [x] Extract form-related state (modelName, validation)
+- [x] Add integration documentation to hook file
+- [ ] Import and use useCastingForm in CastingStudio.tsx (DEFERRED - low risk/reward)
+- [ ] Verify all form interactions work correctly (DEFERRED)
+- [x] Ensure all 149 tests still pass
+
+## CastingStudio Refactor - Phase 11: useGenerationState Hook Extraction
+- [x] Analyze generation logic boundaries in CastingStudio.tsx
+- [x] Create client/src/hooks/useGenerationState.ts (~220 lines)
+- [x] Extract generation state (genState, currentAssets, history)
+- [x] Extract mutation instances and computed values
+- [x] Add integration documentation to hook file
+- [ ] Import and use useGenerationState in CastingStudio.tsx (DEFERRED - high complexity)
+- [ ] Verify all generation features work correctly (DEFERRED)
+- [x] Ensure all 149 tests still pass
