@@ -651,7 +651,7 @@ function VisualEyeGrid({
   onSelect: (val: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="grid grid-cols-4 gap-3">
       {options.map(opt => {
         const isSelected = selected === opt.label;
         return (
@@ -659,10 +659,10 @@ function VisualEyeGrid({
             key={opt.label}
             onClick={() => onSelect(opt.label)}
             className={`
-              relative w-full aspect-square rounded-full border transition-all duration-200 group overflow-hidden
+              relative w-full aspect-square rounded-full transition-all duration-200 group overflow-hidden
               ${isSelected
-                ? 'border-slate-accent ring-1 ring-slate-accent scale-110 z-10'
-                : 'border-gray-200 hover:border-slate-accent/50 hover:scale-105 opacity-80 hover:opacity-100'
+                ? 'ring-2 ring-slate-accent ring-offset-2 ring-offset-white scale-105 z-10'
+                : 'hover:scale-105 opacity-80 hover:opacity-100'
               }
             `}
             title={opt.label}

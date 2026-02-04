@@ -1755,3 +1755,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Use grid-cols-5 gap-2 layout
 - [x] Updated border styling for light theme (border-gray-200 unselected, border-slate-accent selected)
 - [x] Selected state: border-slate-accent ring-1 ring-slate-accent scale-110 z-10
+
+### Iris Image Final Polish
+- [x] Remove visible border from iris images (borderless like original)
+- [x] Change to grid-cols-4 for larger individual iris images
