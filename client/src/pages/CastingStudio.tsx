@@ -650,41 +650,55 @@ function VisualEyeGrid({
   selected: string;
   onSelect: (val: string) => void;
 }) {
+  // Split options into 2 rows
+  const midPoint = Math.ceil(options.length / 2);
+  const row1 = options.slice(0, midPoint);
+  const row2 = options.slice(midPoint);
+
+  const renderOption = (opt: { label: string; hex: string; image?: string }) => {
+    const isSelected = selected === opt.label;
+    return (
+      <button
+        key={opt.label}
+        onClick={() => onSelect(opt.label)}
+        className={`
+          relative flex-shrink-0 w-12 h-12 rounded-full transition-all duration-200 group overflow-hidden
+          ${isSelected
+            ? 'ring-2 ring-slate-accent ring-offset-2 ring-offset-white scale-110 z-10'
+            : 'hover:scale-105 opacity-80 hover:opacity-100'
+          }
+        `}
+        title={opt.label}
+      >
+        {opt.image ? (
+          <img
+            src={opt.image}
+            alt={opt.label}
+            className="absolute inset-0 w-full h-full object-cover rounded-full"
+          />
+        ) : (
+          <>
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{ background: `radial-gradient(circle at 35% 35%, ${opt.hex} 0%, #2a2a2a 80%)` }}
+            />
+            <div className="absolute top-[25%] left-[25%] w-[15%] h-[15%] bg-white rounded-full blur-[1px] opacity-60" />
+          </>
+        )}
+      </button>
+    );
+  };
+
   return (
-    <div className="grid grid-cols-4 gap-3">
-      {options.map(opt => {
-        const isSelected = selected === opt.label;
-        return (
-          <button
-            key={opt.label}
-            onClick={() => onSelect(opt.label)}
-            className={`
-              relative w-full aspect-square rounded-full transition-all duration-200 group overflow-hidden
-              ${isSelected
-                ? 'ring-2 ring-slate-accent ring-offset-2 ring-offset-white scale-105 z-10'
-                : 'hover:scale-105 opacity-80 hover:opacity-100'
-              }
-            `}
-            title={opt.label}
-          >
-            {opt.image ? (
-              <img
-                src={opt.image}
-                alt={opt.label}
-                className="absolute inset-0 w-full h-full object-cover rounded-full"
-              />
-            ) : (
-              <>
-                <div
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: `radial-gradient(circle at 35% 35%, ${opt.hex} 0%, #2a2a2a 80%)` }}
-                />
-                <div className="absolute top-[25%] left-[25%] w-[15%] h-[15%] bg-white rounded-full blur-[1px] opacity-60" />
-              </>
-            )}
-          </button>
-        );
-      })}
+    <div className="overflow-x-auto scrollbar-hide -mx-2 px-2">
+      <div className="flex flex-col gap-2 min-w-max py-1">
+        <div className="flex gap-2">
+          {row1.map(renderOption)}
+        </div>
+        <div className="flex gap-2">
+          {row2.map(renderOption)}
+        </div>
+      </div>
     </div>
   );
 }
