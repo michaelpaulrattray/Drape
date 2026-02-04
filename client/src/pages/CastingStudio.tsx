@@ -20,6 +20,7 @@ import { BrandSelector } from "@/components/CastingStudio/BrandSelector";
 import { PhysiqueSelector } from "@/components/CastingStudio/PhysiqueSelector";
 import { ViewTabs, RefinePanel, ToolsBar } from "@/components/CastingStudio/ImageViewer";
 import { DirectorsNote } from "@/components/CastingStudio/DirectorsNote";
+import { ControlPanel } from "@/components/CastingStudio/ControlPanel";
 import { InlineError, useRetryHandler } from "@/components/ErrorBoundary";
 import {
   BRAND_OPTIONS,
@@ -1837,80 +1838,22 @@ export default function CastingStudio() {
       </div>
 
       {/* Left Panel - Control Panel */}
-      <aside className={`
-        ${showMobilePanel ? 'fixed inset-0 z-50 pt-16 flex flex-col' : 'hidden'}
-        lg:relative lg:flex lg:flex-col lg:w-[400px] lg:pt-0
-        bg-white border-r border-gray-200 h-screen flex-shrink-0
+      <ControlPanel
+        prefs={prefs}
+        updatePref={updatePref}
+        currentHairFamilies={currentHairFamilies}
+        creditsBalance={creditsData?.balance || 0}
+        onNavigateBack={() => navigate("/dashboard")}
+        showMobilePanel={showMobilePanel}
+        onToggleMobilePanel={() => setShowMobilePanel(!showMobilePanel)}
+      />
+
+      {/* Generate Button Panel - Positioned below ControlPanel */}
+      <div className={`
+        ${showMobilePanel ? 'fixed bottom-0 left-0 right-0 z-50' : 'hidden'}
+        lg:relative lg:w-[400px] lg:block lg:flex-shrink-0
+        p-5 border-t border-gray-200 bg-white
       `}>
-        {/* Header */}
-        <div className="hidden lg:flex p-4 border-b border-gray-200 items-center justify-between">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-2 text-subtle hover:text-obsidian transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-obsidian" />
-            <span className="text-xs font-medium text-obsidian">{creditsData?.balance || 0}</span>
-          </div>
-        </div>
-
-        {/* Scrollable Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-2 custom-scrollbar">
-          {/* 1. CASTING BASICS */}
-          <CollapsibleSection title="Casting Basics" required id="section-casting-basics">
-            <BrandSelector
-              prefs={prefs}
-              updatePref={updatePref as (key: string, value: string | CastingVibe) => void}
-            />
-          </CollapsibleSection>
-
-          {/* 2. PHYSIQUE */}
-          <CollapsibleSection title="Physique" id="section-physique">
-            <PhysiqueSelector
-              selected={prefs.bodyType || "Slim"}
-              onSelect={(val) => updatePref('bodyType', val)}
-            />
-          </CollapsibleSection>
-
-          {/* 3. FACE STRUCTURE */}
-          <CollapsibleSection title="Face Structure">
-            <FaceSection
-              prefs={prefs}
-              updatePref={updatePref}
-            />
-          </CollapsibleSection>
-
-          {/* 4. SKIN & COMPLEXION */}
-          <CollapsibleSection title="Skin & Complexion" required id="section-skin">
-            <SkinSection
-              prefs={prefs}
-              updatePref={updatePref}
-            />
-          </CollapsibleSection>
-
-          {/* 5. EYES */}
-          <CollapsibleSection title="Eyes" required id="section-eyes">
-            <EyeSection
-              selected={prefs.eyeColor || ""}
-              onSelect={(val) => updatePref('eyeColor', val)}
-            />
-          </CollapsibleSection>
-
-          {/* 6. HAIR */}
-          <CollapsibleSection title="Hair" required id="section-hair">
-            <HairSection
-              prefs={prefs}
-              updatePref={updatePref}
-              currentHairFamilies={currentHairFamilies}
-            />
-          </CollapsibleSection>
-        </div>
-
-        {/* Generate Button */}
-        <div className="p-5 border-t border-gray-200 bg-white mt-auto">
           <button
             data-debug-generate
             onClick={(e) => {
@@ -1982,11 +1925,10 @@ export default function CastingStudio() {
               </div>
             </details>
           )}
-        </div>
-      </aside>
+      </div>
 
-        {/* Right Panel - Image Viewer */}
-        <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative bg-canvas">
+      {/* Right Panel - Image Viewer */}
+      <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative bg-canvas">
         {/* Background Effects */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-slate-accent/10 rounded-full blur-[90px] mix-blend-screen opacity-30"></div>
