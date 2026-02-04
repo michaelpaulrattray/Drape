@@ -1791,3 +1791,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Make the bottom circle selectors (hair color swatches) scrollable/draggable
 - [x] Enable horizontal scrolling with overflow-x-auto
 - [x] Add drag support with cursor-grab/active:cursor-grabbing
+
+### Eye Color Selector Draggable
+- [x] Add scrollable/draggable functionality to eye color selector
+- [x] Match hair color wheel styling with cursor-grab/active:cursor-grabbing
+- [x] Maintain consistency between both selectors
