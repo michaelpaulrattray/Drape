@@ -421,20 +421,20 @@ function WhyUsSection() {
 
         {/* 4-Column Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Column 1 - Two stacked cards */}
-          <div className="flex flex-col gap-4">
+          {/* Card 1 - #EBEBEB outer with 2 inner cards */}
+          <div className="bg-[#EBEBEB] rounded-2xl p-3 flex flex-col gap-3">
             {/* Top: Dark card with building image */}
-            <div className="relative rounded-2xl overflow-hidden bg-[#121212] min-h-[280px] flex flex-col justify-between">
+            <div className="relative rounded-xl overflow-hidden bg-[#121212] min-h-[240px] flex flex-col justify-between">
               <img
                 src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80"
                 alt="Architecture"
                 className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale"
               />
-              <div className="relative z-10 p-6">
-                <h3 className="text-xl font-semibold text-white leading-tight">Purposeful Design<br />for Modern Brands.</h3>
+              <div className="relative z-10 p-5">
+                <h3 className="text-lg font-semibold text-white leading-tight">Purposeful Design<br />for Modern Brands.</h3>
                 <p className="text-white/50 text-xs mt-2">© 2025</p>
               </div>
-              <div className="relative z-10 p-6 pt-0">
+              <div className="relative z-10 p-5 pt-0">
                 <a href="/waitlist" className="inline-flex items-center gap-2 px-4 py-2 bg-white/90 text-[#121212] text-sm font-medium rounded-full hover:bg-white transition-colors">
                   Get started
                   <Plus className="w-3.5 h-3.5" />
@@ -442,8 +442,8 @@ function WhyUsSection() {
               </div>
             </div>
             {/* Bottom: Bullet list card */}
-            <div className="bg-[#F5F5F5] rounded-2xl p-5">
-              <ul className="space-y-2.5">
+            <div className="bg-white rounded-xl p-4">
+              <ul className="space-y-2">
                 {["Collaborative Approach", "Quick turnaround", "Clear Communication", "Consistent Quality", "Reliable Support"].map((item, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-[#121212]">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#121212]"></span>
@@ -454,18 +454,18 @@ function WhyUsSection() {
             </div>
           </div>
 
-          {/* Column 2 - Two stacked cards */}
-          <div className="flex flex-col gap-4">
-            {/* Top: Clients/avatars card */}
-            <div className="bg-[#F5F5F5] rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
+          {/* Card 2 - #EBEBEB single card with background content */}
+          <div className="bg-[#EBEBEB] rounded-2xl p-5 flex flex-col justify-between min-h-[400px]">
+            {/* Top: Clients/avatars */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex -space-x-2">
                   {["photo-1494790108377-be9c29b29330", "photo-1507003211169-0a1dd7228f2d", "photo-1438761681033-6461ffad8d80", "photo-1472099645785-5658abf4ff4e"].map((id, i) => (
                     <img
                       key={i}
                       src={`https://images.unsplash.com/${id}?w=100&q=80`}
                       alt="Client"
-                      className="w-9 h-9 rounded-full border-2 border-[#F5F5F5] object-cover"
+                      className="w-9 h-9 rounded-full border-2 border-[#EBEBEB] object-cover"
                     />
                   ))}
                 </div>
@@ -478,8 +478,8 @@ function WhyUsSection() {
               </div>
               <p className="text-sm"><span className="font-semibold text-[#121212]">100+</span> <span className="text-[#757575]">Happy clients worldwide</span></p>
             </div>
-            {/* Bottom: Testimonial card */}
-            <div className="bg-[#F5F5F5] rounded-2xl p-5 flex-1">
+            {/* Bottom: Testimonial */}
+            <div>
               <div className="flex items-center gap-0.5 mb-3">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-3 h-3 text-[#121212] fill-current" viewBox="0 0 20 20">
@@ -504,14 +504,14 @@ function WhyUsSection() {
             </div>
           </div>
 
-          {/* Column 3 - Three stacked feature cards */}
-          <div className="flex flex-col gap-4">
+          {/* Card 3 - #EBEBEB outer with 3 white module cards */}
+          <div className="bg-[#EBEBEB] rounded-2xl p-3 flex flex-col gap-3">
             {[
               { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, title: "Streamlined Process", desc: "Our focused, step-by-step approach saves time and keeps projects moving smoothly." },
               { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>, title: "Scalable Design", desc: "We create systems that grow with your brand and stay effective over time." },
               { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "24/7 Dedicated Support", desc: "We're always here when you need us, ready to answer questions, provide updates." },
             ].map((feature, i) => (
-              <div key={i} className="bg-[#F5F5F5] rounded-2xl p-5 flex-1">
+              <div key={i} className="bg-white rounded-xl p-4 flex-1">
                 <div className="text-[#121212] mb-3">{feature.icon}</div>
                 <h4 className="font-semibold text-[#121212] text-sm mb-1.5">{feature.title}</h4>
                 <p className="text-xs text-[#757575] leading-relaxed">{feature.desc}</p>
