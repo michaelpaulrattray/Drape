@@ -21,6 +21,8 @@ import { PhysiqueSelector } from "@/components/CastingStudio/PhysiqueSelector";
 import { ViewTabs, RefinePanel, ToolsBar } from "@/components/CastingStudio/ImageViewer";
 import { DirectorsNote } from "@/components/CastingStudio/DirectorsNote";
 import { InlineError, useRetryHandler } from "@/components/ErrorBoundary";
+import { useCastingUIStore } from "@/stores/useCastingUIStore";
+import { useCastingFormStore, DEFAULT_PREFERENCES } from "@/stores/useCastingFormStore";
 import {
   BRAND_OPTIONS,
   ETHNICITIES,
@@ -672,41 +674,16 @@ export default function CastingStudio() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
-  // Model preferences state
-  const [prefs, setPrefs] = useState<ModelPreferences>({
-    castingBrand: 'Gucci',
-    castingVibe: { editorial: 0.33, commercial: 0.33, runway: 0.34 },
-    gender: '',
-    age: '23',
-    ethnicity: '',
-    bodyType: 'Slim',
-    faceShape: 'Oval',
-    skinTone: '',
-    skinTexture: 'Raw / Standard',
-    skinFinish: 'Natural',
-    eyeColor: '',
-    hairColor: '',
-    hairStyle: '',
-    hairLength: 'Medium',
-    hairTexture: 'Straight',
-    hairFringe: 'None',
-    hairParting: 'Center',
-    hairVolume: 'Natural',
-    hairFlyaways: '',
-    hairHairline: '',
-    hairTuck: '',
-    hairFade: '',
-    facialHair: '',
-    jawline: '',
-    cheekbones: '',
-    cheeks: '',
-    eyeShape: '',
-    noseShape: '',
-    lipShape: '',
-    eyebrowStyle: 'Random',
-    features: '',
-    userPrompt: '',
-  });
+  // Model preferences from Zustand store
+  const {
+    prefs,
+    setPrefs,
+    updatePref,
+    modelName,
+    setModelName,
+    currentHairFamilies,
+    resetForm,
+  } = useCastingFormStore();
 
   // Generation state
   const [genState, setGenState] = useState<GenerationState>({
@@ -718,8 +695,34 @@ export default function CastingStudio() {
   // Current model state
   const [currentModelId, setCurrentModelId] = useState<number | null>(null);
   const [currentAssets, setCurrentAssets] = useState<GeneratedAsset[]>([]);
-  const [activeView, setActiveView] = useState<string>("frontClose");
-  const [modelName, setModelName] = useState("");
+  // UI state from Zustand store
+  const {
+    activeView,
+    setActiveView,
+    activeTool,
+    setActiveTool,
+    resolution,
+    setResolution,
+    showMobilePanel,
+    setShowMobilePanel,
+    refineInput,
+    setRefineInput,
+    isEnhancing,
+    setIsEnhancing,
+    unlockMode,
+    setUnlockMode,
+    isTopupOpen,
+    setIsTopupOpen,
+    showExportModal,
+    setShowExportModal,
+    lockModal,
+    setLockModal,
+    closeLockModal,
+    isAutoGenerating,
+    setIsAutoGenerating,
+    autoGenCancelled,
+    setAutoGenCancelled,
+  } = useCastingUIStore();
   const [currentMasterPrompt, setCurrentMasterPrompt] = useState<string>("");
   const [currentTechnicalSchema, setCurrentTechnicalSchema] = useState<Record<string, any> | null>(null);
 
@@ -727,40 +730,16 @@ export default function CastingStudio() {
   const [history, setHistory] = useState<GeneratedAsset[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  // UI state
-  const [showMobilePanel, setShowMobilePanel] = useState(false);
-
-  const [refineInput, setRefineInput] = useState("");
-  const [isEnhancing, setIsEnhancing] = useState(false);
-  const [unlockMode, setUnlockMode] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Resolution state
-  const [resolution, setResolution] = useState<ImageResolution>(ImageResolution.STD);
-
-  // Tools state
-  const [activeTool, setActiveTool] = useState<EditTool>('none');
+  // Drawing state (kept local due to ref dependencies)
   const [isDrawing, setIsDrawing] = useState(false);
   const [maskPaths, setMaskPaths] = useState<Array<Array<{x: number, y: number}>>>([]);
   const [currentPath, setCurrentPath] = useState<Array<{x: number, y: number}>>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
-  // Modal states
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [lockModal, setLockModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-
-  // Auto-generation state
-  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
-  const [autoGenCancelled, setAutoGenCancelled] = useState(false);
-  
-  // Credit top-up modal state
-  const [isTopupOpen, setIsTopupOpen] = useState(false);
+  // Note: Modal states, auto-generation state, and credit top-up state are now in Zustand store
 
   // Points data
   const { data: creditsData, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
@@ -819,7 +798,7 @@ export default function CastingStudio() {
   // Debug utility: Auto-fill form with random preferences and optionally trigger generation
   const handleDebugFill = (autoGenerate: boolean = false) => {
     const randomPrefs = generateRandomPreferences();
-    setPrefs(prev => ({ ...prev, ...randomPrefs }));
+    setPrefs({ ...prefs, ...randomPrefs });
     toast.success('Debug: Form populated with random preferences');
     
     if (autoGenerate) {
@@ -843,7 +822,7 @@ export default function CastingStudio() {
       if (e.ctrlKey && e.shiftKey && e.key === 'G') {
         e.preventDefault();
         const randomPrefs = generateRandomPreferences();
-        setPrefs(prev => ({ ...prev, ...randomPrefs }));
+        setPrefs({ ...prefs, ...randomPrefs });
         toast.success('Debug: Auto-generating model...');
         // Trigger generation after state update
         setTimeout(() => {
@@ -1001,11 +980,7 @@ export default function CastingStudio() {
     }
   };
 
-  // Get hair styles based on gender
-  const currentHairFamilies = useMemo(() => {
-    const g = (prefs.gender || "Female").toLowerCase();
-    return g === 'male' ? HAIR_FAMILIES_MALE : HAIR_FAMILIES_FEMALE;
-  }, [prefs.gender]);
+  // Note: currentHairFamilies is now from Zustand store
 
   // Form validation
   const isFormValid = useMemo(() => {
@@ -1051,10 +1026,7 @@ export default function CastingStudio() {
     return Math.round((completed / totalFields) * 100);
   }, [prefs]);
 
-  // Update preference helper
-  const updatePref = <K extends keyof ModelPreferences>(key: K, value: ModelPreferences[K]) => {
-    setPrefs((prev) => ({ ...prev, [key]: value }));
-  };
+  // Note: updatePref is now from Zustand store
 
 
 
@@ -1207,7 +1179,7 @@ export default function CastingStudio() {
       title: 'Lock Headshot & Generate Body?',
       message: "Are you sure you want to proceed to full-body generation? You won't be able to return and edit the head without resetting the body generation.",
       onConfirm: async () => {
-        setLockModal(prev => ({ ...prev, isOpen: false }));
+        closeLockModal();
         
         if (!creditsData || creditsData.balance < CREDIT_COSTS.fullBody) {
           toast.error(`Insufficient credits. Need ${CREDIT_COSTS.fullBody} points.`);
@@ -1305,7 +1277,7 @@ export default function CastingStudio() {
           title: 'Lock Body & Generate All Views?',
           message: "This will generate all remaining views (side, walking, back) automatically. You won't be able to edit the body pose without resetting the entire sheet.",
           onConfirm: async () => {
-            setLockModal(prev => ({ ...prev, isOpen: false }));
+            closeLockModal();
             const success = await doGenerate();
             resolve(success);
           }
@@ -1325,7 +1297,7 @@ export default function CastingStudio() {
         title: 'Lock Body & Generate All Views?',
         message: "This will generate all remaining views (side, walking, back) in parallel. You won't be able to edit the body pose without resetting the entire sheet.",
         onConfirm: async () => {
-          setLockModal(prev => ({ ...prev, isOpen: false }));
+          closeLockModal();
           
           setIsAutoGenerating(true);
           setAutoGenCancelled(false);
@@ -1802,7 +1774,7 @@ export default function CastingStudio() {
         title={lockModal.title}
         message={lockModal.message}
         onConfirm={lockModal.onConfirm}
-        onCancel={() => setLockModal(prev => ({ ...prev, isOpen: false }))}
+        onCancel={closeLockModal}
       />
 
       {/* Export Modal */}
@@ -1905,7 +1877,7 @@ export default function CastingStudio() {
             <HairSection
               prefs={prefs}
               updatePref={updatePref}
-              currentHairFamilies={currentHairFamilies}
+              currentHairFamilies={currentHairFamilies().map(h => h.name)}
             />
           </CollapsibleSection>
         </div>
@@ -1964,7 +1936,7 @@ export default function CastingStudio() {
                   <button
                     onClick={() => {
                       const randomPrefs = generateRandomPreferences();
-                      setPrefs(prev => ({ ...prev, ...randomPrefs }));
+                      setPrefs({ ...prefs, ...randomPrefs });
                       toast.success('Auto-generating model...');
                       setTimeout(() => {
                         const generateBtn = document.querySelector('[data-debug-generate]') as HTMLButtonElement;

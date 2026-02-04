@@ -2043,3 +2043,31 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Enhanced error display in CastingStudio with retry and dismiss buttons
 - [x] Verify error handling works correctly
 - [x] Ensure all 149 tests still pass
+
+
+## CastingStudio Refactor - Phase 16: Zustand State Management Migration
+
+### Phase 1: UI State Store
+- [x] Install Zustand dependency
+- [x] Create client/src/stores/useCastingUIStore.ts (~140 lines)
+- [x] Define UI state: activeView, activeTool, resolution, modals (isTopupOpen, lockModal, showExportModal), panels (showMobilePanel), refine input state, auto-generation state
+- [x] Migrate UI state usage in CastingStudio.tsx (replaced 15+ useState hooks with store)
+- [x] Added closeLockModal helper for cleaner modal dismissal
+- [x] Verify all UI interactions work correctly
+- [x] Ensure all 149 tests still pass
+
+### Phase 2: Form/Preferences Store
+- [x] Create client/src/stores/useCastingFormStore.ts (~120 lines)
+- [x] Define form state: prefs (ModelPreferences), modelName, currentHairFamilies
+- [x] Add updatePref and resetForm helpers
+- [x] Migrate form state usage in CastingStudio.tsx (replaced ~35 line prefs declaration)
+- [x] Fixed setPrefs calls to use direct object instead of callback pattern
+- [x] Verify all form interactions work correctly
+- CastingStudio.tsx reduced from 2,370 to 2,338 lines
+
+### Phase 3: Generation Store
+- [ ] Create client/src/stores/useCastingGenerationStore.ts
+- [ ] Define generation state: genState, currentAssets, history, resolution
+- [ ] Migrate generation state usage in CastingStudio.tsx
+- [ ] Update ViewTabs, RefinePanel, ToolsBar, DirectorsNote
+- [ ] Verify all generation features work correctly
