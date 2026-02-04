@@ -2118,3 +2118,23 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Redesign iris selection to remove large ring and black circle
 - Implemented Option B (Inset Shadow): shadow-[inset_0_0_0_3px_rgba(0,0,0,0.7)] scale-105
 - Inset shadow overlays on the iris image, eliminating white gap between iris and border
+
+
+## Waitlist Page Restyling - Match Dashboard
+- [ ] Analyze dashboard styling (colors, typography, components)
+- [ ] Apply dark theme to waitlist page
+- [ ] Update hero section styling
+- [ ] Update all sections to match dashboard design language
+- [ ] Ensure mobile responsiveness
+
+
+## Waitlist Page Restyling - Match Dashboard (COMPLETED)
+- [x] Update hero section colors and styling (bg-canvas, text-obsidian)
+- [x] Update services/exploration section styling
+- [x] Update methodology section styling
+- [x] Update journal section styling (bg-studio-950, slate-accent)
+- [x] Update waitlist form section styling (neumorphic inputs, btn-slate)
+- [x] Update footer styling (bg-canvas, bg-studio-950/80)
+- [x] Replace all orange accents with slate-accent blue-gray
+- [x] Apply neumorphic shadows and soft cards
+- All sections now use dashboard color palette: bg-canvas, bg-studio-950, text-obsidian/charcoal/subtle, border-border, slate-accent for highlights

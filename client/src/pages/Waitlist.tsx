@@ -366,57 +366,29 @@ export default function Waitlist() {
   const currentProject = explorationProjects[projectSlide];
 
   return (
-    <div className="min-h-screen relative text-zinc-900 bg-zinc-50 selection:bg-orange-500 selection:text-white overflow-x-hidden">
-      {/* Background Grid Lines with Animated Neon */}
-      <div className="fixed grid-lines pointer-events-none z-0 inset-0 overflow-hidden">
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="neonGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style={{ stopColor: "rgba(14, 165, 233, 0)", stopOpacity: 0 }} />
-              <stop offset="50%" style={{ stopColor: "rgba(14, 165, 233, 0.5)", stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: "rgba(14, 165, 233, 0)", stopOpacity: 0 }} />
-            </linearGradient>
-            <linearGradient id="neonGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: "rgba(14, 165, 233, 0)", stopOpacity: 0 }} />
-              <stop offset="50%" style={{ stopColor: "rgba(14, 165, 233, 0.5)", stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: "rgba(14, 165, 233, 0)", stopOpacity: 0 }} />
-            </linearGradient>
-            <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <line x1="-200" y1="25%" x2="0" y2="25%" stroke="url(#neonGradient1)" strokeWidth="1" filter="url(#neonGlow)">
-            <animate attributeName="x1" values="-200;100%" dur="15s" repeatCount="indefinite" />
-            <animate attributeName="x2" values="0;120%" dur="15s" repeatCount="indefinite" />
-          </line>
-          <line x1="75%" y1="-200" x2="75%" y2="0" stroke="url(#neonGradient2)" strokeWidth="1" filter="url(#neonGlow)">
-            <animate attributeName="y1" values="-200;100%" dur="12s" repeatCount="indefinite" />
-            <animate attributeName="y2" values="0;120%" dur="12s" repeatCount="indefinite" />
-          </line>
-        </svg>
+    <div className="min-h-screen relative text-obsidian bg-canvas selection:bg-slate-accent selection:text-white overflow-x-hidden">
+      {/* Subtle Background Pattern */}
+      <div className="fixed pointer-events-none z-0 inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(110,127,141,0.03)_0%,transparent_50%)]" />
       </div>
 
-      {/* Navigation - Inline header with mix-blend-difference */}
-      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center mix-blend-difference text-white pointer-events-none">
-        <a href="#" className="group flex items-center gap-2 text-2xl md:text-3xl tracking-tight font-normal pointer-events-auto font-geist">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center bg-canvas/80 backdrop-blur-md border-b border-border">
+        <a href="#" className="group flex items-center gap-2 text-2xl md:text-3xl tracking-tight font-normal font-geist text-obsidian">
           <img 
             src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
             alt="Forma Studio" 
-            className="w-7 h-7 md:w-8 md:h-8 invert"
+            className="w-7 h-7 md:w-8 md:h-8"
           />
-          <span className="border-b border-white pb-0.5 group-hover:border-transparent transition-colors duration-300">forma</span>
-          <span>studio</span>
+          <span className="border-b border-obsidian pb-0.5 group-hover:border-transparent transition-colors duration-300">forma</span>
+          <span className="text-charcoal">studio</span>
         </a>
 
         {/* Desktop Menu */}
         <div className="flex items-center pointer-events-auto">
           <a 
             href="#waitlist" 
-            className="px-5 py-2 rounded-full border border-white/20 hover:bg-white hover:text-black transition-all duration-300 text-sm font-medium uppercase tracking-wide backdrop-blur-sm"
+            className="btn-slate px-5 py-2.5 rounded-lg text-sm font-medium uppercase tracking-wide"
           >
             Join Waitlist
           </a>
@@ -426,48 +398,39 @@ export default function Waitlist() {
       {/* Main Content */}
       <main className="z-10 relative">
         {/* Hero Section */}
-        <section className="md:pt-24 md:pb-32 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-0 border-b px-6 pt-16 pb-20 relative border-black/10">
-          {/* Abstract Video Background */}
-          <video 
-            src="https://cdn.coverr.co/videos/coverr-shadows-of-leaves-on-a-wall-3536/1080p.mp4" 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            className="z-10 opacity-[0.08] w-full h-full object-cover absolute inset-0"
-          />
+        <section className="md:pt-32 md:pb-32 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-0 border-b px-6 pt-24 pb-20 relative border-border bg-studio-950">
           
           {/* Left Col */}
           <div className="col-span-1 flex flex-col z-20 h-full relative justify-between">
             <div className="mb-16">
-              <p className="text-[10px] uppercase md:text-xs font-semibold tracking-widest mb-2 text-orange-600">
+              <p className="text-[10px] uppercase md:text-xs font-semibold tracking-widest mb-2 text-slate-accent">
                 AI-Powered Creative Studio
               </p>
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist">
+              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-none mb-4 font-geist text-obsidian">
                 FORMA
-                <span className="text-orange-500 text-6xl align-top">Studio</span>
+                <span className="text-slate-accent text-6xl align-top">Studio</span>
               </h1>
-              <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-black/20" />
+              <div className="h-px w-full bg-gradient-to-r to-transparent my-6 from-border" />
             </div>
 
             <div className="grid grid-cols-2 gap-8 mb-12">
-              <div className="group cursor-pointer">
-                <Camera className="text-4xl mb-4 group-hover:text-orange-600 transition-colors text-zinc-800 w-9 h-9" />
-                <h3 className="text-sm font-semibold leading-tight mb-2">
+              <div className="group cursor-pointer card-soft p-4 rounded-xl">
+                <Camera className="text-4xl mb-4 group-hover:text-slate-accent transition-colors text-charcoal w-9 h-9" />
+                <h3 className="text-sm font-semibold leading-tight mb-2 text-obsidian">
                   AI Model
                   <br />
                   Generation
                 </h3>
-                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange-500" />
+                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-slate-accent" />
               </div>
-              <div className="group cursor-pointer">
-                <ImageIcon className="text-4xl mb-4 group-hover:text-orange-600 transition-colors text-zinc-800 w-9 h-9" />
-                <h3 className="leading-tight text-sm font-semibold mb-2">
+              <div className="group cursor-pointer card-soft p-4 rounded-xl">
+                <ImageIcon className="text-4xl mb-4 group-hover:text-slate-accent transition-colors text-charcoal w-9 h-9" />
+                <h3 className="leading-tight text-sm font-semibold mb-2 text-obsidian">
                   Campaign
                   <br />
                   Assets
                 </h3>
-                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-orange-500" />
+                <div className="w-4 h-0.5 group-hover:w-8 transition-all bg-slate-accent" />
               </div>
             </div>
 
@@ -487,29 +450,29 @@ export default function Waitlist() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="w-full px-4 py-3 bg-white border border-black/10 text-zinc-900 placeholder:text-zinc-400 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                  className="w-full px-4 py-3 bg-white border border-border rounded-lg text-obsidian placeholder:text-subtle text-sm focus:outline-none focus:border-slate-accent focus:ring-1 focus:ring-slate-accent transition-all shadow-neumorphic"
                 />
                 <button 
                   type="submit"
                   disabled={joinWaitlist.isPending || !email}
-                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-zinc-900 text-white font-semibold text-sm uppercase tracking-wider rounded-full shadow-lg shadow-black/30 hover:bg-black hover:shadow-black/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-slate inline-flex items-center justify-center gap-3 px-8 py-4 font-semibold text-sm uppercase tracking-wider rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {joinWaitlist.isPending ? "Joining..." : "Get Early Access"}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
               {submitted && (
-                <p className="mt-3 text-sm text-orange-600 font-medium">You're on the list! Position #{position}</p>
+                <p className="mt-3 text-sm text-slate-accent font-medium">You're on the list! Position #{position}</p>
               )}
               {alreadyRegistered && (
-                <p className="mt-3 text-sm text-amber-600 font-medium">Already registered! Position #{position}</p>
+                <p className="mt-3 text-sm text-charcoal font-medium">Already registered! Position #{position}</p>
               )}
             </div>
           </div>
 
           {/* Center Visual (Carousel) */}
           <div className="col-span-1 md:col-span-2 flex md:py-0 pt-10 pb-10 relative items-center justify-center">
-            <div className="aspect-[3/4] group overflow-hidden md:aspect-auto md:h-[600px] w-full relative">
+            <div className="aspect-[3/4] group overflow-hidden md:aspect-auto md:h-[600px] w-full relative rounded-2xl shadow-neumorphic">
               {/* Slider Track */}
               <div 
                 className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform w-full h-full"
@@ -563,19 +526,19 @@ export default function Waitlist() {
 
           {/* Right Col */}
           <div className="col-span-1 flex flex-col md:items-end z-20 md:pt-0 h-full pt-8 relative items-start pl-6 md:pl-0">
-            <p className="text-[10px] uppercase font-semibold text-zinc-400 tracking-widest mb-1">
+            <p className="text-[10px] uppercase font-semibold text-subtle tracking-widest mb-1">
               Creators Waiting:
             </p>
-            <span className="text-6xl md:text-8xl font-bold tracking-tighter text-zinc-900 font-geist">
+            <span className="text-6xl md:text-8xl font-bold tracking-tighter text-obsidian font-geist">
               847
             </span>
           </div>
         </section>
 
         {/* Trusted By Section - Scrolling Logos */}
-        <section className="py-8 md:py-12 border-b border-black/10 overflow-hidden">
+        <section className="py-8 md:py-12 border-b border-border overflow-hidden bg-canvas">
           <div className="text-center mb-6">
-            <p className="text-xs md:text-sm font-mono uppercase tracking-widest text-zinc-400">
+            <p className="text-xs md:text-sm font-mono uppercase tracking-widest text-subtle">
               Trusted by top creatives working for:
             </p>
           </div>
@@ -583,8 +546,8 @@ export default function Waitlist() {
           {/* Marquee Container */}
           <div className="relative">
             {/* Gradient Masks */}
-            <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-zinc-50 to-transparent z-10" />
-            <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-zinc-50 to-transparent z-10" />
+            <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-canvas to-transparent z-10" />
+            <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-canvas to-transparent z-10" />
             
             {/* Scrolling Content */}
             <div className="flex w-[200%] animate-marquee">
@@ -671,18 +634,18 @@ export default function Waitlist() {
         </section>
 
         {/* Exploration Section */}
-        <section id="studios" className="grid grid-cols-1 md:grid-cols-2 border-b border-black/10">
+        <section id="studios" className="grid grid-cols-1 md:grid-cols-2 border-b border-border bg-studio-950">
           {/* Left: Gallery */}
-          <div className="md:p-12 overflow-hidden group border-black/10 border-r p-6 relative">
+          <div className="md:p-12 overflow-hidden group border-border border-r p-6 relative">
             <div className="grid grid-cols-2 gap-4 h-full">
-              <div className="bg-zinc-200 w-full h-64 md:h-80 relative overflow-hidden">
+              <div className="bg-studio-900 w-full h-64 md:h-80 relative overflow-hidden rounded-xl shadow-neumorphic">
                 <img 
                   src={currentProject.img1} 
                   className="w-full h-full object-cover grayscale opacity-90 group-hover:scale-105 transition-transform duration-700"
                   alt={currentProject.title}
                 />
               </div>
-              <div className="w-full h-64 md:h-80 relative overflow-hidden translate-y-8 bg-zinc-200">
+              <div className="w-full h-64 md:h-80 relative overflow-hidden translate-y-8 bg-studio-900 rounded-xl shadow-neumorphic">
                 <img 
                   src={currentProject.img2} 
                   className="w-full h-full object-cover grayscale opacity-90 group-hover:scale-105 transition-transform duration-700 delay-75"
@@ -694,39 +657,39 @@ export default function Waitlist() {
 
           {/* Right: Text Content */}
           <div className="md:p-12 flex flex-col p-6 justify-center">
-            <h2 className="text-7xl md:text-9xl font-semibold tracking-tighter mb-4 text-zinc-900 font-geist">
+            <h2 className="text-7xl md:text-9xl font-semibold tracking-tighter mb-4 text-obsidian font-geist">
               {currentProject.title}
             </h2>
-            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-zinc-600">
+            <h3 className="text-xl md:text-2xl font-semibold mb-4 text-charcoal">
               {currentProject.subtitle}
             </h3>
-            <p className="leading-relaxed md:text-base text-sm text-zinc-500 max-w-md mb-10">
+            <p className="leading-relaxed md:text-base text-sm text-subtle max-w-md mb-10">
               {currentProject.description}
             </p>
 
-            <div className="flex items-center justify-between mt-auto pt-8 border-t border-black/10">
+            <div className="flex items-center justify-between mt-auto pt-8 border-t border-border">
               <div className="flex items-center gap-4">
                 <span className="text-3xl font-semibold font-mono">
                   <span>{String(projectSlide + 1).padStart(2, '0')}</span>
-                  <span className="text-base align-top ml-1 text-black/30">/ {String(explorationProjects.length).padStart(2, '0')}</span>
+                  <span className="text-base align-top ml-1 text-subtle">/ {String(explorationProjects.length).padStart(2, '0')}</span>
                 </span>
                 <div className="flex gap-2 ml-4">
                   <button 
                     onClick={prevProjectSlide}
-                    className="flex transition hover:bg-black hover:text-white w-8 h-8 border-black/20 border rounded-full items-center justify-center text-black"
+                    className="flex transition hover:bg-slate-accent hover:text-white w-8 h-8 border-border border rounded-full items-center justify-center text-obsidian"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button 
                     onClick={nextProjectSlide}
-                    className="flex transition hover:bg-black hover:text-white w-8 h-8 border-black/20 border rounded-full items-center justify-center text-black"
+                    className="flex transition hover:bg-slate-accent hover:text-white w-8 h-8 border-border border rounded-full items-center justify-center text-obsidian"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <a href="#waitlist" className="px-6 py-3 border text-sm font-medium transition-colors flex items-center gap-2 border-black/20 hover:bg-black hover:text-white">
+              <a href="#waitlist" className="btn-slate-outline px-6 py-3 text-sm font-medium transition-colors flex items-center gap-2">
                 All Studios
                 <ArrowRight className="w-4 h-4" />
               </a>
@@ -735,51 +698,51 @@ export default function Waitlist() {
         </section>
 
         {/* Process Section */}
-        <section className="relative border-b border-black/10">
+        <section className="relative border-b border-border bg-canvas">
           {/* Tabs */}
           <div className="absolute top-0 left-0 md:left-1/4 flex z-20">
-            <button className="text-sm font-semibold border-r px-8 py-3 backdrop-blur-sm bg-white/50 border-black/10 text-zinc-900">
+            <button className="text-sm font-semibold border-r px-8 py-3 backdrop-blur-sm bg-studio-950/80 border-border text-obsidian">
               AI Workflow
             </button>
-            <button className="transition-colors text-sm font-semibold px-8 py-3 hover:text-black text-black/50">
+            <button className="transition-colors text-sm font-semibold px-8 py-3 hover:text-obsidian text-subtle">
               Traditional
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Left Content */}
-            <div className="md:p-12 md:pt-32 flex flex-col border-black/10 border-r pt-24 p-6 relative justify-center">
-              <h2 className="md:text-7xl uppercase text-5xl font-bold tracking-tighter mb-8 text-zinc-900 font-geist">
+            <div className="md:p-12 md:pt-32 flex flex-col border-border border-r pt-24 p-6 relative justify-center">
+              <h2 className="md:text-7xl uppercase text-5xl font-bold tracking-tighter mb-8 text-obsidian font-geist">
                 Process
               </h2>
 
               <div className="mb-12">
-                <h4 className="text-xl font-semibold mb-2">AI-Powered Pipeline</h4>
-                <h5 className="text-lg text-black/70 mb-6">From Brief to Campaign</h5>
-                <p className="leading-relaxed text-sm text-zinc-500 max-w-sm">
+                <h4 className="text-xl font-semibold mb-2 text-obsidian">AI-Powered Pipeline</h4>
+                <h5 className="text-lg text-charcoal mb-6">From Brief to Campaign</h5>
+                <p className="leading-relaxed text-sm text-subtle max-w-sm">
                   Our AI handles the entire creative pipeline. From model generation to final campaign assets, 
                   we deliver photorealistic results in hours, not weeks.
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-8 pt-8 border-t border-black/10">
+              <div className="grid grid-cols-3 gap-8 pt-8 border-t border-border">
                 <div>
-                  <p className="text-[10px] font-bold uppercase mb-1 text-orange-600">
+                  <p className="text-[10px] font-bold uppercase mb-1 text-slate-accent">
                     Turnaround
                   </p>
-                  <p className="text-2xl font-bold font-mono">24h</p>
+                  <p className="text-2xl font-bold font-mono text-obsidian">24h</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase mb-1 text-orange-600">
+                  <p className="text-[10px] font-bold uppercase mb-1 text-slate-accent">
                     Cost
                   </p>
-                  <p className="text-2xl font-bold font-mono">-90%</p>
+                  <p className="text-2xl font-bold font-mono text-obsidian">-90%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase mb-1 text-orange-600">
+                  <p className="text-[10px] font-bold uppercase mb-1 text-slate-accent">
                     Variations
                   </p>
-                  <p className="text-2xl font-bold font-mono">∞</p>
+                  <p className="text-2xl font-bold font-mono text-obsidian">∞</p>
                 </div>
               </div>
             </div>
@@ -791,31 +754,31 @@ export default function Waitlist() {
                 className="absolute inset-0 w-full h-full object-cover grayscale contrast-125"
                 alt="Process"
               />
-              <div className="absolute inset-0 bg-gradient-to-t to-transparent from-zinc-50/20" />
+              <div className="absolute inset-0 bg-gradient-to-t to-transparent from-canvas/20" />
             </div>
           </div>
         </section>
 
         {/* Methodology Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 border-b relative group border-black/10 bg-zinc-50">
+        <section className="grid grid-cols-1 lg:grid-cols-2 border-b relative group border-border bg-studio-950">
           {/* Left: Visual Content */}
-          <div className="relative min-h-[500px] lg:min-h-[700px] border-r overflow-hidden border-black/10">
+          <div className="relative min-h-[500px] lg:min-h-[700px] border-r overflow-hidden border-border">
             <img 
               src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=2564&auto=format&fit=crop" 
               alt="Camera Lens" 
               className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000 ease-out"
             />
-            <div className="absolute inset-0 bg-gradient-to-t to-transparent from-zinc-50 via-zinc-50/20" />
+            <div className="absolute inset-0 bg-gradient-to-t to-transparent from-studio-950 via-studio-950/20" />
             
             {/* Floating Data Card */}
-            <div className="absolute bottom-8 left-8 right-8 md:left-12 md:right-auto md:w-80 backdrop-blur-xl border p-6 z-10 transition-colors duration-300 bg-white/80 border-black/10 hover:bg-white">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-black/10">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">Current Tech</span>
-                <Camera className="w-4 h-4 text-zinc-500" />
+            <div className="absolute bottom-8 left-8 right-8 md:left-12 md:right-auto md:w-80 backdrop-blur-xl border p-6 z-10 transition-colors duration-300 bg-studio-950/90 border-border hover:bg-studio-950 card-soft rounded-xl">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-accent">Current Tech</span>
+                <Camera className="w-4 h-4 text-subtle" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wider font-semibold text-black/50">Engine: Flux Pro</p>
-                <p className="text-lg font-medium tracking-tight">Photorealistic Generation</p>
+                <p className="text-xs uppercase tracking-wider font-semibold text-subtle">Engine: Flux Pro</p>
+                <p className="text-lg font-medium tracking-tight text-obsidian">Photorealistic Generation</p>
               </div>
             </div>
           </div>
@@ -828,66 +791,66 @@ export default function Waitlist() {
                 <Sparkles className="w-[120px] h-[120px]" />
               </div>
 
-              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange-600 tracking-[0.2em] mb-6">
-                <span className="w-2 h-2 rounded-full bg-orange-600" />
+              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-slate-accent tracking-[0.2em] mb-6">
+                <span className="w-2 h-2 rounded-full bg-slate-accent" />
                 Vision
               </p>
-              <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter leading-none mb-6 text-zinc-900 font-geist">
+              <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter leading-none mb-6 text-obsidian font-geist">
                 Create, Scale & 
-                <span className="text-black/30"> Deliver</span>
+                <span className="text-charcoal"> Deliver</span>
               </h2>
-              <p className="leading-relaxed md:text-base text-sm text-zinc-500 max-w-md">
+              <p className="leading-relaxed md:text-base text-sm text-subtle max-w-md">
                 AI photography is not just about generating images, but creating consistent brand identities. 
                 We combine cutting-edge AI with creative direction to deliver campaign-ready assets.
               </p>
             </div>
 
             {/* Accordion / List Items */}
-            <div className="border-t divide-y border-black/10 divide-black/10 bg-white">
+            <div className="border-t divide-y border-border divide-border bg-canvas">
               {/* Item 1 */}
-              <a href="#" className="group block md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5 p-6">
+              <a href="#" className="group block md:px-12 md:py-8 transition-colors duration-300 hover:bg-studio-950/50 p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-orange-600/50 group-hover:text-orange-600">01</span>
+                    <span className="font-mono text-xs transition-colors text-slate-accent/50 group-hover:text-slate-accent">01</span>
                     <div className="flex flex-col">
-                      <h3 className="group-hover:text-black transition-colors text-lg font-medium text-black/80 tracking-tight">Model Creation</h3>
-                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-black/40">Define characteristics and generate consistent AI models</span>
+                      <h3 className="group-hover:text-obsidian transition-colors text-lg font-medium text-charcoal tracking-tight">Model Creation</h3>
+                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-subtle">Define characteristics and generate consistent AI models</span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange-600/50 group-hover:bg-orange-600/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange-600" />
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-border group-hover:border-slate-accent/50 group-hover:bg-slate-accent/10">
+                    <ArrowUpRight className="w-4 h-4 text-subtle group-hover:text-slate-accent" />
                   </div>
                 </div>
               </a>
 
               {/* Item 2 */}
-              <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5">
+              <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-studio-950/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-orange-600/50 group-hover:text-orange-600">02</span>
+                    <span className="font-mono text-xs transition-colors text-slate-accent/50 group-hover:text-slate-accent">02</span>
                     <div className="flex flex-col">
-                      <h3 className="group-hover:text-black transition-colors text-lg font-medium text-black/80 tracking-tight">Outfit Styling</h3>
-                      <span className="group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform group-hover:translate-y-0 text-xs text-black/40 opacity-0 h-0 mt-1 translate-y-2">Generate any outfit on your AI models</span>
+                      <h3 className="group-hover:text-obsidian transition-colors text-lg font-medium text-charcoal tracking-tight">Outfit Styling</h3>
+                      <span className="group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform group-hover:translate-y-0 text-xs text-subtle opacity-0 h-0 mt-1 translate-y-2">Generate any outfit on your AI models</span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange-600/50 group-hover:bg-orange-600/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange-600" />
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-border group-hover:border-slate-accent/50 group-hover:bg-slate-accent/10">
+                    <ArrowUpRight className="w-4 h-4 text-subtle group-hover:text-slate-accent" />
                   </div>
                 </div>
               </a>
 
               {/* Item 3 */}
-              <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-black/5">
+              <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-studio-950/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-orange-600/50 group-hover:text-orange-600">03</span>
+                    <span className="font-mono text-xs transition-colors text-slate-accent/50 group-hover:text-slate-accent">03</span>
                     <div className="flex flex-col">
-                      <h3 className="text-lg font-medium tracking-tight group-hover:text-black transition-colors text-black/80">Campaign Production</h3>
-                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-black/40">Full photoshoot generation with lighting control</span>
+                      <h3 className="text-lg font-medium tracking-tight group-hover:text-obsidian transition-colors text-charcoal">Campaign Production</h3>
+                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-subtle">Full photoshoot generation with lighting control</span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-black/10 group-hover:border-orange-600/50 group-hover:bg-orange-600/10">
-                    <ArrowUpRight className="w-4 h-4 text-black/50 group-hover:text-orange-600" />
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-border group-hover:border-slate-accent/50 group-hover:bg-slate-accent/10">
+                    <ArrowUpRight className="w-4 h-4 text-subtle group-hover:text-slate-accent" />
                   </div>
                 </div>
               </a>
@@ -899,8 +862,8 @@ export default function Waitlist() {
         <ServicesMarqueeSection />
 
         {/* Journal Section */}
-        <section className="border-b border-black/10 bg-zinc-50">
-          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-black/10">
+        <section className="border-b border-border bg-studio-950">
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
             {/* Left: Featured Article */}
             <div className="group relative min-h-[600px] flex flex-col justify-end p-8 md:p-12 overflow-hidden cursor-pointer">
               <img 
@@ -908,27 +871,27 @@ export default function Waitlist() {
                 alt="Featured" 
                 className="group-hover:opacity-80 group-hover:scale-105 transition-all duration-1000 ease-out opacity-60 w-full h-full object-cover absolute inset-0 grayscale"
               />
-              <div className="bg-gradient-to-t to-transparent absolute inset-0 from-zinc-50 via-zinc-50/60" />
+              <div className="bg-gradient-to-t to-transparent absolute inset-0 from-studio-950 via-studio-950/60" />
               
               <div className="relative z-10 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                 <div className="flex items-center gap-4 mb-6">
-                  <span className="px-3 py-1 border text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm border-orange-500/30 bg-orange-500/10 text-orange-600">Featured</span>
-                  <span className="text-xs font-mono tracking-tight text-black/50">FEB 02, 2026</span>
+                  <span className="px-3 py-1 border text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm border-slate-accent/30 bg-slate-accent/10 text-slate-accent">Featured</span>
+                  <span className="text-xs font-mono tracking-tight text-subtle">FEB 02, 2026</span>
                 </div>
                 
-                <h3 className="md:text-7xl uppercase text-5xl font-bold tracking-tighter mb-8 text-zinc-900 font-geist">
+                <h3 className="md:text-7xl uppercase text-5xl font-bold tracking-tighter mb-8 text-obsidian font-geist">
                   The Future of 
-                  <span className="font-normal text-black/40"> AI Fashion</span>
+                  <span className="font-normal text-charcoal"> AI Fashion</span>
                 </h3>
                 
-                <p className="leading-relaxed line-clamp-2 md:text-lg text-zinc-600 max-w-md mb-8">
+                <p className="leading-relaxed line-clamp-2 md:text-lg text-subtle max-w-md mb-8">
                   Exploring how AI is revolutionizing fashion photography and model casting, 
                   where digital innovation meets creative vision.
                 </p>
                 
-                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest transition-colors text-black group-hover:text-orange-600">
+                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest transition-colors text-obsidian group-hover:text-slate-accent">
                   Read Full Entry
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center group-hover:text-white transition-all duration-300 border-black/20 group-hover:bg-orange-600 group-hover:border-orange-600">
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center group-hover:text-white transition-all duration-300 border-border group-hover:bg-slate-accent group-hover:border-slate-accent">
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
@@ -937,32 +900,32 @@ export default function Waitlist() {
 
             {/* Right: Editorial List */}
             <div className="flex flex-col h-full">
-              <div className="p-8 md:p-12 border-b flex items-center justify-between bg-white/[0.02] border-black/10">
+              <div className="p-8 md:p-12 border-b flex items-center justify-between bg-canvas/50 border-border">
                 <div>
-                  <h2 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase mb-2 text-zinc-900 font-geist">Journal</h2>
-                  <p className="text-xs uppercase tracking-widest text-black/40">Behind the Scenes</p>
+                  <h2 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase mb-2 text-obsidian font-geist">Journal</h2>
+                  <p className="text-xs uppercase tracking-widest text-subtle">Behind the Scenes</p>
                 </div>
-                <a href="#" className="px-5 py-2.5 border text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2 border-black/10 hover:bg-black hover:text-zinc-100">
+                <a href="#" className="btn-slate-outline px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2">
                   Archive
                   <BookOpen className="w-3.5 h-3.5" />
                 </a>
               </div>
               
-              <div className="flex-1 divide-y divide-black/10">
+              <div className="flex-1 divide-y divide-border">
                 {journalEntries.map((entry, index) => (
-                  <a key={index} href="#" className="group block p-8 md:px-12 transition-colors relative overflow-hidden hover:bg-black/5">
-                    <div className="absolute right-0 top-0 bottom-0 w-1 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 bg-orange-500" />
+                  <a key={index} href="#" className="group block p-8 md:px-12 transition-colors relative overflow-hidden hover:bg-studio-950/50">
+                    <div className="absolute right-0 top-0 bottom-0 w-1 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 bg-slate-accent" />
                     <div className="flex justify-between items-start gap-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">{entry.category}</span>
-                          <span className="w-1 h-1 rounded-full bg-black/20" />
-                          <span className="text-[10px] uppercase tracking-widest text-black/40">{entry.type}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-accent">{entry.category}</span>
+                          <span className="w-1 h-1 rounded-full bg-border" />
+                          <span className="text-[10px] uppercase tracking-widest text-subtle">{entry.type}</span>
                         </div>
-                        <h4 className="text-xl md:text-2xl font-semibold mb-2 group-hover:text-black transition-colors text-black/90">{entry.title}</h4>
-                        <p className="text-sm group-hover:text-black/70 transition-colors text-black/40">{entry.description}</p>
+                        <h4 className="text-xl md:text-2xl font-semibold mb-2 group-hover:text-obsidian transition-colors text-charcoal">{entry.title}</h4>
+                        <p className="text-sm group-hover:text-charcoal transition-colors text-subtle">{entry.description}</p>
                       </div>
-                      <div className="flex hidden md:flex transition-colors w-20 h-20 border items-center justify-center bg-black/5 border-black/10 group-hover:bg-orange-100 text-orange-600">
+                      <div className="flex hidden md:flex transition-colors w-20 h-20 border items-center justify-center bg-studio-900/50 border-border group-hover:bg-slate-accent/10 text-slate-accent">
                         <Sparkles className="w-6 h-6" />
                       </div>
                     </div>
@@ -974,17 +937,17 @@ export default function Waitlist() {
         </section>
 
         {/* Waitlist Section - Redesigned */}
-        <section id="waitlist" className="border-b border-black/10">
+        <section id="waitlist" className="border-b border-border">
           <div className="grid grid-cols-1 lg:grid-cols-2">
             {/* Left: Visual Side */}
-            <div className="relative min-h-[500px] lg:min-h-[700px] overflow-hidden bg-zinc-900">
+            <div className="relative min-h-[500px] lg:min-h-[700px] overflow-hidden bg-obsidian">
               <img 
                 src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2670&auto=format&fit=crop" 
                 alt="Fashion model" 
                 className="w-full h-full object-cover opacity-60 grayscale"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-zinc-900/80 via-zinc-900/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-obsidian/80 via-obsidian/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-transparent to-transparent" />
               
               {/* Floating Stats */}
               <div className="absolute bottom-8 left-8 md:bottom-12 md:left-12 z-10">
@@ -1003,28 +966,28 @@ export default function Waitlist() {
               {/* Corner Accent */}
               <div className="absolute top-8 left-8 md:top-12 md:left-12">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-orange-500 animate-pulse" />
+                  <div className="w-3 h-3 rounded-full bg-slate-accent animate-pulse" />
                   <span className="text-[10px] uppercase tracking-widest text-white/70">Limited Access</span>
                 </div>
               </div>
             </div>
             
             {/* Right: Form Side */}
-            <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-zinc-50 border-l border-black/10">
+            <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16 bg-studio-950 border-l border-border">
               <div className="max-w-md">
                 {/* Section Label */}
                 <div className="flex items-center gap-4 mb-8">
-                  <div className="h-px flex-1 bg-black/10" />
-                  <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-orange-600">Early Access</span>
-                  <div className="h-px flex-1 bg-black/10" />
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-accent">Early Access</span>
+                  <div className="h-px flex-1 bg-border" />
                 </div>
                 
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-4 text-zinc-900 font-geist">
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-4 text-obsidian font-geist">
                   Reserve Your
-                  <span className="block text-black/30">Studio Access</span>
+                  <span className="block text-charcoal">Studio Access</span>
                 </h2>
                 
-                <p className="text-base text-zinc-500 mb-10 leading-relaxed">
+                <p className="text-base text-subtle mb-10 leading-relaxed">
                   Join the waitlist for exclusive early access to AI-powered fashion photography. 
                   Be among the first to transform your creative workflow.
                 </p>
@@ -1033,24 +996,24 @@ export default function Waitlist() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="text-[10px] uppercase tracking-widest text-black/40 mb-2 block">Full Name</label>
+                        <label className="text-[10px] uppercase tracking-widest text-subtle mb-2 block">Full Name</label>
                         <Input
                           type="text"
                           placeholder="Enter your name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-zinc-300 focus:outline-none bg-transparent w-full transition-all text-black border-black/10 focus:border-orange-500"
+                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-subtle/50 focus:outline-none bg-transparent w-full transition-all text-obsidian border-border focus:border-slate-accent"
                           required
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase tracking-widest text-black/40 mb-2 block">Email Address</label>
+                        <label className="text-[10px] uppercase tracking-widest text-subtle mb-2 block">Email Address</label>
                         <Input
                           type="email"
                           placeholder="you@company.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-zinc-300 focus:outline-none bg-transparent w-full transition-all text-black border-black/10 focus:border-orange-500"
+                          className="border-0 border-b-2 rounded-none px-0 py-3 text-base placeholder-subtle/50 focus:outline-none bg-transparent w-full transition-all text-obsidian border-border focus:border-slate-accent"
                           required
                         />
                       </div>
@@ -1060,7 +1023,7 @@ export default function Waitlist() {
                       <Button 
                         type="submit" 
                         disabled={joinWaitlist.isPending}
-                        className="group w-full font-semibold text-sm px-8 py-4 transition-all duration-300 text-white bg-zinc-900 hover:bg-orange-600 flex items-center justify-center gap-3"
+                        className="btn-slate w-full font-semibold text-sm px-8 py-4 transition-all duration-300 flex items-center justify-center gap-3"
                       >
                         {joinWaitlist.isPending ? "Joining..." : (
                           <>
@@ -1071,33 +1034,33 @@ export default function Waitlist() {
                       </Button>
                     </div>
                     
-                    <p className="text-[11px] text-black/30 text-center pt-4">
+                    <p className="text-[11px] text-subtle text-center pt-4">
                       No spam, ever. Unsubscribe anytime.
                     </p>
                   </form>
                 ) : (
-                  <div className="p-8 border-2 border-orange-500/30 bg-orange-500/5">
-                    <div className="w-16 h-16 border-2 border-orange-500 flex items-center justify-center mb-6">
-                      <Check className="w-8 h-8 text-orange-600" />
+                  <div className="p-8 border-2 border-slate-accent/30 bg-slate-accent/5 rounded-xl">
+                    <div className="w-16 h-16 border-2 border-slate-accent flex items-center justify-center mb-6 rounded-full">
+                      <Check className="w-8 h-8 text-slate-accent" />
                     </div>
-                    <h3 className="text-2xl font-bold tracking-tight mb-2 text-zinc-900 font-geist">
+                    <h3 className="text-2xl font-bold tracking-tight mb-2 text-obsidian font-geist">
                       {alreadyRegistered ? "Already Registered" : "You're In"}
                     </h3>
-                    <p className="text-zinc-500">
+                    <p className="text-subtle">
                       {position ? `Position #${position} in queue. We'll notify you soon.` : "We'll be in touch soon."}
                     </p>
                   </div>
                 )}
                 
                 {/* Trust Indicators */}
-                <div className="flex items-center gap-6 mt-10 pt-8 border-t border-black/10">
+                <div className="flex items-center gap-6 mt-10 pt-8 border-t border-border">
                   <div className="flex -space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-zinc-300 border-2 border-zinc-50" />
-                    <div className="w-8 h-8 rounded-full bg-zinc-400 border-2 border-zinc-50" />
-                    <div className="w-8 h-8 rounded-full bg-zinc-500 border-2 border-zinc-50" />
+                    <div className="w-8 h-8 rounded-full bg-studio-900 border-2 border-studio-950" />
+                    <div className="w-8 h-8 rounded-full bg-slate-accent/50 border-2 border-studio-950" />
+                    <div className="w-8 h-8 rounded-full bg-slate-accent border-2 border-studio-950" />
                   </div>
-                  <p className="text-xs text-black/40">
-                    <span className="font-semibold text-black/60">847+ creators</span> already waiting
+                  <p className="text-xs text-subtle">
+                    <span className="font-semibold text-charcoal">847+ creators</span> already waiting
                   </p>
                 </div>
               </div>
@@ -1106,10 +1069,10 @@ export default function Waitlist() {
         </section>
 
         {/* Footer */}
-        <section className="overflow-hidden pt-32 pb-12 relative">
+        <section className="overflow-hidden pt-32 pb-12 relative bg-canvas">
           <div className="md:px-12 flex flex-col md:flex-row z-10 mb-16 px-6 relative gap-12 items-end justify-between">
             <div className="flex items-center gap-8">
-              <div className="w-12 h-12 rounded-full border flex items-center justify-center border-zinc-900 bg-zinc-900">
+              <div className="w-12 h-12 rounded-full border flex items-center justify-center border-obsidian bg-obsidian">
                 <span className="font-bold text-white text-xl">F</span>
               </div>
               <div className="flex gap-4 text-xs font-semibold tracking-widest uppercase opacity-80">
@@ -1122,17 +1085,17 @@ export default function Waitlist() {
             </div>
 
             <div className="text-right">
-              <p className="text-sm font-semibold mb-4 text-zinc-900">
+              <p className="text-sm font-semibold mb-4 text-obsidian">
                 Connect:
               </p>
               <div className="flex gap-4 justify-end">
-                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black hover:text-white">
+                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-studio-900/50 hover:bg-slate-accent hover:text-white">
                   <Instagram className="w-4 h-4" />
                 </a>
-                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black hover:text-white">
+                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-studio-900/50 hover:bg-slate-accent hover:text-white">
                   <Twitter className="w-4 h-4" />
                 </a>
-                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-black/5 hover:bg-black hover:text-white">
+                <a href="#" className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-studio-900/50 hover:bg-slate-accent hover:text-white">
                   <Mail className="w-4 h-4" />
                 </a>
               </div>
@@ -1140,7 +1103,7 @@ export default function Waitlist() {
           </div>
 
           {/* Bottom Navigation Bar */}
-          <div className="md:px-12 border-t pt-16 px-6 pb-8 backdrop-blur-md bg-zinc-100/50 border-black/10">
+          <div className="md:px-12 border-t pt-16 px-6 pb-8 backdrop-blur-md bg-studio-950/80 border-border">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12 max-w-7xl mx-auto">
               {/* Brand & Newsletter */}
               <div className="space-y-6">
@@ -1152,18 +1115,18 @@ export default function Waitlist() {
                   />
                   FORMA
                 </a>
-                <p className="text-sm leading-relaxed max-w-xs text-zinc-500">
+                <p className="text-sm leading-relaxed max-w-xs text-subtle">
                   AI-powered fashion photography. Create stunning campaign assets without traditional photoshoots.
                 </p>
                 <div className="pt-2">
-                  <p className="text-xs font-semibold mb-2 text-black">Subscribe for updates</p>
+                  <p className="text-xs font-semibold mb-2 text-obsidian">Subscribe for updates</p>
                   <form className="flex gap-2">
                     <input 
                       type="email" 
                       placeholder="Email address" 
-                      className="border rounded px-3 py-2 text-xs placeholder-zinc-400 focus:outline-none focus:bg-white w-full transition-all bg-white border-black/10 text-black focus:border-orange-500"
+                      className="border rounded-lg px-3 py-2 text-xs placeholder-subtle focus:outline-none w-full transition-all bg-canvas border-border text-obsidian focus:border-slate-accent"
                     />
-                    <button type="submit" className="font-semibold text-xs px-4 py-2 rounded transition-colors text-white bg-zinc-900 hover:bg-zinc-800">
+                    <button type="submit" className="btn-slate font-semibold text-xs px-4 py-2 rounded-lg transition-colors">
                       Join
                     </button>
                   </form>
@@ -1172,44 +1135,44 @@ export default function Waitlist() {
 
               {/* Links Column 1 */}
               <div>
-                <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Studios</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
-                  <li><a href="#" className="transition-colors block hover:text-orange-600">Casting Studio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange-600">Outfit Studio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange-600">Photo Studio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange-600">Campaign Builder</a></li>
+                <h4 className="text-sm font-semibold mb-6 tracking-wide text-obsidian">Studios</h4>
+                <ul className="space-y-3 text-sm text-subtle">
+                  <li><a href="#" className="transition-colors block hover:text-slate-accent">Casting Studio</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-slate-accent">Outfit Studio</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-slate-accent">Photo Studio</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-slate-accent">Campaign Builder</a></li>
                 </ul>
               </div>
 
               {/* Links Column 2 */}
               <div>
-                <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Company</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
-                  <li><a href="#" className="transition-colors block hover:text-orange-600">About FormaStudio</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange-600">Technology</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange-600">Case Studies</a></li>
-                  <li><a href="#" className="transition-colors block hover:text-orange-600">Pricing</a></li>
+                <h4 className="text-sm font-semibold mb-6 tracking-wide text-obsidian">Company</h4>
+                <ul className="space-y-3 text-sm text-subtle">
+                  <li><a href="#" className="transition-colors block hover:text-slate-accent">About FormaStudio</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-slate-accent">Technology</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-slate-accent">Case Studies</a></li>
+                  <li><a href="#" className="transition-colors block hover:text-slate-accent">Pricing</a></li>
                 </ul>
               </div>
 
               {/* Links Column 3 */}
               <div>
-                <h4 className="text-sm font-semibold mb-6 tracking-wide text-black">Contact</h4>
-                <ul className="space-y-3 text-sm text-zinc-500">
+                <h4 className="text-sm font-semibold mb-6 tracking-wide text-obsidian">Contact</h4>
+                <ul className="space-y-3 text-sm text-subtle">
                   <li>
-                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-orange-600">
+                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-slate-accent">
                       <MapPin className="w-3.5 h-3.5" />
                       San Francisco, CA
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-orange-600">
+                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-slate-accent">
                       <Calendar className="w-3.5 h-3.5" />
                       Book a Demo
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-orange-600">
+                    <a href="#" className="transition-colors flex items-center gap-2 hover:text-slate-accent">
                       <Mail className="w-3.5 h-3.5" />
                       hello@formastudio.ai
                     </a>
@@ -1218,14 +1181,14 @@ export default function Waitlist() {
               </div>
             </div>
 
-            <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 max-w-7xl mx-auto border-black/10">
-              <p className="text-xs text-zinc-400">
+            <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4 max-w-7xl mx-auto border-border">
+              <p className="text-xs text-subtle">
                 © 2026 FormaStudio. All rights reserved.
               </p>
-              <div className="flex items-center gap-6 text-xs text-zinc-400">
-                <a href="#" className="transition-colors hover:text-black">Privacy Policy</a>
-                <a href="#" className="transition-colors hover:text-black">Terms of Service</a>
-                <a href="#" className="transition-colors hover:text-black">Sitemap</a>
+              <div className="flex items-center gap-6 text-xs text-subtle">
+                <a href="#" className="transition-colors hover:text-obsidian">Privacy Policy</a>
+                <a href="#" className="transition-colors hover:text-obsidian">Terms of Service</a>
+                <a href="#" className="transition-colors hover:text-obsidian">Sitemap</a>
               </div>
             </div>
           </div>
