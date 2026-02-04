@@ -105,27 +105,7 @@ const serviceCards = [
   },
 ];
 
-// Journal entries data
-const journalEntries = [
-  {
-    category: "Technology",
-    type: "Deep Dive",
-    title: "The Future of AI Models",
-    description: "How AI is revolutionizing fashion photography and model casting.",
-  },
-  {
-    category: "Case Study",
-    type: "Brand",
-    title: "Campaign Success Stories",
-    description: "Real results from brands using AI-generated content.",
-  },
-  {
-    category: "Tutorial",
-    type: "Technique",
-    title: "Mastering AI Prompts",
-    description: "Best practices for generating photorealistic fashion imagery.",
-  },
-];
+
 
 // Services Marquee Section Component with Auto-Scroll
 function ServicesMarqueeSection() {
@@ -216,43 +196,43 @@ function ServicesMarqueeSection() {
   const tripleCards = [...serviceCards, ...serviceCards, ...serviceCards];
 
   return (
-    <section className="border-t border-b border-black/10 bg-zinc-50 py-24 overflow-hidden relative">
+    <section className="border-t border-b border-border bg-canvas py-24 overflow-hidden relative">
       {/* Intelligent Grid Lines - framing content elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Vertical lines at 25%, 50%, 75% - stopping at content boundaries */}
-        <div className="absolute left-[25%] top-0 h-[180px] w-px bg-black/[0.06]" />
-        <div className="absolute left-[50%] top-0 h-[120px] w-px bg-black/[0.06]" />
-        <div className="absolute left-[75%] top-0 h-[180px] w-px bg-black/[0.06]" />
+        <div className="absolute left-[25%] top-0 h-[180px] w-px bg-border" />
+        <div className="absolute left-[50%] top-0 h-[120px] w-px bg-border" />
+        <div className="absolute left-[75%] top-0 h-[180px] w-px bg-border" />
         
         {/* Horizontal line under header content */}
-        <div className="absolute left-0 right-0 top-[200px] h-px bg-black/[0.04] hidden md:block" />
+        <div className="absolute left-0 right-0 top-[200px] h-px bg-border/50 hidden md:block" />
         
         {/* Bottom grid lines - framing the cards area */}
-        <div className="absolute left-[25%] bottom-0 h-[100px] w-px bg-black/[0.06]" />
-        <div className="absolute left-[75%] bottom-0 h-[100px] w-px bg-black/[0.06]" />
+        <div className="absolute left-[25%] bottom-0 h-[100px] w-px bg-border" />
+        <div className="absolute left-[75%] bottom-0 h-[100px] w-px bg-border" />
         
         {/* Corner accent dots */}
-        <div className="absolute left-[25%] top-[180px] w-1.5 h-1.5 rounded-full bg-orange-500/20 -translate-x-1/2" />
-        <div className="absolute left-[75%] top-[180px] w-1.5 h-1.5 rounded-full bg-orange-500/20 -translate-x-1/2" />
+        <div className="absolute left-[25%] top-[180px] w-1.5 h-1.5 rounded-full bg-slate-accent/30 -translate-x-1/2" />
+        <div className="absolute left-[75%] top-[180px] w-1.5 h-1.5 rounded-full bg-slate-accent/30 -translate-x-1/2" />
         
         {/* Subtle diagonal accent line */}
-        <div className="absolute right-0 top-0 w-[200px] h-px bg-gradient-to-l from-orange-500/10 to-transparent rotate-45 origin-right hidden lg:block" />
+        <div className="absolute right-0 top-0 w-[200px] h-px bg-gradient-to-l from-slate-accent/20 to-transparent rotate-45 origin-right hidden lg:block" />
       </div>
       
       <div className="px-6 md:px-12 mb-16 md:mb-20 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
           <div>
-            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-orange-600 tracking-[0.2em] mb-6">
-              <span className="w-2 h-2 rounded-full bg-orange-600" />
+            <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-slate-accent tracking-[0.2em] mb-6">
+              <span className="w-2 h-2 rounded-full bg-slate-accent" />
               Services
             </p>
-            <h2 className="text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none text-zinc-900 font-geist">
+            <h2 className="text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none text-obsidian font-geist">
               Solving Problems With<br/>
-              <span className="text-black/30">Intelligent AI</span>
+              <span className="text-charcoal">Intelligent AI</span>
             </h2>
           </div>
-          <div className="lg:pl-12 lg:border-l lg:border-black/10">
-            <p className="leading-relaxed md:text-base text-sm text-zinc-500 max-w-md">
+          <div className="lg:pl-12 lg:border-l lg:border-border">
+            <p className="leading-relaxed md:text-base text-sm text-subtle max-w-md">
               Whether you're fighting deadlines, budgets, or brand consistency, we build systems that generate premium assets instantly.
             </p>
           </div>
@@ -279,34 +259,34 @@ function ServicesMarqueeSection() {
           {tripleCards.map((card, index) => (
             <div 
               key={index} 
-              className="group relative w-[85vw] md:w-[420px] h-[520px] overflow-hidden border border-black/10 bg-zinc-50 hover:border-orange-500/50 transition-all duration-500 shrink-0"
+              className="group relative w-[85vw] md:w-[420px] h-[520px] overflow-hidden border border-border bg-canvas hover:border-slate-accent/50 transition-all duration-500 shrink-0 rounded-xl shadow-neumorphic"
             >
-              <div className="absolute inset-0 w-full h-full">
+              <div className="absolute inset-0 w-full h-full rounded-xl overflow-hidden">
                 <img 
                   src={card.image} 
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out" 
                   draggable="false" 
                   alt={card.title}
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white" />
+                <div className="absolute inset-0 bg-gradient-to-b from-canvas/20 via-transparent to-canvas" />
               </div>
               <div className="absolute inset-0 p-8 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
-                  <span className="font-geist text-6xl md:text-7xl font-bold text-zinc-900/10 group-hover:text-orange-500/20 transition-colors duration-500">{card.number}</span>
-                  <div className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-black/10">
-                    <ArrowUpRight className="w-5 h-5 text-zinc-900" />
+                  <span className="font-geist text-6xl md:text-7xl font-bold text-obsidian/10 group-hover:text-slate-accent/30 transition-colors duration-500">{card.number}</span>
+                  <div className="w-10 h-10 rounded-full bg-canvas/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-border">
+                    <ArrowUpRight className="w-5 h-5 text-obsidian" />
                   </div>
                 </div>
-                <div className="bg-white/90 backdrop-blur-sm p-6 -mx-8 -mb-8 border-t border-black/10">
-                  <h3 className="text-xl md:text-2xl font-geist font-semibold tracking-tight text-zinc-900 mb-2">
+                <div className="bg-canvas/90 backdrop-blur-sm p-6 -mx-8 -mb-8 border-t border-border rounded-b-xl">
+                  <h3 className="text-xl md:text-2xl font-geist font-semibold tracking-tight text-obsidian mb-2">
                     {card.title}
                   </h3>
-                  <p className="text-zinc-600 text-sm leading-relaxed">
+                  <p className="text-subtle text-sm leading-relaxed">
                     {card.description}
                   </p>
-                  <div className="mt-4 pt-4 border-t border-black/10 flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-[0.15em] text-zinc-400">Learn more</span>
-                    <ArrowRight className="w-4 h-4 text-orange-500" />
+                  <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+                    <span className="text-xs uppercase tracking-[0.15em] text-subtle">Learn more</span>
+                    <ArrowRight className="w-4 h-4 text-slate-accent" />
                   </div>
                 </div>
               </div>
@@ -757,182 +737,10 @@ export default function Waitlist() {
           </div>
         </section>
 
-        {/* Methodology Section */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 border-b relative group border-border bg-studio-950">
-          {/* Left: Visual Content */}
-          <div className="relative min-h-[500px] lg:min-h-[700px] border-r overflow-hidden border-border">
-            <img 
-              src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=2564&auto=format&fit=crop" 
-              alt="Camera Lens" 
-              className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000 ease-out"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t to-transparent from-studio-950 via-studio-950/20" />
-            
-            {/* Floating Data Card */}
-            <div className="absolute bottom-8 left-8 right-8 md:left-12 md:right-auto md:w-80 backdrop-blur-xl border p-6 z-10 transition-colors duration-300 bg-studio-950/90 border-border hover:bg-studio-950 card-soft rounded-xl">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-accent">Current Tech</span>
-                <Camera className="w-4 h-4 text-subtle" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wider font-semibold text-subtle">Engine: Flux Pro</p>
-                <p className="text-lg font-medium tracking-tight text-obsidian">Photorealistic Generation</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Philosophy & Interactive List */}
-          <div className="flex flex-col">
-            {/* Header */}
-            <div className="p-8 md:p-16 flex-1 flex flex-col justify-center relative">
-              <div className="absolute top-0 right-0 p-6 opacity-5">
-                <Sparkles className="w-[120px] h-[120px]" />
-              </div>
-
-              <p className="text-[10px] uppercase flex items-center gap-3 font-bold text-slate-accent tracking-[0.2em] mb-6">
-                <span className="w-2 h-2 rounded-full bg-slate-accent" />
-                Vision
-              </p>
-              <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter leading-none mb-6 text-obsidian font-geist">
-                Create, Scale & 
-                <span className="text-charcoal"> Deliver</span>
-              </h2>
-              <p className="leading-relaxed md:text-base text-sm text-subtle max-w-md">
-                AI photography is not just about generating images, but creating consistent brand identities. 
-                We combine cutting-edge AI with creative direction to deliver campaign-ready assets.
-              </p>
-            </div>
-
-            {/* Accordion / List Items */}
-            <div className="border-t divide-y border-border divide-border bg-canvas">
-              {/* Item 1 */}
-              <a href="#" className="group block md:px-12 md:py-8 transition-colors duration-300 hover:bg-studio-950/50 p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-slate-accent/50 group-hover:text-slate-accent">01</span>
-                    <div className="flex flex-col">
-                      <h3 className="group-hover:text-obsidian transition-colors text-lg font-medium text-charcoal tracking-tight">Model Creation</h3>
-                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-subtle">Define characteristics and generate consistent AI models</span>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-border group-hover:border-slate-accent/50 group-hover:bg-slate-accent/10">
-                    <ArrowUpRight className="w-4 h-4 text-subtle group-hover:text-slate-accent" />
-                  </div>
-                </div>
-              </a>
-
-              {/* Item 2 */}
-              <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-studio-950/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-slate-accent/50 group-hover:text-slate-accent">02</span>
-                    <div className="flex flex-col">
-                      <h3 className="group-hover:text-obsidian transition-colors text-lg font-medium text-charcoal tracking-tight">Outfit Styling</h3>
-                      <span className="group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform group-hover:translate-y-0 text-xs text-subtle opacity-0 h-0 mt-1 translate-y-2">Generate any outfit on your AI models</span>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-border group-hover:border-slate-accent/50 group-hover:bg-slate-accent/10">
-                    <ArrowUpRight className="w-4 h-4 text-subtle group-hover:text-slate-accent" />
-                  </div>
-                </div>
-              </a>
-
-              {/* Item 3 */}
-              <a href="#" className="group block p-6 md:px-12 md:py-8 transition-colors duration-300 hover:bg-studio-950/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <span className="font-mono text-xs transition-colors text-slate-accent/50 group-hover:text-slate-accent">03</span>
-                    <div className="flex flex-col">
-                      <h3 className="text-lg font-medium tracking-tight group-hover:text-obsidian transition-colors text-charcoal">Campaign Production</h3>
-                      <span className="text-xs mt-1 opacity-0 h-0 group-hover:opacity-100 group-hover:h-auto transition-all duration-300 overflow-hidden transform translate-y-2 group-hover:translate-y-0 text-subtle">Full photoshoot generation with lighting control</span>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-all border-border group-hover:border-slate-accent/50 group-hover:bg-slate-accent/10">
-                    <ArrowUpRight className="w-4 h-4 text-subtle group-hover:text-slate-accent" />
-                  </div>
-                </div>
-              </a>
-            </div>
-          </div>
-        </section>
 
         {/* Services Draggable Cards Section with Auto-Scroll */}
         <ServicesMarqueeSection />
 
-        {/* Journal Section */}
-        <section className="border-b border-border bg-studio-950">
-          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
-            {/* Left: Featured Article */}
-            <div className="group relative min-h-[600px] flex flex-col justify-end p-8 md:p-12 overflow-hidden cursor-pointer">
-              <img 
-                src="https://images.unsplash.com/photo-1452587925148-ce544e77e70d?q=80&w=2574&auto=format&fit=crop" 
-                alt="Featured" 
-                className="group-hover:opacity-80 group-hover:scale-105 transition-all duration-1000 ease-out opacity-60 w-full h-full object-cover absolute inset-0 grayscale"
-              />
-              <div className="bg-gradient-to-t to-transparent absolute inset-0 from-studio-950 via-studio-950/60" />
-              
-              <div className="relative z-10 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="px-3 py-1 border text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm border-slate-accent/30 bg-slate-accent/10 text-slate-accent">Featured</span>
-                  <span className="text-xs font-mono tracking-tight text-subtle">FEB 02, 2026</span>
-                </div>
-                
-                <h3 className="md:text-7xl uppercase text-5xl font-bold tracking-tighter mb-8 text-obsidian font-geist">
-                  The Future of 
-                  <span className="font-normal text-charcoal"> AI Fashion</span>
-                </h3>
-                
-                <p className="leading-relaxed line-clamp-2 md:text-lg text-subtle max-w-md mb-8">
-                  Exploring how AI is revolutionizing fashion photography and model casting, 
-                  where digital innovation meets creative vision.
-                </p>
-                
-                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest transition-colors text-obsidian group-hover:text-slate-accent">
-                  Read Full Entry
-                  <div className="w-8 h-8 rounded-full border flex items-center justify-center group-hover:text-white transition-all duration-300 border-border group-hover:bg-slate-accent group-hover:border-slate-accent">
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Editorial List */}
-            <div className="flex flex-col h-full">
-              <div className="p-8 md:p-12 border-b flex items-center justify-between bg-canvas/50 border-border">
-                <div>
-                  <h2 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase mb-2 text-obsidian font-geist">Journal</h2>
-                  <p className="text-xs uppercase tracking-widest text-subtle">Behind the Scenes</p>
-                </div>
-                <a href="#" className="btn-slate-outline px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-2">
-                  Archive
-                  <BookOpen className="w-3.5 h-3.5" />
-                </a>
-              </div>
-              
-              <div className="flex-1 divide-y divide-border">
-                {journalEntries.map((entry, index) => (
-                  <a key={index} href="#" className="group block p-8 md:px-12 transition-colors relative overflow-hidden hover:bg-studio-950/50">
-                    <div className="absolute right-0 top-0 bottom-0 w-1 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300 bg-slate-accent" />
-                    <div className="flex justify-between items-start gap-6">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-accent">{entry.category}</span>
-                          <span className="w-1 h-1 rounded-full bg-border" />
-                          <span className="text-[10px] uppercase tracking-widest text-subtle">{entry.type}</span>
-                        </div>
-                        <h4 className="text-xl md:text-2xl font-semibold mb-2 group-hover:text-obsidian transition-colors text-charcoal">{entry.title}</h4>
-                        <p className="text-sm group-hover:text-charcoal transition-colors text-subtle">{entry.description}</p>
-                      </div>
-                      <div className="flex hidden md:flex transition-colors w-20 h-20 border items-center justify-center bg-studio-900/50 border-border group-hover:bg-slate-accent/10 text-slate-accent">
-                        <Sparkles className="w-6 h-6" />
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Waitlist Section - Redesigned */}
         <section id="waitlist" className="border-b border-border">

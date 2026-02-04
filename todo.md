@@ -2143,3 +2143,19 @@ The entry and configuration files are properly set up with several enhancements 
 ## Header Update - Icon Only & Reduced Height
 - [x] Remove "forma studio" text from header, keep only icon
 - [x] Reduce header height/padding (py-6/py-8 → py-3/py-4)
+
+
+## Waitlist Page Section Updates
+- [ ] Remove "Create, Scale & Deliver" section
+- [ ] Remove "Journal" section
+- [ ] Restyle "Solving Problems With Intelligent AI" section to match dashboard
+
+## Waitlist Page Cleanup & Styling Consistency
+- [x] Remove "Create, Scale & Deliver" (Methodology) section
+- [x] Remove "Journal" section
+- [x] Restyle "Solving Problems With Intelligent AI" section to match dashboard neumorphic design
+  - [x] Replace orange accents with slate-accent (#6E7F8D)
+  - [x] Replace zinc grays with obsidian/charcoal/subtle
+  - [x] Update background to bg-canvas
+  - [x] Add neumorphic shadows and rounded corners to cards
+  - [x] Update grid lines to use border color
