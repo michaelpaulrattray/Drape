@@ -2116,4 +2116,4 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Eye Color/Iris Selection Styling
 - [x] Redesign iris selection to remove large ring and black circle
-- Implemented Option B (Glow Effect): ring-4 ring-white/60 with shadow-[0_0_12px_rgba(0,0,0,0.3)]
+- Implemented Option A (Dark Border): border-2 border-obsidian ring-2 ring-obsidian/50 shadow-lg (matches skin tone picker)
