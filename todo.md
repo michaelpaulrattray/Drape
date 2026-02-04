@@ -1951,3 +1951,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Import and use FaceSection in CastingStudio.tsx
 - [x] Verify all face options work correctly (jawline, cheekbones, eyes, nose, lips, eyebrows, advanced)
 - [x] Ensure all 149 tests still pass
+
+
+## CastingStudio Refactor - Phase 5: BrandSelector Extraction
+- [x] Analyze BrandSelector code boundaries in CastingStudio.tsx
+- [x] Create client/src/components/CastingStudio/BrandSelector.tsx
+- [x] Define BrandSelectorProps interface with required props
+- [x] Extract Brand & Vibe collapsible section JSX to new component (Casting Basics: brand, vibe, gender, age, ethnicity)
+- [x] Import and use BrandSelector in CastingStudio.tsx
+- [x] Verify all brand and vibe options work correctly
+- [x] Ensure all 149 tests still pass
