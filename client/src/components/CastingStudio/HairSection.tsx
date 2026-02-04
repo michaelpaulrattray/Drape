@@ -1,16 +1,6 @@
 import { useState } from "react";
 import HairColorWheel from "@/components/HairColorWheel";
 import Tooltip from "@/components/Tooltip";
-import {
-  HAIR_LENGTHS,
-  HAIR_TEXTURES,
-  HAIR_FRINGES,
-  HAIR_PARTINGS,
-  HAIR_VOLUMES,
-  HAIR_TUCKS,
-  HAIR_FADES,
-  CHAR_OPTIONS,
-} from "@/constants/casting";
 
 // ============ Types ============
 
@@ -48,6 +38,20 @@ interface HairSectionProps {
   updatePref: <K extends HairPrefKey>(key: K, value: string) => void;
   currentHairFamilies: string[];
 }
+
+// ============ Constants ============
+
+const HAIR_LENGTHS = ["Very Short", "Short", "Medium", "Long", "Very Long"];
+const HAIR_TEXTURES = ["Straight", "Slight Wave", "Wavy", "Curly", "Coily / Afro"];
+const HAIR_FRINGES = ["None", "Curtain Bangs", "Wispy Bangs", "Blunt Bangs", "Side-Swept", "Micro Fringe"];
+const HAIR_PARTINGS = ["Center", "Slight Off-Center", "Side", "Deep Side", "No Part / Slicked"];
+const HAIR_VOLUMES = ["Flat / Sleek", "Natural", "Voluminous", "Lifted Crown", "Face-Framing"];
+const HAIR_TUCKS = ["None", "One Side", "Both Sides"];
+const HAIR_FADES = ["None", "Low Taper", "Mid Fade", "High Fade", "Skin Fade"];
+
+const CHAR_OPTIONS = {
+  facialHair: ["None", "Stubble", "Short Beard", "Full Beard", "Goatee", "Mustache"],
+};
 
 // ============ Sub-Components ============
 

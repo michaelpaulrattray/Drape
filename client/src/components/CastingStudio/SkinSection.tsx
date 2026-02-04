@@ -1,11 +1,13 @@
 import Tooltip from "@/components/Tooltip";
-import {
-  SKIN_TONES,
-  SKIN_TEXTURES,
-  SKIN_FINISHES,
-} from "@/constants/casting";
 
 // ============ Types ============
+
+interface SkinTone {
+  label: string;
+  value: string;
+  base: string;
+  shadow: string;
+}
 
 // Skin-related keys from ModelPreferences
 type SkinPrefKey = 'skinTone' | 'skinTexture' | 'skinFinish';
@@ -18,6 +20,20 @@ interface SkinSectionProps {
   };
   updatePref: <K extends SkinPrefKey>(key: K, value: string) => void;
 }
+
+// ============ Constants ============
+
+const SKIN_TONES: SkinTone[] = [
+  { label: "Porcelain", value: "Porcelain / Pale", base: "#ffe0d6", shadow: "#eac0b0" },
+  { label: "Fair", value: "Fair / Light", base: "#f5cbb6", shadow: "#dcb098" },
+  { label: "Medium", value: "Medium / Olive", base: "#d9ae88", shadow: "#bf926b" },
+  { label: "Tan", value: "Tan / Bronze", base: "#c08a65", shadow: "#a06d48" },
+  { label: "Deep", value: "Deep / Brown", base: "#8d5e42", shadow: "#6b422a" },
+  { label: "Ebony", value: "Ebony / Dark", base: "#593b2b", shadow: "#3d2316" },
+];
+
+const SKIN_TEXTURES = ["Raw / Standard", "Glass / Perfect", "Freckled", "Textured / Acneic", "Mature"];
+const SKIN_FINISHES = ["Natural", "Matte / Powdered", "Dewy / Sweat", "Oily"];
 
 // ============ Sub-Components ============
 

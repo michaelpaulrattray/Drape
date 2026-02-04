@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Tooltip from "@/components/Tooltip";
-import { FACE_SHAPES, CHAR_OPTIONS } from "@/constants/casting";
 
 // ============ Types ============
 
@@ -32,7 +31,9 @@ interface FaceSectionProps {
   updatePref: <K extends FacePrefKey>(key: K, value: string) => void;
 }
 
-// ============ Constants (UI-specific, not shared) ============
+// ============ Constants ============
+
+const FACE_SHAPES = ["Oval", "Round", "Square", "Heart", "Diamond", "Random"];
 
 const FACE_ICONS: Record<string, React.ReactNode> = {
   "Oval": <path d="M12 2C7 2 5 6 5 11C5 16 8 22 12 22C16 22 19 16 19 11C19 6 17 2 12 2Z" />,
@@ -41,6 +42,17 @@ const FACE_ICONS: Record<string, React.ReactNode> = {
   "Heart": <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" transform="scale(0.8) translate(3, 2)" />,
   "Diamond": <polygon points="12 2 4 10 12 22 20 10" />,
   "Random": <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l-5 5M4 4l5 5" />,
+};
+
+const CHAR_OPTIONS = {
+  jawline: ["Sharp / Chiseled", "Soft / Rounded", "Strong / Pronounced", "Receding / Weak", "Snatched"],
+  cheekbones: ["High", "Defined", "Soft"],
+  cheeks: ["Slightly Hollow", "Full", "Balanced"],
+  eyeShape: ["Thin Almond", "Monolids", "Wide-Set", "Round", "Hooded"],
+  noseShape: ["Thin", "Straight Bridge", "Rounded", "Prominent", "Button"],
+  lipShape: ["Full", "Subtle", "Lip Lift", "Wide", "Cupid's Bow"],
+  eyebrows: ["Brushed Up", "Straight", "Arched", "Bold", "Bleached", "Random"],
+  facialHair: ["Clean Shaven", "Stubble", "Short Beard", "Full Beard"],
 };
 
 // ============ Sub-Components ============
