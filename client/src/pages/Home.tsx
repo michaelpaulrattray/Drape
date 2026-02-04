@@ -379,13 +379,25 @@ function WorkSection() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
               </div>
-              {/* Info Bar with scroll-up animation */}
-              <div className="flex items-center justify-between p-4 pt-3 translate-y-2 opacity-80 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                <div>
-                  <h3 className="text-base font-semibold text-black group-hover:text-white transition-colors">{project.name}</h3>
-                  <p className="text-sm text-black/50 group-hover:text-white/60 transition-colors">{project.category}</p>
+              {/* Info Bar with text replacement scroll animation */}
+              <div className="flex items-center justify-between p-4 pt-3">
+                <div className="overflow-hidden">
+                  {/* Project Name - stacked text */}
+                  <div className="relative h-6 overflow-hidden">
+                    <h3 className="text-base font-semibold text-black transition-transform duration-300 group-hover:-translate-y-full">{project.name}</h3>
+                    <h3 className="text-base font-semibold text-white absolute top-full left-0 transition-transform duration-300 group-hover:-translate-y-full">{project.name}</h3>
+                  </div>
+                  {/* Category - stacked text */}
+                  <div className="relative h-5 overflow-hidden">
+                    <p className="text-sm text-black/50 transition-transform duration-300 group-hover:-translate-y-full">{project.category}</p>
+                    <p className="text-sm text-white/60 absolute top-full left-0 transition-transform duration-300 group-hover:-translate-y-full">{project.category}</p>
+                  </div>
                 </div>
-                <span className="text-sm text-black/40 group-hover:text-white/50 transition-colors">{project.year}</span>
+                {/* Year - stacked text */}
+                <div className="relative h-5 overflow-hidden">
+                  <span className="text-sm text-black/40 block transition-transform duration-300 group-hover:-translate-y-full">{project.year}</span>
+                  <span className="text-sm text-white/50 absolute top-full left-0 transition-transform duration-300 group-hover:-translate-y-full">{project.year}</span>
+                </div>
               </div>
             </a>
           ))}

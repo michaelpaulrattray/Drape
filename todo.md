@@ -2255,3 +2255,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Keep border/padding constant on hover (no margin change)
 - [x] Only zoom the image inside container
 - [x] Add scroll-up animation for text info bar
+
+
+## Text Replacement Scroll Animation
+- [x] Add stacked text (black/white) with scroll-up replacement effect on hover
