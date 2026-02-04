@@ -528,16 +528,18 @@ function CollapsibleSection({
   required = false,
   children,
   defaultOpen = true,
+  id,
 }: {
   title: string;
   required?: boolean;
   children?: React.ReactNode;
   defaultOpen?: boolean;
+  id?: string;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-gray-200/50 last:border-0 group/section">
+    <div id={id} className="border-b border-gray-200/50 last:border-0 group/section scroll-mt-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-4 group focus:outline-none select-none hover-scale"
@@ -2146,7 +2148,7 @@ export default function CastingStudio() {
         {/* Scrollable Content */}
         <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-2 custom-scrollbar">
           {/* 1. CASTING BASICS */}
-          <CollapsibleSection title="Casting Basics" required>
+          <CollapsibleSection title="Casting Basics" required id="section-casting-basics">
             <div className="space-y-4 pt-1">
               {/* Brand Selector */}
               <div className="space-y-1.5">
@@ -2263,7 +2265,7 @@ export default function CastingStudio() {
           </CollapsibleSection>
 
           {/* 2. PHYSIQUE */}
-          <CollapsibleSection title="Physique">
+          <CollapsibleSection title="Physique" id="section-physique">
             <div className="space-y-2 pt-1">
               <div className="grid grid-cols-3 gap-2">
                 {BODY_TYPES.map((opt) => {
@@ -2343,7 +2345,7 @@ export default function CastingStudio() {
           </CollapsibleSection>
 
           {/* 4. SKIN & COMPLEXION */}
-          <CollapsibleSection title="Skin & Complexion" required>
+          <CollapsibleSection title="Skin & Complexion" required id="section-skin">
             <div className="space-y-5 pt-1">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-subtle block">Skin Tone</label>
@@ -2382,7 +2384,7 @@ export default function CastingStudio() {
           </CollapsibleSection>
 
           {/* 5. EYES */}
-          <CollapsibleSection title="Eyes" required>
+          <CollapsibleSection title="Eyes" required id="section-eyes">
             <div className="space-y-2 pt-1">
               <label className="text-xs font-medium text-subtle block">Eye Color</label>
               <VisualEyeGrid
@@ -2394,7 +2396,7 @@ export default function CastingStudio() {
           </CollapsibleSection>
 
           {/* 6. HAIR */}
-          <CollapsibleSection title="Hair" required>
+          <CollapsibleSection title="Hair" required id="section-hair">
             <div className="space-y-5 pt-1">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-subtle block">Hair Color</label>
@@ -3206,7 +3208,25 @@ export default function CastingStudio() {
             <div className="relative z-10 w-full max-w-4xl p-8 flex flex-col items-center justify-center min-h-[500px]">
               {/* DNA Helix Visualization */}
               <div className="w-full">
-                <DNAHelix progress={formProgress} className="mx-auto" />
+                <DNAHelix 
+                  progress={formProgress} 
+                  className="mx-auto" 
+                  onSectionClick={(sectionIndex) => {
+                    const sectionIds = [
+                      'section-casting-basics',
+                      'section-casting-basics', // Identity is part of casting basics
+                      'section-physique',
+                      'section-skin',
+                      'section-eyes',
+                      'section-hair'
+                    ];
+                    const targetId = sectionIds[sectionIndex];
+                    const element = document.getElementById(targetId);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                />
               </div>
             </div>
           </div>

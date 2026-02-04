@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 interface DNAHelixProps {
   progress: number; // 0-100
   className?: string;
+  onSectionClick?: (sectionIndex: number) => void;
 }
 
 interface BackgroundDot {
@@ -39,15 +40,28 @@ const SECTION_LABELS = [
   'Hair',
 ];
 
-export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
+// Section IDs for click-to-navigate
+const SECTION_IDS = [
+  'casting-basics',
+  'identity',
+  'physique',
+  'skin-complexion',
+  'eyes',
+  'hair',
+];
+
+export function DNAHelix({ progress, className = '', onSectionClick }: DNAHelixProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>(0);
   const timeRef = useRef<number>(0);
   const mouseRef = useRef<{ x: number | null; y: number | null; radius: number }>({ x: null, y: null, radius: 120 });
   const backgroundDotsRef = useRef<BackgroundDot[]>([]);
+  const rungPositionsRef = useRef<{ x: number; y1: number; y2: number; sectionIndex: number }[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const [prevProgress, setPrevProgress] = useState(progress);
+  const [entranceProgress, setEntranceProgress] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
   // Decorative circles (like in reference image)
   const decorativeCircles: DecorativeCircle[] = [
@@ -97,6 +111,31 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     }
     setPrevProgress(progress);
   }, [progress, prevProgress]);
+
+  // Entrance animation - helix assembles from center outward
+  useEffect(() => {
+    if (hasAnimated) return;
+    
+    setHasAnimated(true);
+    let startTime: number | null = null;
+    const duration = 1500; // 1.5 seconds
+    
+    const animateEntrance = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease out cubic for smooth deceleration
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setEntranceProgress(eased);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animateEntrance);
+      }
+    };
+    
+    requestAnimationFrame(animateEntrance);
+  }, [hasAnimated]);
 
   const isComplete = progress >= 100;
 
@@ -337,6 +376,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     time: number
   ) => {
     const centerY = height / 2;
+    const centerX = width / 2;
 
     // DNA parameters
     const helixLength = width * 0.7;
@@ -346,8 +386,15 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     const numPoints = 100;
     const numRungs = 25;
 
+    // Apply entrance animation - scale from center
+    const entranceScale = entranceProgress;
+    const entranceOpacity = entranceProgress;
+
     // Calculate progress-based lit rungs
     const litRungs = Math.floor((progress / 100) * numRungs);
+
+    // Store rung positions for click detection
+    const newRungPositions: { x: number; y1: number; y2: number; sectionIndex: number }[] = [];
 
     // Calculate points for both strands
     const strand1Points: { x: number; y: number; z: number; angle: number }[] = [];
@@ -355,6 +402,12 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
 
     for (let i = 0; i <= numPoints; i++) {
       const t = i / numPoints;
+      // Apply entrance animation - expand from center
+      const distFromCenter = Math.abs(t - 0.5) * 2; // 0 at center, 1 at edges
+      const pointVisible = entranceScale >= distFromCenter;
+      
+      if (!pointVisible) continue;
+      
       const x = startX + t * helixLength;
       const angle = t * frequency * Math.PI * 2 + time;
 
@@ -374,6 +427,12 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     const rungData: { x: number; y1: number; y2: number; z: number; index: number }[] = [];
     for (let i = 0; i < numRungs; i++) {
       const t = (i + 0.5) / numRungs;
+      // Apply entrance animation - expand from center
+      const distFromCenter = Math.abs(t - 0.5) * 2;
+      const rungVisible = entranceScale >= distFromCenter;
+      
+      if (!rungVisible) continue;
+      
       const x = startX + t * helixLength;
       const angle = t * frequency * Math.PI * 2 + time;
 
@@ -382,7 +441,14 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       const z = Math.cos(angle);
 
       rungData.push({ x, y1, y2, z, index: i });
+      
+      // Store rung position for click detection (map to 6 sections)
+      const sectionIndex = Math.floor((i / numRungs) * 6);
+      newRungPositions.push({ x, y1, y2, sectionIndex });
     }
+    
+    // Update rung positions ref for click detection
+    rungPositionsRef.current = newRungPositions;
 
     // Sort rungs by depth (draw back to front)
     rungData.sort((a, b) => a.z - b.z);
@@ -511,7 +577,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
         ctx.restore();
       }
     }
-  }, [progress, isComplete, showCelebration, drawRung]);
+  }, [progress, isComplete, showCelebration, drawRung, entranceProgress]);
 
   // Animation loop
   useEffect(() => {
@@ -548,10 +614,33 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       mouseRef.current.y = null;
     };
 
+    const handleClick = (e: MouseEvent) => {
+      if (!onSectionClick) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      
+      // Check if click is near any rung
+      const clickRadius = 30; // Detection radius
+      for (const rung of rungPositionsRef.current) {
+        const rungCenterY = (rung.y1 + rung.y2) / 2;
+        const dx = clickX - rung.x;
+        const dy = clickY - rungCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < clickRadius) {
+          onSectionClick(rung.sectionIndex);
+          return;
+        }
+      }
+    };
+
     resize();
     window.addEventListener('resize', resize);
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseleave', handleMouseLeave);
+    canvas.addEventListener('click', handleClick);
 
     const animate = () => {
       const rect = container.getBoundingClientRect();
@@ -577,9 +666,10 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
       window.removeEventListener('resize', resize);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
+      canvas.removeEventListener('click', handleClick);
       cancelAnimationFrame(animationRef.current);
     };
-  }, [generateBackgroundDots, drawBackgroundElements, drawDNAHelix]);
+  }, [generateBackgroundDots, drawBackgroundElements, drawDNAHelix, onSectionClick]);
 
   // Calculate which section is active
   const activeSection = Math.min(Math.floor((progress / 100) * 6), 5);
@@ -589,7 +679,7 @@ export function DNAHelix({ progress, className = '' }: DNAHelixProps) {
     <div ref={containerRef} className={`relative w-full ${className}`} style={{ minHeight: '280px' }}>
       <canvas
         ref={canvasRef}
-        className="w-full h-full cursor-crosshair"
+        className={`w-full h-full ${onSectionClick ? 'cursor-pointer' : 'cursor-crosshair'}`}
         style={{ minHeight: '280px' }}
       />
 

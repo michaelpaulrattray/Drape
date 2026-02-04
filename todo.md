@@ -1895,3 +1895,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update endpoint spheres to dark with glow
 - [x] Update celebration and ripple effects to dark theme
 - [x] Ensure high contrast on white background
+
+
+## DNA Helix - Click-to-Navigate & Entrance Animation
+- [ ] Implement click detection on DNA rungs
+- [ ] Map each rung to corresponding form section ID
+- [ ] Add smooth scroll to form section on rung click
+- [ ] Add visual feedback (cursor change, hover effect) for clickable rungs
+- [ ] Create entrance animation - helix assembles from center outward
+- [ ] Add staggered reveal for rungs during entrance
+- [ ] Add fade-in for particles during entrance
+- [ ] Ensure entrance animation only plays once on page load
