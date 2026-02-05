@@ -650,7 +650,7 @@ function WorkSection() {
                 <div className="overflow-hidden">
                   {/* Project Name - stacked text */}
                   <div className="relative h-6 overflow-hidden">
-                    <h3 className="text-base font-semibold text-[#0A0A0A] transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
+                    <h3 className="text-base font-semibold text-[#0A0A0A] transition-transform duration-500 group-hover:-translate-y-full" style={{fontSize: '18px'}}>{project.name}</h3>
                     <h3 className="text-base font-semibold text-white absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full" style={{fontSize: '18px'}}>{project.name}</h3>
                   </div>
                   {/* Category - stacked text */}
