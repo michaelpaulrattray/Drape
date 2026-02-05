@@ -2384,3 +2384,21 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Create Heading component (section, hero variants)
 - [x] Create Grid component with presets
 - [x] Create ConveyorText component for hover animations
+
+## Home.tsx Refactoring to Design System
+- [ ] Import all design system components
+- [ ] Replace section wrappers with Section component
+- [ ] Replace containers with Container component
+- [ ] Replace section labels with SectionLabel component
+- [ ] Replace buttons with Button component (conveyor animation)
+- [ ] Replace cards with Card variants
+- [ ] Replace headings with SectionHeading/HeroHeading
+- [ ] Replace body text with BodyText component
+- [ ] Replace tags with Tag component
+- [ ] Replace grid layouts with Grid component
+- [ ] Remove duplicate inline styles and use tokens
+
+## Phase 1 - Quick Wins (Claude's Optimization Guide)
+- [x] Fix FAQ Plus icon rotation (180° → 45°)
+- [x] Fix footer grid columns (4 → 3)
+- [x] Add loading="lazy" to below-fold images (7 images updated)

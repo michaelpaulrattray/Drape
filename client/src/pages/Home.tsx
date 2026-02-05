@@ -693,6 +693,8 @@ function AboutSection() {
             <img
               src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
               alt="Showreel"
+              loading="lazy"
+              decoding="async"
               className="video-showreel-image w-full h-full object-cover grayscale contrast-110"
               style={{
                 transform: `scale(${showHoverEffect ? 1.1 : 1})`,
@@ -832,6 +834,8 @@ function WorkSection() {
                 <img
                   src={project.image}
                   alt={project.name}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
               </div>
@@ -903,6 +907,8 @@ function WhyUsSection() {
               <img
                 src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80"
                 alt="Architecture"
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale"
               />
               <div className="relative z-10 p-5">
@@ -999,6 +1005,8 @@ function WhyUsSection() {
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80"
               alt="Silhouette"
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale"
             />
             <div className="relative z-10 p-6 text-right">
@@ -1065,6 +1073,8 @@ function ServicesSection() {
                           <img
                             src={service.image}
                             alt={service.title}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -1288,7 +1298,7 @@ function FAQSection() {
                     <div className="w-6 h-6 rounded-full border border-[#0A0A0A]/20 flex items-center justify-center flex-shrink-0">
                       <Plus
                         className={`w-3 h-3 text-[#0A0A0A] transition-transform duration-700 ease-out ${
-                          openIndex === index ? "rotate-180" : ""
+                          openIndex === index ? "rotate-45" : ""
                         }`}
                       />
                     </div>
@@ -1366,6 +1376,8 @@ function BlogSection() {
               <img
                 src={blogPosts[0].image}
                 alt={blogPosts[0].title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               {/* Dark gradient overlay for text readability */}
@@ -1398,6 +1410,8 @@ function BlogSection() {
                   <img
                     src={post.image}
                     alt={post.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   {/* Category badge */}
@@ -1499,7 +1513,7 @@ function Footer() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={fadeIn}
-          className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-t border-white/10"
+          className="grid grid-cols-2 md:grid-cols-3 gap-8 py-12 border-t border-white/10"
         >
           <div className="space-y-3">
             <a href="/" className="block text-white/60 hover:text-white transition-colors">Home</a>
