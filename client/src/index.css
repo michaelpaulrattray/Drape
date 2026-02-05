@@ -43,6 +43,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: Inter, "Inter Placeholder", sans-serif;
   --font-geist: "Geist", sans-serif;
   --font-inter: "Inter", sans-serif;
   --font-space: "Space Grotesk", monospace;
@@ -823,3 +824,23 @@ input[type="range"].slider-slate::-moz-range-thumb:hover {
 .particle:nth-child(4) { animation-delay: 1.5s; left: 40%; top: 60%; }
 .particle:nth-child(5) { animation-delay: 2s; left: 80%; top: 70%; }
 .particle:nth-child(6) { animation-delay: 2.5s; left: 10%; top: 80%; }
+
+
+/* Video Showreel Hover Effects */
+.video-showreel-image {
+  transition: filter 650ms ease-out, transform 650ms ease-out;
+  filter: blur(0px);
+  transform: scale(1);
+}
+.group:hover .video-showreel-image {
+  filter: blur(4px);
+  transform: scale(1.05);
+}
+
+.video-play-icon {
+  transition: transform 650ms ease-out;
+  transform: scale(1);
+}
+.group:hover .video-play-icon {
+  transform: scale(1.1);
+}

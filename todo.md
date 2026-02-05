@@ -2290,3 +2290,23 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Card 2: #EBEBEB background with avatars/rating at top, testimonial at bottom (single card)
 - [x] Card 3: #EBEBEB outer container with 3 white module cards inside
 - [x] Card 4: Keep as-is (dark silhouette card)
+
+
+## Header Update (Kanso Style)
+- [x] Changed header from fixed full-width to sticky constrained width
+- [x] Header now matches section content width (max-w-[1400px])
+
+## Visual Style Updates (Feb 5, 2026)
+- [x] Services section: Fixed + sign counter-clockwise rotation on expand
+- [x] Services section: Reduced grid gap to match reference
+- [x] Why Us section: Reduced grid gap to match Selected Work
+- [x] Changed global font to Inter, "Inter Placeholder", sans-serif
+- [x] Fixed duplicate style attributes throughout Home.tsx
+- [x] Added line-height 22px to body text paragraphs
+- [x] Added line-height 59px to section headlines
+- [x] Changed Services section numbers to Inter font with semibold weight
+- [x] Updated section labels to 16px font size
+- [x] Updated section number colors to #757575
+- [x] Updated Services section background to #121212
+- [x] Updated various font sizes per visual editor feedback
+- [x] Added Framer Motion scroll animations to all sections

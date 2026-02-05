@@ -1,6 +1,55 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+
+// ============ ANIMATION VARIANTS ============
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }
+  }
+};
+
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1
+    }
+  }
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
 
 // ============ DATA ============
 
@@ -32,28 +81,32 @@ const projects = [
 
 const services = [
   {
-    title: "AI Model Casting",
+    title: "Model Identity",
     number: 1,
     description: "We generate unique, consistent AI model identities for your brand with photorealistic quality and complete creative control.",
     items: ["Model Generation", "Identity Systems", "Character Guidelines", "Ethnicity & Aesthetic", "Pose Libraries", "Expression Ranges"],
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80",
   },
   {
     title: "Outfit Generation",
     number: 2,
     description: "We create any outfit on your AI models. From streetwear to haute couture, no physical samples needed.",
     items: ["Virtual Try-On", "Garment Design", "Fabric Simulation", "Color Variants", "Style Matching", "Seasonal Collections"],
+    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80",
   },
   {
     title: "Campaign Production",
     number: 3,
     description: "Full photoshoot generation with complete lighting and environment control for campaign-ready assets.",
     items: ["Scene Composition", "Lighting Design", "Background Generation", "Multi-angle Shots", "Post-processing", "Asset Delivery"],
+    image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&q=80",
   },
   {
     title: "Brand Consistency",
     number: 4,
     description: "Maintain perfect visual consistency across all channels with AI-powered brand asset generation.",
     items: ["Style Guidelines", "Asset Libraries", "Cross-platform Assets", "Brand Templates", "Quality Control", "Version Management"],
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80",
   },
 ];
 
@@ -101,6 +154,7 @@ const blogPosts = [
 function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const handleScroll = () => {
@@ -110,37 +164,60 @@ function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Live time update every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format time for display
+  const formatTime = () => {
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Australia/Sydney'
+    };
+    return currentTime.toLocaleString('en-US', options).replace(',', '');
+  };
+
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white/95 backdrop-blur-sm shadow-sm" : "bg-transparent"
-      }`}
-    >
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl font-bold tracking-tight text-[#121212]">Forma®</span>
-          </Link>
+    <header className="sticky top-0 z-50 max-w-[1400px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-full">
+      <div className="flex items-center justify-between h-14">
+          {/* Logo + Time */}
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2">
+              <img 
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
+                alt="Forma®" 
+                className="h-6"
+              />
+            </Link>
+            <span className="text-sm text-[#0A0A0A]/50 hidden sm:inline">{formatTime()}</span>
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#about" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">About</a>
-            <a href="#work" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">Work</a>
-            <a href="#services" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">Services</a>
-            <a href="#pricing" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">Pricing</a>
-            <a href="#blog" className="text-sm text-[#121212]/70 hover:text-[#121212] transition-colors">Blog</a>
+            <a href="#about" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">About</a>
+            <a href="#work" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">Work</a>
+            <a href="#services" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">Services</a>
+            <a href="#pricing" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">Pricing</a>
+            <a href="#blog" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">Blog</a>
           </nav>
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
             <Link
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors"
             >
               Start a project
             </Link>
-            <button className="w-10 h-10 flex items-center justify-center rounded-full border border-[#121212]/10 hover:bg-[#121212]/5 transition-colors">
+            <button className="w-10 h-10 flex items-center justify-center rounded-full border border-[#0A0A0A]/10 hover:bg-[#0A0A0A]/5 transition-colors">
               <Plus className="w-4 h-4" />
             </button>
           </div>
@@ -152,20 +229,20 @@ function Header() {
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-        </div>
+      </div>
 
-        {/* Mobile Menu */}
+      {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-20 left-0 right-0 bg-white border-t border-[#121212]/10 shadow-lg">
+          <div className="md:hidden absolute top-20 left-0 right-0 bg-white border-t border-[#0A0A0A]/10 shadow-lg">
             <nav className="flex flex-col p-6 gap-4">
-              <a href="#about" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</a>
-              <a href="#work" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Work</a>
-              <a href="#services" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Services</a>
-              <a href="#pricing" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
-              <a href="#blog" className="text-lg text-[#121212]/70 hover:text-[#121212] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
+              <a href="#about" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</a>
+              <a href="#work" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Work</a>
+              <a href="#services" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Services</a>
+              <a href="#pricing" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+              <a href="#blog" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
               <Link
                 href="/waitlist"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors mt-4"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors mt-4"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Start a project
@@ -173,7 +250,6 @@ function Header() {
             </nav>
           </div>
         )}
-      </div>
     </header>
   );
 }
@@ -193,7 +269,7 @@ function LogoMarquee() {
             key={index}
             className="flex items-center justify-center min-w-[120px] px-8 grayscale opacity-50 hover:opacity-100 hover:grayscale-0 transition-all duration-300"
           >
-            <span className="text-xl font-semibold text-[#121212]/40">{logo.name}</span>
+            <span className="text-xl font-semibold text-[#0A0A0A]/40">{logo.name}</span>
           </div>
         ))}
       </div>
@@ -208,20 +284,37 @@ function HeroSection() {
         {/* Main Hero Content */}
         <div className="pt-16 pb-8">
           {/* Large Wordmark */}
-          <h1 className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#121212]">
+          <motion.h1 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#0A0A0A]" 
+            style={{fontWeight: '500', fontFamily: 'Inter, sans-serif'}}
+          >
             Forma®
-          </h1>
+          </motion.h1>
           
           {/* Tagline */}
-          <div className="mt-8 max-w-md ml-auto text-right">
-            <p className="text-lg text-[#121212]/60 leading-relaxed">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+            className="mt-8 max-w-md ml-auto text-right"
+          >
+            <p className="text-lg text-[#4D4D4D] leading-relaxed" style={{fontWeight: '500', color: '#757575', lineHeight: '22px'}}>
               Forma is an AI studio crafting refined model identities and photorealistic campaign assets.
             </p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Logo Marquee + Trust Badge - Inline */}
-        <div className="flex items-center gap-6 py-6 border-y border-[#121212]/10">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="flex items-center gap-6 py-6 border-y border-[#0A0A0A]/10" 
+          style={{borderWidth: '0px'}}
+        >
           {/* Logo Marquee with gradient fades */}
           <LogoMarquee />
           
@@ -229,24 +322,29 @@ function HeroSection() {
           <div className="flex items-center gap-4 shrink-0 pl-4">
             <div className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-3.5 h-3.5 text-[#121212]/60 fill-current" viewBox="0 0 20 20">
+                <svg key={i} className="w-3.5 h-3.5 text-[#4D4D4D] fill-current" viewBox="0 0 20 20">
                   <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                 </svg>
               ))}
-              <span className="ml-1.5 text-sm font-medium text-[#121212]/80">4.9/5</span>
+              <span className="ml-1.5 text-sm font-medium text-[#0A0A0A]/80">4.9/5</span>
             </div>
-            <span className="text-sm text-[#121212]/50">Trusted by <span className="font-medium text-[#121212]/70">100+</span> businesses</span>
+            <span className="text-sm text-[#4D4D4D]">Trusted by <span className="font-medium text-[#0A0A0A]/70">100+</span> businesses</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Hero Image */}
-        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#121212]/5">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+          className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5"
+        >
           <img
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=80"
             alt="AI Generated Model"
             className="w-full h-full object-cover grayscale contrast-125"
           />
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -255,8 +353,8 @@ function HeroSection() {
 function SectionLabel({ label, number }: { label: string; number: string }) {
   return (
     <div className="flex items-center justify-between mb-12">
-      <span className="text-sm text-[#121212]/40 tracking-wide">/ {label}</span>
-      <span className="text-sm text-[#121212]/40">({number})</span>
+      <span className="text-sm font-semibold text-[#0A0A0A] tracking-wide" style={{fontSize: '16px'}}>/ {label}</span>
+      <span className="text-sm font-semibold text-[#757575]" style={{fontSize: '16px'}}>({number})</span>
     </div>
   );
 }
@@ -278,9 +376,9 @@ function StatsMarquee() {
         <div className="flex shrink-0 items-center whitespace-nowrap">
           {statsSet.map((stat, index) => (
             <span key={index} className="flex items-center text-sm mx-3">
-              <span className="font-semibold text-[#121212]/70">{stat.value}</span>
-              <span className="text-[#121212]/40 ml-1.5">{stat.label}</span>
-              <span className="text-[#121212]/30 ml-3">/</span>
+              <span className="font-semibold text-[#0A0A0A]/70" style={{fontWeight: '700'}}>{stat.value}</span>
+              <span className="text-[#0A0A0A]/40 ml-1.5" style={{color: '#757575'}} style={{color: '#757575'}} style={{color: '#757575'}} style={{color: '#757575'}} style={{color: '#757575'}}>{stat.label}</span>
+              <span className="text-[#0A0A0A]/30 ml-3">/</span>
             </span>
           ))}
         </div>
@@ -288,9 +386,9 @@ function StatsMarquee() {
         <div className="flex shrink-0 items-center whitespace-nowrap">
           {statsSet.map((stat, index) => (
             <span key={`dup-${index}`} className="flex items-center text-sm mx-3">
-              <span className="font-semibold text-[#121212]/70">{stat.value}</span>
-              <span className="text-[#121212]/40 ml-1.5">{stat.label}</span>
-              <span className="text-[#121212]/30 ml-3">/</span>
+              <span className="font-semibold text-[#0A0A0A]/70">{stat.value}</span>
+              <span className="text-[#0A0A0A]/40 ml-1.5">{stat.label}</span>
+              <span className="text-[#0A0A0A]/30 ml-3">/</span>
             </span>
           ))}
         </div>
@@ -303,41 +401,73 @@ function AboutSection() {
   return (
     <section id="about" className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <SectionLabel label="About us" number="01" />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+        >
+          <SectionLabel label="About us" number="01" />
+        </motion.div>
 
         {/* Two-tone Headline - Kanso Style with font-medium, smaller size */}
-        <h2 className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-tight mb-12">
-          <span className="text-[#121212]">We're a design studio focused on creating</span>
+        <motion.h2 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeInUp}
+          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-tight mb-12"
+        >
+          <span className="text-[#0A0A0A]" style={{fontSize: '54px', fontFamily: 'Inter, sans-serif'}}>We're a design studio focused on creating</span>
           <br />
-          <span className="text-gray-400">simple, purposeful, and elegant solutions.</span>
-        </h2>
+          <span className="text-[#757575]" style={{fontSize: '54px', fontFamily: 'Inter, sans-serif'}}>simple, purposeful, and elegant solutions.</span>
+        </motion.h2>
 
         {/* Stats Marquee + Description - Inline Layout */}
-        <div className="flex items-center gap-6 py-6 mb-16">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+          className="flex items-center gap-6 py-6 mb-16" 
+          style={{marginBottom: '-10px'}}
+        >
           {/* Stats Marquee with gradient fades */}
           <StatsMarquee />
           
           {/* Description - Right aligned */}
-          <p className="shrink-0 max-w-xs text-sm text-[#121212]/60 leading-relaxed text-right">
+          <p className="shrink-0 max-w-xs text-sm text-[#4D4D4D] leading-relaxed text-right" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px'}}>
             Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
           </p>
-        </div>
+        </motion.div>
 
         {/* Video Block - Full Width */}
-        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-200">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={scaleIn}
+          className="group relative w-full aspect-video rounded-xl overflow-hidden bg-gray-200 cursor-pointer"
+        >
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-black/50 z-10"></div>
           <img
             src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
             alt="Showreel"
-            className="w-full h-full object-cover grayscale contrast-110"
+            className="video-showreel-image w-full h-full object-cover grayscale contrast-110"
           />
           {/* Play Button + Label */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <button className="w-16 h-16 rounded-full bg-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
-              <Play className="w-6 h-6 text-[#121212] fill-[#121212] ml-0.5" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+            <button className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg">
+              <Play className="video-play-icon w-6 h-6 text-[#0A0A0A] fill-[#0A0A0A] ml-0.5" />
             </button>
-            <span className="mt-4 text-white text-sm font-medium">Play Showreel</span>
+            <span className="mt-4 text-white text-xl font-medium" style={{fontSize: '24px', fontWeight: '600'}}>Play Showreel</span>
           </div>
-        </div>
+          {/* Forma branding at bottom */}
+          <div className="absolute bottom-4 left-0 right-0 text-center z-20">
+            <span className="text-white/60 text-sm" style={{color: '#ffffff', fontSize: '16px', fontWeight: '500'}}>© 2025 Forma®</span>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -347,29 +477,48 @@ function WorkSection() {
   return (
     <section id="work" className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <SectionLabel label="Selected Work" number="02" />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+        >
+          <SectionLabel label="Selected Work" number="02" />
+        </motion.div>
 
         {/* Header with subtext and button */}
-        <div className="flex items-start justify-between mb-16">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeInUp}
+          className="flex items-start justify-between mb-16"
+        >
           <div>
-            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-[#121212] mb-4">Selected Work.</h2>
-            <p className="text-[#121212]/50 text-sm max-w-sm leading-relaxed">
+            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-[#0A0A0A] mb-4" style={{fontSize: '64px', fontFamily: 'Inter, sans-serif'}}>Selected Work.</h2>
+            <p className="text-[#4D4D4D] text-sm max-w-sm leading-relaxed" style={{fontSize: '16px', lineHeight: '22px'}}>
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
-          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#121212]/20 text-sm text-[#121212] rounded-full hover:bg-[#121212] hover:text-white transition-all">
+          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#0A0A0A]/20 text-sm text-[#0A0A0A] rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all" style={{marginTop: '100px', fontWeight: '500'}}>
             View all projects
             <Plus className="w-4 h-4" />
           </a>
-        </div>
+        </motion.div>
 
         {/* Project Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+          className="grid md:grid-cols-2 gap-1"
+        >
           {projects.map((project, index) => (
             <a
               key={index}
               href="#"
-              className="group block rounded-2xl overflow-hidden transition-all duration-500 bg-[#EBEBEB] hover:bg-[#121212]"
+              className="group block rounded-2xl overflow-hidden transition-all duration-500 bg-[#EBEBEB] hover:bg-[#0A0A0A]"
             >
               {/* Image Container with zoom effect - border stays constant */}
               <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
@@ -384,24 +533,24 @@ function WorkSection() {
                 <div className="overflow-hidden">
                   {/* Project Name - stacked text */}
                   <div className="relative h-6 overflow-hidden">
-                    <h3 className="text-base font-semibold text-[#121212] transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
-                    <h3 className="text-base font-semibold text-white absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
+                    <h3 className="text-base font-semibold text-[#0A0A0A] transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
+                    <h3 className="text-base font-semibold text-white absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full" style={{fontSize: '18px'}}>{project.name}</h3>
                   </div>
                   {/* Category - stacked text */}
                   <div className="relative h-5 overflow-hidden">
-                    <p className="text-sm text-[#121212]/50 transition-transform duration-500 group-hover:-translate-y-full">{project.category}</p>
+                    <p className="text-sm text-[#4D4D4D] transition-transform duration-500 group-hover:-translate-y-full">{project.category}</p>
                     <p className="text-sm text-white/60 absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.category}</p>
                   </div>
                 </div>
                 {/* Year - stacked text */}
                 <div className="relative h-5 overflow-hidden">
-                  <span className="text-sm text-[#121212]/40 block transition-transform duration-500 group-hover:-translate-y-full">{project.year}</span>
+                  <span className="text-sm text-[#0A0A0A]/40 block transition-transform duration-500 group-hover:-translate-y-full">{project.year}</span>
                   <span className="text-sm text-white/50 absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.year}</span>
                 </div>
               </div>
             </a>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -411,31 +560,50 @@ function WhyUsSection() {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <SectionLabel label="Why us" number="03" />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+        >
+          <SectionLabel label="Why us" number="03" />
+        </motion.div>
 
         {/* Two-tone Headline - smaller size, font-weight 500 */}
-        <h2 className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-16">
-          <span className="text-[#121212]">We cut through noise to create designs that are </span>
-          <span className="text-[#757575]">thoughtful, timeless, and impactful.</span>
-        </h2>
+        <motion.h2 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeInUp}
+          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-16"
+        >
+          <span className="text-[#0A0A0A]" style={{fontSize: '54px', fontFamily: 'inter, sans-serif'}}>We cut through noise to create designs that are </span>
+          <span className="text-[#757575]" style={{fontSize: '54px', fontFamily: 'inter, sans-serif'}}>thoughtful, timeless, and impactful.</span>
+        </motion.h2>
 
         {/* 4-Column Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1"
+        >
           {/* Card 1 - #EBEBEB outer with 2 inner cards */}
           <div className="bg-[#EBEBEB] rounded-2xl p-3 flex flex-col gap-3">
             {/* Top: Dark card with building image */}
-            <div className="relative rounded-xl overflow-hidden bg-[#121212] min-h-[240px] flex flex-col justify-between">
+            <div className="relative rounded-xl overflow-hidden bg-[#0A0A0A] min-h-[240px] flex flex-col justify-between">
               <img
                 src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80"
                 alt="Architecture"
                 className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale"
               />
               <div className="relative z-10 p-5">
-                <h3 className="text-lg font-semibold text-white leading-tight">Purposeful Design<br />for Modern Brands.</h3>
+                <h3 className="text-lg font-semibold text-white leading-tight" style={{fontSize: '24px'}}>Purposeful Design<br />for Modern Brands.</h3>
                 <p className="text-white/50 text-xs mt-2">© 2025</p>
               </div>
               <div className="relative z-10 p-5 pt-0">
-                <a href="/waitlist" className="inline-flex items-center gap-2 px-4 py-2 bg-white/90 text-[#121212] text-sm font-medium rounded-full hover:bg-white transition-colors">
+                <a href="/waitlist" className="inline-flex items-center gap-2 px-4 py-2 bg-white/90 text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-white transition-colors">
                   Get started
                   <Plus className="w-3.5 h-3.5" />
                 </a>
@@ -445,8 +613,8 @@ function WhyUsSection() {
             <div className="bg-white rounded-xl p-4">
               <ul className="space-y-2">
                 {["Collaborative Approach", "Quick turnaround", "Clear Communication", "Consistent Quality", "Reliable Support"].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-sm text-[#121212]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#121212]"></span>
+                  <li key={i} className="flex items-center gap-2.5 text-sm text-[#0A0A0A]" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px'}}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A]"></span>
                     {item}
                   </li>
                 ))}
@@ -470,24 +638,24 @@ function WhyUsSection() {
                   ))}
                 </div>
                 <div className="flex items-center gap-1 text-sm">
-                  <span className="text-[#121212]">4.9/5</span>
-                  <svg className="w-3.5 h-3.5 text-[#121212] fill-current" viewBox="0 0 20 20">
+                  <span className="text-[#0A0A0A]">4.9/5</span>
+                  <svg className="w-3.5 h-3.5 text-[#0A0A0A] fill-current" viewBox="0 0 20 20">
                     <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                   </svg>
                 </div>
               </div>
-              <p className="text-sm"><span className="font-semibold text-[#121212]">100+</span> <span className="text-[#757575]">Happy clients worldwide</span></p>
+              <p className="text-sm"><span className="font-semibold text-[#0A0A0A]">100+</span> <span className="text-[#757575]">Happy clients worldwide</span></p>
             </div>
             {/* Bottom: Testimonial */}
             <div>
               <div className="flex items-center gap-0.5 mb-3">
                 {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-3 h-3 text-[#121212] fill-current" viewBox="0 0 20 20">
+                  <svg key={i} className="w-3 h-3 text-[#0A0A0A] fill-current" viewBox="0 0 20 20">
                     <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                   </svg>
                 ))}
               </div>
-              <blockquote className="text-sm text-[#121212] leading-relaxed mb-4">
+              <blockquote className="text-sm text-[#0A0A0A] leading-relaxed mb-4" style={{fontSize: '16px', lineHeight: '22px'}}>
                 "Kanso understood our brand better than we did. Their ability to find the essential and express it simply is what sets them apart."
               </blockquote>
               <div className="flex items-center gap-3">
@@ -497,7 +665,7 @@ function WhyUsSection() {
                   className="w-9 h-9 rounded-full object-cover"
                 />
                 <div>
-                  <p className="text-sm font-medium text-[#121212]">Sofia Ford</p>
+                  <p className="text-sm font-medium text-[#0A0A0A]">Sofia Ford</p>
                   <p className="text-xs text-[#757575]">Founder</p>
                 </div>
               </div>
@@ -512,80 +680,170 @@ function WhyUsSection() {
               { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "24/7 Dedicated Support", desc: "We're always here when you need us, ready to answer questions, provide updates." },
             ].map((feature, i) => (
               <div key={i} className="bg-white rounded-xl p-4 flex-1">
-                <div className="text-[#121212] mb-3">{feature.icon}</div>
-                <h4 className="font-semibold text-[#121212] text-sm mb-1.5">{feature.title}</h4>
-                <p className="text-xs text-[#757575] leading-relaxed">{feature.desc}</p>
+                <div className="text-[#0A0A0A] mb-3">{feature.icon}</div>
+                <h4 className="font-semibold text-[#0A0A0A] text-sm mb-1.5" style={{fontSize: '18px', lineHeight: '22px'}}>{feature.title}</h4>
+                <p className="text-xs text-[#757575] leading-relaxed" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px'}}>{feature.desc}</p>
               </div>
             ))}
           </div>
 
           {/* Column 4 - Tall dark card with silhouette */}
-          <div className="relative rounded-2xl overflow-hidden bg-[#121212] min-h-[500px] md:min-h-full flex flex-col justify-between">
+          <div className="relative rounded-2xl overflow-hidden bg-[#0A0A0A] min-h-[500px] md:min-h-full flex flex-col justify-between">
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80"
               alt="Silhouette"
               className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale"
             />
             <div className="relative z-10 p-6 text-right">
-              <span className="text-white/80 text-sm font-medium">Forma®</span>
+              <span className="text-white/80 text-sm font-medium" style={{fontSize: '18px', marginRight: '80px', textAlign: 'center'}}>Forma®</span>
             </div>
             <div className="relative z-10 p-6">
               <h3 className="text-2xl font-semibold text-white leading-tight">Design with intent.</h3>
               <p className="text-white/60 text-sm mt-1">No excess, no fluff.</p>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 }
 
 function ServicesSection() {
-  const [activeService, setActiveService] = useState(0);
+  const [expandedService, setExpandedService] = useState<number | null>(null);
+  const [hoveredService, setHoveredService] = useState<number | null>(null);
+
+  const toggleService = (index: number) => {
+    setExpandedService(expandedService === index ? null : index);
+  };
 
   return (
-    <section id="services" className="py-24 bg-[#121212] text-white">
+    <section id="services" className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <div className="flex items-center justify-between mb-12">
-          <span className="text-sm text-white/40 tracking-wide">/ Services</span>
-          <span className="text-sm text-white/40">(04)</span>
-        </div>
-
-        {/* Service List */}
-        <div className="space-y-4 mb-12">
-          {services.map((service, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveService(index)}
-              className={`w-full text-left flex items-center justify-between py-4 border-b border-white/10 transition-colors ${
-                activeService === index ? "text-white" : "text-white/40 hover:text-white/70"
-              }`}
-            >
-              <span className="text-[clamp(1.5rem,4vw,3rem)] font-bold">{service.title}</span>
-              <span className="text-[clamp(2rem,5vw,4rem)] font-light text-white/20">{service.number}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Active Service Details */}
-        <div className="grid lg:grid-cols-2 gap-12 mb-12">
-          <p className="text-lg text-white/60 leading-relaxed">
-            {services[activeService].description}
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            {services[activeService].items.map((item, i) => (
-              <span key={i} className="text-sm text-white/40">{item}</span>
-            ))}
-          </div>
-        </div>
-
-        <a
-          href="#pricing"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#121212] text-sm font-medium rounded-full hover:bg-white/90 transition-colors"
+        {/* Contained dark card */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={scaleIn}
+          className="bg-[#0A0A0A] rounded-3xl px-8 py-12 lg:px-16 lg:py-16" style={{backgroundColor: '#121212'}}
         >
-          See pricing
-          <Plus className="w-4 h-4" />
-        </a>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-12">
+            <span className="text-sm font-medium text-white/60 tracking-wide" style={{color: '#ffffff', fontSize: '16px'}}>/ Services</span>
+            <span className="text-sm font-medium text-white/60">(04)</span>
+          </div>
+
+          {/* Service List - Accordion */}
+          <div className="space-y-1 mb-12">
+            {services.map((service, index) => {
+              const isExpanded = expandedService === index;
+              const isHovered = hoveredService === index;
+              const showImage = isExpanded || isHovered;
+              const showPlus = isExpanded || isHovered;
+              
+              return (
+                <div key={index}>
+                  {/* Service Row - Clickable */}
+                  <div
+                    className="group cursor-pointer py-4"
+                    onClick={() => toggleService(index)}
+                    onMouseEnter={() => setHoveredService(index)}
+                    onMouseLeave={() => setHoveredService(null)}
+                  >
+                    <div className="flex items-center justify-between">
+                      {/* Left side - Image + Title with slide animation */}
+                      <div className="relative flex items-center">
+                        {/* Image thumbnail - always present, revealed on hover/expand */}
+                        <div className="absolute left-0 w-28 h-16 overflow-hidden rounded-xl">
+                          <img
+                            src={service.image}
+                            alt={service.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        
+                        {/* Title - slides right on hover/expand to reveal image */}
+                        <span className={`bg-[#0A0A0A] rounded-xl px-4 py-2 text-[clamp(1.75rem,4vw,3.5rem)] font-semibold tracking-tight transition-all duration-700 ease-out ${
+                          showImage 
+                            ? "text-white translate-x-36" 
+                            : "text-white/80 translate-x-0 group-hover:text-white"
+                        }`} style={{backgroundColor: '#121212'}}>
+                          {service.title}
+                        </span>
+                      </div>
+
+                      {/* Right side - Number / Plus / X transitions */}
+                      <div className="relative w-20 h-20 flex items-center justify-center overflow-hidden">
+                        {/* Number - slides out to the LEFT on hover */}
+                        <span 
+                          className={`absolute text-[clamp(3rem,6vw,5rem)] font-semibold text-white/25 transition-all duration-700 ease-out ${
+                            showPlus 
+                              ? "-translate-x-24 opacity-0" 
+                              : "translate-x-0 opacity-100"
+                          }`}
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                          {service.number}
+                        </span>
+                        
+                        {/* Plus - slides in from RIGHT, rotates to X on expand */}
+                        <span 
+                          className={`absolute text-[clamp(3rem,6vw,5rem)] font-light text-white/25 transition-all duration-700 ease-out ${
+                            isExpanded
+                              ? "translate-x-0 -rotate-[135deg]"  /* X shape (counter-clockwise from -90°) */
+                              : isHovered
+                                ? "translate-x-0 -rotate-90"  /* + rotated counter-clockwise */
+                                : "translate-x-24 rotate-0 opacity-0"  /* Hidden to the right */
+                          } ${
+                            showPlus ? "opacity-100" : "opacity-0"
+                          }`}
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                          +
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Content */}
+                  <div 
+                    className={`overflow-hidden transition-all duration-500 ease-out ${
+                      isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="pb-6 pl-0 lg:pl-[calc(7rem+1.5rem)]">
+                      {/* Description */}
+                      <p className="text-white/60 text-base leading-relaxed max-w-xl mb-6">
+                        {service.description}
+                      </p>
+                      
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2">
+                        {service.items.map((item, itemIndex) => (
+                          <span
+                            key={itemIndex}
+                            className="px-4 py-2 border border-white/20 rounded-full text-sm text-white/80"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* CTA Button */}
+          <a
+            href="#pricing"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-white/90 transition-colors"
+          >
+            See pricing
+            <Plus className="w-4 h-4" />
+          </a>
+        </motion.div>
       </div>
     </section>
   );
@@ -595,38 +853,56 @@ function ProcessSection() {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <SectionLabel label="Process" number="05" />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+        >
+          <SectionLabel label="Process" number="05" />
+        </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-16">
           {/* Left - Headline */}
-          <div>
-            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+          >
+            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif', color: '#0a0a0a', lineHeight: '59px'}}>
               Our process is simple, purposeful, and adaptable.
             </h2>
-            <p className="text-[#121212]/60 mb-8">
+            <p className="text-[#4D4D4D] mb-8" style={{color: '#757575'}}>
               We believe great design is a result of clarity, collaboration, and craft.
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors"
             >
               Let's talk
               <Plus className="w-4 h-4" />
             </a>
-          </div>
+          </motion.div>
 
           {/* Right - Steps */}
-          <div className="space-y-6">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={staggerContainer}
+            className="space-y-6"
+          >
             {processSteps.map((step, index) => (
-              <div key={index} className="border-b border-[#121212]/10 pb-6">
+              <div key={index} className="border-b border-[#0A0A0A]/10 pb-6">
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-bold text-[#121212]">{step.title}</h3>
-                  <span className="text-sm text-[#121212]/30">{step.number}</span>
+                  <h3 className="text-xl font-bold text-[#0A0A0A]" style={{fontSize: '24px'}}>{step.title}</h3>
+                  <span className="text-sm text-[#0A0A0A]/30">{step.number}</span>
                 </div>
-                <p className="text-[#121212]/60">{step.description}</p>
+                <p className="text-[#4D4D4D]" style={{color: '#757575', lineHeight: '22px'}}>{step.description}</p>
               </div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -639,18 +915,37 @@ function PricingSection() {
   return (
     <section id="pricing" className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <SectionLabel label="Pricing Plans" number="06" />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+        >
+          <SectionLabel label="Pricing Plans" number="06" />
+        </motion.div>
 
-        <p className="text-[#121212]/60 mb-8 max-w-xl">
+        <motion.p 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeInUp}
+          className="text-[#4D4D4D] mb-8 max-w-xl"
+        >
           Flexible pricing designed to match your creative needs and scale with your brand.
-        </p>
+        </motion.p>
 
         {/* Billing Toggle */}
-        <div className="flex items-center gap-4 mb-12">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+          className="flex items-center gap-4 mb-12"
+        >
           <button
             onClick={() => setBillingType("monthly")}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              billingType === "monthly" ? "bg-[#121212] text-white" : "bg-[#121212]/5 text-[#121212]/60 hover:bg-[#121212]/10"
+              billingType === "monthly" ? "bg-[#0A0A0A] text-white" : "bg-[#0A0A0A]/5 text-[#4D4D4D] hover:bg-[#0A0A0A]/10"
             }`}
           >
             Monthly
@@ -658,16 +953,22 @@ function PricingSection() {
           <button
             onClick={() => setBillingType("project")}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              billingType === "project" ? "bg-[#121212] text-white" : "bg-[#121212]/5 text-[#121212]/60 hover:bg-[#121212]/10"
+              billingType === "project" ? "bg-[#0A0A0A] text-white" : "bg-[#0A0A0A]/5 text-[#4D4D4D] hover:bg-[#0A0A0A]/10"
             }`}
           >
             Project based
           </button>
-        </div>
+        </motion.div>
 
         {/* Pricing Card */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="bg-[#121212] text-white rounded-2xl p-8">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={scaleIn}
+          className="grid lg:grid-cols-2 gap-8"
+        >
+          <div className="bg-[#0A0A0A] text-white rounded-2xl p-8">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <span className="text-sm text-white/50">Subscription</span>
@@ -688,28 +989,28 @@ function PricingSection() {
           </div>
 
           <div>
-            <h4 className="text-sm font-medium text-[#121212]/50 mb-4">What's included:</h4>
+            <h4 className="text-sm font-medium text-[#4D4D4D] mb-4">What's included:</h4>
             <ul className="space-y-3 mb-8">
               {pricingFeatures.map((feature, i) => (
-                <li key={i} className="flex items-center gap-3 text-[#121212]/70">
-                  <span className="w-2 h-2 rounded-full bg-[#121212]" />
+                <li key={i} className="flex items-center gap-3 text-[#0A0A0A]/70">
+                  <span className="w-2 h-2 rounded-full bg-[#0A0A0A]" />
                   {feature}
                 </li>
               ))}
             </ul>
             <div className="mb-8">
-              <span className="text-sm text-[#121212]/50">Estimated delivery:</span>
-              <p className="text-2xl font-bold text-[#121212]">48 hours</p>
+              <span className="text-sm text-[#4D4D4D]">Estimated delivery:</span>
+              <p className="text-2xl font-bold text-[#0A0A0A]">48 hours</p>
             </div>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors"
             >
               Get started
               <Plus className="w-4 h-4" />
             </a>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -719,20 +1020,39 @@ function TestimonialsSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   return (
-    <section className="py-24 bg-[#121212] text-white">
+    <section className="py-24 bg-[#0A0A0A] text-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <div className="flex items-center justify-between mb-12">
-          <span className="text-sm text-white/40 tracking-wide">/ Testimonials</span>
-          <span className="text-sm text-white/40">(07)</span>
-        </div>
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+          className="flex items-center justify-between mb-12"
+        >
+          <span className="text-sm font-semibold text-white tracking-wide">/ Testimonials</span>
+          <span className="text-sm font-semibold text-white">(07)</span>
+        </motion.div>
 
-        <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold mb-16">
+        <motion.h2 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeInUp}
+          className="text-[clamp(2rem,4vw,3.5rem)] font-bold mb-16" 
+          style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif'}}
+        >
           Success stories from our clients.
-        </h2>
+        </motion.h2>
 
         {/* Testimonial Carousel */}
         <div className="relative">
-          <div className="grid md:grid-cols-3 gap-6">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={staggerContainer}
+            className="grid md:grid-cols-3 gap-6"
+          >
             {testimonials.map((testimonial, index) => (
               <div
                 key={index}
@@ -766,7 +1086,7 @@ function TestimonialsSection() {
                 </div>
               </div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Navigation */}
           <div className="flex items-center justify-center gap-4 mt-8">
@@ -795,49 +1115,67 @@ function FAQSection() {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <SectionLabel label="FAQs" number="08" />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+        >
+          <SectionLabel label="FAQs" number="08" />
+        </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-16">
           {/* Left - Headline */}
-          <div>
-            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+          >
+            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif', color: '#0a0a0a', lineHeight: '59px'}}>
               Wondering How We Work?
             </h2>
-            <p className="text-[#121212]/60 mb-8">
+            <p className="text-[#4D4D4D] mb-8" style={{color: '#757575'}}>
               Answers to common questions about our process, services, and how we work.
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#121212] text-white text-sm font-medium rounded-full hover:bg-[#121212]/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors"
             >
               Contact us
               <Plus className="w-4 h-4" />
             </a>
-          </div>
+          </motion.div>
 
           {/* Right - Accordion */}
-          <div className="space-y-4">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={staggerContainer}
+            className="space-y-4"
+          >
             {faqs.map((faq, index) => (
-              <div key={index} className="border-b border-[#121212]/10">
+              <div key={index} className="border-b border-[#0A0A0A]/10">
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
                   className="w-full flex items-center justify-between py-4 text-left"
                 >
-                  <span className="font-medium text-[#121212]">{index + 1}. {faq.question}</span>
+                  <span className="font-medium text-[#0A0A0A]" style={{fontSize: '18px'}}>{index + 1}. {faq.question}</span>
                   <Plus
-                    className={`w-5 h-5 text-[#121212]/50 transition-transform ${
+                    className={`w-5 h-5 text-[#4D4D4D] transition-transform ${
                       openIndex === index ? "rotate-45" : ""
                     }`}
                   />
                 </button>
                 {openIndex === index && (
                   <div className="pb-4">
-                    <p className="text-[#121212]/60">{faq.answer}</p>
+                    <p className="text-[#4D4D4D]">{faq.answer}</p>
                   </div>
                 )}
               </div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -848,47 +1186,66 @@ function BlogSection() {
   return (
     <section id="blog" className="py-24 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        <SectionLabel label="Blog" number="09" />
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeIn}
+        >
+          <SectionLabel label="Blog" number="09" />
+        </motion.div>
 
-        <div className="flex items-end justify-between mb-12">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeInUp}
+          className="flex items-end justify-between mb-12"
+        >
           <div>
-            <h2 className="text-3xl font-bold text-[#121212] mb-4">Latest insights from our blog.</h2>
-            <p className="text-[#121212]/60">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
+            <h2 className="text-3xl font-bold text-[#0A0A0A] mb-4">Latest insights from our blog.</h2>
+            <p className="text-[#4D4D4D]">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
-          <a href="#" className="hidden md:inline-flex items-center gap-2 text-sm text-[#121212]/60 hover:text-[#121212] transition-colors">
+          <a href="#" className="hidden md:inline-flex items-center gap-2 text-sm text-[#4D4D4D] hover:text-[#0A0A0A] transition-colors">
             View all articles
             <ArrowRight className="w-4 h-4" />
           </a>
-        </div>
+        </motion.div>
 
         {/* Blog Grid */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+          className="grid md:grid-cols-3 gap-6"
+        >
           {blogPosts.map((post, index) => (
             <a
               key={index}
               href="#"
               className="group"
             >
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#121212]/5 mb-4 relative">
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#0A0A0A]/5 mb-4 relative">
                 <img
                   src={post.image}
                   alt={post.title}
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                 />
-                <span className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-[#121212]">
+                <span className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-[#0A0A0A]">
                   {post.category}
                 </span>
               </div>
-              <span className="text-sm text-[#121212]/50">{post.date}</span>
-              <h3 className="text-lg font-bold text-[#121212] mt-2 mb-2 group-hover:text-[#121212]/70 transition-colors">
+              <span className="text-sm text-[#4D4D4D]">{post.date}</span>
+              <h3 className="text-lg font-bold text-[#0A0A0A] mt-2 mb-2 group-hover:text-[#0A0A0A]/70 transition-colors">
                 {post.title}
               </h3>
-              <p className="text-sm text-[#121212]/60 line-clamp-2">{post.excerpt}</p>
+              <p className="text-sm text-[#4D4D4D] line-clamp-2">{post.excerpt}</p>
             </a>
           ))}
-        </div>
+        </motion.div>
 
-        <a href="#" className="md:hidden inline-flex items-center gap-2 text-sm text-[#121212]/60 hover:text-[#121212] transition-colors mt-8">
+        <a href="#" className="md:hidden inline-flex items-center gap-2 text-sm text-[#4D4D4D] hover:text-[#0A0A0A] transition-colors mt-8">
           View all articles
           <ArrowRight className="w-4 h-4" />
         </a>
@@ -899,14 +1256,26 @@ function BlogSection() {
 
 function Footer() {
   return (
-    <footer className="py-24 bg-[#121212] text-white">
+    <footer className="py-24 bg-[#0A0A0A] text-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         {/* Large Wordmark */}
-        <h2 className="text-[clamp(3rem,10vw,8rem)] font-bold tracking-tighter mb-16">
+        <motion.h2 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeInUp}
+          className="text-[clamp(3rem,10vw,8rem)] font-bold tracking-tighter mb-16"
+        >
           Forma® Studio
-        </h2>
+        </motion.h2>
 
-        <div className="grid lg:grid-cols-2 gap-16 mb-16">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={staggerContainer}
+          className="grid lg:grid-cols-2 gap-16 mb-16"
+        >
           {/* Left - Contact */}
           <div>
             <p className="text-white/60 mb-8 max-w-md">
@@ -933,16 +1302,22 @@ function Footer() {
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-white text-[#121212] font-medium rounded-full hover:bg-white/90 transition-colors"
+                className="px-6 py-3 bg-white text-[#0A0A0A] font-medium rounded-full hover:bg-white/90 transition-colors"
               >
                 Sign up
               </button>
             </form>
           </div>
-        </div>
+        </motion.div>
 
         {/* Links Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-t border-white/10">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={fadeIn}
+          className="grid grid-cols-2 md:grid-cols-4 gap-8 py-12 border-t border-white/10"
+        >
           <div className="space-y-3">
             <a href="/" className="block text-white/60 hover:text-white transition-colors">Home</a>
             <a href="#about" className="block text-white/60 hover:text-white transition-colors">About</a>
@@ -959,13 +1334,19 @@ function Footer() {
             <a href="#" className="block text-white/60 hover:text-white transition-colors">Instagram</a>
             <a href="#" className="block text-white/60 hover:text-white transition-colors">LinkedIn</a>
           </div>
-        </div>
+        </motion.div>
 
         {/* Copyright */}
-        <div className="flex items-center justify-between pt-8 border-t border-white/10 text-sm text-white/40">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={fadeIn}
+          className="flex items-center justify-between pt-8 border-t border-white/10 text-sm text-white/40"
+        >
           <span>© 2025 All rights reserved</span>
           <span>Designed with AI</span>
-        </div>
+        </motion.div>
       </div>
     </footer>
   );
