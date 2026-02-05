@@ -414,6 +414,7 @@ function StatsMarquee() {
 
 function AboutSection() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [imageKey, setImageKey] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handlePlay = () => {
@@ -429,6 +430,8 @@ function AboutSection() {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
+    // Increment key to force image remount and reset hover state
+    setImageKey(prev => prev + 1);
     setIsPlaying(false);
   };
 
@@ -484,10 +487,11 @@ function AboutSection() {
           className="group relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] cursor-pointer"
         >
           {/* Static Image - shown when not playing */}
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {!isPlaying && (
               <motion.div
-                initial={{ opacity: 0 }}
+                key="static-image"
+                initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
@@ -496,6 +500,7 @@ function AboutSection() {
                 {/* Dark overlay for text readability */}
                 <div className="absolute inset-0 bg-black/50 z-10"></div>
                 <img
+                  key={`img-${imageKey}`}
                   src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
                   alt="Showreel"
                   className="video-showreel-image w-full h-full object-cover grayscale contrast-110 transition-transform duration-700 group-hover:scale-110"
