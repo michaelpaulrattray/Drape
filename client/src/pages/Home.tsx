@@ -293,9 +293,9 @@ function Header() {
               style={{ overflow: 'hidden' }}
             >
               {/* Content wrapper */}
-              <div className="py-8 flex">
+              <div className="pt-6 pb-4 flex gap-8">
                 {/* Left Column - Navigation */}
-                <div className="flex-1 flex flex-col justify-between">
+                <div className="w-1/2 flex flex-col">
                   <nav className="flex flex-col">
                     {[
                       { name: 'Home', href: '/', index: '01' },
@@ -310,30 +310,17 @@ function Header() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.03 + 0.05, duration: 0.3 }}
-                        className="group flex items-center justify-between py-2 border-b border-[#0A0A0A]/10 hover:border-[#0A0A0A]/30 transition-colors"
+                        className="group flex items-center justify-between py-2 border-b transition-colors"
                         onClick={() => setIsMegaMenuOpen(false)}
-                        style={{ borderColor: '#757575' }}
+                        style={{ borderColor: '#d4d4d4' }}
                       >
-                        <span className="text-2xl md:text-3xl font-light text-[#0A0A0A] group-hover:text-[#0A0A0A]/70 transition-colors" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: '600' }}>
+                        <span className="text-[#0A0A0A] group-hover:text-[#0A0A0A]/70 transition-colors" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: '600' }}>
                           {item.name}
                         </span>
-                        <span className="text-sm text-[#0A0A0A]/40" style={{ color: '#4d4d4d', fontWeight: '500' }}>({item.index})</span>
+                        <span className="text-sm" style={{ color: '#4d4d4d', fontWeight: '500' }}>({item.index})</span>
                       </motion.a>
                     ))}
                   </nav>
-
-                  {/* Contact Info */}
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.25, duration: 0.3 }}
-                    className="flex flex-col gap-1 mt-6"
-                  >
-                    <a href="mailto:hello@formastudio.ai" className="text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors font-medium">
-                      hello@formastudio.ai
-                    </a>
-                    <span className="text-[#0A0A0A]/50 text-sm" style={{color: '#0a0a0a', fontWeight: '500'}}>(123) 456-7890</span>
-                  </motion.div>
                 </div>
 
                 {/* Right Column - Feature Image */}
@@ -341,16 +328,16 @@ function Header() {
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.1, duration: 0.4 }}
-                  className="hidden lg:flex flex-1 items-start justify-end pl-12"
+                  className="hidden lg:block w-1/2"
                 >
-                  <div className="relative w-full max-w-[400px] aspect-[21/9] rounded-lg overflow-hidden">
+                  <div className="relative w-full h-full rounded-lg overflow-hidden" style={{ minHeight: '260px' }}>
                     <img 
                       src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" 
                       alt="FormaStudio™" 
                       className="w-full h-full object-cover grayscale"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" style={{ width: '700px', height: '225px', marginLeft: '-300px' }} />
-                    <div className="absolute top-4 left-4">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute top-4 right-4">
                       <span className="text-white font-medium text-sm">FormaStudio™</span>
                     </div>
                     <div className="absolute bottom-4 left-4">
@@ -360,19 +347,25 @@ function Header() {
                 </motion.div>
               </div>
 
-              {/* Bottom row with social links */}
-              <div className="pb-6 flex justify-end">
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3, duration: 0.3 }}
-                  className="flex items-center gap-6"
-                >
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Twitter/X</a>
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Instagram</a>
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>LinkedIn</a>
-                </motion.div>
-              </div>
+              {/* Bottom row - Contact info on left, social links on right */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.25, duration: 0.3 }}
+                className="pb-4 flex items-center justify-between"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <a href="mailto:hello@formastudio.ai" className="text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors font-medium">
+                    hello@formastudio.ai
+                  </a>
+                  <span className="text-sm" style={{ color: '#0a0a0a', fontWeight: '500' }}>(123) 456-7890</span>
+                </div>
+                <div className="flex items-center gap-6">
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{ fontWeight: '500' }}>Twitter/X</a>
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{ fontWeight: '500' }}>Instagram</a>
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{ fontWeight: '500' }}>LinkedIn</a>
+                </div>
+              </motion.div>
             </motion.div>
         )}
       </AnimatePresence>
