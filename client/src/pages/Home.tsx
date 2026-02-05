@@ -476,7 +476,7 @@ function HeroSection() {
     <section className="min-h-screen pt-20 bg-white" style={{paddingBottom: '120px'}}>
       <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         {/* Main Hero Content */}
-        <div className="pt-[40vh] pb-8" style={{paddingTop: '470px'}}>
+        <div className="pt-[40vh] pb-8" style={{paddingTop: '0px'}}>
           {/* Large Wordmark */}
           <motion.h1 
             initial={{ opacity: 0, y: 40 }}
