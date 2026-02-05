@@ -638,7 +638,7 @@ function WorkSection() {
               className="group block rounded-2xl overflow-hidden transition-all duration-500 bg-[#EBEBEB] hover:bg-[#0A0A0A]"
             >
               {/* Image Container with zoom effect - border stays constant */}
-              <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-1.5">
                 <img
                   src={project.image}
                   alt={project.name}
@@ -707,7 +707,7 @@ function WhyUsSection() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1"
         >
           {/* Card 1 - #EBEBEB outer with 2 inner cards */}
-          <div className="bg-[#EBEBEB] rounded-2xl p-3 flex flex-col gap-3">
+          <div className="bg-[#EBEBEB] rounded-2xl p-2 flex flex-col gap-2">
             {/* Top: Dark card with building image */}
             <div className="relative rounded-xl overflow-hidden bg-[#0A0A0A] min-h-[240px] flex flex-col justify-between" style={{height: '290px'}}>
               <img
@@ -790,7 +790,7 @@ function WhyUsSection() {
           </div>
 
           {/* Card 3 - #EBEBEB outer with 3 white module cards */}
-          <div className="bg-[#EBEBEB] rounded-2xl p-3 flex flex-col gap-3">
+          <div className="bg-[#EBEBEB] rounded-2xl p-2 flex flex-col gap-2">
             {[
               { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, title: "Streamlined Process", desc: "Our focused, step-by-step approach saves time and keeps projects moving smoothly." },
               { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>, title: "Scalable Design", desc: "We create systems that grow with your brand and stay effective over time." },
@@ -1143,7 +1143,7 @@ function BlogSection() {
             href="#"
             className="group block rounded-2xl overflow-hidden bg-[#EBEBEB] hover:bg-[#0A0A0A] transition-colors duration-500 md:col-span-2 md:row-span-2"
           >
-            <div className="relative h-full min-h-[500px] overflow-hidden rounded-xl m-2">
+            <div className="relative h-full min-h-[500px] overflow-hidden rounded-xl m-1.5">
               <img
                 src={blogPosts[0].image}
                 alt={blogPosts[0].title}
@@ -1175,7 +1175,7 @@ function BlogSection() {
             >
               {/* Card with image */}
               <div className="rounded-2xl overflow-hidden bg-[#EBEBEB] group-hover:bg-[#0A0A0A] transition-colors duration-500">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-1.5">
                   <img
                     src={post.image}
                     alt={post.title}
