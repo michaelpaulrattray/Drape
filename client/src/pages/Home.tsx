@@ -1142,7 +1142,7 @@ function BlogSection() {
           {/* Featured Post (First - Large with text overlay, spans 2 columns) */}
           <a
             href="#"
-            className="group block rounded-2xl overflow-hidden bg-[#EBEBEB] md:col-span-2 md:row-span-2"
+            className="group block rounded-2xl overflow-hidden bg-[#EBEBEB] hover:bg-[#0A0A0A] transition-colors duration-500 md:col-span-2 md:row-span-2"
           >
             <div className="relative h-full min-h-[500px] overflow-hidden rounded-xl m-2">
               <img
@@ -1175,7 +1175,7 @@ function BlogSection() {
               className="group block"
             >
               {/* Card with image */}
-              <div className="rounded-2xl overflow-hidden bg-[#EBEBEB]">
+              <div className="rounded-2xl overflow-hidden bg-[#EBEBEB] group-hover:bg-[#0A0A0A] transition-colors duration-500">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
                   <img
                     src={post.image}
