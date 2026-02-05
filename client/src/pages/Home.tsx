@@ -281,7 +281,7 @@ function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
-    offset: ["start start", "end start"]
+    offset: ["start start", "60% start"]
   });
   const imageScale = useTransform(scrollYProgress, [0, 1], [1.25, 1.0]);
   const smoothScale = useSpring(imageScale, {
