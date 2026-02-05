@@ -483,7 +483,7 @@ function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#0A0A0A]" 
-            style={{fontWeight: '500', fontFamily: 'Inter, sans-serif', fontSize: '240px', marginBottom: '-78px', marginTop: '35px'}}
+            style={{fontWeight: '500', fontFamily: 'Inter, sans-serif', fontSize: '210px', marginBottom: '-78px', marginTop: '35px'}}
           >
             Forma®
           </motion.h1>
