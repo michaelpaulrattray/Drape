@@ -2354,3 +2354,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Mega menu dropdown constrained to same width as header (max-w-[1520px])
 - [x] Fixed white strip issue - header uses conditional rounded-b-xl/rounded-b-none, mega menu has rounded-b-xl
 - [x] Moved backdrop outside header element so z-index works correctly - header+menu now sits on top of backdrop
+- [x] Changed header corners from rounded-xl to rounded-b-xl so only bottom corners are rounded (sides are straight)
