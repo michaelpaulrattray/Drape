@@ -223,11 +223,36 @@ function Header() {
         {/* Desktop Navigation - Hidden when mega menu is open */}
         {!isMegaMenuOpen && (
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#about" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">About</a>
-            <a href="#work" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">Work</a>
-            <a href="#services" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">Services</a>
-            <a href="#pricing" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">Pricing</a>
-            <a href="#blog" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">Blog</a>
+            <a href="#about" className="group overflow-hidden">
+              <span className="overflow-hidden h-5 block">
+                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">About</span>
+                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">About</span>
+              </span>
+            </a>
+            <a href="#work" className="group overflow-hidden">
+              <span className="overflow-hidden h-5 block">
+                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Work</span>
+                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Work</span>
+              </span>
+            </a>
+            <a href="#services" className="group overflow-hidden">
+              <span className="overflow-hidden h-5 block">
+                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Services</span>
+                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Services</span>
+              </span>
+            </a>
+            <a href="#pricing" className="group overflow-hidden">
+              <span className="overflow-hidden h-5 block">
+                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Pricing</span>
+                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Pricing</span>
+              </span>
+            </a>
+            <a href="#blog" className="group overflow-hidden">
+              <span className="overflow-hidden h-5 block">
+                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Blog</span>
+                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Blog</span>
+              </span>
+            </a>
           </nav>
         )}
 
