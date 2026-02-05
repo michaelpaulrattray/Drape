@@ -1003,7 +1003,7 @@ function ProcessSection() {
           </motion.div>
 
           {/* Right - Steps in big card container */}
-          <div className="bg-[#EBEBEB] rounded-2xl p-3">
+          <div className="bg-[#EBEBEB] rounded-2xl p-2">
             <div className="flex flex-col">
               {processSteps.map((step, index) => (
                 <div 
