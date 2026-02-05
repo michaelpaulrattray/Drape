@@ -342,7 +342,7 @@ function Header() {
                   transition={{ delay: 0.1, duration: 0.4 }}
                   className="hidden lg:flex flex-1 items-start justify-end pl-12"
                 >
-                  <div className="relative w-full max-w-[400px] aspect-[16/9] rounded-lg overflow-hidden">
+                  <div className="relative w-full max-w-[400px] aspect-[21/9] rounded-lg overflow-hidden">
                     <img 
                       src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" 
                       alt="FormaStudio™" 
