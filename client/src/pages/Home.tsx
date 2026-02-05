@@ -709,7 +709,7 @@ function WhyUsSection() {
           {/* Card 1 - #EBEBEB outer with 2 inner cards */}
           <div className="bg-[#EBEBEB] rounded-2xl p-3 flex flex-col gap-3">
             {/* Top: Dark card with building image */}
-            <div className="relative rounded-xl overflow-hidden bg-[#0A0A0A] min-h-[240px] flex flex-col justify-between">
+            <div className="relative rounded-xl overflow-hidden bg-[#0A0A0A] min-h-[240px] flex flex-col justify-between" style={{height: '290px'}}>
               <img
                 src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80"
                 alt="Architecture"
