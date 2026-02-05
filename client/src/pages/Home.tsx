@@ -312,11 +312,12 @@ function Header() {
                         transition={{ delay: i * 0.03 + 0.05, duration: 0.3 }}
                         className="group flex items-center justify-between py-2 border-b border-[#0A0A0A]/10 hover:border-[#0A0A0A]/30 transition-colors"
                         onClick={() => setIsMegaMenuOpen(false)}
+                        style={{ borderColor: '#757575' }}
                       >
-                        <span className="text-2xl md:text-3xl font-light text-[#0A0A0A] group-hover:text-[#0A0A0A]/70 transition-colors" style={{ fontFamily: 'Georgia, serif' }}>
+                        <span className="text-2xl md:text-3xl font-light text-[#0A0A0A] group-hover:text-[#0A0A0A]/70 transition-colors" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: '600' }}>
                           {item.name}
                         </span>
-                        <span className="text-sm text-[#0A0A0A]/40">({item.index})</span>
+                        <span className="text-sm text-[#0A0A0A]/40" style={{ color: '#4d4d4d', fontWeight: '500' }}>({item.index})</span>
                       </motion.a>
                     ))}
                   </nav>
@@ -331,7 +332,7 @@ function Header() {
                     <a href="mailto:hello@formastudio.ai" className="text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors font-medium">
                       hello@formastudio.ai
                     </a>
-                    <span className="text-[#0A0A0A]/50 text-sm">(123) 456-7890</span>
+                    <span className="text-[#0A0A0A]/50 text-sm" style={{color: '#0a0a0a', fontWeight: '500'}}>(123) 456-7890</span>
                   </motion.div>
                 </div>
 
@@ -348,7 +349,7 @@ function Header() {
                       alt="FormaStudio™" 
                       className="w-full h-full object-cover grayscale"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" style={{ width: '700px', height: '225px', marginLeft: '-300px' }} />
                     <div className="absolute top-4 left-4">
                       <span className="text-white font-medium text-sm">FormaStudio™</span>
                     </div>
@@ -367,9 +368,9 @@ function Header() {
                   transition={{ delay: 0.3, duration: 0.3 }}
                   className="flex items-center gap-6"
                 >
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors">Twitter/X</a>
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors">Instagram</a>
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors">LinkedIn</a>
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Twitter/X</a>
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Instagram</a>
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>LinkedIn</a>
                 </motion.div>
               </div>
             </motion.div>
