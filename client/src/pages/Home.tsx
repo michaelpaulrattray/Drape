@@ -512,8 +512,8 @@ function HeroSection() {
           {/* Logo Marquee with gradient fades */}
           <LogoMarquee />
           
-          {/* Trust Badge - Right aligned */}
-          <div className="flex items-center gap-4 shrink-0 pl-4">
+          {/* Trust Badge - Right aligned, stacked vertically */}
+          <div className="flex flex-col items-end shrink-0 pl-4">
             <div className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
                 <svg key={i} className="w-3.5 h-3.5 text-[#4D4D4D] fill-current" viewBox="0 0 20 20">
