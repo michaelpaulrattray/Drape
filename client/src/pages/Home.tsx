@@ -278,12 +278,13 @@ function LogoMarquee() {
 }
 
 function HeroSection() {
-  const heroRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "60% start"]
+    target: imageContainerRef,
+    offset: ["start end", "end end"]
   });
-  const imageScale = useTransform(scrollYProgress, [0, 1], [1.25, 1.0]);
+  // Clamp scale to never go below 1.0
+  const imageScale = useTransform(scrollYProgress, [0, 1], [1.25, 1.0], { clamp: true });
   const smoothScale = useSpring(imageScale, {
     stiffness: 100,
     damping: 30,
@@ -291,7 +292,7 @@ function HeroSection() {
   });
 
   return (
-    <section ref={heroRef} className="min-h-screen pt-20 bg-white" style={{paddingBottom: '120px'}}>
+    <section className="min-h-screen pt-20 bg-white" style={{paddingBottom: '120px'}}>
       <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         {/* Main Hero Content */}
         <div className="pt-[40vh] pb-8" style={{paddingTop: '470px'}}>
@@ -346,6 +347,7 @@ function HeroSection() {
 
         {/* Hero Image with scroll-unzoom effect */}
         <motion.div 
+          ref={imageContainerRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
