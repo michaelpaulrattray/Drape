@@ -476,7 +476,7 @@ function HeroSection() {
     <section className="min-h-screen pt-20 bg-white" style={{paddingBottom: '120px'}}>
       <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         {/* Main Hero Content */}
-        <div className="pt-[40vh] pb-8" style={{paddingTop: '0px'}}>
+        <div className="pt-[40vh] pb-8" style={{paddingTop: '0px', paddingBottom: '50px'}}>
           {/* Large Wordmark */}
           <motion.h1 
             initial={{ opacity: 0, y: 40 }}
@@ -532,13 +532,13 @@ function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-          className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5"
+          className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5" style={{height: '950px'}}
         >
           <motion.img
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=80"
             alt="AI Generated Model"
             className="w-full h-full object-cover grayscale contrast-125"
-            style={{ scale: smoothScale, height: '998px' }}
+            style={{ scale: smoothScale, height: '950px' }}
           />
         </motion.div>
       </div>
