@@ -219,10 +219,10 @@ function Header() {
               src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
               alt="Forma®" 
               className="h-6"
-              style={{width: '31px', height: '31px'}}
+              style={{ width: 31, height: 31 }}
             />
           </Link>
-          <span className="text-sm hidden sm:inline" style={{color: '#757575'}}>{formatTime()}</span>
+          <span className="text-sm hidden sm:inline text-gray-secondary">{formatTime()}</span>
         </div>
 
         {/* Desktop Navigation - Hidden when mega menu is open */}
@@ -289,7 +289,7 @@ function Header() {
               style={{ overflow: 'hidden' }}
             >
               {/* Content wrapper */}
-              <div className="pt-6 pb-4 flex gap-8" style={{paddingBottom: '32px'}}>
+              <div className="pt-6 pb-8 flex gap-8">
                 {/* Left Column - Navigation */}
                 <div className="w-1/2 flex flex-col">
                   <nav className="flex flex-col">
@@ -311,7 +311,7 @@ function Header() {
                         style={{ borderColor: '#d4d4d4' }}
                       >
                         {/* Nav item name with conveyor effect */}
-                        <span className="overflow-hidden h-7" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: '600' }}>
+                        <span className="overflow-hidden h-7 text-card-title font-inter">
                           <span className="block text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full">
                             {item.name}
                           </span>
@@ -320,9 +320,9 @@ function Header() {
                           </span>
                         </span>
                         {/* Index number with conveyor effect like + icon */}
-                        <span className="overflow-hidden h-5 relative" style={{ width: '32px' }}>
-                          <span className="absolute inset-0 flex items-center justify-center text-sm transition-transform duration-500 ease-out group-hover:translate-y-5" style={{ color: '#4d4d4d', fontWeight: '500' }}>({item.index})</span>
-                          <span className="absolute inset-0 flex items-center justify-center text-sm transition-transform duration-500 ease-out -translate-y-5 group-hover:translate-y-0" style={{ color: '#4d4d4d', fontWeight: '500' }}>({item.index})</span>
+                        <span className="overflow-hidden h-5 relative w-8">
+                          <span className="absolute inset-0 flex items-center justify-center text-sm text-gray-muted font-medium transition-transform duration-500 ease-out group-hover:translate-y-5">({item.index})</span>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm text-gray-muted font-medium transition-transform duration-500 ease-out -translate-y-5 group-hover:translate-y-0">({item.index})</span>
                         </span>
                       </motion.a>
                     ))}
@@ -336,7 +336,7 @@ function Header() {
                   transition={{ delay: 0.1, duration: 0.4 }}
                   className="hidden lg:block w-1/2"
                 >
-                  <div className="relative w-full rounded-lg overflow-hidden" style={{ height: '260px' }}>
+                  <div className="relative w-full rounded-lg overflow-hidden h-mega-menu-image">
                     <img 
                       src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" 
                       alt="FormaStudio™" 
@@ -371,8 +371,8 @@ function Header() {
                   {/* Phone with conveyor effect */}
                   <a href="tel:+11234567890" className="group overflow-hidden">
                     <span className="overflow-hidden h-5 block">
-                      <span className="block text-sm transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ color: '#0a0a0a', fontWeight: '500' }}>(123) 456-7890</span>
-                      <span className="block text-sm transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ color: '#0a0a0a', fontWeight: '500' }}>(123) 456-7890</span>
+                      <span className="block text-sm text-dark font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">(123) 456-7890</span>
+                      <span className="block text-sm text-dark font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">(123) 456-7890</span>
                     </span>
                   </a>
                 </div>
@@ -429,17 +429,17 @@ function HeroSection() {
   });
 
   return (
-    <section className="min-h-screen pt-20 bg-white" style={{paddingBottom: '120px'}}>
-      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+    <section className="min-h-screen pt-20 pb-[120px] bg-white">
+      <div className="max-w-[1520px] mx-auto container-full-bleed">
         {/* Main Hero Content */}
-        <div className="pt-[40vh] pb-8" style={{paddingTop: '0px', paddingBottom: '50px'}}>
+        <div className="pb-[50px]">
           {/* Large Wordmark */}
           <motion.h1 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#0A0A0A]" 
-            style={{fontWeight: '500', fontFamily: 'Inter, sans-serif', fontSize: '210px', marginBottom: '-78px', marginTop: '35px'}}
+            style={{ marginBottom: '-78px', marginTop: 35 }}
           >
             Forma®
           </motion.h1>
@@ -451,7 +451,7 @@ function HeroSection() {
             transition={{ duration: 0.6, delay: 0.3, ease: easeOut }}
             className="mt-8 max-w-md ml-auto text-right"
           >
-            <p className="text-lg text-[#4D4D4D] leading-relaxed" style={{fontWeight: '500', color: '#757575', lineHeight: '22px'}}>
+            <p className="text-body-md text-gray-secondary">
               Forma is an AI studio crafting refined model identities and photorealistic campaign assets.
             </p>
           </motion.div>
@@ -463,7 +463,7 @@ function HeroSection() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="flex items-center gap-6 py-6 border-y border-[#0A0A0A]/10" 
-          style={{borderWidth: '0px', height: '80px'}}
+          style={{ borderWidth: 0 }}
         >
           {/* Logo Marquee with gradient fades */}
           <LogoMarquee />
@@ -478,7 +478,7 @@ function HeroSection() {
               ))}
               <span className="ml-1.5 text-sm font-medium text-[#0A0A0A]/80">4.9/5</span>
             </div>
-            <span className="text-sm text-[#4D4D4D]" style={{fontWeight: '500'}}>Trusted by <span className="font-medium text-[#0A0A0A]/70" style={{fontWeight: '500'}}>100+</span> businesses</span>
+            <span className="text-sm text-[#4D4D4D] font-medium">Trusted by <span className="font-medium text-[#0A0A0A]/70">100+</span> businesses</span>
           </div>
         </motion.div>
 
@@ -488,13 +488,13 @@ function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4, ease: easeOut }}
-          className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5" style={{height: '950px'}}
+          className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5 h-hero-image"
         >
           <motion.img
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=80"
             alt="AI Generated Model"
             className="w-full h-full object-cover grayscale contrast-125"
-            style={{ scale: smoothScale, height: '950px' }}
+            style={{ scale: smoothScale }}
           />
         </motion.div>
       </div>
@@ -504,9 +504,9 @@ function HeroSection() {
 
 function SectionLabel({ label, number }: { label: string; number: string }) {
   return (
-    <div className="flex items-center justify-between mb-12" style={{marginBottom: '22px'}}>
-      <span className="text-sm font-semibold text-[#0A0A0A] tracking-wide" style={{fontSize: '16px'}}>/ {label}</span>
-      <span className="text-sm font-semibold text-[#757575]" style={{fontSize: '16px'}}>({number})</span>
+    <div className="flex items-center justify-between mb-section-label">
+      <span className="text-base font-semibold text-[#0A0A0A] tracking-wide">/ {label}</span>
+      <span className="text-base font-semibold text-gray-secondary">({number})</span>
     </div>
   );
 }
@@ -528,7 +528,7 @@ function StatsMarquee() {
         <div className="flex shrink-0 items-center whitespace-nowrap">
           {statsSet.map((stat, index) => (
             <span key={index} className="flex items-center text-sm mx-3">
-              <span className="font-semibold text-[#0A0A0A]/70" style={{fontWeight: '700'}}>{stat.value}</span>
+              <span className="font-bold text-[#0A0A0A]/70">{stat.value}</span>
               <span className="text-[#757575] ml-1.5">{stat.label}</span>
               <span className="text-[#0A0A0A]/30 ml-3">/</span>
             </span>
@@ -584,7 +584,7 @@ function AboutSection() {
 
   return (
     <section id="about" className="py-24 bg-white">
-      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -602,9 +602,9 @@ function AboutSection() {
           variants={fadeInUp}
           className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-tight mb-12"
         >
-          <span className="text-[#0A0A0A]" style={{fontSize: '54px', fontFamily: 'Inter, sans-serif'}}>We're a design studio focused on creating</span>
+          <span className="text-section-title text-[#0A0A0A]">We're a design studio focused on creating</span>
           <br />
-          <span className="text-[#757575]" style={{fontSize: '54px', fontFamily: 'Inter, sans-serif'}}>simple, purposeful, and elegant solutions.</span>
+          <span className="text-section-title text-gray-secondary">simple, purposeful, and elegant solutions.</span>
         </motion.h2>
 
         {/* Stats Marquee + Description - Inline Layout */}
@@ -614,13 +614,13 @@ function AboutSection() {
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeIn}
           className="flex items-center gap-6 py-6 mb-16" 
-          style={{marginBottom: '-10px'}}
+          style={{ marginBottom: -10 }}
         >
           {/* Stats Marquee with gradient fades */}
           <StatsMarquee />
           
           {/* Description - Right aligned */}
-          <p className="shrink-0 text-sm text-[#4D4D4D] leading-relaxed text-right" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px', width: '380px'}}>
+          <p className="shrink-0 text-body-md text-gray-muted text-right w-about-text">
             Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
           </p>
         </motion.div>
@@ -633,15 +633,15 @@ function AboutSection() {
           variants={scaleIn}
           className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] cursor-pointer"
           onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave} style={{height: '800px'}}
+          onMouseLeave={handleMouseLeave}
         >
           {/* Static Image - always mounted, controlled by opacity */}
           <div
             className="absolute inset-0 z-10 transition-opacity duration-300"
-            style={{ opacity: isPlaying ? 0 : 1, height: '800px' }}
+            style={{ opacity: isPlaying ? 0 : 1 }}
           >
             {/* Dark overlay for text readability */}
-            <div className="absolute inset-0 bg-black/50 z-10" style={{height: '800px'}}></div>
+            <div className="absolute inset-0 bg-black/50 z-10"></div>
             <img
               src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
               alt="Showreel"
@@ -662,7 +662,7 @@ function AboutSection() {
             className={`absolute inset-0 w-full h-full object-cover z-5 transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0'}`}
             src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
             playsInline
-            onEnded={handleClose} style={{height: '800px'}}
+            onEnded={handleClose}
           />
 
           {/* Play/Close Button with smooth animation */}
@@ -719,8 +719,8 @@ function AboutSection() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 translate-y-8 mt-4 text-white text-xl font-medium z-20"
-                style={{fontSize: '24px', fontWeight: '600'}}
+                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 translate-y-8 mt-4 text-white text-card-title font-semibold z-20"
+                
               >
                 Play Showreel
               </motion.span>
@@ -729,7 +729,7 @@ function AboutSection() {
 
           {/* Forma branding at bottom */}
           <div className="absolute bottom-4 left-0 right-0 text-center z-20">
-            <span className="text-white/60 text-sm" style={{color: '#ffffff', fontSize: '16px', fontWeight: '500'}}>© 2025 Forma®</span>
+            <span className="text-white text-base font-medium">© 2025 Forma®</span>
           </div>
         </motion.div>
       </div>
@@ -740,7 +740,7 @@ function AboutSection() {
 function WorkSection() {
   return (
     <section id="work" className="py-24 bg-white">
-      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto container-full-bleed">
         {/* Header with subtext and button */}
         <motion.div 
           initial="hidden"
@@ -750,8 +750,8 @@ function WorkSection() {
           className="flex items-start justify-between mb-16"
         >
           <div>
-            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-[#0A0A0A] mb-4" style={{fontSize: '54px', fontFamily: 'Inter, sans-serif'}}>Selected Work.</h2>
-            <p className="text-[#4D4D4D] text-sm max-w-sm leading-relaxed" style={{fontSize: '16px', lineHeight: '22px', fontWeight: '500'}}>
+            <h2 className="text-section-title leading-[1.1] tracking-tight text-[#0A0A0A] mb-4">Selected Work.</h2>
+            <p className="text-body-md text-gray-muted max-w-sm">
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
@@ -789,8 +789,8 @@ function WorkSection() {
                 <div className="overflow-hidden">
                   {/* Project Name - stacked text */}
                   <div className="relative h-6 overflow-hidden">
-                    <h3 className="text-base font-semibold text-[#0A0A0A] transition-transform duration-500 group-hover:-translate-y-full" style={{fontSize: '18px'}}>{project.name}</h3>
-                    <h3 className="text-base font-semibold text-white absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full" style={{fontSize: '18px'}}>{project.name}</h3>
+                    <h3 className="text-lg font-semibold text-[#0A0A0A] transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
+                    <h3 className="text-lg font-semibold text-white absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full">{project.name}</h3>
                   </div>
                   {/* Category - stacked text */}
                   <div className="relative h-5 overflow-hidden">
@@ -815,7 +815,7 @@ function WorkSection() {
 function WhyUsSection() {
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -831,10 +831,10 @@ function WhyUsSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-16" style={{width: '1018px'}}
+          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-16 w-services-headline"
         >
-          <span className="text-[#0A0A0A]" style={{fontSize: '54px', fontFamily: 'inter, sans-serif'}}>We cut through noise to create designs that are </span>
-          <span className="text-[#757575]" style={{fontSize: '54px', fontFamily: 'inter, sans-serif'}}>thoughtful, timeless, and impactful.</span>
+          <span className="text-section-title text-[#0A0A0A]">We cut through noise to create designs that are </span>
+          <span className="text-section-title text-gray-secondary">thoughtful, timeless, and impactful.</span>
         </motion.h2>
 
         {/* 4-Column Bento Grid */}
@@ -848,7 +848,7 @@ function WhyUsSection() {
           {/* Card 1 - #EBEBEB outer with 2 inner cards */}
           <div className="bg-[#EBEBEB] rounded-2xl p-2 flex flex-col gap-2">
             {/* Top: Dark card with building image */}
-            <div className="relative rounded-xl overflow-hidden bg-[#0A0A0A] min-h-[240px] flex flex-col justify-between" style={{height: '290px'}}>
+            <div className="relative rounded-xl overflow-hidden bg-[#0A0A0A] min-h-[240px] h-bento-card flex flex-col justify-between">
               <img
                 src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80"
                 alt="Architecture"
@@ -857,7 +857,7 @@ function WhyUsSection() {
                 className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale"
               />
               <div className="relative z-10 p-5">
-                <h3 className="text-lg font-semibold text-white leading-tight" style={{fontSize: '24px'}}>Purposeful Design<br />for Modern Brands.</h3>
+                <h3 className="text-card-title font-semibold text-white leading-tight">Purposeful Design<br />for Modern Brands.</h3>
                 <p className="text-white/50 text-xs mt-2">© 2025</p>
               </div>
               <div className="relative z-10 p-5 pt-0">
@@ -871,7 +871,7 @@ function WhyUsSection() {
             <div className="bg-white rounded-xl p-4">
               <ul className="space-y-2">
                 {["Collaborative Approach", "Quick turnaround", "Clear Communication", "Consistent Quality", "Reliable Support"].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-sm text-[#0A0A0A]" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px'}}>
+                  <li key={i} className="flex items-center gap-2.5 text-body-md text-[#0A0A0A]">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A]"></span>
                     {item}
                   </li>
@@ -913,7 +913,7 @@ function WhyUsSection() {
                   </svg>
                 ))}
               </div>
-              <blockquote className="text-sm text-[#0A0A0A] leading-relaxed mb-4" style={{fontSize: '16px', lineHeight: '22px'}}>
+              <blockquote className="text-body-md text-[#0A0A0A] mb-4">
                 "Kanso understood our brand better than we did. Their ability to find the essential and express it simply is what sets them apart."
               </blockquote>
               <div className="flex items-center gap-3">
@@ -939,8 +939,8 @@ function WhyUsSection() {
             ].map((feature, i) => (
               <div key={i} className="bg-white rounded-xl p-4 flex-1">
                 <div className="text-[#0A0A0A] mb-3">{feature.icon}</div>
-                <h4 className="font-semibold text-[#0A0A0A] text-sm mb-1.5" style={{fontSize: '18px', lineHeight: '22px'}}>{feature.title}</h4>
-                <p className="text-xs text-[#757575] leading-relaxed" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px'}}>{feature.desc}</p>
+                <h4 className="font-semibold text-[#0A0A0A] text-lg mb-1.5">{feature.title}</h4>
+                <p className="text-body-md text-gray-secondary">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -955,7 +955,7 @@ function WhyUsSection() {
               className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale"
             />
             <div className="relative z-10 p-6 text-right">
-              <span className="text-white/80 text-sm font-medium" style={{fontSize: '18px', marginRight: '80px', textAlign: 'center'}}>Forma®</span>
+              <span className="text-white/80 text-lg font-medium mr-20">Forma®</span>
             </div>
             <div className="relative z-10 p-6">
               <h3 className="text-2xl font-semibold text-white leading-tight">Design with intent.</h3>
@@ -978,18 +978,18 @@ function ServicesSection() {
 
   return (
     <section id="services" className="py-24 bg-white">
-      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto container-full-bleed">
         {/* Contained dark card */}
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={scaleIn}
-          className="bg-[#0A0A0A] rounded-3xl px-8 py-12 lg:px-16 lg:py-16" style={{backgroundColor: '#121212'}}
+          className="bg-dark-card rounded-3xl px-8 py-12 lg:px-16 lg:py-16"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-12" style={{marginBottom: '42px'}}>
-            <span className="text-sm font-medium text-white/60 tracking-wide" style={{color: '#ffffff', fontSize: '16px'}}>/ Services</span>
+          <div className="flex items-center justify-between mb-services-header">
+            <span className="text-base font-medium text-white tracking-wide">/ Services</span>
             <span className="text-sm font-medium text-white/60">(04)</span>
           </div>
 
@@ -1029,7 +1029,7 @@ function ServicesSection() {
                           showImage 
                             ? "text-white translate-x-36" 
                             : "text-white/80 translate-x-0 group-hover:text-white"
-                        }`} style={{backgroundColor: '#121212'}}>
+                        }`} >
                           {service.title}
                         </span>
                       </div>
@@ -1110,7 +1110,7 @@ function ServicesSection() {
 function ProcessSection() {
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -1128,10 +1128,10 @@ function ProcessSection() {
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeInUp}
           >
-            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif', color: '#0a0a0a', lineHeight: '59px'}}>
+            <h2 className="text-section-title leading-[1.1] mb-8 text-dark">
               Our process is simple, purposeful, and adaptable.
             </h2>
-            <p className="text-[#4D4D4D] mb-8" style={{color: '#757575', fontWeight: '500'}}>
+            <p className="text-body-md text-gray-secondary mb-8">
               We believe great design is a result of clarity, collaboration, and craft.
             </p>
             <Button href="/#contact" variant="secondary-invert" showPlus>
@@ -1148,10 +1148,10 @@ function ProcessSection() {
                   className={`bg-white rounded-xl p-6 ${index < processSteps.length - 1 ? 'mb-1' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-xl font-bold text-[#0A0A0A]" style={{fontSize: '24px'}}>{step.title}</h3>
+                    <h3 className="text-card-title font-bold text-[#0A0A0A]">{step.title}</h3>
                     <span className="text-sm text-[#0A0A0A]/30">{step.number}</span>
                   </div>
-                  <p className="text-[#4D4D4D]" style={{color: '#757575', lineHeight: '22px'}}>{step.description}</p>
+                  <p className="text-body-md text-gray-secondary">{step.description}</p>
                 </div>
               ))}
             </div>
@@ -1168,7 +1168,7 @@ function FAQSection() {
 
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -1186,10 +1186,10 @@ function FAQSection() {
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeInUp}
           >
-            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif', color: '#0a0a0a', lineHeight: '59px'}}>
+            <h2 className="text-section-title leading-[1.1] mb-8 text-dark">
               Wondering How We Work?
             </h2>
-            <p className="text-[#4D4D4D] mb-8" style={{color: '#757575', fontWeight: '500'}}>
+            <p className="text-body-md text-gray-secondary mb-8">
               Answers to common questions about our process, services, and how we work.
             </p>
             <Button href="/#contact" variant="secondary-invert" showPlus>
@@ -1209,7 +1209,7 @@ function FAQSection() {
                     onClick={() => setOpenIndex(openIndex === index ? null : index)}
                     className="w-full flex items-center justify-between p-5 text-left"
                   >
-                    <span className="font-medium text-[#0A0A0A]" style={{fontSize: '18px'}}>{index + 1}. {faq.question}</span>
+                    <span className="font-medium text-[#0A0A0A] text-lg">{index + 1}. {faq.question}</span>
                     <div className="w-6 h-6 rounded-full border border-[#0A0A0A]/20 flex items-center justify-center flex-shrink-0">
                       <Plus
                         className={`w-3 h-3 text-[#0A0A0A] transition-transform duration-700 ease-out ${
@@ -1240,7 +1240,7 @@ function FAQSection() {
 function BlogSection() {
   return (
     <section id="blog" className="py-24 bg-white">
-      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -1259,8 +1259,8 @@ function BlogSection() {
           className="flex items-start justify-between mb-16"
         >
           <div>
-            <h2 className="text-3xl font-bold text-[#0A0A0A] mb-4" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif'}}>Latest insights from our blog.</h2>
-            <p className="text-[#4D4D4D]" style={{fontWeight: '500', width: '330px'}}>Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
+            <h2 className="text-section-title text-[#0A0A0A] mb-4">Latest insights from our blog.</h2>
+            <p className="text-body-md text-gray-muted w-blog-text">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
           <Button href="#" variant="secondary-invert" showPlus className="hidden md:inline-flex mt-[100px] font-medium">
             View all articles
@@ -1359,7 +1359,7 @@ function Footer() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(3rem,10vw,8rem)] font-bold tracking-tighter mb-16" style={{color: '#ebebeb'}}
+          className="text-[clamp(3rem,10vw,8rem)] font-bold tracking-tighter mb-16 text-surface"
         >
           Forma® Studio
         </motion.h2>

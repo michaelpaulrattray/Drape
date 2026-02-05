@@ -266,3 +266,123 @@
   line-height: var(--leading-normal);
   color: var(--color-text-muted);
 }
+
+
+/* ============================================
+ * FORMA STUDIO CUSTOM UTILITIES
+ * For converting inline styles to reusable classes
+ * ============================================ */
+
+/* Font Size Utilities */
+.text-hero-title {
+  font-size: 210px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+}
+
+.text-section-title {
+  font-size: 54px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  line-height: 1.1;
+}
+
+.text-card-title {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.text-body-lg {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.text-body-md {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 22px;
+}
+
+/* Color Utilities */
+.text-gray-secondary {
+  color: #757575;
+}
+
+.text-gray-muted {
+  color: #4d4d4d;
+}
+
+.text-dark {
+  color: #0a0a0a;
+}
+
+.bg-dark-section {
+  background-color: #121212;
+}
+
+/* Border Utilities */
+.border-gray-light {
+  border-color: #d4d4d4;
+}
+
+/* Container Override (removes padding) */
+.container-full-bleed {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Height Utilities */
+.h-mega-menu-image {
+  height: 260px;
+}
+
+.h-hero-image {
+  height: 950px;
+}
+
+.h-video-section {
+  height: 800px;
+}
+
+.h-service-card {
+  height: 290px;
+}
+
+.h-logo-marquee {
+  height: 80px;
+}
+
+/* Width Utilities */
+.w-about-text {
+  width: 380px;
+}
+
+.w-blog-text {
+  width: 330px;
+}
+
+.w-services-headline {
+  width: 1018px;
+}
+
+/* Spacing Utilities */
+.mb-section-label {
+  margin-bottom: 22px;
+}
+
+.mb-services-header {
+  margin-bottom: 42px;
+}
+
+/* Service Number Display */
+.text-service-number {
+  font-size: 110px;
+  font-family: var(--font-sans);
+}
+
+/* Marquee Brand Text */
+.text-marquee-brand {
+  font-size: 18px;
+  margin-right: 80px;
+  text-align: center;
+}

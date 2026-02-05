@@ -2424,3 +2424,21 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Replace View all articles buttons (desktop and mobile)
 - [x] Replace Sign up newsletter button
 - [x] Add header nav links with NavLink component
+
+## Phase 3 - Convert Inline Styles to Tailwind Classes (Claude's Optimization Guide)
+- [ ] Identify and catalog all inline style props in Home.tsx
+- [ ] Convert font-related inline styles (fontSize, fontWeight, fontFamily)
+- [ ] Convert spacing inline styles (padding, margin)
+- [ ] Convert sizing inline styles (width, height)
+- [ ] Convert border and color inline styles
+- [ ] Remove conflicting padding overrides
+- [ ] Verify all conversions maintain visual appearance
+
+## Phase 3 - Convert Inline Styles to Tailwind (Claude's Optimization Guide)
+- [x] Add custom utility classes to tokens.css
+- [x] Convert font-related inline styles (fontWeight, fontSize, fontFamily)
+- [x] Convert spacing inline styles (margin, padding)
+- [x] Convert sizing inline styles (width, height)
+- [x] Convert color inline styles
+- [x] Convert remaining inline styles (borders, etc.)
+- [x] Reduced inline styles from ~100+ to 13 (remaining are dynamic/Framer Motion specific)
