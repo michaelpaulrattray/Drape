@@ -444,7 +444,7 @@ function AboutSection() {
           <StatsMarquee />
           
           {/* Description - Right aligned */}
-          <p className="shrink-0 max-w-xs text-sm text-[#4D4D4D] leading-relaxed text-right" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px', width: '330px'}}>
+          <p className="shrink-0 text-sm text-[#4D4D4D] leading-relaxed text-right" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px', width: '380px'}}>
             Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
           </p>
         </motion.div>
