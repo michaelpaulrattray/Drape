@@ -481,7 +481,7 @@ function AboutSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={scaleIn}
-          className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A]"
+          className="group relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] cursor-pointer"
         >
           {/* Static Image - shown when not playing */}
           <AnimatePresence>
@@ -498,7 +498,7 @@ function AboutSection() {
                 <img
                   src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
                   alt="Showreel"
-                  className="video-showreel-image w-full h-full object-cover grayscale contrast-110"
+                  className="video-showreel-image w-full h-full object-cover grayscale contrast-110 transition-transform duration-700 group-hover:scale-110"
                 />
               </motion.div>
             )}
