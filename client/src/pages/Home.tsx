@@ -1113,59 +1113,99 @@ function BlogSection() {
           <SectionLabel label="Blog" number="09" />
         </motion.div>
 
+        {/* Header with title and button */}
         <motion.div 
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="flex items-end justify-between mb-12"
+          className="flex items-start justify-between mb-16"
         >
           <div>
             <h2 className="text-3xl font-bold text-[#0A0A0A] mb-4" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif'}}>Latest insights from our blog.</h2>
             <p className="text-[#4D4D4D]" style={{fontWeight: '500', width: '330px'}}>Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
-          <a href="#" className="hidden md:inline-flex items-center gap-2 text-sm text-[#4D4D4D] hover:text-[#0A0A0A] transition-colors">
+          <a href="#" className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] text-sm rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all" style={{marginTop: '100px', fontWeight: '500'}}>
             View all articles
-            <ArrowRight className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
           </a>
         </motion.div>
 
-        {/* Blog Grid */}
+        {/* Blog Grid - Kanso style */}
         <motion.div 
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid md:grid-cols-3 gap-6"
+          className="grid md:grid-cols-2 gap-1"
         >
-          {blogPosts.map((post, index) => (
-            <a
-              key={index}
-              href="#"
-              className="group"
-            >
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#0A0A0A]/5 mb-4 relative">
-                <img
-                  src={post.image}
-                  alt={post.title}
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                />
-                <span className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-[#0A0A0A]">
-                  {post.category}
-                </span>
+          {/* Featured Post (First - Large with text overlay) */}
+          <a
+            href="#"
+            className="group block rounded-2xl overflow-hidden bg-[#EBEBEB] row-span-2"
+          >
+            <div className="relative h-full overflow-hidden rounded-xl m-2">
+              <img
+                src={blogPosts[0].image}
+                alt={blogPosts[0].title}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              {/* Dark gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              {/* Category badge */}
+              <span className="absolute top-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-[#0A0A0A]">
+                {blogPosts[0].category}
+              </span>
+              {/* Text overlay at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <span className="text-sm text-white/70">{blogPosts[0].date}</span>
+                <h3 className="text-xl font-semibold text-white mt-2 mb-2">
+                  {blogPosts[0].title}
+                </h3>
+                <p className="text-sm text-white/80 line-clamp-2">{blogPosts[0].excerpt}</p>
               </div>
-              <span className="text-sm text-[#4D4D4D]">{post.date}</span>
-              <h3 className="text-lg font-bold text-[#0A0A0A] mt-2 mb-2 group-hover:text-[#0A0A0A]/70 transition-colors">
-                {post.title}
-              </h3>
-              <p className="text-sm text-[#4D4D4D] line-clamp-2">{post.excerpt}</p>
-            </a>
-          ))}
+            </div>
+          </a>
+
+          {/* Right column - Two smaller cards stacked */}
+          <div className="flex flex-col gap-1">
+            {blogPosts.slice(1, 3).map((post, index) => (
+              <a
+                key={index}
+                href="#"
+                className="group block"
+              >
+                {/* Card with image */}
+                <div className="rounded-2xl overflow-hidden bg-[#EBEBEB]">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    {/* Category badge */}
+                    <span className="absolute top-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-[#0A0A0A]">
+                      {post.category}
+                    </span>
+                  </div>
+                </div>
+                {/* Text below card */}
+                <div className="pt-4 pb-2">
+                  <span className="text-sm text-[#757575]">{post.date}</span>
+                  <h3 className="text-lg font-semibold text-[#0A0A0A] mt-1 mb-1 group-hover:text-[#0A0A0A]/70 transition-colors">
+                    {post.title}
+                  </h3>
+                  <p className="text-sm text-[#757575] line-clamp-2">{post.excerpt}</p>
+                </div>
+              </a>
+            ))}
+          </div>
         </motion.div>
 
-        <a href="#" className="md:hidden inline-flex items-center gap-2 text-sm text-[#4D4D4D] hover:text-[#0A0A0A] transition-colors mt-8">
+        {/* Mobile view all link */}
+        <a href="#" className="md:hidden inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] text-sm rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all mt-8" style={{fontWeight: '500'}}>
           View all articles
-          <ArrowRight className="w-4 h-4" />
+          <Plus className="w-4 h-4" />
         </a>
       </div>
     </section>
