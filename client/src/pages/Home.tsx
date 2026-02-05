@@ -293,7 +293,7 @@ function Header() {
               style={{ overflow: 'hidden' }}
             >
               {/* Content wrapper */}
-              <div className="pt-6 pb-4 flex gap-8">
+              <div className="pt-6 pb-4 flex gap-8" style={{paddingBottom: '32px'}}>
                 {/* Left Column - Navigation */}
                 <div className="w-1/2 flex flex-col">
                   <nav className="flex flex-col">
@@ -334,9 +334,9 @@ function Header() {
                     <img 
                       src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" 
                       alt="FormaStudio™" 
-                      className="w-full h-full object-cover grayscale"
+                      className="w-full h-full object-cover grayscale" style={{ height: '260px' }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" style={{ height: '260px' }} />
                     <div className="absolute top-4 right-4">
                       <span className="text-white font-medium text-sm">FormaStudio™</span>
                     </div>
