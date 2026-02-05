@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 // ============ ANIMATION VARIANTS ============
 
@@ -278,8 +278,15 @@ function LogoMarquee() {
 }
 
 function HeroSection() {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
+  const imageScale = useTransform(scrollYProgress, [0, 1], [1.1, 1.0]);
+
   return (
-    <section className="min-h-screen pt-20 bg-white">
+    <section ref={heroRef} className="min-h-screen pt-20 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         {/* Main Hero Content */}
         <div className="pt-16 pb-8">
@@ -332,17 +339,18 @@ function HeroSection() {
           </div>
         </motion.div>
 
-        {/* Hero Image */}
+        {/* Hero Image with scroll-unzoom effect */}
         <motion.div 
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
           className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5"
         >
-          <img
+          <motion.img
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=80"
             alt="AI Generated Model"
             className="w-full h-full object-cover grayscale contrast-125"
+            style={{ scale: imageScale }}
           />
         </motion.div>
       </div>

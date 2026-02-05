@@ -2314,3 +2314,6 @@ The entry and configuration files are properly set up with several enhancements 
 ## Section Removal (Feb 5, 2026)
 - [x] Remove Pricing Plans section from homepage
 - [x] Remove Testimonials section from homepage
+
+## Hero Scroll Effects (Feb 5, 2026)
+- [x] Add hero image scroll-unzoom effect (scale 1.1 → 1.0 on scroll)
