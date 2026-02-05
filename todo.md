@@ -2343,3 +2343,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Hide header nav items (About, Work, Services, Pricing, Blog) when mega menu is open
 - [x] Seamless blend with header - same background color, no shadow
 - [x] Header rounding transition (rounded-full to rounded-t-full when menu opens)
+- [x] Header straight sides with slight bottom corner rounding only
+- [x] Added opacity (95%) and backdrop blur to header and mega menu
+- [x] Smooth roll-down animation using scaleY with origin-top
