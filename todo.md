@@ -2367,3 +2367,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Fix mixed font-weight patterns (Tailwind vs inline)
 - [ ] Remove redundant container padding overrides
 - [x] Create design system architecture proposal
+- [x] Fix TypeScript errors related to Framer Motion easing types

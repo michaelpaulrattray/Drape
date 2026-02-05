@@ -1,28 +1,32 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { motion, useScroll, useTransform, useSpring, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring, AnimatePresence, type Variants } from "framer-motion";
 
 // ============ ANIMATION VARIANTS ============
 
-const fadeInUp = {
+// Easing curves
+const easeOut: [number, number, number, number] = [0, 0, 0.2, 1];
+const easeInOut: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94];
+
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }
+    transition: { duration: 0.6, ease: easeInOut }
   }
 };
 
-const fadeIn = {
+const fadeIn: Variants = {
   hidden: { opacity: 0 },
   visible: { 
     opacity: 1,
-    transition: { duration: 0.6, ease: "easeOut" }
+    transition: { duration: 0.6, ease: easeOut }
   }
 };
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -33,21 +37,21 @@ const staggerContainer = {
   }
 };
 
-const staggerItem = {
+const staggerItem: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.5, ease: "easeOut" }
+    transition: { duration: 0.5, ease: easeOut }
   }
 };
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: { 
     opacity: 1, 
     scale: 1,
-    transition: { duration: 0.6, ease: "easeOut" }
+    transition: { duration: 0.6, ease: easeOut }
   }
 };
 
@@ -492,7 +496,7 @@ function HeroSection() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+            transition={{ duration: 0.6, delay: 0.3, ease: easeOut }}
             className="mt-8 max-w-md ml-auto text-right"
           >
             <p className="text-lg text-[#4D4D4D] leading-relaxed" style={{fontWeight: '500', color: '#757575', lineHeight: '22px'}}>
@@ -531,7 +535,7 @@ function HeroSection() {
           ref={imageContainerRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+          transition={{ duration: 0.8, delay: 0.4, ease: easeOut }}
           className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5" style={{height: '950px'}}
         >
           <motion.img
