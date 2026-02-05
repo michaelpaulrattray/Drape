@@ -178,6 +178,22 @@ function Header() {
     return () => clearInterval(timer);
   }, []);
 
+  // Close mega menu on Escape key press
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMegaMenuOpen(false);
+        setIsMobileMenuOpen(false);
+      }
+    };
+    
+    if (isMegaMenuOpen || isMobileMenuOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+    
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [isMegaMenuOpen, isMobileMenuOpen]);
+
   // Format time for display
   const formatTime = () => {
     const options: Intl.DateTimeFormatOptions = {
