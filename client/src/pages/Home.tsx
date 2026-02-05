@@ -187,7 +187,7 @@ function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-b-xl">
+    <header className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-b-xl relative">
       <div className="flex items-center justify-between h-14">
           {/* Logo + Time */}
           <div className="flex items-center gap-3">
@@ -284,7 +284,7 @@ function Header() {
               animate={{ scaleY: 1, opacity: 1 }}
               exit={{ scaleY: 0, opacity: 0 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute top-full left-0 right-0 z-[100] bg-[#EBEBEB] rounded-b-xl origin-top"
+              className="absolute top-full inset-x-0 z-[100] bg-[#EBEBEB] rounded-b-xl origin-top"
             >
               {/* Mega Menu Content */}
               <div className="max-w-[1520px] mx-auto px-6 lg:px-12 py-8 flex">
