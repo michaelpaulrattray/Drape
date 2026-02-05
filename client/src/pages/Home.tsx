@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { Button, NavLink, SocialLink, ConveyorText, ConveyorTextColor, ConveyorIcon } from "@/components/design-system";
 import { motion, useScroll, useTransform, useSpring, AnimatePresence, type Variants } from "framer-motion";
 
 // ============ ANIMATION VARIANTS ============
@@ -227,50 +228,18 @@ function Header() {
         {/* Desktop Navigation - Hidden when mega menu is open */}
         {!isMegaMenuOpen && (
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#about" className="group overflow-hidden">
-              <span className="overflow-hidden h-5 block">
-                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">About</span>
-                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">About</span>
-              </span>
-            </a>
-            <a href="#work" className="group overflow-hidden">
-              <span className="overflow-hidden h-5 block">
-                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Work</span>
-                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Work</span>
-              </span>
-            </a>
-            <a href="#services" className="group overflow-hidden">
-              <span className="overflow-hidden h-5 block">
-                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Services</span>
-                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Services</span>
-              </span>
-            </a>
-            <a href="#pricing" className="group overflow-hidden">
-              <span className="overflow-hidden h-5 block">
-                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Pricing</span>
-                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Pricing</span>
-              </span>
-            </a>
-            <a href="#blog" className="group overflow-hidden">
-              <span className="overflow-hidden h-5 block">
-                <span className="block text-sm text-[#0A0A0A]/70 font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Blog</span>
-                <span className="block text-sm text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">Blog</span>
-              </span>
-            </a>
+            <NavLink href="#about">About</NavLink>
+            <NavLink href="#work">Work</NavLink>
+            <NavLink href="#services">Services</NavLink>
+            <NavLink href="#blog">Blog</NavLink>
           </nav>
         )}
 
         {/* CTA Button */}
         <div className="hidden md:flex items-center gap-4">
-          <Link
-            href="/#contact"
-            className="group inline-flex items-center gap-2 px-5 py-2.5 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors overflow-hidden"
-          >
-            <span className="overflow-hidden h-5">
-              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
-              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
-            </span>
-          </Link>
+          <Button href="/#contact" variant="primary" size="md">
+            Start a project
+          </Button>
           <button 
             className="w-10 h-10 flex items-center justify-center rounded-full border border-[#0A0A0A]/10 hover:bg-[#0A0A0A]/5 transition-colors"
             onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
@@ -297,16 +266,14 @@ function Header() {
             <a href="#services" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Services</a>
             <a href="#pricing" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
             <a href="#blog" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
-            <Link
-              href="/#contact"
-              className="group inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors mt-4 overflow-hidden"
+            <Button 
+              href="/#contact" 
+              variant="primary" 
+              className="mt-4 justify-center"
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <span className="overflow-hidden h-5">
-                <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
-                <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
-              </span>
-            </Link>
+              Start a project
+            </Button>
           </nav>
         </div>
       )}
@@ -411,24 +378,9 @@ function Header() {
                 </div>
                 <div className="flex items-center gap-6">
                   {/* Social links with conveyor effect */}
-                  <a href="#" className="group overflow-hidden">
-                    <span className="overflow-hidden h-5 block">
-                      <span className="block text-sm text-[#0A0A0A]/50 transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>Twitter/X</span>
-                      <span className="block text-sm text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>Twitter/X</span>
-                    </span>
-                  </a>
-                  <a href="#" className="group overflow-hidden">
-                    <span className="overflow-hidden h-5 block">
-                      <span className="block text-sm text-[#0A0A0A]/50 transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>Instagram</span>
-                      <span className="block text-sm text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>Instagram</span>
-                    </span>
-                  </a>
-                  <a href="#" className="group overflow-hidden">
-                    <span className="overflow-hidden h-5 block">
-                      <span className="block text-sm text-[#0A0A0A]/50 transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>LinkedIn</span>
-                      <span className="block text-sm text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>LinkedIn</span>
-                    </span>
-                  </a>
+                  <SocialLink href="#">Twitter/X</SocialLink>
+                  <SocialLink href="#">Instagram</SocialLink>
+                  <SocialLink href="#">LinkedIn</SocialLink>
                 </div>
               </motion.div>
             </motion.div>
@@ -803,16 +755,9 @@ function WorkSection() {
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
-          <a href="#" className="group inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all overflow-hidden" style={{marginTop: '100px', fontWeight: '500'}}>
-            <span className="overflow-hidden h-5">
-              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all projects</span>
-              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all projects</span>
-            </span>
-            <span className="overflow-hidden h-4 w-4 relative">
-              <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out group-hover:translate-y-4" />
-              <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out -translate-y-4 group-hover:translate-y-0" />
-            </span>
-          </a>
+          <Button href="#" variant="secondary-invert" showPlus className="mt-[100px] font-medium">
+            View all projects
+          </Button>
         </motion.div>
 
         {/* Project Grid */}
@@ -1153,19 +1098,9 @@ function ServicesSection() {
           </div>
 
           {/* CTA Button */}
-          <a
-            href="#pricing"
-            className="group inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors overflow-hidden"
-          >
-            <span className="overflow-hidden h-5">
-              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">See pricing</span>
-              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">See pricing</span>
-            </span>
-            <span className="overflow-hidden h-4 w-4 relative">
-              <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out group-hover:translate-y-4" />
-              <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out -translate-y-4 group-hover:translate-y-0" />
-            </span>
-          </a>
+          <Button href="#pricing" variant="secondary" showPlus>
+            See pricing
+          </Button>
         </motion.div>
       </div>
     </section>
@@ -1199,19 +1134,9 @@ function ProcessSection() {
             <p className="text-[#4D4D4D] mb-8" style={{color: '#757575', fontWeight: '500'}}>
               We believe great design is a result of clarity, collaboration, and craft.
             </p>
-            <a
-              href="/#contact"
-              className="group inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors overflow-hidden"
-            >
-              <span className="overflow-hidden h-5">
-                <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Let's talk</span>
-                <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Let's talk</span>
-              </span>
-              <span className="overflow-hidden h-4 w-4 relative">
-                <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out group-hover:translate-y-4" />
-                <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out -translate-y-4 group-hover:translate-y-0" />
-              </span>
-            </a>
+            <Button href="/#contact" variant="secondary-invert" showPlus>
+              Let's talk
+            </Button>
           </motion.div>
 
           {/* Right - Steps in big card container */}
@@ -1267,19 +1192,9 @@ function FAQSection() {
             <p className="text-[#4D4D4D] mb-8" style={{color: '#757575', fontWeight: '500'}}>
               Answers to common questions about our process, services, and how we work.
             </p>
-            <a
-              href="/#contact"
-              className="group inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors overflow-hidden"
-            >
-              <span className="overflow-hidden h-5">
-                <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Contact us</span>
-                <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Contact us</span>
-              </span>
-              <span className="overflow-hidden h-4 w-4 relative">
-                <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out group-hover:translate-y-4" />
-                <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out -translate-y-4 group-hover:translate-y-0" />
-              </span>
-            </a>
+            <Button href="/#contact" variant="secondary-invert" showPlus>
+              Contact us
+            </Button>
           </motion.div>
 
           {/* Right - Accordion in #EBEBEB container */}
@@ -1347,16 +1262,9 @@ function BlogSection() {
             <h2 className="text-3xl font-bold text-[#0A0A0A] mb-4" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif'}}>Latest insights from our blog.</h2>
             <p className="text-[#4D4D4D]" style={{fontWeight: '500', width: '330px'}}>Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
-          <a href="#" className="group hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] text-sm rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all overflow-hidden" style={{marginTop: '100px', fontWeight: '500'}}>
-            <span className="overflow-hidden h-5">
-              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all articles</span>
-              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all articles</span>
-            </span>
-            <span className="overflow-hidden h-4 w-4 relative">
-              <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out group-hover:translate-y-4" />
-              <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out -translate-y-4 group-hover:translate-y-0" />
-            </span>
-          </a>
+          <Button href="#" variant="secondary-invert" showPlus className="hidden md:inline-flex mt-[100px] font-medium">
+            View all articles
+          </Button>
         </motion.div>
 
         {/* Blog Grid - Kanso style: Featured (50%) + Two cards side by side (25% each) */}
@@ -1433,16 +1341,9 @@ function BlogSection() {
         </motion.div>
 
         {/* Mobile view all link */}
-        <a href="#" className="group md:hidden inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] text-sm rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all mt-8 overflow-hidden" style={{fontWeight: '500'}}>
-          <span className="overflow-hidden h-5">
-            <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all articles</span>
-            <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all articles</span>
-          </span>
-          <span className="overflow-hidden h-4 w-4 relative">
-            <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out group-hover:translate-y-4" />
-            <Plus className="absolute inset-0 w-4 h-4 transition-transform duration-500 ease-out -translate-y-4 group-hover:translate-y-0" />
-          </span>
-        </a>
+        <Button href="#" variant="secondary-invert" showPlus className="md:hidden mt-8 font-medium">
+          View all articles
+        </Button>
       </div>
     </section>
   );
@@ -1494,15 +1395,9 @@ function Footer() {
                 placeholder="Email"
                 className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
               />
-              <button
-                type="submit"
-                className="group px-6 py-3 bg-white text-[#0A0A0A] font-medium rounded-full hover:bg-white/90 transition-colors overflow-hidden" style={{backgroundColor: '#ebebeb'}}
-              >
-                <span className="overflow-hidden h-5 block">
-                  <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Sign up</span>
-                  <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Sign up</span>
-                </span>
-              </button>
+              <Button type="submit" variant="secondary" className="px-6 py-3">
+                Sign up
+              </Button>
             </form>
           </div>
         </motion.div>

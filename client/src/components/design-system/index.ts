@@ -35,11 +35,16 @@ export {
   Button, 
   IconButton, 
   LinkButton,
+  NavLink,
+  SocialLink,
   ConveyorText,
+  ConveyorTextColor,
   ConveyorIcon,
   type ButtonProps,
   type IconButtonProps,
   type LinkButtonProps,
+  type NavLinkProps,
+  type SocialLinkProps,
 } from "./Button";
 
 // Typography Components
