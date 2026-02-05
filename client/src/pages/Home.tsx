@@ -187,107 +187,116 @@ function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-b-xl relative">
+    <header 
+      className={`sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] relative transition-[border-radius] duration-300 ${
+        isMegaMenuOpen ? 'rounded-b-none' : 'rounded-b-xl'
+      }`}
+    >
+      {/* Header content */}
       <div className="flex items-center justify-between h-14">
-          {/* Logo + Time */}
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <img 
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
-                alt="Forma®" 
-                className="h-6"
-                style={{width: '31px', height: '31px'}}
-              />
-            </Link>
-            <span className="text-sm text-[#0A0A0A]/50 hidden sm:inline" style={{color: '#757575'}}>{formatTime()}</span>
-          </div>
+        {/* Logo + Time */}
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2">
+            <img 
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
+              alt="Forma®" 
+              className="h-6"
+              style={{width: '31px', height: '31px'}}
+            />
+          </Link>
+          <span className="text-sm hidden sm:inline" style={{color: '#757575'}}>{formatTime()}</span>
+        </div>
 
-          {/* Desktop Navigation - Hidden when mega menu is open */}
-          {!isMegaMenuOpen && (
-            <nav className="hidden md:flex items-center gap-8">
-              <a href="#about" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>About</a>
-              <a href="#work" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Work</a>
-              <a href="#services" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Services</a>
-              <a href="#pricing" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Pricing</a>
-              <a href="#blog" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Blog</a>
-            </nav>
-          )}
+        {/* Desktop Navigation - Hidden when mega menu is open */}
+        {!isMegaMenuOpen && (
+          <nav className="hidden md:flex items-center gap-8">
+            <a href="#about" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">About</a>
+            <a href="#work" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">Work</a>
+            <a href="#services" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">Services</a>
+            <a href="#pricing" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">Pricing</a>
+            <a href="#blog" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors font-medium">Blog</a>
+          </nav>
+        )}
 
-          {/* CTA Button */}
-          <div className="hidden md:flex items-center gap-4">
+        {/* CTA Button */}
+        <div className="hidden md:flex items-center gap-4">
+          <Link
+            href="/waitlist"
+            className="group inline-flex items-center gap-2 px-5 py-2.5 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors overflow-hidden"
+          >
+            <span className="overflow-hidden h-5">
+              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
+              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
+            </span>
+          </Link>
+          <button 
+            className="w-10 h-10 flex items-center justify-center rounded-full border border-[#0A0A0A]/10 hover:bg-[#0A0A0A]/5 transition-colors"
+            onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+          >
+            <Plus className={`w-4 h-4 transition-transform duration-300 ${isMegaMenuOpen ? '-rotate-45' : ''}`} />
+          </button>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden w-10 h-10 flex items-center justify-center"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-14 left-0 right-0 bg-white border-t border-[#0A0A0A]/10 shadow-lg z-50">
+          <nav className="flex flex-col p-6 gap-4">
+            <a href="#about" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</a>
+            <a href="#work" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Work</a>
+            <a href="#services" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Services</a>
+            <a href="#pricing" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+            <a href="#blog" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
             <Link
               href="/waitlist"
-              className="group inline-flex items-center gap-2 px-5 py-2.5 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors overflow-hidden"
+              className="group inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors mt-4 overflow-hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
               <span className="overflow-hidden h-5">
                 <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
                 <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
               </span>
             </Link>
-            <button 
-              className="w-10 h-10 flex items-center justify-center rounded-full border border-[#0A0A0A]/10 hover:bg-[#0A0A0A]/5 transition-colors"
-              onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
-            >
-              <Plus className={`w-4 h-4 transition-transform duration-300 ${isMegaMenuOpen ? '-rotate-45' : ''}`} />
-            </button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden w-10 h-10 flex items-center justify-center"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-      </div>
-
-      {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-20 left-0 right-0 bg-white border-t border-[#0A0A0A]/10 shadow-lg">
-            <nav className="flex flex-col p-6 gap-4">
-              <a href="#about" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</a>
-              <a href="#work" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Work</a>
-              <a href="#services" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Services</a>
-              <a href="#pricing" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
-              <a href="#blog" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
-              <Link
-                href="/waitlist"
-                className="group inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors mt-4 overflow-hidden"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <span className="overflow-hidden h-5">
-                  <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
-                  <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
-                </span>
-              </Link>
-            </nav>
-          </div>
-        )}
+          </nav>
+        </div>
+      )}
 
       {/* Mega Menu Dropdown */}
       <AnimatePresence>
         {isMegaMenuOpen && (
           <>
-            {/* Backdrop overlay - starts below header */}
+            {/* Backdrop overlay - starts below the entire header+menu area */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="fixed left-0 right-0 bottom-0 bg-black/20"
-              style={{ top: '56px', zIndex: 89 }}
+              style={{ 
+                top: 0,
+                zIndex: -1
+              }}
               onClick={() => setIsMegaMenuOpen(false)}
             />
-            {/* Dropdown panel */}
+            
+            {/* Dropdown panel - NO top rounding, only bottom */}
             <motion.div
-              initial={{ scaleY: 0, opacity: 0 }}
-              animate={{ scaleY: 1, opacity: 1 }}
-              exit={{ scaleY: 0, opacity: 0 }}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute top-full inset-x-0 z-[100] bg-[#EBEBEB] rounded-b-xl origin-top"
+              className="overflow-hidden bg-[#EBEBEB] rounded-b-xl"
             >
               {/* Mega Menu Content */}
-              <div className="max-w-[1520px] mx-auto px-6 lg:px-12 py-8 flex">
+              <div className="py-8 flex">
                 {/* Left Column - Navigation */}
                 <div className="flex-1 flex flex-col justify-between">
                   <nav className="flex flex-col">
@@ -354,7 +363,8 @@ function Header() {
               </div>
 
               {/* Bottom row with social links */}
-              <div className="max-w-[1520px] mx-auto px-6 lg:px-12 pb-6 flex justify-end">
+              <div className="pb-6 flex justify-between items-end">
+                <div></div>
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

@@ -2352,3 +2352,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fixed header z-index (z-100) to sit above backdrop overlay - header and mega menu now appear as one cohesive component
 - [x] Fixed backdrop overlay to start below header (top: 56px) - header and mega menu now have consistent color
 - [x] Mega menu dropdown constrained to same width as header (max-w-[1520px])
+- [x] Fixed white strip issue - header uses conditional rounded-b-xl/rounded-b-none, mega menu has rounded-b-xl
