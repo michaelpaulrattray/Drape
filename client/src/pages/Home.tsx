@@ -287,7 +287,7 @@ function HeroSection() {
 
   return (
     <section ref={heroRef} className="min-h-screen pt-20 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         {/* Main Hero Content */}
         <div className="pt-[40vh] pb-8">
           {/* Large Wordmark */}
@@ -296,7 +296,7 @@ function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#0A0A0A]" 
-            style={{fontWeight: '500', fontFamily: 'Inter, sans-serif'}}
+            style={{fontWeight: '500', fontFamily: 'Inter, sans-serif', fontSize: '210px', marginBottom: '-78px'}}
           >
             Forma®
           </motion.h1>
@@ -408,7 +408,7 @@ function StatsMarquee() {
 function AboutSection() {
   return (
     <section id="about" className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -444,7 +444,7 @@ function AboutSection() {
           <StatsMarquee />
           
           {/* Description - Right aligned */}
-          <p className="shrink-0 max-w-xs text-sm text-[#4D4D4D] leading-relaxed text-right" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px'}}>
+          <p className="shrink-0 max-w-xs text-sm text-[#4D4D4D] leading-relaxed text-right" style={{fontSize: '16px', fontWeight: '500', lineHeight: '22px', width: '330px'}}>
             Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
           </p>
         </motion.div>
@@ -484,7 +484,7 @@ function AboutSection() {
 function WorkSection() {
   return (
     <section id="work" className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -567,7 +567,7 @@ function WorkSection() {
 function WhyUsSection() {
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -726,7 +726,7 @@ function ServicesSection() {
 
   return (
     <section id="services" className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         {/* Contained dark card */}
         <motion.div
           initial="hidden"
@@ -860,7 +860,7 @@ function ServicesSection() {
 function ProcessSection() {
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -923,7 +923,7 @@ function FAQSection() {
 
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -994,7 +994,7 @@ function FAQSection() {
 function BlogSection() {
   return (
     <section id="blog" className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
