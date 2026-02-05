@@ -1131,20 +1131,20 @@ function BlogSection() {
           </a>
         </motion.div>
 
-        {/* Blog Grid - Kanso style */}
+        {/* Blog Grid - Kanso style: Featured (50%) + Two cards side by side (25% each) */}
         <motion.div 
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid md:grid-cols-2 gap-1"
+          className="grid md:grid-cols-4 gap-1 items-start"
         >
-          {/* Featured Post (First - Large with text overlay) */}
+          {/* Featured Post (First - Large with text overlay, spans 2 columns) */}
           <a
             href="#"
-            className="group block rounded-2xl overflow-hidden bg-[#EBEBEB] row-span-2"
+            className="group block rounded-2xl overflow-hidden bg-[#EBEBEB] md:col-span-2 md:row-span-2"
           >
-            <div className="relative h-full overflow-hidden rounded-xl m-2">
+            <div className="relative h-full min-h-[500px] overflow-hidden rounded-xl m-2">
               <img
                 src={blogPosts[0].image}
                 alt={blogPosts[0].title}
@@ -1167,39 +1167,37 @@ function BlogSection() {
             </div>
           </a>
 
-          {/* Right column - Two smaller cards stacked */}
-          <div className="flex flex-col gap-1">
-            {blogPosts.slice(1, 3).map((post, index) => (
-              <a
-                key={index}
-                href="#"
-                className="group block"
-              >
-                {/* Card with image */}
-                <div className="rounded-2xl overflow-hidden bg-[#EBEBEB]">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    {/* Category badge */}
-                    <span className="absolute top-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-[#0A0A0A]">
-                      {post.category}
-                    </span>
-                  </div>
+          {/* Second and Third cards - each takes 1 column, side by side */}
+          {blogPosts.slice(1, 3).map((post, index) => (
+            <a
+              key={index}
+              href="#"
+              className="group block"
+            >
+              {/* Card with image */}
+              <div className="rounded-2xl overflow-hidden bg-[#EBEBEB]">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl m-2">
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  {/* Category badge */}
+                  <span className="absolute top-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-[#0A0A0A]">
+                    {post.category}
+                  </span>
                 </div>
-                {/* Text below card */}
-                <div className="pt-4 pb-2">
-                  <span className="text-sm text-[#757575]">{post.date}</span>
-                  <h3 className="text-lg font-semibold text-[#0A0A0A] mt-1 mb-1 group-hover:text-[#0A0A0A]/70 transition-colors">
-                    {post.title}
-                  </h3>
-                  <p className="text-sm text-[#757575] line-clamp-2">{post.excerpt}</p>
-                </div>
-              </a>
-            ))}
-          </div>
+              </div>
+              {/* Text below card */}
+              <div className="pt-4 pb-2">
+                <span className="text-sm text-[#757575]">{post.date}</span>
+                <h3 className="text-lg font-semibold text-[#0A0A0A] mt-1 mb-1 group-hover:text-[#0A0A0A]/70 transition-colors">
+                  {post.title}
+                </h3>
+                <p className="text-sm text-[#757575] line-clamp-2">{post.excerpt}</p>
+              </div>
+            </a>
+          ))}
         </motion.div>
 
         {/* Mobile view all link */}
