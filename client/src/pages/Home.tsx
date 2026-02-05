@@ -326,7 +326,7 @@ function HeroSection() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="flex items-center gap-6 py-6 border-y border-[#0A0A0A]/10" 
-          style={{borderWidth: '0px'}}
+          style={{borderWidth: '0px', height: '90px'}}
         >
           {/* Logo Marquee with gradient fades */}
           <LogoMarquee />
@@ -367,7 +367,7 @@ function HeroSection() {
 
 function SectionLabel({ label, number }: { label: string; number: string }) {
   return (
-    <div className="flex items-center justify-between mb-12">
+    <div className="flex items-center justify-between mb-12" style={{marginBottom: '22px'}}>
       <span className="text-sm font-semibold text-[#0A0A0A] tracking-wide" style={{fontSize: '16px'}}>/ {label}</span>
       <span className="text-sm font-semibold text-[#757575]" style={{fontSize: '16px'}}>({number})</span>
     </div>
@@ -853,7 +853,7 @@ function ServicesSection() {
           className="bg-[#0A0A0A] rounded-3xl px-8 py-12 lg:px-16 lg:py-16" style={{backgroundColor: '#121212'}}
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center justify-between mb-12" style={{marginBottom: '42px'}}>
             <span className="text-sm font-medium text-white/60 tracking-wide" style={{color: '#ffffff', fontSize: '16px'}}>/ Services</span>
             <span className="text-sm font-medium text-white/60">(04)</span>
           </div>
@@ -1130,7 +1130,7 @@ function BlogSection() {
         >
           <div>
             <h2 className="text-3xl font-bold text-[#0A0A0A] mb-4" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif'}}>Latest insights from our blog.</h2>
-            <p className="text-[#4D4D4D]" style={{fontWeight: '500'}}>Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
+            <p className="text-[#4D4D4D]" style={{fontWeight: '500', width: '330px'}}>Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
           <a href="#" className="hidden md:inline-flex items-center gap-2 text-sm text-[#4D4D4D] hover:text-[#0A0A0A] transition-colors">
             View all articles
