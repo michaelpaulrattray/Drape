@@ -617,7 +617,7 @@ function WorkSection() {
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
-          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 border border-[#0A0A0A]/20 text-sm text-[#0A0A0A] rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all" style={{marginTop: '100px', fontWeight: '500'}}>
+          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#757575] text-sm text-white rounded-full hover:bg-[#0A0A0A] transition-all" style={{marginTop: '100px', fontWeight: '500'}}>
             View all projects
             <Plus className="w-4 h-4" />
           </a>
@@ -720,7 +720,7 @@ function WhyUsSection() {
                 <p className="text-white/50 text-xs mt-2">© 2025</p>
               </div>
               <div className="relative z-10 p-5 pt-0">
-                <a href="/waitlist" className="inline-flex items-center gap-2 px-4 py-2 bg-white/90 text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-white transition-colors">
+                <a href="/waitlist" className="inline-flex items-center gap-2 px-4 py-2 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors">
                   Get started
                   <Plus className="w-3.5 h-3.5" />
                 </a>
@@ -955,7 +955,7 @@ function ServicesSection() {
           {/* CTA Button */}
           <a
             href="#pricing"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-white/90 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors"
           >
             See pricing
             <Plus className="w-4 h-4" />
@@ -995,7 +995,7 @@ function ProcessSection() {
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#757575] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A] transition-colors"
             >
               Let's talk
               <Plus className="w-4 h-4" />
@@ -1058,7 +1058,7 @@ function FAQSection() {
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#757575] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A] transition-colors"
             >
               Contact us
               <Plus className="w-4 h-4" />
