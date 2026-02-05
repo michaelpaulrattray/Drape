@@ -289,7 +289,7 @@ function HeroSection() {
     <section ref={heroRef} className="min-h-screen pt-20 bg-white">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         {/* Main Hero Content */}
-        <div className="pt-16 pb-8">
+        <div className="pt-[40vh] pb-8">
           {/* Large Wordmark */}
           <motion.h1 
             initial={{ opacity: 0, y: 40 }}
