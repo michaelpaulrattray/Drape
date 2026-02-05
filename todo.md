@@ -2359,3 +2359,11 @@ The entry and configuration files are properly set up with several enhancements 
 ## Mega Menu Bug Fixes
 - [x] Fix mega menu background color to match header (#EBEBEB) - currently appears lighter/white
 - [x] Fix mega menu bottom corners to be rounded (currently square)
+
+## Design System Cleanup & Architecture
+- [x] Fix duplicate inline styles in StatsMarquee (line 576)
+- [x] Standardize headline sizes to 54px (Work section uses 64px)
+- [x] Align FAQ accordion timing to 500ms
+- [ ] Fix mixed font-weight patterns (Tailwind vs inline)
+- [ ] Remove redundant container padding overrides
+- [x] Create design system architecture proposal

@@ -573,7 +573,7 @@ function StatsMarquee() {
           {statsSet.map((stat, index) => (
             <span key={index} className="flex items-center text-sm mx-3">
               <span className="font-semibold text-[#0A0A0A]/70" style={{fontWeight: '700'}}>{stat.value}</span>
-              <span className="text-[#0A0A0A]/40 ml-1.5" style={{color: '#757575'}} style={{color: '#757575'}} style={{color: '#757575'}} style={{color: '#757575'}} style={{color: '#757575'}}>{stat.label}</span>
+              <span className="text-[#757575] ml-1.5">{stat.label}</span>
               <span className="text-[#0A0A0A]/30 ml-3">/</span>
             </span>
           ))}
@@ -792,7 +792,7 @@ function WorkSection() {
           className="flex items-start justify-between mb-16"
         >
           <div>
-            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-[#0A0A0A] mb-4" style={{fontSize: '64px', fontFamily: 'Inter, sans-serif'}}>Selected Work.</h2>
+            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-[#0A0A0A] mb-4" style={{fontSize: '54px', fontFamily: 'Inter, sans-serif'}}>Selected Work.</h2>
             <p className="text-[#4D4D4D] text-sm max-w-sm leading-relaxed" style={{fontSize: '16px', lineHeight: '22px', fontWeight: '500'}}>
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
@@ -1290,7 +1290,7 @@ function FAQSection() {
                     </div>
                   </button>
                   <div 
-                    className={`overflow-hidden transition-all duration-300 ${
+                    className={`overflow-hidden transition-all duration-500 ${
                       openIndex === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                     }`}
                   >
