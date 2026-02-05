@@ -2348,3 +2348,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Smooth roll-down animation using scaleY with origin-top
 - [x] Slower/smoother mega menu animation (0.5s with ease-out curve)
 - [x] Constant header background color and opacity (no changes on toggle)
+- [x] Consistent header color - solid #EBEBEB for both header and mega menu (no opacity)
