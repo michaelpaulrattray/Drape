@@ -203,7 +203,7 @@ function Header() {
       </AnimatePresence>
       
       <header 
-        className={`sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] relative ${isMegaMenuOpen ? '' : 'rounded-b-xl'}`}
+        className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] relative rounded-b-xl overflow-hidden"
       >
       {/* Header content */}
       <div className="flex items-center justify-between h-14">
@@ -290,7 +290,7 @@ function Header() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden rounded-b-xl"
+              style={{ overflow: 'hidden' }}
             >
               {/* Content wrapper */}
               <div className="py-8 flex">
