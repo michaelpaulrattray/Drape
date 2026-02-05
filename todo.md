@@ -2346,3 +2346,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Header straight sides with slight bottom corner rounding only
 - [x] Added opacity (95%) and backdrop blur to header and mega menu
 - [x] Smooth roll-down animation using scaleY with origin-top
+- [x] Slower/smoother mega menu animation (0.5s with ease-out curve)
+- [x] Constant header background color and opacity (no changes on toggle)

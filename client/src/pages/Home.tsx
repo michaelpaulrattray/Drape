@@ -187,7 +187,7 @@ function Header() {
   };
 
   return (
-    <header className={`sticky top-0 z-50 max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB]/95 backdrop-blur-sm transition-all duration-300 ${isMegaMenuOpen ? '' : 'rounded-b-xl'}`}>
+    <header className="sticky top-0 z-50 max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB]/95 backdrop-blur-sm rounded-b-xl">
       <div className="flex items-center justify-between h-14">
           {/* Logo + Time */}
           <div className="flex items-center gap-3">
@@ -282,7 +282,7 @@ function Header() {
               initial={{ scaleY: 0, opacity: 0 }}
               animate={{ scaleY: 1, opacity: 1 }}
               exit={{ scaleY: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="absolute top-full left-0 right-0 z-[100] bg-[#EBEBEB]/95 backdrop-blur-sm rounded-b-xl origin-top"
             >
               {/* Mega Menu Content */}
