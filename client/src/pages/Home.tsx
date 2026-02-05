@@ -154,6 +154,7 @@ const blogPosts = [
 function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -221,8 +222,11 @@ function Header() {
                 <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Start a project</span>
               </span>
             </Link>
-            <button className="w-10 h-10 flex items-center justify-center rounded-full border border-[#0A0A0A]/10 hover:bg-[#0A0A0A]/5 transition-colors">
-              <Plus className="w-4 h-4" />
+            <button 
+              className="w-10 h-10 flex items-center justify-center rounded-full border border-[#0A0A0A]/10 hover:bg-[#0A0A0A]/5 transition-colors"
+              onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+            >
+              <Plus className={`w-4 h-4 transition-transform duration-300 ${isMegaMenuOpen ? '-rotate-45' : ''}`} />
             </button>
           </div>
 
@@ -257,6 +261,112 @@ function Header() {
             </nav>
           </div>
         )}
+
+      {/* Mega Menu Dropdown */}
+      <AnimatePresence>
+        {isMegaMenuOpen && (
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[90] bg-black/20"
+              onClick={() => setIsMegaMenuOpen(false)}
+            />
+            {/* Dropdown panel */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="absolute top-full left-0 right-0 z-[100] bg-[#EBEBEB] rounded-b-2xl shadow-xl"
+            >
+              {/* Mega Menu Content */}
+              <div className="max-w-[1520px] mx-auto px-6 lg:px-12 py-8 flex">
+                {/* Left Column - Navigation */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <nav className="flex flex-col">
+                    {[
+                      { name: 'Home', href: '/', index: '01' },
+                      { name: 'About', href: '#about', index: '02' },
+                      { name: 'Projects', href: '#work', index: '03' },
+                      { name: 'Blog', href: '#blog', index: '04' },
+                      { name: 'Contact', href: '#contact', index: '05' },
+                    ].map((item, i) => (
+                      <motion.a
+                        key={item.name}
+                        href={item.href}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 + 0.05, duration: 0.3 }}
+                        className="group flex items-center justify-between py-2 border-b border-[#0A0A0A]/10 hover:border-[#0A0A0A]/30 transition-colors"
+                        onClick={() => setIsMegaMenuOpen(false)}
+                      >
+                        <span className="text-2xl md:text-3xl font-light text-[#0A0A0A] group-hover:text-[#0A0A0A]/70 transition-colors" style={{ fontFamily: 'Georgia, serif' }}>
+                          {item.name}
+                        </span>
+                        <span className="text-sm text-[#0A0A0A]/40">({item.index})</span>
+                      </motion.a>
+                    ))}
+                  </nav>
+
+                  {/* Contact Info */}
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.25, duration: 0.3 }}
+                    className="flex flex-col gap-1 mt-6"
+                  >
+                    <a href="mailto:hello@formastudio.ai" className="text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors font-medium">
+                      hello@formastudio.ai
+                    </a>
+                    <span className="text-[#0A0A0A]/50 text-sm">(123) 456-7890</span>
+                  </motion.div>
+                </div>
+
+                {/* Right Column - Feature Image */}
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1, duration: 0.4 }}
+                  className="hidden lg:flex flex-1 items-start justify-end pl-12"
+                >
+                  <div className="relative w-full max-w-[400px] aspect-[16/9] rounded-lg overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" 
+                      alt="FormaStudio™" 
+                      className="w-full h-full object-cover grayscale"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <div className="absolute top-4 left-4">
+                      <span className="text-white font-medium text-sm">FormaStudio™</span>
+                    </div>
+                    <div className="absolute bottom-4 left-4">
+                      <span className="text-white/70 text-xs">© 2025 All rights reserved</span>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Bottom row with social links */}
+              <div className="max-w-[1520px] mx-auto px-6 lg:px-12 pb-6 flex justify-end">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.3 }}
+                  className="flex items-center gap-6"
+                >
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors">Twitter/X</a>
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors">Instagram</a>
+                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors">LinkedIn</a>
+                </motion.div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
