@@ -414,15 +414,13 @@ function StatsMarquee() {
 
 function AboutSection() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMouseOver, setIsMouseOver] = useState(false); // Physical mouse position
-  const [hoverEnabled, setHoverEnabled] = useState(true); // Whether to show hover effect
+  const [isMouseOver, setIsMouseOver] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Derived state: show hover effect only when mouse is over AND enabled AND not playing
-  const showHoverEffect = isMouseOver && hoverEnabled && !isPlaying;
+  // Show hover effect when mouse is over and not playing
+  const showHoverEffect = isMouseOver && !isPlaying;
 
   const handlePlay = () => {
-    setHoverEnabled(false); // Disable hover effect when playing
     setIsPlaying(true);
     // Small delay to let video element render before playing
     setTimeout(() => {
@@ -436,18 +434,15 @@ function AboutSection() {
       videoRef.current.currentTime = 0;
     }
     setIsPlaying(false);
-    // Keep hover disabled - will re-enable on fresh mouse enter
-    setHoverEnabled(false);
+    // isMouseOver is still true if mouse never left, so showHoverEffect becomes true immediately
   };
 
   const handleMouseEnter = () => {
     setIsMouseOver(true);
-    setHoverEnabled(true); // Re-enable hover when mouse enters fresh
   };
 
   const handleMouseLeave = () => {
     setIsMouseOver(false);
-    setHoverEnabled(true); // Reset for next hover
   };
 
   return (
