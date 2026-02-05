@@ -483,7 +483,7 @@ function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#0A0A0A]" 
-            style={{fontWeight: '500', fontFamily: 'Inter, sans-serif', fontSize: '210px', marginBottom: '-78px'}}
+            style={{fontWeight: '500', fontFamily: 'Inter, sans-serif', fontSize: '240px', marginBottom: '-78px', marginTop: '35px'}}
           >
             Forma®
           </motion.h1>
@@ -507,7 +507,7 @@ function HeroSection() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="flex items-center gap-6 py-6 border-y border-[#0A0A0A]/10" 
-          style={{borderWidth: '0px', height: '90px'}}
+          style={{borderWidth: '0px', height: '80px'}}
         >
           {/* Logo Marquee with gradient fades */}
           <LogoMarquee />
@@ -538,7 +538,7 @@ function HeroSection() {
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=80"
             alt="AI Generated Model"
             className="w-full h-full object-cover grayscale contrast-125"
-            style={{ scale: smoothScale }}
+            style={{ scale: smoothScale, height: '998px' }}
           />
         </motion.div>
       </div>
