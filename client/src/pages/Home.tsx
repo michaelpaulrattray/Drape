@@ -1064,35 +1064,40 @@ function FAQSection() {
             </a>
           </motion.div>
 
-          {/* Right - Accordion */}
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={staggerContainer}
-            className="space-y-4"
-          >
-            {faqs.map((faq, index) => (
-              <div key={index} className="border-b border-[#0A0A0A]/10">
-                <button
-                  onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                  className="w-full flex items-center justify-between py-4 text-left"
+          {/* Right - Accordion in #EBEBEB container */}
+          <div className="bg-[#EBEBEB] rounded-2xl p-2">
+            <div className="flex flex-col">
+              {faqs.map((faq, index) => (
+                <div 
+                  key={index} 
+                  className={`bg-white rounded-xl ${index < faqs.length - 1 ? 'mb-1' : ''}`}
                 >
-                  <span className="font-medium text-[#0A0A0A]" style={{fontSize: '18px'}}>{index + 1}. {faq.question}</span>
-                  <Plus
-                    className={`w-5 h-5 text-[#4D4D4D] transition-transform ${
-                      openIndex === index ? "rotate-45" : ""
+                  <button
+                    onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                    className="w-full flex items-center justify-between p-5 text-left"
+                  >
+                    <span className="font-medium text-[#0A0A0A]" style={{fontSize: '18px'}}>{index + 1}. {faq.question}</span>
+                    <div className="w-8 h-8 rounded-full border border-[#0A0A0A]/20 flex items-center justify-center flex-shrink-0">
+                      <Plus
+                        className={`w-4 h-4 text-[#0A0A0A] transition-transform duration-300 ${
+                          openIndex === index ? "rotate-[270deg]" : ""
+                        }`}
+                      />
+                    </div>
+                  </button>
+                  <div 
+                    className={`overflow-hidden transition-all duration-300 ${
+                      openIndex === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                     }`}
-                  />
-                </button>
-                {openIndex === index && (
-                  <div className="pb-4">
-                    <p className="text-[#4D4D4D]">{faq.answer}</p>
+                  >
+                    <div className="px-5 pb-5">
+                      <p className="text-[#757575]">{faq.answer}</p>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </motion.div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
