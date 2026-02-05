@@ -1219,7 +1219,7 @@ function Footer() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(3rem,10vw,8rem)] font-bold tracking-tighter mb-16"
+          className="text-[clamp(3rem,10vw,8rem)] font-bold tracking-tighter mb-16" style={{color: '#ebebeb'}}
         >
           Forma® Studio
         </motion.h2>
@@ -1257,7 +1257,7 @@ function Footer() {
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-white text-[#0A0A0A] font-medium rounded-full hover:bg-white/90 transition-colors"
+                className="px-6 py-3 bg-white text-[#0A0A0A] font-medium rounded-full hover:bg-white/90 transition-colors" style={{backgroundColor: '#ebebeb'}}
               >
                 Sign up
               </button>
