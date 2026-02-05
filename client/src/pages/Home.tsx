@@ -334,7 +334,7 @@ function Header() {
                     <img 
                       src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" 
                       alt="FormaStudio™" 
-                      className="w-full h-full object-cover grayscale" style={{ height: '260px' }}
+                      className="w-full h-full object-cover grayscale rounded-lg" style={{ height: '260px' }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" style={{ height: '260px' }} />
                     <div className="absolute top-4 right-4">
