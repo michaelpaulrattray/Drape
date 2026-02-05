@@ -590,7 +590,7 @@ function WhyUsSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-16"
+          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-16" style={{width: '1018px'}}
         >
           <span className="text-[#0A0A0A]" style={{fontSize: '54px', fontFamily: 'inter, sans-serif'}}>We cut through noise to create designs that are </span>
           <span className="text-[#757575]" style={{fontSize: '54px', fontFamily: 'inter, sans-serif'}}>thoughtful, timeless, and impactful.</span>
@@ -812,7 +812,7 @@ function ServicesSection() {
                           } ${
                             showPlus ? "opacity-100" : "opacity-0"
                           }`}
-                          style={{ fontFamily: 'Inter, sans-serif' }}
+                          style={{ fontFamily: 'Inter, sans-serif', fontSize: '110px' }}
                         >
                           +
                         </span>
