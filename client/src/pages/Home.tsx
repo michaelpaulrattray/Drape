@@ -310,14 +310,24 @@ function Header() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.03 + 0.05, duration: 0.3 }}
-                        className="group flex items-center justify-between py-2 border-b transition-colors"
+                        className="group flex items-center justify-between py-2 border-b transition-colors overflow-hidden"
                         onClick={() => setIsMegaMenuOpen(false)}
                         style={{ borderColor: '#d4d4d4' }}
                       >
-                        <span className="text-[#0A0A0A] group-hover:text-[#0A0A0A]/70 transition-colors" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: '600' }}>
-                          {item.name}
+                        {/* Nav item name with conveyor effect */}
+                        <span className="overflow-hidden h-7" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: '600' }}>
+                          <span className="block text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full">
+                            {item.name}
+                          </span>
+                          <span className="block text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full">
+                            {item.name}
+                          </span>
                         </span>
-                        <span className="text-sm" style={{ color: '#4d4d4d', fontWeight: '500' }}>({item.index})</span>
+                        {/* Index number with conveyor effect like + icon */}
+                        <span className="overflow-hidden h-5 relative" style={{ width: '32px' }}>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm transition-transform duration-500 ease-out group-hover:translate-y-5" style={{ color: '#4d4d4d', fontWeight: '500' }}>({item.index})</span>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm transition-transform duration-500 ease-out -translate-y-5 group-hover:translate-y-0" style={{ color: '#4d4d4d', fontWeight: '500' }}>({item.index})</span>
+                        </span>
                       </motion.a>
                     ))}
                   </nav>
@@ -355,15 +365,41 @@ function Header() {
                 className="pb-4 flex items-center justify-between"
               >
                 <div className="flex flex-col gap-0.5">
-                  <a href="mailto:hello@formastudio.ai" className="text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors font-medium">
-                    hello@formastudio.ai
+                  {/* Email with conveyor effect */}
+                  <a href="mailto:hello@formastudio.ai" className="group overflow-hidden">
+                    <span className="overflow-hidden h-5 block">
+                      <span className="block text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">hello@formastudio.ai</span>
+                      <span className="block text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">hello@formastudio.ai</span>
+                    </span>
                   </a>
-                  <span className="text-sm" style={{ color: '#0a0a0a', fontWeight: '500' }}>(123) 456-7890</span>
+                  {/* Phone with conveyor effect */}
+                  <a href="tel:+11234567890" className="group overflow-hidden">
+                    <span className="overflow-hidden h-5 block">
+                      <span className="block text-sm transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ color: '#0a0a0a', fontWeight: '500' }}>(123) 456-7890</span>
+                      <span className="block text-sm transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ color: '#0a0a0a', fontWeight: '500' }}>(123) 456-7890</span>
+                    </span>
+                  </a>
                 </div>
                 <div className="flex items-center gap-6">
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{ fontWeight: '500' }}>Twitter/X</a>
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{ fontWeight: '500' }}>Instagram</a>
-                  <a href="#" className="text-sm text-[#0A0A0A]/50 hover:text-[#0A0A0A] transition-colors" style={{ fontWeight: '500' }}>LinkedIn</a>
+                  {/* Social links with conveyor effect */}
+                  <a href="#" className="group overflow-hidden">
+                    <span className="overflow-hidden h-5 block">
+                      <span className="block text-sm text-[#0A0A0A]/50 transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>Twitter/X</span>
+                      <span className="block text-sm text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>Twitter/X</span>
+                    </span>
+                  </a>
+                  <a href="#" className="group overflow-hidden">
+                    <span className="overflow-hidden h-5 block">
+                      <span className="block text-sm text-[#0A0A0A]/50 transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>Instagram</span>
+                      <span className="block text-sm text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>Instagram</span>
+                    </span>
+                  </a>
+                  <a href="#" className="group overflow-hidden">
+                    <span className="overflow-hidden h-5 block">
+                      <span className="block text-sm text-[#0A0A0A]/50 transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>LinkedIn</span>
+                      <span className="block text-sm text-[#0A0A0A] transition-transform duration-500 ease-out group-hover:-translate-y-full" style={{ fontWeight: '500' }}>LinkedIn</span>
+                    </span>
+                  </a>
                 </div>
               </motion.div>
             </motion.div>
