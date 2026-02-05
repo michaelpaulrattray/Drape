@@ -414,12 +414,15 @@ function StatsMarquee() {
 
 function AboutSection() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
-  const [canHover, setCanHover] = useState(true);
+  const [isMouseOver, setIsMouseOver] = useState(false); // Physical mouse position
+  const [hoverEnabled, setHoverEnabled] = useState(true); // Whether to show hover effect
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Derived state: show hover effect only when mouse is over AND enabled AND not playing
+  const showHoverEffect = isMouseOver && hoverEnabled && !isPlaying;
+
   const handlePlay = () => {
-    setIsHovering(false);
+    setHoverEnabled(false); // Disable hover effect when playing
     setIsPlaying(true);
     // Small delay to let video element render before playing
     setTimeout(() => {
@@ -432,24 +435,19 @@ function AboutSection() {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
-    // Disable hover temporarily to reset scale
-    setCanHover(false);
-    setIsHovering(false);
     setIsPlaying(false);
-    // Re-enable hover after a brief delay
-    setTimeout(() => {
-      setCanHover(true);
-    }, 50);
+    // Keep hover disabled - will re-enable on fresh mouse enter
+    setHoverEnabled(false);
   };
 
   const handleMouseEnter = () => {
-    if (canHover && !isPlaying) {
-      setIsHovering(true);
-    }
+    setIsMouseOver(true);
+    setHoverEnabled(true); // Re-enable hover when mouse enters fresh
   };
 
   const handleMouseLeave = () => {
-    setIsHovering(false);
+    setIsMouseOver(false);
+    setHoverEnabled(true); // Reset for next hover
   };
 
   return (
@@ -517,8 +515,9 @@ function AboutSection() {
               alt="Showreel"
               className="video-showreel-image w-full h-full object-cover grayscale contrast-110"
               style={{
-                transform: `scale(${isHovering && !isPlaying ? 1.1 : 1})`,
-                transition: 'transform 700ms ease-out'
+                transform: `scale(${showHoverEffect ? 1.1 : 1})`,
+                filter: `blur(${showHoverEffect ? '4px' : '0px'})`,
+                transition: 'transform 700ms ease-out, filter 700ms ease-out'
               }}
             />
           </div>
