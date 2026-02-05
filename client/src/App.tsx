@@ -7,7 +7,6 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import Waitlist from "./pages/Waitlist";
 import CastingStudio from "./pages/CastingStudio";
 
 function Router() {
@@ -15,7 +14,6 @@ function Router() {
     <Switch>
       {/* New Kanso-style Home page */}
       <Route path="/" component={Home} />
-      <Route path="/waitlist" component={Waitlist} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/casting-studio" component={CastingStudio} />

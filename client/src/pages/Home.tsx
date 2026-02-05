@@ -259,7 +259,7 @@ function Header() {
         {/* CTA Button */}
         <div className="hidden md:flex items-center gap-4">
           <Link
-            href="/waitlist"
+            href="/#contact"
             className="group inline-flex items-center gap-2 px-5 py-2.5 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors overflow-hidden"
           >
             <span className="overflow-hidden h-5">
@@ -294,7 +294,7 @@ function Header() {
             <a href="#pricing" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
             <a href="#blog" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
             <Link
-              href="/waitlist"
+              href="/#contact"
               className="group inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#0A0A0A] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A]/90 transition-colors mt-4 overflow-hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             >
@@ -906,7 +906,7 @@ function WhyUsSection() {
                 <p className="text-white/50 text-xs mt-2">© 2025</p>
               </div>
               <div className="relative z-10 p-5 pt-0">
-                <a href="/waitlist" className="inline-flex items-center gap-2 px-4 py-2 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors">
+                <a href="/#contact" className="inline-flex items-center gap-2 px-4 py-2 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors">
                   Get started
                   <Plus className="w-3.5 h-3.5" />
                 </a>
@@ -1186,7 +1186,7 @@ function ProcessSection() {
               We believe great design is a result of clarity, collaboration, and craft.
             </p>
             <a
-              href="/waitlist"
+              href="/#contact"
               className="group inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors overflow-hidden"
             >
               <span className="overflow-hidden h-5">
@@ -1254,7 +1254,7 @@ function FAQSection() {
               Answers to common questions about our process, services, and how we work.
             </p>
             <a
-              href="/waitlist"
+              href="/#contact"
               className="group inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors overflow-hidden"
             >
               <span className="overflow-hidden h-5">
@@ -1502,7 +1502,7 @@ function Footer() {
             <a href="#about" className="block text-white/60 hover:text-white transition-colors">About</a>
             <a href="#work" className="block text-white/60 hover:text-white transition-colors">Projects</a>
             <a href="#blog" className="block text-white/60 hover:text-white transition-colors">Blog</a>
-            <a href="/waitlist" className="block text-white/60 hover:text-white transition-colors">Contact</a>
+            <a href="/#contact" className="block text-white/60 hover:text-white transition-colors">Contact</a>
           </div>
           <div className="space-y-3">
             <a href="#" className="block text-white/60 hover:text-white transition-colors">Terms & Conditions</a>

@@ -29,10 +29,10 @@ export default function Login() {
         </a>
 
         <a 
-          href="/#waitlist" 
+          href="/#contact" 
           className="px-5 py-2.5 rounded-full border border-gray-200 bg-white hover:bg-slate-accent hover:text-white hover:border-slate-accent transition-all duration-300 text-sm font-medium shadow-sm"
         >
-          Join Waitlist
+          Contact Us
         </a>
       </nav>
 
