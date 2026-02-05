@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 
 // ============ ANIMATION VARIANTS ============
 
@@ -283,7 +283,12 @@ function HeroSection() {
     target: heroRef,
     offset: ["start start", "end start"]
   });
-  const imageScale = useTransform(scrollYProgress, [0, 1], [1.1, 1.0]);
+  const imageScale = useTransform(scrollYProgress, [0, 1], [1.25, 1.0]);
+  const smoothScale = useSpring(imageScale, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   return (
     <section ref={heroRef} className="min-h-screen pt-20 bg-white" style={{paddingBottom: '120px'}}>
@@ -350,7 +355,7 @@ function HeroSection() {
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=80"
             alt="AI Generated Model"
             className="w-full h-full object-cover grayscale contrast-125"
-            style={{ scale: imageScale }}
+            style={{ scale: smoothScale }}
           />
         </motion.div>
       </div>
