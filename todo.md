@@ -2349,3 +2349,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Slower/smoother mega menu animation (0.5s with ease-out curve)
 - [x] Constant header background color and opacity (no changes on toggle)
 - [x] Consistent header color - solid #EBEBEB for both header and mega menu (no opacity)
+- [x] Fixed header z-index (z-100) to sit above backdrop overlay - header and mega menu now appear as one cohesive component

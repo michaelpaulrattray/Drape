@@ -187,7 +187,7 @@ function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-b-xl">
+    <header className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-b-xl">
       <div className="flex items-center justify-between h-14">
           {/* Logo + Time */}
           <div className="flex items-center gap-3">
