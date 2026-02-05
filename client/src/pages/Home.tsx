@@ -187,7 +187,7 @@ function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-full">
+    <header className={`sticky top-0 z-50 max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] transition-all duration-300 ${isMegaMenuOpen ? 'rounded-t-full' : 'rounded-full'}`}>
       <div className="flex items-center justify-between h-14">
           {/* Logo + Time */}
           <div className="flex items-center gap-3">
@@ -202,14 +202,16 @@ function Header() {
             <span className="text-sm text-[#0A0A0A]/50 hidden sm:inline" style={{color: '#757575'}}>{formatTime()}</span>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#about" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>About</a>
-            <a href="#work" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Work</a>
-            <a href="#services" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Services</a>
-            <a href="#pricing" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Pricing</a>
-            <a href="#blog" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Blog</a>
-          </nav>
+          {/* Desktop Navigation - Hidden when mega menu is open */}
+          {!isMegaMenuOpen && (
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="#about" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>About</a>
+              <a href="#work" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Work</a>
+              <a href="#services" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Services</a>
+              <a href="#pricing" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Pricing</a>
+              <a href="#blog" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Blog</a>
+            </nav>
+          )}
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
@@ -277,11 +279,11 @@ function Header() {
             />
             {/* Dropdown panel */}
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="absolute top-full left-0 right-0 z-[100] bg-[#EBEBEB] rounded-b-2xl shadow-xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="absolute top-full left-0 right-0 z-[100] bg-[#EBEBEB] rounded-b-3xl"
             >
               {/* Mega Menu Content */}
               <div className="max-w-[1520px] mx-auto px-6 lg:px-12 py-8 flex">
