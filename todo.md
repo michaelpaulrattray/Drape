@@ -2317,3 +2317,7 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Hero Scroll Effects (Feb 5, 2026)
 - [x] Add hero image scroll-unzoom effect (scale 1.1 → 1.0 on scroll)
+
+## Button Animation Fixes
+- [x] Fix plus icon to be visible by default on all buttons (View all projects, See pricing, Let's talk, Contact us, View all articles)
+- [x] Plus icon now slides DOWN on hover while new icon slides in from TOP (opposite direction to text)

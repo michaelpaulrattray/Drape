@@ -623,8 +623,8 @@ function WorkSection() {
               <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all projects</span>
             </span>
             <span className="overflow-hidden h-4 w-4 flex flex-col">
-              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
-              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
+              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:translate-y-full" />
+              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out -translate-y-full group-hover:translate-y-0" />
             </span>
           </a>
         </motion.div>
@@ -968,8 +968,8 @@ function ServicesSection() {
               <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">See pricing</span>
             </span>
             <span className="overflow-hidden h-4 w-4 flex flex-col">
-              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
-              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
+              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:translate-y-full" />
+              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out -translate-y-full group-hover:translate-y-0" />
             </span>
           </a>
         </motion.div>
@@ -1014,8 +1014,8 @@ function ProcessSection() {
                 <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Let's talk</span>
               </span>
               <span className="overflow-hidden h-4 w-4 flex flex-col">
-                <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
-                <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
+                <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:translate-y-full" />
+                <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out -translate-y-full group-hover:translate-y-0" />
               </span>
             </a>
           </motion.div>
@@ -1082,8 +1082,8 @@ function FAQSection() {
                 <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">Contact us</span>
               </span>
               <span className="overflow-hidden h-4 w-4 flex flex-col">
-                <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
-                <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
+                <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:translate-y-full" />
+                <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out -translate-y-full group-hover:translate-y-0" />
               </span>
             </a>
           </motion.div>
@@ -1159,8 +1159,8 @@ function BlogSection() {
               <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all articles</span>
             </span>
             <span className="overflow-hidden h-4 w-4 flex flex-col">
-              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
-              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
+              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:translate-y-full" />
+              <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out -translate-y-full group-hover:translate-y-0" />
             </span>
           </a>
         </motion.div>
@@ -1241,8 +1241,8 @@ function BlogSection() {
             <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">View all articles</span>
           </span>
           <span className="overflow-hidden h-4 w-4 flex flex-col">
-            <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
-            <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-full" />
+            <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out group-hover:translate-y-full" />
+            <Plus className="w-4 h-4 flex-shrink-0 transition-transform duration-500 ease-out -translate-y-full group-hover:translate-y-0" />
           </span>
         </a>
       </div>
