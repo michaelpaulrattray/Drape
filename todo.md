@@ -2350,3 +2350,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Constant header background color and opacity (no changes on toggle)
 - [x] Consistent header color - solid #EBEBEB for both header and mega menu (no opacity)
 - [x] Fixed header z-index (z-100) to sit above backdrop overlay - header and mega menu now appear as one cohesive component
+- [x] Fixed backdrop overlay to start below header (top: 56px) - header and mega menu now have consistent color
