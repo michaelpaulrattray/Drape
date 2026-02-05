@@ -414,10 +414,12 @@ function StatsMarquee() {
 
 function AboutSection() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [imageKey, setImageKey] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
+  const [canHover, setCanHover] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handlePlay = () => {
+    setIsHovering(false);
     setIsPlaying(true);
     // Small delay to let video element render before playing
     setTimeout(() => {
@@ -430,9 +432,24 @@ function AboutSection() {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
-    // Increment key to force image remount and reset hover state
-    setImageKey(prev => prev + 1);
+    // Disable hover temporarily to reset scale
+    setCanHover(false);
+    setIsHovering(false);
     setIsPlaying(false);
+    // Re-enable hover after a brief delay
+    setTimeout(() => {
+      setCanHover(true);
+    }, 50);
+  };
+
+  const handleMouseEnter = () => {
+    if (canHover && !isPlaying) {
+      setIsHovering(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
   };
 
   return (
@@ -484,30 +501,27 @@ function AboutSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={scaleIn}
-          className="group relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] cursor-pointer"
+          className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] cursor-pointer"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          {/* Static Image - shown when not playing */}
-          <AnimatePresence mode="wait">
-            {!isPlaying && (
-              <motion.div
-                key="static-image"
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0 z-10"
-              >
-                {/* Dark overlay for text readability */}
-                <div className="absolute inset-0 bg-black/50 z-10"></div>
-                <img
-                  key={`img-${imageKey}`}
-                  src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
-                  alt="Showreel"
-                  className="video-showreel-image w-full h-full object-cover grayscale contrast-110 transition-transform duration-700 group-hover:scale-110"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Static Image - always mounted, controlled by opacity */}
+          <div
+            className="absolute inset-0 z-10 transition-opacity duration-300"
+            style={{ opacity: isPlaying ? 0 : 1 }}
+          >
+            {/* Dark overlay for text readability */}
+            <div className="absolute inset-0 bg-black/50 z-10"></div>
+            <img
+              src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
+              alt="Showreel"
+              className="video-showreel-image w-full h-full object-cover grayscale contrast-110"
+              style={{
+                transform: `scale(${isHovering && !isPlaying ? 1.1 : 1})`,
+                transition: 'transform 700ms ease-out'
+              }}
+            />
+          </div>
 
           {/* Video Element - shown when playing */}
           <video
