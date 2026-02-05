@@ -187,11 +187,24 @@ function Header() {
   };
 
   return (
-    <header 
-      className={`sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] relative transition-[border-radius] duration-300 ${
-        isMegaMenuOpen ? 'rounded-b-none' : 'rounded-b-xl'
-      }`}
-    >
+    <>
+      {/* Backdrop overlay - OUTSIDE the header so z-index works correctly */}
+      <AnimatePresence>
+        {isMegaMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/20 z-[90]"
+            onClick={() => setIsMegaMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+      
+      <header 
+        className={`sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] relative rounded-xl`}
+      >
       {/* Header content */}
       <div className="flex items-center justify-between h-14">
         {/* Logo + Time */}
@@ -272,30 +285,14 @@ function Header() {
       {/* Mega Menu Dropdown */}
       <AnimatePresence>
         {isMegaMenuOpen && (
-          <>
-            {/* Backdrop overlay - starts below the entire header+menu area */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed left-0 right-0 bottom-0 bg-black/20"
-              style={{ 
-                top: 0,
-                zIndex: -1
-              }}
-              onClick={() => setIsMegaMenuOpen(false)}
-            />
-            
-            {/* Dropdown panel - NO top rounding, only bottom */}
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden bg-[#EBEBEB] rounded-b-xl"
+          <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
             >
-              {/* Mega Menu Content */}
+              {/* Content wrapper */}
               <div className="py-8 flex">
                 {/* Left Column - Navigation */}
                 <div className="flex-1 flex flex-col justify-between">
@@ -363,8 +360,7 @@ function Header() {
               </div>
 
               {/* Bottom row with social links */}
-              <div className="pb-6 flex justify-between items-end">
-                <div></div>
+              <div className="pb-6 flex justify-end">
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -377,10 +373,10 @@ function Header() {
                 </motion.div>
               </div>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
     </header>
+    </>
   );
 }
 
