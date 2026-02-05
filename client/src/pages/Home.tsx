@@ -617,9 +617,15 @@ function WorkSection() {
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
-          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all" style={{marginTop: '100px', fontWeight: '500'}}>
-            View all projects
-            <Plus className="w-4 h-4" />
+          <a href="#" className="group inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all overflow-hidden" style={{marginTop: '100px', fontWeight: '500'}}>
+            <span className="overflow-hidden h-5">
+              <span className="block transition-transform duration-300 group-hover:-translate-y-full">View all projects</span>
+              <span className="block transition-transform duration-300 group-hover:-translate-y-full">View all projects</span>
+            </span>
+            <span className="overflow-hidden h-4 w-4">
+              <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full" />
+              <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full -translate-y-full" />
+            </span>
           </a>
         </motion.div>
 
@@ -955,10 +961,16 @@ function ServicesSection() {
           {/* CTA Button */}
           <a
             href="#pricing"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors"
+            className="group inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors overflow-hidden"
           >
-            See pricing
-            <Plus className="w-4 h-4" />
+            <span className="overflow-hidden h-5">
+              <span className="block transition-transform duration-300 group-hover:-translate-y-full">See pricing</span>
+              <span className="block transition-transform duration-300 group-hover:-translate-y-full">See pricing</span>
+            </span>
+            <span className="overflow-hidden h-4 w-4">
+              <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full" />
+              <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full -translate-y-full" />
+            </span>
           </a>
         </motion.div>
       </div>
@@ -995,10 +1007,16 @@ function ProcessSection() {
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors"
+              className="group inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors overflow-hidden"
             >
-              Let's talk
-              <Plus className="w-4 h-4" />
+              <span className="overflow-hidden h-5">
+                <span className="block transition-transform duration-300 group-hover:-translate-y-full">Let's talk</span>
+                <span className="block transition-transform duration-300 group-hover:-translate-y-full">Let's talk</span>
+              </span>
+              <span className="overflow-hidden h-4 w-4">
+                <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full" />
+                <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full -translate-y-full" />
+              </span>
             </a>
           </motion.div>
 
@@ -1057,10 +1075,16 @@ function FAQSection() {
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors"
+              className="group inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors overflow-hidden"
             >
-              Contact us
-              <Plus className="w-4 h-4" />
+              <span className="overflow-hidden h-5">
+                <span className="block transition-transform duration-300 group-hover:-translate-y-full">Contact us</span>
+                <span className="block transition-transform duration-300 group-hover:-translate-y-full">Contact us</span>
+              </span>
+              <span className="overflow-hidden h-4 w-4">
+                <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full" />
+                <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full -translate-y-full" />
+              </span>
             </a>
           </motion.div>
 
@@ -1129,9 +1153,15 @@ function BlogSection() {
             <h2 className="text-3xl font-bold text-[#0A0A0A] mb-4" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif'}}>Latest insights from our blog.</h2>
             <p className="text-[#4D4D4D]" style={{fontWeight: '500', width: '330px'}}>Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
-          <a href="#" className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] text-sm rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all" style={{marginTop: '100px', fontWeight: '500'}}>
-            View all articles
-            <Plus className="w-4 h-4" />
+          <a href="#" className="group hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] text-sm rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all overflow-hidden" style={{marginTop: '100px', fontWeight: '500'}}>
+            <span className="overflow-hidden h-5">
+              <span className="block transition-transform duration-300 group-hover:-translate-y-full">View all articles</span>
+              <span className="block transition-transform duration-300 group-hover:-translate-y-full">View all articles</span>
+            </span>
+            <span className="overflow-hidden h-4 w-4">
+              <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full" />
+              <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full -translate-y-full" />
+            </span>
           </a>
         </motion.div>
 
@@ -1205,9 +1235,15 @@ function BlogSection() {
         </motion.div>
 
         {/* Mobile view all link */}
-        <a href="#" className="md:hidden inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] text-sm rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all mt-8" style={{fontWeight: '500'}}>
-          View all articles
-          <Plus className="w-4 h-4" />
+        <a href="#" className="group md:hidden inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] text-sm rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all mt-8 overflow-hidden" style={{fontWeight: '500'}}>
+          <span className="overflow-hidden h-5">
+            <span className="block transition-transform duration-300 group-hover:-translate-y-full">View all articles</span>
+            <span className="block transition-transform duration-300 group-hover:-translate-y-full">View all articles</span>
+          </span>
+          <span className="overflow-hidden h-4 w-4">
+            <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full" />
+            <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-y-full -translate-y-full" />
+          </span>
         </a>
       </div>
     </section>
