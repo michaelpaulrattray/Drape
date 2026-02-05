@@ -195,18 +195,19 @@ function Header() {
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
                 alt="Forma®" 
                 className="h-6"
+                style={{width: '31px', height: '31px'}}
               />
             </Link>
-            <span className="text-sm text-[#0A0A0A]/50 hidden sm:inline">{formatTime()}</span>
+            <span className="text-sm text-[#0A0A0A]/50 hidden sm:inline" style={{color: '#757575'}}>{formatTime()}</span>
           </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <a href="#about" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">About</a>
-            <a href="#work" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">Work</a>
-            <a href="#services" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">Services</a>
-            <a href="#pricing" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">Pricing</a>
-            <a href="#blog" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors">Blog</a>
+            <a href="#about" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>About</a>
+            <a href="#work" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Work</a>
+            <a href="#services" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Services</a>
+            <a href="#pricing" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Pricing</a>
+            <a href="#blog" className="text-sm text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" style={{fontWeight: '500'}}>Blog</a>
           </nav>
 
           {/* CTA Button */}
