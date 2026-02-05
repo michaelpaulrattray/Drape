@@ -2321,3 +2321,11 @@ The entry and configuration files are properly set up with several enhancements 
 ## Button Animation Fixes
 - [x] Fix plus icon to be visible by default on all buttons (View all projects, See pricing, Let's talk, Contact us, View all articles)
 - [x] Plus icon now slides DOWN on hover while new icon slides in from TOP (opposite direction to text)
+
+
+## Button Slide Animations
+- [x] Fix plus icon animation using absolute positioning (conveyor belt effect)
+- [x] Plus icon visible by default, slides down on hover while new plus slides in from top
+- [x] Applied to all 6 CTA buttons: View all projects, See pricing, Let's talk, Contact us, View all articles (desktop + mobile)
+- [x] Add text slide animation to header "Start a project" button (desktop + mobile)
+- [x] Add text slide animation to footer "Sign up" button
