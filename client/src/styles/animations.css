@@ -1,0 +1,300 @@
+/**
+ * FormaStudio™ Keyframe Animations
+ * 
+ * This file contains CSS keyframe animations used throughout the application.
+ * These are primarily for marquee effects and other CSS-only animations.
+ * 
+ * For JavaScript-controlled animations, use the motion.ts presets instead.
+ * 
+ * @see motion.ts for Framer Motion presets
+ * @see tokens.css for timing values
+ */
+
+/* ============================================
+ * MARQUEE ANIMATIONS
+ * ============================================ */
+
+/**
+ * Standard marquee - scrolls content left
+ * Use for: logo marquees, testimonial scrollers
+ */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/**
+ * Reverse marquee - scrolls content right
+ * Use for: alternating rows, visual variety
+ */
+@keyframes marquee-reverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/**
+ * Vertical marquee - scrolls content up
+ * Use for: vertical text scrollers
+ */
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+/* Marquee utility classes */
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee-reverse {
+  animation: marquee-reverse 30s linear infinite;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical 20s linear infinite;
+}
+
+/* Pause marquee on hover */
+.animate-marquee:hover,
+.animate-marquee-reverse:hover,
+.animate-marquee-vertical:hover {
+  animation-play-state: paused;
+}
+
+/* ============================================
+ * PULSE ANIMATIONS
+ * ============================================ */
+
+/**
+ * Subtle pulse - for attention indicators
+ */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/**
+ * Scale pulse - for buttons, badges
+ */
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.animate-pulse-scale {
+  animation: pulse-scale 2s ease-in-out infinite;
+}
+
+/* ============================================
+ * FADE ANIMATIONS
+ * ============================================ */
+
+/**
+ * Fade in animation
+ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/**
+ * Fade in from bottom
+ */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/**
+ * Fade in from top
+ */
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in var(--duration-slow, 500ms) var(--ease-out, ease-out) forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up var(--duration-slow, 500ms) var(--ease-out, ease-out) forwards;
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down var(--duration-slow, 500ms) var(--ease-out, ease-out) forwards;
+}
+
+/* ============================================
+ * SPIN ANIMATIONS
+ * ============================================ */
+
+/**
+ * Standard spin - for loading indicators
+ */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+/* ============================================
+ * CONVEYOR BELT HELPERS
+ * ============================================ */
+
+/**
+ * These classes help create the conveyor belt text effect
+ * used on buttons and navigation items.
+ * 
+ * Structure:
+ * <span class="conveyor-container">
+ *   <span class="conveyor-text">Text</span>
+ *   <span class="conveyor-text">Text</span>
+ * </span>
+ */
+
+.conveyor-container {
+  overflow: hidden;
+  height: 1.25rem; /* h-5 */
+  display: block;
+}
+
+.conveyor-text {
+  display: block;
+  transition: transform var(--duration-slow, 500ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.group:hover .conveyor-text {
+  transform: translateY(-100%);
+}
+
+/* Vertical conveyor for icons (like the + button) */
+.conveyor-icon-container {
+  overflow: hidden;
+  height: 1rem; /* h-4 */
+  width: 1rem;  /* w-4 */
+  position: relative;
+}
+
+.conveyor-icon {
+  position: absolute;
+  inset: 0;
+  width: 1rem;
+  height: 1rem;
+  transition: transform var(--duration-slow, 500ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.conveyor-icon-first {
+  transform: translateY(0);
+}
+
+.conveyor-icon-second {
+  transform: translateY(-100%);
+}
+
+.group:hover .conveyor-icon-first {
+  transform: translateY(100%);
+}
+
+.group:hover .conveyor-icon-second {
+  transform: translateY(0);
+}
+
+/* ============================================
+ * ACCORDION ANIMATIONS
+ * ============================================ */
+
+/**
+ * Smooth height transition for accordions
+ * Note: max-height approach used for CSS-only accordions
+ */
+.accordion-content {
+  overflow: hidden;
+  transition: 
+    max-height var(--duration-slow, 500ms) var(--ease-out, ease-out),
+    opacity var(--duration-slow, 500ms) var(--ease-out, ease-out);
+}
+
+.accordion-content[data-state="closed"] {
+  max-height: 0;
+  opacity: 0;
+}
+
+.accordion-content[data-state="open"] {
+  max-height: 500px; /* Adjust based on content */
+  opacity: 1;
+}
+
+/* ============================================
+ * IMAGE HOVER EFFECTS
+ * ============================================ */
+
+/**
+ * Zoom effect for project cards
+ */
+.image-zoom {
+  transition: transform var(--duration-slower, 700ms) var(--ease-out, ease-out);
+}
+
+.group:hover .image-zoom {
+  transform: scale(1.05);
+}
+
+/**
+ * Grayscale to color effect
+ */
+.image-grayscale {
+  filter: grayscale(100%);
+  transition: filter var(--duration-slow, 500ms) var(--ease-out, ease-out);
+}
+
+.group:hover .image-grayscale {
+  filter: grayscale(0%);
+}

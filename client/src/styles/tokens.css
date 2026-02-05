@@ -1,0 +1,268 @@
+/**
+ * FormaStudio™ Design Tokens
+ * 
+ * This file contains all CSS custom properties (design tokens) extracted from
+ * the Home.tsx patterns. These tokens ensure consistency across all pages and
+ * components in the application.
+ * 
+ * Usage: Reference tokens using var(--token-name) in CSS or Tailwind classes.
+ * 
+ * @see STYLE_GUIDE.md for usage guidelines
+ * @see DESIGN_SYSTEM_PROPOSAL.md for architecture details
+ */
+
+:root {
+  /* ============================================
+   * COLOR TOKENS
+   * ============================================ */
+  
+  /* Primary Colors */
+  --color-black: #0A0A0A;
+  --color-dark: #121212;
+  --color-white: #FFFFFF;
+  
+  /* Gray Scale */
+  --color-gray-100: #EBEBEB;  /* Surface, buttons, cards */
+  --color-gray-200: #D4D4D4;  /* Borders */
+  --color-gray-400: #757575;  /* Secondary text */
+  --color-gray-500: #4D4D4D;  /* Body text */
+  
+  /* Semantic Colors */
+  --color-surface: var(--color-gray-100);
+  --color-text-primary: var(--color-black);
+  --color-text-secondary: var(--color-gray-400);
+  --color-text-muted: var(--color-gray-500);
+  --color-border: rgba(10, 10, 10, 0.1);
+  --color-border-medium: rgba(10, 10, 10, 0.2);
+  --color-border-strong: rgba(10, 10, 10, 0.3);
+  
+  /* Dark Mode Variants (for dark sections) */
+  --color-text-on-dark: var(--color-white);
+  --color-text-on-dark-muted: rgba(255, 255, 255, 0.6);
+  --color-border-on-dark: rgba(255, 255, 255, 0.2);
+  
+  /* ============================================
+   * SPACING TOKENS
+   * ============================================ */
+  
+  /* Base Spacing Scale (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  
+  /* Section Spacing */
+  --section-padding-y: var(--space-24);        /* py-24 = 96px */
+  --section-label-gap: 22px;                   /* Gap below section labels */
+  --content-gap: var(--space-16);              /* 64px between major blocks */
+  --header-margin-bottom: var(--space-16);     /* mb-16 = 64px */
+  
+  /* Card Spacing */
+  --card-padding-outer: var(--space-2);        /* p-2 = 8px */
+  --card-padding-inner: var(--space-4);        /* p-4 = 16px */
+  --card-padding-large: var(--space-6);        /* p-6 = 24px */
+  --card-gap: var(--space-1);                  /* gap-1 = 4px */
+  
+  /* ============================================
+   * TYPOGRAPHY TOKENS
+   * ============================================ */
+  
+  /* Font Family */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Font Sizes */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 36px;
+  --text-5xl: 48px;
+  --text-6xl: 54px;      /* Section headlines */
+  --text-hero: 210px;    /* Hero title */
+  
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.1;
+  --leading-snug: 1.15;
+  --leading-normal: 1.375;    /* 22px for 16px text */
+  --leading-relaxed: 1.625;
+  
+  /* Letter Spacing */
+  --tracking-tighter: -0.05em;
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  
+  /* ============================================
+   * BORDER RADIUS TOKENS
+   * ============================================ */
+  
+  /* Radius Scale */
+  --radius-sm: 8px;           /* rounded-lg */
+  --radius-md: 12px;          /* rounded-xl */
+  --radius-lg: 16px;          /* rounded-2xl */
+  --radius-xl: 24px;          /* rounded-3xl */
+  --radius-full: 9999px;      /* rounded-full */
+  
+  /* Semantic Radius */
+  --radius-card-outer: var(--radius-lg);
+  --radius-card-inner: var(--radius-md);
+  --radius-button: var(--radius-full);
+  --radius-image: var(--radius-md);
+  --radius-tag: var(--radius-full);
+  
+  /* ============================================
+   * MOTION TOKENS
+   * ============================================ */
+  
+  /* Durations */
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-slower: 700ms;
+  --duration-slowest: 800ms;
+  
+  /* Easing Functions (CSS format) */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* Semantic Motion */
+  --transition-conveyor: var(--duration-slow) var(--ease-out);
+  --transition-image-zoom: var(--duration-slower);
+  --transition-color: var(--duration-slow);
+  --transition-accordion: var(--duration-slow) var(--ease-out);
+  --transition-hover: var(--duration-normal) var(--ease-out);
+  
+  /* ============================================
+   * LAYOUT TOKENS
+   * ============================================ */
+  
+  /* Container */
+  --container-max: 1520px;
+  --container-padding: 24px;      /* px-6 */
+  --container-padding-lg: 48px;   /* lg:px-12 */
+  
+  /* Grid */
+  --grid-gap-tight: var(--space-1);     /* 4px - project cards */
+  --grid-gap-normal: var(--space-4);    /* 16px */
+  --grid-gap-wide: var(--space-16);     /* 64px - 2-column layouts */
+  
+  /* ============================================
+   * SHADOW TOKENS
+   * ============================================ */
+  
+  /* Shadows (minimal use in current design) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* ============================================
+   * Z-INDEX TOKENS
+   * ============================================ */
+  
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-tooltip: 70;
+}
+
+/* ============================================
+ * UTILITY CLASSES
+ * ============================================ */
+
+/* Container utility */
+.container-forma {
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-padding);
+  padding-right: var(--container-padding);
+}
+
+@media (min-width: 1024px) {
+  .container-forma {
+    padding-left: var(--container-padding-lg);
+    padding-right: var(--container-padding-lg);
+  }
+}
+
+/* Section padding utility */
+.section-padding {
+  padding-top: var(--section-padding-y);
+  padding-bottom: var(--section-padding-y);
+}
+
+/* Card utilities */
+.card-outer {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-card-outer);
+  padding: var(--card-padding-outer);
+}
+
+.card-inner {
+  background-color: var(--color-white);
+  border-radius: var(--radius-card-inner);
+  padding: var(--card-padding-inner);
+}
+
+/* Text utilities */
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+/* Heading utilities */
+.heading-section {
+  font-size: var(--text-6xl);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+.heading-hero {
+  font-size: var(--text-hero);
+  font-weight: var(--font-medium);
+  line-height: 0.85;
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Body text utility */
+.body-text {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+}
