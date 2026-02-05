@@ -330,13 +330,13 @@ function Header() {
                   transition={{ delay: 0.1, duration: 0.4 }}
                   className="hidden lg:block w-1/2"
                 >
-                  <div className="relative w-full h-full rounded-lg overflow-hidden" style={{ minHeight: '260px' }}>
+                  <div className="relative w-full rounded-lg overflow-hidden" style={{ height: '260px' }}>
                     <img 
                       src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" 
                       alt="FormaStudio™" 
-                      className="w-full h-full object-cover grayscale rounded-lg" style={{ height: '260px' }}
+                      className="w-full h-full object-cover grayscale"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" style={{ height: '260px' }} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     <div className="absolute top-4 right-4">
                       <span className="text-white font-medium text-sm">FormaStudio™</span>
                     </div>
