@@ -602,15 +602,6 @@ function WorkSection() {
   return (
     <section id="work" className="py-24 bg-white">
       <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={fadeIn}
-        >
-          <SectionLabel label="Selected Work" number="02" />
-        </motion.div>
-
         {/* Header with subtext and button */}
         <motion.div 
           initial="hidden"
