@@ -186,7 +186,7 @@ function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 max-w-[1400px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-full">
+    <header className="sticky top-0 z-50 max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] rounded-full">
       <div className="flex items-center justify-between h-14">
           {/* Logo + Time */}
           <div className="flex items-center gap-3">
@@ -287,7 +287,7 @@ function HeroSection() {
 
   return (
     <section ref={heroRef} className="min-h-screen pt-20 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         {/* Main Hero Content */}
         <div className="pt-[40vh] pb-8">
           {/* Large Wordmark */}
@@ -335,7 +335,7 @@ function HeroSection() {
               ))}
               <span className="ml-1.5 text-sm font-medium text-[#0A0A0A]/80">4.9/5</span>
             </div>
-            <span className="text-sm text-[#4D4D4D]">Trusted by <span className="font-medium text-[#0A0A0A]/70">100+</span> businesses</span>
+            <span className="text-sm text-[#4D4D4D]" style={{fontWeight: '500'}}>Trusted by <span className="font-medium text-[#0A0A0A]/70" style={{fontWeight: '500'}}>100+</span> businesses</span>
           </div>
         </motion.div>
 
@@ -408,7 +408,7 @@ function StatsMarquee() {
 function AboutSection() {
   return (
     <section id="about" className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -484,7 +484,7 @@ function AboutSection() {
 function WorkSection() {
   return (
     <section id="work" className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -504,7 +504,7 @@ function WorkSection() {
         >
           <div>
             <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-medium leading-[1.1] tracking-tight text-[#0A0A0A] mb-4" style={{fontSize: '64px', fontFamily: 'Inter, sans-serif'}}>Selected Work.</h2>
-            <p className="text-[#4D4D4D] text-sm max-w-sm leading-relaxed" style={{fontSize: '16px', lineHeight: '22px'}}>
+            <p className="text-[#4D4D4D] text-sm max-w-sm leading-relaxed" style={{fontSize: '16px', lineHeight: '22px', fontWeight: '500'}}>
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
@@ -567,7 +567,7 @@ function WorkSection() {
 function WhyUsSection() {
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -726,7 +726,7 @@ function ServicesSection() {
 
   return (
     <section id="services" className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         {/* Contained dark card */}
         <motion.div
           initial="hidden"
@@ -860,7 +860,7 @@ function ServicesSection() {
 function ProcessSection() {
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -881,7 +881,7 @@ function ProcessSection() {
             <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif', color: '#0a0a0a', lineHeight: '59px'}}>
               Our process is simple, purposeful, and adaptable.
             </h2>
-            <p className="text-[#4D4D4D] mb-8" style={{color: '#757575'}}>
+            <p className="text-[#4D4D4D] mb-8" style={{color: '#757575', fontWeight: '500'}}>
               We believe great design is a result of clarity, collaboration, and craft.
             </p>
             <a
@@ -923,7 +923,7 @@ function FAQSection() {
 
   return (
     <section className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -944,7 +944,7 @@ function FAQSection() {
             <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold leading-[1.1] mb-8" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif', color: '#0a0a0a', lineHeight: '59px'}}>
               Wondering How We Work?
             </h2>
-            <p className="text-[#4D4D4D] mb-8" style={{color: '#757575'}}>
+            <p className="text-[#4D4D4D] mb-8" style={{color: '#757575', fontWeight: '500'}}>
               Answers to common questions about our process, services, and how we work.
             </p>
             <a
@@ -994,7 +994,7 @@ function FAQSection() {
 function BlogSection() {
   return (
     <section id="blog" className="py-24 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12" style={{paddingRight: '0px', paddingLeft: '0px'}}>
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -1012,8 +1012,8 @@ function BlogSection() {
           className="flex items-end justify-between mb-12"
         >
           <div>
-            <h2 className="text-3xl font-bold text-[#0A0A0A] mb-4">Latest insights from our blog.</h2>
-            <p className="text-[#4D4D4D]">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
+            <h2 className="text-3xl font-bold text-[#0A0A0A] mb-4" style={{fontSize: '54px', fontWeight: '500', fontFamily: 'Inter, sans-serif'}}>Latest insights from our blog.</h2>
+            <p className="text-[#4D4D4D]" style={{fontWeight: '500'}}>Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
           <a href="#" className="hidden md:inline-flex items-center gap-2 text-sm text-[#4D4D4D] hover:text-[#0A0A0A] transition-colors">
             View all articles
@@ -1066,7 +1066,7 @@ function BlogSection() {
 function Footer() {
   return (
     <footer className="py-24 bg-[#0A0A0A] text-white">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="max-w-[1520px] mx-auto px-6 lg:px-12">
         {/* Large Wordmark */}
         <motion.h2 
           initial="hidden"
