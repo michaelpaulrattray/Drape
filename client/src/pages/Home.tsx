@@ -1002,24 +1002,23 @@ function ProcessSection() {
             </a>
           </motion.div>
 
-          {/* Right - Steps */}
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={staggerContainer}
-            className="space-y-6"
-          >
-            {processSteps.map((step, index) => (
-              <div key={index} className="border-b border-[#0A0A0A]/10 pb-6">
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-xl font-bold text-[#0A0A0A]" style={{fontSize: '24px'}}>{step.title}</h3>
-                  <span className="text-sm text-[#0A0A0A]/30">{step.number}</span>
+          {/* Right - Steps in big card container */}
+          <div className="bg-[#EBEBEB] rounded-2xl p-3">
+            <div className="flex flex-col">
+              {processSteps.map((step, index) => (
+                <div 
+                  key={index} 
+                  className={`bg-white rounded-xl p-6 ${index < processSteps.length - 1 ? 'mb-1' : ''}`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-xl font-bold text-[#0A0A0A]" style={{fontSize: '24px'}}>{step.title}</h3>
+                    <span className="text-sm text-[#0A0A0A]/30">{step.number}</span>
+                  </div>
+                  <p className="text-[#4D4D4D]" style={{color: '#757575', lineHeight: '22px'}}>{step.description}</p>
                 </div>
-                <p className="text-[#4D4D4D]" style={{color: '#757575', lineHeight: '22px'}}>{step.description}</p>
-              </div>
-            ))}
-          </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
