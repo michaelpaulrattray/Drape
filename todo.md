@@ -2310,3 +2310,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Updated Services section background to #121212
 - [x] Updated various font sizes per visual editor feedback
 - [x] Added Framer Motion scroll animations to all sections
+
+## Section Removal (Feb 5, 2026)
+- [x] Remove Pricing Plans section from homepage
+- [x] Remove Testimonials section from homepage
