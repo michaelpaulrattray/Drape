@@ -320,6 +320,10 @@
   background-color: #121212;
 }
 
+.bg-dark-card {
+  background-color: #121212;
+}
+
 /* Border Utilities */
 .border-gray-light {
   border-color: #d4d4d4;

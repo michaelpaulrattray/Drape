@@ -651,7 +651,7 @@ function AboutSection() {
               style={{
                 transform: `scale(${showHoverEffect ? 1.1 : 1})`,
                 filter: `blur(${showHoverEffect ? '4px' : '0px'})`,
-                transition: 'transform 700ms ease-out, filter 700ms ease-out', height: '800px'
+                transition: 'transform 700ms ease-out, filter 700ms ease-out'
               }}
             />
           </div>
@@ -985,7 +985,7 @@ function ServicesSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={scaleIn}
-          className="bg-dark-card rounded-3xl px-8 py-12 lg:px-16 lg:py-16"
+          className="bg-[#121212] rounded-3xl px-8 py-12 lg:px-16 lg:py-16"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-services-header">
@@ -1025,11 +1025,11 @@ function ServicesSection() {
                         </div>
                         
                         {/* Title - slides right on hover/expand to reveal image */}
-                        <span className={`bg-[#0A0A0A] rounded-xl px-4 py-2 text-[clamp(1.75rem,4vw,3.5rem)] font-semibold tracking-tight transition-all duration-700 ease-out ${
+                        <span className={`bg-[#121212] rounded-xl px-4 py-2 text-[clamp(1.75rem,4vw,3.5rem)] font-semibold tracking-tight transition-all duration-700 ease-out ${
                           showImage 
                             ? "text-white translate-x-36" 
                             : "text-white/80 translate-x-0 group-hover:text-white"
-                        }`} >
+                        }`}>
                           {service.title}
                         </span>
                       </div>

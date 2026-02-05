@@ -2442,3 +2442,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Convert color inline styles
 - [x] Convert remaining inline styles (borders, etc.)
 - [x] Reduced inline styles from ~100+ to 13 (remaining are dynamic/Framer Motion specific)
+
+## Bug Fixes
+- [x] Fix Services section not displaying correctly (broken after Phase 3 changes)
+- [x] Fix video section black bar at bottom of static image
+- [x] Change Services section title background from #0A0A0A to #121212 to blend with card background
