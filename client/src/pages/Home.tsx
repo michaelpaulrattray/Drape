@@ -496,15 +496,15 @@ function AboutSection() {
           variants={scaleIn}
           className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] cursor-pointer"
           onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handleMouseLeave} style={{height: '800px'}}
         >
           {/* Static Image - always mounted, controlled by opacity */}
           <div
             className="absolute inset-0 z-10 transition-opacity duration-300"
-            style={{ opacity: isPlaying ? 0 : 1 }}
+            style={{ opacity: isPlaying ? 0 : 1, height: '800px' }}
           >
             {/* Dark overlay for text readability */}
-            <div className="absolute inset-0 bg-black/50 z-10"></div>
+            <div className="absolute inset-0 bg-black/50 z-10" style={{height: '800px'}}></div>
             <img
               src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80"
               alt="Showreel"
@@ -512,7 +512,7 @@ function AboutSection() {
               style={{
                 transform: `scale(${showHoverEffect ? 1.1 : 1})`,
                 filter: `blur(${showHoverEffect ? '4px' : '0px'})`,
-                transition: 'transform 700ms ease-out, filter 700ms ease-out'
+                transition: 'transform 700ms ease-out, filter 700ms ease-out', height: '800px'
               }}
             />
           </div>
@@ -523,7 +523,7 @@ function AboutSection() {
             className={`absolute inset-0 w-full h-full object-cover z-5 transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0'}`}
             src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
             playsInline
-            onEnded={handleClose}
+            onEnded={handleClose} style={{height: '800px'}}
           />
 
           {/* Play/Close Button with smooth animation */}
