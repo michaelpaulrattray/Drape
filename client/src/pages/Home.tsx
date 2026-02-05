@@ -617,7 +617,7 @@ function WorkSection() {
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
-          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#757575] text-sm text-white rounded-full hover:bg-[#0A0A0A] transition-all" style={{marginTop: '100px', fontWeight: '500'}}>
+          <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#EBEBEB] text-[#0A0A0A] rounded-full hover:bg-[#0A0A0A] hover:text-white transition-all" style={{marginTop: '100px', fontWeight: '500'}}>
             View all projects
             <Plus className="w-4 h-4" />
           </a>
@@ -995,7 +995,7 @@ function ProcessSection() {
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#757575] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A] transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors"
             >
               Let's talk
               <Plus className="w-4 h-4" />
@@ -1058,7 +1058,7 @@ function FAQSection() {
             </p>
             <a
               href="/waitlist"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#757575] text-white text-sm font-medium rounded-full hover:bg-[#0A0A0A] transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full hover:bg-[#0A0A0A] hover:text-white transition-colors"
             >
               Contact us
               <Plus className="w-4 h-4" />
