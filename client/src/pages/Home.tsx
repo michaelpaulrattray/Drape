@@ -1080,7 +1080,7 @@ function FAQSection() {
                     <div className="w-6 h-6 rounded-full border border-[#0A0A0A]/20 flex items-center justify-center flex-shrink-0">
                       <Plus
                         className={`w-3 h-3 text-[#0A0A0A] transition-transform duration-700 ease-out ${
-                          openIndex === index ? "rotate-[270deg]" : ""
+                          openIndex === index ? "rotate-180" : ""
                         }`}
                       />
                     </div>
