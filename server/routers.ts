@@ -3424,21 +3424,25 @@ export const appRouter = router({
     getUserDetails: moderatorProcedure
       .input(z.object({ userId: z.number() }))
       .query(async ({ input }) => {
-        const { getUserById } = await import("./db");
+        const { getUserById, getUserCredits } = await import("./db");
         const user = await getUserById(input.userId);
         if (!user) return null;
         
+        const userCredits = await getUserCredits(input.userId);
         return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          suspendedAt: user.suspendedAt,
-          suspendedReason: user.suspendedReason,
-          lockedUntil: user.lockedUntil,
-          failedLoginAttempts: user.failedLoginAttempts,
-          createdAt: user.createdAt,
-          lastSignedIn: user.lastSignedIn,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            suspendedAt: user.suspendedAt,
+            suspendedReason: user.suspendedReason,
+            lockedUntil: user.lockedUntil,
+            failedLoginAttempts: user.failedLoginAttempts,
+            createdAt: user.createdAt,
+            lastSignedIn: user.lastSignedIn,
+          },
+          credits: userCredits ? { balance: userCredits.balance } : null,
         };
       }),
 

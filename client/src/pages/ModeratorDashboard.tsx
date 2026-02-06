@@ -831,11 +831,11 @@ export default function ModeratorDashboard() {
                             >
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium">
+                                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white">
                                     {(u.name || "U").charAt(0).toUpperCase()}
                                   </div>
                                   <div>
-                                    <div className="font-medium text-sm">{u.name || "Unnamed"}</div>
+                                    <div className="font-medium text-sm text-white">{u.name || "Unnamed"}</div>
                                     <div className="text-xs text-white/40">{u.email || "No email"}</div>
                                   </div>
                                 </div>
@@ -936,7 +936,7 @@ export default function ModeratorDashboard() {
                     {/* User Profile Header */}
                     <Card className="bg-white/5 border-white/10">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
                           <User className="w-4 h-4 text-blue-400" />
                           User Details
                           <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs ml-auto">
@@ -952,14 +952,14 @@ export default function ModeratorDashboard() {
                             ))}
                           </div>
                         ) : userDetailsQuery.data ? (
-                          <div className="space-y-2 text-sm">
+                            <div className="space-y-2 text-sm text-white">
                             <div className="flex justify-between">
                               <span className="text-white/40">Name</span>
                               <span>{userDetailsQuery.data.user.name || "—"}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/40">Email</span>
-                              <span className="text-xs">{userDetailsQuery.data.user.email || "—"}</span>
+                              <span className="text-xs text-white/80">{userDetailsQuery.data.user.email || "—"}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/40">Role</span>
@@ -973,11 +973,11 @@ export default function ModeratorDashboard() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/40">Credits</span>
-                              <span className="font-medium">{userDetailsQuery.data.credits?.balance ?? "—"}</span>
+                              <span className="font-medium text-white">{userDetailsQuery.data.credits?.balance?.toLocaleString() ?? "—"}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/40">Joined</span>
-                              <span className="text-xs">{formatDate(new Date(userDetailsQuery.data.user.createdAt))}</span>
+                              <span className="text-xs text-white/80">{formatDate(new Date(userDetailsQuery.data.user.createdAt))}</span>
                             </div>
                             {userDetailsQuery.data.user.suspendedAt && (
                               <div className="p-2 rounded bg-red-500/10 border border-red-500/20">
@@ -1042,7 +1042,7 @@ export default function ModeratorDashboard() {
                     {userDetailTab === "overview" && (
                       <Card className="bg-white/5 border-white/10">
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
                             <Activity className="w-4 h-4 text-blue-400" />
                             Recent Activity
                           </CardTitle>
@@ -1083,7 +1083,7 @@ export default function ModeratorDashboard() {
                     {userDetailTab === "credits" && (
                       <Card className="bg-white/5 border-white/10">
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
                             <Coins className="w-4 h-4 text-emerald-400" />
                             Credit History
                           </CardTitle>
@@ -1102,7 +1102,7 @@ export default function ModeratorDashboard() {
                               </div>
                               <div className="p-2 rounded bg-blue-500/10 border border-blue-500/20 text-center">
                                 <p className="text-xs text-blue-400/60">Balance</p>
-                                <p className="text-sm font-bold text-blue-400">{creditHistoryQuery.data.summary.netChange}</p>
+                                <p className="text-sm font-bold text-blue-400">{userDetailsQuery.data?.credits?.balance?.toLocaleString() ?? creditHistoryQuery.data.summary.netChange}</p>
                               </div>
                             </div>
                           )}
@@ -1208,7 +1208,7 @@ export default function ModeratorDashboard() {
                     {userDetailTab === "generations" && (
                       <Card className="bg-white/5 border-white/10">
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
                             <Image className="w-4 h-4 text-violet-400" />
                             Generation History
                           </CardTitle>
@@ -1398,7 +1398,7 @@ export default function ModeratorDashboard() {
                   ) : (
                     blockedIpsQuery.data?.ips.map((ip) => (
                       <tr key={ip.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="px-4 py-3 font-mono text-sm">{ip.ipAddress}</td>
+                        <td className="px-4 py-3 font-mono text-sm text-white">{ip.ipAddress}</td>
                         <td className="px-4 py-3 text-sm text-white/60">{ip.reason}</td>
                         <td className="px-4 py-3 text-sm text-white/60">Admin #{ip.blockedBy}</td>
                         <td className="px-4 py-3 text-sm text-white/60">
