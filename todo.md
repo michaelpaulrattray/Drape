@@ -2657,3 +2657,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Build generation history tab in moderator user detail panel (summary cards, status/type filters, paginated list)
 - [x] Add Activity/Credits/Generations sub-tab navigation in user detail sidebar
 - [x] Write vitest tests for new procedures (14 tests, 405 total passing)
+
+
+## Bug Fix: ModeratorDashboard Hooks Violation
+- [x] Fix conditional hooks in ModeratorDashboard causing "Rendered more hooks than during the previous render" error (moved useEffect before early returns)

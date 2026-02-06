@@ -248,6 +248,24 @@ export default function ModeratorDashboard() {
     if (autoRefresh) toast.success("Auto-refresh enabled (30s interval)");
   }, [autoRefresh]);
 
+  // Reset user detail sub-tab state when user changes
+  useEffect(() => {
+    setUserDetailTab("overview");
+    setCreditPage(0);
+    setGenPage(0);
+    setCreditTypeFilter("all");
+    setGenStatusFilter("all");
+    setGenTypeFilter("all");
+  }, [selectedUserId]);
+
+  // Redirect unauthorized users
+  const isUnauthorized = !loading && isAuthenticated && user?.role !== "moderator" && user?.role !== "admin";
+  useEffect(() => {
+    if (isUnauthorized) {
+      toast.error("Access denied. Moderator or admin privileges required.");
+    }
+  }, [isUnauthorized]);
+
   // Loading state
   if (loading) {
     return (
@@ -263,20 +281,9 @@ export default function ModeratorDashboard() {
   }
 
   // Role check - allow moderators and admins
-  if (user?.role !== "moderator" && user?.role !== "admin") {
-    toast.error("Access denied. Moderator or admin privileges required.");
+  if (isUnauthorized) {
     return <Redirect to="/dashboard" />;
   }
-
-  // Reset user detail sub-tab state when user changes
-  useEffect(() => {
-    setUserDetailTab("overview");
-    setCreditPage(0);
-    setGenPage(0);
-    setCreditTypeFilter("all");
-    setGenStatusFilter("all");
-    setGenTypeFilter("all");
-  }, [selectedUserId]);
 
   const handleRefresh = () => {
     logsQuery.refetch();
