@@ -1376,69 +1376,99 @@ function BlogSection() {
 function NewsletterForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [validationError, setValidationError] = useState("");
+
+  // Email validation regex
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const subscribeMutation = trpc.newsletter.subscribe.useMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
       setStatus("success");
-      setMessage(data.message);
-      setEmail("");
-      // Reset after 5 seconds
-      setTimeout(() => {
-        setStatus("idle");
-        setMessage("");
-      }, 5000);
+      // Keep the email visible to show what was subscribed
     },
     onError: (error) => {
       setStatus("error");
-      setMessage(error.message || "Something went wrong. Please try again.");
-      // Reset after 5 seconds
+      setErrorMessage(error.message || "Something went wrong. Please try again.");
+      // Reset error after 5 seconds
       setTimeout(() => {
         setStatus("idle");
-        setMessage("");
+        setErrorMessage("");
       }, 5000);
     },
   });
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    // Clear validation error when user starts typing
+    if (validationError) setValidationError("");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || status === "loading") return;
+    if (!email || status === "loading" || status === "success") return;
+    
+    // Validate email format
+    if (!isValidEmail(email)) {
+      setValidationError("Please enter a valid email address");
+      return;
+    }
     
     setStatus("loading");
     subscribeMutation.mutate({ email, source: "website_footer" });
   };
 
   return (
-    <div>
+    <div className="max-w-sm">
       <p className="text-white/60 mb-4">Sign up for our monthly newsletter.</p>
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={handleEmailChange}
           placeholder="Email"
           disabled={status === "loading" || status === "success"}
-          className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder:text-white/40 focus:outline-none focus:border-white/40 disabled:opacity-50"
+          className={`w-full px-4 py-3 bg-white/10 border rounded-full text-white placeholder:text-white/40 focus:outline-none transition-colors disabled:opacity-70 ${
+            validationError 
+              ? "border-red-400 focus:border-red-400" 
+              : "border-white/20 focus:border-white/40"
+          }`}
         />
-        <Button 
+        {validationError && (
+          <p className="text-red-400 text-sm -mt-1 ml-4">{validationError}</p>
+        )}
+        <button 
           type="submit" 
-          variant="secondary" 
-          className="px-6 py-3 min-w-[100px]"
           disabled={status === "loading" || status === "success"}
+          className={`group w-full py-3 rounded-full font-medium transition-all duration-300 bg-[#EBEBEB] text-[#0A0A0A] disabled:opacity-70 ${
+            status === "success" ? "" : "hover:bg-[#DEDEDE]"
+          }`}
         >
           {status === "loading" ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Signing up...
+            </span>
           ) : status === "success" ? (
-            <Check className="w-4 h-4" />
+            "Thank You!"
           ) : (
-            "Sign up"
+            <span className="overflow-hidden h-5 block">
+              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">
+                Sign up
+              </span>
+              <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">
+                Sign up
+              </span>
+            </span>
           )}
-        </Button>
+        </button>
       </form>
-      {message && (
-        <p className={`mt-2 text-sm ${status === "success" ? "text-green-400" : "text-red-400"}`}>
-          {message}
-        </p>
+      {errorMessage && (
+        <p className="mt-2 text-sm text-red-400">{errorMessage}</p>
       )}
     </div>
   );

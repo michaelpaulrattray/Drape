@@ -2455,3 +2455,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Create backend endpoint for newsletter signup
 - [x] Connect footer newsletter form to Klaviyo API
 - [x] Test newsletter signup flow end-to-end
+- [x] Stack newsletter signup button below email input field
+- [x] Add email format validation to newsletter form
+- [x] Show "Thank You!" message after successful signup (like reference image)
+- [x] Fix newsletter button to use #EBEBEB background by default, only change text on success
+- [x] Add conveyor belt animation to "Sign up" button text, keep "Thank You!" static
