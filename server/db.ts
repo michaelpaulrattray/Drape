@@ -176,6 +176,31 @@ export async function getCreditTransactions(userId: number, limit: number = 20) 
 // Legacy alias
 export const getPointTransactions = getCreditTransactions;
 
+/**
+ * Get a specific credit transaction by userId and referenceId.
+ * Used to look up dispute-related transactions for credit restoration.
+ */
+export async function getCreditTransactionByRef(userId: number, referenceId: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get transaction by ref: database not available");
+    return null;
+  }
+
+  const result = await db
+    .select()
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.userId, userId),
+        eq(creditTransactions.referenceId, referenceId)
+      )
+    )
+    .limit(1);
+
+  return result.length > 0 ? result[0] : null;
+}
+
 export async function deductCredits(
   userId: number,
   amount: number,

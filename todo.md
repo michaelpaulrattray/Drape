@@ -2749,3 +2749,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Tests for idempotency (duplicate session.id rejected) — 6 tests
 - [x] Tests for chargeback handler — 6 tests + 2 edge case tests
 - [x] Verify all tests pass (532 tests, 28 files)
+
+## Chargeback Auto-Suspend + Credit Revocation (Option A)
+- [x] Update handleDisputeCreated: auto-suspend user + revoke credits (idempotent via dispute_{disputeId})
+- [x] Update handleDisputeClosed (won): unsuspend user + restore credits (idempotent via dispute_restore_{disputeId})
+- [x] Update handleDisputeClosed (lost): keep suspended + cancel Stripe subscription
+- [x] Add getCreditTransactionByRef helper to db.ts for credit restoration lookup
+- [x] Tests for dispute lifecycle — 20 tests covering created/won/lost/edge cases
+- [x] Verify all tests pass (536 tests, 28 files)

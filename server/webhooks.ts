@@ -11,6 +11,7 @@ import {
   mapPlanToTier,
   calculateRolloverCredits,
   getMonthlyCredits,
+  cancelSubscription,
 } from "./stripeService";
 import { 
   updateUserSubscription, 
@@ -18,6 +19,10 @@ import {
   refreshMonthlyCredits,
   addTopupCredits,
   getUserCredits,
+  suspendUser,
+  unsuspendUser,
+  deductCredits,
+  addCredits,
 } from "./db";
 import { SlackAlerts } from "./slackNotification";
 import { CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
@@ -269,19 +274,17 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
  */
 async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookResult> {
   const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id || "unknown";
-  const amount = dispute.amount;
+  const amount = dispute.amount; // in cents
   const currency = dispute.currency;
   const reason = dispute.reason || "not_specified";
+  const disputeRef = `dispute_${dispute.id}`;
 
-  // Try to identify the user from the payment_intent → customer chain
+  // Try to identify the user from the customer field
   let userId: number | undefined;
   let userName: string | undefined;
+  let userCreditsBalance: number | undefined;
+  let stripeSubscriptionId: string | null | undefined;
 
-  const customerId = typeof dispute.payment_intent === "string"
-    ? undefined // Can't resolve customer from just the PI ID without an API call
-    : (dispute as any).customer;
-
-  // Try to get customer ID from the charge metadata or customer field
   const disputeCustomerId = (dispute as any).customer as string | undefined;
 
   if (disputeCustomerId) {
@@ -289,10 +292,12 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
     if (userWithCredits) {
       userId = userWithCredits.id;
       userName = userWithCredits.name || userWithCredits.email || `User #${userWithCredits.id}`;
+      userCreditsBalance = userWithCredits.credits?.balance;
+      stripeSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
     }
   }
 
-  // Send critical Slack alert
+  // Send critical Slack alert (always, even if user not identified)
   await SlackAlerts.chargebackFiled(
     dispute.id,
     chargeId,
@@ -303,26 +308,64 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
     userName
   );
 
-  console.log(`[Webhook] Dispute created: ${dispute.id}, amount: ${amount} ${currency}, reason: ${reason}`);
+  // If we identified the user, auto-suspend and revoke credits
+  if (userId) {
+    // 1. Suspend the user account
+    //    Using userId 0 as "system" since this is an automated action
+    const suspendResult = await suspendUser(userId, `Chargeback filed: ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()} — reason: ${reason}`, 0);
+    if (suspendResult.success) {
+      console.log(`[Webhook] User ${userId} auto-suspended due to dispute ${dispute.id}`);
+    } else {
+      console.error(`[Webhook] Failed to suspend user ${userId}: ${suspendResult.error}`);
+    }
+
+    // 2. Revoke credits — calculate how many credits the disputed amount corresponds to
+    //    We use the dispute amount in cents. For topups, we stored the credit count in the transaction.
+    //    As a safe approach, revoke the user's entire current balance (they can be restored on win).
+    //    The idempotency referenceId `dispute_{disputeId}` prevents double-revocation on webhook replays.
+    const currentBalance = userCreditsBalance ?? 0;
+    if (currentBalance > 0) {
+      const revokeResult = await deductCredits(
+        userId,
+        currentBalance,
+        "refund",
+        `Credits frozen: chargeback ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`,
+        disputeRef
+      );
+      if (revokeResult.success) {
+        console.log(`[Webhook] Revoked ${currentBalance} credits from user ${userId} (dispute ${dispute.id}). New balance: ${revokeResult.newBalance}`);
+      } else {
+        console.error(`[Webhook] Failed to revoke credits from user ${userId}: ${revokeResult.error}`);
+      }
+    } else {
+      console.log(`[Webhook] User ${userId} has 0 credits — no credits to revoke for dispute ${dispute.id}`);
+    }
+  }
+
+  console.log(`[Webhook] Dispute created: ${dispute.id}, amount: ${amount} ${currency}, reason: ${reason}, userId: ${userId || "unknown"}`);
   return {
     success: true,
-    message: `Dispute ${dispute.id} filed — Slack alert sent`,
+    message: `Dispute ${dispute.id} filed — user ${userId ? `#${userId} suspended, ${userCreditsBalance ?? 0} credits revoked` : "not identified"} — Slack alert sent`,
   };
 }
 
 /**
  * Handle charge.dispute.closed event
- * Sends a Slack alert with the dispute outcome (won/lost).
+ * On win: unsuspend user + restore credits.
+ * On loss: keep suspended + cancel Stripe subscription.
  */
 async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResult> {
   const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id || "unknown";
   const amount = dispute.amount;
   const currency = dispute.currency;
   const status = dispute.status; // "won", "lost", "warning_closed", etc.
+  const disputeRef = `dispute_${dispute.id}`;
+  const restoreRef = `dispute_restore_${dispute.id}`;
 
   // Try to identify the user
   let userId: number | undefined;
   let userName: string | undefined;
+  let stripeSubscriptionId: string | null | undefined;
 
   const disputeCustomerId = (dispute as any).customer as string | undefined;
 
@@ -331,6 +374,7 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     if (userWithCredits) {
       userId = userWithCredits.id;
       userName = userWithCredits.name || userWithCredits.email || `User #${userWithCredits.id}`;
+      stripeSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
     }
   }
 
@@ -345,9 +389,73 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     userName
   );
 
-  console.log(`[Webhook] Dispute closed: ${dispute.id}, status: ${status}`);
+  const actions: string[] = [];
+
+  if (userId && status === "won") {
+    // DISPUTE WON: Restore the user's account and credits
+    // 1. Unsuspend the user
+    const unsuspendResult = await unsuspendUser(userId);
+    if (unsuspendResult.success) {
+      actions.push("account restored");
+      console.log(`[Webhook] User ${userId} unsuspended after winning dispute ${dispute.id}`);
+    } else {
+      actions.push(`unsuspend failed: ${unsuspendResult.error}`);
+      console.error(`[Webhook] Failed to unsuspend user ${userId}: ${unsuspendResult.error}`);
+    }
+
+    // 2. Restore the revoked credits
+    //    Look up how many credits were deducted by the dispute_created handler
+    //    by finding the transaction with referenceId `dispute_{disputeId}`
+    const { getCreditTransactionByRef } = await import("./db");
+    const revokeTransaction = await getCreditTransactionByRef(userId, disputeRef);
+    if (revokeTransaction && revokeTransaction.amount < 0) {
+      const creditsToRestore = Math.abs(revokeTransaction.amount);
+      const restoreResult = await addCredits(
+        userId,
+        creditsToRestore,
+        "refund",
+        `Credits restored: dispute ${dispute.id} won — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`,
+        restoreRef
+      );
+      if (restoreResult.success && !restoreResult.duplicate) {
+        actions.push(`${creditsToRestore} credits restored`);
+        console.log(`[Webhook] Restored ${creditsToRestore} credits to user ${userId} after winning dispute ${dispute.id}`);
+      } else if (restoreResult.duplicate) {
+        actions.push("credits already restored (duplicate)");
+        console.log(`[Webhook] Credits already restored for dispute ${dispute.id} (duplicate)`);
+      } else {
+        actions.push(`credit restore failed: ${restoreResult.error}`);
+        console.error(`[Webhook] Failed to restore credits for user ${userId}: ${restoreResult.error}`);
+      }
+    } else {
+      actions.push("no revoked credits found to restore");
+      console.log(`[Webhook] No revoked credits found for dispute ${dispute.id} — nothing to restore`);
+    }
+  } else if (userId && status === "lost") {
+    // DISPUTE LOST: Keep suspended, cancel subscription
+    actions.push("account remains suspended");
+
+    // Cancel the user's Stripe subscription if they have one
+    if (stripeSubscriptionId) {
+      const cancelResult = await cancelSubscription(stripeSubscriptionId);
+      if (cancelResult) {
+        actions.push("subscription cancelled");
+        console.log(`[Webhook] Cancelled subscription ${stripeSubscriptionId} for user ${userId} after losing dispute ${dispute.id}`);
+      } else {
+        actions.push("subscription cancel failed");
+        console.error(`[Webhook] Failed to cancel subscription ${stripeSubscriptionId} for user ${userId}`);
+      }
+    } else {
+      actions.push("no active subscription");
+    }
+  } else if (userId) {
+    // Other statuses (warning_closed, etc.) — log but don't auto-action
+    actions.push(`status: ${status} — no automatic action taken`);
+  }
+
+  console.log(`[Webhook] Dispute closed: ${dispute.id}, status: ${status}, userId: ${userId || "unknown"}, actions: ${actions.join(", ")}`);
   return {
     success: true,
-    message: `Dispute ${dispute.id} closed (${status}) — Slack alert sent`,
+    message: `Dispute ${dispute.id} closed (${status}) — ${userId ? actions.join(", ") : "user not identified"} — Slack alert sent`,
   };
 }
