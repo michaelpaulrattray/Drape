@@ -17,7 +17,7 @@
  * Pending actions expire after 5 minutes if not approved/denied.
  */
 
-import { sendToChannel, sendAuditLogEntry } from "./slackNotification";
+import { sendRawToChannel, dispatchAuditLog } from "./slackDispatcher";
 
 // ============ Types ============
 
@@ -287,7 +287,8 @@ async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
   
   try {
     // Send to #admin-actions channel
-    const sent = await sendToChannel("admin-actions", {
+    // Approval messages with action buttons must always go through (skipDedup)
+    const sent = await sendRawToChannel("admin-actions", {
         text: `${emoji} Admin Action Approval Required: ${label}`,
         blocks: [
           {
@@ -406,7 +407,7 @@ async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
             fallback: `Admin action approval required: ${label} by ${action.requestedBy.name}`,
           },
         ],
-    });
+    }, { skipDedup: true });
     
     if (!sent) {
       console.error("[SlackApproval] Failed to send approval request to #admin-actions");
@@ -414,7 +415,7 @@ async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
     }
     
     // Also log the request to #audit-log
-    await sendAuditLogEntry({
+    await dispatchAuditLog({
       title: "Admin Action Approval Requested",
       description: `${action.requestedBy.name} requested: ${label}`,
       fields: [

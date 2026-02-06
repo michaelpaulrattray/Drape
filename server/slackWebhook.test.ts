@@ -1,16 +1,33 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
- * Test to validate Slack webhook URL is configured and reachable
+ * Test to validate Slack webhook URL is configured and reachable.
+ * Uses mocked fetch to avoid sending real messages during test runs.
  */
+
+const originalFetch = globalThis.fetch;
+
 describe("Slack Webhook Configuration", () => {
+  beforeEach(() => {
+    // Mock fetch to prevent real Slack messages
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve("ok"),
+      status: 200,
+    } as any);
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
   it("should have SLACK_WEBHOOK_URL configured", () => {
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
     expect(webhookUrl).toBeDefined();
     expect(webhookUrl).toMatch(/^https:\/\/hooks\.slack\.com\/services\//);
   });
 
-  it("should be able to send a test message to Slack", async () => {
+  it("should be able to send a test message to Slack (mocked)", async () => {
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
     
     if (!webhookUrl) {
@@ -18,7 +35,7 @@ describe("Slack Webhook Configuration", () => {
       return;
     }
 
-    // Send a minimal test message
+    // Send a minimal test message (mocked - no real message sent)
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
@@ -29,10 +46,18 @@ describe("Slack Webhook Configuration", () => {
       }),
     });
 
-    // Slack returns "ok" as text on success
     expect(response.ok).toBe(true);
     const responseText = await response.text();
     expect(responseText).toBe("ok");
+
+    // Verify fetch was called with the correct URL
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      webhookUrl,
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+    );
   });
 
   it("should have SLACK_SIGNING_SECRET configured for interactive buttons", () => {

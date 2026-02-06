@@ -2726,3 +2726,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Frontend: Update AdminChangeRequests UI to show "Awaiting Slack Approval" state
 - [x] Tests: Add/update tests for both sensitive and non-sensitive approval paths
 - [x] Verify all tests pass (500 tests, 26 files)
+
+## Fix Duplicate Slack Alert Spam
+- [x] Investigate root cause of duplicate Slack alerts (4 root causes identified)
+- [x] Step 1: Create centralized slackDispatcher.ts with event-based API and dedup cache
+- [x] Step 2: Migrate slackNotification.ts to route through dispatcher
+- [x] Step 3: Migrate slackApproval.ts and adminSecurity.ts to use dispatcher
+- [x] Step 4: Remove redundant Slack calls from routers.ts
+- [x] Step 5: Mock Slack in test files to stop real messages during tests
+- [x] Step 6: Write tests for dispatcher dedup logic (18 tests)
+- [x] Verify all tests pass (518 tests, 27 files)

@@ -3315,7 +3315,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const { getChangeRequestById, updateChangeRequestStatus } = await import("./db");
-        const { sendAdminActionNotification, sendAuditLogEntry } = await import("./slackNotification");
+        const { sendAdminActionNotification } = await import("./slackNotification");
         const { logAuditEvent } = await import("./auditLog");
         const { AUDIT_ACTIONS } = await import("../drizzle/schema");
         const { writeImmutableLog } = await import("./adminSecurity");
@@ -3442,19 +3442,7 @@ export const appRouter = router({
             ],
           });
 
-          // Log to #audit-log
-          await sendAuditLogEntry({
-            title: `Change Request Approved (Pending Slack)`,
-            description: `${adminName} approved change request #${input.id}: ${typeLabels[request.type] || request.type} \u2014 awaiting Slack confirmation`,
-            fields: [
-              { title: "Request ID", value: `#${input.id}`, short: true },
-              { title: "Decision", value: "Approved (Pending Slack)", short: true },
-              { title: "Admin", value: adminName, short: true },
-              { title: "Type", value: typeLabels[request.type] || request.type, short: true },
-            ],
-            severity: "info",
-          });
-
+          // writeImmutableLog already sends to #audit-log via the dispatcher
           await writeImmutableLog(
             "change_request_approved_pending_slack",
             {
@@ -3509,18 +3497,7 @@ export const appRouter = router({
           ],
         });
 
-        // Log to #audit-log
-        await sendAuditLogEntry({
-          title: `Change Request ${actionVerb}`,
-          description: `${adminName} ${actionVerb.toLowerCase()} change request #${input.id}: ${typeLabels[request.type] || request.type}`,
-          fields: [
-            { title: "Request ID", value: `#${input.id}`, short: true },
-            { title: "Decision", value: actionVerb, short: true },
-            { title: "Admin", value: adminName, short: true },
-            { title: "Type", value: typeLabels[request.type] || request.type, short: true },
-          ],
-          severity: input.action === "approved" ? "info" : "warning",
-        });
+        // writeImmutableLog below already sends to #audit-log via the dispatcher
 
         // Database audit log
         const auditAction = input.action === "approved"

@@ -12,10 +12,10 @@ import {
   type ApprovalAction,
 } from "./slackApproval";
 
-// Mock the Slack notification module
-vi.mock("./slackNotification", () => ({
-  sendToChannel: vi.fn().mockResolvedValue(true),
-  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
+// Mock the Slack dispatcher module (slackApproval now imports from slackDispatcher)
+vi.mock("./slackDispatcher", () => ({
+  sendRawToChannel: vi.fn().mockResolvedValue(true),
+  dispatchAuditLog: vi.fn().mockResolvedValue(true),
 }));
 
 // Mock fetch for Slack webhook calls
@@ -50,7 +50,7 @@ describe("Slack Approval Flow", () => {
     });
 
     it("should send approval request to admin-actions channel", async () => {
-      const { sendToChannel } = await import("./slackNotification");
+      const { sendRawToChannel } = await import("./slackDispatcher");
       
       await requestApproval({
         action: "blockIP",
@@ -60,13 +60,14 @@ describe("Slack Approval Flow", () => {
         params: { reason: "Brute force" },
       });
 
-      // Verify sendToChannel was called with "admin-actions"
-      expect(sendToChannel).toHaveBeenCalledWith(
+      // Verify sendRawToChannel was called with "admin-actions"
+      expect(sendRawToChannel).toHaveBeenCalledWith(
         "admin-actions",
         expect.objectContaining({
           text: expect.stringContaining("Admin Action"),
           blocks: expect.any(Array),
-        })
+        }),
+        expect.objectContaining({ skipDedup: true })
       );
     });
 

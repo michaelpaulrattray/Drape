@@ -331,4 +331,4 @@ export function verifyImmutableLogChain(): {
   return { valid: true, entries: immutableLogChain.length };
 }
 
-// sendAuditLogEntry is imported at the top of the file
+// sendAuditLogEntry routes through the centralized dispatcher for dedup
