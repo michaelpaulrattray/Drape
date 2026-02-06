@@ -2813,3 +2813,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add stripe_refund to SENSITIVE_TYPES in AdminChangeRequests.tsx
 - [x] Add stripe_refund to type filter options
 - [x] Add refund-specific detail display (session ID, refund type, amount, credits)
+
+## Account Deletion / GDPR
+- [x] Add deleteUserData() helper in server/deleteUserData.ts (anonymize user, zero credits, delete models/assets/generations)
+- [x] Add S3 cleanup for user files (avatar, banner, model assets)
+- [x] Add auth.deleteAccount protected procedure (cancel Stripe, delete data, clear session)
+- [x] Wire up ProfileSettingsModal Delete Account button with confirmation dialog
+- [x] Write tests for account deletion logic

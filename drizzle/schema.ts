@@ -285,6 +285,9 @@ export const AUDIT_ACTIONS = {
   CHANGE_REQUEST_APPROVED: "admin.change_request_approved",
   CHANGE_REQUEST_DENIED: "admin.change_request_denied",
   CHANGE_REQUEST_CANCELLED: "moderator.change_request_cancelled",
+  
+  // Account lifecycle events
+  ACCOUNT_DELETED: "account.deleted",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];

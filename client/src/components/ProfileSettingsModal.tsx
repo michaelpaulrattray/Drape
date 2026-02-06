@@ -533,6 +533,10 @@ export default function ProfileSettingsModal({
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Account deletion state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   // Local preview URLs for instant feedback
   const [localAvatarPreview, setLocalAvatarPreview] = useState<string | null>(null);
   const [localBannerPreview, setLocalBannerPreview] = useState<string | null>(null);
@@ -614,6 +618,24 @@ export default function ProfileSettingsModal({
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const deleteAccountMutation = trpc.auth.deleteAccount.useMutation();
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") return;
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccountMutation.mutateAsync({ confirmation: "DELETE" });
+      toast.success("Account deleted. Redirecting...");
+      // Redirect to homepage after a short delay
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete account");
+      setIsDeletingAccount(false);
     }
   };
 
@@ -1065,9 +1087,45 @@ export default function ProfileSettingsModal({
                   </label>
                   <div className="p-5 rounded-xl bg-red-50 border border-red-200">
                     <p className="text-sm text-red-600 mb-3">Delete your account and all associated data. This action cannot be undone.</p>
-                    <button className="px-4 py-2.5 rounded-xl bg-red-100 border border-red-200 text-red-600 text-sm font-medium hover:bg-red-200 transition-all">
-                      Delete Account
-                    </button>
+                    {!showDeleteConfirm ? (
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="px-4 py-2.5 rounded-xl bg-red-100 border border-red-200 text-red-600 text-sm font-medium hover:bg-red-200 transition-all"
+                      >
+                        Delete Account
+                      </button>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <p className="text-sm text-red-700 font-medium">
+                          This will permanently delete your account, cancel any active subscription, and remove all your models and generated content. Type <span className="font-mono font-bold">DELETE</span> to confirm.
+                        </p>
+                        <input
+                          type="text"
+                          value={deleteConfirmText}
+                          onChange={(e) => setDeleteConfirmText(e.target.value)}
+                          placeholder="Type DELETE to confirm"
+                          className="w-full px-3 py-2 rounded-lg border border-red-300 bg-white text-red-900 placeholder-red-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleDeleteAccount}
+                            disabled={deleteConfirmText !== "DELETE" || isDeletingAccount}
+                            className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {isDeletingAccount && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isDeletingAccount ? "Deleting..." : "Permanently Delete"}
+                          </button>
+                          <button
+                            onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}
+                            disabled={isDeletingAccount}
+                            className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-40"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
