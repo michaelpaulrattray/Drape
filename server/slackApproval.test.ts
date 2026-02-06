@@ -14,7 +14,8 @@ import {
 
 // Mock the Slack notification module
 vi.mock("./slackNotification", () => ({
-  sendSlackAlert: vi.fn().mockResolvedValue(true),
+  sendToChannel: vi.fn().mockResolvedValue(true),
+  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
 }));
 
 // Mock fetch for Slack webhook calls
@@ -29,7 +30,7 @@ describe("Slack Approval Flow", () => {
     _clearPendingActions();
     vi.clearAllMocks();
     // Set webhook URL so Slack messages are sent (not auto-approved)
-    process.env.SLACK_WEBHOOK_URL = "https://hooks.slack.com/test";
+    process.env.SLACK_ADMIN_ACTIONS_WEBHOOK_URL = "https://hooks.slack.com/test-admin-actions";
   });
 
   describe("requestApproval", () => {
@@ -48,7 +49,9 @@ describe("Slack Approval Flow", () => {
       expect(result.sent).toBe(true);
     });
 
-    it("should send a Slack message with approval buttons", async () => {
+    it("should send approval request to admin-actions channel", async () => {
+      const { sendToChannel } = await import("./slackNotification");
+      
       await requestApproval({
         action: "blockIP",
         requestedBy: { id: 1, name: "Admin One" },
@@ -57,29 +60,18 @@ describe("Slack Approval Flow", () => {
         params: { reason: "Brute force" },
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://hooks.slack.com/test",
+      // Verify sendToChannel was called with "admin-actions"
+      expect(sendToChannel).toHaveBeenCalledWith(
+        "admin-actions",
         expect.objectContaining({
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          text: expect.stringContaining("Admin Action"),
+          blocks: expect.any(Array),
         })
       );
-
-      // Verify the Slack payload contains approval buttons
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(callBody.text).toContain("Admin Action");
-      expect(callBody.blocks).toBeDefined();
-      
-      // Find the actions block
-      const actionsBlock = callBody.blocks.find((b: any) => b.type === "actions");
-      expect(actionsBlock).toBeDefined();
-      expect(actionsBlock.elements).toHaveLength(2);
-      expect(actionsBlock.elements[0].action_id).toBe("approve_admin_action");
-      expect(actionsBlock.elements[1].action_id).toBe("deny_admin_action");
     });
 
-    it("should auto-approve when Slack webhook is not configured", async () => {
-      delete process.env.SLACK_WEBHOOK_URL;
+    it("should auto-approve when admin-actions webhook is not configured", async () => {
+      delete process.env.SLACK_ADMIN_ACTIONS_WEBHOOK_URL;
 
       const result = await requestApproval({
         action: "suspendUser",

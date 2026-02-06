@@ -16,6 +16,7 @@ vi.mock("./slackNotification", () => ({
     unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
   },
   sendSlackAlert: vi.fn().mockResolvedValue(true),
+  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
 }));
 
 describe("Admin Security", () => {

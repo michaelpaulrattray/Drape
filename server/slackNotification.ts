@@ -1,23 +1,56 @@
 /**
- * Slack Notification Service
+ * Slack Notification Service - Three-Channel Architecture
  * 
- * Sends security alerts to Slack with interactive buttons for emergency actions.
- * Buttons allow admins to block IPs or suspend users directly from Slack.
+ * Routes messages to the correct Slack channel based on type:
+ * 
+ * #security-alerts (SLACK_WEBHOOK_URL)
+ *   - Abuse detection, rate limits, unauthorized access, suspicious activity
+ *   - Moderators + Admins can see these
+ *   - Contains "Escalate to Admin" button (no direct action buttons)
+ *   - Critical alerts also send action buttons to #admin-actions simultaneously
+ * 
+ * #admin-actions (SLACK_ADMIN_ACTIONS_WEBHOOK_URL)
+ *   - Approval requests for sensitive actions (Approve/Deny buttons)
+ *   - Emergency action buttons (Block IP, Suspend User) for critical alerts
+ *   - Admin activity confirmations
+ *   - Admins only
+ * 
+ * #audit-log (SLACK_AUDIT_LOG_WEBHOOK_URL)
+ *   - Immutable log entries
+ *   - Completed action confirmations
+ *   - Compliance trail
+ *   - Admins only (read-only record)
  * 
  * SETUP:
  * 1. Create a Slack App at https://api.slack.com/apps
- * 2. Enable Incoming Webhooks and add to your channel
+ * 2. Enable Incoming Webhooks and add to your channels
  * 3. Enable Interactivity with Request URL: https://[your-domain]/api/slack/interactions
- * 4. Set SLACK_WEBHOOK_URL secret
- * 5. Set SLACK_SIGNING_SECRET secret (for verifying button callbacks)
+ * 4. Set SLACK_WEBHOOK_URL (security-alerts channel)
+ * 5. Set SLACK_ADMIN_ACTIONS_WEBHOOK_URL (admin-actions channel)
+ * 6. Set SLACK_AUDIT_LOG_WEBHOOK_URL (audit-log channel)
+ * 7. Set SLACK_SIGNING_SECRET (for verifying button callbacks)
  */
 
 import { createEmergencyToken } from "./db";
 import { ENV } from "./_core/env";
 
-// Slack webhook URL from environment
-const getSlackWebhookUrl = () => process.env.SLACK_WEBHOOK_URL;
+// ============ Channel Webhook Getters ============
+
+/** #security-alerts - Moderators + Admins see threat info */
+const getSecurityAlertsWebhook = () => process.env.SLACK_WEBHOOK_URL;
+
+/** #admin-actions - Admins only, has action buttons */
+const getAdminActionsWebhook = () => process.env.SLACK_ADMIN_ACTIONS_WEBHOOK_URL;
+
+/** #audit-log - Admins only, read-only compliance trail */
+const getAuditLogWebhook = () => process.env.SLACK_AUDIT_LOG_WEBHOOK_URL;
+
+/** Slack signing secret for verifying interaction callbacks */
 const getSlackSigningSecret = () => process.env.SLACK_SIGNING_SECRET;
+
+// ============ Types ============
+
+export type SlackChannel = "security-alerts" | "admin-actions" | "audit-log";
 
 export interface SlackAlertOptions {
   /** Alert title */
@@ -52,206 +85,406 @@ const SEVERITY_EMOJI = {
   critical: "🚨",
 };
 
+// ============ Core Send Functions ============
+
 /**
- * Send a security alert to Slack with optional emergency action buttons
+ * Send a message to a specific Slack channel.
+ * Low-level function used by all channel-specific senders.
  */
-export async function sendSlackAlert(options: SlackAlertOptions): Promise<boolean> {
-  const webhookUrl = getSlackWebhookUrl();
-  
+export async function sendToChannel(
+  channel: SlackChannel,
+  payload: Record<string, unknown>
+): Promise<boolean> {
+  const webhookMap: Record<SlackChannel, string | undefined> = {
+    "security-alerts": getSecurityAlertsWebhook(),
+    "admin-actions": getAdminActionsWebhook(),
+    "audit-log": getAuditLogWebhook(),
+  };
+
+  const webhookUrl = webhookMap[channel];
+
   if (!webhookUrl) {
-    console.log("[Slack] Webhook URL not configured, skipping notification");
+    console.log(`[Slack] ${channel} webhook not configured, skipping`);
     return false;
   }
 
   try {
-    const { title, description, severity, fields = [], ipAddress, userId, userName, alertContext } = options;
-    
-    // Build the message blocks
-    const blocks: any[] = [
-      {
-        type: "header",
-        text: {
-          type: "plain_text",
-          text: `${SEVERITY_EMOJI[severity]} ${title}`,
-          emoji: true,
-        },
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: description,
-        },
-      },
-    ];
-
-    // Add fields if provided
-    if (fields.length > 0) {
-      blocks.push({
-        type: "section",
-        fields: fields.map(f => ({
-          type: "mrkdwn",
-          text: `*${f.title}*\n${f.value}`,
-        })),
-      });
-    }
-
-    // Add timestamp
-    blocks.push({
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          text: `Detected at <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
-        },
-      ],
-    });
-
-    // Create emergency action buttons if IP or user provided
-    const actionButtons: any[] = [];
-
-    if (ipAddress) {
-      // Create emergency token for IP blocking
-      const tokenResult = await createEmergencyToken("block_ip", ipAddress, {
-        ...alertContext,
-        alertTitle: title,
-      });
-
-      if (tokenResult) {
-        const baseUrl = process.env.VITE_APP_URL || ENV.oAuthServerUrl?.replace('/api', '') || '';
-        actionButtons.push({
-          type: "button",
-          text: {
-            type: "plain_text",
-            text: `🚫 Block IP ${ipAddress}`,
-            emoji: true,
-          },
-          style: "danger",
-          action_id: "block_ip",
-          value: JSON.stringify({
-            token: tokenResult.token,
-            ip: ipAddress,
-          }),
-          confirm: {
-            title: {
-              type: "plain_text",
-              text: "Block IP Address?",
-            },
-            text: {
-              type: "mrkdwn",
-              text: `This will immediately block IP *${ipAddress}* from accessing the system. This action is logged.`,
-            },
-            confirm: {
-              type: "plain_text",
-              text: "Block IP",
-            },
-            deny: {
-              type: "plain_text",
-              text: "Cancel",
-            },
-          },
-        });
-      }
-    }
-
-    if (userId) {
-      // Create emergency token for user suspension
-      const tokenResult = await createEmergencyToken("suspend_user", String(userId), {
-        ...alertContext,
-        alertTitle: title,
-        userName,
-      });
-
-      if (tokenResult) {
-        actionButtons.push({
-          type: "button",
-          text: {
-            type: "plain_text",
-            text: `⛔ Suspend User ${userName || userId}`,
-            emoji: true,
-          },
-          style: "danger",
-          action_id: "suspend_user",
-          value: JSON.stringify({
-            token: tokenResult.token,
-            userId,
-            userName,
-          }),
-          confirm: {
-            title: {
-              type: "plain_text",
-              text: "Suspend User Account?",
-            },
-            text: {
-              type: "mrkdwn",
-              text: `This will immediately suspend ${userName ? `*${userName}*` : `user ID *${userId}*`}'s account. They will be logged out and unable to access the system. This action is logged.`,
-            },
-            confirm: {
-              type: "plain_text",
-              text: "Suspend User",
-            },
-            deny: {
-              type: "plain_text",
-              text: "Cancel",
-            },
-          },
-        });
-      }
-    }
-
-    // Add action buttons if any
-    if (actionButtons.length > 0) {
-      blocks.push({
-        type: "divider",
-      });
-      blocks.push({
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: "*Emergency Actions* (valid for 24 hours)",
-        },
-      });
-      blocks.push({
-        type: "actions",
-        elements: actionButtons,
-      });
-    }
-
-    // Send to Slack
     const response = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text: `${SEVERITY_EMOJI[severity]} ${title}`, // Fallback for notifications
-        blocks,
-        attachments: [
-          {
-            color: SEVERITY_COLORS[severity],
-            fallback: `${title}: ${description}`,
-          },
-        ],
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[Slack] Failed to send alert:", response.status, errorText);
+      console.error(`[Slack] Failed to send to ${channel}:`, response.status, errorText);
       return false;
     }
 
-    console.log("[Slack] Alert sent successfully:", title);
+    console.log(`[Slack] Message sent to ${channel}`);
     return true;
   } catch (error) {
-    console.error("[Slack] Error sending alert:", error);
+    console.error(`[Slack] Error sending to ${channel}:`, error);
     return false;
   }
 }
 
+// ============ Security Alerts Channel (#security-alerts) ============
+
 /**
- * Verify Slack request signature
- * Used to validate incoming requests from Slack interactive components
+ * Send a security alert to #security-alerts.
+ * 
+ * For NON-CRITICAL alerts: Info only + "Escalate to Admin" button
+ * For CRITICAL alerts: Info in #security-alerts + action buttons in #admin-actions
+ */
+export async function sendSlackAlert(options: SlackAlertOptions): Promise<boolean> {
+  const { title, description, severity, fields = [], ipAddress, userId, userName, alertContext } = options;
+
+  // Build info blocks (no action buttons for security-alerts)
+  const infoBlocks = buildInfoBlocks(title, description, severity, fields);
+
+  // For non-critical: add "Escalate to Admin" button
+  // For critical: add a note that action buttons were sent to admin channel
+  if (severity === "critical") {
+    infoBlocks.push({
+      type: "context",
+      elements: [{
+        type: "mrkdwn",
+        text: "🔔 _Emergency action buttons sent to #admin-actions channel_",
+      }],
+    });
+
+    // Send action buttons to #admin-actions simultaneously
+    await sendEmergencyActionsToAdminChannel(
+      title, description, fields, ipAddress, userId, userName, alertContext
+    );
+  } else {
+    // Add escalation button for moderators
+    const escalationData: Record<string, unknown> = {
+      title,
+      description,
+      severity,
+      fields,
+    };
+    if (ipAddress) escalationData.ipAddress = ipAddress;
+    if (userId) escalationData.userId = userId;
+    if (userName) escalationData.userName = userName;
+    if (alertContext) escalationData.alertContext = alertContext;
+
+    infoBlocks.push({ type: "divider" });
+    infoBlocks.push({
+      type: "actions",
+      elements: [{
+        type: "button",
+        text: {
+          type: "plain_text",
+          text: "📤 Escalate to Admin",
+          emoji: true,
+        },
+        action_id: "escalate_to_admin",
+        value: JSON.stringify(escalationData),
+        confirm: {
+          title: { type: "plain_text", text: "Escalate to Admin?" },
+          text: {
+            type: "mrkdwn",
+            text: `This will send an alert with emergency action buttons to the *#admin-actions* channel.\n\n*Alert:* ${title}`,
+          },
+          confirm: { type: "plain_text", text: "Escalate" },
+          deny: { type: "plain_text", text: "Cancel" },
+        },
+      }],
+    });
+  }
+
+  // Send to #security-alerts
+  return sendToChannel("security-alerts", {
+    text: `${SEVERITY_EMOJI[severity]} ${title}`,
+    blocks: infoBlocks,
+    attachments: [{
+      color: SEVERITY_COLORS[severity],
+      fallback: `${title}: ${description}`,
+    }],
+  });
+}
+
+/**
+ * Send emergency action buttons to #admin-actions channel.
+ * Called automatically for critical alerts, or via escalation button.
+ */
+export async function sendEmergencyActionsToAdminChannel(
+  title: string,
+  description: string,
+  fields: Array<{ title: string; value: string; short?: boolean }>,
+  ipAddress?: string,
+  userId?: number,
+  userName?: string,
+  alertContext?: Record<string, unknown>
+): Promise<boolean> {
+  const blocks: any[] = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `🚨 Emergency Action Required`,
+        emoji: true,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${title}*\n${description}`,
+      },
+    },
+  ];
+
+  if (fields.length > 0) {
+    blocks.push({
+      type: "section",
+      fields: fields.map(f => ({
+        type: "mrkdwn",
+        text: `*${f.title}*\n${f.value}`,
+      })),
+    });
+  }
+
+  blocks.push({
+    type: "context",
+    elements: [{
+      type: "mrkdwn",
+      text: `Escalated at <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+    }],
+  });
+
+  // Build emergency action buttons
+  const actionButtons: any[] = [];
+
+  if (ipAddress) {
+    const tokenResult = await createEmergencyToken("block_ip", ipAddress, {
+      ...alertContext,
+      alertTitle: title,
+    });
+
+    if (tokenResult) {
+      actionButtons.push({
+        type: "button",
+        text: {
+          type: "plain_text",
+          text: `🚫 Block IP ${ipAddress}`,
+          emoji: true,
+        },
+        style: "danger",
+        action_id: "block_ip",
+        value: JSON.stringify({
+          token: tokenResult.token,
+          ip: ipAddress,
+        }),
+        confirm: {
+          title: { type: "plain_text", text: "Block IP Address?" },
+          text: {
+            type: "mrkdwn",
+            text: `This will immediately block IP *${ipAddress}* from accessing the system. This action is logged.`,
+          },
+          confirm: { type: "plain_text", text: "Block IP" },
+          deny: { type: "plain_text", text: "Cancel" },
+        },
+      });
+    }
+  }
+
+  if (userId) {
+    const tokenResult = await createEmergencyToken("suspend_user", String(userId), {
+      ...alertContext,
+      alertTitle: title,
+      userName,
+    });
+
+    if (tokenResult) {
+      actionButtons.push({
+        type: "button",
+        text: {
+          type: "plain_text",
+          text: `⛔ Suspend User ${userName || userId}`,
+          emoji: true,
+        },
+        style: "danger",
+        action_id: "suspend_user",
+        value: JSON.stringify({
+          token: tokenResult.token,
+          userId,
+          userName,
+        }),
+        confirm: {
+          title: { type: "plain_text", text: "Suspend User Account?" },
+          text: {
+            type: "mrkdwn",
+            text: `This will immediately suspend ${userName ? `*${userName}*` : `user ID *${userId}*`}'s account. This action is logged.`,
+          },
+          confirm: { type: "plain_text", text: "Suspend User" },
+          deny: { type: "plain_text", text: "Cancel" },
+        },
+      });
+    }
+  }
+
+  if (actionButtons.length > 0) {
+    blocks.push({ type: "divider" });
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: "*Emergency Actions* (valid for 24 hours)",
+      },
+    });
+    blocks.push({
+      type: "actions",
+      elements: actionButtons,
+    });
+  }
+
+  return sendToChannel("admin-actions", {
+    text: `🚨 Emergency Action Required: ${title}`,
+    blocks,
+    attachments: [{
+      color: "#ff0000",
+      fallback: `Emergency: ${title} - ${description}`,
+    }],
+  });
+}
+
+// ============ Admin Actions Channel (#admin-actions) ============
+
+/**
+ * Send an admin action notification to #admin-actions.
+ * Used for non-emergency admin activity (routine actions, confirmations).
+ */
+export async function sendAdminActionNotification(options: {
+  title: string;
+  description: string;
+  severity: "info" | "warning" | "critical";
+  fields?: Array<{ title: string; value: string; short?: boolean }>;
+}): Promise<boolean> {
+  const { title, description, severity, fields = [] } = options;
+  const blocks = buildInfoBlocks(title, description, severity, fields);
+
+  return sendToChannel("admin-actions", {
+    text: `${SEVERITY_EMOJI[severity]} ${title}`,
+    blocks,
+    attachments: [{
+      color: SEVERITY_COLORS[severity],
+      fallback: `${title}: ${description}`,
+    }],
+  });
+}
+
+// ============ Audit Log Channel (#audit-log) ============
+
+/**
+ * Send an audit log entry to #audit-log.
+ * Used for immutable log entries and completed action confirmations.
+ */
+export async function sendAuditLogEntry(options: {
+  title: string;
+  description: string;
+  fields?: Array<{ title: string; value: string; short?: boolean }>;
+  severity?: "info" | "warning" | "critical";
+}): Promise<boolean> {
+  const { title, description, fields = [], severity = "info" } = options;
+  
+  const blocks: any[] = [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${title}*\n${description}`,
+      },
+    },
+  ];
+
+  if (fields.length > 0) {
+    blocks.push({
+      type: "section",
+      fields: fields.map(f => ({
+        type: "mrkdwn",
+        text: `*${f.title}*\n${f.value}`,
+      })),
+    });
+  }
+
+  blocks.push({
+    type: "context",
+    elements: [{
+      type: "mrkdwn",
+      text: `Logged at <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+    }],
+  });
+
+  return sendToChannel("audit-log", {
+    text: `📋 ${title}`,
+    blocks,
+    attachments: [{
+      color: SEVERITY_COLORS[severity],
+      fallback: `Audit: ${title}: ${description}`,
+    }],
+  });
+}
+
+// ============ Shared Block Builders ============
+
+/**
+ * Build standard info blocks (header, description, fields, timestamp).
+ * No action buttons - those are added by the caller based on channel.
+ */
+function buildInfoBlocks(
+  title: string,
+  description: string,
+  severity: "info" | "warning" | "critical",
+  fields: Array<{ title: string; value: string; short?: boolean }>
+): any[] {
+  const blocks: any[] = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `${SEVERITY_EMOJI[severity]} ${title}`,
+        emoji: true,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: description,
+      },
+    },
+  ];
+
+  if (fields.length > 0) {
+    blocks.push({
+      type: "section",
+      fields: fields.map(f => ({
+        type: "mrkdwn",
+        text: `*${f.title}*\n${f.value}`,
+      })),
+    });
+  }
+
+  blocks.push({
+    type: "context",
+    elements: [{
+      type: "mrkdwn",
+      text: `Detected at <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`,
+    }],
+  });
+
+  return blocks;
+}
+
+// ============ Signature Verification ============
+
+/**
+ * Verify Slack request signature.
+ * Used to validate incoming requests from Slack interactive components.
  */
 export function verifySlackSignature(
   signature: string,
@@ -259,22 +492,20 @@ export function verifySlackSignature(
   body: string
 ): boolean {
   const signingSecret = getSlackSigningSecret();
-  
+
   if (!signingSecret) {
     console.warn("[Slack] Signing secret not configured");
     return false;
   }
 
-  // Check timestamp is within 5 minutes
   const requestTimestamp = parseInt(timestamp, 10);
   const currentTimestamp = Math.floor(Date.now() / 1000);
-  
+
   if (Math.abs(currentTimestamp - requestTimestamp) > 300) {
     console.warn("[Slack] Request timestamp too old");
     return false;
   }
 
-  // Compute expected signature
   const crypto = require("crypto");
   const sigBasestring = `v0:${timestamp}:${body}`;
   const expectedSignature = "v0=" + crypto
@@ -282,16 +513,17 @@ export function verifySlackSignature(
     .update(sigBasestring)
     .digest("hex");
 
-  // Constant-time comparison - buffers must be same length
   const signatureBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expectedSignature);
-  
+
   if (signatureBuffer.length !== expectedBuffer.length) {
     return false;
   }
-  
+
   return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
 }
+
+// ============ Test Helper ============
 
 /**
  * Send a test alert to verify Slack integration
@@ -308,12 +540,12 @@ export async function sendTestSlackAlert(): Promise<boolean> {
   });
 }
 
-/**
- * Pre-built alert templates for common security events
- */
+// ============ Pre-built Alert Templates ============
+
 export const SlackAlerts = {
   /**
    * Alert for credential stuffing attack detection
+   * → #security-alerts (info) + #admin-actions (buttons if critical)
    */
   credentialStuffing: async (
     failedCount: number,
@@ -340,6 +572,7 @@ export const SlackAlerts = {
 
   /**
    * Alert for credits exploit attempt
+   * → #security-alerts (info) + #admin-actions (buttons - always critical)
    */
   creditsExploit: async (
     userId: number,
@@ -369,6 +602,7 @@ export const SlackAlerts = {
 
   /**
    * Alert for rapid model deletion
+   * → #security-alerts only (warning, not critical)
    */
   rapidDeletion: async (
     userId: number,
@@ -394,6 +628,7 @@ export const SlackAlerts = {
 
   /**
    * Alert for billing anomaly
+   * → #security-alerts only (warning)
    */
   billingAnomaly: async (
     userId: number,
@@ -420,14 +655,16 @@ export const SlackAlerts = {
   },
 
   /**
-   * Alert when IP is blocked (confirmation)
+   * Confirmation when IP is blocked
+   * → #admin-actions (confirmation) + #audit-log (record)
    */
   ipBlocked: async (
     ipAddress: string,
     reason: string,
     blockedBy: string
   ): Promise<boolean> => {
-    return sendSlackAlert({
+    // Send confirmation to #admin-actions
+    await sendAdminActionNotification({
       title: "IP Address Blocked",
       description: `IP address *${ipAddress}* has been blocked.`,
       severity: "info",
@@ -437,10 +674,22 @@ export const SlackAlerts = {
         { title: "Reason", value: reason, short: false },
       ],
     });
+
+    // Send to #audit-log
+    return sendAuditLogEntry({
+      title: "IP Address Blocked",
+      description: `IP *${ipAddress}* blocked by ${blockedBy}`,
+      fields: [
+        { title: "IP Address", value: ipAddress, short: true },
+        { title: "Blocked By", value: blockedBy, short: true },
+        { title: "Reason", value: reason, short: false },
+      ],
+    });
   },
 
   /**
-   * Alert when user is suspended (confirmation)
+   * Confirmation when user is suspended
+   * → #admin-actions (confirmation) + #audit-log (record)
    */
   userSuspended: async (
     userId: number,
@@ -448,7 +697,8 @@ export const SlackAlerts = {
     reason: string,
     suspendedBy: string
   ): Promise<boolean> => {
-    return sendSlackAlert({
+    // Send confirmation to #admin-actions
+    await sendAdminActionNotification({
       title: "User Account Suspended",
       description: `User *${userName}* (ID: ${userId}) has been suspended.`,
       severity: "info",
@@ -458,10 +708,24 @@ export const SlackAlerts = {
         { title: "Reason", value: reason, short: false },
       ],
     });
+
+    // Send to #audit-log
+    return sendAuditLogEntry({
+      title: "User Account Suspended",
+      description: `User *${userName}* (ID: ${userId}) suspended by ${suspendedBy}`,
+      fields: [
+        { title: "User", value: userName, short: true },
+        { title: "User ID", value: String(userId), short: true },
+        { title: "Suspended By", value: suspendedBy, short: true },
+        { title: "Reason", value: reason, short: false },
+      ],
+      severity: "warning",
+    });
   },
 
   /**
-   * Alert for admin action performed - sent for ALL admin actions
+   * Admin action performed (routine)
+   * → #admin-actions
    */
   adminAction: async (
     adminName: string,
@@ -471,7 +735,7 @@ export const SlackAlerts = {
     targetId: string,
     details?: string
   ): Promise<boolean> => {
-    return sendSlackAlert({
+    return sendAdminActionNotification({
       title: "Admin Action Performed",
       description: `Admin *${adminName}* performed an action.`,
       severity: "info",
@@ -485,7 +749,8 @@ export const SlackAlerts = {
   },
 
   /**
-   * Alert for sensitive admin action requiring extra attention
+   * Sensitive admin action performed
+   * → #admin-actions (warning) + #audit-log (record)
    */
   sensitiveAdminAction: async (
     adminName: string,
@@ -495,7 +760,8 @@ export const SlackAlerts = {
     targetId: string,
     details?: string
   ): Promise<boolean> => {
-    return sendSlackAlert({
+    // Send to #admin-actions
+    await sendAdminActionNotification({
       title: "⚠️ Sensitive Admin Action",
       description: `Admin *${adminName}* performed a sensitive action that requires attention.`,
       severity: "warning",
@@ -506,10 +772,24 @@ export const SlackAlerts = {
         ...(details ? [{ title: "Details", value: details, short: false }] : []),
       ],
     });
+
+    // Also log to #audit-log
+    return sendAuditLogEntry({
+      title: "Sensitive Admin Action",
+      description: `Admin *${adminName}* (ID: ${adminId}) performed: ${action}`,
+      fields: [
+        { title: "Admin", value: `${adminName} (ID: ${adminId})`, short: true },
+        { title: "Action", value: action, short: true },
+        { title: "Target", value: `${targetType}: ${targetId}`, short: true },
+        ...(details ? [{ title: "Details", value: details, short: false }] : []),
+      ],
+      severity: "warning",
+    });
   },
 
   /**
-   * Alert when unauthorized admin access is attempted
+   * Unauthorized admin access attempt
+   * → #security-alerts (critical) + #admin-actions (with buttons) + #audit-log
    */
   unauthorizedAdminAccess: async (
     userId: number,
@@ -517,7 +797,8 @@ export const SlackAlerts = {
     attemptedAction: string,
     ipAddress?: string
   ): Promise<boolean> => {
-    return sendSlackAlert({
+    // This is always critical, so sendSlackAlert will auto-send to both channels
+    const result = await sendSlackAlert({
       title: "🚨 Unauthorized Admin Access Attempt",
       description: `User *${userName}* (ID: ${userId}) attempted to access admin functionality without proper authorization.`,
       severity: "critical",
@@ -534,5 +815,19 @@ export const SlackAlerts = {
         attemptedAction,
       },
     });
+
+    // Also log to #audit-log
+    await sendAuditLogEntry({
+      title: "Unauthorized Admin Access Attempt",
+      description: `User *${userName}* (ID: ${userId}) attempted: ${attemptedAction}`,
+      fields: [
+        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
+        { title: "Attempted Action", value: attemptedAction, short: true },
+        ...(ipAddress ? [{ title: "IP Address", value: ipAddress, short: true }] : []),
+      ],
+      severity: "critical",
+    });
+
+    return result;
   },
 };

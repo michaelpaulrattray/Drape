@@ -8,7 +8,7 @@
  * 4. Immutable Audit Log - Append-only critical log storage
  */
 
-import { SlackAlerts } from "./slackNotification";
+import { SlackAlerts, sendAuditLogEntry } from "./slackNotification";
 import { logAuditEvent } from "./auditLog";
 import { AUDIT_ACTIONS } from "../drizzle/schema";
 
@@ -254,11 +254,10 @@ export async function writeImmutableLog(
   immutableLogChain.push(fullEntry);
   lastHash = hash;
   
-  // Backup to Slack as permanent record
-  await sendSlackAlert({
+  // Backup to #audit-log Slack channel as permanent record
+  await sendAuditLogEntry({
     title: "🔒 Immutable Security Log",
     description: `Critical security event recorded with hash chain verification.`,
-    severity: "info",
     fields: [
       { title: "Event Type", value: eventType, short: true },
       { title: "Entry ID", value: entry.id, short: true },
@@ -327,5 +326,4 @@ export function verifyImmutableLogChain(): {
   return { valid: true, entries: immutableLogChain.length };
 }
 
-// Import sendSlackAlert for immutable log backup
-import { sendSlackAlert } from "./slackNotification";
+// sendAuditLogEntry is imported at the top of the file

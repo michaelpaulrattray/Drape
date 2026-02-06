@@ -17,7 +17,7 @@
  * Pending actions expire after 5 minutes if not approved/denied.
  */
 
-import { sendSlackAlert } from "./slackNotification";
+import { sendToChannel, sendAuditLogEntry } from "./slackNotification";
 
 // ============ Types ============
 
@@ -255,10 +255,10 @@ export function markFailed(actionId: string, errorMessage: string): void {
  * Send an approval request message to Slack with Approve/Deny buttons.
  */
 async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
-  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+  const webhookUrl = process.env.SLACK_ADMIN_ACTIONS_WEBHOOK_URL;
   
   if (!webhookUrl) {
-    console.log("[SlackApproval] Webhook URL not configured, auto-approving action");
+    console.log("[SlackApproval] Admin-actions webhook not configured, auto-approving action");
     // If Slack is not configured, auto-approve to avoid blocking
     action.status = "approved";
     action.resolvedBy = "system (Slack not configured)";
@@ -271,10 +271,8 @@ async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
   const expiresInMinutes = Math.ceil((action.expiresAt - Date.now()) / 60_000);
   
   try {
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    // Send to #admin-actions channel
+    const sent = await sendToChannel("admin-actions", {
         text: `${emoji} Admin Action Approval Required: ${label}`,
         blocks: [
           {
@@ -393,16 +391,26 @@ async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
             fallback: `Admin action approval required: ${label} by ${action.requestedBy.name}`,
           },
         ],
-      }),
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[SlackApproval] Failed to send approval request:", response.status, errorText);
+    if (!sent) {
+      console.error("[SlackApproval] Failed to send approval request to #admin-actions");
       return false;
     }
     
-    console.log("[SlackApproval] Approval request sent to Slack for action:", action.id);
+    // Also log the request to #audit-log
+    await sendAuditLogEntry({
+      title: "Admin Action Approval Requested",
+      description: `${action.requestedBy.name} requested: ${label}`,
+      fields: [
+        { title: "Action", value: label, short: true },
+        { title: "Requested By", value: `${action.requestedBy.name} (ID: ${action.requestedBy.id})`, short: true },
+        { title: "Target", value: action.targetId, short: true },
+        { title: "Expires In", value: `${expiresInMinutes} minutes`, short: true },
+      ],
+    });
+    
+    console.log("[SlackApproval] Approval request sent to #admin-actions for action:", action.id);
     return true;
   } catch (error) {
     console.error("[SlackApproval] Error sending approval request:", error);

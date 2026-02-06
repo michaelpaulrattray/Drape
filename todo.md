@@ -2601,3 +2601,19 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Write vitest tests for Slack approval flow (30 tests)
 - [x] Update security documentation
 - [x] Auto-approve fallback when Slack is not configured
+
+
+## Three-Channel Slack Setup with Tiered Emergency Buttons
+- [x] Add SLACK_ADMIN_ACTIONS_WEBHOOK_URL secret
+- [x] Add SLACK_AUDIT_LOG_WEBHOOK_URL secret
+- [x] Refactor slackNotification.ts to route messages to correct channel based on type
+- [x] Move emergency action buttons (Block IP, Suspend User) from #security-alerts to #admin-actions
+- [x] Add "Escalate to Admin" button in #security-alerts for moderator use
+- [x] Add escalation handler in slackInteractions.ts
+- [x] For critical severity alerts, send to both #security-alerts (info) and #admin-actions (with buttons)
+- [x] Route approval requests to #admin-actions channel
+- [x] Send immutable log entries to #audit-log channel
+- [x] Send completed action confirmations to #audit-log channel
+- [x] Update slackApproval.ts to use admin-actions webhook
+- [x] Update tests for three-channel routing (329 tests passing)
+- [x] Update documentation (AUTHENTICATION.md)
