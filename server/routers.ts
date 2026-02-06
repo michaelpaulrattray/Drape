@@ -15,7 +15,9 @@ import {
   // Billing functions
   updateUserSubscription, getSubscriptionByUserId, refreshMonthlyCredits, addTopupCredits,
   // Usage functions
-  getCreditHistory, getUsageStats, getDailyUsage
+  getCreditHistory, getUsageStats, getDailyUsage,
+  // Velocity limits
+  getRecentTopupCount, getRecentTopupCredits
 } from "./db";
 import {
   getOrCreateStripeCustomer,
@@ -47,6 +49,7 @@ import { newsletterSignup, testConnection as testKlaviyoConnection } from "./kla
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "./rateLimit";
 import { withAtomicCredits } from "./atomicCredits";
 import { logAuditEvent, AUDIT_ACTIONS } from "./auditLog";
+import { SlackAlerts } from "./slackNotification";
 import { logAdminAction, isSensitiveAction, writeImmutableLog } from "./adminSecurity";
 import { 
   requestApproval as requestSlackApproval, 
@@ -2087,6 +2090,51 @@ export const appRouter = router({
         const user = await getUserById(ctx.user.id);
         if (!user) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // ── Credit Purchase Velocity Limits ──
+        const VELOCITY_LIMITS = {
+          HOURLY_MAX: 3,        // max 3 top-ups per hour
+          DAILY_MAX: 10,        // max 10 top-ups per 24 hours
+          DAILY_CREDIT_CAP: 33333, // ~$500 worth of credits per 24h (xl pack = 5000 credits/$60, so $500 ≈ 33333 credits)
+        };
+
+        const now = new Date();
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+        const [hourlyCount, dailyCount, dailyCredits] = await Promise.all([
+          getRecentTopupCount(ctx.user.id, oneHourAgo),
+          getRecentTopupCount(ctx.user.id, oneDayAgo),
+          getRecentTopupCredits(ctx.user.id, oneDayAgo),
+        ]);
+
+        const userName = user.displayName || user.name || user.email || `User #${ctx.user.id}`;
+
+        if (hourlyCount >= VELOCITY_LIMITS.HOURLY_MAX) {
+          // Fire-and-forget Slack alert
+          SlackAlerts.velocityLimitHit(ctx.user.id, userName, "hourly (3/hr)", hourlyCount, VELOCITY_LIMITS.HOURLY_MAX).catch(() => {});
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "You've reached the maximum number of credit purchases per hour. Please try again later.",
+          });
+        }
+
+        if (dailyCount >= VELOCITY_LIMITS.DAILY_MAX) {
+          SlackAlerts.velocityLimitHit(ctx.user.id, userName, "daily (10/day)", dailyCount, VELOCITY_LIMITS.DAILY_MAX).catch(() => {});
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "You've reached the maximum number of credit purchases per day. Please try again tomorrow.",
+          });
+        }
+
+        const pkg = CREDIT_TOPUP_PRODUCTS[input.packageId];
+        if (dailyCredits + pkg.credits > VELOCITY_LIMITS.DAILY_CREDIT_CAP) {
+          SlackAlerts.velocityLimitHit(ctx.user.id, userName, "daily spend cap ($500/day)", dailyCredits + pkg.credits, VELOCITY_LIMITS.DAILY_CREDIT_CAP).catch(() => {});
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "You've reached the daily credit purchase limit. Please try again tomorrow.",
+          });
         }
 
         // Get or create Stripe customer

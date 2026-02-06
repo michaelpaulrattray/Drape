@@ -12,18 +12,21 @@ This folder contains security guides for developers working on FormaStudio. Thes
 | [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) | Audit logging for sensitive operations | Before implementing billing or deletion features |
 | [NOTIFICATIONS.md](./NOTIFICATIONS.md) | Slack alerts and emergency actions | Before setting up security monitoring |
 | [ADMIN_SECURITY.md](./ADMIN_SECURITY.md) | Admin allowlist, activity alerts, immutable log | Before implementing admin features |
+| [BILLING_ALERTS.md](./BILLING_ALERTS.md) | Billing-specific Slack alerts and velocity limits | Before modifying payment or credit flows |
 
 ## Security Principles
 
 FormaStudio follows these core security principles throughout the codebase.
 
-**Defense in Depth** means that multiple layers of security protect sensitive operations. For example, a billing endpoint uses authentication (protectedProcedure), rate limiting, audit logging, and abuse detection together rather than relying on any single mechanism.
+**Defense in Depth** means that multiple layers of security protect sensitive operations. For example, a billing endpoint uses authentication (protectedProcedure), rate limiting, velocity limits, audit logging, and abuse detection together rather than relying on any single mechanism.
 
 **Fail Secure** ensures that when errors occur, the system defaults to the more restrictive behavior. The atomic credit pattern exemplifies this by deducting credits before expensive operations and refunding on failure, rather than risking free generations.
 
 **Least Privilege** restricts access to the minimum necessary. User data is scoped by userId in all queries, and admin operations require explicit role checks via adminProcedure.
 
 **Audit Everything** maintains a record of security-relevant events. The audit logging system captures billing changes, model deletions, and detected abuse patterns for investigation and compliance.
+
+**Monitor Proactively** ensures that security-relevant events trigger real-time alerts. The Slack alert system routes billing events (chargebacks, payment failures, velocity limit triggers) to dedicated channels for immediate visibility.
 
 ## Quick Reference: Endpoint Security Checklist
 
@@ -37,6 +40,28 @@ Before deploying any new endpoint, verify the following:
 | Credit Deduction | Generation endpoints use `withAtomicCredits` |
 | Audit Logging | Sensitive operations call `logAuditEvent` |
 | Input Validation | All inputs validated with Zod schemas |
+| Billing Alerts | Payment events trigger appropriate Slack alerts |
+
+## Slack Alert Channels
+
+| Channel | Purpose | Webhook Env Var |
+|---------|---------|----------------|
+| `#admin-actions` | Admin actions, IP blocks, emergency alerts | `SLACK_ADMIN_ACTIONS_WEBHOOK_URL` |
+| `#audit-log` | Audit log entries, security events | `SLACK_AUDIT_LOG_WEBHOOK_URL` |
+| `#billing-alerts` | Chargebacks, payment failures, cancellations, large purchases, velocity limits | `SLACK_BILLING_ALERTS_WEBHOOK_URL` |
+| `#general` | General notifications, test alerts | `SLACK_WEBHOOK_URL` |
+
+## Credit Purchase Velocity Limits
+
+To prevent fraud from stolen cards, credit top-ups are rate-limited:
+
+| Limit | Window | Purpose |
+|-------|--------|--------|
+| 3 top-ups | Per hour | Prevents rapid-fire purchases |
+| 10 top-ups | Per 24 hours | Daily cap |
+| ~$500 total spend | Per 24 hours | Dollar-amount cap (33,333 credits) |
+
+When a velocity limit is triggered, the purchase is blocked and a Slack alert is sent to `#billing-alerts`.
 
 ## Reporting Security Issues
 
@@ -51,4 +76,4 @@ These security guides should be updated whenever:
 3. New categories of sensitive operations are added
 4. Security incidents reveal gaps in documentation
 
-Last updated: February 2026
+Last updated: February 6, 2026

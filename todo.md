@@ -2775,3 +2775,16 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update pnpm packageManager field to 10.28.2
 - [x] Add pnpm overrides for tar, lodash, lodash-es, qs, mdast-util-to-hast (19→11 vulns)
 - [x] Upgrade vitest from v2.1.4 to v4.0.18 (resolved transitive vite 5.x vuln, 11→9 findings)
+
+## Security Audit Update (Feb 2026)
+- [x] Add billing-alerts Slack channel webhook and dispatcher
+- [x] Add subscription cancellation Slack alert
+- [x] Add failed payment Slack alert
+- [x] Add large credit purchase Slack alert
+- [x] Add unusual consumption spike Slack alert
+- [x] Move chargeback alerts to billing-alerts channel
+- [x] Implement credit purchase velocity limits (3/hr, 10/day, $500/day cap)
+- [x] Write tests for billing alerts and velocity limits (21 new tests, 567 total)
+- [x] Update SECURITY_AUDIT.md with current audit findings
+- [x] Update docs/SECURITY_OVERVIEW.md with current status
+- [x] Create docs/BILLING_ALERTS.md for billing alerts and velocity limits

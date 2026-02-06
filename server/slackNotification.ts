@@ -11,6 +11,7 @@
  *   #security-alerts (SLACK_WEBHOOK_URL)
  *   #admin-actions (SLACK_ADMIN_ACTIONS_WEBHOOK_URL)
  *   #audit-log (SLACK_AUDIT_LOG_WEBHOOK_URL)
+ *   #billing-alerts (SLACK_BILLING_ALERTS_WEBHOOK_URL)
  * 
  * SETUP:
  * 1. Create a Slack App at https://api.slack.com/apps
@@ -19,7 +20,8 @@
  * 4. Set SLACK_WEBHOOK_URL (security-alerts channel)
  * 5. Set SLACK_ADMIN_ACTIONS_WEBHOOK_URL (admin-actions channel)
  * 6. Set SLACK_AUDIT_LOG_WEBHOOK_URL (audit-log channel)
- * 7. Set SLACK_SIGNING_SECRET (for verifying button callbacks)
+ * 7. Set SLACK_BILLING_ALERTS_WEBHOOK_URL (billing-alerts channel)
+ * 8. Set SLACK_SIGNING_SECRET (for verifying button callbacks)
  */
 
 import {
@@ -28,6 +30,8 @@ import {
   dispatchAdminAction,
   dispatchAuditLog,
   dispatchAdminActionWithAudit,
+  dispatchBillingAlert,
+  dispatchBillingAlertWithAudit,
   dispatchEmergencyActions,
   sendRawToChannel,
   verifySlackSignature as _verifySlackSignature,
@@ -436,7 +440,7 @@ export const SlackAlerts = {
 
   /**
    * Alert when a chargeback/dispute is filed
-   * → #admin-actions + #audit-log (critical — direct financial impact)
+   * → #billing-alerts + #audit-log (critical — direct financial impact)
    */
   chargebackFiled: async (
     disputeId: string,
@@ -450,7 +454,7 @@ export const SlackAlerts = {
     const amountFormatted = `$${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
     const userInfo = userName ? `*${userName}* (ID: ${userId})` : "Unknown user";
 
-    const result = await dispatchAdminActionWithAudit({
+    const result = await dispatchBillingAlertWithAudit({
       title: "\u26a0\ufe0f Chargeback / Dispute Filed",
       description: `A chargeback has been filed for ${amountFormatted}. User: ${userInfo}.`,
       severity: "critical",
@@ -477,7 +481,7 @@ export const SlackAlerts = {
 
   /**
    * Alert when a chargeback/dispute is resolved
-   * → #admin-actions + #audit-log
+   * → #billing-alerts + #audit-log
    */
   chargebackResolved: async (
     disputeId: string,
@@ -493,7 +497,7 @@ export const SlackAlerts = {
     const won = status === "won";
     const statusEmoji = won ? "\u2705" : "\u274c";
 
-    return dispatchAdminActionWithAudit({
+    return dispatchBillingAlertWithAudit({
       title: `${statusEmoji} Chargeback / Dispute ${won ? "Won" : "Lost"}`,
       description: `Dispute ${disputeId} for ${amountFormatted} has been ${status}. User: ${userInfo}.`,
       severity: won ? "info" : "critical",
@@ -510,6 +514,129 @@ export const SlackAlerts = {
         { title: "Outcome", value: status.toUpperCase(), short: true },
         { title: "Amount", value: amountFormatted, short: true },
         ...(userName ? [{ title: "User", value: `${userName} (ID: ${userId})`, short: true }] : []),
+      ],
+    });
+  },
+
+  // ============ NEW Billing Alerts (Feb 2026) ============
+
+  /**
+   * Alert when a subscription is cancelled
+   * → #billing-alerts
+   */
+  subscriptionCancelled: async (
+    userId: number,
+    userName: string,
+    plan: string,
+    reason?: string
+  ): Promise<boolean> => {
+    return dispatchBillingAlert({
+      title: "Subscription Cancelled",
+      description: `User *${userName}* (ID: ${userId}) cancelled their *${plan}* subscription.`,
+      severity: "warning",
+      fields: [
+        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
+        { title: "Plan", value: plan, short: true },
+        ...(reason ? [{ title: "Reason", value: reason, short: false }] : []),
+      ],
+    });
+  },
+
+  /**
+   * Alert when a payment fails
+   * → #billing-alerts
+   */
+  paymentFailed: async (
+    userId: number,
+    userName: string,
+    amount: number,
+    currency: string,
+    failureReason?: string
+  ): Promise<boolean> => {
+    const amountFormatted = `$${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
+    return dispatchBillingAlert({
+      title: "Payment Failed",
+      description: `Payment of ${amountFormatted} failed for user *${userName}* (ID: ${userId}).`,
+      severity: "warning",
+      fields: [
+        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
+        { title: "Amount", value: amountFormatted, short: true },
+        ...(failureReason ? [{ title: "Failure Reason", value: failureReason, short: false }] : []),
+      ],
+    });
+  },
+
+  /**
+   * Alert when a large credit purchase is made (above threshold)
+   * → #billing-alerts
+   */
+  largeCreditPurchase: async (
+    userId: number,
+    userName: string,
+    credits: number,
+    amountCents: number,
+    currency: string
+  ): Promise<boolean> => {
+    const amountFormatted = `$${(amountCents / 100).toFixed(2)} ${currency.toUpperCase()}`;
+    return dispatchBillingAlert({
+      title: "Large Credit Purchase",
+      description: `User *${userName}* (ID: ${userId}) purchased *${credits.toLocaleString()} credits* for ${amountFormatted}.`,
+      severity: "info",
+      fields: [
+        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
+        { title: "Credits", value: credits.toLocaleString(), short: true },
+        { title: "Amount", value: amountFormatted, short: true },
+      ],
+    });
+  },
+
+  /**
+   * Alert when unusual credit consumption spike is detected
+   * → #billing-alerts + #audit-log
+   */
+  consumptionSpike: async (
+    userId: number,
+    userName: string,
+    recentUsage: number,
+    averageUsage: number,
+    period: string
+  ): Promise<boolean> => {
+    const multiplier = averageUsage > 0 ? (recentUsage / averageUsage).toFixed(1) : "N/A";
+    return dispatchBillingAlertWithAudit({
+      title: "Unusual Credit Consumption Spike",
+      description: `User *${userName}* (ID: ${userId}) consumed *${recentUsage.toLocaleString()} credits* in the last ${period}, which is *${multiplier}x* their average.`,
+      severity: "warning",
+      fields: [
+        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
+        { title: "Recent Usage", value: `${recentUsage.toLocaleString()} credits`, short: true },
+        { title: "Average Usage", value: `${averageUsage.toLocaleString()} credits`, short: true },
+        { title: "Multiplier", value: `${multiplier}x normal`, short: true },
+        { title: "Period", value: period, short: true },
+      ],
+      auditTitle: "Credit Consumption Spike Detected",
+      auditDescription: `User ${userName} (ID: ${userId}) consumed ${recentUsage} credits in ${period} (${multiplier}x average).`,
+    });
+  },
+
+  /**
+   * Alert when credit purchase velocity limit is hit
+   * → #billing-alerts
+   */
+  velocityLimitHit: async (
+    userId: number,
+    userName: string,
+    limitType: string,
+    currentCount: number,
+    maxAllowed: number
+  ): Promise<boolean> => {
+    return dispatchBillingAlert({
+      title: "Credit Purchase Velocity Limit Hit",
+      description: `User *${userName}* (ID: ${userId}) hit the *${limitType}* purchase velocity limit.`,
+      severity: "warning",
+      fields: [
+        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
+        { title: "Limit Type", value: limitType, short: true },
+        { title: "Attempts", value: `${currentCount}/${maxAllowed}`, short: true },
       ],
     });
   },

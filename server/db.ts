@@ -2478,3 +2478,54 @@ export async function getChangeRequestsByModerator(
     offset: options.offset,
   });
 }
+
+
+// ============ Credit Purchase Velocity Limits ============
+
+/**
+ * Get count of recent topup transactions for a user within a time window.
+ * Used for velocity limiting credit purchases.
+ */
+export async function getRecentTopupCount(
+  userId: number,
+  sinceTimestamp: Date
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.userId, userId),
+        eq(creditTransactions.type, "topup"),
+        gte(creditTransactions.createdAt, sinceTimestamp)
+      )
+    );
+  return Number(result[0]?.count ?? 0);
+}
+
+/**
+ * Get total credits purchased from topup transactions for a user within a time window.
+ * Used for daily dollar-amount velocity cap.
+ */
+export async function getRecentTopupCredits(
+  userId: number,
+  sinceTimestamp: Date
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .select({ total: sql<number>`COALESCE(SUM(amount), 0)` })
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.userId, userId),
+        eq(creditTransactions.type, "topup"),
+        gte(creditTransactions.createdAt, sinceTimestamp)
+      )
+    );
+  return Number(result[0]?.total ?? 0);
+}

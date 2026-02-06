@@ -20,13 +20,14 @@ import { createEmergencyToken } from "./db";
 
 // ============ Channel Config ============
 
-export type SlackChannel = "security-alerts" | "admin-actions" | "audit-log";
+export type SlackChannel = "security-alerts" | "admin-actions" | "audit-log" | "billing-alerts";
 
 const getWebhook = (channel: SlackChannel): string | undefined => {
   switch (channel) {
     case "security-alerts": return process.env.SLACK_WEBHOOK_URL;
     case "admin-actions": return process.env.SLACK_ADMIN_ACTIONS_WEBHOOK_URL;
     case "audit-log": return process.env.SLACK_AUDIT_LOG_WEBHOOK_URL;
+    case "billing-alerts": return process.env.SLACK_BILLING_ALERTS_WEBHOOK_URL;
   }
 };
 
@@ -316,6 +317,11 @@ function routeEvent(eventType: string): SlackChannel[] {
     return ["admin-actions"];
   }
   
+  // Billing events → #billing-alerts
+  if (eventType.startsWith("billing_")) {
+    return ["billing-alerts"];
+  }
+  
   // Default: admin-actions
   console.warn(`[SlackDispatcher] Unknown event type "${eventType}", routing to admin-actions`);
   return ["admin-actions"];
@@ -581,6 +587,62 @@ export async function dispatchAdminActionWithAudit(options: {
   });
   
   return adminResult.sent || auditResult.sent;
+}
+
+/**
+ * Dispatch a billing alert. Routes to #billing-alerts.
+ * Used for subscription cancellations, failed payments, large purchases,
+ * chargebacks, and consumption spikes.
+ */
+export async function dispatchBillingAlert(options: {
+  title: string;
+  description: string;
+  severity: "info" | "warning" | "critical";
+  fields?: Array<{ title: string; value: string; short?: boolean }>;
+}): Promise<boolean> {
+  const result = await dispatch({
+    type: "billing_alert",
+    title: options.title,
+    description: options.description,
+    severity: options.severity,
+    fields: options.fields,
+    channels: ["billing-alerts"],
+  });
+  return result.sent;
+}
+
+/**
+ * Dispatch a billing alert to both #billing-alerts and #audit-log.
+ * Used for critical billing events that need audit trail.
+ */
+export async function dispatchBillingAlertWithAudit(options: {
+  title: string;
+  description: string;
+  severity: "info" | "warning" | "critical";
+  fields?: Array<{ title: string; value: string; short?: boolean }>;
+  auditTitle?: string;
+  auditDescription?: string;
+  auditFields?: Array<{ title: string; value: string; short?: boolean }>;
+}): Promise<boolean> {
+  const billingResult = await dispatch({
+    type: "billing_alert_with_audit",
+    title: options.title,
+    description: options.description,
+    severity: options.severity,
+    fields: options.fields,
+    channels: ["billing-alerts"],
+  });
+  
+  const auditResult = await dispatch({
+    type: "billing_alert_with_audit",
+    title: options.auditTitle || options.title,
+    description: options.auditDescription || options.description,
+    severity: options.severity,
+    fields: options.auditFields || options.fields,
+    channels: ["audit-log"],
+  });
+  
+  return billingResult.sent || auditResult.sent;
 }
 
 // ============ Signature Verification (unchanged) ============
