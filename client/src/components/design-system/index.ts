@@ -37,6 +37,7 @@ export {
   LinkButton,
   NavLink,
   SocialLink,
+  FooterLink,
   ConveyorText,
   ConveyorTextColor,
   ConveyorIcon,
@@ -45,6 +46,7 @@ export {
   type LinkButtonProps,
   type NavLinkProps,
   type SocialLinkProps,
+  type FooterLinkProps,
 } from "./Button";
 
 // Typography Components

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { Button, NavLink, SocialLink, ConveyorText, ConveyorTextColor, ConveyorIcon } from "@/components/design-system";
+import { Button, NavLink, SocialLink, FooterLink, ConveyorText, ConveyorTextColor, ConveyorIcon } from "@/components/design-system";
 import { motion, useScroll, useTransform, useSpring, AnimatePresence, type Variants } from "framer-motion";
 
 // ============ ANIMATION VARIANTS ============
@@ -1398,12 +1398,8 @@ function Footer() {
               Whether you're building a brand, designing a product, or simply want to explore an idea, we'd love to hear from you.
             </p>
             <div className="space-y-2">
-              <a href="mailto:hello@formastudio.ai" className="block text-white hover:text-white/70 transition-colors underline underline-offset-4">
-                hello@formastudio.ai
-              </a>
-              <a href="tel:+1234567890" className="block text-white hover:text-white/70 transition-colors underline underline-offset-4">
-                (123) 456-7890
-              </a>
+              <FooterLink href="mailto:hello@formastudio.ai" className="underline underline-offset-4">hello@formastudio.ai</FooterLink>
+              <FooterLink href="tel:+1234567890" className="underline underline-offset-4">(123) 456-7890</FooterLink>
             </div>
           </div>
 
@@ -1432,20 +1428,20 @@ function Footer() {
           className="grid grid-cols-2 md:grid-cols-3 gap-8 py-12 border-t border-white/10"
         >
           <div className="space-y-3">
-            <a href="/" className="block text-white/60 hover:text-white transition-colors">Home</a>
-            <a href="#about" className="block text-white/60 hover:text-white transition-colors">About</a>
-            <a href="#work" className="block text-white/60 hover:text-white transition-colors">Projects</a>
-            <a href="#blog" className="block text-white/60 hover:text-white transition-colors">Blog</a>
-            <a href="/#contact" className="block text-white/60 hover:text-white transition-colors">Contact</a>
+            <FooterLink href="/">Home</FooterLink>
+            <FooterLink href="#about">About</FooterLink>
+            <FooterLink href="#work">Projects</FooterLink>
+            <FooterLink href="#blog">Blog</FooterLink>
+            <FooterLink href="/#contact">Contact</FooterLink>
           </div>
           <div className="space-y-3">
-            <a href="#" className="block text-white/60 hover:text-white transition-colors">Terms & Conditions</a>
-            <a href="#" className="block text-white/60 hover:text-white transition-colors">Privacy Policy</a>
+            <FooterLink href="#">Terms & Conditions</FooterLink>
+            <FooterLink href="#">Privacy Policy</FooterLink>
           </div>
           <div className="space-y-3">
-            <a href="#" className="block text-white/60 hover:text-white transition-colors">Twitter/X</a>
-            <a href="#" className="block text-white/60 hover:text-white transition-colors">Instagram</a>
-            <a href="#" className="block text-white/60 hover:text-white transition-colors">LinkedIn</a>
+            <FooterLink href="#">Twitter/X</FooterLink>
+            <FooterLink href="#">Instagram</FooterLink>
+            <FooterLink href="#">LinkedIn</FooterLink>
           </div>
         </motion.div>
 

@@ -389,4 +389,33 @@ export function SocialLink({ children, href, className }: SocialLinkProps) {
   );
 }
 
+/* ============================================
+ * FOOTER LINK COMPONENT
+ * ============================================ */
+
+export interface FooterLinkProps {
+  /** Link text */
+  children: ReactNode;
+  /** Link URL */
+  href: string;
+  /** Additional CSS classes */
+  className?: string;
+}
+
+/**
+ * Footer link with conveyor animation for dark backgrounds
+ */
+export function FooterLink({ children, href, className }: FooterLinkProps) {
+  return (
+    <a href={href} className={cn("group overflow-hidden block", className)}>
+      <ConveyorTextColor 
+        defaultColor="text-white/60 text-base"
+        hoverColor="text-white text-base"
+      >
+        {children}
+      </ConveyorTextColor>
+    </a>
+  );
+}
+
 export default Button;
