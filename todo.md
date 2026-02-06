@@ -2773,3 +2773,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update @aws-sdk/* to latest (transitive vuln fixes)
 - [x] Update vite to 7.3.1 (dev dependency patch)
 - [x] Update pnpm packageManager field to 10.28.2
+- [x] Add pnpm overrides for tar, lodash, lodash-es, qs, mdast-util-to-hast (19→11 vulns)
