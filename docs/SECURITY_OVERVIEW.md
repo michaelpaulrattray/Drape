@@ -11,6 +11,7 @@ This folder contains security guides for developers working on FormaStudio. Thes
 | [RATE_LIMITING.md](./RATE_LIMITING.md) | Rate limiting implementation and configuration | Before exposing public endpoints |
 | [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) | Audit logging for sensitive operations | Before implementing billing or deletion features |
 | [NOTIFICATIONS.md](./NOTIFICATIONS.md) | Slack alerts and emergency actions | Before setting up security monitoring |
+| [ADMIN_SECURITY.md](./ADMIN_SECURITY.md) | Admin allowlist, activity alerts, immutable log | Before implementing admin features |
 
 ## Security Principles
 

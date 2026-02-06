@@ -268,6 +268,12 @@ export const AUDIT_ACTIONS = {
   
   // Emergency actions (from Slack buttons)
   EMERGENCY_ACTION_EXECUTED: "security.emergency_action",
+  
+  // Admin activity tracking
+  ADMIN_ACTION: "admin.action",
+  SECURITY_UNAUTHORIZED_ADMIN: "security.unauthorized_admin_access",
+  SECURITY_IMMUTABLE_LOG: "security.immutable_log",
+  ADMIN_CONFIRMATION_REQUIRED: "admin.confirmation_required",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];

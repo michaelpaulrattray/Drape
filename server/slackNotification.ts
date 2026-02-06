@@ -459,4 +459,80 @@ export const SlackAlerts = {
       ],
     });
   },
+
+  /**
+   * Alert for admin action performed - sent for ALL admin actions
+   */
+  adminAction: async (
+    adminName: string,
+    adminId: number,
+    action: string,
+    targetType: string,
+    targetId: string,
+    details?: string
+  ): Promise<boolean> => {
+    return sendSlackAlert({
+      title: "Admin Action Performed",
+      description: `Admin *${adminName}* performed an action.`,
+      severity: "info",
+      fields: [
+        { title: "Admin", value: `${adminName} (ID: ${adminId})`, short: true },
+        { title: "Action", value: action, short: true },
+        { title: "Target", value: `${targetType}: ${targetId}`, short: true },
+        ...(details ? [{ title: "Details", value: details, short: false }] : []),
+      ],
+    });
+  },
+
+  /**
+   * Alert for sensitive admin action requiring extra attention
+   */
+  sensitiveAdminAction: async (
+    adminName: string,
+    adminId: number,
+    action: string,
+    targetType: string,
+    targetId: string,
+    details?: string
+  ): Promise<boolean> => {
+    return sendSlackAlert({
+      title: "⚠️ Sensitive Admin Action",
+      description: `Admin *${adminName}* performed a sensitive action that requires attention.`,
+      severity: "warning",
+      fields: [
+        { title: "Admin", value: `${adminName} (ID: ${adminId})`, short: true },
+        { title: "Action", value: action, short: true },
+        { title: "Target", value: `${targetType}: ${targetId}`, short: true },
+        ...(details ? [{ title: "Details", value: details, short: false }] : []),
+      ],
+    });
+  },
+
+  /**
+   * Alert when unauthorized admin access is attempted
+   */
+  unauthorizedAdminAccess: async (
+    userId: number,
+    userName: string,
+    attemptedAction: string,
+    ipAddress?: string
+  ): Promise<boolean> => {
+    return sendSlackAlert({
+      title: "🚨 Unauthorized Admin Access Attempt",
+      description: `User *${userName}* (ID: ${userId}) attempted to access admin functionality without proper authorization.`,
+      severity: "critical",
+      fields: [
+        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
+        { title: "Attempted Action", value: attemptedAction, short: true },
+        ...(ipAddress ? [{ title: "IP Address", value: ipAddress, short: true }] : []),
+      ],
+      userId,
+      userName,
+      ipAddress,
+      alertContext: {
+        attackType: "unauthorized_admin_access",
+        attemptedAction,
+      },
+    });
+  },
 };

@@ -47,6 +47,7 @@ import { newsletterSignup, testConnection as testKlaviyoConnection } from "./kla
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "./rateLimit";
 import { withAtomicCredits } from "./atomicCredits";
 import { logAuditEvent, AUDIT_ACTIONS } from "./auditLog";
+import { logAdminAction, isSensitiveAction, generateConfirmationToken, validateConfirmationToken, writeImmutableLog } from "./adminSecurity";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2101,6 +2102,27 @@ export const appRouter = router({
           userAgent: ctx.req.headers["user-agent"] || null,
         });
 
+        // Log admin action with Slack notification
+        await logAdminAction({
+          adminId: ctx.user.id,
+          adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
+          action: "suspendUser",
+          targetType: "user",
+          targetId: input.userId.toString(),
+          details: `Suspended user ${targetUser.email || targetUser.name} - Reason: ${input.reason}`,
+          ipAddress: getClientIp(ctx.req),
+          userAgent: ctx.req.headers["user-agent"] || undefined,
+        });
+
+        // Write to immutable log for critical action
+        await writeImmutableLog("user_suspended", {
+          adminId: ctx.user.id,
+          adminName: ctx.user.name,
+          targetUserId: input.userId,
+          targetUserEmail: targetUser.email,
+          reason: input.reason,
+        });
+
         return { success: true };
       }),
 
@@ -2262,7 +2284,28 @@ export const appRouter = router({
           req: ctx.req,
         });
 
-        return { success: true, id: result.id };
+        // Log admin action with Slack notification
+        await logAdminAction({
+          adminId: ctx.user.id,
+          adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
+          action: "blockIP",
+          targetType: "ip",
+          targetId: input.ipAddress,
+          details: `Blocked IP ${input.ipAddress} - Reason: ${input.reason} - Expires: ${expiresAt?.toISOString() || "permanent"}`,
+          ipAddress: getClientIp(ctx.req),
+          userAgent: ctx.req.headers["user-agent"] || undefined,
+        });
+
+        // Write to immutable log for critical action
+        await writeImmutableLog("ip_blocked", {
+          adminId: ctx.user.id,
+          adminName: ctx.user.name,
+          ipAddress: input.ipAddress,
+          reason: input.reason,
+          expiresAt: expiresAt?.toISOString() || "permanent",
+        });
+
+        return { success: true };
       }),
 
     // Unblock an IP address
@@ -2437,6 +2480,29 @@ export const appRouter = router({
           },
           severity: "warning",
           req: ctx.req,
+        });
+
+        // Log admin action with Slack notification
+        await logAdminAction({
+          adminId: ctx.user.id,
+          adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
+          action: "adjustCredits",
+          targetType: "user",
+          targetId: input.userId.toString(),
+          details: `${input.amount > 0 ? "Added" : "Deducted"} ${Math.abs(input.amount)} credits for ${targetUser.email || targetUser.name} - Reason: ${input.reason} - New balance: ${result.newBalance}`,
+          ipAddress: getClientIp(ctx.req),
+          userAgent: ctx.req.headers["user-agent"] || undefined,
+        });
+
+        // Write to immutable log for credit adjustments
+        await writeImmutableLog("credits_adjusted", {
+          adminId: ctx.user.id,
+          adminName: ctx.user.name,
+          targetUserId: input.userId,
+          targetUserEmail: targetUser.email,
+          amount: input.amount,
+          reason: input.reason,
+          newBalance: result.newBalance,
         });
 
         return { success: true, newBalance: result.newBalance };

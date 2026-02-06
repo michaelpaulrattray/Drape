@@ -325,3 +325,107 @@ The following audit events are logged for authentication:
 ## Related Documentation
 
 For additional security context, see [RATE_LIMITING.md](./RATE_LIMITING.md) for preventing brute force attacks on authentication and distributed attack protection, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for securing credit-consuming operations, and [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging authentication events.
+
+
+## Admin Security Hardening
+
+FormaStudio implements multiple layers of security to protect admin functionality from both external attacks and internal threats. These measures ensure that even if one security layer is compromised, others remain in place.
+
+### Admin Allowlist
+
+The admin allowlist is a hardcoded list of user identifiers (open IDs and emails) that are permitted to access admin functionality. This provides defense-in-depth against database tampering—even if an attacker gains write access to the database and sets their role to "admin," they cannot access admin features unless they are on the allowlist.
+
+```typescript
+// server/adminSecurity.ts
+export const ADMIN_ALLOWLIST: AdminAllowlistEntry[] = [
+  { openId: process.env.OWNER_OPEN_ID, email: process.env.OWNER_EMAIL },
+  // Add additional trusted admins here with their openId or email
+];
+```
+
+The allowlist is checked in addition to the database role check. If the allowlist is empty (no entries configured), the system falls back to database-only role checking for backward compatibility.
+
+### Sensitive Action Confirmation
+
+Certain admin actions are classified as "sensitive" and require additional confirmation before execution. This prevents accidental or malicious actions from being executed immediately.
+
+| Sensitive Actions |
+|-------------------|
+| suspendUser |
+| unsuspendUser |
+| adjustCredits |
+| blockIP |
+| unblockIP |
+| deleteModel |
+| revokeSession |
+| modifyPermissions |
+
+When a sensitive action is requested, the system generates a confirmation token that must be provided to complete the action. Tokens are single-use and expire after 5 minutes.
+
+```typescript
+// Generate a confirmation token
+const token = generateConfirmationToken(adminId, "suspendUser", targetUserId);
+
+// Validate and consume the token
+const result = validateConfirmationToken(token, adminId, "suspendUser", targetUserId);
+if (!result.valid) {
+  throw new Error(result.reason);
+}
+```
+
+### Admin Activity Alerts
+
+All admin actions are logged and sent to Slack for real-time monitoring. This provides visibility into admin activity and enables rapid response to suspicious behavior.
+
+| Alert Type | Trigger |
+|------------|---------|
+| Admin Action | Any admin operation (listUsers, getAuditLogs, etc.) |
+| Sensitive Admin Action | High-risk operations (suspend, credit adjustment, IP blocking) |
+| Unauthorized Access | Attempt to access admin features without proper authorization |
+
+Slack alerts include the admin's name, the action performed, the target resource, and additional context to help security teams assess the activity.
+
+### Immutable Audit Log
+
+Critical security events are written to an immutable, append-only log that cannot be modified or deleted. This provides forensic evidence that survives even if the primary database is compromised.
+
+The immutable log uses a blockchain-like structure where each entry contains a hash of the previous entry, creating a tamper-evident chain. Any modification to historical entries breaks the chain and is immediately detectable.
+
+```typescript
+// Write to immutable log
+const entry = await writeImmutableLog("admin.suspend_user", {
+  adminId: 1,
+  targetUserId: 123,
+  reason: "Policy violation"
+});
+
+// Verify chain integrity
+const { valid, entries, brokenAt } = verifyImmutableLogChain();
+if (!valid) {
+  console.error(`Chain broken at entry ${brokenAt}`);
+}
+```
+
+Events written to the immutable log include:
+
+| Event Type | Description |
+|------------|-------------|
+| admin.suspend_user | User account suspended |
+| admin.unsuspend_user | User account unsuspended |
+| admin.adjust_credits | Credit balance modified |
+| admin.block_ip | IP address blocked |
+| admin.unblock_ip | IP address unblocked |
+| security.unauthorized_admin_access | Unauthorized admin access attempt |
+
+### Implementation Checklist
+
+When adding new admin functionality, ensure these security measures are in place:
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Allowlist check | Use `validateAdminAccess()` before any admin operation |
+| Sensitive action check | Use `isSensitiveAction()` to determine if confirmation is needed |
+| Confirmation token | Generate and validate tokens for sensitive actions |
+| Slack notification | Call `logAdminAction()` for all admin operations |
+| Immutable logging | Write critical events to `writeImmutableLog()` |
+| Unauthorized access logging | Call `logUnauthorizedAdminAccess()` for denied attempts |

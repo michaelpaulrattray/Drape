@@ -27,6 +27,8 @@ FormaStudio uses a multi-channel notification system for security alerts:
 
 The system sends Slack alerts for:
 
+**Abuse Detection Alerts:**
+
 | Alert Type | Severity | Trigger |
 |------------|----------|---------|
 | Credits Exploit | Critical | 10+ insufficient credits errors in 5 minutes |
@@ -36,6 +38,14 @@ The system sends Slack alerts for:
 | Global Attack | Critical | 50+ failed logins system-wide in 5 minutes |
 | IP Blocked | Info | Admin blocks an IP address |
 | User Suspended | Warning | Admin suspends a user |
+
+**Admin Activity Alerts:**
+
+| Alert Type | Severity | Trigger |
+|------------|----------|---------|
+| Admin Action | Info | Any admin operation (listUsers, getAuditLogs, etc.) |
+| Sensitive Admin Action | Warning | High-risk operations (suspend, credit adjustment, IP blocking) |
+| Unauthorized Admin Access | Critical | Attempt to access admin features without proper authorization |
 
 ### Interactive Buttons
 

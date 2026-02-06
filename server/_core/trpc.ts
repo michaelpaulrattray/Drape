@@ -2,6 +2,7 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
+import { validateAdminAccess, logUnauthorizedAdminAccess } from "../adminSecurity";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -51,12 +52,44 @@ const requireUser = t.middleware(async opts => {
 
 export const protectedProcedure = t.procedure.use(requireUser);
 
+/**
+ * Admin procedure with enhanced security:
+ * 1. Checks user has admin role
+ * 2. Validates against admin allowlist
+ * 3. Logs unauthorized access attempts
+ * 4. Checks for suspension
+ */
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== 'admin') {
-      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    // Must be authenticated
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    // Validate admin access (checks both role AND allowlist)
+    const validation = validateAdminAccess({
+      id: ctx.user.id,
+      role: ctx.user.role,
+      email: ctx.user.email || undefined,
+      name: ctx.user.name || undefined,
+    });
+
+    if (!validation.allowed) {
+      // Log unauthorized access attempt
+      await logUnauthorizedAdminAccess({
+        userId: ctx.user.id,
+        userName: ctx.user.name || ctx.user.email || `User ${ctx.user.id}`,
+        attemptedAction: "admin_access",
+        ipAddress: ctx.req?.ip || ctx.req?.headers?.["x-forwarded-for"] as string,
+        userAgent: ctx.req?.headers?.["user-agent"] as string,
+      });
+
+      throw new TRPCError({ 
+        code: "FORBIDDEN", 
+        message: validation.reason || NOT_ADMIN_ERR_MSG 
+      });
     }
 
     // Admins should never be suspended, but check anyway for security
