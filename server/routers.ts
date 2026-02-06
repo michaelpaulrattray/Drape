@@ -2052,6 +2052,171 @@ export const appRouter = router({
         const { getAuditLogById } = await import("./auditLog");
         return await getAuditLogById(input.id);
       }),
+
+    // Suspend a user account
+    suspendUser: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        reason: z.string().min(1).max(500),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { suspendUser, getUserById } = await import("./db");
+        
+        // Get target user info for audit log
+        const targetUser = await getUserById(input.userId);
+        if (!targetUser) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Prevent self-suspension
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot suspend your own account" });
+        }
+
+        // Prevent suspending other admins
+        if (targetUser.role === "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Cannot suspend admin accounts" });
+        }
+
+        const result = await suspendUser(input.userId, input.reason, ctx.user.id);
+        if (!result.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error });
+        }
+
+        // Log the suspension
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: AUDIT_ACTIONS.ACCOUNT_SUSPENDED,
+          resourceType: "user",
+          resourceId: input.userId.toString(),
+          metadata: {
+            targetUserId: input.userId,
+            targetUserEmail: targetUser.email,
+            reason: input.reason,
+            suspendedBy: ctx.user.id,
+            suspendedByName: ctx.user.name,
+          },
+          severity: "critical",
+          ipAddress: getClientIp(ctx.req),
+          userAgent: ctx.req.headers["user-agent"] || null,
+        });
+
+        return { success: true };
+      }),
+
+    // Unsuspend a user account
+    unsuspendUser: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { unsuspendUser, getUserById } = await import("./db");
+        
+        const targetUser = await getUserById(input.userId);
+        if (!targetUser) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        if (!targetUser.suspendedAt) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "User is not suspended" });
+        }
+
+        const result = await unsuspendUser(input.userId);
+        if (!result.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error });
+        }
+
+        // Log the unsuspension
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: AUDIT_ACTIONS.ACCOUNT_UNSUSPENDED,
+          resourceType: "user",
+          resourceId: input.userId.toString(),
+          metadata: {
+            targetUserId: input.userId,
+            targetUserEmail: targetUser.email,
+            previousReason: targetUser.suspendedReason,
+            unsuspendedBy: ctx.user.id,
+            unsuspendedByName: ctx.user.name,
+          },
+          severity: "info",
+          ipAddress: getClientIp(ctx.req),
+          userAgent: ctx.req.headers["user-agent"] || null,
+        });
+
+        return { success: true };
+      }),
+
+    // Get user details for admin view
+    getUserDetails: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const { getUserById } = await import("./db");
+        const user = await getUserById(input.userId);
+        if (!user) return null;
+        
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          suspendedAt: user.suspendedAt,
+          suspendedReason: user.suspendedReason,
+          lockedUntil: user.lockedUntil,
+          failedLoginAttempts: user.failedLoginAttempts,
+          createdAt: user.createdAt,
+          lastSignedIn: user.lastSignedIn,
+        };
+      }),
+
+    // Export audit logs as CSV
+    exportAuditLogs: adminProcedure
+      .input(z.object({
+        severity: z.enum(["info", "warning", "critical", "all"]).optional().default("all"),
+        actionCategory: z.enum(["billing", "model", "security", "abuse", "all"]).optional().default("all"),
+        userId: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        maxRecords: z.number().min(1).max(10000).optional().default(1000),
+      }).optional())
+      .mutation(async ({ input }) => {
+        const { getFilteredAuditLogs } = await import("./auditLog");
+        
+        const result = await getFilteredAuditLogs({
+          limit: input?.maxRecords || 1000,
+          offset: 0,
+          severity: input?.severity === "all" ? undefined : input?.severity,
+          actionCategory: input?.actionCategory === "all" ? undefined : input?.actionCategory,
+          userId: input?.userId,
+          startDate: input?.startDate ? new Date(input.startDate) : undefined,
+          endDate: input?.endDate ? new Date(input.endDate) : undefined,
+        });
+
+        // Generate CSV content
+        const headers = ["ID", "Timestamp", "User ID", "Action", "Severity", "Resource Type", "Resource ID", "IP Address", "User Agent"];
+        const rows = result.logs.map(log => [
+          log.id,
+          new Date(log.createdAt).toISOString(),
+          log.userId || "",
+          log.action,
+          log.severity,
+          log.resourceType || "",
+          log.resourceId || "",
+          log.ipAddress || "",
+          (log.userAgent || "").replace(/,/g, ";"), // Escape commas in user agent
+        ]);
+
+        const csvContent = [
+          headers.join(","),
+          ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+        ].join("\n");
+
+        return {
+          csv: csvContent,
+          filename: `audit-logs-${new Date().toISOString().split("T")[0]}.csv`,
+          recordCount: result.logs.length,
+        };
+      }),
   }),
 });
 

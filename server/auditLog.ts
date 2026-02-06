@@ -40,6 +40,10 @@ export interface AuditEventOptions {
     headers: Record<string, string | string[] | undefined>;
     ip?: string;
   };
+  /** Direct IP address (alternative to req) */
+  ipAddress?: string | null;
+  /** Direct user agent (alternative to req) */
+  userAgent?: string | null;
 }
 
 /**
@@ -83,6 +87,8 @@ export async function logAuditEvent(options: AuditEventOptions): Promise<void> {
     metadata,
     severity = "info",
     req,
+    ipAddress: directIpAddress,
+    userAgent: directUserAgent,
   } = options;
 
   try {
@@ -92,6 +98,10 @@ export async function logAuditEvent(options: AuditEventOptions): Promise<void> {
       return;
     }
     
+    // Use direct values if provided, otherwise extract from request
+    const ipAddress = directIpAddress ?? getIpFromRequest(req);
+    const userAgent = directUserAgent ?? getUserAgentFromRequest(req);
+    
     await db.insert(auditLogs).values({
       userId: userId ?? null,
       action,
@@ -99,8 +109,8 @@ export async function logAuditEvent(options: AuditEventOptions): Promise<void> {
       resourceId: resourceId ?? null,
       metadata: metadata ?? null,
       severity,
-      ipAddress: getIpFromRequest(req),
-      userAgent: getUserAgentFromRequest(req),
+      ipAddress,
+      userAgent,
     });
 
     // Check for abuse patterns after logging

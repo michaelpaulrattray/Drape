@@ -21,6 +21,7 @@ import {
   Gift,
   Upload,
   Settings,
+  Shield,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
@@ -267,6 +268,28 @@ export default function Dashboard() {
               ))}
             </nav>
           </div>
+
+          {/* Admin Section - Only visible to admins */}
+          {user?.role === 'admin' && (
+            <div>
+              <h3 className="px-4 text-xs font-medium text-subtle uppercase tracking-wider mb-3">
+                Admin
+              </h3>
+              <nav className="space-y-1">
+                <Link href="/admin/audit-logs">
+                  <button
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-subtle hover:text-obsidian hover:bg-gray-50 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-[18px] h-[18px]" />
+                      <span className="text-sm">Audit Logs</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                </Link>
+              </nav>
+            </div>
+          )}
         </div>
 
         {/* User Profile */}

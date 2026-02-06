@@ -2507,3 +2507,21 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add real-time refresh capability for monitoring
 - [x] Add route to admin navigation (/admin/audit-logs)
 - [x] Write vitest tests for admin audit procedures (20 tests)
+
+
+## User Account Suspension & Audit Enhancements
+- [x] Add suspendedAt and suspendedReason fields to user schema
+- [x] Create admin.suspendUser procedure
+- [x] Create admin.unsuspendUser procedure
+- [x] Add real-time suspension check to protectedProcedure middleware
+- [x] Add suspension check to authentication flow (OAuth callback)
+- [x] Add suspend/unsuspend buttons to audit log details modal
+- [x] Add authentication event logging (login success, login failed, login blocked)
+- [x] Integrate auth events into audit logs page
+- [x] Add per-user rate limiting (protect against distributed attacks)
+- [x] Add account lockout after failed login attempts (5 attempts = 15 min lockout)
+- [x] Add global anomaly detection (system-wide attack detection - 50+ failed logins in 5 min)
+- [x] Add credential stuffing detection pattern
+- [x] Add admin access link to dashboard sidebar (admin only)
+- [x] Implement CSV export for filtered audit logs (up to 1000 records)
+- [x] Write vitest tests for suspension, auth logging, and attack protection (210 tests total)

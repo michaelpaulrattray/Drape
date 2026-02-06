@@ -18,6 +18,10 @@ import {
   X,
   Eye,
   Home,
+  Download,
+  Ban,
+  UserCheck,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,6 +122,9 @@ export default function AdminAuditLogs() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [suspendModalOpen, setSuspendModalOpen] = useState(false);
+  const [suspendReason, setSuspendReason] = useState("");
+  const [suspendingUserId, setSuspendingUserId] = useState<number | null>(null);
 
   // Queries
   const logsQuery = trpc.admin.getAuditLogs.useQuery(
@@ -148,6 +155,15 @@ export default function AdminAuditLogs() {
   const statsQuery = trpc.admin.getAuditStats.useQuery(
     undefined,
     { refetchInterval: autoRefresh ? 60000 : false }
+  );
+
+  // Mutations
+  const exportMutation = trpc.admin.exportAuditLogs.useMutation();
+  const suspendMutation = trpc.admin.suspendUser.useMutation();
+  const unsuspendMutation = trpc.admin.unsuspendUser.useMutation();
+  const userDetailsQuery = trpc.admin.getUserDetails.useQuery(
+    { userId: selectedLog?.userId || 0 },
+    { enabled: !!selectedLog?.userId }
   );
 
   // Auto-refresh effect
@@ -188,6 +204,67 @@ export default function AdminAuditLogs() {
     setCategoryFilter("all");
     setUserIdSearch("");
     setPage(0);
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const result = await exportMutation.mutateAsync({
+        severity: severityFilter as "info" | "warning" | "critical" | "all",
+        actionCategory: categoryFilter as "billing" | "model" | "security" | "abuse" | "all",
+        userId: userIdSearch ? parseInt(userIdSearch) : undefined,
+        maxRecords: 1000,
+      });
+      
+      // Create and download the CSV file
+      const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = result.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Exported ${result.recordCount} records`);
+    } catch (error) {
+      toast.error("Failed to export audit logs");
+    }
+  };
+
+  const handleSuspendUser = async () => {
+    if (!suspendingUserId || !suspendReason.trim()) {
+      toast.error("Please provide a reason for suspension");
+      return;
+    }
+    
+    try {
+      await suspendMutation.mutateAsync({
+        userId: suspendingUserId,
+        reason: suspendReason.trim(),
+      });
+      toast.success("User suspended successfully");
+      setSuspendModalOpen(false);
+      setSuspendReason("");
+      setSuspendingUserId(null);
+      logsQuery.refetch();
+      userDetailsQuery.refetch();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to suspend user";
+      toast.error(message);
+    }
+  };
+
+  const handleUnsuspendUser = async (userId: number) => {
+    try {
+      await unsuspendMutation.mutateAsync({ userId });
+      toast.success("User unsuspended successfully");
+      logsQuery.refetch();
+      userDetailsQuery.refetch();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to unsuspend user";
+      toast.error(message);
+    }
   };
 
   return (
@@ -231,6 +308,20 @@ export default function AdminAuditLogs() {
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${logsQuery.isRefetching ? "animate-spin" : ""}`} />
                 Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCsv}
+                disabled={exportMutation.isPending}
+                className="border-white/20 text-white"
+              >
+                {exportMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Export CSV
               </Button>
             </div>
           </div>
@@ -532,7 +623,38 @@ export default function AdminAuditLogs() {
                 </div>
               )}
 
-              <div className="flex gap-2 pt-4 border-t border-white/10">
+              {/* User Status Section */}
+              {selectedLog.userId && userDetailsQuery.data && (
+                <div className="bg-white/5 rounded-lg p-4 space-y-2">
+                  <label className="text-xs text-white/40 uppercase">User Status</label>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm">{userDetailsQuery.data.name || "Unknown"}</p>
+                      <p className="text-xs text-white/60">{userDetailsQuery.data.email}</p>
+                    </div>
+                    {userDetailsQuery.data.suspendedAt ? (
+                      <Badge className="bg-red-500/10 text-red-400 border-red-500/20">
+                        Suspended
+                      </Badge>
+                    ) : userDetailsQuery.data.lockedUntil && new Date(userDetailsQuery.data.lockedUntil) > new Date() ? (
+                      <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+                        Locked
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                  {userDetailsQuery.data.suspendedAt && (
+                    <p className="text-xs text-red-400">
+                      Reason: {userDetailsQuery.data.suspendedReason}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-white/10">
                 <Button
                   variant="outline"
                   size="sm"
@@ -546,9 +668,93 @@ export default function AdminAuditLogs() {
                   <Filter className="w-4 h-4 mr-2" />
                   Filter by User
                 </Button>
+                
+                {selectedLog.userId && userDetailsQuery.data && !userDetailsQuery.data.suspendedAt && userDetailsQuery.data.role !== "admin" && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setSuspendingUserId(selectedLog.userId!);
+                      setSuspendModalOpen(true);
+                    }}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Ban className="w-4 h-4 mr-2" />
+                    Suspend User
+                  </Button>
+                )}
+                
+                {selectedLog.userId && userDetailsQuery.data?.suspendedAt && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUnsuspendUser(selectedLog.userId!)}
+                    disabled={unsuspendMutation.isPending}
+                    className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10"
+                  >
+                    {unsuspendMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <UserCheck className="w-4 h-4 mr-2" />
+                    )}
+                    Unsuspend User
+                  </Button>
+                )}
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Suspend User Modal */}
+      <Dialog open={suspendModalOpen} onOpenChange={setSuspendModalOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <Ban className="w-5 h-5" />
+              Suspend User
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-white/60">
+              This will immediately block the user from accessing the platform. They will be logged out and unable to log back in until unsuspended.
+            </p>
+            <div>
+              <label className="text-xs text-white/40 uppercase mb-2 block">Suspension Reason</label>
+              <Input
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                placeholder="Enter reason for suspension..."
+                className="bg-white/5 border-white/10 text-white"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSuspendModalOpen(false);
+                  setSuspendReason("");
+                  setSuspendingUserId(null);
+                }}
+                className="border-white/20 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleSuspendUser}
+                disabled={!suspendReason.trim() || suspendMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {suspendMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Ban className="w-4 h-4 mr-2" />
+                )}
+                Confirm Suspension
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

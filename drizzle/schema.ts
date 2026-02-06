@@ -20,6 +20,13 @@ export const users = mysqlTable("users", {
   // Storage quota management (in bytes)
   storageUsed: int("storageUsed").default(0).notNull(), // Current storage used
   storageLimit: int("storageLimit").default(104857600).notNull(), // 100MB default limit
+  // Account suspension fields
+  suspendedAt: timestamp("suspendedAt"), // When account was suspended (null = active)
+  suspendedReason: text("suspendedReason"), // Reason for suspension
+  suspendedBy: int("suspendedBy"), // Admin user ID who suspended
+  // Account lockout fields (for failed login protection)
+  failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
+  lockedUntil: timestamp("lockedUntil"), // Temporary lockout expiry
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -236,11 +243,22 @@ export const AUDIT_ACTIONS = {
   RATE_LIMIT_EXCEEDED: "security.rate_limit",
   INSUFFICIENT_CREDITS: "security.insufficient_credits",
   
+  // Authentication events
+  LOGIN_BLOCKED_SUSPENDED: "auth.login_blocked_suspended",
+  LOGIN_BLOCKED_LOCKED: "auth.login_blocked_locked",
+  ACCOUNT_LOCKOUT: "auth.account_lockout",
+  
+  // Account suspension events
+  ACCOUNT_SUSPENDED: "admin.account_suspended",
+  ACCOUNT_UNSUSPENDED: "admin.account_unsuspended",
+  
   // Abuse detection
   ABUSE_DETECTED: "abuse.detected",
   ABUSE_PATTERN_CREDITS: "abuse.credits_exploit_attempt",
   ABUSE_PATTERN_DELETION: "abuse.rapid_deletion",
   ABUSE_PATTERN_BILLING: "abuse.billing_anomaly",
+  ABUSE_CREDENTIAL_STUFFING: "abuse.credential_stuffing",
+  ABUSE_GLOBAL_ATTACK: "abuse.global_attack_detected",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];

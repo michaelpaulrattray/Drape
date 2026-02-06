@@ -78,6 +78,13 @@
       "when": 1770351288057,
       "tag": "0010_stale_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1770352556668,
+      "tag": "0011_worthless_riptide",
+      "breakpoints": true
     }
   ]
 }

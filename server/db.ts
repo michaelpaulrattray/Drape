@@ -1095,3 +1095,153 @@ export async function getDailyUsage(
     return [];
   }
 }
+
+
+// ============ Account Suspension & Lockout Functions ============
+
+/**
+ * Suspend a user account
+ */
+export async function suspendUser(
+  userId: number,
+  reason: string,
+  suspendedByAdminId: number
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    await db.update(users)
+      .set({
+        suspendedAt: new Date(),
+        suspendedReason: reason,
+        suspendedBy: suspendedByAdminId,
+      })
+      .where(eq(users.id, userId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to suspend user:", error);
+    return { success: false, error: "Failed to suspend user" };
+  }
+}
+
+/**
+ * Unsuspend a user account
+ */
+export async function unsuspendUser(userId: number): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    await db.update(users)
+      .set({
+        suspendedAt: null,
+        suspendedReason: null,
+        suspendedBy: null,
+      })
+      .where(eq(users.id, userId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to unsuspend user:", error);
+    return { success: false, error: "Failed to unsuspend user" };
+  }
+}
+
+/**
+ * Record a failed login attempt and potentially lock the account
+ * Returns lockout info if account is now locked
+ */
+export async function recordFailedLogin(
+  openId: string
+): Promise<{ locked: boolean; lockedUntil?: Date; attempts: number }> {
+  const db = await getDb();
+  if (!db) return { locked: false, attempts: 0 };
+
+  try {
+    const user = await getUserByOpenId(openId);
+    if (!user) return { locked: false, attempts: 0 };
+
+    const newAttempts = (user.failedLoginAttempts || 0) + 1;
+    const LOCKOUT_THRESHOLD = 5;
+    const LOCKOUT_DURATION_MINUTES = 15;
+
+    let lockedUntil: Date | null = null;
+
+    // Lock account if threshold exceeded
+    if (newAttempts >= LOCKOUT_THRESHOLD) {
+      lockedUntil = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000);
+    }
+
+    await db.update(users)
+      .set({
+        failedLoginAttempts: newAttempts,
+        lockedUntil: lockedUntil,
+      })
+      .where(eq(users.id, user.id));
+
+    return {
+      locked: !!lockedUntil,
+      lockedUntil: lockedUntil || undefined,
+      attempts: newAttempts,
+    };
+  } catch (error) {
+    console.error("[Database] Failed to record failed login:", error);
+    return { locked: false, attempts: 0 };
+  }
+}
+
+/**
+ * Reset failed login attempts on successful login
+ */
+export async function resetFailedLogins(openId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    await db.update(users)
+      .set({
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      })
+      .where(eq(users.openId, openId));
+  } catch (error) {
+    console.error("[Database] Failed to reset failed logins:", error);
+  }
+}
+
+/**
+ * Check if user account is locked
+ */
+export async function isAccountLocked(openId: string): Promise<{ locked: boolean; lockedUntil?: Date; reason?: string }> {
+  const db = await getDb();
+  if (!db) return { locked: false };
+
+  try {
+    const user = await getUserByOpenId(openId);
+    if (!user) return { locked: false };
+
+    // Check suspension
+    if (user.suspendedAt) {
+      return { 
+        locked: true, 
+        reason: user.suspendedReason || "Account suspended",
+      };
+    }
+
+    // Check temporary lockout
+    if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
+      return { 
+        locked: true, 
+        lockedUntil: new Date(user.lockedUntil),
+        reason: "Too many failed login attempts",
+      };
+    }
+
+    return { locked: false };
+  } catch (error) {
+    console.error("[Database] Failed to check account lock:", error);
+    return { locked: false };
+  }
+}
