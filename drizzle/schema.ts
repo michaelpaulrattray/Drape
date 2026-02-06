@@ -277,6 +277,7 @@ export const AUDIT_ACTIONS = {
   
   // Moderator events
   MODERATOR_ESCALATION: "moderator.escalation",
+  ROLE_CHANGED: "admin.role_changed",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];

@@ -2634,3 +2634,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update RoleBadge component to support moderator role
 - [x] Write vitest tests for moderator procedures and middleware (47 tests)
 - [x] Update AUTHENTICATION.md with moderator role documentation
+
+
+## Moderator Management in Admin Dashboard
+- [x] Add updateUserRole db helper function
+- [x] Add admin.changeUserRole tRPC procedure (with security logging and Slack notification)
+- [x] Update AdminUserManagement UI with role change buttons (Promote to Moderator / Demote to User)
+- [x] Add confirmation dialog for role changes with user preview and reason field
+- [x] Prevent admins from demoting themselves or changing other admin roles
+- [x] Add moderator option to role filter dropdown
+- [x] Add ROLE_CHANGED audit action
+- [x] Write vitest tests for role change procedure (14 tests)

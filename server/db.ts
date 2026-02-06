@@ -1150,6 +1150,57 @@ export async function unsuspendUser(userId: number): Promise<{ success: boolean;
 }
 
 /**
+ * Update a user's role (promote/demote between user and moderator)
+ * Only admins can change roles, and they cannot change their own role or promote to admin.
+ */
+export async function updateUserRole(
+  userId: number,
+  newRole: "user" | "moderator",
+  changedByAdminId: number
+): Promise<{ success: boolean; previousRole?: string; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    // Get current user to check existing role
+    const [targetUser] = await db.select({ role: users.role, id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!targetUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Prevent changing admin roles
+    if (targetUser.role === "admin") {
+      return { success: false, error: "Cannot change the role of an admin user" };
+    }
+
+    // Prevent self-role-change
+    if (userId === changedByAdminId) {
+      return { success: false, error: "Cannot change your own role" };
+    }
+
+    // Prevent no-op
+    if (targetUser.role === newRole) {
+      return { success: false, error: `User is already a ${newRole}` };
+    }
+
+    const previousRole = targetUser.role;
+
+    await db.update(users)
+      .set({ role: newRole })
+      .where(eq(users.id, userId));
+
+    return { success: true, previousRole };
+  } catch (error) {
+    console.error("[Database] Failed to update user role:", error);
+    return { success: false, error: "Failed to update user role" };
+  }
+}
+
+/**
  * Record a failed login attempt and potentially lock the account
  * Returns lockout info if account is now locked
  */

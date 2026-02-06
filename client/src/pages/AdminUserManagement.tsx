@@ -95,7 +95,7 @@ export default function AdminUserManagement() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended" | "locked">("all");
-  const [roleFilter, setRoleFilter] = useState<"all" | "user" | "admin">("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "user" | "admin" | "moderator">("all");
   const [sortBy, setSortBy] = useState<"createdAt" | "lastSignedIn" | "name">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -108,6 +108,9 @@ export default function AdminUserManagement() {
   const [creditAmount, setCreditAmount] = useState("");
   const [creditReason, setCreditReason] = useState("");
   const [creditAction, setCreditAction] = useState<"add" | "deduct">("add");
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [roleChangeTarget, setRoleChangeTarget] = useState<"user" | "moderator">("moderator");
+  const [roleChangeReason, setRoleChangeReason] = useState("");
 
   const ITEMS_PER_PAGE = 20;
 
@@ -176,6 +179,19 @@ export default function AdminUserManagement() {
     },
   });
 
+  const changeRoleMutation = trpc.admin.changeUserRole.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Role changed: ${data.previousRole} → ${data.newRole}`);
+      setRoleModalOpen(false);
+      setRoleChangeReason("");
+      usersQuery.refetch();
+      userDetailsQuery.refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   // Handlers
   const handleSearch = () => {
     setSearch(searchInput);
@@ -204,6 +220,15 @@ export default function AdminUserManagement() {
       userId: selectedUserId,
       amount: finalAmount,
       reason: creditReason,
+    });
+  };
+
+  const handleChangeRole = () => {
+    if (!selectedUserId || !roleChangeReason.trim()) return;
+    changeRoleMutation.mutate({
+      userId: selectedUserId,
+      newRole: roleChangeTarget,
+      reason: roleChangeReason,
     });
   };
 
@@ -344,6 +369,7 @@ export default function AdminUserManagement() {
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
                   <SelectItem value="user">Users</SelectItem>
+                  <SelectItem value="moderator">Moderators</SelectItem>
                   <SelectItem value="admin">Admins</SelectItem>
                 </SelectContent>
               </Select>
@@ -592,7 +618,7 @@ export default function AdminUserManagement() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-wrap gap-2 pt-2">
                     {selectedUser.user.suspendedAt ? (
                       <Button
                         onClick={handleUnsuspend}
@@ -611,6 +637,34 @@ export default function AdminUserManagement() {
                         <ShieldOff className="w-4 h-4 mr-2" />
                         Suspend User
                       </Button>
+                    )}
+                    {/* Role change buttons - only for non-admin users */}
+                    {selectedUser.user.role !== "admin" && (
+                      selectedUser.user.role === "moderator" ? (
+                        <Button
+                          onClick={() => {
+                            setRoleChangeTarget("user");
+                            setRoleModalOpen(true);
+                          }}
+                          variant="outline"
+                          className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                        >
+                          <ShieldOff className="w-4 h-4 mr-2" />
+                          Demote to User
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            setRoleChangeTarget("moderator");
+                            setRoleModalOpen(true);
+                          }}
+                          variant="outline"
+                          className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                        >
+                          <Shield className="w-4 h-4 mr-2" />
+                          Promote to Moderator
+                        </Button>
+                      )
                     )}
                   </div>
                 </div>
@@ -798,6 +852,89 @@ export default function AdminUserManagement() {
               className={creditAction === "add" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-600 hover:bg-amber-700"}
             >
               {adjustCreditsMutation.isPending ? "Processing..." : creditAction === "add" ? "Add Credits" : "Deduct Credits"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Change Modal */}
+      <Dialog open={roleModalOpen} onOpenChange={setRoleModalOpen}>
+        <DialogContent className="bg-[#0f0f0f] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {roleChangeTarget === "moderator" ? (
+                <>
+                  <Shield className="w-5 h-5 text-blue-400" />
+                  Promote to Moderator
+                </>
+              ) : (
+                <>
+                  <UserCog className="w-5 h-5 text-amber-400" />
+                  Demote to User
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {roleChangeTarget === "moderator"
+                ? "This user will gain access to the moderator dashboard with read-only audit logs, user activity, and the ability to escalate issues to admins via Slack."
+                : "This user will lose moderator access and return to standard user permissions."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedUser && (
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <div className="flex items-center gap-3">
+                  {selectedUser.user.avatarUrl ? (
+                    <img src={selectedUser.user.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                      <User className="w-5 h-5 text-purple-400" />
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-medium">{selectedUser.user.name || "Unnamed"}</div>
+                    <div className="text-sm text-gray-400">{selectedUser.user.email || "No email"}</div>
+                  </div>
+                  <div className="ml-auto flex items-center gap-2 text-sm">
+                    <RoleBadge role={selectedUser.user.role} />
+                    <span className="text-gray-500">→</span>
+                    <RoleBadge role={roleChangeTarget} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div>
+              <label className="text-sm text-gray-400">Reason for role change</label>
+              <Textarea
+                value={roleChangeReason}
+                onChange={(e) => setRoleChangeReason(e.target.value)}
+                placeholder={roleChangeTarget === "moderator"
+                  ? "e.g., Trusted community member, needs access to review reports..."
+                  : "e.g., No longer needed, stepping down from moderation duties..."}
+                className="mt-1 bg-white/5 border-white/10"
+              />
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-amber-400 text-sm font-medium">
+                <AlertTriangle className="w-4 h-4" />
+                This action will be logged and reported to Slack
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleModalOpen(false)} className="border-white/10">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleChangeRole}
+              disabled={!roleChangeReason.trim() || changeRoleMutation.isPending}
+              className={roleChangeTarget === "moderator" ? "bg-blue-600 hover:bg-blue-700" : "bg-amber-600 hover:bg-amber-700"}
+            >
+              {changeRoleMutation.isPending
+                ? "Processing..."
+                : roleChangeTarget === "moderator"
+                  ? "Promote to Moderator"
+                  : "Demote to User"}
             </Button>
           </DialogFooter>
         </DialogContent>
