@@ -2710,3 +2710,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix credit balance display showing calculated sum instead of actual user balance (now fetches from credits table via getUserCredits)
 - [x] Fix black text on dark background throughout moderator dashboard (CardTitle, user details, user list names, blocked IPs)
 - [x] Improve overall text contrast/readability in moderator dashboard dark mode
+
+## Audit: Admin Pages
+- [x] Audit AdminAuditLogs.tsx for mock data and disconnected features — ALL CONNECTED
+- [x] Audit AdminUserManagement.tsx for mock data and disconnected features — ALL CONNECTED
+- [x] Audit AdminChangeRequests.tsx for mock data — ALL CONNECTED
+- [x] No issues found — all features are wired to real backend

@@ -2256,6 +2256,8 @@ export async function listChangeRequests(options: {
     pendingCount: number;
     approvedCount: number;
     deniedCount: number;
+    cancelledCount: number;
+    expiredCount: number;
     totalCount: number;
   };
 }> {
@@ -2264,7 +2266,7 @@ export async function listChangeRequests(options: {
     return {
       requests: [],
       total: 0,
-      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, totalCount: 0 },
+      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, cancelledCount: 0, expiredCount: 0, totalCount: 0 },
     };
   }
 
@@ -2325,25 +2327,29 @@ export async function listChangeRequests(options: {
     let pendingCount = 0;
     let approvedCount = 0;
     let deniedCount = 0;
+    let cancelledCount = 0;
+    let expiredCount = 0;
     let totalCount = 0;
     for (const row of summaryRows) {
       totalCount += row.count;
       if (row.status === "pending") pendingCount = row.count;
       else if (row.status === "approved") approvedCount = row.count;
       else if (row.status === "denied") deniedCount = row.count;
+      else if (row.status === "cancelled") cancelledCount = row.count;
+      else if (row.status === "expired") expiredCount = row.count;
     }
 
     return {
       requests,
       total,
-      summary: { pendingCount, approvedCount, deniedCount, totalCount },
+      summary: { pendingCount, approvedCount, deniedCount, cancelledCount, expiredCount, totalCount },
     };
   } catch (error) {
     console.error("[Database] Failed to list change requests:", error);
     return {
       requests: [],
       total: 0,
-      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, totalCount: 0 },
+      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, cancelledCount: 0, expiredCount: 0, totalCount: 0 },
     };
   }
 }
