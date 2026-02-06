@@ -43,6 +43,7 @@ import {
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { generatePremiumIdentityPdf, PdfModelData } from "./pdfService";
+import { newsletterSignup, testConnection as testKlaviyoConnection } from "./klaviyo";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1875,6 +1876,41 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const dailyData = await getDailyUsage(ctx.user.id, input?.days || 30);
         return dailyData;
+      }),
+  }),
+
+  // ============ Newsletter / Klaviyo ============
+  newsletter: router({
+    // Subscribe to newsletter (public - no auth required)
+    subscribe: publicProcedure
+      .input(z.object({
+        email: z.string().email("Please enter a valid email address"),
+        source: z.string().optional().default("website_footer"),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await newsletterSignup(input.email, input.source);
+        
+        if (!result.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to subscribe. Please try again later.",
+          });
+        }
+        
+        return {
+          success: true,
+          message: result.isNew 
+            ? "Welcome! You've been subscribed to our newsletter."
+            : "You're already subscribed. Thanks for your interest!",
+          isNew: result.isNew,
+        };
+      }),
+
+    // Test Klaviyo connection (admin/debug only)
+    testConnection: protectedProcedure
+      .query(async () => {
+        const result = await testKlaviyoConnection();
+        return result;
       }),
   }),
 });

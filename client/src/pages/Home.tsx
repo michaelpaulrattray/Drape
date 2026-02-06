@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight, Loader2, Check } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+
 import { Button, NavLink, SocialLink, FooterLink, ConveyorText, ConveyorTextColor, ConveyorIcon } from "@/components/design-system";
 import { motion, useScroll, useTransform, useSpring, AnimatePresence, type Variants } from "framer-motion";
 
@@ -1370,6 +1372,78 @@ function BlogSection() {
   );
 }
 
+// ============ NEWSLETTER FORM ============
+function NewsletterForm() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  const subscribeMutation = trpc.newsletter.subscribe.useMutation({
+    onSuccess: (data) => {
+      setStatus("success");
+      setMessage(data.message);
+      setEmail("");
+      // Reset after 5 seconds
+      setTimeout(() => {
+        setStatus("idle");
+        setMessage("");
+      }, 5000);
+    },
+    onError: (error) => {
+      setStatus("error");
+      setMessage(error.message || "Something went wrong. Please try again.");
+      // Reset after 5 seconds
+      setTimeout(() => {
+        setStatus("idle");
+        setMessage("");
+      }, 5000);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || status === "loading") return;
+    
+    setStatus("loading");
+    subscribeMutation.mutate({ email, source: "website_footer" });
+  };
+
+  return (
+    <div>
+      <p className="text-white/60 mb-4">Sign up for our monthly newsletter.</p>
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          disabled={status === "loading" || status === "success"}
+          className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder:text-white/40 focus:outline-none focus:border-white/40 disabled:opacity-50"
+        />
+        <Button 
+          type="submit" 
+          variant="secondary" 
+          className="px-6 py-3 min-w-[100px]"
+          disabled={status === "loading" || status === "success"}
+        >
+          {status === "loading" ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : status === "success" ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            "Sign up"
+          )}
+        </Button>
+      </form>
+      {message && (
+        <p className={`mt-2 text-sm ${status === "success" ? "text-green-400" : "text-red-400"}`}>
+          {message}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Footer() {
   return (
     <footer className="py-24 bg-[#0A0A0A] text-white">
@@ -1404,19 +1478,7 @@ function Footer() {
           </div>
 
           {/* Right - Newsletter */}
-          <div>
-            <p className="text-white/60 mb-4">Sign up for our monthly newsletter.</p>
-            <form className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Email"
-                className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder:text-white/40 focus:outline-none focus:border-white/40"
-              />
-              <Button type="submit" variant="secondary" className="px-6 py-3">
-                Sign up
-              </Button>
-            </form>
-          </div>
+          <NewsletterForm />
         </motion.div>
 
         {/* Links Grid */}

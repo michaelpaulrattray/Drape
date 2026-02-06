@@ -2450,3 +2450,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add Escape key support to close mega menu for keyboard accessibility
 - [x] Replace marquee text with brand logos (Facebook, Meta, Instagram, Nike, Shopify, etc.)
 - [x] Add conveyor belt animation to footer menu links
+- [x] Set up Klaviyo API key as environment secret
+- [x] Research Klaviyo API for subscriber/profile creation
+- [x] Create backend endpoint for newsletter signup
+- [x] Connect footer newsletter form to Klaviyo API
+- [x] Test newsletter signup flow end-to-end
