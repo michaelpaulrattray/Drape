@@ -24,6 +24,7 @@ import {
   Loader2,
   ChevronRight,
   Timer,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: typeof Coins; color: st
   suspend_user: { label: "Suspend User", icon: Ban, color: "text-red-400" },
   unsuspend_user: { label: "Unsuspend User", icon: UserCheck, color: "text-green-400" },
   block_ip: { label: "Block IP", icon: Globe, color: "text-red-400" },
+  stripe_refund: { label: "Stripe Refund", icon: CreditCard, color: "text-violet-400" },
   other: { label: "Other", icon: HelpCircle, color: "text-gray-400" },
 };
 
@@ -75,14 +77,14 @@ const PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 const ALL_TYPES = [
-  "refund_credits", "add_credits", "flag_account", "note_incident",
+  "refund_credits", "add_credits", "stripe_refund", "flag_account", "note_incident",
   "suspend_user", "unsuspend_user", "block_ip", "other",
 ];
 
 const ALL_STATUSES = ["all", "pending", "pending_execution", "approved", "denied", "cancelled", "expired"];
 
 // Sensitive types that go through Slack approval
-const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits"];
+const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits", "stripe_refund"];
 const ALL_PRIORITIES = ["all", "low", "normal", "high", "urgent"];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -618,6 +620,43 @@ export default function AdminChangeRequests() {
                         <p className="text-xs text-amber-400/70 mt-2 flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
                           Approving will automatically {selectedRequest.type === "refund_credits" ? "refund" : "add"} {selectedRequest.creditAmount} credits to the target user.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Stripe Refund Details */}
+                  {selectedRequest.type === "stripe_refund" && (
+                    <div className="bg-violet-500/5 border border-violet-500/10 rounded-lg p-4">
+                      <h3 className="text-xs font-medium text-violet-400 uppercase tracking-wider mb-3">Stripe Refund Details</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs text-gray-500">Refund Type</div>
+                          <div className="text-sm font-medium capitalize">{selectedRequest.refundType || "—"}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500">Refund Amount</div>
+                          <div className="text-lg font-bold text-violet-400">${selectedRequest.refundAmountCents ? (selectedRequest.refundAmountCents / 100).toFixed(2) : "—"}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500">Original Credits</div>
+                          <div className="text-sm">{selectedRequest.originalCredits ?? "—"} credits</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500">Credits to Deduct</div>
+                          <div className="text-sm font-medium text-red-400">{selectedRequest.creditsToDeduct ?? "—"} credits</div>
+                        </div>
+                        {selectedRequest.stripeSessionId && (
+                          <div className="col-span-2">
+                            <div className="text-xs text-gray-500">Stripe Session</div>
+                            <code className="text-xs font-mono text-gray-400">{selectedRequest.stripeSessionId}</code>
+                          </div>
+                        )}
+                      </div>
+                      {selectedRequest.status === "pending" && (
+                        <p className="text-xs text-violet-400/70 mt-3 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Approving will issue a ${selectedRequest.refundAmountCents ? (selectedRequest.refundAmountCents / 100).toFixed(2) : "—"} Stripe refund and deduct {selectedRequest.creditsToDeduct ?? "—"} credits from the user (balance floored at 0).
                         </p>
                       )}
                     </div>

@@ -2807,3 +2807,9 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Moderator Dashboard Credit History Query
 - [x] Fix invalid type value sent to credit history query on moderator page (frontend select options mismatched backend Zod enum)
+
+## Fix: Admin Change Requests Dashboard - stripe_refund support
+- [x] Add stripe_refund to TYPE_CONFIG in AdminChangeRequests.tsx
+- [x] Add stripe_refund to SENSITIVE_TYPES in AdminChangeRequests.tsx
+- [x] Add stripe_refund to type filter options
+- [x] Add refund-specific detail display (session ID, refund type, amount, credits)
