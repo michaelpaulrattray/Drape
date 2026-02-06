@@ -59,12 +59,12 @@ const scaleIn: Variants = {
 // ============ DATA ============
 
 const clientLogos = [
-  { name: "Shopify" },
-  { name: "Meta" },
-  { name: "Nike" },
-  { name: "Instagram" },
-  { name: "Google" },
-  { name: "Vogue" },
+  { name: "Google", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/KWvxGyeHeOdCWDBA.svg" },
+  { name: "Shopify", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/RrYrMQAByeXLDYvF.svg" },
+  { name: "Meta", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/IVQzagtquxBRPCYL.svg" },
+  { name: "Nike", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/TiXyLFbvFHbHEbTs.svg" },
+  { name: "Facebook", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/OeUyRoFtFBfOvhUj.svg" },
+  { name: "Instagram", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/mikmpxOOFgYakoyl.svg" },
 ];
 
 const statsMarqueeItems = [
@@ -420,9 +420,14 @@ function LogoMarquee() {
         {[...clientLogos, ...clientLogos, ...clientLogos, ...clientLogos].map((logo, index) => (
           <div
             key={index}
-            className="flex items-center justify-center min-w-[120px] px-8 grayscale opacity-50 hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+            className="flex items-center justify-center min-w-[140px] px-8 opacity-40 hover:opacity-100 transition-all duration-300"
           >
-            <span className="text-xl font-semibold text-[#0A0A0A]/40">{logo.name}</span>
+            <img 
+              src={logo.logo} 
+              alt={logo.name} 
+              className="h-6 w-auto object-contain"
+              style={{ filter: 'brightness(0)' }}
+            />
           </div>
         ))}
       </div>

@@ -2448,3 +2448,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix video section black bar at bottom of static image
 - [x] Change Services section title background from #0A0A0A to #121212 to blend with card background
 - [x] Add Escape key support to close mega menu for keyboard accessibility
+- [x] Replace marquee text with brand logos (Facebook, Meta, Instagram, Nike, Shopify, etc.)
