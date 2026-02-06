@@ -2769,3 +2769,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Update @trpc/server 11.6.0 → 11.8.0+ (prototype pollution fix)
 - [ ] Update other vulnerable dependencies
 - [ ] Verify all tests pass after updates
+- [x] Update @trpc/* from 11.6.0 to 11.9.0 (prototype pollution fix)
+- [x] Update @aws-sdk/* to latest (transitive vuln fixes)
+- [x] Update vite to 7.3.1 (dev dependency patch)
+- [x] Update pnpm packageManager field to 10.28.2
