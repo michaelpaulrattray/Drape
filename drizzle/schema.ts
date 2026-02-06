@@ -90,7 +90,7 @@ export const creditTransactions = mysqlTable("point_transactions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   amount: int("amount").notNull(),
-  type: mysqlEnum("type", ["generation", "purchase", "bonus", "refund", "signup", "topup", "subscription"]).notNull(),
+  type: mysqlEnum("type", ["generation", "purchase", "bonus", "refund", "signup", "topup", "subscription", "admin_add", "admin_deduct"]).notNull(),
   description: text("description"),
   referenceId: varchar("referenceId", { length: 64 }),
   balanceAfter: int("balanceAfter").notNull(),
@@ -229,7 +229,8 @@ export const AUDIT_ACTIONS = {
   SUBSCRIPTION_CANCELED: "subscription.canceled",
   SUBSCRIPTION_UPDATED: "subscription.updated",
   CREDITS_PURCHASED: "credits.purchased",
-  CREDITS_DEDUCTED: "credits.deducted",
+  CREDITS_ADDED: "credits.admin_added",
+  CREDITS_DEDUCTED: "credits.admin_deducted",
   CREDITS_REFUNDED: "credits.refunded",
   
   // Model events

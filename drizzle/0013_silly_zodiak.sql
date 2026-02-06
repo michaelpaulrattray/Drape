@@ -1,0 +1,1 @@
+ALTER TABLE `point_transactions` MODIFY COLUMN `type` enum('generation','purchase','bonus','refund','signup','topup','subscription','admin_add','admin_deduct') NOT NULL;

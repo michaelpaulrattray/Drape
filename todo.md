@@ -2548,3 +2548,20 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update RATE_LIMITING.md with IP blocking documentation
 - [x] Create NOTIFICATIONS.md security guide
 - [x] Write vitest tests for IP blocking and Slack notifications (242 tests total)
+
+
+## User Management Admin Page
+- [x] Create admin.listUsers procedure with search, pagination, and filters
+- [x] Create admin.getUserDetails procedure for full user profile and activity
+- [x] Create admin.adjustCredits procedure for adding/deducting credits
+- [x] Create admin.getUserActivity procedure for user's audit log history
+- [x] Create AdminUserManagement.tsx page component
+- [x] Implement user search with name/email filters
+- [x] Implement user table with pagination
+- [x] Implement user details modal with profile info
+- [x] Implement suspend/unsuspend actions (reuse existing)
+- [x] Implement credit adjustment modal
+- [x] Implement user activity log view
+- [x] Add /admin/users route to App.tsx
+- [x] Add "User Management" link to dashboard admin menu
+- [x] Write vitest tests for user management procedures (261 tests total)

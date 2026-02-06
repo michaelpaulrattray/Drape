@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CastingStudio from "./pages/CastingStudio";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
+import AdminUserManagement from "./pages/AdminUserManagement";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/casting-studio" component={CastingStudio} />
       <Route path="/admin/audit-logs" component={AdminAuditLogs} />
+      <Route path="/admin/users" component={AdminUserManagement} />
       <Route path="/outfit-studio" component={ComingSoon} />
       <Route path="/photo-studio" component={ComingSoon} />
       <Route path="/404" component={NotFound} />
