@@ -345,33 +345,54 @@ export const ADMIN_ALLOWLIST: AdminAllowlistEntry[] = [
 
 The allowlist is checked in addition to the database role check. If the allowlist is empty (no entries configured), the system falls back to database-only role checking for backward compatibility.
 
-### Sensitive Action Confirmation
+### Slack-Based Approval Flow (Out-of-Band 2FA)
 
-Certain admin actions are classified as "sensitive" and require additional confirmation before execution. This prevents accidental or malicious actions from being executed immediately.
+Certain admin actions are classified as "sensitive" and require **out-of-band approval via Slack** before execution. This provides a second-channel security boundary: an attacker who compromises an admin web session also needs access to the Slack workspace to execute sensitive actions.
 
-| Sensitive Actions |
-|-------------------|
+| Sensitive Actions Requiring Slack Approval |
+|--------------------------------------------|
 | suspendUser |
 | unsuspendUser |
 | adjustCredits |
 | blockIP |
 | unblockIP |
-| deleteModel |
-| revokeSession |
-| modifyPermissions |
 
-When a sensitive action is requested, the system generates a confirmation token that must be provided to complete the action. Tokens are single-use and expire after 5 minutes.
+The approval flow works as follows:
+
+1. **Admin initiates action** in the web UI (e.g., clicks "Suspend User")
+2. **Server creates a pending action** (NOT executed yet) and sends a Slack message with Approve/Deny buttons
+3. **Admin or another team member** clicks "Approve" or "Deny" in Slack
+4. **Admin polls for status** in the web UI, and once approved, the server executes the action
+5. **If no response within 5 minutes**, the pending action expires automatically
+
+If Slack is not configured (`SLACK_WEBHOOK_URL` not set), actions are auto-approved to avoid blocking admin operations.
+
+**tRPC Endpoints:**
 
 ```typescript
-// Generate a confirmation token
-const token = generateConfirmationToken(adminId, "suspendUser", targetUserId);
+// Step 1: Request approval (creates pending action, sends Slack message)
+const { actionId, slackSent, expiresIn } = await trpc.admin.requestApproval.mutate({
+  action: "suspendUser",
+  targetId: "42",
+  description: "Suspend user 42 for repeated TOS violations",
+  params: { reason: "TOS violation" },
+});
 
-// Validate and consume the token
-const result = validateConfirmationToken(token, adminId, "suspendUser", targetUserId);
-if (!result.valid) {
-  throw new Error(result.reason);
+// Step 2: Poll for approval status
+const status = await trpc.admin.checkApprovalStatus.query({ actionId });
+// status.status: "pending" | "approved" | "denied" | "expired" | "executed" | "failed"
+
+// Step 3: Execute once approved
+if (status.status === "approved") {
+  const result = await trpc.admin.executeApproved.mutate({ actionId });
+  // result.message: "User suspended successfully"
 }
 ```
+
+**Key files:**
+- `server/slackApproval.ts` — Pending action store, Slack message builder, approval/deny logic
+- `server/slackInteractions.ts` — Handles Approve/Deny button clicks from Slack
+- `server/routers.ts` — `admin.requestApproval`, `admin.checkApprovalStatus`, `admin.executeApproved` endpoints
 
 ### Admin Activity Alerts
 

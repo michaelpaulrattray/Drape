@@ -47,7 +47,288 @@ import { newsletterSignup, testConnection as testKlaviyoConnection } from "./kla
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "./rateLimit";
 import { withAtomicCredits } from "./atomicCredits";
 import { logAuditEvent, AUDIT_ACTIONS } from "./auditLog";
-import { logAdminAction, isSensitiveAction, generateConfirmationToken, validateConfirmationToken, writeImmutableLog } from "./adminSecurity";
+import { logAdminAction, isSensitiveAction, writeImmutableLog } from "./adminSecurity";
+import { 
+  requestApproval as requestSlackApproval, 
+  getApprovalStatus as getSlackApprovalStatus,
+  markExecuted as markSlackActionExecuted,
+  markFailed as markSlackActionFailed,
+  type PendingAction,
+} from "./slackApproval";
+
+/**
+ * Execute an approved admin action from the Slack approval flow.
+ * This function dispatches to the appropriate action handler based on the pending action type.
+ */
+async function executeApprovedAdminAction(
+  pendingAction: PendingAction,
+  ctx: { user: { id: number; name: string | null; email: string | null; role: string }; req: any; res: any }
+): Promise<{ message: string }> {
+  const params = pendingAction.params;
+  const adminName = ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`;
+  
+  switch (pendingAction.action) {
+    case "suspendUser": {
+      const { suspendUser, getUserById } = await import("./db");
+      const userId = Number(pendingAction.targetId);
+      const reason = (params.reason as string) || "Approved via Slack";
+      
+      const targetUser = await getUserById(userId);
+      if (!targetUser) throw new Error("User not found");
+      if (targetUser.role === "admin") throw new Error("Cannot suspend admin accounts");
+      
+      const result = await suspendUser(userId, reason, ctx.user.id);
+      if (!result.success) throw new Error(result.error || "Failed to suspend user");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.ACCOUNT_SUSPENDED,
+        resourceType: "user",
+        resourceId: userId.toString(),
+        metadata: {
+          targetUserId: userId,
+          targetUserEmail: targetUser.email,
+          reason,
+          suspendedBy: ctx.user.id,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "critical",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await logAdminAction({
+        adminId: ctx.user.id,
+        adminName,
+        action: "suspendUser",
+        targetType: "user",
+        targetId: userId.toString(),
+        details: `Suspended user ${targetUser.email || targetUser.name} (Slack-approved by ${pendingAction.resolvedBy}) - Reason: ${reason}`,
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || undefined,
+      });
+      
+      await writeImmutableLog("user_suspended", {
+        adminId: ctx.user.id,
+        adminName,
+        targetUserId: userId,
+        targetUserEmail: targetUser.email,
+        reason,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `User ${targetUser.email || targetUser.name} suspended successfully` };
+    }
+    
+    case "unsuspendUser": {
+      const { unsuspendUser, getUserById } = await import("./db");
+      const userId = Number(pendingAction.targetId);
+      
+      const targetUser = await getUserById(userId);
+      if (!targetUser) throw new Error("User not found");
+      if (!targetUser.suspendedAt) throw new Error("User is not suspended");
+      
+      const result = await unsuspendUser(userId);
+      if (!result.success) throw new Error(result.error || "Failed to unsuspend user");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.ACCOUNT_UNSUSPENDED,
+        resourceType: "user",
+        resourceId: userId.toString(),
+        metadata: {
+          targetUserId: userId,
+          targetUserEmail: targetUser.email,
+          previousReason: targetUser.suspendedReason,
+          unsuspendedBy: ctx.user.id,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "info",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await logAdminAction({
+        adminId: ctx.user.id,
+        adminName,
+        action: "unsuspendUser",
+        targetType: "user",
+        targetId: userId.toString(),
+        details: `Unsuspended user ${targetUser.email || targetUser.name} (Slack-approved by ${pendingAction.resolvedBy})`,
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || undefined,
+      });
+      
+      await writeImmutableLog("user_unsuspended", {
+        adminId: ctx.user.id,
+        adminName,
+        targetUserId: userId,
+        targetUserEmail: targetUser.email,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `User ${targetUser.email || targetUser.name} unsuspended successfully` };
+    }
+    
+    case "blockIP": {
+      const { blockIp } = await import("./db");
+      const ipAddress = pendingAction.targetId;
+      const reason = (params.reason as string) || "Approved via Slack";
+      const expiresInHours = params.expiresInHours as number | undefined;
+      
+      const expiresAt = expiresInHours
+        ? new Date(Date.now() + expiresInHours * 60 * 60 * 1000)
+        : null;
+      
+      const result = await blockIp(ipAddress, reason, ctx.user.id, expiresAt);
+      if (!result.success) throw new Error("Failed to block IP address");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.IP_BLOCKED,
+        resourceType: "ip",
+        resourceId: ipAddress,
+        metadata: {
+          reason,
+          expiresAt: expiresAt?.toISOString() || "permanent",
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "warning",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await logAdminAction({
+        adminId: ctx.user.id,
+        adminName,
+        action: "blockIP",
+        targetType: "ip",
+        targetId: ipAddress,
+        details: `Blocked IP ${ipAddress} (Slack-approved by ${pendingAction.resolvedBy}) - Reason: ${reason}`,
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || undefined,
+      });
+      
+      await writeImmutableLog("ip_blocked", {
+        adminId: ctx.user.id,
+        adminName,
+        ipAddress,
+        reason,
+        expiresAt: expiresAt?.toISOString() || "permanent",
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `IP ${ipAddress} blocked successfully` };
+    }
+    
+    case "unblockIP": {
+      const { unblockIp } = await import("./db");
+      const ipAddress = pendingAction.targetId;
+      
+      const success = await unblockIp(ipAddress);
+      if (!success) throw new Error("Failed to unblock IP address");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.IP_UNBLOCKED,
+        resourceType: "ip",
+        resourceId: ipAddress,
+        metadata: {
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "info",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await logAdminAction({
+        adminId: ctx.user.id,
+        adminName,
+        action: "unblockIP",
+        targetType: "ip",
+        targetId: ipAddress,
+        details: `Unblocked IP ${ipAddress} (Slack-approved by ${pendingAction.resolvedBy})`,
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || undefined,
+      });
+      
+      await writeImmutableLog("ip_unblocked", {
+        adminId: ctx.user.id,
+        adminName,
+        ipAddress,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `IP ${ipAddress} unblocked successfully` };
+    }
+    
+    case "adjustCredits": {
+      const { adjustUserCredits, getUserById } = await import("./db");
+      const userId = Number(pendingAction.targetId);
+      const amount = params.amount as number;
+      const reason = (params.reason as string) || "Approved via Slack";
+      
+      if (typeof amount !== "number") throw new Error("Invalid credit amount");
+      
+      const targetUser = await getUserById(userId);
+      if (!targetUser) throw new Error("User not found");
+      
+      const result = await adjustUserCredits(userId, amount, reason, ctx.user.id);
+      if (!result.success) throw new Error(result.error || "Failed to adjust credits");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: amount > 0 ? AUDIT_ACTIONS.CREDITS_ADDED : AUDIT_ACTIONS.CREDITS_DEDUCTED,
+        resourceType: "credits",
+        resourceId: userId.toString(),
+        metadata: {
+          targetUserId: userId,
+          targetUserEmail: targetUser.email,
+          amount,
+          reason,
+          newBalance: result.newBalance,
+          adjustedBy: ctx.user.id,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "warning",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await logAdminAction({
+        adminId: ctx.user.id,
+        adminName,
+        action: "adjustCredits",
+        targetType: "user",
+        targetId: userId.toString(),
+        details: `${amount > 0 ? "Added" : "Deducted"} ${Math.abs(amount)} credits for ${targetUser.email || targetUser.name} (Slack-approved by ${pendingAction.resolvedBy}) - Reason: ${reason} - New balance: ${result.newBalance}`,
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || undefined,
+      });
+      
+      await writeImmutableLog("credits_adjusted", {
+        adminId: ctx.user.id,
+        adminName,
+        targetUserId: userId,
+        targetUserEmail: targetUser.email,
+        amount,
+        reason,
+        newBalance: result.newBalance,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `${amount > 0 ? "Added" : "Deducted"} ${Math.abs(amount)} credits. New balance: ${result.newBalance}` };
+    }
+    
+    default:
+      throw new Error(`Unknown action type: ${pendingAction.action}`);
+  }
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -2005,48 +2286,112 @@ export const appRouter = router({
 
   // ============ Admin: Audit Logs ============
   admin: router({
-    // ============ Confirmation Tokens ============
+    // ============ Slack Approval Flow ============
     
-    // Generate a confirmation token for a sensitive action
-    generateConfirmationToken: adminProcedure
+    // Request Slack approval for a sensitive admin action
+    requestApproval: adminProcedure
       .input(z.object({
-        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP", "deleteModel"]),
+        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP"]),
         targetId: z.string(),
+        description: z.string().min(1).max(1000),
+        params: z.record(z.string(), z.unknown()).optional().default({}),
       }))
       .mutation(async ({ ctx, input }) => {
-        const token = generateConfirmationToken(
-          ctx.user.id,
-          input.action,
-          input.targetId
-        );
+        const result = await requestSlackApproval({
+          action: input.action,
+          requestedBy: {
+            id: ctx.user.id,
+            name: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
+            email: ctx.user.email || undefined,
+          },
+          targetId: input.targetId,
+          description: input.description,
+          params: input.params,
+          ipAddress: getClientIp(ctx.req),
+        });
         
         return {
-          token,
-          expiresIn: 300, // 5 minutes in seconds
-          action: input.action,
-          targetId: input.targetId,
+          actionId: result.actionId,
+          slackSent: result.sent,
+          expiresIn: 300, // 5 minutes
         };
       }),
 
-    // Validate a confirmation token (for checking before executing)
-    validateToken: adminProcedure
+    // Check the status of a pending approval
+    checkApprovalStatus: adminProcedure
       .input(z.object({
-        token: z.string(),
-        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP", "deleteModel"]),
-        targetId: z.string(),
+        actionId: z.string(),
       }))
       .query(async ({ ctx, input }) => {
-        const result = validateConfirmationToken(
-          input.token,
-          ctx.user.id,
-          input.action,
-          input.targetId
-        );
+        const status = getSlackApprovalStatus(input.actionId);
+        
+        if (!status) {
+          return {
+            status: "not_found" as const,
+            message: "Approval request not found or has been cleaned up",
+          };
+        }
+        
+        // Only the requesting admin can check status
+        if (status.requestedBy.id !== ctx.user.id) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only check status of your own approval requests",
+          });
+        }
         
         return {
-          valid: result.valid,
-          reason: result.reason,
+          status: status.status,
+          action: status.action,
+          targetId: status.targetId,
+          resolvedBy: status.resolvedBy,
+          resolvedAt: status.resolvedAt,
+          resultMessage: status.resultMessage,
+          expiresAt: status.expiresAt,
         };
+      }),
+
+    // Execute an approved action
+    executeApproved: adminProcedure
+      .input(z.object({
+        actionId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const status = getSlackApprovalStatus(input.actionId);
+        
+        if (!status) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Approval request not found",
+          });
+        }
+        
+        if (status.requestedBy.id !== ctx.user.id) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only execute your own approved actions",
+          });
+        }
+        
+        if (status.status !== "approved") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Cannot execute action with status: ${status.status}`,
+          });
+        }
+        
+        // Execute the approved action based on its type
+        try {
+          const result = await executeApprovedAdminAction(status, ctx);
+          markSlackActionExecuted(input.actionId, result.message);
+          return { success: true, message: result.message };
+        } catch (error: any) {
+          markSlackActionFailed(input.actionId, error.message || "Execution failed");
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "Failed to execute approved action",
+          });
+        }
       }),
 
     // ============ Audit Logs ============
@@ -2105,26 +2450,9 @@ export const appRouter = router({
       .input(z.object({
         userId: z.number(),
         reason: z.string().min(1).max(500),
-        confirmationToken: z.string().optional(), // Required for UI confirmation flow
       }))
       .mutation(async ({ ctx, input }) => {
         const { suspendUser, getUserById } = await import("./db");
-        
-        // Validate confirmation token if provided
-        if (input.confirmationToken) {
-          const tokenResult = validateConfirmationToken(
-            input.confirmationToken,
-            ctx.user.id,
-            "suspendUser",
-            input.userId.toString()
-          );
-          if (!tokenResult.valid) {
-            throw new TRPCError({ 
-              code: "BAD_REQUEST", 
-              message: tokenResult.reason || "Invalid confirmation token" 
-            });
-          }
-        }
         
         // Get target user info for audit log
         const targetUser = await getUserById(input.userId);
@@ -2193,26 +2521,9 @@ export const appRouter = router({
     unsuspendUser: adminProcedure
       .input(z.object({
         userId: z.number(),
-        confirmationToken: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { unsuspendUser, getUserById } = await import("./db");
-        
-        // Validate confirmation token if provided
-        if (input.confirmationToken) {
-          const tokenResult = validateConfirmationToken(
-            input.confirmationToken,
-            ctx.user.id,
-            "unsuspendUser",
-            input.userId.toString()
-          );
-          if (!tokenResult.valid) {
-            throw new TRPCError({ 
-              code: "BAD_REQUEST", 
-              message: tokenResult.reason || "Invalid confirmation token" 
-            });
-          }
-        }
         
         const targetUser = await getUserById(input.userId);
         if (!targetUser) {
@@ -2349,26 +2660,9 @@ export const appRouter = router({
         ipAddress: z.string().min(1),
         reason: z.string().min(1).max(500),
         expiresInHours: z.number().min(1).max(8760).optional(), // Max 1 year, null = permanent
-        confirmationToken: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { blockIp } = await import("./db");
-        
-        // Validate confirmation token if provided
-        if (input.confirmationToken) {
-          const tokenResult = validateConfirmationToken(
-            input.confirmationToken,
-            ctx.user.id,
-            "blockIP",
-            input.ipAddress
-          );
-          if (!tokenResult.valid) {
-            throw new TRPCError({ 
-              code: "BAD_REQUEST", 
-              message: tokenResult.reason || "Invalid confirmation token" 
-            });
-          }
-        }
         
         const expiresAt = input.expiresInHours 
           ? new Date(Date.now() + input.expiresInHours * 60 * 60 * 1000)
@@ -2430,26 +2724,9 @@ export const appRouter = router({
     unblockIP: adminProcedure
       .input(z.object({
         ipAddress: z.string().min(1),
-        confirmationToken: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { unblockIp } = await import("./db");
-        
-        // Validate confirmation token if provided
-        if (input.confirmationToken) {
-          const tokenResult = validateConfirmationToken(
-            input.confirmationToken,
-            ctx.user.id,
-            "unblockIP",
-            input.ipAddress
-          );
-          if (!tokenResult.valid) {
-            throw new TRPCError({ 
-              code: "BAD_REQUEST", 
-              message: tokenResult.reason || "Invalid confirmation token" 
-            });
-          }
-        }
         
         const success = await unblockIp(input.ipAddress);
 
@@ -2593,26 +2870,9 @@ export const appRouter = router({
         userId: z.number(),
         amount: z.number().min(-100000).max(100000),
         reason: z.string().min(1).max(500),
-        confirmationToken: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { adjustUserCredits, getUserById } = await import("./db");
-        
-        // Validate confirmation token if provided
-        if (input.confirmationToken) {
-          const tokenResult = validateConfirmationToken(
-            input.confirmationToken,
-            ctx.user.id,
-            "adjustCredits",
-            input.userId.toString()
-          );
-          if (!tokenResult.valid) {
-            throw new TRPCError({ 
-              code: "BAD_REQUEST", 
-              message: tokenResult.reason || "Invalid confirmation token" 
-            });
-          }
-        }
         
         // Get target user info
         const targetUser = await getUserById(input.userId);

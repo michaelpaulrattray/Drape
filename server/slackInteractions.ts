@@ -9,6 +9,7 @@ import { Request, Response } from "express";
 import { verifySlackSignature, SlackAlerts } from "./slackNotification";
 import { consumeEmergencyToken, blockIp, getUserById } from "./db";
 import { logAuditEvent, AUDIT_ACTIONS } from "./auditLog";
+import { approveAction, denyAction } from "./slackApproval";
 
 interface SlackInteractionPayload {
   type: string;
@@ -87,6 +88,10 @@ export async function handleSlackInteraction(req: Request, res: Response): Promi
       await handleBlockIpAction(actionData, slackUser, payload.response_url);
     } else if (action.action_id === "suspend_user") {
       await handleSuspendUserAction(actionData, slackUser, payload.response_url);
+    } else if (action.action_id === "approve_admin_action") {
+      await handleApproveAction(actionData, slackUser, payload.response_url);
+    } else if (action.action_id === "deny_admin_action") {
+      await handleDenyAction(actionData, slackUser, payload.response_url);
     } else {
       await sendSlackResponse(payload.response_url, {
         text: `❌ Unknown action: ${action.action_id}`,
@@ -236,6 +241,94 @@ async function handleSuspendUserAction(
 
   // Also send a confirmation alert
   await SlackAlerts.userSuspended(userId, userName || `User ${userId}`, reason, slackUser);
+}
+
+/**
+ * Handle approval of a pending admin action from Slack button
+ */
+async function handleApproveAction(
+  actionData: { actionId: string },
+  slackUser: string,
+  responseUrl: string
+): Promise<void> {
+  const { actionId } = actionData;
+  
+  const result = approveAction(actionId, slackUser);
+  
+  if (!result.success) {
+    await sendSlackResponse(responseUrl, {
+      text: `❌ *Approval Failed*\n${result.error}`,
+      replace_original: false,
+    });
+    return;
+  }
+  
+  const action = result.action!;
+  
+  // Log the approval
+  await logAuditEvent({
+    userId: null, // Slack user, not a system user
+    action: AUDIT_ACTIONS.ADMIN_ACTION,
+    resourceType: "approval",
+    resourceId: actionId,
+    metadata: {
+      approvedAction: action.action,
+      targetId: action.targetId,
+      requestedBy: action.requestedBy.name,
+      approvedBy: slackUser,
+      source: "slack_approval",
+    },
+    severity: "warning",
+  });
+  
+  await sendSlackResponse(responseUrl, {
+    text: `✅ *Action Approved*\n\n*Action:* ${action.action}\n*Target:* ${action.targetId}\n*Requested By:* ${action.requestedBy.name}\n*Approved By:* ${slackUser}\n\nThe action will now be executed.`,
+    replace_original: false,
+  });
+}
+
+/**
+ * Handle denial of a pending admin action from Slack button
+ */
+async function handleDenyAction(
+  actionData: { actionId: string },
+  slackUser: string,
+  responseUrl: string
+): Promise<void> {
+  const { actionId } = actionData;
+  
+  const result = denyAction(actionId, slackUser);
+  
+  if (!result.success) {
+    await sendSlackResponse(responseUrl, {
+      text: `❌ *Denial Failed*\n${result.error}`,
+      replace_original: false,
+    });
+    return;
+  }
+  
+  const action = result.action!;
+  
+  // Log the denial
+  await logAuditEvent({
+    userId: null,
+    action: AUDIT_ACTIONS.ADMIN_ACTION,
+    resourceType: "approval",
+    resourceId: actionId,
+    metadata: {
+      deniedAction: action.action,
+      targetId: action.targetId,
+      requestedBy: action.requestedBy.name,
+      deniedBy: slackUser,
+      source: "slack_denial",
+    },
+    severity: "warning",
+  });
+  
+  await sendSlackResponse(responseUrl, {
+    text: `❌ *Action Denied*\n\n*Action:* ${action.action}\n*Target:* ${action.targetId}\n*Requested By:* ${action.requestedBy.name}\n*Denied By:* ${slackUser}\n\nThe action has been blocked and will not be executed.`,
+    replace_original: false,
+  });
 }
 
 /**

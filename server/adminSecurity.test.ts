@@ -2,13 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   validateAdminAccess,
   isSensitiveAction,
-  generateConfirmationToken,
-  validateConfirmationToken,
   writeImmutableLog,
   verifyImmutableLogChain,
   logAdminAction,
   logUnauthorizedAdminAccess,
-  ADMIN_ALLOWLIST,
 } from "./adminSecurity";
 
 // Mock the Slack notifications
@@ -24,15 +21,12 @@ vi.mock("./slackNotification", () => ({
 describe("Admin Security", () => {
   describe("validateAdminAccess", () => {
     it("should allow access for users on the allowlist with admin role", () => {
-      // The owner should be on the allowlist by default
       const result = validateAdminAccess({
         id: 1,
         role: "admin",
         email: "owner@example.com",
       });
       
-      // Result depends on whether OWNER_OPEN_ID is set
-      // In test environment, allowlist may be empty
       expect(result).toHaveProperty("allowed");
       expect(result).toHaveProperty("reason");
     });
@@ -44,8 +38,6 @@ describe("Admin Security", () => {
         email: "attacker@example.com",
       });
       
-      // If allowlist is empty, all admins are allowed (fallback behavior)
-      // If allowlist has entries, non-listed users are denied
       expect(result).toHaveProperty("allowed");
     });
 
@@ -76,52 +68,8 @@ describe("Admin Security", () => {
     });
   });
 
-  describe("Confirmation Tokens", () => {
-    it("should generate valid confirmation tokens", () => {
-      // generateConfirmationToken takes (adminId, action, targetId) as separate args
-      const token = generateConfirmationToken(1, "suspendUser", "123");
-      
-      expect(token).toBeDefined();
-      expect(typeof token).toBe("string");
-      expect(token.length).toBeGreaterThan(20);
-    });
-
-    it("should validate correct tokens", () => {
-      const token = generateConfirmationToken(1, "suspendUser", "123");
-      
-      const result = validateConfirmationToken(token, 1, "suspendUser", "123");
-      
-      expect(result.valid).toBe(true);
-    });
-
-    it("should reject tokens with wrong admin ID", () => {
-      const token = generateConfirmationToken(1, "suspendUser", "123");
-      
-      const result = validateConfirmationToken(token, 2, "suspendUser", "123");
-      
-      expect(result.valid).toBe(false);
-    });
-
-    it("should reject tokens with wrong action", () => {
-      const token = generateConfirmationToken(1, "suspendUser", "123");
-      
-      const result = validateConfirmationToken(token, 1, "adjustCredits", "123");
-      
-      expect(result.valid).toBe(false);
-    });
-
-    it("should reject invalid tokens", () => {
-      // Try to validate a non-existent token
-      const result = validateConfirmationToken("invalid-token", 1, "suspendUser", "123");
-      
-      expect(result.valid).toBe(false);
-      expect(result.reason).toBeDefined();
-    });
-  });
-
   describe("Immutable Log", () => {
     beforeEach(() => {
-      // Clear the log before each test
       vi.resetModules();
     });
 
@@ -206,7 +154,6 @@ describe("Admin Security", () => {
         attemptedAction: "admin_access",
         ipAddress: "192.168.1.100",
         userAgent: "Mozilla/5.0",
-        reason: "User not on allowlist",
       });
       
       expect(SlackAlerts.unauthorizedAdminAccess).toHaveBeenCalled();

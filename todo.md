@@ -2587,3 +2587,17 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add confirmation token validation to sensitive action endpoints
 - [x] Add immutable logging for critical security events (suspend, credit adjust, IP block)
 - [x] Update tests for integrated security features (277 tests passing)
+
+
+## Slack-Based Approval Flow for Sensitive Admin Actions
+- [x] Create pending actions in-memory store with expiry management
+- [x] Create Slack approval message builder with Approve/Deny buttons
+- [x] Update Slack interactions endpoint to handle approve/deny callbacks
+- [x] Update sensitive admin procedures to require Slack approval (suspendUser, unsuspendUser, adjustCredits, blockIP, unblockIP)
+- [x] Add admin.requestApproval tRPC endpoint that initiates the flow
+- [x] Add admin.checkApprovalStatus tRPC endpoint for polling from UI
+- [x] Add admin.executeApproved tRPC endpoint for executing approved actions
+- [x] Remove UI-only confirmation token endpoints (generateConfirmationToken, validateToken)
+- [x] Write vitest tests for Slack approval flow (30 tests)
+- [x] Update security documentation
+- [x] Auto-approve fallback when Slack is not configured

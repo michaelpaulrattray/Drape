@@ -188,95 +188,14 @@ export async function logUnauthorizedAdminAccess(options: {
 }
 
 /**
- * ADMIN ACTION CONFIRMATION TOKENS
+ * ADMIN ACTION CONFIRMATION
  * 
- * For sensitive actions, we require a confirmation token that proves
- * the admin re-authenticated recently (within 5 minutes)
+ * UI-only confirmation tokens have been replaced by Slack-based approval flow.
+ * See server/slackApproval.ts for the out-of-band two-factor authorization system.
+ * 
+ * Sensitive actions now require approval via Slack before execution,
+ * ensuring an attacker needs access to both the admin session AND the Slack workspace.
  */
-interface ConfirmationToken {
-  adminId: number;
-  action: string;
-  targetId: string;
-  createdAt: number;
-  expiresAt: number;
-}
-
-// In-memory store for confirmation tokens (short-lived, doesn't need persistence)
-const confirmationTokens = new Map<string, ConfirmationToken>();
-
-/**
- * Generate a confirmation token for a sensitive action
- */
-export function generateConfirmationToken(
-  adminId: number,
-  action: string,
-  targetId: string
-): string {
-  const crypto = require("crypto");
-  const token = crypto.randomBytes(32).toString("hex");
-  
-  const tokenData: ConfirmationToken = {
-    adminId,
-    action,
-    targetId,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-  };
-  
-  confirmationTokens.set(token, tokenData);
-  
-  // Clean up expired tokens
-  cleanupExpiredTokens();
-  
-  return token;
-}
-
-/**
- * Validate and consume a confirmation token
- */
-export function validateConfirmationToken(
-  token: string,
-  adminId: number,
-  action: string,
-  targetId: string
-): { valid: boolean; reason?: string } {
-  const tokenData = confirmationTokens.get(token);
-  
-  if (!tokenData) {
-    return { valid: false, reason: "Invalid or expired confirmation token" };
-  }
-  
-  if (tokenData.expiresAt < Date.now()) {
-    confirmationTokens.delete(token);
-    return { valid: false, reason: "Confirmation token has expired" };
-  }
-  
-  if (tokenData.adminId !== adminId) {
-    return { valid: false, reason: "Token does not belong to this admin" };
-  }
-  
-  if (tokenData.action !== action || tokenData.targetId !== targetId) {
-    return { valid: false, reason: "Token does not match the requested action" };
-  }
-  
-  // Consume the token (single use)
-  confirmationTokens.delete(token);
-  
-  return { valid: true };
-}
-
-/**
- * Clean up expired confirmation tokens
- */
-function cleanupExpiredTokens(): void {
-  const now = Date.now();
-  const entries = Array.from(confirmationTokens.entries());
-  for (const [token, data] of entries) {
-    if (data.expiresAt < now) {
-      confirmationTokens.delete(token);
-    }
-  }
-}
 
 /**
  * IMMUTABLE AUDIT LOG
