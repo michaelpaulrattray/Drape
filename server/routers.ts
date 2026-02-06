@@ -44,6 +44,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { generatePremiumIdentityPdf, PdfModelData } from "./pdfService";
 import { newsletterSignup, testConnection as testKlaviyoConnection } from "./klaviyo";
+import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "./rateLimit";
 
 export const appRouter = router({
   system: systemRouter,
@@ -205,7 +206,18 @@ export const appRouter = router({
         source: z.string().optional(),
         referralCode: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Rate limit by IP to prevent spam
+        const clientIp = getClientIp(ctx.req);
+        const rateCheck = checkRateLimit(clientIp, RATE_LIMITS.waitlist);
+        
+        if (!rateCheck.allowed) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: rateLimitError(rateCheck.resetIn),
+          });
+        }
+        
         const result = await addToWaitlist({
           email: input.email.toLowerCase().trim(),
           name: input.name || null,
@@ -412,12 +424,29 @@ export const appRouter = router({
         referenceImage: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Check points
-        const userPoints = await getUserPoints(ctx.user.id);
-        if (!userPoints || userPoints.balance < POINT_COSTS.castingImage) {
+        // Rate limit by user to prevent API abuse
+        const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+        if (!rateCheck.allowed) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: rateLimitError(rateCheck.resetIn),
+          });
+        }
+        
+        // ATOMIC credit deduction BEFORE generation to prevent race conditions
+        // Credits are deducted first, then refunded if generation fails
+        const deductResult = await deductPoints(
+          ctx.user.id,
+          POINT_COSTS.castingImage,
+          "generation",
+          "Casting image generation (pending)",
+          `pending-${Date.now()}`
+        );
+        
+        if (!deductResult.success) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Insufficient points. Need ${POINT_COSTS.castingImage} points.`,
+            message: deductResult.error || `Insufficient credits. Need ${POINT_COSTS.castingImage} credits.`,
           });
         }
 
@@ -468,14 +497,7 @@ export const appRouter = router({
             });
           }
 
-          // Deduct points
-          await deductPoints(
-            ctx.user.id,
-            POINT_COSTS.castingImage,
-            "generation",
-            "Casting image generation",
-            `gen-${genResult.generationId}`
-          );
+          // Credits already deducted before generation - no need to deduct again
 
           // Save asset
           const assetResult = await createModelAsset({
@@ -503,6 +525,15 @@ export const appRouter = router({
             assetId: assetResult.assetId,
           };
         } catch (error) {
+          // Refund credits on failure
+          await addCredits(
+            ctx.user.id,
+            POINT_COSTS.castingImage,
+            "refund",
+            "Refund for failed casting image generation",
+            `refund-${genResult.generationId}`
+          );
+          
           await updateGeneration(genResult.generationId!, {
             status: "failed",
             errorMessage: error instanceof Error ? error.message : "Unknown error",
@@ -1887,7 +1918,18 @@ export const appRouter = router({
         email: z.string().email("Please enter a valid email address"),
         source: z.string().optional().default("website_footer"),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Rate limit by IP to prevent spam
+        const clientIp = getClientIp(ctx.req);
+        const rateCheck = checkRateLimit(clientIp, RATE_LIMITS.newsletter);
+        
+        if (!rateCheck.allowed) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: rateLimitError(rateCheck.resetIn),
+          });
+        }
+        
         const result = await newsletterSignup(input.email, input.source);
         
         if (!result.success) {

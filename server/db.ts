@@ -190,24 +190,31 @@ export async function deductCredits(
   }
 
   try {
-    // Get current balance
-    const userCredits = await getUserCredits(userId);
-    if (!userCredits) {
-      return { success: false, error: "User credits not found" };
-    }
+    // ATOMIC DEDUCTION: Use SQL conditional update to prevent race conditions
+    // This ensures credits are only deducted if balance >= amount at the moment of update
+    // If two requests race, only one will succeed - the other will see 0 rows affected
+    const updateResult = await db.execute(
+      sql`UPDATE ${credits} 
+          SET balance = balance - ${amount},
+              credits_used = COALESCE(credits_used, 0) + ${amount}
+          WHERE user_id = ${userId} AND balance >= ${amount}`
+    );
 
-    if (userCredits.balance < amount) {
+    // Check if any rows were affected (cast to handle different MySQL driver responses)
+    const affectedRows = (updateResult as any)[0]?.affectedRows ?? (updateResult as any).affectedRows ?? 0;
+    
+    if (affectedRows === 0) {
+      // Either user not found or insufficient balance
+      const userCredits = await getUserCredits(userId);
+      if (!userCredits) {
+        return { success: false, error: "User credits not found" };
+      }
       return { success: false, error: "Insufficient credits" };
     }
 
-    const newBalance = userCredits.balance - amount;
-    const newCreditsUsed = (userCredits.creditsUsed || 0) + amount;
-
-    // Update balance and track usage
-    await db.update(credits).set({ 
-      balance: newBalance,
-      creditsUsed: newCreditsUsed,
-    }).where(eq(credits.userId, userId));
+    // Get the new balance for the transaction record
+    const userCredits = await getUserCredits(userId);
+    const newBalance = userCredits?.balance ?? 0;
 
     // Record transaction with engine info
     await db.insert(creditTransactions).values({
