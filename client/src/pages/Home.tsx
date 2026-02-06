@@ -1375,7 +1375,7 @@ function BlogSection() {
 // ============ NEWSLETTER FORM ============
 function NewsletterForm() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "duplicate" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [validationError, setValidationError] = useState("");
 
@@ -1386,9 +1386,12 @@ function NewsletterForm() {
   };
 
   const subscribeMutation = trpc.newsletter.subscribe.useMutation({
-    onSuccess: () => {
-      setStatus("success");
-      // Keep the email visible to show what was subscribed
+    onSuccess: (data) => {
+      if (data.isNew) {
+        setStatus("success");
+      } else {
+        setStatus("duplicate");
+      }
     },
     onError: (error) => {
       setStatus("error");
@@ -1410,7 +1413,7 @@ function NewsletterForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || status === "loading" || status === "success") return;
+    if (!email || status === "loading" || status === "success" || status === "duplicate") return;
     
     // Validate email format
     if (!isValidEmail(email)) {
@@ -1422,6 +1425,8 @@ function NewsletterForm() {
     subscribeMutation.mutate({ email, source: "website_footer" });
   };
 
+  const isSubmitted = status === "success" || status === "duplicate";
+
   return (
     <div className="max-w-sm">
       <p className="text-white/60 mb-4">Sign up for our monthly newsletter.</p>
@@ -1431,7 +1436,7 @@ function NewsletterForm() {
           value={email}
           onChange={handleEmailChange}
           placeholder="Email"
-          disabled={status === "loading" || status === "success"}
+          disabled={status === "loading" || isSubmitted}
           className={`w-full px-4 py-3 bg-white/10 border rounded-full text-white placeholder:text-white/40 focus:outline-none transition-colors disabled:opacity-70 ${
             validationError 
               ? "border-red-400 focus:border-red-400" 
@@ -1443,9 +1448,9 @@ function NewsletterForm() {
         )}
         <button 
           type="submit" 
-          disabled={status === "loading" || status === "success"}
+          disabled={status === "loading" || isSubmitted}
           className={`group w-full py-3 rounded-full font-medium transition-all duration-300 bg-[#EBEBEB] text-[#0A0A0A] disabled:opacity-70 ${
-            status === "success" ? "" : "hover:bg-[#DEDEDE]"
+            isSubmitted ? "" : "hover:bg-[#DEDEDE]"
           }`}
         >
           {status === "loading" ? (
@@ -1455,6 +1460,8 @@ function NewsletterForm() {
             </span>
           ) : status === "success" ? (
             "Thank You!"
+          ) : status === "duplicate" ? (
+            "This email is already on the list."
           ) : (
             <span className="overflow-hidden h-5 block">
               <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">

@@ -1901,7 +1901,7 @@ export const appRouter = router({
           success: true,
           message: result.isNew 
             ? "Welcome! You've been subscribed to our newsletter."
-            : "You're already subscribed. Thanks for your interest!",
+            : "This email is already on the list.",
           isNew: result.isNew,
         };
       }),
