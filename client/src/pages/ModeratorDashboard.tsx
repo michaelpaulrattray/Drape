@@ -861,7 +861,10 @@ export default function ModeratorDashboard() {
                                     </div>
                                   )}
                                   <div>
-                                    <div className="font-medium text-sm text-white">{u.name || "Unnamed"}</div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-xs text-white/30">#{u.id}</span>
+                                      <span className="font-medium text-sm text-white">{u.name || "Unnamed"}</span>
+                                    </div>
                                     <div className="text-xs text-white/40">{u.email || "No email"}</div>
                                   </div>
                                 </div>

@@ -436,7 +436,10 @@ export default function AdminUserManagement() {
                             </div>
                           )}
                           <div>
-                            <div className="font-medium">{u.name || "Unnamed"}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-xs text-white/30">#{u.id}</span>
+                              <span className="font-medium">{u.name || "Unnamed"}</span>
+                            </div>
                             <div className="text-sm text-gray-400">{u.email || "No email"}</div>
                           </div>
                         </div>
