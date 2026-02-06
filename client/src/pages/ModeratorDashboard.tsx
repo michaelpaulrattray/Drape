@@ -1158,12 +1158,15 @@ export default function ModeratorDashboard() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="all">All Types</SelectItem>
+                                <SelectItem value="generation">Generations</SelectItem>
                                 <SelectItem value="purchase">Purchases</SelectItem>
-                                <SelectItem value="usage">Usage</SelectItem>
-                                <SelectItem value="admin_adjustment">Admin Adjustments</SelectItem>
+                                <SelectItem value="topup">Top-ups</SelectItem>
+                                <SelectItem value="subscription">Subscription</SelectItem>
+                                <SelectItem value="signup">Signup</SelectItem>
                                 <SelectItem value="refund">Refunds</SelectItem>
                                 <SelectItem value="bonus">Bonuses</SelectItem>
-                                <SelectItem value="expiry">Expired</SelectItem>
+                                <SelectItem value="admin_add">Admin Add</SelectItem>
+                                <SelectItem value="admin_deduct">Admin Deduct</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

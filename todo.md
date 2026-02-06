@@ -2804,3 +2804,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add mod dashboard UI for requesting Stripe refunds
 - [x] Write tests for refund calculation and execution logic (11 tests, 578 total)
 - [x] Update security/billing docs (BILLING_ALERTS.md updated with refund workflow, noise reduction, auto-cancel)
+
+## Bug Fix: Moderator Dashboard Credit History Query
+- [x] Fix invalid type value sent to credit history query on moderator page (frontend select options mismatched backend Zod enum)
