@@ -46,6 +46,7 @@ import { generatePremiumIdentityPdf, PdfModelData } from "./pdfService";
 import { newsletterSignup, testConnection as testKlaviyoConnection } from "./klaviyo";
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "./rateLimit";
 import { withAtomicCredits } from "./atomicCredits";
+import { logAuditEvent, AUDIT_ACTIONS } from "./auditLog";
 
 export const appRouter = router({
   system: systemRouter,
@@ -412,6 +413,21 @@ export const appRouter = router({
         }
 
         await deleteModel(input.modelId);
+        
+        // Audit log: model deletion
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: AUDIT_ACTIONS.MODEL_DELETED,
+          resourceType: "model",
+          resourceId: input.modelId.toString(),
+          metadata: {
+            modelName: model.name,
+            agencyId: model.agencyId,
+            status: model.status,
+          },
+          req: ctx.req,
+        });
+        
         return { success: true };
       }),
   }),
@@ -1532,6 +1548,20 @@ export const appRouter = router({
           input.interval
         );
 
+        // Audit log: subscription checkout initiated
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: AUDIT_ACTIONS.SUBSCRIPTION_CREATED,
+          resourceType: "subscription",
+          resourceId: customerId,
+          metadata: {
+            plan: input.plan,
+            interval: input.interval,
+            stage: "checkout_initiated",
+          },
+          req: ctx.req,
+        });
+
         return { checkoutUrl };
       }),
 
@@ -1573,6 +1603,19 @@ export const appRouter = router({
           `${baseUrl}/dashboard?topup=canceled`,
           ctx.user.id
         );
+
+        // Audit log: credit top-up checkout initiated
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: AUDIT_ACTIONS.CREDITS_PURCHASED,
+          resourceType: "credits",
+          resourceId: customerId,
+          metadata: {
+            packageId: input.packageId,
+            stage: "checkout_initiated",
+          },
+          req: ctx.req,
+        });
 
         return { checkoutUrl };
       }),
@@ -1619,6 +1662,20 @@ export const appRouter = router({
           message: "Failed to cancel subscription.",
         });
       }
+
+      // Audit log: subscription canceled
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.SUBSCRIPTION_CANCELED,
+        resourceType: "subscription",
+        resourceId: subscription.stripeSubscriptionId,
+        metadata: {
+          planTier: subscription.planTier,
+          cancelAtPeriodEnd: true,
+        },
+        severity: "warning",
+        req: ctx.req,
+      });
 
       return { success: true, message: "Subscription will be canceled at the end of the billing period." };
     }),
@@ -1832,6 +1889,22 @@ export const appRouter = router({
         // Update local subscription record
         await updateUserSubscription(ctx.user.id, {
           planTier: input.newPlan,
+        });
+
+        // Audit log: subscription plan changed
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: AUDIT_ACTIONS.SUBSCRIPTION_UPDATED,
+          resourceType: "subscription",
+          resourceId: subscription.stripeSubscriptionId,
+          metadata: {
+            previousPlan: currentPlan,
+            newPlan: input.newPlan,
+            isUpgrade: proration.isUpgrade,
+            creditAdjustment,
+            proratedAmount: result.proratedAmount,
+          },
+          req: ctx.req,
         });
 
         return {

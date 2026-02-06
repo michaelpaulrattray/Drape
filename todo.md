@@ -2480,4 +2480,19 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Apply atomic credit pattern to generateAllViews endpoint
 - [x] Apply atomic credit pattern to iterate endpoint
 - [x] Apply atomic credit pattern to upscale endpoint
-- [ ] Add developer documentation for atomic credit pattern
+- [x] Add developer documentation for atomic credit pattern (see docs/ATOMIC_CREDITS.md)
+
+
+## Developer Documentation & Audit Logging
+- [x] Create docs/ folder structure
+- [x] Write docs/SECURITY_OVERVIEW.md with index of all security guides
+- [x] Write docs/ATOMIC_CREDITS.md with pattern explanation and examples
+- [x] Write docs/AUTHENTICATION.md covering auth flow and protected procedures
+- [x] Write docs/RATE_LIMITING.md covering rate limit implementation
+- [x] Add audit_logs database table for sensitive operations
+- [x] Create auditLog helper function for consistent logging
+- [x] Implement abuse detection patterns (failed credits, rapid deletions, unusual billing)
+- [x] Add owner notifications for detected abuse via notifyOwner helper
+- [x] Integrate audit logging into billing endpoints (createSubscriptionCheckout, cancelSubscription, updateSubscriptionPlan, createTopupCheckout)
+- [x] Integrate audit logging into model deletion endpoint
+- [x] Write vitest tests for audit logging and abuse detection (19 tests)

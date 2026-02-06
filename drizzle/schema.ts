@@ -191,3 +191,56 @@ export const generations = mysqlTable("generations", {
 
 export type Generation = typeof generations.$inferSelect;
 export type InsertGeneration = typeof generations.$inferInsert;
+
+
+/**
+ * Audit logs table for tracking security-sensitive operations.
+ * Used for compliance, investigation, and abuse detection.
+ */
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"), // Nullable for system events or unauthenticated actions
+  action: varchar("action", { length: 64 }).notNull(), // e.g., "subscription.created", "model.deleted"
+  resourceType: varchar("resourceType", { length: 32 }), // e.g., "subscription", "model", "credits"
+  resourceId: varchar("resourceId", { length: 64 }), // ID of the affected resource
+  metadata: json("metadata"), // Additional context (plan, amount, reason, etc.)
+  ipAddress: varchar("ipAddress", { length: 45 }), // IPv4 or IPv6
+  userAgent: text("userAgent"),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+/**
+ * Audit action constants for consistent logging
+ */
+export const AUDIT_ACTIONS = {
+  // Billing events
+  SUBSCRIPTION_CREATED: "subscription.created",
+  SUBSCRIPTION_CANCELED: "subscription.canceled",
+  SUBSCRIPTION_UPDATED: "subscription.updated",
+  CREDITS_PURCHASED: "credits.purchased",
+  CREDITS_DEDUCTED: "credits.deducted",
+  CREDITS_REFUNDED: "credits.refunded",
+  
+  // Model events
+  MODEL_CREATED: "model.created",
+  MODEL_DELETED: "model.deleted",
+  MODEL_MINTED: "model.minted",
+  
+  // Security events
+  LOGIN_SUCCESS: "auth.login",
+  LOGIN_FAILED: "auth.login_failed",
+  RATE_LIMIT_EXCEEDED: "security.rate_limit",
+  INSUFFICIENT_CREDITS: "security.insufficient_credits",
+  
+  // Abuse detection
+  ABUSE_DETECTED: "abuse.detected",
+  ABUSE_PATTERN_CREDITS: "abuse.credits_exploit_attempt",
+  ABUSE_PATTERN_DELETION: "abuse.rapid_deletion",
+  ABUSE_PATTERN_BILLING: "abuse.billing_anomaly",
+} as const;
+
+export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];

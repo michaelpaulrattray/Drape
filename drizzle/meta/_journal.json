@@ -71,6 +71,13 @@
       "when": 1770171497901,
       "tag": "0009_brainy_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1770351288057,
+      "tag": "0010_stale_maximus",
+      "breakpoints": true
     }
   ]
 }
