@@ -173,7 +173,7 @@ export default function ModeratorDashboard() {
       offset: page * PAGE_SIZE,
       severity: severityFilter as "info" | "warning" | "critical" | "all",
       actionCategory: categoryFilter as "billing" | "model" | "security" | "abuse" | "all",
-      userId: userIdSearch ? parseInt(userIdSearch) : undefined,
+      userId: userIdSearch && !isNaN(parseInt(userIdSearch)) ? parseInt(userIdSearch) : undefined,
     },
     { refetchInterval: autoRefresh ? 30000 : false }
   );
