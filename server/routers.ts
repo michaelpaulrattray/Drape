@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { 
   getUserCredits, getCreditTransactions, deductCredits, addCredits,
   // Legacy aliases
@@ -1999,6 +1999,58 @@ export const appRouter = router({
       .query(async () => {
         const result = await testKlaviyoConnection();
         return result;
+      }),
+  }),
+
+  // ============ Admin: Audit Logs ============
+  admin: router({
+    // Get paginated audit logs with filters
+    getAuditLogs: adminProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).optional().default(20),
+        offset: z.number().min(0).optional().default(0),
+        severity: z.enum(["info", "warning", "critical", "all"]).optional().default("all"),
+        actionCategory: z.enum(["billing", "model", "security", "abuse", "all"]).optional().default("all"),
+        userId: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const { getFilteredAuditLogs } = await import("./auditLog");
+        return await getFilteredAuditLogs({
+          limit: input?.limit || 20,
+          offset: input?.offset || 0,
+          severity: input?.severity === "all" ? undefined : input?.severity,
+          actionCategory: input?.actionCategory === "all" ? undefined : input?.actionCategory,
+          userId: input?.userId,
+          startDate: input?.startDate ? new Date(input.startDate) : undefined,
+          endDate: input?.endDate ? new Date(input.endDate) : undefined,
+        });
+      }),
+
+    // Get abuse alerts summary
+    getAbuseAlerts: adminProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(50).optional().default(10),
+      }).optional())
+      .query(async ({ input }) => {
+        const { getAbuseAlertsSummary } = await import("./auditLog");
+        return await getAbuseAlertsSummary(input?.limit || 10);
+      }),
+
+    // Get audit log statistics
+    getAuditStats: adminProcedure
+      .query(async () => {
+        const { getAuditStatistics } = await import("./auditLog");
+        return await getAuditStatistics();
+      }),
+
+    // Get single audit log details
+    getAuditLogById: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const { getAuditLogById } = await import("./auditLog");
+        return await getAuditLogById(input.id);
       }),
   }),
 });

@@ -2496,3 +2496,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Integrate audit logging into billing endpoints (createSubscriptionCheckout, cancelSubscription, updateSubscriptionPlan, createTopupCheckout)
 - [x] Integrate audit logging into model deletion endpoint
 - [x] Write vitest tests for audit logging and abuse detection (19 tests)
+
+
+## Admin Audit Logs Dashboard
+- [x] Create tRPC admin procedures for querying audit logs
+- [x] Create tRPC admin procedure for abuse alerts summary
+- [x] Create AuditLogs admin dashboard page component
+- [x] Implement audit log table with filtering and pagination
+- [x] Implement abuse alerts section with severity indicators
+- [x] Add real-time refresh capability for monitoring
+- [x] Add route to admin navigation (/admin/audit-logs)
+- [x] Write vitest tests for admin audit procedures (20 tests)

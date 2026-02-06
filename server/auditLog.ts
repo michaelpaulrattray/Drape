@@ -323,3 +323,217 @@ export async function getCriticalAuditLogs(
 
 // Re-export AUDIT_ACTIONS for convenience
 export { AUDIT_ACTIONS };
+
+
+// ============ Admin Dashboard Query Helpers ============
+
+// Action category mappings for filtering
+const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
+  billing: [
+    AUDIT_ACTIONS.SUBSCRIPTION_CREATED,
+    AUDIT_ACTIONS.SUBSCRIPTION_CANCELED,
+    AUDIT_ACTIONS.SUBSCRIPTION_UPDATED,
+    AUDIT_ACTIONS.CREDITS_PURCHASED,
+    AUDIT_ACTIONS.CREDITS_DEDUCTED,
+    AUDIT_ACTIONS.CREDITS_REFUNDED,
+  ],
+  model: [
+    AUDIT_ACTIONS.MODEL_CREATED,
+    AUDIT_ACTIONS.MODEL_DELETED,
+    AUDIT_ACTIONS.MODEL_MINTED,
+  ],
+  security: [
+    AUDIT_ACTIONS.LOGIN_SUCCESS,
+    AUDIT_ACTIONS.LOGIN_FAILED,
+    AUDIT_ACTIONS.RATE_LIMIT_EXCEEDED,
+    AUDIT_ACTIONS.INSUFFICIENT_CREDITS,
+  ],
+  abuse: [
+    AUDIT_ACTIONS.ABUSE_DETECTED,
+    AUDIT_ACTIONS.ABUSE_PATTERN_CREDITS,
+    AUDIT_ACTIONS.ABUSE_PATTERN_DELETION,
+    AUDIT_ACTIONS.ABUSE_PATTERN_BILLING,
+  ],
+};
+
+export interface FilteredAuditLogsOptions {
+  limit: number;
+  offset: number;
+  severity?: "info" | "warning" | "critical";
+  actionCategory?: "billing" | "model" | "security" | "abuse";
+  userId?: number;
+  startDate?: Date;
+  endDate?: Date;
+}
+
+/**
+ * Get filtered and paginated audit logs for admin dashboard
+ */
+export async function getFilteredAuditLogs(options: FilteredAuditLogsOptions): Promise<{
+  logs: AuditLog[];
+  total: number;
+  hasMore: boolean;
+}> {
+  const db = await getDb();
+  if (!db) return { logs: [], total: 0, hasMore: false };
+
+  const { limit, offset, severity, actionCategory, userId, startDate, endDate } = options;
+
+  // Build conditions array
+  const conditions: ReturnType<typeof eq>[] = [];
+
+  if (severity) {
+    conditions.push(eq(auditLogs.severity, severity));
+  }
+
+  if (userId) {
+    conditions.push(eq(auditLogs.userId, userId));
+  }
+
+  if (startDate) {
+    conditions.push(gte(auditLogs.createdAt, startDate));
+  }
+
+  if (endDate) {
+    const { lte } = await import("drizzle-orm");
+    conditions.push(lte(auditLogs.createdAt, endDate));
+  }
+
+  // Get logs with filters
+  let query = db.select().from(auditLogs);
+  
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as typeof query;
+  }
+
+  let logs = await query.orderBy(desc(auditLogs.createdAt)).limit(limit + 1).offset(offset);
+
+  // Filter by action category if specified (done in JS since it's an array match)
+  if (actionCategory && ACTION_CATEGORIES[actionCategory]) {
+    const categoryActions = ACTION_CATEGORIES[actionCategory];
+    logs = logs.filter((log: AuditLog) => categoryActions.includes(log.action as AuditAction));
+  }
+
+  // Check if there are more results
+  const hasMore = logs.length > limit;
+  if (hasMore) {
+    logs = logs.slice(0, limit);
+  }
+
+  // Get total count (simplified - just return current batch info)
+  const total = offset + logs.length + (hasMore ? 1 : 0);
+
+  return { logs, total, hasMore };
+}
+
+/**
+ * Get abuse alerts summary for admin dashboard
+ */
+export async function getAbuseAlertsSummary(limit: number = 10): Promise<{
+  alerts: AuditLog[];
+  criticalCount: number;
+  warningCount: number;
+  recentPatterns: { pattern: string; count: number }[];
+}> {
+  const db = await getDb();
+  if (!db) return { alerts: [], criticalCount: 0, warningCount: 0, recentPatterns: [] };
+
+  // Get recent abuse-related events
+  const abuseActions = ACTION_CATEGORIES.abuse;
+  const alerts = await db
+    .select()
+    .from(auditLogs)
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(100);
+
+  // Filter to abuse events
+  const abuseAlerts = alerts.filter((log: AuditLog) => 
+    abuseActions.includes(log.action as AuditAction)
+  ).slice(0, limit);
+
+  // Count by severity
+  const criticalCount = abuseAlerts.filter((a: AuditLog) => a.severity === "critical").length;
+  const warningCount = abuseAlerts.filter((a: AuditLog) => a.severity === "warning").length;
+
+  // Count by pattern (from metadata)
+  const patternCounts = new Map<string, number>();
+  for (const alert of abuseAlerts) {
+    const metadata = alert.metadata as Record<string, unknown> | null;
+    const patternName = metadata?.patternName as string || alert.resourceId || "unknown";
+    patternCounts.set(patternName, (patternCounts.get(patternName) || 0) + 1);
+  }
+
+  const recentPatterns = Array.from(patternCounts.entries())
+    .map(([pattern, count]) => ({ pattern, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return { alerts: abuseAlerts, criticalCount, warningCount, recentPatterns };
+}
+
+/**
+ * Get audit statistics for admin dashboard
+ */
+export async function getAuditStatistics(): Promise<{
+  totalLogs: number;
+  last24Hours: number;
+  bySeverity: { severity: string; count: number }[];
+  byCategory: { category: string; count: number }[];
+}> {
+  const db = await getDb();
+  if (!db) return { totalLogs: 0, last24Hours: 0, bySeverity: [], byCategory: [] };
+
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  // Get recent logs for statistics
+  const recentLogs = await db
+    .select()
+    .from(auditLogs)
+    .where(gte(auditLogs.createdAt, oneDayAgo))
+    .orderBy(desc(auditLogs.createdAt));
+
+  const last24Hours = recentLogs.length;
+
+  // Count by severity
+  const severityCounts = new Map<string, number>();
+  for (const log of recentLogs) {
+    severityCounts.set(log.severity, (severityCounts.get(log.severity) || 0) + 1);
+  }
+  const bySeverity = Array.from(severityCounts.entries())
+    .map(([severity, count]) => ({ severity, count }));
+
+  // Count by category
+  const categoryCounts = new Map<string, number>();
+  for (const log of recentLogs) {
+    for (const [category, actions] of Object.entries(ACTION_CATEGORIES)) {
+      if (actions.includes(log.action as AuditAction)) {
+        categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+        break;
+      }
+    }
+  }
+  const byCategory = Array.from(categoryCounts.entries())
+    .map(([category, count]) => ({ category, count }));
+
+  // Get total count (approximate)
+  const allLogs = await db.select().from(auditLogs).limit(10000);
+  const totalLogs = allLogs.length;
+
+  return { totalLogs, last24Hours, bySeverity, byCategory };
+}
+
+/**
+ * Get single audit log by ID
+ */
+export async function getAuditLogById(id: number): Promise<AuditLog | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const results = await db
+    .select()
+    .from(auditLogs)
+    .where(eq(auditLogs.id, id))
+    .limit(1);
+
+  return results[0] || null;
+}

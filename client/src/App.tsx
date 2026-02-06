@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CastingStudio from "./pages/CastingStudio";
+import AdminAuditLogs from "./pages/AdminAuditLogs";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/casting-studio" component={CastingStudio} />
+      <Route path="/admin/audit-logs" component={AdminAuditLogs} />
       <Route path="/outfit-studio" component={ComingSoon} />
       <Route path="/photo-studio" component={ComingSoon} />
       <Route path="/404" component={NotFound} />
