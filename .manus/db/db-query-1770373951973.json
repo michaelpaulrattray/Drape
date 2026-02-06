@@ -1,0 +1,98 @@
+{
+  "query": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'change_requests' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'change_requests' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "type",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "status",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "priority",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "submittedById",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "submittedByName",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "targetUserId",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "targetUserName",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "title",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "description",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "evidenceSummary",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "relatedAuditLogId",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "creditAmount",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "creditReason",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "ipAddress",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "reviewedById",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "reviewedByName",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "reviewedAt",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "reviewNotes",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "slackApprovalId",
+      "DATA_TYPE": "varchar"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tDATA_TYPE\nid\tint\ntype\tenum\nstatus\tenum\npriority\tenum\nsubmittedById\tint\nsubmittedByName\tvarchar\ntargetUserId\tint\ntargetUserName\tvarchar\ntitle\tvarchar\ndescription\ttext\nevidenceSummary\ttext\nrelatedAuditLogId\tint\ncreditAmount\tint\ncreditReason\tvarchar\nipAddress\tvarchar\nreviewedById\tint\nreviewedByName\tvarchar\nreviewedAt\ttimestamp\nreviewNotes\ttext\ncreatedAt\ttimestamp\nupdatedAt\ttimestamp\nslackApprovalId\tvarchar\n",
+  "stderr": "",
+  "execution_time_ms": 1523
+}

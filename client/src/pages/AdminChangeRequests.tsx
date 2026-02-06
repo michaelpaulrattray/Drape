@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect, Link } from "wouter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ClipboardList,
   ChevronLeft,
@@ -23,6 +23,7 @@ import {
   HelpCircle,
   Loader2,
   ChevronRight,
+  Timer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,6 +64,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; icon: ty
   denied: { label: "Denied", className: "bg-red-500/10 text-red-400 border-red-500/20", icon: XCircle },
   cancelled: { label: "Cancelled", className: "bg-gray-500/10 text-gray-400 border-gray-500/20", icon: XCircle },
   expired: { label: "Expired", className: "bg-gray-500/10 text-gray-400 border-gray-500/20", icon: Clock },
+  pending_execution: { label: "Awaiting Slack", className: "bg-purple-500/10 text-purple-400 border-purple-500/20", icon: Timer },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {
@@ -77,7 +79,10 @@ const ALL_TYPES = [
   "suspend_user", "unsuspend_user", "block_ip", "other",
 ];
 
-const ALL_STATUSES = ["all", "pending", "approved", "denied", "cancelled", "expired"];
+const ALL_STATUSES = ["all", "pending", "pending_execution", "approved", "denied", "cancelled", "expired"];
+
+// Sensitive types that go through Slack approval
+const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits"];
 const ALL_PRIORITIES = ["all", "low", "normal", "high", "urgent"];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -153,7 +158,7 @@ export default function AdminChangeRequests() {
   const pageSize = 20;
 
   const queryInput = useMemo(() => ({
-    status: statusFilter as "pending" | "approved" | "denied" | "cancelled" | "expired" | "all",
+    status: statusFilter as "pending" | "approved" | "denied" | "cancelled" | "expired" | "pending_execution" | "all",
     type: typeFilter === "all" ? undefined : typeFilter,
     priority: priorityFilter === "all" ? undefined : priorityFilter,
     limit: pageSize,
@@ -167,24 +172,62 @@ export default function AdminChangeRequests() {
   );
 
   const reviewMutation = trpc.admin.reviewChangeRequest.useMutation({
-    onSuccess: (result: { success: boolean; action: string; message: string; executionResult?: { executed: boolean; success?: boolean; error?: string } }) => {
-      const executionInfo = result.executionResult;
-      if (executionInfo?.executed && executionInfo?.success) {
-        toast.success(`${result.message} — Action auto-executed successfully.`);
-      } else if (executionInfo?.executed && !executionInfo?.success) {
-        toast.warning(`${result.message} — Auto-execution failed: ${executionInfo.error || "Unknown error"}. Manual action may be required.`);
+    onSuccess: (result: any) => {
+      if (result.pendingExecution) {
+        // Sensitive type — routed through Slack
+        toast.info(`${result.message}${!result.slackSent ? " (Slack not configured — will auto-approve)" : ""}`);
       } else {
-        toast.success(result.message);
+        const executionInfo = result.executionResult;
+        if (executionInfo?.executed && executionInfo?.success) {
+          toast.success(`${result.message} — Action auto-executed successfully.`);
+        } else if (executionInfo?.executed && !executionInfo?.success) {
+          toast.warning(`${result.message} — Auto-execution failed: ${executionInfo.error || "Unknown error"}. Manual action may be required.`);
+        } else {
+          toast.success(result.message);
+        }
       }
       setReviewDialogOpen(false);
       setReviewNotes("");
-      setSelectedRequestId(null);
+      // Don't deselect if pending execution — user may want to monitor
+      if (!result.pendingExecution) setSelectedRequestId(null);
       listQuery.refetch();
+      detailQuery.refetch();
     },
     onError: (error: { message: string }) => {
       toast.error(`Review failed: ${error.message}`);
     },
   });
+
+  // Slack approval status polling for pending_execution requests
+  const slackStatusQuery = trpc.admin.checkChangeRequestSlackStatus.useQuery(
+    { changeRequestId: selectedRequestId! },
+    {
+      enabled: !!selectedRequestId && selectedRequest?.status === "pending_execution",
+      refetchInterval: 3000, // Poll every 3 seconds
+    }
+  );
+
+  const executeAfterSlackMutation = trpc.admin.executeChangeRequestAfterSlack.useMutation({
+    onSuccess: (result: { success: boolean; message: string }) => {
+      toast.success(result.message);
+      setSelectedRequestId(null);
+      listQuery.refetch();
+    },
+    onError: (error: { message: string }) => {
+      toast.error(`Execution failed: ${error.message}`);
+    },
+  });
+
+  // Auto-execute when Slack approves
+  useEffect(() => {
+    if (
+      slackStatusQuery.data?.slackStatus === "approved" &&
+      selectedRequestId &&
+      !executeAfterSlackMutation.isPending
+    ) {
+      executeAfterSlackMutation.mutate({ changeRequestId: selectedRequestId });
+    }
+  }, [slackStatusQuery.data?.slackStatus, selectedRequestId]);
 
   // ─── Guards ──────────────────────────────────────────────────────────────
 
@@ -202,7 +245,7 @@ export default function AdminChangeRequests() {
   // ─── Derived data ────────────────────────────────────────────────────────
 
   const requests = listQuery.data?.requests || [];
-  const summary = listQuery.data?.summary || { pendingCount: 0, approvedCount: 0, deniedCount: 0, totalCount: 0 };
+  const summary = listQuery.data?.summary || { pendingCount: 0, approvedCount: 0, deniedCount: 0, pendingExecutionCount: 0, totalCount: 0 };
   const total = listQuery.data?.total || 0;
   const totalPages = Math.ceil(total / pageSize);
   const selectedRequest = detailQuery.data;
@@ -469,7 +512,7 @@ export default function AdminChangeRequests() {
                           className="bg-emerald-600 hover:bg-emerald-700 text-white"
                         >
                           <CheckCircle className="w-4 h-4 mr-1" />
-                          Approve
+                          {SENSITIVE_TYPES.includes(selectedRequest.type) ? "Approve (Slack)" : "Approve"}
                         </Button>
                         <Button
                           size="sm"
@@ -480,6 +523,36 @@ export default function AdminChangeRequests() {
                           <XCircle className="w-4 h-4 mr-1" />
                           Deny
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Pending Slack Execution Status */}
+                    {selectedRequest.status === "pending_execution" && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        {slackStatusQuery.data?.slackStatus === "approved" ? (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-400" />
+                            <span className="text-sm text-emerald-400">Slack Approved</span>
+                            {executeAfterSlackMutation.isPending && (
+                              <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                            )}
+                          </div>
+                        ) : slackStatusQuery.data?.slackStatus === "denied" ? (
+                          <div className="flex items-center gap-2">
+                            <XCircle className="w-4 h-4 text-red-400" />
+                            <span className="text-sm text-red-400">Slack Denied</span>
+                          </div>
+                        ) : slackStatusQuery.data?.slackStatus === "expired" ? (
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm text-gray-400">Slack Expired</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Timer className="w-4 h-4 animate-pulse text-purple-400" />
+                            <span className="text-sm text-purple-400">Awaiting Slack Approval...</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -572,8 +645,29 @@ export default function AdminChangeRequests() {
                     <div className={`${selectedRequest.type === "suspend_user" ? "bg-red-500/5 border-red-500/10" : "bg-green-500/5 border-green-500/10"} border rounded-lg p-4`}>
                       <p className={`text-xs ${selectedRequest.type === "suspend_user" ? "text-red-400/70" : "text-green-400/70"} flex items-center gap-1`}>
                         <AlertTriangle className="w-3 h-3" />
-                        Approving will automatically {selectedRequest.type === "suspend_user" ? "suspend" : "unsuspend"} the target user's account.
+                        Approving will require Slack confirmation before {selectedRequest.type === "suspend_user" ? "suspending" : "unsuspending"} the target user's account.
                       </p>
+                    </div>
+                  )}
+
+                  {/* Pending Execution Banner */}
+                  {selectedRequest.status === "pending_execution" && (
+                    <div className="bg-purple-500/5 border border-purple-500/10 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Timer className="w-4 h-4 text-purple-400" />
+                        <h3 className="text-sm font-medium text-purple-400">Awaiting Slack Confirmation</h3>
+                      </div>
+                      <p className="text-xs text-purple-400/70">
+                        This change request has been approved by an admin but requires Slack confirmation before the action is executed.
+                        {slackStatusQuery.data?.slackStatus === "pending" && " Check your Slack #admin-actions channel for the approval buttons."}
+                        {slackStatusQuery.data?.slackStatus === "denied" && " The Slack approval was denied. This request will not be executed."}
+                        {slackStatusQuery.data?.slackStatus === "expired" && " The Slack approval has expired. This request will not be executed."}
+                      </p>
+                      {selectedRequest.reviewedByName && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Approved by {selectedRequest.reviewedByName} at {formatDate(selectedRequest.reviewedAt)}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -649,24 +743,14 @@ export default function AdminChangeRequests() {
               {reviewAction === "approved" ? (
                 <>
                   This will approve request <strong>#{selectedRequestId}</strong>.
-                  {selectedRequest && (selectedRequest.type === "refund_credits" || selectedRequest.type === "add_credits") && selectedRequest.creditAmount && (
-                    <span className="block mt-1 text-amber-400 font-medium">
-                      This will immediately {selectedRequest.type === "refund_credits" ? "refund" : "add"} {selectedRequest.creditAmount} credits to the target user.
+                  {selectedRequest && SENSITIVE_TYPES.includes(selectedRequest.type) && (
+                    <span className="block mt-1 text-purple-400 font-medium">
+                      This is a sensitive action. A Slack confirmation will be required before execution.
                     </span>
                   )}
-                  {selectedRequest && selectedRequest.type === "suspend_user" && (
-                    <span className="block mt-1 text-red-400 font-medium">
-                      This will immediately suspend the target user's account.
-                    </span>
-                  )}
-                  {selectedRequest && selectedRequest.type === "unsuspend_user" && (
-                    <span className="block mt-1 text-green-400 font-medium">
-                      This will immediately unsuspend the target user's account.
-                    </span>
-                  )}
-                  {selectedRequest && selectedRequest.type === "block_ip" && selectedRequest.ipAddress && (
-                    <span className="block mt-1 text-red-400 font-medium">
-                      This will immediately block IP address {selectedRequest.ipAddress}.
+                  {selectedRequest && !SENSITIVE_TYPES.includes(selectedRequest.type) && (
+                    <span className="block mt-1 text-gray-400">
+                      This will approve the request. No auto-execution for this type.
                     </span>
                   )}
                 </>
@@ -710,7 +794,11 @@ export default function AdminChangeRequests() {
               ) : (
                 <XCircle className="w-4 h-4 mr-2" />
               )}
-              {reviewAction === "approved" ? "Approve & Execute" : "Deny Request"}
+              {reviewAction === "approved"
+                ? (selectedRequest && SENSITIVE_TYPES.includes(selectedRequest.type)
+                    ? "Approve & Send to Slack"
+                    : "Approve")
+                : "Deny Request"}
             </Button>
           </DialogFooter>
         </DialogContent>

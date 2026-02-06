@@ -325,6 +325,236 @@ async function executeApprovedAdminAction(
       return { message: `${amount > 0 ? "Added" : "Deducted"} ${Math.abs(amount)} credits. New balance: ${result.newBalance}` };
     }
     
+    // ─── Change Request Approval Actions ───────────────────────────────
+    case "cr_suspendUser": {
+      const { suspendUser, getUserById, updateChangeRequestStatus } = await import("./db");
+      const userId = Number(pendingAction.targetId);
+      const changeRequestId = params.changeRequestId as number;
+      const reason = (params.reason as string) || "Suspended via approved change request";
+      
+      const targetUser = await getUserById(userId);
+      if (!targetUser) throw new Error("User not found");
+      if (targetUser.role === "admin") throw new Error("Cannot suspend admin accounts");
+      
+      const result = await suspendUser(userId, reason, ctx.user.id);
+      if (!result.success) throw new Error(result.error || "Failed to suspend user");
+      
+      // Update change request status to approved (from pending_execution)
+      await updateChangeRequestStatus(changeRequestId, { status: "approved" }, "pending_execution");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.ACCOUNT_SUSPENDED,
+        resourceType: "user",
+        resourceId: userId.toString(),
+        metadata: {
+          targetUserId: userId,
+          targetUserEmail: targetUser.email,
+          reason,
+          changeRequestId,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "critical",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await writeImmutableLog("user_suspended", {
+        adminId: ctx.user.id,
+        adminName,
+        targetUserId: userId,
+        targetUserEmail: targetUser.email,
+        reason,
+        changeRequestId,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `User ${targetUser.email || targetUser.name} suspended via change request #${changeRequestId}` };
+    }
+    
+    case "cr_unsuspendUser": {
+      const { unsuspendUser, getUserById, updateChangeRequestStatus } = await import("./db");
+      const userId = Number(pendingAction.targetId);
+      const changeRequestId = params.changeRequestId as number;
+      
+      const targetUser = await getUserById(userId);
+      if (!targetUser) throw new Error("User not found");
+      if (!targetUser.suspendedAt) throw new Error("User is not suspended");
+      
+      const result = await unsuspendUser(userId);
+      if (!result.success) throw new Error(result.error || "Failed to unsuspend user");
+      
+      await updateChangeRequestStatus(changeRequestId, { status: "approved" }, "pending_execution");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.ACCOUNT_UNSUSPENDED,
+        resourceType: "user",
+        resourceId: userId.toString(),
+        metadata: {
+          targetUserId: userId,
+          targetUserEmail: targetUser.email,
+          changeRequestId,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "info",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await writeImmutableLog("user_unsuspended", {
+        adminId: ctx.user.id,
+        adminName,
+        targetUserId: userId,
+        targetUserEmail: targetUser.email,
+        changeRequestId,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `User ${targetUser.email || targetUser.name} unsuspended via change request #${changeRequestId}` };
+    }
+    
+    case "cr_refundCredits": {
+      const { addCredits, getUserById, updateChangeRequestStatus } = await import("./db");
+      const userId = Number(pendingAction.targetId);
+      const changeRequestId = params.changeRequestId as number;
+      const amount = params.creditAmount as number;
+      const reason = (params.creditReason as string) || "Refund via approved change request";
+      
+      if (typeof amount !== "number" || amount <= 0) throw new Error("Invalid credit amount");
+      
+      const targetUser = await getUserById(userId);
+      if (!targetUser) throw new Error("User not found");
+      
+      const creditResult = await addCredits(userId, amount, "refund", `Refund via change request #${changeRequestId}: ${reason}`, `cr-${changeRequestId}`);
+      if (!creditResult.success) throw new Error(creditResult.error || "Failed to refund credits");
+      
+      await updateChangeRequestStatus(changeRequestId, { status: "approved" }, "pending_execution");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.CREDITS_REFUNDED,
+        resourceType: "credits",
+        resourceId: userId.toString(),
+        metadata: {
+          amount,
+          reason,
+          changeRequestId,
+          newBalance: creditResult.newBalance,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "info",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await writeImmutableLog("credits_refunded", {
+        adminId: ctx.user.id,
+        adminName,
+        targetUserId: userId,
+        targetUserEmail: targetUser.email,
+        amount,
+        reason,
+        changeRequestId,
+        newBalance: creditResult.newBalance,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `Refunded ${amount} credits to ${targetUser.email || targetUser.name} via change request #${changeRequestId}` };
+    }
+    
+    case "cr_addCredits": {
+      const { addCredits, getUserById, updateChangeRequestStatus } = await import("./db");
+      const userId = Number(pendingAction.targetId);
+      const changeRequestId = params.changeRequestId as number;
+      const amount = params.creditAmount as number;
+      const reason = (params.creditReason as string) || "Credits added via approved change request";
+      
+      if (typeof amount !== "number" || amount <= 0) throw new Error("Invalid credit amount");
+      
+      const targetUser = await getUserById(userId);
+      if (!targetUser) throw new Error("User not found");
+      
+      const creditResult = await addCredits(userId, amount, "bonus", `Credits added via change request #${changeRequestId}: ${reason}`, `cr-${changeRequestId}`);
+      if (!creditResult.success) throw new Error(creditResult.error || "Failed to add credits");
+      
+      await updateChangeRequestStatus(changeRequestId, { status: "approved" }, "pending_execution");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.CREDITS_ADDED,
+        resourceType: "credits",
+        resourceId: userId.toString(),
+        metadata: {
+          amount,
+          reason,
+          changeRequestId,
+          newBalance: creditResult.newBalance,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "info",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await writeImmutableLog("credits_added", {
+        adminId: ctx.user.id,
+        adminName,
+        targetUserId: userId,
+        targetUserEmail: targetUser.email,
+        amount,
+        reason,
+        changeRequestId,
+        newBalance: creditResult.newBalance,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `Added ${amount} credits to ${targetUser.email || targetUser.name} via change request #${changeRequestId}` };
+    }
+    
+    case "cr_blockIP": {
+      const { blockIp, updateChangeRequestStatus } = await import("./db");
+      const ipAddress = pendingAction.targetId;
+      const changeRequestId = params.changeRequestId as number;
+      const reason = (params.reason as string) || "Blocked via approved change request";
+      
+      const result = await blockIp(ipAddress, reason, ctx.user.id, null);
+      if (!result.success) throw new Error("Failed to block IP address");
+      
+      await updateChangeRequestStatus(changeRequestId, { status: "approved" }, "pending_execution");
+      
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.IP_BLOCKED,
+        resourceType: "ip",
+        resourceId: ipAddress,
+        metadata: {
+          reason,
+          changeRequestId,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "warning",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+      
+      await writeImmutableLog("ip_blocked", {
+        adminId: ctx.user.id,
+        adminName,
+        ipAddress,
+        reason,
+        changeRequestId,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+      
+      return { message: `IP ${ipAddress} blocked via change request #${changeRequestId}` };
+    }
+    
     default:
       throw new Error(`Unknown action type: ${pendingAction.action}`);
   }
@@ -2291,7 +2521,7 @@ export const appRouter = router({
     // Request Slack approval for a sensitive admin action
     requestApproval: adminProcedure
       .input(z.object({
-        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP"]),
+        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP", "cr_suspendUser", "cr_unsuspendUser", "cr_refundCredits", "cr_addCredits", "cr_blockIP"]),
         targetId: z.string(),
         description: z.string().min(1).max(1000),
         params: z.record(z.string(), z.unknown()).optional().default({}),
@@ -3101,18 +3331,6 @@ export const appRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: `Change request is already ${request.status}` });
         }
 
-        // Update the status
-        const result = await updateChangeRequestStatus(input.id, {
-          status: input.action,
-          reviewedById: ctx.user.id,
-          reviewedByName: adminName,
-          reviewNotes: input.reviewNotes,
-        });
-
-        if (!result.success) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to update change request" });
-        }
-
         const typeLabels: Record<string, string> = {
           refund_credits: "Refund Credits",
           add_credits: "Add Credits",
@@ -3124,8 +3342,157 @@ export const appRouter = router({
           other: "Other",
         };
 
+        // Sensitive types that require Slack approval before execution
+        const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits"];
+        const isSensitive = SENSITIVE_TYPES.includes(request.type);
+
+        // Map change request types to Slack approval action types
+        const CR_TO_APPROVAL_ACTION: Record<string, string> = {
+          suspend_user: "cr_suspendUser",
+          unsuspend_user: "cr_unsuspendUser",
+          refund_credits: "cr_refundCredits",
+          add_credits: "cr_addCredits",
+          block_ip: "cr_blockIP",
+        };
+
         const actionVerb = input.action === "approved" ? "Approved" : "Denied";
         const actionEmoji = input.action === "approved" ? "\u2705" : "\u274c";
+
+        // ─── Sensitive type + approval → route through Slack ─────────────
+        if (input.action === "approved" && isSensitive) {
+          // Set status to pending_execution (admin approved, awaiting Slack confirmation)
+          const result = await updateChangeRequestStatus(input.id, {
+            status: "pending_execution",
+            reviewedById: ctx.user.id,
+            reviewedByName: adminName,
+            reviewNotes: input.reviewNotes,
+          });
+
+          if (!result.success) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to update change request" });
+          }
+
+          // Build params for the Slack approval action
+          const approvalParams: Record<string, unknown> = {
+            changeRequestId: input.id,
+            reason: request.title,
+          };
+          if (request.creditAmount) approvalParams.creditAmount = request.creditAmount;
+          if (request.creditReason) approvalParams.creditReason = request.creditReason;
+          if (request.ipAddress) approvalParams.reason = `${request.title} (IP: ${request.ipAddress})`;
+
+          // Determine targetId for the approval action
+          const targetId = request.type === "block_ip" && request.ipAddress
+            ? request.ipAddress
+            : String(request.targetUserId);
+
+          // Request Slack approval
+          const approvalResult = await requestSlackApproval({
+            action: CR_TO_APPROVAL_ACTION[request.type] as any,
+            requestedBy: {
+              id: ctx.user.id,
+              name: adminName,
+              email: ctx.user.email || undefined,
+            },
+            targetId,
+            description: `Change Request #${input.id}: ${typeLabels[request.type] || request.type}\n\n*Title:* ${request.title}\n*Target:* ${request.targetUserName || `User ${request.targetUserId}`}${request.creditAmount ? `\n*Amount:* ${request.creditAmount} credits` : ""}${request.ipAddress ? `\n*IP:* ${request.ipAddress}` : ""}\n*Submitted By:* ${request.submittedByName || `User ${request.submittedById}`}`,
+            params: approvalParams,
+            ipAddress: getClientIp(ctx.req),
+          });
+
+          // Store the Slack approval ID on the change request
+          await updateChangeRequestStatus(input.id, {
+            status: "pending_execution",
+            slackApprovalId: approvalResult.actionId,
+          }, "pending_execution");
+
+          // Audit logging
+          await logAuditEvent({
+            userId: ctx.user.id,
+            action: AUDIT_ACTIONS.CHANGE_REQUEST_APPROVED,
+            resourceType: "change_request",
+            resourceId: String(input.id),
+            metadata: {
+              requestId: input.id,
+              type: request.type,
+              decision: "approved_pending_slack",
+              reviewNotes: input.reviewNotes,
+              slackApprovalId: approvalResult.actionId,
+              slackSent: approvalResult.sent,
+              submittedById: request.submittedById,
+              targetUserId: request.targetUserId,
+              creditAmount: request.creditAmount,
+            },
+            severity: "info",
+            req: ctx.req,
+          });
+
+          // Notify #admin-actions about the pending Slack approval
+          await sendAdminActionNotification({
+            title: `\u23f3 Change Request #${input.id} Approved \u2014 Awaiting Slack Confirmation`,
+            description: `*${adminName}* approved change request #${input.id} (${typeLabels[request.type] || request.type}).\n\nExecution is held pending Slack confirmation.${!approvalResult.sent ? "\n\n\u26a0\ufe0f Slack not configured \u2014 action was auto-approved and will execute when polled." : ""}`,
+            severity: "info",
+            fields: [
+              { title: "Request ID", value: `#${input.id}`, short: true },
+              { title: "Type", value: typeLabels[request.type] || request.type, short: true },
+              { title: "Reviewed By", value: adminName, short: true },
+              { title: "Status", value: "\u23f3 Awaiting Slack Approval", short: true },
+              { title: "Submitted By", value: request.submittedByName || `User ${request.submittedById}`, short: true },
+              { title: "Target User", value: request.targetUserName ? `${request.targetUserName} (ID: ${request.targetUserId})` : `User ID: ${request.targetUserId}`, short: true },
+            ],
+          });
+
+          // Log to #audit-log
+          await sendAuditLogEntry({
+            title: `Change Request Approved (Pending Slack)`,
+            description: `${adminName} approved change request #${input.id}: ${typeLabels[request.type] || request.type} \u2014 awaiting Slack confirmation`,
+            fields: [
+              { title: "Request ID", value: `#${input.id}`, short: true },
+              { title: "Decision", value: "Approved (Pending Slack)", short: true },
+              { title: "Admin", value: adminName, short: true },
+              { title: "Type", value: typeLabels[request.type] || request.type, short: true },
+            ],
+            severity: "info",
+          });
+
+          await writeImmutableLog(
+            "change_request_approved_pending_slack",
+            {
+              adminId: ctx.user.id,
+              adminName,
+              targetId: String(request.targetUserId),
+              action: `Approved change request #${input.id} (${request.type}) - pending Slack confirmation`,
+              requestId: input.id,
+              type: request.type,
+              title: request.title,
+              creditAmount: request.creditAmount,
+              reviewNotes: input.reviewNotes,
+              slackApprovalId: approvalResult.actionId,
+            },
+          );
+
+          return {
+            success: true,
+            action: "approved" as const,
+            message: `Change request #${input.id} approved \u2014 awaiting Slack confirmation before execution`,
+            slackApprovalId: approvalResult.actionId,
+            slackSent: approvalResult.sent,
+            pendingExecution: true,
+            executionResult: { executed: false },
+          };
+        }
+
+        // ─── Non-sensitive approval or denial → immediate processing ─────
+        const result = await updateChangeRequestStatus(input.id, {
+          status: input.action,
+          reviewedById: ctx.user.id,
+          reviewedByName: adminName,
+          reviewNotes: input.reviewNotes,
+        });
+
+        if (!result.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to update change request" });
+        }
 
         // Notify #admin-actions
         await sendAdminActionNotification({
@@ -3194,178 +3561,102 @@ export const appRouter = router({
           },
         );
 
-        // ─── Auto-execute on approval ───────────────────────────────────
-        let executionResult: { executed: boolean; success?: boolean; error?: string } = { executed: false };
-
-        if (input.action === "approved") {
-          const { addCredits, suspendUser, unsuspendUser, blockIp } = await import("./db");
-
-          try {
-            switch (request.type) {
-              case "refund_credits": {
-                if (request.creditAmount && request.creditAmount > 0) {
-                  const creditResult = await addCredits(
-                    request.targetUserId,
-                    request.creditAmount,
-                    "refund",
-                    `Refund via change request #${input.id}: ${request.creditReason || request.title}`,
-                    `cr-${input.id}`
-                  );
-                  executionResult = { executed: true, success: creditResult.success, error: creditResult.error };
-                  if (creditResult.success) {
-                    await logAuditEvent({
-                      userId: ctx.user.id,
-                      action: AUDIT_ACTIONS.CREDITS_REFUNDED,
-                      resourceType: "credits",
-                      resourceId: String(request.targetUserId),
-                      metadata: {
-                        amount: request.creditAmount,
-                        reason: request.creditReason || request.title,
-                        changeRequestId: input.id,
-                        newBalance: creditResult.newBalance,
-                      },
-                      severity: "info",
-                      req: ctx.req,
-                    });
-                  }
-                } else {
-                  executionResult = { executed: false };
-                }
-                break;
-              }
-              case "add_credits": {
-                if (request.creditAmount && request.creditAmount > 0) {
-                  const creditResult = await addCredits(
-                    request.targetUserId,
-                    request.creditAmount,
-                    "bonus",
-                    `Credits added via change request #${input.id}: ${request.creditReason || request.title}`,
-                    `cr-${input.id}`
-                  );
-                  executionResult = { executed: true, success: creditResult.success, error: creditResult.error };
-                  if (creditResult.success) {
-                    await logAuditEvent({
-                      userId: ctx.user.id,
-                      action: AUDIT_ACTIONS.CREDITS_ADDED,
-                      resourceType: "credits",
-                      resourceId: String(request.targetUserId),
-                      metadata: {
-                        amount: request.creditAmount,
-                        reason: request.creditReason || request.title,
-                        changeRequestId: input.id,
-                        newBalance: creditResult.newBalance,
-                      },
-                      severity: "info",
-                      req: ctx.req,
-                    });
-                  }
-                } else {
-                  executionResult = { executed: false };
-                }
-                break;
-              }
-              case "suspend_user": {
-                const suspendResult = await suspendUser(
-                  request.targetUserId,
-                  `Suspended via change request #${input.id}: ${request.title}`,
-                  ctx.user.id
-                );
-                executionResult = { executed: true, success: suspendResult.success, error: suspendResult.error };
-                if (suspendResult.success) {
-                  await logAuditEvent({
-                    userId: ctx.user.id,
-                    action: AUDIT_ACTIONS.ACCOUNT_SUSPENDED,
-                    resourceType: "user",
-                    resourceId: String(request.targetUserId),
-                    metadata: {
-                      reason: request.title,
-                      changeRequestId: input.id,
-                    },
-                    severity: "warning",
-                    req: ctx.req,
-                  });
-                }
-                break;
-              }
-              case "unsuspend_user": {
-                const unsuspendResult = await unsuspendUser(request.targetUserId);
-                executionResult = { executed: true, success: unsuspendResult.success, error: unsuspendResult.error };
-                if (unsuspendResult.success) {
-                  await logAuditEvent({
-                    userId: ctx.user.id,
-                    action: AUDIT_ACTIONS.ACCOUNT_UNSUSPENDED,
-                    resourceType: "user",
-                    resourceId: String(request.targetUserId),
-                    metadata: {
-                      reason: request.title,
-                      changeRequestId: input.id,
-                    },
-                    severity: "info",
-                    req: ctx.req,
-                  });
-                }
-                break;
-              }
-              case "block_ip": {
-                if (request.ipAddress) {
-                  const blockResult = await blockIp(
-                    request.ipAddress,
-                    `Blocked via change request #${input.id}: ${request.title}`,
-                    ctx.user.id
-                  );
-                  executionResult = { executed: true, success: blockResult.success };
-                  if (blockResult.success) {
-                    await logAuditEvent({
-                      userId: ctx.user.id,
-                      action: AUDIT_ACTIONS.IP_BLOCKED,
-                      resourceType: "ip",
-                      resourceId: request.ipAddress,
-                      metadata: {
-                        reason: request.title,
-                        changeRequestId: input.id,
-                      },
-                      severity: "warning",
-                      req: ctx.req,
-                    });
-                  }
-                } else {
-                  executionResult = { executed: false };
-                }
-                break;
-              }
-              default:
-                // flag_account, note_incident, other — no auto-execution
-                executionResult = { executed: false };
-            }
-
-            // Send Slack notification about auto-execution
-            if (executionResult.executed) {
-              const execEmoji = executionResult.success ? "\u2699\ufe0f\u2705" : "\u2699\ufe0f\u274c";
-              const execStatus = executionResult.success ? "succeeded" : `failed: ${executionResult.error || "Unknown error"}`;
-              await sendAdminActionNotification({
-                title: `${execEmoji} Auto-Executed: ${typeLabels[request.type] || request.type}`,
-                description: `Action auto-executed for change request #${input.id}. Execution ${execStatus}.`,
-                severity: executionResult.success ? "info" : "critical",
-                fields: [
-                  { title: "Request", value: `#${input.id}`, short: true },
-                  { title: "Type", value: typeLabels[request.type] || request.type, short: true },
-                  { title: "Target", value: request.targetUserName || `User ${request.targetUserId}`, short: true },
-                  { title: "Execution", value: executionResult.success ? "Success" : "Failed", short: true },
-                ],
-              });
-            }
-          } catch (execError: any) {
-            console.error(`[ChangeRequest] Auto-execution failed for request #${input.id}:`, execError);
-            executionResult = { executed: true, success: false, error: execError?.message || "Unexpected execution error" };
-          }
-        }
-
+        // Non-sensitive approvals still don't auto-execute (flag_account, note_incident, other)
         return {
           success: true,
           action: input.action,
           message: `Change request #${input.id} has been ${actionVerb.toLowerCase()}`,
-          executionResult,
+          executionResult: { executed: false },
         };
+      }),
+
+    // Check Slack approval status for a pending_execution change request
+    checkChangeRequestSlackStatus: adminProcedure
+      .input(z.object({
+        changeRequestId: z.number(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const { getChangeRequestById } = await import("./db");
+        const request = await getChangeRequestById(input.changeRequestId);
+        if (!request) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Change request not found" });
+        }
+
+        if (request.status !== "pending_execution" || !request.slackApprovalId) {
+          return {
+            status: request.status,
+            slackStatus: null,
+            message: request.status === "approved" ? "Already executed" : `Request is ${request.status}`,
+          };
+        }
+
+        const slackStatus = getSlackApprovalStatus(request.slackApprovalId);
+        if (!slackStatus) {
+          return {
+            status: "pending_execution",
+            slackStatus: "not_found",
+            message: "Slack approval request not found or expired",
+          };
+        }
+
+        return {
+          status: "pending_execution",
+          slackStatus: slackStatus.status,
+          resolvedBy: slackStatus.resolvedBy,
+          resolvedAt: slackStatus.resolvedAt,
+          expiresAt: slackStatus.expiresAt,
+          message: slackStatus.status === "approved"
+            ? "Slack approved \u2014 ready to execute"
+            : slackStatus.status === "denied"
+            ? "Slack denied \u2014 action will not execute"
+            : slackStatus.status === "expired"
+            ? "Slack approval expired"
+            : "Awaiting Slack approval",
+        };
+      }),
+
+    // Execute a change request after Slack approval
+    executeChangeRequestAfterSlack: adminProcedure
+      .input(z.object({
+        changeRequestId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getChangeRequestById, updateChangeRequestStatus } = await import("./db");
+        const request = await getChangeRequestById(input.changeRequestId);
+        if (!request) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Change request not found" });
+        }
+        if (request.status !== "pending_execution" || !request.slackApprovalId) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Change request is not pending Slack execution" });
+        }
+
+        const slackStatus = getSlackApprovalStatus(request.slackApprovalId);
+        if (!slackStatus || slackStatus.status !== "approved") {
+          // If Slack denied or expired, update the change request accordingly
+          if (slackStatus?.status === "denied") {
+            await updateChangeRequestStatus(input.changeRequestId, { status: "denied", reviewNotes: `${request.reviewNotes || ""}\n[Slack denied by ${slackStatus.resolvedBy}]` }, "pending_execution");
+            return { success: false, message: "Slack approval was denied" };
+          }
+          if (slackStatus?.status === "expired") {
+            await updateChangeRequestStatus(input.changeRequestId, { status: "expired" }, "pending_execution");
+            return { success: false, message: "Slack approval expired" };
+          }
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Slack approval status: ${slackStatus?.status || "not found"}` });
+        }
+
+        // Execute via the existing executeApprovedAdminAction dispatcher
+        try {
+          const execResult = await executeApprovedAdminAction(slackStatus, ctx);
+          markSlackActionExecuted(request.slackApprovalId, execResult.message);
+          return { success: true, message: execResult.message };
+        } catch (error: any) {
+          markSlackActionFailed(request.slackApprovalId, error.message || "Execution failed");
+          // Still mark the change request as approved (execution failed but admin intent was clear)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "Failed to execute approved change request",
+          });
+        }
       }),
   }),
 

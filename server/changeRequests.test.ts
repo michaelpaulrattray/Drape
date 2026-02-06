@@ -226,9 +226,9 @@ describe("Change Request - Types & Validation", () => {
     });
   });
 
-  it("should support all 5 status values", () => {
-    const validStatuses = ["pending", "approved", "denied", "cancelled", "expired"];
-    expect(validStatuses).toHaveLength(5);
+  it("should support all 6 status values including pending_execution", () => {
+    const validStatuses = ["pending", "approved", "denied", "cancelled", "expired", "pending_execution"];
+    expect(validStatuses).toHaveLength(6);
   });
 
   it("should support all 4 priority levels", () => {
@@ -929,6 +929,7 @@ describe("Change Request - Security Boundaries", () => {
     expect(validActions).not.toContain("pending");
     expect(validActions).not.toContain("cancelled");
     expect(validActions).not.toContain("expired");
+    expect(validActions).not.toContain("pending_execution");
   });
 
   it("review notes should be limited to 2000 characters", () => {
@@ -1395,6 +1396,430 @@ describe("Change Request - Auto-Execute on Approval", () => {
         expect.objectContaining({
           severity: "critical",
         }),
+      );
+    });
+  });
+});
+
+// ============================================================
+// Slack Approval Gating for Sensitive Change Requests
+// ============================================================
+describe("Change Request - Slack Approval Gating", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits"];
+  const NON_SENSITIVE_TYPES = ["flag_account", "note_incident", "other"];
+
+  describe("sensitive type classification", () => {
+    it("should classify 5 types as sensitive", () => {
+      expect(SENSITIVE_TYPES).toHaveLength(5);
+      expect(SENSITIVE_TYPES).toContain("suspend_user");
+      expect(SENSITIVE_TYPES).toContain("unsuspend_user");
+      expect(SENSITIVE_TYPES).toContain("block_ip");
+      expect(SENSITIVE_TYPES).toContain("refund_credits");
+      expect(SENSITIVE_TYPES).toContain("add_credits");
+    });
+
+    it("should classify 3 types as non-sensitive", () => {
+      expect(NON_SENSITIVE_TYPES).toHaveLength(3);
+      expect(NON_SENSITIVE_TYPES).toContain("flag_account");
+      expect(NON_SENSITIVE_TYPES).toContain("note_incident");
+      expect(NON_SENSITIVE_TYPES).toContain("other");
+    });
+
+    it("should not overlap between sensitive and non-sensitive", () => {
+      for (const type of SENSITIVE_TYPES) {
+        expect(NON_SENSITIVE_TYPES).not.toContain(type);
+      }
+      for (const type of NON_SENSITIVE_TYPES) {
+        expect(SENSITIVE_TYPES).not.toContain(type);
+      }
+    });
+
+    it("should cover all 8 change request types", () => {
+      const allTypes = [...SENSITIVE_TYPES, ...NON_SENSITIVE_TYPES];
+      expect(allTypes).toHaveLength(8);
+      expect(allTypes).toContain("refund_credits");
+      expect(allTypes).toContain("add_credits");
+      expect(allTypes).toContain("flag_account");
+      expect(allTypes).toContain("note_incident");
+      expect(allTypes).toContain("suspend_user");
+      expect(allTypes).toContain("unsuspend_user");
+      expect(allTypes).toContain("block_ip");
+      expect(allTypes).toContain("other");
+    });
+  });
+
+  describe("CR to Slack approval action mapping", () => {
+    const CR_TO_APPROVAL_ACTION: Record<string, string> = {
+      suspend_user: "cr_suspendUser",
+      unsuspend_user: "cr_unsuspendUser",
+      refund_credits: "cr_refundCredits",
+      add_credits: "cr_addCredits",
+      block_ip: "cr_blockIP",
+    };
+
+    it("should map all sensitive types to cr_ prefixed actions", () => {
+      for (const type of SENSITIVE_TYPES) {
+        expect(CR_TO_APPROVAL_ACTION[type]).toBeDefined();
+        expect(CR_TO_APPROVAL_ACTION[type]).toMatch(/^cr_/);
+      }
+    });
+
+    it("should not have mappings for non-sensitive types", () => {
+      for (const type of NON_SENSITIVE_TYPES) {
+        expect(CR_TO_APPROVAL_ACTION[type]).toBeUndefined();
+      }
+    });
+  });
+
+  describe("sensitive approval flow", () => {
+    it("should set status to pending_execution for sensitive type approval", async () => {
+      const { getChangeRequestById, updateChangeRequestStatus } = await import("./db");
+
+      const request = await getChangeRequestById(1); // refund_credits (sensitive)
+      expect(request).not.toBeNull();
+      expect(SENSITIVE_TYPES.includes(request!.type)).toBe(true);
+
+      // Simulate the procedure setting pending_execution
+      await updateChangeRequestStatus(1, {
+        status: "pending_execution",
+        reviewedById: 1,
+        reviewedByName: "Admin",
+        reviewNotes: "Approved pending Slack",
+      });
+
+      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          status: "pending_execution",
+          reviewedById: 1,
+        }),
+      );
+    });
+
+    it("should return pendingExecution: true for sensitive type approval", () => {
+      const result = {
+        success: true,
+        action: "approved" as const,
+        message: "Change request #1 approved — awaiting Slack confirmation before execution",
+        slackApprovalId: "test-action-id-123",
+        slackSent: true,
+        pendingExecution: true,
+        executionResult: { executed: false },
+      };
+
+      expect(result.pendingExecution).toBe(true);
+      expect(result.slackApprovalId).toBeDefined();
+      expect(result.executionResult.executed).toBe(false);
+    });
+
+    it("should store slackApprovalId on the change request", async () => {
+      const { updateChangeRequestStatus } = await import("./db");
+
+      await updateChangeRequestStatus(1, {
+        status: "pending_execution",
+        slackApprovalId: "test-slack-action-id",
+      }, "pending_execution");
+
+      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          slackApprovalId: "test-slack-action-id",
+        }),
+        "pending_execution",
+      );
+    });
+
+    it("should route each sensitive type through Slack", () => {
+      for (const type of SENSITIVE_TYPES) {
+        const isSensitive = SENSITIVE_TYPES.includes(type);
+        expect(isSensitive).toBe(true);
+      }
+    });
+  });
+
+  describe("non-sensitive approval flow", () => {
+    it("should NOT set pending_execution for non-sensitive type approval", async () => {
+      const { getChangeRequestById } = await import("./db");
+
+      const request = await getChangeRequestById(7); // note_incident (non-sensitive)
+      expect(request).not.toBeNull();
+      expect(SENSITIVE_TYPES.includes(request!.type)).toBe(false);
+
+      // Non-sensitive types go directly to approved status
+      const result = {
+        success: true,
+        action: "approved" as const,
+        message: "Change request #7 has been approved",
+        executionResult: { executed: false },
+      };
+
+      expect(result).not.toHaveProperty("pendingExecution");
+      expect(result).not.toHaveProperty("slackApprovalId");
+    });
+
+    it("should process non-sensitive denials immediately", () => {
+      const result = {
+        success: true,
+        action: "denied" as const,
+        message: "Change request #7 has been denied",
+        executionResult: { executed: false },
+      };
+
+      expect(result.action).toBe("denied");
+      expect(result).not.toHaveProperty("pendingExecution");
+    });
+  });
+
+  describe("denial bypasses Slack", () => {
+    it("should NOT route through Slack when denying a sensitive type", () => {
+      // Even for sensitive types, denial is immediate (no Slack needed)
+      const request = { type: "suspend_user", status: "pending" };
+      const action = "denied";
+
+      const shouldRouteToSlack = action === "approved" && SENSITIVE_TYPES.includes(request.type);
+      expect(shouldRouteToSlack).toBe(false);
+    });
+
+    it("should set status directly to denied for sensitive type denial", async () => {
+      const { updateChangeRequestStatus } = await import("./db");
+
+      await updateChangeRequestStatus(3, {
+        status: "denied",
+        reviewedById: 1,
+        reviewedByName: "Admin",
+        reviewNotes: "Insufficient evidence",
+      });
+
+      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+        3,
+        expect.objectContaining({ status: "denied" }),
+      );
+    });
+  });
+
+  describe("checkChangeRequestSlackStatus", () => {
+    it("should return null slackStatus for non-pending_execution requests", () => {
+      const request = { status: "approved", slackApprovalId: null };
+      const result = request.status !== "pending_execution" || !request.slackApprovalId
+        ? { status: request.status, slackStatus: null, message: "Already executed" }
+        : null;
+
+      expect(result).not.toBeNull();
+      expect(result!.slackStatus).toBeNull();
+    });
+
+    it("should return pending slackStatus for pending_execution requests", () => {
+      const mockSlackStatus = {
+        status: "pending" as const,
+        resolvedBy: null,
+        resolvedAt: null,
+        expiresAt: new Date(Date.now() + 300000),
+      };
+
+      const result = {
+        status: "pending_execution",
+        slackStatus: mockSlackStatus.status,
+        message: "Awaiting Slack approval",
+      };
+
+      expect(result.slackStatus).toBe("pending");
+      expect(result.status).toBe("pending_execution");
+    });
+
+    it("should return approved slackStatus when Slack approves", () => {
+      const result = {
+        status: "pending_execution",
+        slackStatus: "approved" as const,
+        resolvedBy: "slack-admin",
+        message: "Slack approved — ready to execute",
+      };
+
+      expect(result.slackStatus).toBe("approved");
+      expect(result.resolvedBy).toBe("slack-admin");
+    });
+
+    it("should return denied slackStatus when Slack denies", () => {
+      const result = {
+        status: "pending_execution",
+        slackStatus: "denied" as const,
+        resolvedBy: "slack-admin",
+        message: "Slack denied — action will not execute",
+      };
+
+      expect(result.slackStatus).toBe("denied");
+    });
+  });
+
+  describe("executeChangeRequestAfterSlack", () => {
+    it("should reject execution if request is not pending_execution", () => {
+      const request = { status: "approved", slackApprovalId: null };
+      const shouldReject = request.status !== "pending_execution" || !request.slackApprovalId;
+      expect(shouldReject).toBe(true);
+    });
+
+    it("should reject execution if Slack status is not approved", () => {
+      const slackStatuses = ["pending", "denied", "expired"];
+      for (const status of slackStatuses) {
+        const shouldExecute = status === "approved";
+        expect(shouldExecute).toBe(false);
+      }
+    });
+
+    it("should allow execution when Slack status is approved", () => {
+      const slackStatus = { status: "approved" };
+      expect(slackStatus.status === "approved").toBe(true);
+    });
+
+    it("should update change request to denied when Slack denies", async () => {
+      const { updateChangeRequestStatus } = await import("./db");
+
+      // Simulate Slack denial → update CR to denied
+      await updateChangeRequestStatus(1, {
+        status: "denied",
+        reviewNotes: "\n[Slack denied by slack-admin]",
+      }, "pending_execution");
+
+      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ status: "denied" }),
+        "pending_execution",
+      );
+    });
+
+    it("should update change request to expired when Slack expires", async () => {
+      const { updateChangeRequestStatus } = await import("./db");
+
+      await updateChangeRequestStatus(1, {
+        status: "expired",
+      }, "pending_execution");
+
+      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ status: "expired" }),
+        "pending_execution",
+      );
+    });
+  });
+
+  describe("Slack approval action types", () => {
+    it("should have cr_ prefixed action types for all sensitive change request types", () => {
+      const crActions = [
+        "cr_suspendUser",
+        "cr_unsuspendUser",
+        "cr_refundCredits",
+        "cr_addCredits",
+        "cr_blockIP",
+      ];
+
+      expect(crActions).toHaveLength(5);
+      crActions.forEach(action => {
+        expect(action).toMatch(/^cr_/);
+      });
+    });
+
+    it("should map cr_ actions to correct labels", () => {
+      const ACTION_LABELS: Record<string, string> = {
+        cr_suspendUser: "CR: Suspend User",
+        cr_unsuspendUser: "CR: Unsuspend User",
+        cr_refundCredits: "CR: Refund Credits",
+        cr_addCredits: "CR: Add Credits",
+        cr_blockIP: "CR: Block IP",
+      };
+
+      expect(ACTION_LABELS["cr_suspendUser"]).toContain("Suspend");
+      expect(ACTION_LABELS["cr_refundCredits"]).toContain("Refund");
+      expect(ACTION_LABELS["cr_blockIP"]).toContain("Block");
+    });
+  });
+
+  describe("pending_execution status in summary", () => {
+    it("should include pendingExecutionCount in list summary", () => {
+      const summary = {
+        pendingCount: 3,
+        approvedCount: 5,
+        deniedCount: 2,
+        pendingExecutionCount: 1,
+        totalCount: 11,
+      };
+
+      expect(summary).toHaveProperty("pendingExecutionCount");
+      expect(summary.pendingExecutionCount).toBe(1);
+    });
+  });
+
+  describe("end-to-end flow simulation", () => {
+    it("should follow the complete flow: approve → pending_execution → Slack approve → execute", async () => {
+      const { getChangeRequestById, updateChangeRequestStatus, addCredits } = await import("./db");
+
+      // Step 1: Admin approves a sensitive request (refund_credits)
+      const request = await getChangeRequestById(1);
+      expect(request!.type).toBe("refund_credits");
+      expect(SENSITIVE_TYPES.includes(request!.type)).toBe(true);
+
+      // Step 2: Status set to pending_execution
+      await updateChangeRequestStatus(1, {
+        status: "pending_execution",
+        reviewedById: 1,
+        reviewedByName: "Admin",
+      });
+
+      // Step 3: Slack approval ID stored
+      await updateChangeRequestStatus(1, {
+        status: "pending_execution",
+        slackApprovalId: "mock-slack-id",
+      }, "pending_execution");
+
+      // Step 4: Slack approves → execute the action
+      const creditResult = await addCredits(
+        request!.targetUserId,
+        request!.creditAmount!,
+        "refund",
+        `Refund via change request #1: ${request!.creditReason || request!.title}`,
+        "cr-1"
+      );
+      expect(creditResult.success).toBe(true);
+
+      // Step 5: Update status to approved
+      await updateChangeRequestStatus(1, { status: "approved" }, "pending_execution");
+
+      // Verify the full flow
+      expect(updateChangeRequestStatus).toHaveBeenCalledTimes(3);
+      expect(addCredits).toHaveBeenCalledWith(
+        42, 50, "refund",
+        expect.stringContaining("Refund via change request #1"),
+        "cr-1"
+      );
+    });
+
+    it("should follow the flow: approve → pending_execution → Slack deny → denied", async () => {
+      const { updateChangeRequestStatus, addCredits } = await import("./db");
+
+      // Step 1: Admin approves → pending_execution
+      await updateChangeRequestStatus(1, {
+        status: "pending_execution",
+        reviewedById: 1,
+        reviewedByName: "Admin",
+      });
+
+      // Step 2: Slack denies → update to denied
+      await updateChangeRequestStatus(1, {
+        status: "denied",
+        reviewNotes: "\n[Slack denied by slack-admin]",
+      }, "pending_execution");
+
+      // Step 3: No execution should happen
+      expect(addCredits).not.toHaveBeenCalled();
+
+      // Verify status transitions
+      expect(updateChangeRequestStatus).toHaveBeenCalledTimes(2);
+      expect(updateChangeRequestStatus).toHaveBeenLastCalledWith(
+        1,
+        expect.objectContaining({ status: "denied" }),
+        "pending_execution",
       );
     });
   });

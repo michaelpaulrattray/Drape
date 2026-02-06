@@ -2258,6 +2258,7 @@ export async function listChangeRequests(options: {
     deniedCount: number;
     cancelledCount: number;
     expiredCount: number;
+    pendingExecutionCount: number;
     totalCount: number;
   };
 }> {
@@ -2266,7 +2267,7 @@ export async function listChangeRequests(options: {
     return {
       requests: [],
       total: 0,
-      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, cancelledCount: 0, expiredCount: 0, totalCount: 0 },
+      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, cancelledCount: 0, expiredCount: 0, pendingExecutionCount: 0, totalCount: 0 },
     };
   }
 
@@ -2329,6 +2330,7 @@ export async function listChangeRequests(options: {
     let deniedCount = 0;
     let cancelledCount = 0;
     let expiredCount = 0;
+    let pendingExecutionCount = 0;
     let totalCount = 0;
     for (const row of summaryRows) {
       totalCount += row.count;
@@ -2337,19 +2339,20 @@ export async function listChangeRequests(options: {
       else if (row.status === "denied") deniedCount = row.count;
       else if (row.status === "cancelled") cancelledCount = row.count;
       else if (row.status === "expired") expiredCount = row.count;
+      else if (row.status === "pending_execution") pendingExecutionCount = row.count;
     }
 
     return {
       requests,
       total,
-      summary: { pendingCount, approvedCount, deniedCount, cancelledCount, expiredCount, totalCount },
+      summary: { pendingCount, approvedCount, deniedCount, cancelledCount, expiredCount, pendingExecutionCount, totalCount },
     };
   } catch (error) {
     console.error("[Database] Failed to list change requests:", error);
     return {
       requests: [],
       total: 0,
-      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, cancelledCount: 0, expiredCount: 0, totalCount: 0 },
+      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, cancelledCount: 0, expiredCount: 0, pendingExecutionCount: 0, totalCount: 0 },
     };
   }
 }
@@ -2361,30 +2364,37 @@ export async function listChangeRequests(options: {
 export async function updateChangeRequestStatus(
   id: number,
   update: {
-    status: "approved" | "denied" | "cancelled" | "expired";
+    status: "approved" | "denied" | "cancelled" | "expired" | "pending_execution";
     reviewedById?: number;
     reviewedByName?: string;
     reviewNotes?: string;
-  }
+    slackApprovalId?: string;
+  },
+  /** Which current status to match. Defaults to "pending". */
+  fromStatus: "pending" | "pending_execution" = "pending"
 ): Promise<{ success: boolean; error?: string }> {
   const db = await getDb();
   if (!db) return { success: false, error: "Database not available" };
 
   try {
+    const setData: Record<string, unknown> = {
+      status: update.status,
+      updatedAt: new Date(),
+    };
+    if (update.reviewedById !== undefined) setData.reviewedById = update.reviewedById;
+    if (update.reviewedByName !== undefined) setData.reviewedByName = update.reviewedByName;
+    if (update.reviewNotes !== undefined) setData.reviewNotes = update.reviewNotes;
+    if (update.slackApprovalId !== undefined) setData.slackApprovalId = update.slackApprovalId;
+    // Only set reviewedAt when transitioning from pending (first review)
+    if (fromStatus === "pending") setData.reviewedAt = new Date();
+
     const [result] = await db
       .update(changeRequests)
-      .set({
-        status: update.status,
-        reviewedById: update.reviewedById,
-        reviewedByName: update.reviewedByName,
-        reviewedAt: new Date(),
-        reviewNotes: update.reviewNotes,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(changeRequests.id, id), eq(changeRequests.status, "pending")));
+      .set(setData)
+      .where(and(eq(changeRequests.id, id), eq(changeRequests.status, fromStatus)));
 
     if (result.affectedRows === 0) {
-      return { success: false, error: "Change request not found or not in pending status" };
+      return { success: false, error: `Change request not found or not in ${fromStatus} status` };
     }
 
     return { success: true };

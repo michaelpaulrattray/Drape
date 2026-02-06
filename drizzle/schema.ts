@@ -346,6 +346,7 @@ export const CHANGE_REQUEST_STATUSES = [
   "denied",
   "cancelled",
   "expired",
+  "pending_execution",
 ] as const;
 
 export type ChangeRequestStatus = typeof CHANGE_REQUEST_STATUSES[number];
@@ -367,7 +368,7 @@ export const changeRequests = mysqlTable("change_requests", {
   id: int("id").autoincrement().primaryKey(),
   // Request metadata
   type: mysqlEnum("type", ["refund_credits", "add_credits", "flag_account", "note_incident", "suspend_user", "unsuspend_user", "block_ip", "other"]).notNull(),
-  status: mysqlEnum("status", ["pending", "approved", "denied", "cancelled", "expired"]).default("pending").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "denied", "cancelled", "expired", "pending_execution"]).default("pending").notNull(),
   priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal").notNull(),
   // Who submitted
   submittedById: int("submittedById").notNull(), // Moderator user ID
@@ -390,6 +391,8 @@ export const changeRequests = mysqlTable("change_requests", {
   reviewedByName: varchar("reviewedByName", { length: 256 }),
   reviewedAt: timestamp("reviewedAt"),
   reviewNotes: text("reviewNotes"), // Admin's notes on approval/denial
+  // Slack approval flow (for sensitive types)
+  slackApprovalId: varchar("slackApprovalId", { length: 64 }), // Links to pending Slack approval action
   // Timestamps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),

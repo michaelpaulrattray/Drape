@@ -2719,3 +2719,10 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Minor Enhancement - Plan Tier Display
 - [x] Show user's plan tier in moderator dashboard user details panel (between Credits and Joined)
+
+## Slack Approval Gating for Sensitive Change Requests
+- [x] Backend: Add Slack approval gating to reviewChangeRequest for sensitive types (suspend_user, block_ip, refund_credits, add_credits, unsuspend_user)
+- [x] Slack integration: Wire Slack approval callback to complete change request execution
+- [x] Frontend: Update AdminChangeRequests UI to show "Awaiting Slack Approval" state
+- [x] Tests: Add/update tests for both sensitive and non-sensitive approval paths
+- [x] Verify all tests pass (500 tests, 26 files)

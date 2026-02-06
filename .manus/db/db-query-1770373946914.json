@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'change_requests' AND COLUMN_NAME LIKE '%slack%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'change_requests' AND COLUMN_NAME LIKE '%slack%';",
+  "rows": [
+    {
+      "COLUMN_NAME": "slackApprovalId"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nslackApprovalId\n",
+  "stderr": "",
+  "execution_time_ms": 1604
+}

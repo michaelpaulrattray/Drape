@@ -26,7 +26,12 @@ export type ApprovalAction =
   | "unsuspendUser"
   | "adjustCredits"
   | "blockIP"
-  | "unblockIP";
+  | "unblockIP"
+  | "cr_suspendUser"
+  | "cr_unsuspendUser"
+  | "cr_refundCredits"
+  | "cr_addCredits"
+  | "cr_blockIP";
 
 export type ApprovalStatus = "pending" | "approved" | "denied" | "expired" | "executed" | "failed";
 
@@ -99,6 +104,11 @@ const ACTION_LABELS: Record<ApprovalAction, string> = {
   adjustCredits: "Adjust Credits",
   blockIP: "Block IP Address",
   unblockIP: "Unblock IP Address",
+  cr_suspendUser: "Change Request: Suspend User",
+  cr_unsuspendUser: "Change Request: Unsuspend User",
+  cr_refundCredits: "Change Request: Refund Credits",
+  cr_addCredits: "Change Request: Add Credits",
+  cr_blockIP: "Change Request: Block IP",
 };
 
 const ACTION_EMOJI: Record<ApprovalAction, string> = {
@@ -107,6 +117,11 @@ const ACTION_EMOJI: Record<ApprovalAction, string> = {
   adjustCredits: "💰",
   blockIP: "🚫",
   unblockIP: "🔓",
+  cr_suspendUser: "📋⛔",
+  cr_unsuspendUser: "📋✅",
+  cr_refundCredits: "📋💰",
+  cr_addCredits: "📋💰",
+  cr_blockIP: "📋🚫",
 };
 
 // ============ Core Functions ============
