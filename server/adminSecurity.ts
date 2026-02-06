@@ -28,14 +28,14 @@ import { AUDIT_ACTIONS } from "../drizzle/schema";
 const ADMIN_ALLOWLIST: (number | string)[] = [
   // Add allowed admin user IDs or emails here
   // Example: 1, "admin@formastudio.app", 2
-  process.env.OWNER_OPEN_ID ? parseInt(process.env.OWNER_OPEN_ID) : null,
+  process.env.OWNER_OPEN_ID || null,
   process.env.OWNER_NAME || null,
 ].filter(Boolean) as (number | string)[];
 
 /**
  * Check if a user is on the admin allowlist
  */
-export function isOnAdminAllowlist(userId: number, email?: string): boolean {
+export function isOnAdminAllowlist(userId: number, email?: string, openId?: string): boolean {
   // If allowlist is empty, allow all database admins (backwards compatible)
   if (ADMIN_ALLOWLIST.length === 0) {
     return true;
@@ -43,6 +43,11 @@ export function isOnAdminAllowlist(userId: number, email?: string): boolean {
   
   // Check if user ID is in allowlist
   if (ADMIN_ALLOWLIST.includes(userId)) {
+    return true;
+  }
+  
+  // Check if openId is in allowlist (OWNER_OPEN_ID is a string, not a number)
+  if (openId && ADMIN_ALLOWLIST.includes(openId)) {
     return true;
   }
   
@@ -58,7 +63,7 @@ export function isOnAdminAllowlist(userId: number, email?: string): boolean {
  * Validate admin access - checks both role AND allowlist
  */
 export function validateAdminAccess(
-  user: { id: number; role: string; email?: string; name?: string }
+  user: { id: number; role: string; email?: string; name?: string; openId?: string }
 ): { allowed: boolean; reason?: string } {
   // Check role first
   if (user.role !== "admin") {
@@ -66,7 +71,7 @@ export function validateAdminAccess(
   }
   
   // Check allowlist
-  if (!isOnAdminAllowlist(user.id, user.email)) {
+  if (!isOnAdminAllowlist(user.id, user.email, user.openId)) {
     return { 
       allowed: false, 
       reason: "User is not on admin allowlist despite having admin role" 

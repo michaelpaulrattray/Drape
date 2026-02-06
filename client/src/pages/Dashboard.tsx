@@ -24,6 +24,7 @@ import {
   Shield,
   Eye,
   AlertTriangle,
+  ClipboardList,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
@@ -318,6 +319,17 @@ export default function Dashboard() {
                     <div className="flex items-center gap-3">
                       <Users className="w-[18px] h-[18px]" />
                       <span className="text-sm">User Management</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                </Link>
+                <Link href="/admin/change-requests">
+                  <button
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-subtle hover:text-obsidian hover:bg-gray-50 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ClipboardList className="w-[18px] h-[18px]" />
+                      <span className="text-sm">Change Requests</span>
                     </div>
                     <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>

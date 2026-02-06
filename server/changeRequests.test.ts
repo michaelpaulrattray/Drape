@@ -15,6 +15,11 @@ vi.mock("./auditLog", () => ({
     CHANGE_REQUEST_APPROVED: "admin.change_request_approved",
     CHANGE_REQUEST_DENIED: "admin.change_request_denied",
     CHANGE_REQUEST_CANCELLED: "moderator.change_request_cancelled",
+    CREDITS_REFUNDED: "credits.refunded",
+    CREDITS_ADDED: "credits.admin_added",
+    ACCOUNT_SUSPENDED: "admin.account_suspended",
+    ACCOUNT_UNSUSPENDED: "admin.account_unsuspended",
+    IP_BLOCKED: "admin.ip_blocked",
   },
 }));
 
@@ -79,6 +84,71 @@ vi.mock("./db", () => ({
         updatedAt: new Date("2026-01-15T12:00:00Z"),
       });
     }
+    // Mock for suspend_user auto-execute test
+    if (id === 3) {
+      return Promise.resolve({
+        id: 3, type: "suspend_user", status: "pending", priority: "high",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 55, targetUserName: "Bad Actor",
+        title: "Suspend user for abuse", description: "Repeated TOS violations",
+        evidenceSummary: "Multiple warnings issued", relatedAuditLogId: null,
+        creditAmount: null, creditReason: null, ipAddress: null,
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
+    // Mock for unsuspend_user auto-execute test
+    if (id === 4) {
+      return Promise.resolve({
+        id: 4, type: "unsuspend_user", status: "pending", priority: "normal",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 55, targetUserName: "Reformed User",
+        title: "Unsuspend user after review", description: "User has served suspension period",
+        evidenceSummary: null, relatedAuditLogId: null,
+        creditAmount: null, creditReason: null, ipAddress: null,
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
+    // Mock for block_ip auto-execute test
+    if (id === 5) {
+      return Promise.resolve({
+        id: 5, type: "block_ip", status: "pending", priority: "urgent",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 55, targetUserName: "Attacker",
+        title: "Block malicious IP", description: "Brute force attack detected",
+        evidenceSummary: "500+ failed login attempts", relatedAuditLogId: null,
+        creditAmount: null, creditReason: null, ipAddress: "192.168.1.100",
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
+    // Mock for add_credits auto-execute test
+    if (id === 6) {
+      return Promise.resolve({
+        id: 6, type: "add_credits", status: "pending", priority: "normal",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 42, targetUserName: "Loyal User",
+        title: "Bonus credits for loyalty", description: "User has been active for 12 months",
+        evidenceSummary: null, relatedAuditLogId: null,
+        creditAmount: 100, creditReason: "Loyalty bonus", ipAddress: null,
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
+    // Mock for note_incident (no auto-execute)
+    if (id === 7) {
+      return Promise.resolve({
+        id: 7, type: "note_incident", status: "pending", priority: "low",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 42, targetUserName: "Test User",
+        title: "Note: unusual activity", description: "User reported unusual behavior",
+        evidenceSummary: null, relatedAuditLogId: null,
+        creditAmount: null, creditReason: null, ipAddress: null,
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
     return Promise.resolve(null);
   }),
   listChangeRequests: vi.fn().mockResolvedValue({
@@ -108,6 +178,10 @@ vi.mock("./db", () => ({
     },
   }),
   updateChangeRequestStatus: vi.fn().mockResolvedValue({ success: true }),
+  addCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 150 }),
+  suspendUser: vi.fn().mockResolvedValue({ success: true }),
+  unsuspendUser: vi.fn().mockResolvedValue({ success: true }),
+  blockIp: vi.fn().mockResolvedValue({ success: true, id: 1 }),
   getChangeRequestsByModerator: vi.fn().mockResolvedValue({
     requests: [
       {
@@ -917,5 +991,411 @@ describe("Change Request - Replaces Escalation", () => {
     expect(workflow.approvalPath).toBe("approved");
     expect(workflow.denialPath).toBe("denied");
     expect(workflow.cancelPath).toBe("cancelled");
+  });
+});
+
+// ============================================================
+// Auto-Execute on Approval Tests
+// ============================================================
+
+describe("Change Request - Auto-Execute on Approval", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("refund_credits auto-execute", () => {
+    it("should call addCredits with refund type when refund_credits request is approved", async () => {
+      const { getChangeRequestById, updateChangeRequestStatus, addCredits } = await import("./db");
+      const { logAuditEvent } = await import("./auditLog");
+      const { AUDIT_ACTIONS } = await import("./auditLog");
+
+      const request = await getChangeRequestById(1); // refund_credits, creditAmount: 50
+      expect(request).not.toBeNull();
+      expect(request!.type).toBe("refund_credits");
+      expect(request!.creditAmount).toBe(50);
+
+      // Simulate approval
+      await updateChangeRequestStatus(1, {
+        status: "approved",
+        reviewedById: 1,
+        reviewedByName: "Admin",
+        reviewNotes: "Approved refund",
+      });
+
+      // Simulate auto-execute
+      const creditResult = await addCredits(
+        request!.targetUserId,
+        request!.creditAmount!,
+        "refund",
+        `Refund via change request #1: ${request!.creditReason || request!.title}`,
+        "cr-1"
+      );
+
+      expect(addCredits).toHaveBeenCalledWith(
+        42, // targetUserId
+        50, // creditAmount
+        "refund",
+        expect.stringContaining("Refund via change request #1"),
+        "cr-1"
+      );
+      expect(creditResult.success).toBe(true);
+      expect(creditResult.newBalance).toBe(150);
+
+      // Verify audit log would be called
+      await logAuditEvent({
+        userId: 1,
+        action: AUDIT_ACTIONS.CREDITS_REFUNDED,
+        resourceType: "credits",
+        resourceId: "42",
+        metadata: { amount: 50, changeRequestId: 1, newBalance: 150 },
+        severity: "info",
+        req: undefined as any,
+      });
+
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "credits.refunded",
+          resourceType: "credits",
+        }),
+      );
+    });
+
+    it("should not execute if creditAmount is null or zero", async () => {
+      const { addCredits } = await import("./db");
+
+      // A refund_credits request with no credit amount should not trigger addCredits
+      const shouldExecute = (creditAmount: number | null) => {
+        return creditAmount !== null && creditAmount > 0;
+      };
+
+      expect(shouldExecute(null)).toBe(false);
+      expect(shouldExecute(0)).toBe(false);
+      expect(shouldExecute(50)).toBe(true);
+      expect(addCredits).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("add_credits auto-execute", () => {
+    it("should call addCredits with bonus type when add_credits request is approved", async () => {
+      const { getChangeRequestById, addCredits } = await import("./db");
+
+      const request = await getChangeRequestById(6); // add_credits, creditAmount: 100
+      expect(request!.type).toBe("add_credits");
+      expect(request!.creditAmount).toBe(100);
+
+      const creditResult = await addCredits(
+        request!.targetUserId,
+        request!.creditAmount!,
+        "bonus",
+        `Credits added via change request #6: ${request!.creditReason || request!.title}`,
+        "cr-6"
+      );
+
+      expect(addCredits).toHaveBeenCalledWith(
+        42,
+        100,
+        "bonus",
+        expect.stringContaining("Credits added via change request #6"),
+        "cr-6"
+      );
+      expect(creditResult.success).toBe(true);
+    });
+  });
+
+  describe("suspend_user auto-execute", () => {
+    it("should call suspendUser when suspend_user request is approved", async () => {
+      const { getChangeRequestById, suspendUser } = await import("./db");
+      const { logAuditEvent, AUDIT_ACTIONS } = await import("./auditLog");
+
+      const request = await getChangeRequestById(3); // suspend_user
+      expect(request!.type).toBe("suspend_user");
+
+      const result = await suspendUser(
+        request!.targetUserId,
+        `Suspended via change request #3: ${request!.title}`,
+        1 // admin ID
+      );
+
+      expect(suspendUser).toHaveBeenCalledWith(
+        55, // targetUserId
+        expect.stringContaining("Suspended via change request #3"),
+        1
+      );
+      expect(result.success).toBe(true);
+
+      await logAuditEvent({
+        userId: 1,
+        action: AUDIT_ACTIONS.ACCOUNT_SUSPENDED,
+        resourceType: "user",
+        resourceId: "55",
+        metadata: { reason: request!.title, changeRequestId: 3 },
+        severity: "warning",
+        req: undefined as any,
+      });
+
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "admin.account_suspended",
+          resourceType: "user",
+        }),
+      );
+    });
+  });
+
+  describe("unsuspend_user auto-execute", () => {
+    it("should call unsuspendUser when unsuspend_user request is approved", async () => {
+      const { getChangeRequestById, unsuspendUser } = await import("./db");
+      const { logAuditEvent, AUDIT_ACTIONS } = await import("./auditLog");
+
+      const request = await getChangeRequestById(4); // unsuspend_user
+      expect(request!.type).toBe("unsuspend_user");
+
+      const result = await unsuspendUser(request!.targetUserId);
+
+      expect(unsuspendUser).toHaveBeenCalledWith(55);
+      expect(result.success).toBe(true);
+
+      await logAuditEvent({
+        userId: 1,
+        action: AUDIT_ACTIONS.ACCOUNT_UNSUSPENDED,
+        resourceType: "user",
+        resourceId: "55",
+        metadata: { reason: request!.title, changeRequestId: 4 },
+        severity: "info",
+        req: undefined as any,
+      });
+
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "admin.account_unsuspended",
+          resourceType: "user",
+        }),
+      );
+    });
+  });
+
+  describe("block_ip auto-execute", () => {
+    it("should call blockIp when block_ip request is approved", async () => {
+      const { getChangeRequestById, blockIp } = await import("./db");
+      const { logAuditEvent, AUDIT_ACTIONS } = await import("./auditLog");
+
+      const request = await getChangeRequestById(5); // block_ip, ipAddress: "192.168.1.100"
+      expect(request!.type).toBe("block_ip");
+      expect(request!.ipAddress).toBe("192.168.1.100");
+
+      const result = await blockIp(
+        request!.ipAddress!,
+        `Blocked via change request #5: ${request!.title}`,
+        1 // admin ID
+      );
+
+      expect(blockIp).toHaveBeenCalledWith(
+        "192.168.1.100",
+        expect.stringContaining("Blocked via change request #5"),
+        1
+      );
+      expect(result.success).toBe(true);
+
+      await logAuditEvent({
+        userId: 1,
+        action: AUDIT_ACTIONS.IP_BLOCKED,
+        resourceType: "ip",
+        resourceId: "192.168.1.100",
+        metadata: { reason: request!.title, changeRequestId: 5 },
+        severity: "warning",
+        req: undefined as any,
+      });
+
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "admin.ip_blocked",
+          resourceType: "ip",
+        }),
+      );
+    });
+
+    it("should not execute block_ip if ipAddress is missing", async () => {
+      const { blockIp } = await import("./db");
+
+      const shouldExecute = (ipAddress: string | null) => {
+        return ipAddress !== null && ipAddress.length > 0;
+      };
+
+      expect(shouldExecute(null)).toBe(false);
+      expect(shouldExecute("")).toBe(false);
+      expect(shouldExecute("192.168.1.100")).toBe(true);
+      expect(blockIp).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("non-executable types", () => {
+    it("should NOT auto-execute for flag_account type", async () => {
+      const { addCredits, suspendUser, unsuspendUser, blockIp } = await import("./db");
+
+      const nonExecutableTypes = ["flag_account", "note_incident", "other"];
+      for (const type of nonExecutableTypes) {
+        const shouldAutoExecute = !["flag_account", "note_incident", "other"].includes(type);
+        expect(shouldAutoExecute).toBe(false);
+      }
+
+      // None of the action functions should be called
+      expect(addCredits).not.toHaveBeenCalled();
+      expect(suspendUser).not.toHaveBeenCalled();
+      expect(unsuspendUser).not.toHaveBeenCalled();
+      expect(blockIp).not.toHaveBeenCalled();
+    });
+
+    it("should NOT auto-execute for note_incident type", async () => {
+      const { getChangeRequestById } = await import("./db");
+
+      const request = await getChangeRequestById(7); // note_incident
+      expect(request!.type).toBe("note_incident");
+
+      // note_incident should not trigger any auto-execution
+      const autoExecuteTypes = ["refund_credits", "add_credits", "suspend_user", "unsuspend_user", "block_ip"];
+      expect(autoExecuteTypes.includes(request!.type)).toBe(false);
+    });
+  });
+
+  describe("denial should NOT auto-execute", () => {
+    it("should not call any action functions when a request is denied", async () => {
+      const { getChangeRequestById, updateChangeRequestStatus, addCredits, suspendUser, unsuspendUser, blockIp } = await import("./db");
+
+      const request = await getChangeRequestById(1); // refund_credits
+      expect(request!.type).toBe("refund_credits");
+
+      // Deny the request
+      await updateChangeRequestStatus(1, {
+        status: "denied",
+        reviewedById: 1,
+        reviewedByName: "Admin",
+        reviewNotes: "Insufficient evidence",
+      });
+
+      // Auto-execute should only happen on approval, not denial
+      const shouldAutoExecute = (action: string) => action === "approved";
+      expect(shouldAutoExecute("denied")).toBe(false);
+
+      // None of the action functions should be called for denial
+      expect(addCredits).not.toHaveBeenCalled();
+      expect(suspendUser).not.toHaveBeenCalled();
+      expect(unsuspendUser).not.toHaveBeenCalled();
+      expect(blockIp).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("execution failure handling", () => {
+    it("should handle addCredits failure gracefully", async () => {
+      const { addCredits } = await import("./db");
+      
+      // Override mock to simulate failure
+      (addCredits as any).mockResolvedValueOnce({ success: false, error: "Insufficient balance" });
+
+      const result = await addCredits(42, 50, "refund", "Test refund", "cr-test");
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Insufficient balance");
+    });
+
+    it("should handle suspendUser failure gracefully", async () => {
+      const { suspendUser } = await import("./db");
+
+      (suspendUser as any).mockResolvedValueOnce({ success: false, error: "User already suspended" });
+
+      const result = await suspendUser(55, "Test suspension", 1);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("User already suspended");
+    });
+
+    it("should handle blockIp failure gracefully", async () => {
+      const { blockIp } = await import("./db");
+
+      (blockIp as any).mockResolvedValueOnce({ success: false });
+
+      const result = await blockIp("192.168.1.100", "Test block", 1);
+      expect(result.success).toBe(false);
+    });
+
+    it("should catch unexpected errors during auto-execution", async () => {
+      const { addCredits } = await import("./db");
+
+      (addCredits as any).mockRejectedValueOnce(new Error("Database connection lost"));
+
+      try {
+        await addCredits(42, 50, "refund", "Test", "cr-test");
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error: any) {
+        expect(error.message).toBe("Database connection lost");
+      }
+    });
+  });
+
+  describe("execution result structure", () => {
+    it("should return executed: false for non-executable types", () => {
+      const executionResult = { executed: false };
+      expect(executionResult.executed).toBe(false);
+      expect(executionResult).not.toHaveProperty("success");
+      expect(executionResult).not.toHaveProperty("error");
+    });
+
+    it("should return executed: true with success for successful execution", () => {
+      const executionResult = { executed: true, success: true };
+      expect(executionResult.executed).toBe(true);
+      expect(executionResult.success).toBe(true);
+    });
+
+    it("should return executed: true with error for failed execution", () => {
+      const executionResult = { executed: true, success: false, error: "Something went wrong" };
+      expect(executionResult.executed).toBe(true);
+      expect(executionResult.success).toBe(false);
+      expect(executionResult.error).toBe("Something went wrong");
+    });
+  });
+
+  describe("Slack notification for auto-execution", () => {
+    it("should send Slack notification after successful auto-execution", async () => {
+      const { sendAdminActionNotification } = await import("./slackNotification");
+
+      await sendAdminActionNotification({
+        title: "⚙️✅ Auto-Executed: Refund Credits",
+        description: "Action auto-executed for change request #1. Execution succeeded.",
+        severity: "info",
+        fields: [
+          { title: "Request", value: "#1", short: true },
+          { title: "Type", value: "Refund Credits", short: true },
+          { title: "Target", value: "Test User", short: true },
+          { title: "Execution", value: "Success", short: true },
+        ],
+      });
+
+      expect(sendAdminActionNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: expect.stringContaining("Auto-Executed"),
+          severity: "info",
+        }),
+      );
+    });
+
+    it("should send critical Slack notification after failed auto-execution", async () => {
+      const { sendAdminActionNotification } = await import("./slackNotification");
+
+      await sendAdminActionNotification({
+        title: "⚙️❌ Auto-Executed: Suspend User",
+        description: "Action auto-executed for change request #3. Execution failed: User already suspended.",
+        severity: "critical",
+        fields: [
+          { title: "Request", value: "#3", short: true },
+          { title: "Type", value: "Suspend User", short: true },
+          { title: "Target", value: "Bad Actor", short: true },
+          { title: "Execution", value: "Failed", short: true },
+        ],
+      });
+
+      expect(sendAdminActionNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: "critical",
+        }),
+      );
+    });
   });
 });

@@ -3194,10 +3194,177 @@ export const appRouter = router({
           },
         );
 
+        // ─── Auto-execute on approval ───────────────────────────────────
+        let executionResult: { executed: boolean; success?: boolean; error?: string } = { executed: false };
+
+        if (input.action === "approved") {
+          const { addCredits, suspendUser, unsuspendUser, blockIp } = await import("./db");
+
+          try {
+            switch (request.type) {
+              case "refund_credits": {
+                if (request.creditAmount && request.creditAmount > 0) {
+                  const creditResult = await addCredits(
+                    request.targetUserId,
+                    request.creditAmount,
+                    "refund",
+                    `Refund via change request #${input.id}: ${request.creditReason || request.title}`,
+                    `cr-${input.id}`
+                  );
+                  executionResult = { executed: true, success: creditResult.success, error: creditResult.error };
+                  if (creditResult.success) {
+                    await logAuditEvent({
+                      userId: ctx.user.id,
+                      action: AUDIT_ACTIONS.CREDITS_REFUNDED,
+                      resourceType: "credits",
+                      resourceId: String(request.targetUserId),
+                      metadata: {
+                        amount: request.creditAmount,
+                        reason: request.creditReason || request.title,
+                        changeRequestId: input.id,
+                        newBalance: creditResult.newBalance,
+                      },
+                      severity: "info",
+                      req: ctx.req,
+                    });
+                  }
+                } else {
+                  executionResult = { executed: false };
+                }
+                break;
+              }
+              case "add_credits": {
+                if (request.creditAmount && request.creditAmount > 0) {
+                  const creditResult = await addCredits(
+                    request.targetUserId,
+                    request.creditAmount,
+                    "bonus",
+                    `Credits added via change request #${input.id}: ${request.creditReason || request.title}`,
+                    `cr-${input.id}`
+                  );
+                  executionResult = { executed: true, success: creditResult.success, error: creditResult.error };
+                  if (creditResult.success) {
+                    await logAuditEvent({
+                      userId: ctx.user.id,
+                      action: AUDIT_ACTIONS.CREDITS_ADDED,
+                      resourceType: "credits",
+                      resourceId: String(request.targetUserId),
+                      metadata: {
+                        amount: request.creditAmount,
+                        reason: request.creditReason || request.title,
+                        changeRequestId: input.id,
+                        newBalance: creditResult.newBalance,
+                      },
+                      severity: "info",
+                      req: ctx.req,
+                    });
+                  }
+                } else {
+                  executionResult = { executed: false };
+                }
+                break;
+              }
+              case "suspend_user": {
+                const suspendResult = await suspendUser(
+                  request.targetUserId,
+                  `Suspended via change request #${input.id}: ${request.title}`,
+                  ctx.user.id
+                );
+                executionResult = { executed: true, success: suspendResult.success, error: suspendResult.error };
+                if (suspendResult.success) {
+                  await logAuditEvent({
+                    userId: ctx.user.id,
+                    action: AUDIT_ACTIONS.ACCOUNT_SUSPENDED,
+                    resourceType: "user",
+                    resourceId: String(request.targetUserId),
+                    metadata: {
+                      reason: request.title,
+                      changeRequestId: input.id,
+                    },
+                    severity: "warning",
+                    req: ctx.req,
+                  });
+                }
+                break;
+              }
+              case "unsuspend_user": {
+                const unsuspendResult = await unsuspendUser(request.targetUserId);
+                executionResult = { executed: true, success: unsuspendResult.success, error: unsuspendResult.error };
+                if (unsuspendResult.success) {
+                  await logAuditEvent({
+                    userId: ctx.user.id,
+                    action: AUDIT_ACTIONS.ACCOUNT_UNSUSPENDED,
+                    resourceType: "user",
+                    resourceId: String(request.targetUserId),
+                    metadata: {
+                      reason: request.title,
+                      changeRequestId: input.id,
+                    },
+                    severity: "info",
+                    req: ctx.req,
+                  });
+                }
+                break;
+              }
+              case "block_ip": {
+                if (request.ipAddress) {
+                  const blockResult = await blockIp(
+                    request.ipAddress,
+                    `Blocked via change request #${input.id}: ${request.title}`,
+                    ctx.user.id
+                  );
+                  executionResult = { executed: true, success: blockResult.success };
+                  if (blockResult.success) {
+                    await logAuditEvent({
+                      userId: ctx.user.id,
+                      action: AUDIT_ACTIONS.IP_BLOCKED,
+                      resourceType: "ip",
+                      resourceId: request.ipAddress,
+                      metadata: {
+                        reason: request.title,
+                        changeRequestId: input.id,
+                      },
+                      severity: "warning",
+                      req: ctx.req,
+                    });
+                  }
+                } else {
+                  executionResult = { executed: false };
+                }
+                break;
+              }
+              default:
+                // flag_account, note_incident, other — no auto-execution
+                executionResult = { executed: false };
+            }
+
+            // Send Slack notification about auto-execution
+            if (executionResult.executed) {
+              const execEmoji = executionResult.success ? "\u2699\ufe0f\u2705" : "\u2699\ufe0f\u274c";
+              const execStatus = executionResult.success ? "succeeded" : `failed: ${executionResult.error || "Unknown error"}`;
+              await sendAdminActionNotification({
+                title: `${execEmoji} Auto-Executed: ${typeLabels[request.type] || request.type}`,
+                description: `Action auto-executed for change request #${input.id}. Execution ${execStatus}.`,
+                severity: executionResult.success ? "info" : "critical",
+                fields: [
+                  { title: "Request", value: `#${input.id}`, short: true },
+                  { title: "Type", value: typeLabels[request.type] || request.type, short: true },
+                  { title: "Target", value: request.targetUserName || `User ${request.targetUserId}`, short: true },
+                  { title: "Execution", value: executionResult.success ? "Success" : "Failed", short: true },
+                ],
+              });
+            }
+          } catch (execError: any) {
+            console.error(`[ChangeRequest] Auto-execution failed for request #${input.id}:`, execError);
+            executionResult = { executed: true, success: false, error: execError?.message || "Unexpected execution error" };
+          }
+        }
+
         return {
           success: true,
           action: input.action,
           message: `Change request #${input.id} has been ${actionVerb.toLowerCase()}`,
+          executionResult,
         };
       }),
   }),

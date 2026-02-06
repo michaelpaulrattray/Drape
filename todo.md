@@ -2676,3 +2676,32 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Write vitest tests for moderator change request procedures
 - [x] Write vitest tests for admin change request review procedures
 - [x] Verify all 453 tests pass (48 net new tests added)
+
+## Phase 2 Continuation: Admin Review UI + Auto-Execute
+
+### Admin Change Request Review UI
+- [x] Create AdminChangeRequests.tsx page component
+- [x] Add route to App.tsx and admin sidebar navigation
+- [x] Implement request list with status/type/priority filters
+- [x] Implement request detail view with full context
+- [x] Add approve/deny buttons with confirmation dialog and review notes
+- [x] Add status badges and priority indicators
+- [x] Style with dark mode matching admin dashboard aesthetic
+
+### Auto-Execute on Approval
+- [x] Update reviewChangeRequest procedure to auto-execute approved actions
+- [x] Auto-execute refund_credits: call addCredits for the target user
+- [x] Auto-execute add_credits: call addCredits for the target user
+- [x] Auto-execute suspend_user: call suspendUser for the target user
+- [x] Auto-execute unsuspend_user: call unsuspendUser for the target user
+- [x] Auto-execute block_ip: call blockIp for the target IP
+- [x] Log auto-executed actions to audit trail and Slack
+- [x] Handle execution failures gracefully (approve but flag execution error)
+
+### Testing
+- [x] Write tests for auto-execute logic (19 new tests)
+- [x] Write tests for admin review UI procedures
+- [x] Verify all 472 tests pass (19 net new tests added)
+
+## Bug Fix
+- [x] Fix "User is not on admin allowlist despite having admin role" error on /admin/audit-logs

@@ -74,6 +74,7 @@ export const adminProcedure = t.procedure.use(
       role: ctx.user.role,
       email: ctx.user.email || undefined,
       name: ctx.user.name || undefined,
+      openId: ctx.user.openId || undefined,
     });
 
     if (!validation.allowed) {

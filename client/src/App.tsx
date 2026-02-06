@@ -11,6 +11,7 @@ import CastingStudio from "./pages/CastingStudio";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
+import AdminChangeRequests from "./pages/AdminChangeRequests";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/casting-studio" component={CastingStudio} />
       <Route path="/admin/audit-logs" component={AdminAuditLogs} />
       <Route path="/admin/users" component={AdminUserManagement} />
+      <Route path="/admin/change-requests" component={AdminChangeRequests} />
       <Route path="/moderator" component={ModeratorDashboard} />
       <Route path="/outfit-studio" component={ComingSoon} />
       <Route path="/photo-studio" component={ComingSoon} />
