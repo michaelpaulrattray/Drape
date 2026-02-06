@@ -831,9 +831,13 @@ export default function ModeratorDashboard() {
                             >
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white">
-                                    {(u.name || "U").charAt(0).toUpperCase()}
-                                  </div>
+                                  {u.avatarUrl ? (
+                                    <img src={u.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white">
+                                      {(u.name || "U").charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
                                   <div>
                                     <div className="font-medium text-sm text-white">{u.name || "Unnamed"}</div>
                                     <div className="text-xs text-white/40">{u.email || "No email"}</div>
@@ -953,6 +957,11 @@ export default function ModeratorDashboard() {
                           </div>
                         ) : userDetailsQuery.data ? (
                             <div className="space-y-2 text-sm text-white">
+                            {userDetailsQuery.data.user.avatarUrl && (
+                              <div className="flex justify-center mb-3">
+                                <img src={userDetailsQuery.data.user.avatarUrl} alt="" className="w-16 h-16 rounded-full object-cover" />
+                              </div>
+                            )}
                             <div className="flex justify-between">
                               <span className="text-white/40">Name</span>
                               <span>{userDetailsQuery.data.user.name || "—"}</span>
