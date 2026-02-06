@@ -2757,3 +2757,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add getCreditTransactionByRef helper to db.ts for credit restoration lookup
 - [x] Tests for dispute lifecycle — 20 tests covering created/won/lost/edge cases
 - [x] Verify all tests pass (536 tests, 28 files)
+
+## Security Headers Middleware
+- [x] Create securityHeaders.ts middleware with HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- [x] Register middleware in Express server setup (first middleware, before body parsers)
+- [x] Write tests for all 5 headers (9 tests)
+- [x] Verify all tests pass (545 tests, 29 files)
