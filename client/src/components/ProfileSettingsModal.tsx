@@ -607,6 +607,8 @@ export default function ProfileSettingsModal({
     }
   }, [profileData]);
 
+  const deleteAccountMutation = trpc.auth.deleteAccount.useMutation();
+
   if (!isOpen) return null;
 
   const handleSave = async () => {
@@ -620,8 +622,6 @@ export default function ProfileSettingsModal({
       setIsSaving(false);
     }
   };
-
-  const deleteAccountMutation = trpc.auth.deleteAccount.useMutation();
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") return;

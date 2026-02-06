@@ -2820,3 +2820,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add auth.deleteAccount protected procedure (cancel Stripe, delete data, clear session)
 - [x] Wire up ProfileSettingsModal Delete Account button with confirmation dialog
 - [x] Write tests for account deletion logic
+
+## Bug Fixes
+- [x] Fix React hooks order violation in ProfileSettingsModal (deleteAccountMutation after early return)
