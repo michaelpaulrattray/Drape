@@ -10,7 +10,7 @@ The authentication flow works as follows. When a user clicks "Sign In," they are
 
 ## Procedure Types
 
-FormaStudio defines three procedure types in `server/_core/trpc.ts` that determine the authentication requirements for each endpoint.
+FormaStudio defines four procedure types in `server/_core/trpc.ts` that determine the authentication requirements for each endpoint.
 
 ### publicProcedure
 
@@ -50,6 +50,46 @@ listAllUsers: adminProcedure.query(async () => {
 ```
 
 Use admin procedures for administrative operations like user management, system configuration, or viewing aggregate data across all users.
+
+### moderatorProcedure
+
+Moderator procedures require authentication and either the `moderator` or `admin` role. Regular users receive a `FORBIDDEN` error. Moderators have read-only access to audit logs, user activity, and blocked IPs, plus the ability to escalate issues to admins via Slack.
+
+```typescript
+// Example: Moderators can view audit logs (read-only)
+getAuditLogs: moderatorProcedure
+  .input(z.object({ limit: z.number().optional() }))
+  .query(async ({ input }) => {
+    return await getFilteredAuditLogs({ limit: input?.limit || 20 });
+  }),
+
+// Example: Moderators can escalate issues to admins (only write operation)
+escalateToAdmin: moderatorProcedure
+  .input(z.object({
+    actionType: z.enum(["suspendUser", "blockIP", "investigateUser", "other"]),
+    targetId: z.string(),
+    reason: z.string().min(10).max(2000),
+    severity: z.enum(["warning", "critical"]),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    // Sends escalation to #admin-actions Slack channel
+  }),
+```
+
+Use moderator procedures for read-only monitoring operations and escalation workflows. The moderator router is completely separate from the admin router, ensuring moderators cannot accidentally access admin mutations.
+
+**Moderator capabilities:**
+- View audit logs, abuse alerts, and audit statistics
+- View user details, user activity, and user lists (read-only)
+- View blocked IPs (read-only, cannot block/unblock)
+- Escalate issues to #admin-actions Slack channel with context
+
+**Moderator restrictions:**
+- Cannot suspend/unsuspend users
+- Cannot block/unblock IPs
+- Cannot adjust credits
+- Cannot export or delete audit logs
+- Cannot access admin-only procedures
 
 ## Authorization: Data Scoping
 

@@ -108,3 +108,41 @@ export const adminProcedure = t.procedure.use(
     });
   }),
 );
+
+/**
+ * Moderator procedure - allows access for moderator OR admin roles.
+ * Moderators have read-only access to audit logs, user activity, and can escalate to admins.
+ * Admins automatically pass this check as well.
+ */
+export const moderatorProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    // Allow moderators and admins
+    if (ctx.user.role !== "moderator" && ctx.user.role !== "admin") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Moderator or admin privileges required.",
+      });
+    }
+
+    // Check for suspension
+    if (ctx.user.suspendedAt) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Your account has been suspended. Contact an administrator.",
+      });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  }),
+);

@@ -2617,3 +2617,20 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update slackApproval.ts to use admin-actions webhook
 - [x] Update tests for three-channel routing (329 tests passing)
 - [x] Update documentation (AUTHENTICATION.md)
+
+
+## Moderator Role Implementation
+- [x] Add 'moderator' to user role enum in database schema
+- [x] Push database migration for new role
+- [x] Create moderatorProcedure middleware (allows moderator OR admin)
+- [x] Create moderator read-only procedures (10 read-only queries + getUserStats)
+- [x] Create escalation tRPC endpoint for moderators to escalate to #admin-actions
+- [x] Build moderator dashboard UI with view-only audit logs
+- [x] Build moderator user activity viewer (read-only)
+- [x] Build escalation UI component (select action type, target, reason, severity)
+- [x] Update App.tsx routing for /moderator route
+- [x] Update Dashboard sidebar navigation for moderator role
+- [x] Ensure moderators cannot access admin-only actions (separate router, no mutations)
+- [x] Update RoleBadge component to support moderator role
+- [x] Write vitest tests for moderator procedures and middleware (47 tests)
+- [x] Update AUTHENTICATION.md with moderator role documentation

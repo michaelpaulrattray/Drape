@@ -16,7 +16,7 @@ export const users = mysqlTable("users", {
   bannerKey: varchar("bannerKey", { length: 256 }), // S3 key for cleanup
   bio: text("bio"), // User bio/description
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "moderator"]).default("user").notNull(),
   // Storage quota management (in bytes)
   storageUsed: int("storageUsed").default(0).notNull(), // Current storage used
   storageLimit: int("storageLimit").default(104857600).notNull(), // 100MB default limit
@@ -274,6 +274,9 @@ export const AUDIT_ACTIONS = {
   SECURITY_UNAUTHORIZED_ADMIN: "security.unauthorized_admin_access",
   SECURITY_IMMUTABLE_LOG: "security.immutable_log",
   ADMIN_CONFIRMATION_REQUIRED: "admin.confirmation_required",
+  
+  // Moderator events
+  MODERATOR_ESCALATION: "moderator.escalation",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];

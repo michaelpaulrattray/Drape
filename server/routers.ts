@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, moderatorProcedure, router } from "./_core/trpc";
 import { 
   getUserCredits, getCreditTransactions, deductCredits, addCredits,
   // Legacy aliases
@@ -2806,7 +2806,7 @@ export const appRouter = router({
         offset: z.number().min(0).optional().default(0),
         search: z.string().optional(),
         status: z.enum(["active", "suspended", "locked", "all"]).optional().default("all"),
-        role: z.enum(["user", "admin", "all"]).optional().default("all"),
+        role: z.enum(["user", "admin", "moderator", "all"]).optional().default("all"),
         sortBy: z.enum(["createdAt", "lastSignedIn", "name"]).optional().default("createdAt"),
         sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
       }).optional())
@@ -2954,6 +2954,290 @@ export const appRouter = router({
           limit: input.limit,
           offset: input.offset,
         });
+      }),
+  }),
+
+  // ============ Moderator: Read-Only Access + Escalation ============
+  moderator: router({
+    // View audit logs (read-only, same data as admin)
+    getAuditLogs: moderatorProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).optional().default(20),
+        offset: z.number().min(0).optional().default(0),
+        severity: z.enum(["info", "warning", "critical", "all"]).optional().default("all"),
+        actionCategory: z.enum(["billing", "model", "security", "abuse", "all"]).optional().default("all"),
+        userId: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const { getFilteredAuditLogs } = await import("./auditLog");
+        return await getFilteredAuditLogs({
+          limit: input?.limit || 20,
+          offset: input?.offset || 0,
+          severity: input?.severity === "all" ? undefined : input?.severity,
+          actionCategory: input?.actionCategory === "all" ? undefined : input?.actionCategory,
+          userId: input?.userId,
+          startDate: input?.startDate ? new Date(input.startDate) : undefined,
+          endDate: input?.endDate ? new Date(input.endDate) : undefined,
+        });
+      }),
+
+    // View abuse alerts (read-only)
+    getAbuseAlerts: moderatorProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(50).optional().default(10),
+      }).optional())
+      .query(async ({ input }) => {
+        const { getAbuseAlertsSummary } = await import("./auditLog");
+        return await getAbuseAlertsSummary(input?.limit || 10);
+      }),
+
+    // View audit statistics (read-only)
+    getAuditStats: moderatorProcedure
+      .query(async () => {
+        const { getAuditStatistics } = await import("./auditLog");
+        return await getAuditStatistics();
+      }),
+
+    // View single audit log entry (read-only)
+    getAuditLogById: moderatorProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const { getAuditLogById } = await import("./auditLog");
+        return await getAuditLogById(input.id);
+      }),
+
+    // View user details (read-only, no mutations)
+    getUserDetails: moderatorProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const { getUserById } = await import("./db");
+        const user = await getUserById(input.userId);
+        if (!user) return null;
+        
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          suspendedAt: user.suspendedAt,
+          suspendedReason: user.suspendedReason,
+          lockedUntil: user.lockedUntil,
+          failedLoginAttempts: user.failedLoginAttempts,
+          createdAt: user.createdAt,
+          lastSignedIn: user.lastSignedIn,
+        };
+      }),
+
+    // View user activity (read-only)
+    getUserActivity: moderatorProcedure
+      .input(z.object({
+        userId: z.number(),
+        limit: z.number().min(1).max(100).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+      }))
+      .query(async ({ input }) => {
+        const { getFilteredAuditLogs } = await import("./auditLog");
+        return await getFilteredAuditLogs({
+          userId: input.userId,
+          limit: input.limit,
+          offset: input.offset,
+        });
+      }),
+
+    // View blocked IPs (read-only)
+    listBlockedIPs: moderatorProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+      }).optional())
+      .query(async ({ input }) => {
+        const { getBlockedIps } = await import("./db");
+        const result = await getBlockedIps(
+          input?.limit || 50,
+          input?.offset || 0
+        );
+        return {
+          ips: result.ips.map(ip => ({
+            id: ip.id,
+            ipAddress: ip.ipAddress,
+            reason: ip.reason,
+            blockedBy: ip.blockedBy,
+            expiresAt: ip.expiresAt?.toISOString() || null,
+            createdAt: ip.createdAt.toISOString(),
+          })),
+          total: result.total,
+        };
+      }),
+
+    // View user list (read-only, for investigation)
+    listUsers: moderatorProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).optional().default(20),
+        offset: z.number().min(0).optional().default(0),
+        search: z.string().optional(),
+        status: z.enum(["active", "suspended", "locked", "all"]).optional().default("all"),
+        role: z.enum(["user", "admin", "moderator", "all"]).optional().default("all"),
+        sortBy: z.enum(["createdAt", "lastSignedIn", "name"]).optional().default("createdAt"),
+        sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+      }).optional())
+      .query(async ({ input }) => {
+        const { listAllUsers } = await import("./db");
+        const result = await listAllUsers({
+          limit: input?.limit || 20,
+          offset: input?.offset || 0,
+          search: input?.search,
+          status: input?.status || "all",
+          role: input?.role || "all",
+          sortBy: input?.sortBy || "createdAt",
+          sortOrder: input?.sortOrder || "desc",
+        });
+        return {
+          users: result.users.map(user => ({
+            ...user,
+            suspendedAt: user.suspendedAt?.toISOString() || null,
+            lockedUntil: user.lockedUntil?.toISOString() || null,
+            createdAt: user.createdAt.toISOString(),
+            lastSignedIn: user.lastSignedIn.toISOString(),
+          })),
+          total: result.total,
+        };
+      }),
+
+    // View user full details (read-only, for investigation)
+    getUserFullDetails: moderatorProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const { getUserFullDetails } = await import("./db");
+        const result = await getUserFullDetails(input.userId);
+        if (!result) return null;
+        return {
+          user: {
+            ...result.user,
+            suspendedAt: result.user.suspendedAt?.toISOString() || null,
+            lockedUntil: result.user.lockedUntil?.toISOString() || null,
+            createdAt: result.user.createdAt.toISOString(),
+            lastSignedIn: result.user.lastSignedIn.toISOString(),
+          },
+          credits: result.credits,
+          stats: result.stats,
+        };
+      }),
+
+    // View user statistics (read-only)
+    getUserStats: moderatorProcedure
+      .query(async () => {
+        const { getUserStatistics } = await import("./db");
+        return await getUserStatistics();
+      }),
+
+    // ============ Escalation (the only write operation for moderators) ============
+
+    // Escalate an issue to #admin-actions channel via Slack
+    escalateToAdmin: moderatorProcedure
+      .input(z.object({
+        actionType: z.enum(["suspendUser", "blockIP", "investigateUser", "other"]),
+        targetId: z.string().min(1).max(256), // User ID, IP address, or other identifier
+        targetName: z.string().optional(), // User name or description for context
+        reason: z.string().min(10).max(2000), // Detailed reason for escalation
+        severity: z.enum(["warning", "critical"]).default("warning"),
+        relatedAuditLogIds: z.array(z.number()).optional(), // Link to specific audit log entries
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { sendEmergencyActionsToAdminChannel, sendAuditLogEntry } = await import("./slackNotification");
+        const { logAuditEvent, AUDIT_ACTIONS } = await import("./auditLog");
+
+        const moderatorName = ctx.user.name || ctx.user.email || `Moderator ${ctx.user.id}`;
+
+        // Build escalation context
+        const actionLabels: Record<string, string> = {
+          suspendUser: "Suspend User",
+          blockIP: "Block IP Address",
+          investigateUser: "Investigate User",
+          other: "Other Action Required",
+        };
+
+        const fields: Array<{ title: string; value: string; short?: boolean }> = [
+          { title: "Escalated By", value: `${moderatorName} (Moderator)`, short: true },
+          { title: "Requested Action", value: actionLabels[input.actionType] || input.actionType, short: true },
+          { title: "Target", value: input.targetName ? `${input.targetName} (${input.targetId})` : input.targetId, short: true },
+          { title: "Severity", value: input.severity === "critical" ? "🔴 Critical" : "🟡 Warning", short: true },
+          { title: "Reason", value: input.reason },
+        ];
+
+        if (input.relatedAuditLogIds && input.relatedAuditLogIds.length > 0) {
+          fields.push({
+            title: "Related Audit Logs",
+            value: input.relatedAuditLogIds.map(id => `#${id}`).join(", "),
+            short: true,
+          });
+        }
+
+        // Determine if we should include emergency action buttons
+        const includeActionButtons = input.actionType === "suspendUser" || input.actionType === "blockIP";
+
+        let slackSent = false;
+        if (includeActionButtons) {
+          // Send to #admin-actions with emergency buttons
+          slackSent = await sendEmergencyActionsToAdminChannel(
+            `📤 Moderator Escalation: ${actionLabels[input.actionType]}`,
+            `*${moderatorName}* has escalated an issue requiring admin action.\n\n*Reason:* ${input.reason}`,
+            fields,
+            input.actionType === "blockIP" ? input.targetId : undefined,
+            input.actionType === "suspendUser" ? parseInt(input.targetId) || undefined : undefined,
+            input.targetName || undefined,
+            { escalatedBy: ctx.user.id, escalatedByName: moderatorName, actionType: input.actionType },
+          );
+        } else {
+          // Send info-only notification to #admin-actions
+          const { sendAdminActionNotification } = await import("./slackNotification");
+          slackSent = await sendAdminActionNotification({
+            title: `📤 Moderator Escalation: ${actionLabels[input.actionType]}`,
+            description: `*${moderatorName}* has escalated an issue requiring admin attention.\n\n*Reason:* ${input.reason}`,
+            severity: input.severity,
+            fields,
+          });
+        }
+
+        // Log to #audit-log
+        await sendAuditLogEntry({
+          title: "Moderator Escalation",
+          description: `${moderatorName} escalated: ${actionLabels[input.actionType]} for target ${input.targetId}`,
+          fields: [
+            { title: "Moderator", value: moderatorName, short: true },
+            { title: "Action", value: actionLabels[input.actionType], short: true },
+            { title: "Target", value: input.targetId, short: true },
+          ],
+          severity: input.severity === "critical" ? "warning" : "info",
+        });
+
+        // Log to database audit log
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: AUDIT_ACTIONS.MODERATOR_ESCALATION,
+          resourceType: input.actionType,
+          resourceId: input.targetId,
+          metadata: {
+            moderatorName,
+            actionType: input.actionType,
+            targetName: input.targetName,
+            reason: input.reason,
+            severity: input.severity,
+            relatedAuditLogIds: input.relatedAuditLogIds,
+            slackSent,
+          },
+          severity: input.severity,
+          req: ctx.req,
+        });
+
+        return {
+          success: true,
+          slackSent,
+          message: slackSent
+            ? "Escalation sent to admin team via Slack"
+            : "Escalation logged but Slack notification could not be sent",
+        };
       }),
   }),
 });

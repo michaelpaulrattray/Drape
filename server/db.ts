@@ -1474,7 +1474,7 @@ export async function listAllUsers(options: {
   offset?: number;
   search?: string;
   status?: "active" | "suspended" | "locked" | "all";
-  role?: "user" | "admin" | "all";
+  role?: "user" | "admin" | "moderator" | "all";
   sortBy?: "createdAt" | "lastSignedIn" | "name";
   sortOrder?: "asc" | "desc";
 }): Promise<{
@@ -1484,7 +1484,7 @@ export async function listAllUsers(options: {
     name: string | null;
     email: string | null;
     avatarUrl: string | null;
-    role: "user" | "admin";
+    role: "user" | "admin" | "moderator";
     suspendedAt: Date | null;
     suspendedReason: string | null;
     lockedUntil: Date | null;
@@ -1590,7 +1590,7 @@ export async function getUserFullDetails(userId: number): Promise<{
     avatarUrl: string | null;
     bannerUrl: string | null;
     bio: string | null;
-    role: "user" | "admin";
+    role: "user" | "admin" | "moderator";
     storageUsed: number;
     storageLimit: number;
     suspendedAt: Date | null;
