@@ -3277,7 +3277,7 @@ export const appRouter = router({
     // List change requests with optional filters
     listChangeRequests: adminProcedure
       .input(z.object({
-        status: z.enum(["pending", "approved", "denied", "cancelled", "expired", "all"]).optional().default("pending"),
+        status: z.enum(["pending", "approved", "denied", "cancelled", "expired", "pending_execution", "all"]).optional().default("pending"),
         type: z.string().optional(),
         priority: z.string().optional(),
         limit: z.number().min(1).max(100).optional().default(50),

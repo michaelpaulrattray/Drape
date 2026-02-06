@@ -198,6 +198,8 @@ export default function AdminChangeRequests() {
     },
   });
 
+  const selectedRequest = detailQuery.data;
+
   // Slack approval status polling for pending_execution requests
   const slackStatusQuery = trpc.admin.checkChangeRequestSlackStatus.useQuery(
     { changeRequestId: selectedRequestId! },
@@ -248,8 +250,6 @@ export default function AdminChangeRequests() {
   const summary = listQuery.data?.summary || { pendingCount: 0, approvedCount: 0, deniedCount: 0, pendingExecutionCount: 0, totalCount: 0 };
   const total = listQuery.data?.total || 0;
   const totalPages = Math.ceil(total / pageSize);
-  const selectedRequest = detailQuery.data;
-
   function openReviewDialog(action: "approved" | "denied") {
     setReviewAction(action);
     setReviewNotes("");

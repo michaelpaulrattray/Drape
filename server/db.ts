@@ -2240,7 +2240,7 @@ export async function getChangeRequestById(id: number): Promise<ChangeRequest | 
  * Used by admins to review pending requests and by moderators to view their own.
  */
 export async function listChangeRequests(options: {
-  status?: "pending" | "approved" | "denied" | "cancelled" | "expired";
+  status?: "pending" | "approved" | "denied" | "cancelled" | "expired" | "pending_execution";
   type?: string;
   submittedById?: number;
   targetUserId?: number;
@@ -2411,7 +2411,7 @@ export async function updateChangeRequestStatus(
 export async function getChangeRequestsByModerator(
   moderatorId: number,
   options: {
-    status?: "pending" | "approved" | "denied" | "cancelled" | "expired";
+    status?: "pending" | "approved" | "denied" | "cancelled" | "expired" | "pending_execution";
     limit?: number;
     offset?: number;
   } = {}
