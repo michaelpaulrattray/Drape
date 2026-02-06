@@ -2565,3 +2565,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add /admin/users route to App.tsx
 - [x] Add "User Management" link to dashboard admin menu
 - [x] Write vitest tests for user management procedures (261 tests total)
+
+
+## Security Hardening
+- [x] Make Slack signature verification stricter - always require signing secret

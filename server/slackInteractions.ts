@@ -38,19 +38,31 @@ export async function handleSlackInteraction(req: Request, res: Response): Promi
       return;
     }
 
-    // Verify signature if signing secret is configured
+    // STRICT: Always require signature verification for security
+    const signingSecret = process.env.SLACK_SIGNING_SECRET;
+    
+    if (!signingSecret) {
+      console.error("[SlackInteraction] SLACK_SIGNING_SECRET not configured - rejecting request");
+      res.status(500).json({ error: "Slack integration not properly configured" });
+      return;
+    }
+    
     const signature = req.headers["x-slack-signature"] as string;
     const timestamp = req.headers["x-slack-request-timestamp"] as string;
     
-    if (signature && timestamp && process.env.SLACK_SIGNING_SECRET) {
-      // Reconstruct the raw body for verification
-      const rawBody = `payload=${encodeURIComponent(payloadString)}`;
-      
-      if (!verifySlackSignature(signature, timestamp, rawBody)) {
-        console.error("[SlackInteraction] Invalid signature");
-        res.status(401).json({ error: "Invalid signature" });
-        return;
-      }
+    if (!signature || !timestamp) {
+      console.error("[SlackInteraction] Missing signature or timestamp headers");
+      res.status(401).json({ error: "Missing authentication headers" });
+      return;
+    }
+    
+    // Reconstruct the raw body for verification
+    const rawBody = `payload=${encodeURIComponent(payloadString)}`;
+    
+    if (!verifySlackSignature(signature, timestamp, rawBody)) {
+      console.error("[SlackInteraction] Invalid signature");
+      res.status(401).json({ error: "Invalid signature" });
+      return;
     }
 
     const payload: SlackInteractionPayload = JSON.parse(payloadString);
