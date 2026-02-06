@@ -3,8 +3,13 @@
  * 
  * Sets HTTP security headers on all responses to mitigate
  * XSS, clickjacking, MIME-sniffing, and protocol downgrade attacks.
+ * 
+ * In development mode, CSP is relaxed to allow Vite's HMR and
+ * JSX transform inline scripts. Production uses strict CSP.
  */
 import type { Request, Response, NextFunction } from "express";
+
+const isDev = process.env.NODE_ENV === "development";
 
 /**
  * Content Security Policy directives.
@@ -18,14 +23,24 @@ import type { Request, Response, NextFunction } from "express";
  * - Data URIs for images (used by some components)
  * - Blob URLs for media playback
  */
+// In dev: allow unsafe-inline/eval for Vite HMR + React Fast Refresh preamble
+const scriptSrc = isDev
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com"
+  : "script-src 'self' https://js.stripe.com";
+
+// In dev: allow WebSocket connections for Vite HMR
+const connectSrc = isDev
+  ? "connect-src 'self' https://api.stripe.com https://api.manus.im https://*.manus.storage ws://localhost:* ws://127.0.0.1:* https://manus-analytics.com"
+  : "connect-src 'self' https://api.stripe.com https://api.manus.im https://*.manus.storage https://manus-analytics.com";
+
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  "script-src 'self' https://js.stripe.com",
+  scriptSrc,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://*.amazonaws.com https://*.manus.storage https://api.manus.im",
   "media-src 'self' blob: https://*.amazonaws.com https://*.manus.storage",
-  "connect-src 'self' https://api.stripe.com https://api.manus.im https://*.manus.storage",
+  connectSrc,
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
   "object-src 'none'",
   "base-uri 'self'",

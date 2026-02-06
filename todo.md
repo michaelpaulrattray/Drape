@@ -2763,3 +2763,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Register middleware in Express server setup (first middleware, before body parsers)
 - [x] Write tests for all 5 headers (9 tests)
 - [x] Verify all tests pass (545 tests, 29 files)
+
+## Dependency Vulnerability Updates
+- [ ] Audit all 23 vulnerabilities and assess which updates are safe
+- [ ] Update @trpc/server 11.6.0 → 11.8.0+ (prototype pollution fix)
+- [ ] Update other vulnerable dependencies
+- [ ] Verify all tests pass after updates

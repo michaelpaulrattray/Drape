@@ -56,7 +56,9 @@ describe("Security Headers Middleware", () => {
 
     // Verify essential directives are present
     expect(csp).toContain("default-src 'self'");
-    expect(csp).toContain("script-src 'self' https://js.stripe.com");
+    // In dev mode, script-src includes 'unsafe-inline' 'unsafe-eval' for Vite HMR
+    expect(csp).toContain("https://js.stripe.com");
+    expect(csp).toMatch(/script-src 'self'/);
     expect(csp).toContain("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com");
     expect(csp).toContain("font-src 'self' https://fonts.gstatic.com");
     expect(csp).toContain("object-src 'none'");
@@ -91,7 +93,8 @@ describe("Security Headers Middleware", () => {
     );
     const csp = cspCall![1] as string;
 
-    expect(csp).toContain("script-src 'self' https://js.stripe.com");
+    // In dev mode, script-src includes 'unsafe-inline' 'unsafe-eval' for Vite HMR
+    expect(csp).toMatch(/script-src 'self'.*https:\/\/js\.stripe\.com/);
     expect(csp).toContain("https://api.stripe.com");
     expect(csp).toContain("frame-src 'self' https://js.stripe.com https://hooks.stripe.com");
   });
