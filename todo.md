@@ -2716,3 +2716,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Audit AdminUserManagement.tsx for mock data and disconnected features — ALL CONNECTED
 - [x] Audit AdminChangeRequests.tsx for mock data — ALL CONNECTED
 - [x] No issues found — all features are wired to real backend
+
+## Minor Enhancement - Plan Tier Display
+- [x] Show user's plan tier in moderator dashboard user details panel (between Credits and Joined)

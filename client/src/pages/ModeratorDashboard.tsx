@@ -976,6 +976,18 @@ export default function ModeratorDashboard() {
                               <span className="font-medium text-white">{userDetailsQuery.data.credits?.balance?.toLocaleString() ?? "—"}</span>
                             </div>
                             <div className="flex justify-between">
+                              <span className="text-white/40">Plan</span>
+                              <Badge className={
+                                userDetailsQuery.data.credits?.planTier === "enterprise" ? "bg-amber-500/10 text-amber-400" :
+                                userDetailsQuery.data.credits?.planTier === "studio" ? "bg-purple-500/10 text-purple-400" :
+                                userDetailsQuery.data.credits?.planTier === "pro" ? "bg-blue-500/10 text-blue-400" :
+                                userDetailsQuery.data.credits?.planTier === "starter" ? "bg-emerald-500/10 text-emerald-400" :
+                                "bg-gray-500/10 text-gray-400"
+                              }>
+                                {userDetailsQuery.data.credits?.planTier || "free"}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between">
                               <span className="text-white/40">Joined</span>
                               <span className="text-xs text-white/80">{formatDate(new Date(userDetailsQuery.data.user.createdAt))}</span>
                             </div>
