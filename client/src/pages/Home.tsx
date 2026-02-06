@@ -425,7 +425,7 @@ function LogoMarquee() {
             <img 
               src={logo.logo} 
               alt={logo.name} 
-              className="h-6 w-auto object-contain"
+              className="h-8 w-auto object-contain"
               style={{ filter: 'brightness(0)' }}
             />
           </div>
