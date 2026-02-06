@@ -128,7 +128,7 @@ function formatAction(action: string): string {
 
 export default function ModeratorDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"audit-logs" | "users" | "blocked-ips">("audit-logs");
+  const [activeTab, setActiveTab] = useState<"audit-logs" | "users" | "blocked-ips" | "my-requests">("audit-logs");
   const [userDetailTab, setUserDetailTab] = useState<"overview" | "credits" | "generations" | "activity">("overview");
   const [creditTypeFilter, setCreditTypeFilter] = useState<string>("all");
   const [creditPage, setCreditPage] = useState(0);
@@ -143,14 +143,19 @@ export default function ModeratorDashboard() {
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  // Escalation modal state
-  const [escalationOpen, setEscalationOpen] = useState(false);
-  const [escalationActionType, setEscalationActionType] = useState<"suspendUser" | "blockIP" | "investigateUser" | "other">("investigateUser");
-  const [escalationTargetId, setEscalationTargetId] = useState("");
-  const [escalationTargetName, setEscalationTargetName] = useState("");
-  const [escalationReason, setEscalationReason] = useState("");
-  const [escalationSeverity, setEscalationSeverity] = useState<"warning" | "critical">("warning");
-  const [escalationRelatedLogIds, setEscalationRelatedLogIds] = useState<number[]>([]);
+  // Change request modal state
+  const [changeRequestOpen, setChangeRequestOpen] = useState(false);
+  const [crType, setCrType] = useState<"refund_credits" | "add_credits" | "flag_account" | "note_incident" | "suspend_user" | "unsuspend_user" | "block_ip" | "other">("note_incident");
+  const [crPriority, setCrPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
+  const [crTargetUserId, setCrTargetUserId] = useState("");
+  const [crTargetUserName, setCrTargetUserName] = useState("");
+  const [crTitle, setCrTitle] = useState("");
+  const [crDescription, setCrDescription] = useState("");
+  const [crEvidenceSummary, setCrEvidenceSummary] = useState("");
+  const [crRelatedAuditLogId, setCrRelatedAuditLogId] = useState("");
+  const [crCreditAmount, setCrCreditAmount] = useState("");
+  const [crCreditReason, setCrCreditReason] = useState("");
+  const [crIpAddress, setCrIpAddress] = useState("");
 
   // User investigation state
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -224,21 +229,28 @@ export default function ModeratorDashboard() {
     { enabled: !!selectedUserId && userDetailTab === "generations" }
   );
 
-  // Escalation mutation
-  const escalateMutation = trpc.moderator.escalateToAdmin.useMutation({
+  // Change request mutation
+  const createChangeRequestMutation = trpc.moderator.createChangeRequest.useMutation({
     onSuccess: (result) => {
       if (result.slackSent) {
-        toast.success("Escalation sent to admin team via Slack");
+        toast.success(`Change request #${result.requestId} submitted and admin team notified`);
       } else {
-        toast.warning("Escalation logged but Slack notification could not be sent");
+        toast.warning(`Change request #${result.requestId} submitted but Slack notification could not be sent`);
       }
-      setEscalationOpen(false);
-      resetEscalationForm();
+      setChangeRequestOpen(false);
+      resetChangeRequestForm();
+      myRequestsQuery.refetch();
     },
     onError: (error) => {
-      toast.error(`Failed to escalate: ${error.message}`);
+      toast.error(`Failed to submit change request: ${error.message}`);
     },
   });
+
+  // My change requests query
+  const myRequestsQuery = trpc.moderator.getMyChangeRequests.useQuery(
+    { limit: 50, offset: 0 },
+    { enabled: activeTab === "my-requests" }
+  );
 
   useEffect(() => {
     if (logsQuery.data) setLastRefresh(new Date());
@@ -300,45 +312,70 @@ export default function ModeratorDashboard() {
     setPage(0);
   };
 
-  const resetEscalationForm = () => {
-    setEscalationActionType("investigateUser");
-    setEscalationTargetId("");
-    setEscalationTargetName("");
-    setEscalationReason("");
-    setEscalationSeverity("warning");
-    setEscalationRelatedLogIds([]);
+  const resetChangeRequestForm = () => {
+    setCrType("note_incident");
+    setCrPriority("normal");
+    setCrTargetUserId("");
+    setCrTargetUserName("");
+    setCrTitle("");
+    setCrDescription("");
+    setCrEvidenceSummary("");
+    setCrRelatedAuditLogId("");
+    setCrCreditAmount("");
+    setCrCreditReason("");
+    setCrIpAddress("");
   };
 
-  const openEscalation = (options?: {
-    actionType?: "suspendUser" | "blockIP" | "investigateUser" | "other";
-    targetId?: string;
-    targetName?: string;
-    relatedLogIds?: number[];
+  const openChangeRequest = (options?: {
+    type?: typeof crType;
+    targetUserId?: string;
+    targetUserName?: string;
+    relatedAuditLogId?: number;
+    ipAddress?: string;
   }) => {
-    if (options?.actionType) setEscalationActionType(options.actionType);
-    if (options?.targetId) setEscalationTargetId(options.targetId);
-    if (options?.targetName) setEscalationTargetName(options.targetName);
-    if (options?.relatedLogIds) setEscalationRelatedLogIds(options.relatedLogIds);
-    setEscalationOpen(true);
+    resetChangeRequestForm();
+    if (options?.type) setCrType(options.type);
+    if (options?.targetUserId) setCrTargetUserId(options.targetUserId);
+    if (options?.targetUserName) setCrTargetUserName(options.targetUserName);
+    if (options?.relatedAuditLogId) setCrRelatedAuditLogId(String(options.relatedAuditLogId));
+    if (options?.ipAddress) setCrIpAddress(options.ipAddress);
+    setChangeRequestOpen(true);
   };
 
-  const handleEscalate = () => {
-    if (!escalationReason || escalationReason.length < 10) {
-      toast.error("Please provide a detailed reason (at least 10 characters)");
+  const handleSubmitChangeRequest = () => {
+    if (!crTitle || crTitle.length < 5) {
+      toast.error("Please provide a title (at least 5 characters)");
       return;
     }
-    if (!escalationTargetId) {
-      toast.error("Please specify a target (user ID or IP address)");
+    if (!crDescription || crDescription.length < 10) {
+      toast.error("Please provide a description (at least 10 characters)");
+      return;
+    }
+    if (!crTargetUserId || isNaN(parseInt(crTargetUserId))) {
+      toast.error("Please specify a valid target user ID");
+      return;
+    }
+    if ((crType === "refund_credits" || crType === "add_credits") && (!crCreditAmount || parseInt(crCreditAmount) < 1)) {
+      toast.error("Please specify a valid credit amount");
+      return;
+    }
+    if (crType === "block_ip" && !crIpAddress) {
+      toast.error("Please specify an IP address");
       return;
     }
 
-    escalateMutation.mutate({
-      actionType: escalationActionType,
-      targetId: escalationTargetId,
-      targetName: escalationTargetName || undefined,
-      reason: escalationReason,
-      severity: escalationSeverity,
-      relatedAuditLogIds: escalationRelatedLogIds.length > 0 ? escalationRelatedLogIds : undefined,
+    createChangeRequestMutation.mutate({
+      type: crType,
+      priority: crPriority,
+      targetUserId: parseInt(crTargetUserId),
+      targetUserName: crTargetUserName || undefined,
+      title: crTitle,
+      description: crDescription,
+      evidenceSummary: crEvidenceSummary || undefined,
+      relatedAuditLogId: crRelatedAuditLogId ? parseInt(crRelatedAuditLogId) : undefined,
+      creditAmount: crCreditAmount ? parseInt(crCreditAmount) : undefined,
+      creditReason: crCreditReason || undefined,
+      ipAddress: crIpAddress || undefined,
     });
   };
 
@@ -392,11 +429,11 @@ export default function ModeratorDashboard() {
               </Button>
               <Button
                 size="sm"
-                onClick={() => openEscalation()}
+                onClick={() => openChangeRequest()}
                 className="bg-amber-600 hover:bg-amber-700 text-white"
               >
-                <Send className="w-4 h-4 mr-2" />
-                Escalate to Admin
+                <FileText className="w-4 h-4 mr-2" />
+                New Change Request
               </Button>
             </div>
           </div>
@@ -491,6 +528,18 @@ export default function ModeratorDashboard() {
               <Badge className="ml-2 bg-red-500/20 text-red-400">{blockedIpsQuery.data.total}</Badge>
             ) : null}
           </Button>
+          <Button
+            variant={activeTab === "my-requests" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("my-requests")}
+            className={activeTab === "my-requests" ? "bg-amber-600 hover:bg-amber-700" : "text-white/60 hover:text-white"}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            My Requests
+            {myRequestsQuery.data?.summary?.pendingCount ? (
+              <Badge className="ml-2 bg-amber-500/20 text-amber-400">{myRequestsQuery.data.summary.pendingCount}</Badge>
+            ) : null}
+          </Button>
         </div>
 
         {/* ============ Audit Logs Tab ============ */}
@@ -526,16 +575,17 @@ export default function ModeratorDashboard() {
                           className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                           onClick={() => {
                             const metadata = alert.metadata as Record<string, unknown> | null;
-                            openEscalation({
-                              actionType: metadata?.ipAddress ? "blockIP" : "suspendUser",
-                              targetId: metadata?.ipAddress as string || alert.userId?.toString() || "",
-                              targetName: metadata?.userName as string || undefined,
-                              relatedLogIds: [alert.id],
+                            openChangeRequest({
+                              type: metadata?.ipAddress ? "block_ip" : "flag_account",
+                              targetUserId: alert.userId?.toString() || "",
+                              targetUserName: metadata?.userName as string || undefined,
+                              relatedAuditLogId: alert.id,
+                              ipAddress: metadata?.ipAddress as string || undefined,
                             });
                           }}
                         >
-                          <Send className="w-3 h-3 mr-1" />
-                          Escalate
+                          <FileText className="w-3 h-3 mr-1" />
+                          Request Action
                         </Button>
                       </div>
                     ))}
@@ -672,15 +722,16 @@ export default function ModeratorDashboard() {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       const metadata = log.metadata as Record<string, unknown> | null;
-                                      openEscalation({
-                                        actionType: metadata?.ipAddress ? "blockIP" : log.userId ? "suspendUser" : "other",
-                                        targetId: metadata?.ipAddress as string || log.userId?.toString() || "",
-                                        targetName: metadata?.userName as string || undefined,
-                                        relatedLogIds: [log.id],
+                                      openChangeRequest({
+                                        type: metadata?.ipAddress ? "block_ip" : log.userId ? "flag_account" : "note_incident",
+                                        targetUserId: log.userId?.toString() || "",
+                                        targetUserName: metadata?.userName as string || undefined,
+                                        relatedAuditLogId: log.id,
+                                        ipAddress: metadata?.ipAddress as string || undefined,
                                       });
                                     }}
                                   >
-                                    <Send className="w-3.5 h-3.5" />
+                                    <FileText className="w-3.5 h-3.5" />
                                   </Button>
                                 )}
                               </div>
@@ -829,14 +880,14 @@ export default function ModeratorDashboard() {
                                     className="text-amber-400/60 hover:text-amber-400 h-7 w-7 p-0"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      openEscalation({
-                                        actionType: "suspendUser",
-                                        targetId: u.id.toString(),
-                                        targetName: u.name || u.email || undefined,
+                                      openChangeRequest({
+                                        type: "flag_account",
+                                        targetUserId: u.id.toString(),
+                                        targetUserName: u.name || u.email || undefined,
                                       });
                                     }}
                                   >
-                                    <Send className="w-3.5 h-3.5" />
+                                    <FileText className="w-3.5 h-3.5" />
                                   </Button>
                                 </div>
                               </td>
@@ -939,14 +990,14 @@ export default function ModeratorDashboard() {
                                 size="sm"
                                 variant="outline"
                                 className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                                onClick={() => openEscalation({
-                                  actionType: "suspendUser",
-                                  targetId: selectedUserId.toString(),
-                                  targetName: userDetailsQuery.data?.user.name || userDetailsQuery.data?.user.email || undefined,
+                                onClick={() => openChangeRequest({
+                                  type: "flag_account",
+                                  targetUserId: selectedUserId.toString(),
+                                  targetUserName: userDetailsQuery.data?.user.name || userDetailsQuery.data?.user.email || undefined,
                                 })}
                               >
-                                <Send className="w-3 h-3 mr-2" />
-                                Escalate User
+                                <FileText className="w-3 h-3 mr-2" />
+                                Submit Change Request
                               </Button>
                             </div>
                           </div>
@@ -1364,6 +1415,15 @@ export default function ModeratorDashboard() {
             </div>
           </Card>
         )}
+
+        {/* ============ My Requests Tab ============ */}
+        {activeTab === "my-requests" && (
+          <MyRequestsContent
+            data={myRequestsQuery.data}
+            isLoading={myRequestsQuery.isLoading}
+            refetch={() => myRequestsQuery.refetch()}
+          />
+        )}
       </main>
 
       {/* ============ Log Detail Modal ============ */}
@@ -1434,7 +1494,7 @@ export default function ModeratorDashboard() {
                 </div>
               )}
 
-              {/* Escalation button in detail view */}
+              {/* Change request button in detail view */}
               {(selectedLog.severity === "warning" || selectedLog.severity === "critical") && (
                 <div className="pt-2 border-t border-white/10">
                   <Button
@@ -1442,17 +1502,18 @@ export default function ModeratorDashboard() {
                     className="bg-amber-600 hover:bg-amber-700 text-white"
                     onClick={() => {
                       const metadata = selectedLog.metadata as Record<string, unknown> | null;
-                      openEscalation({
-                        actionType: metadata?.ipAddress ? "blockIP" : selectedLog.userId ? "suspendUser" : "other",
-                        targetId: metadata?.ipAddress as string || selectedLog.userId?.toString() || "",
-                        targetName: metadata?.userName as string || undefined,
-                        relatedLogIds: [selectedLog.id],
+                      openChangeRequest({
+                        type: metadata?.ipAddress ? "block_ip" : selectedLog.userId ? "flag_account" : "note_incident",
+                        targetUserId: selectedLog.userId?.toString() || "",
+                        targetUserName: metadata?.userName as string || undefined,
+                        relatedAuditLogId: selectedLog.id,
+                        ipAddress: metadata?.ipAddress as string || undefined,
                       });
                       setSelectedLog(null);
                     }}
                   >
-                    <Send className="w-3 h-3 mr-2" />
-                    Escalate to Admin
+                    <FileText className="w-3 h-3 mr-2" />
+                    Submit Change Request
                   </Button>
                 </div>
               )}
@@ -1461,97 +1522,157 @@ export default function ModeratorDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* ============ Escalation Modal ============ */}
-      <Dialog open={escalationOpen} onOpenChange={(open) => { if (!open) { setEscalationOpen(false); resetEscalationForm(); } }}>
-        <DialogContent className="bg-[#111] border-white/10 text-white max-w-lg">
+      {/* ============ Change Request Modal ============ */}
+      <Dialog open={changeRequestOpen} onOpenChange={(open) => { if (!open) { setChangeRequestOpen(false); resetChangeRequestForm(); } }}>
+        <DialogContent className="bg-[#111] border-white/10 text-white max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Send className="w-5 h-5 text-amber-400" />
-              Escalate to Admin
+              <FileText className="w-5 h-5 text-amber-400" />
+              New Change Request
             </DialogTitle>
             <DialogDescription className="text-white/50">
-              This will send a notification to the #admin-actions Slack channel for admin review.
+              Submit a structured request for admin review. This will be tracked and you can follow its status.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Action Type</label>
-              <Select value={escalationActionType} onValueChange={(v) => setEscalationActionType(v as typeof escalationActionType)}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="suspendUser">Suspend User</SelectItem>
-                  <SelectItem value="blockIP">Block IP Address</SelectItem>
-                  <SelectItem value="investigateUser">Investigate User</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">
-                {escalationActionType === "blockIP" ? "IP Address" : "User ID"}
-              </label>
-              <Input
-                value={escalationTargetId}
-                onChange={(e) => setEscalationTargetId(e.target.value)}
-                placeholder={escalationActionType === "blockIP" ? "e.g., 192.168.1.1" : "e.g., 42"}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Target Name (optional)</label>
-              <Input
-                value={escalationTargetName}
-                onChange={(e) => setEscalationTargetName(e.target.value)}
-                placeholder="User name or description"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Severity</label>
-              <Select value={escalationSeverity} onValueChange={(v) => setEscalationSeverity(v as "warning" | "critical")}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="warning">Warning</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Reason (min 10 characters)</label>
-              <Textarea
-                value={escalationReason}
-                onChange={(e) => setEscalationReason(e.target.value)}
-                placeholder="Describe the issue and why admin action is needed..."
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 min-h-[100px]"
-              />
-              <p className="text-xs text-white/30 mt-1">{escalationReason.length}/2000 characters</p>
-            </div>
-
-            {escalationRelatedLogIds.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-white/40 mb-1 block">Related Audit Logs</label>
-                <div className="flex gap-1 flex-wrap">
-                  {escalationRelatedLogIds.map(id => (
-                    <Badge key={id} className="bg-white/10 text-white/60">
-                      #{id}
-                      <button
-                        className="ml-1 hover:text-white"
-                        onClick={() => setEscalationRelatedLogIds(ids => ids.filter(i => i !== id))}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                <label className="text-xs text-white/40 mb-1 block">Request Type</label>
+                <Select value={crType} onValueChange={(v) => setCrType(v as typeof crType)}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="refund_credits">Refund Credits</SelectItem>
+                    <SelectItem value="add_credits">Add Credits</SelectItem>
+                    <SelectItem value="flag_account">Flag Account</SelectItem>
+                    <SelectItem value="note_incident">Note Incident</SelectItem>
+                    <SelectItem value="suspend_user">Suspend User</SelectItem>
+                    <SelectItem value="unsuspend_user">Unsuspend User</SelectItem>
+                    <SelectItem value="block_ip">Block IP</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Priority</label>
+                <Select value={crPriority} onValueChange={(v) => setCrPriority(v as typeof crPriority)}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Target User ID *</label>
+                <Input
+                  value={crTargetUserId}
+                  onChange={(e) => setCrTargetUserId(e.target.value)}
+                  placeholder="e.g., 42"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Target User Name</label>
+                <Input
+                  value={crTargetUserName}
+                  onChange={(e) => setCrTargetUserName(e.target.value)}
+                  placeholder="User name (optional)"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                />
+              </div>
+            </div>
+
+            {/* Conditional fields based on type */}
+            {(crType === "refund_credits" || crType === "add_credits") && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-white/40 mb-1 block">Credit Amount *</label>
+                  <Input
+                    type="number"
+                    value={crCreditAmount}
+                    onChange={(e) => setCrCreditAmount(e.target.value)}
+                    placeholder="e.g., 100"
+                    min="1"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                  />
                 </div>
+                <div>
+                  <label className="text-xs text-white/40 mb-1 block">Credit Reason</label>
+                  <Input
+                    value={crCreditReason}
+                    onChange={(e) => setCrCreditReason(e.target.value)}
+                    placeholder="e.g., Service disruption"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                  />
+                </div>
+              </div>
+            )}
+
+            {crType === "block_ip" && (
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">IP Address *</label>
+                <Input
+                  value={crIpAddress}
+                  onChange={(e) => setCrIpAddress(e.target.value)}
+                  placeholder="e.g., 192.168.1.1"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Title * (min 5 characters)</label>
+              <Input
+                value={crTitle}
+                onChange={(e) => setCrTitle(e.target.value)}
+                placeholder="Brief summary of the request"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Description * (min 10 characters)</label>
+              <Textarea
+                value={crDescription}
+                onChange={(e) => setCrDescription(e.target.value)}
+                placeholder="Detailed description of the issue and why this action is needed..."
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 min-h-[80px]"
+              />
+              <p className="text-xs text-white/30 mt-1">{crDescription.length}/5000 characters</p>
+            </div>
+
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Evidence Summary (optional)</label>
+              <Textarea
+                value={crEvidenceSummary}
+                onChange={(e) => setCrEvidenceSummary(e.target.value)}
+                placeholder="Links, screenshots, or other evidence supporting this request..."
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 min-h-[60px]"
+              />
+            </div>
+
+            {crRelatedAuditLogId && (
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Related Audit Log</label>
+                <Badge className="bg-white/10 text-white/60">
+                  #{crRelatedAuditLogId}
+                  <button
+                    className="ml-1 hover:text-white"
+                    onClick={() => setCrRelatedAuditLogId("")}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
               </div>
             )}
           </div>
@@ -1559,26 +1680,177 @@ export default function ModeratorDashboard() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => { setEscalationOpen(false); resetEscalationForm(); }}
+              onClick={() => { setChangeRequestOpen(false); resetChangeRequestForm(); }}
               className="border-white/20 text-white"
             >
               Cancel
             </Button>
             <Button
-              onClick={handleEscalate}
-              disabled={escalateMutation.isPending || escalationReason.length < 10 || !escalationTargetId}
+              onClick={handleSubmitChangeRequest}
+              disabled={createChangeRequestMutation.isPending || crTitle.length < 5 || crDescription.length < 10 || !crTargetUserId}
               className="bg-amber-600 hover:bg-amber-700 text-white"
             >
-              {escalateMutation.isPending ? (
+              {createChangeRequestMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
-                <Send className="w-4 h-4 mr-2" />
+                <FileText className="w-4 h-4 mr-2" />
               )}
-              Send Escalation
+              Submit Request
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ============ My Requests Tab Content ============
+function MyRequestsContent({ data, isLoading, refetch }: {
+  data: any;
+  isLoading: boolean;
+  refetch: () => void;
+}) {
+  const STATUS_BADGES: Record<string, string> = {
+    pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    approved: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    denied: "bg-red-500/10 text-red-400 border-red-500/20",
+    cancelled: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+    expired: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  };
+
+  const PRIORITY_BADGES: Record<string, string> = {
+    low: "bg-zinc-500/10 text-zinc-400",
+    normal: "bg-blue-500/10 text-blue-400",
+    high: "bg-amber-500/10 text-amber-400",
+    urgent: "bg-red-500/10 text-red-400",
+  };
+
+  const TYPE_LABELS: Record<string, string> = {
+    refund_credits: "Refund Credits",
+    add_credits: "Add Credits",
+    flag_account: "Flag Account",
+    note_incident: "Note Incident",
+    suspend_user: "Suspend User",
+    unsuspend_user: "Unsuspend User",
+    block_ip: "Block IP",
+    other: "Other",
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full bg-white/5" />
+        ))}
+      </div>
+    );
+  }
+
+  const requests = data?.requests || [];
+  const summary = data?.summary;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Cards */}
+      {summary && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card className="bg-amber-500/5 border-amber-500/20">
+            <CardContent className="p-3 text-center">
+              <p className="text-lg font-bold text-amber-400">{summary.pendingCount}</p>
+              <p className="text-xs text-white/40">Pending</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-emerald-500/5 border-emerald-500/20">
+            <CardContent className="p-3 text-center">
+              <p className="text-lg font-bold text-emerald-400">{summary.approvedCount}</p>
+              <p className="text-xs text-white/40">Approved</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-red-500/5 border-red-500/20">
+            <CardContent className="p-3 text-center">
+              <p className="text-lg font-bold text-red-400">{summary.deniedCount}</p>
+              <p className="text-xs text-white/40">Denied</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-zinc-500/5 border-zinc-500/20">
+            <CardContent className="p-3 text-center">
+              <p className="text-lg font-bold text-zinc-400">{summary.cancelledCount + summary.expiredCount}</p>
+              <p className="text-xs text-white/40">Closed</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="p-3 text-center">
+              <p className="text-lg font-bold text-white">{summary.totalCount}</p>
+              <p className="text-xs text-white/40">Total</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Refresh */}
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={refetch} className="border-white/20 text-white">
+          <RefreshCw className="w-3 h-3 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Request List */}
+      {requests.length === 0 ? (
+        <Card className="bg-white/5 border-white/10">
+          <CardContent className="py-12 text-center">
+            <FileText className="w-10 h-10 text-white/20 mx-auto mb-3" />
+            <p className="text-white/40">No change requests yet</p>
+            <p className="text-xs text-white/30 mt-1">Use the "New Change Request" button to submit one</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {requests.map((req: any) => (
+            <Card key={req.id} className="bg-white/5 border-white/10 hover:bg-white/[0.07] transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-white/30">#{req.id}</span>
+                      <Badge className={STATUS_BADGES[req.status] || "bg-white/10 text-white/60"}>
+                        {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                      </Badge>
+                      <Badge className={PRIORITY_BADGES[req.priority] || "bg-white/10 text-white/60"}>
+                        {req.priority.charAt(0).toUpperCase() + req.priority.slice(1)}
+                      </Badge>
+                      <Badge className="bg-white/10 text-white/50">
+                        {TYPE_LABELS[req.type] || req.type}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium text-white truncate">{req.title}</p>
+                    <p className="text-xs text-white/40 mt-1 line-clamp-2">{req.description}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-white/30">
+                      <span>Target: {req.targetUserName || `User ${req.targetUserId}`}</span>
+                      {req.creditAmount && <span>{req.creditAmount} credits</span>}
+                      <span>{new Date(req.createdAt).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  {req.status !== "pending" && req.reviewedByName && (
+                    <div className="text-right shrink-0">
+                      <p className="text-xs text-white/30">Reviewed by</p>
+                      <p className="text-xs text-white/50">{req.reviewedByName}</p>
+                      {req.reviewNotes && (
+                        <p className="text-xs text-white/30 mt-1 max-w-[200px] truncate" title={req.reviewNotes}>
+                          "{req.reviewNotes}"
+                        </p>
+                      )}
+                      {req.reviewedAt && (
+                        <p className="text-xs text-white/20 mt-0.5">{new Date(req.reviewedAt).toLocaleString()}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

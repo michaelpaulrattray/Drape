@@ -2186,3 +2186,233 @@ export async function getDetailedGenerationHistory(
     };
   }
 }
+
+
+// ============================================================
+// Change Request CRUD Helpers
+// ============================================================
+
+import { changeRequests, ChangeRequest, InsertChangeRequest } from "../drizzle/schema";
+
+/**
+ * Create a new change request submitted by a moderator.
+ */
+export async function createChangeRequest(
+  data: Omit<InsertChangeRequest, "id" | "status" | "createdAt" | "updatedAt">
+): Promise<{ success: boolean; requestId?: number; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    const [result] = await db.insert(changeRequests).values({
+      ...data,
+      status: "pending",
+    });
+    return { success: true, requestId: result.insertId };
+  } catch (error) {
+    console.error("[Database] Failed to create change request:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
+/**
+ * Get a single change request by ID.
+ */
+export async function getChangeRequestById(id: number): Promise<ChangeRequest | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const [row] = await db
+      .select()
+      .from(changeRequests)
+      .where(eq(changeRequests.id, id))
+      .limit(1);
+    return row || null;
+  } catch (error) {
+    console.error("[Database] Failed to get change request:", error);
+    return null;
+  }
+}
+
+/**
+ * List change requests with filtering and pagination.
+ * Used by admins to review pending requests and by moderators to view their own.
+ */
+export async function listChangeRequests(options: {
+  status?: "pending" | "approved" | "denied" | "cancelled" | "expired";
+  type?: string;
+  submittedById?: number;
+  targetUserId?: number;
+  priority?: string;
+  limit?: number;
+  offset?: number;
+  sortBy?: "createdAt" | "priority" | "updatedAt";
+  sortOrder?: "asc" | "desc";
+} = {}): Promise<{
+  requests: ChangeRequest[];
+  total: number;
+  summary: {
+    pendingCount: number;
+    approvedCount: number;
+    deniedCount: number;
+    totalCount: number;
+  };
+}> {
+  const db = await getDb();
+  if (!db) {
+    return {
+      requests: [],
+      total: 0,
+      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, totalCount: 0 },
+    };
+  }
+
+  const {
+    status,
+    type,
+    submittedById,
+    targetUserId,
+    priority,
+    limit = 50,
+    offset = 0,
+    sortOrder = "desc",
+  } = options;
+
+  try {
+    // Build where conditions
+    const conditions: SQL[] = [];
+    if (status) conditions.push(eq(changeRequests.status, status));
+    if (type) conditions.push(eq(changeRequests.type, type as any));
+    if (submittedById) conditions.push(eq(changeRequests.submittedById, submittedById));
+    if (targetUserId) conditions.push(eq(changeRequests.targetUserId, targetUserId));
+    if (priority) conditions.push(eq(changeRequests.priority, priority as any));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get paginated results
+    const orderFn = sortOrder === "asc" ? asc : desc;
+    const requests = await db
+      .select()
+      .from(changeRequests)
+      .where(whereClause)
+      .orderBy(orderFn(changeRequests.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    // Get total count
+    const [countResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(changeRequests)
+      .where(whereClause);
+    const total = countResult?.count || 0;
+
+    // Get summary counts (unfiltered by status, but filtered by submittedById/targetUserId if set)
+    const summaryConditions: SQL[] = [];
+    if (submittedById) summaryConditions.push(eq(changeRequests.submittedById, submittedById));
+    if (targetUserId) summaryConditions.push(eq(changeRequests.targetUserId, targetUserId));
+    const summaryWhere = summaryConditions.length > 0 ? and(...summaryConditions) : undefined;
+
+    const summaryRows = await db
+      .select({
+        status: changeRequests.status,
+        count: sql<number>`count(*)`,
+      })
+      .from(changeRequests)
+      .where(summaryWhere)
+      .groupBy(changeRequests.status);
+
+    let pendingCount = 0;
+    let approvedCount = 0;
+    let deniedCount = 0;
+    let totalCount = 0;
+    for (const row of summaryRows) {
+      totalCount += row.count;
+      if (row.status === "pending") pendingCount = row.count;
+      else if (row.status === "approved") approvedCount = row.count;
+      else if (row.status === "denied") deniedCount = row.count;
+    }
+
+    return {
+      requests,
+      total,
+      summary: { pendingCount, approvedCount, deniedCount, totalCount },
+    };
+  } catch (error) {
+    console.error("[Database] Failed to list change requests:", error);
+    return {
+      requests: [],
+      total: 0,
+      summary: { pendingCount: 0, approvedCount: 0, deniedCount: 0, totalCount: 0 },
+    };
+  }
+}
+
+/**
+ * Update the status of a change request (approve, deny, cancel, expire).
+ * Used by admins to review requests.
+ */
+export async function updateChangeRequestStatus(
+  id: number,
+  update: {
+    status: "approved" | "denied" | "cancelled" | "expired";
+    reviewedById?: number;
+    reviewedByName?: string;
+    reviewNotes?: string;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    const [result] = await db
+      .update(changeRequests)
+      .set({
+        status: update.status,
+        reviewedById: update.reviewedById,
+        reviewedByName: update.reviewedByName,
+        reviewedAt: new Date(),
+        reviewNotes: update.reviewNotes,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(changeRequests.id, id), eq(changeRequests.status, "pending")));
+
+    if (result.affectedRows === 0) {
+      return { success: false, error: "Change request not found or not in pending status" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to update change request status:", error);
+    return { success: false, error: String(error) };
+  }
+}
+
+/**
+ * Get change requests submitted by a specific moderator.
+ * Convenience wrapper around listChangeRequests.
+ */
+export async function getChangeRequestsByModerator(
+  moderatorId: number,
+  options: {
+    status?: "pending" | "approved" | "denied" | "cancelled" | "expired";
+    limit?: number;
+    offset?: number;
+  } = {}
+): Promise<{
+  requests: ChangeRequest[];
+  total: number;
+  summary: {
+    pendingCount: number;
+    approvedCount: number;
+    deniedCount: number;
+    totalCount: number;
+  };
+}> {
+  return listChangeRequests({
+    submittedById: moderatorId,
+    status: options.status,
+    limit: options.limit,
+    offset: options.offset,
+  });
+}

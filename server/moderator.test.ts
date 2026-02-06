@@ -329,193 +329,133 @@ describe("Moderator Role - Read-Only Procedures", () => {
   });
 });
 
-describe("Moderator Role - Escalation", () => {
+describe("Moderator Role - Change Requests (replaces Escalation)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("escalateToAdmin mutation", () => {
-    it("should validate escalation input", () => {
+  describe("createChangeRequest mutation", () => {
+    it("should validate change request input", () => {
       const validInput = {
-        actionType: "suspendUser" as const,
-        targetId: "42",
-        reason: "User is exhibiting suspicious behavior with multiple rate limit violations",
-        severity: "warning" as const,
+        type: "refund_credits" as const,
+        priority: "normal" as const,
+        targetUserId: 42,
+        targetUserName: "Test User",
+        title: "Refund credits for service disruption",
+        description: "User experienced a service disruption during generation and lost 50 credits",
+        creditAmount: 50,
+        creditReason: "Service disruption",
       };
 
-      expect(validInput.actionType).toBe("suspendUser");
-      expect(validInput.targetId.length).toBeGreaterThan(0);
-      expect(validInput.reason.length).toBeGreaterThanOrEqual(10);
+      expect(validInput.type).toBe("refund_credits");
+      expect(validInput.title.length).toBeGreaterThanOrEqual(5);
+      expect(validInput.description.length).toBeGreaterThanOrEqual(10);
     });
 
-    it("should reject escalation with reason too short", () => {
-      const shortReason = "bad user";
-      expect(shortReason.length).toBeLessThan(10);
+    it("should reject description too short", () => {
+      const shortDesc = "bad user";
+      expect(shortDesc.length).toBeLessThan(10);
     });
 
-    it("should reject escalation with empty target", () => {
-      const emptyTarget = "";
-      expect(emptyTarget.length).toBe(0);
+    it("should reject title too short", () => {
+      const shortTitle = "Hi";
+      expect(shortTitle.length).toBeLessThan(5);
     });
 
-    it("should support all action types", () => {
-      const validActionTypes = ["suspendUser", "blockIP", "investigateUser", "other"];
-      validActionTypes.forEach(type => {
-        expect(["suspendUser", "blockIP", "investigateUser", "other"]).toContain(type);
+    it("should support all 8 change request types", () => {
+      const validTypes = [
+        "refund_credits", "add_credits", "flag_account", "note_incident",
+        "suspend_user", "unsuspend_user", "block_ip", "other",
+      ];
+      expect(validTypes).toHaveLength(8);
+      validTypes.forEach(type => {
+        expect(typeof type).toBe("string");
       });
     });
 
-    it("should send emergency buttons for suspendUser escalation", async () => {
-      const { sendEmergencyActionsToAdminChannel } = await import("./slackNotification");
-      
-      await sendEmergencyActionsToAdminChannel(
-        "📤 Moderator Escalation: Suspend User",
-        "Moderator has escalated an issue",
-        [{ title: "Target", value: "User #42" }],
-        undefined, // no IP
-        42, // userId
-        "Test User",
-        { escalatedBy: 10, escalatedByName: "Mod User", actionType: "suspendUser" },
-      );
-
-      expect(sendEmergencyActionsToAdminChannel).toHaveBeenCalledWith(
-        expect.stringContaining("Suspend User"),
-        expect.any(String),
-        expect.any(Array),
-        undefined,
-        42,
-        "Test User",
-        expect.objectContaining({ actionType: "suspendUser" }),
-      );
-    });
-
-    it("should send emergency buttons for blockIP escalation", async () => {
-      const { sendEmergencyActionsToAdminChannel } = await import("./slackNotification");
-      
-      await sendEmergencyActionsToAdminChannel(
-        "📤 Moderator Escalation: Block IP Address",
-        "Moderator has escalated an issue",
-        [{ title: "Target", value: "1.2.3.4" }],
-        "1.2.3.4", // IP to block
-        undefined, // no userId
-        undefined,
-        { escalatedBy: 10, escalatedByName: "Mod User", actionType: "blockIP" },
-      );
-
-      expect(sendEmergencyActionsToAdminChannel).toHaveBeenCalledWith(
-        expect.stringContaining("Block IP"),
-        expect.any(String),
-        expect.any(Array),
-        "1.2.3.4",
-        undefined,
-        undefined,
-        expect.objectContaining({ actionType: "blockIP" }),
-      );
-    });
-
-    it("should send info-only notification for investigateUser escalation", async () => {
+    it("should send Slack notification for new change request", async () => {
       const { sendAdminActionNotification } = await import("./slackNotification");
       
       await sendAdminActionNotification({
-        title: "📤 Moderator Escalation: Investigate User",
-        description: "Moderator has escalated an issue",
-        severity: "warning",
-        fields: [{ title: "Target", value: "User #42" }],
+        title: "📋 New Change Request: Refund Credits",
+        description: "Mod User submitted a change request for Test User",
+        severity: "info",
+        fields: [
+          { title: "Type", value: "Refund Credits", short: true },
+          { title: "Priority", value: "Normal", short: true },
+          { title: "Target", value: "Test User (#42)", short: true },
+          { title: "Credit Amount", value: "50 credits", short: true },
+        ],
       });
 
       expect(sendAdminActionNotification).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: expect.stringContaining("Investigate User"),
-          severity: "warning",
+          title: expect.stringContaining("Change Request"),
         }),
       );
     });
 
-    it("should log escalation to audit log", async () => {
+    it("should log change request to audit log", async () => {
       const { logAuditEvent } = await import("./auditLog");
       
       await logAuditEvent({
         userId: 10,
-        action: "moderator.escalation",
-        resourceType: "suspendUser",
-        resourceId: "42",
+        action: "moderator.change_request_created",
+        resourceType: "change_request",
+        resourceId: "1",
         metadata: {
-          moderatorName: "Mod User",
-          actionType: "suspendUser",
-          reason: "Suspicious activity detected",
-          severity: "warning",
+          type: "refund_credits",
+          priority: "normal",
+          targetUserId: 42,
+          title: "Refund credits for service disruption",
         },
-        severity: "warning",
+        severity: "info",
         req: undefined as any,
       });
 
       expect(logAuditEvent).toHaveBeenCalledWith(
         expect.objectContaining({
-          action: "moderator.escalation",
-          resourceType: "suspendUser",
-          resourceId: "42",
+          action: "moderator.change_request_created",
+          resourceType: "change_request",
         }),
       );
     });
 
-    it("should log escalation to #audit-log channel", async () => {
-      const { sendAuditLogEntry } = await import("./slackNotification");
-      
-      await sendAuditLogEntry({
-        title: "Moderator Escalation",
-        description: "Mod User escalated: Suspend User for target 42",
-        fields: [
-          { title: "Moderator", value: "Mod User", short: true },
-          { title: "Action", value: "Suspend User", short: true },
-          { title: "Target", value: "42", short: true },
-        ],
-        severity: "info",
-      });
-
-      expect(sendAuditLogEntry).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: "Moderator Escalation",
-        }),
-      );
-    });
-
-    it("should support related audit log IDs", () => {
-      const escalation = {
-        actionType: "suspendUser",
-        targetId: "42",
-        reason: "Multiple violations found in audit logs",
-        severity: "critical",
-        relatedAuditLogIds: [101, 102, 103],
+    it("should support optional related audit log ID", () => {
+      const withAuditLog = {
+        type: "flag_account",
+        relatedAuditLogId: 501,
+      };
+      const withoutAuditLog = {
+        type: "note_incident",
       };
 
-      expect(escalation.relatedAuditLogIds).toHaveLength(3);
-      expect(escalation.relatedAuditLogIds).toContain(101);
+      expect(withAuditLog.relatedAuditLogId).toBe(501);
+      expect(withoutAuditLog).not.toHaveProperty("relatedAuditLogId");
     });
 
     it("should support optional target name", () => {
       const withName = {
-        actionType: "suspendUser",
-        targetId: "42",
-        targetName: "John Doe",
-        reason: "Suspicious activity",
+        type: "suspend_user",
+        targetUserId: 42,
+        targetUserName: "John Doe",
       };
       const withoutName = {
-        actionType: "suspendUser",
-        targetId: "42",
-        reason: "Suspicious activity",
+        type: "suspend_user",
+        targetUserId: 42,
       };
 
-      expect(withName.targetName).toBe("John Doe");
-      expect(withoutName).not.toHaveProperty("targetName");
+      expect(withName.targetUserName).toBe("John Doe");
+      expect(withoutName).not.toHaveProperty("targetUserName");
     });
   });
 });
 
 describe("Moderator Role - Security Boundaries", () => {
   it("moderator router should NOT contain suspend mutation", () => {
-    // The moderator router only has read queries + escalateToAdmin mutation
+    // The moderator router has read queries + createChangeRequest mutation
     // No suspendUser, unsuspendUser, blockIP, unblockIP, adjustCredits
-    const moderatorWriteOperations = ["escalateToAdmin"];
+    const moderatorWriteOperations = ["createChangeRequest"];
     const adminOnlyOperations = [
       "suspendUser", "unsuspendUser", "blockIP", "unblockIP",
       "adjustCredits", "exportAuditLogs", "deleteAuditLogs",
@@ -526,10 +466,10 @@ describe("Moderator Role - Security Boundaries", () => {
     });
   });
 
-  it("moderator should only have one write operation (escalateToAdmin)", () => {
-    const moderatorMutations = ["escalateToAdmin"];
+  it("moderator should only have one write operation (createChangeRequest)", () => {
+    const moderatorMutations = ["createChangeRequest"];
     expect(moderatorMutations).toHaveLength(1);
-    expect(moderatorMutations[0]).toBe("escalateToAdmin");
+    expect(moderatorMutations[0]).toBe("createChangeRequest");
   });
 
   it("moderator read operations should not expose sensitive admin data", () => {
@@ -545,26 +485,25 @@ describe("Moderator Role - Security Boundaries", () => {
     });
   });
 
-  it("escalation severity should be limited to warning and critical", () => {
-    const validSeverities = ["warning", "critical"];
-    expect(validSeverities).toContain("warning");
-    expect(validSeverities).toContain("critical");
-    expect(validSeverities).not.toContain("info");
+  it("change request priority should support 4 levels", () => {
+    const validPriorities = ["low", "normal", "high", "urgent"];
+    expect(validPriorities).toHaveLength(4);
+    validPriorities.forEach(p => expect(typeof p).toBe("string"));
   });
 
-  it("escalation reason must be at least 10 characters", () => {
+  it("change request description must be at least 10 characters", () => {
     const minLength = 10;
-    const validReason = "This user has been violating rate limits repeatedly";
-    const invalidReason = "bad user";
+    const validDesc = "This user has been violating rate limits repeatedly";
+    const invalidDesc = "bad user";
 
-    expect(validReason.length).toBeGreaterThanOrEqual(minLength);
-    expect(invalidReason.length).toBeLessThan(minLength);
+    expect(validDesc.length).toBeGreaterThanOrEqual(minLength);
+    expect(invalidDesc.length).toBeLessThan(minLength);
   });
 
-  it("escalation reason must not exceed 2000 characters", () => {
-    const maxLength = 2000;
-    const longReason = "x".repeat(2001);
-    expect(longReason.length).toBeGreaterThan(maxLength);
+  it("change request description must not exceed 5000 characters", () => {
+    const maxLength = 5000;
+    const longDesc = "x".repeat(5001);
+    expect(longDesc.length).toBeGreaterThan(maxLength);
   });
 });
 

@@ -278,6 +278,12 @@ export const AUDIT_ACTIONS = {
   // Moderator events
   MODERATOR_ESCALATION: "moderator.escalation",
   ROLE_CHANGED: "admin.role_changed",
+  
+  // Change request events
+  CHANGE_REQUEST_CREATED: "moderator.change_request_created",
+  CHANGE_REQUEST_APPROVED: "admin.change_request_approved",
+  CHANGE_REQUEST_DENIED: "admin.change_request_denied",
+  CHANGE_REQUEST_CANCELLED: "moderator.change_request_cancelled",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
@@ -317,3 +323,77 @@ export const emergencyTokens = mysqlTable("emergency_tokens", {
 
 export type EmergencyToken = typeof emergencyTokens.$inferSelect;
 export type InsertEmergencyToken = typeof emergencyTokens.$inferInsert;
+
+/**
+ * Change request types for moderator-initiated actions
+ */
+export const CHANGE_REQUEST_TYPES = [
+  "refund_credits",
+  "add_credits",
+  "flag_account",
+  "note_incident",
+  "suspend_user",
+  "unsuspend_user",
+  "block_ip",
+  "other",
+] as const;
+
+export type ChangeRequestType = typeof CHANGE_REQUEST_TYPES[number];
+
+export const CHANGE_REQUEST_STATUSES = [
+  "pending",
+  "approved",
+  "denied",
+  "cancelled",
+  "expired",
+] as const;
+
+export type ChangeRequestStatus = typeof CHANGE_REQUEST_STATUSES[number];
+
+export const CHANGE_REQUEST_PRIORITIES = [
+  "low",
+  "normal",
+  "high",
+  "urgent",
+] as const;
+
+export type ChangeRequestPriority = typeof CHANGE_REQUEST_PRIORITIES[number];
+
+/**
+ * Change requests table for moderator-initiated actions requiring admin approval.
+ * Replaces free-text escalation with structured, trackable requests.
+ */
+export const changeRequests = mysqlTable("change_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  // Request metadata
+  type: mysqlEnum("type", ["refund_credits", "add_credits", "flag_account", "note_incident", "suspend_user", "unsuspend_user", "block_ip", "other"]).notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "denied", "cancelled", "expired"]).default("pending").notNull(),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal").notNull(),
+  // Who submitted
+  submittedById: int("submittedById").notNull(), // Moderator user ID
+  submittedByName: varchar("submittedByName", { length: 256 }),
+  // Target user
+  targetUserId: int("targetUserId").notNull(),
+  targetUserName: varchar("targetUserName", { length: 256 }),
+  // Request details
+  title: varchar("title", { length: 512 }).notNull(),
+  description: text("description").notNull(), // Detailed reason/justification
+  evidenceSummary: text("evidenceSummary"), // What the moderator found in logs
+  relatedAuditLogId: int("relatedAuditLogId"), // Link to relevant audit log entry
+  // For credit-related requests
+  creditAmount: int("creditAmount"), // Number of credits to refund/add
+  creditReason: varchar("creditReason", { length: 512 }), // Specific reason for credit change
+  // For IP-related requests
+  ipAddress: varchar("ipAddress", { length: 45 }), // IP to block (for block_ip type)
+  // Admin review
+  reviewedById: int("reviewedById"), // Admin who reviewed
+  reviewedByName: varchar("reviewedByName", { length: 256 }),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewNotes: text("reviewNotes"), // Admin's notes on approval/denial
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type ChangeRequest = typeof changeRequests.$inferSelect;
+export type InsertChangeRequest = typeof changeRequests.$inferInsert;

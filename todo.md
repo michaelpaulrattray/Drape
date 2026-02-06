@@ -2661,3 +2661,18 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: ModeratorDashboard Hooks Violation
 - [x] Fix conditional hooks in ModeratorDashboard causing "Rendered more hooks than during the previous render" error (moved useEffect before early returns)
+
+## Phase 2: Structured Change Request System
+- [x] Create change request CRUD helper functions in server/db.ts (createChangeRequest, getChangeRequestById, listChangeRequests, updateChangeRequestStatus, getChangeRequestsByModerator)
+- [x] Replace escalateToAdmin mutation with createChangeRequest in moderator router
+- [x] Add getMyChangeRequests procedure to moderator router
+- [x] Add listChangeRequests + getChangeRequest procedures to admin router
+- [x] Add reviewChangeRequest (approve/deny) procedure to admin router
+- [x] Update ModeratorDashboard escalation modal to structured change request form (type dropdown, amount field, reason, evidence)
+- [x] Add "My Requests" tab to moderator dashboard with status tracking
+- [x] Fix database table schema mismatch (drop and recreate change_requests table)
+- [x] Send Slack notifications to #admin-actions for new change requests
+- [x] Write vitest tests for change request CRUD helpers
+- [x] Write vitest tests for moderator change request procedures
+- [x] Write vitest tests for admin change request review procedures
+- [x] Verify all 453 tests pass (48 net new tests added)

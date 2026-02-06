@@ -3041,6 +3041,165 @@ export const appRouter = router({
           offset: input.offset,
         });
       }),
+
+    // ============ Change Request Review (Admin Only) ============
+
+    // List change requests with optional filters
+    listChangeRequests: adminProcedure
+      .input(z.object({
+        status: z.enum(["pending", "approved", "denied", "cancelled", "expired", "all"]).optional().default("pending"),
+        type: z.string().optional(),
+        priority: z.string().optional(),
+        limit: z.number().min(1).max(100).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+      }).optional())
+      .query(async ({ input }) => {
+        const { listChangeRequests } = await import("./db");
+        return await listChangeRequests({
+          status: input?.status === "all" ? undefined : input?.status,
+          type: input?.type,
+          priority: input?.priority,
+          limit: input?.limit || 50,
+          offset: input?.offset || 0,
+        });
+      }),
+
+    // Get a single change request by ID
+    getChangeRequest: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const { getChangeRequestById } = await import("./db");
+        const request = await getChangeRequestById(input.id);
+        if (!request) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Change request not found" });
+        }
+        return request;
+      }),
+
+    // Approve or deny a change request
+    reviewChangeRequest: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        action: z.enum(["approved", "denied"]),
+        reviewNotes: z.string().max(2000).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getChangeRequestById, updateChangeRequestStatus } = await import("./db");
+        const { sendAdminActionNotification, sendAuditLogEntry } = await import("./slackNotification");
+        const { logAuditEvent } = await import("./auditLog");
+        const { AUDIT_ACTIONS } = await import("../drizzle/schema");
+        const { writeImmutableLog } = await import("./adminSecurity");
+
+        const adminName = ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`;
+
+        // Fetch the request first
+        const request = await getChangeRequestById(input.id);
+        if (!request) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Change request not found" });
+        }
+        if (request.status !== "pending") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Change request is already ${request.status}` });
+        }
+
+        // Update the status
+        const result = await updateChangeRequestStatus(input.id, {
+          status: input.action,
+          reviewedById: ctx.user.id,
+          reviewedByName: adminName,
+          reviewNotes: input.reviewNotes,
+        });
+
+        if (!result.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to update change request" });
+        }
+
+        const typeLabels: Record<string, string> = {
+          refund_credits: "Refund Credits",
+          add_credits: "Add Credits",
+          flag_account: "Flag Account",
+          note_incident: "Note Incident",
+          suspend_user: "Suspend User",
+          unsuspend_user: "Unsuspend User",
+          block_ip: "Block IP",
+          other: "Other",
+        };
+
+        const actionVerb = input.action === "approved" ? "Approved" : "Denied";
+        const actionEmoji = input.action === "approved" ? "\u2705" : "\u274c";
+
+        // Notify #admin-actions
+        await sendAdminActionNotification({
+          title: `${actionEmoji} Change Request #${input.id} ${actionVerb}`,
+          description: `*${adminName}* ${actionVerb.toLowerCase()} change request #${input.id} (${typeLabels[request.type] || request.type}).\n\n*Original Title:* ${request.title}${input.reviewNotes ? `\n*Review Notes:* ${input.reviewNotes}` : ""}`,
+          severity: input.action === "approved" ? "info" : "warning",
+          fields: [
+            { title: "Request ID", value: `#${input.id}`, short: true },
+            { title: "Type", value: typeLabels[request.type] || request.type, short: true },
+            { title: "Reviewed By", value: adminName, short: true },
+            { title: "Decision", value: `${actionEmoji} ${actionVerb}`, short: true },
+            { title: "Submitted By", value: request.submittedByName || `User ${request.submittedById}`, short: true },
+            { title: "Target User", value: request.targetUserName ? `${request.targetUserName} (ID: ${request.targetUserId})` : `User ID: ${request.targetUserId}`, short: true },
+          ],
+        });
+
+        // Log to #audit-log
+        await sendAuditLogEntry({
+          title: `Change Request ${actionVerb}`,
+          description: `${adminName} ${actionVerb.toLowerCase()} change request #${input.id}: ${typeLabels[request.type] || request.type}`,
+          fields: [
+            { title: "Request ID", value: `#${input.id}`, short: true },
+            { title: "Decision", value: actionVerb, short: true },
+            { title: "Admin", value: adminName, short: true },
+            { title: "Type", value: typeLabels[request.type] || request.type, short: true },
+          ],
+          severity: input.action === "approved" ? "info" : "warning",
+        });
+
+        // Database audit log
+        const auditAction = input.action === "approved"
+          ? AUDIT_ACTIONS.CHANGE_REQUEST_APPROVED
+          : AUDIT_ACTIONS.CHANGE_REQUEST_DENIED;
+
+        await logAuditEvent({
+          userId: ctx.user.id,
+          action: auditAction,
+          resourceType: "change_request",
+          resourceId: String(input.id),
+          metadata: {
+            requestId: input.id,
+            type: request.type,
+            decision: input.action,
+            reviewNotes: input.reviewNotes,
+            submittedById: request.submittedById,
+            targetUserId: request.targetUserId,
+            creditAmount: request.creditAmount,
+          },
+          severity: "info",
+          req: ctx.req,
+        });
+
+        // Write to immutable log for compliance
+        await writeImmutableLog(
+          `change_request_${input.action}`,
+          {
+            adminId: ctx.user.id,
+            adminName,
+            targetId: String(request.targetUserId),
+            action: `${actionVerb} change request #${input.id} (${request.type})`,
+            requestId: input.id,
+            type: request.type,
+            title: request.title,
+            creditAmount: request.creditAmount,
+            reviewNotes: input.reviewNotes,
+          },
+        );
+
+        return {
+          success: true,
+          action: input.action,
+          message: `Change request #${input.id} has been ${actionVerb.toLowerCase()}`,
+        };
+      }),
   }),
 
   // ============ Moderator: Read-Only Access + Escalation ============
@@ -3262,114 +3421,170 @@ export const appRouter = router({
         });
       }),
 
-    // ============ Escalation (the only write operation for moderators) ============
+    // ============ Change Requests (structured write operations for moderators) ============
 
-    // Escalate an issue to #admin-actions channel via Slack
-    escalateToAdmin: moderatorProcedure
+    // Submit a structured change request for admin review
+    createChangeRequest: moderatorProcedure
       .input(z.object({
-        actionType: z.enum(["suspendUser", "blockIP", "investigateUser", "other"]),
-        targetId: z.string().min(1).max(256), // User ID, IP address, or other identifier
-        targetName: z.string().optional(), // User name or description for context
-        reason: z.string().min(10).max(2000), // Detailed reason for escalation
-        severity: z.enum(["warning", "critical"]).default("warning"),
-        relatedAuditLogIds: z.array(z.number()).optional(), // Link to specific audit log entries
+        type: z.enum(["refund_credits", "add_credits", "flag_account", "note_incident", "suspend_user", "unsuspend_user", "block_ip", "other"]),
+        priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+        targetUserId: z.number(),
+        targetUserName: z.string().optional(),
+        title: z.string().min(5).max(512),
+        description: z.string().min(10).max(5000),
+        evidenceSummary: z.string().max(5000).optional(),
+        relatedAuditLogId: z.number().optional(),
+        creditAmount: z.number().min(1).optional(),
+        creditReason: z.string().max(512).optional(),
+        ipAddress: z.string().max(45).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const { sendEmergencyActionsToAdminChannel, sendAuditLogEntry } = await import("./slackNotification");
-        const { logAuditEvent, AUDIT_ACTIONS } = await import("./auditLog");
+        const { createChangeRequest } = await import("./db");
+        const { sendAdminActionNotification, sendAuditLogEntry } = await import("./slackNotification");
+        const { logAuditEvent } = await import("./auditLog");
+        const { AUDIT_ACTIONS } = await import("../drizzle/schema");
 
         const moderatorName = ctx.user.name || ctx.user.email || `Moderator ${ctx.user.id}`;
 
-        // Build escalation context
-        const actionLabels: Record<string, string> = {
-          suspendUser: "Suspend User",
-          blockIP: "Block IP Address",
-          investigateUser: "Investigate User",
-          other: "Other Action Required",
+        // Validate credit-related fields
+        if ((input.type === "refund_credits" || input.type === "add_credits") && !input.creditAmount) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Credit amount is required for credit-related requests" });
+        }
+        if (input.type === "block_ip" && !input.ipAddress) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "IP address is required for block IP requests" });
+        }
+
+        // Create the change request in the database
+        const result = await createChangeRequest({
+          type: input.type,
+          priority: input.priority,
+          submittedById: ctx.user.id,
+          submittedByName: moderatorName,
+          targetUserId: input.targetUserId,
+          targetUserName: input.targetUserName || null,
+          title: input.title,
+          description: input.description,
+          evidenceSummary: input.evidenceSummary || null,
+          relatedAuditLogId: input.relatedAuditLogId || null,
+          creditAmount: input.creditAmount || null,
+          creditReason: input.creditReason || null,
+          ipAddress: input.ipAddress || null,
+        });
+
+        if (!result.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to create change request" });
+        }
+
+        // Type labels for Slack messages
+        const typeLabels: Record<string, string> = {
+          refund_credits: "Refund Credits",
+          add_credits: "Add Credits",
+          flag_account: "Flag Account",
+          note_incident: "Note Incident",
+          suspend_user: "Suspend User",
+          unsuspend_user: "Unsuspend User",
+          block_ip: "Block IP",
+          other: "Other",
         };
 
+        const priorityEmoji: Record<string, string> = {
+          low: "⬜",
+          normal: "🟦",
+          high: "🟧",
+          urgent: "🟥",
+        };
+
+        // Send notification to #admin-actions
         const fields: Array<{ title: string; value: string; short?: boolean }> = [
-          { title: "Escalated By", value: `${moderatorName} (Moderator)`, short: true },
-          { title: "Requested Action", value: actionLabels[input.actionType] || input.actionType, short: true },
-          { title: "Target", value: input.targetName ? `${input.targetName} (${input.targetId})` : input.targetId, short: true },
-          { title: "Severity", value: input.severity === "critical" ? "🔴 Critical" : "🟡 Warning", short: true },
-          { title: "Reason", value: input.reason },
+          { title: "Request ID", value: `#${result.requestId}`, short: true },
+          { title: "Type", value: typeLabels[input.type] || input.type, short: true },
+          { title: "Priority", value: `${priorityEmoji[input.priority] || ""} ${input.priority.charAt(0).toUpperCase() + input.priority.slice(1)}`, short: true },
+          { title: "Submitted By", value: `${moderatorName} (Moderator)`, short: true },
+          { title: "Target User", value: input.targetUserName ? `${input.targetUserName} (ID: ${input.targetUserId})` : `User ID: ${input.targetUserId}`, short: true },
+          { title: "Title", value: input.title },
+          { title: "Description", value: input.description.length > 200 ? input.description.substring(0, 200) + "..." : input.description },
         ];
 
-        if (input.relatedAuditLogIds && input.relatedAuditLogIds.length > 0) {
-          fields.push({
-            title: "Related Audit Logs",
-            value: input.relatedAuditLogIds.map(id => `#${id}`).join(", "),
-            short: true,
-          });
+        if (input.creditAmount) {
+          fields.push({ title: "Credit Amount", value: `${input.creditAmount} credits`, short: true });
+        }
+        if (input.ipAddress) {
+          fields.push({ title: "IP Address", value: input.ipAddress, short: true });
+        }
+        if (input.evidenceSummary) {
+          fields.push({ title: "Evidence", value: input.evidenceSummary.length > 200 ? input.evidenceSummary.substring(0, 200) + "..." : input.evidenceSummary });
         }
 
-        // Determine if we should include emergency action buttons
-        const includeActionButtons = input.actionType === "suspendUser" || input.actionType === "blockIP";
+        const slackSeverity = input.priority === "urgent" ? "critical" as const : input.priority === "high" ? "warning" as const : "info" as const;
 
-        let slackSent = false;
-        if (includeActionButtons) {
-          // Send to #admin-actions with emergency buttons
-          slackSent = await sendEmergencyActionsToAdminChannel(
-            `📤 Moderator Escalation: ${actionLabels[input.actionType]}`,
-            `*${moderatorName}* has escalated an issue requiring admin action.\n\n*Reason:* ${input.reason}`,
-            fields,
-            input.actionType === "blockIP" ? input.targetId : undefined,
-            input.actionType === "suspendUser" ? parseInt(input.targetId) || undefined : undefined,
-            input.targetName || undefined,
-            { escalatedBy: ctx.user.id, escalatedByName: moderatorName, actionType: input.actionType },
-          );
-        } else {
-          // Send info-only notification to #admin-actions
-          const { sendAdminActionNotification } = await import("./slackNotification");
-          slackSent = await sendAdminActionNotification({
-            title: `📤 Moderator Escalation: ${actionLabels[input.actionType]}`,
-            description: `*${moderatorName}* has escalated an issue requiring admin attention.\n\n*Reason:* ${input.reason}`,
-            severity: input.severity,
-            fields,
-          });
-        }
+        const slackSent = await sendAdminActionNotification({
+          title: `📋 New Change Request #${result.requestId}: ${typeLabels[input.type]}`,
+          description: `*${moderatorName}* submitted a change request requiring admin review.\n\n*${input.title}*`,
+          severity: slackSeverity,
+          fields,
+        });
 
         // Log to #audit-log
         await sendAuditLogEntry({
-          title: "Moderator Escalation",
-          description: `${moderatorName} escalated: ${actionLabels[input.actionType]} for target ${input.targetId}`,
+          title: "Change Request Created",
+          description: `${moderatorName} created change request #${result.requestId}: ${typeLabels[input.type]} for user ${input.targetUserId}`,
           fields: [
+            { title: "Request ID", value: `#${result.requestId}`, short: true },
+            { title: "Type", value: typeLabels[input.type], short: true },
             { title: "Moderator", value: moderatorName, short: true },
-            { title: "Action", value: actionLabels[input.actionType], short: true },
-            { title: "Target", value: input.targetId, short: true },
+            { title: "Target User", value: String(input.targetUserId), short: true },
           ],
-          severity: input.severity === "critical" ? "warning" : "info",
+          severity: "info",
         });
 
         // Log to database audit log
         await logAuditEvent({
           userId: ctx.user.id,
-          action: AUDIT_ACTIONS.MODERATOR_ESCALATION,
-          resourceType: input.actionType,
-          resourceId: input.targetId,
+          action: AUDIT_ACTIONS.CHANGE_REQUEST_CREATED,
+          resourceType: "change_request",
+          resourceId: String(result.requestId),
           metadata: {
-            moderatorName,
-            actionType: input.actionType,
-            targetName: input.targetName,
-            reason: input.reason,
-            severity: input.severity,
-            relatedAuditLogIds: input.relatedAuditLogIds,
+            requestId: result.requestId,
+            type: input.type,
+            priority: input.priority,
+            targetUserId: input.targetUserId,
+            targetUserName: input.targetUserName,
+            title: input.title,
+            creditAmount: input.creditAmount,
+            ipAddress: input.ipAddress,
             slackSent,
           },
-          severity: input.severity,
+          severity: slackSeverity === "critical" ? "critical" : slackSeverity === "warning" ? "warning" : "info",
           req: ctx.req,
         });
 
         return {
           success: true,
+          requestId: result.requestId,
           slackSent,
           message: slackSent
-            ? "Escalation sent to admin team via Slack"
-            : "Escalation logged but Slack notification could not be sent",
+            ? "Change request submitted and admin team notified via Slack"
+            : "Change request submitted but Slack notification could not be sent",
         };
+      }),
+
+    // Get change requests submitted by the current moderator
+    getMyChangeRequests: moderatorProcedure
+      .input(z.object({
+        status: z.enum(["pending", "approved", "denied", "cancelled", "expired", "all"]).optional().default("all"),
+        limit: z.number().min(1).max(100).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const { getChangeRequestsByModerator } = await import("./db");
+        return await getChangeRequestsByModerator(ctx.user.id, {
+          status: input?.status === "all" ? undefined : input?.status,
+          limit: input?.limit || 50,
+          offset: input?.offset || 0,
+        });
       }),
   }),
 });
 
 export type AppRouter = typeof appRouter;
+
