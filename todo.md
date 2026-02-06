@@ -2525,3 +2525,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add admin access link to dashboard sidebar (admin only)
 - [x] Implement CSV export for filtered audit logs (up to 1000 records)
 - [x] Write vitest tests for suspension, auth logging, and attack protection (210 tests total)
+
+
+## Security Audit Gap Fixes
+- [x] Update AUTHENTICATION.md with suspension/lockout documentation
+- [x] Update RATE_LIMITING.md with per-user rate limiting and global attack detection
+- [x] Update Login.tsx with error message UI for suspended/locked users

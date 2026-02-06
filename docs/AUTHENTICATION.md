@@ -215,6 +215,113 @@ if (!model) {
 }
 ```
 
+## Account Suspension
+
+Administrators can suspend user accounts to immediately block access. Suspension is used for confirmed abuse, policy violations, or security incidents. Unlike temporary lockouts, suspensions persist until manually lifted by an admin.
+
+### Database Fields
+
+The `users` table includes these suspension-related fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `suspendedAt` | timestamp | When the account was suspended (null = active) |
+| `suspendedReason` | text | Admin-provided reason for suspension |
+| `suspendedBy` | int | User ID of the admin who suspended the account |
+
+### Real-Time Enforcement
+
+Suspension is enforced at two levels to ensure immediate effect:
+
+**At Login:** The OAuth callback checks `suspendedAt` before creating a session. Suspended users are redirected to `/login?error=suspended` with a clear error message.
+
+**At API Calls:** The `protectedProcedure` middleware checks `suspendedAt` on every request. Even if a user was suspended mid-session, their next API call will be blocked immediately with a `FORBIDDEN` error.
+
+```typescript
+// In server/_core/trpc.ts - protectedProcedure middleware
+if (ctx.user.suspendedAt) {
+  throw new TRPCError({ 
+    code: "FORBIDDEN", 
+    message: "Your account has been suspended. Please contact support for assistance.",
+  });
+}
+```
+
+### Admin Operations
+
+Suspend and unsuspend operations are available through the admin router:
+
+```typescript
+// Suspend a user
+await trpc.admin.suspendUser.mutate({ 
+  userId: 123, 
+  reason: "Repeated abuse of generation endpoints" 
+});
+
+// Unsuspend a user
+await trpc.admin.unsuspendUser.mutate({ userId: 123 });
+```
+
+Both operations are logged to the audit system with `admin.account_suspended` and `admin.account_unsuspended` actions.
+
+## Account Lockout
+
+Account lockout is an automatic protection against brute force attacks. After multiple failed login attempts, the account is temporarily locked to prevent further attempts.
+
+### Database Fields
+
+The `users` table includes these lockout-related fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `failedLoginAttempts` | int | Counter of consecutive failed login attempts |
+| `lockedUntil` | timestamp | When the lockout expires (null = not locked) |
+
+### Lockout Configuration
+
+The lockout system uses these thresholds:
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Threshold | 5 attempts | Number of failed logins before lockout |
+| Duration | 15 minutes | How long the account remains locked |
+| Reset | On success | Counter resets to 0 after successful login |
+
+### How It Works
+
+When a login fails, the system increments `failedLoginAttempts`. If the counter reaches 5, `lockedUntil` is set to 15 minutes in the future. Subsequent login attempts check `lockedUntil` and redirect to `/login?error=locked&minutes=X` if still locked.
+
+On successful login, both `failedLoginAttempts` and `lockedUntil` are reset, allowing normal access.
+
+### Real-Time Enforcement
+
+Like suspension, lockout is enforced at both login and API levels:
+
+```typescript
+// In server/_core/trpc.ts - protectedProcedure middleware
+if (ctx.user.lockedUntil && new Date(ctx.user.lockedUntil) > new Date()) {
+  const remainingMinutes = Math.ceil(
+    (new Date(ctx.user.lockedUntil).getTime() - Date.now()) / 60000
+  );
+  throw new TRPCError({ 
+    code: "FORBIDDEN", 
+    message: `Your account is temporarily locked. Please try again in ${remainingMinutes} minute(s).`,
+  });
+}
+```
+
+### Audit Events
+
+The following audit events are logged for authentication:
+
+| Event | Description |
+|-------|-------------|
+| `auth.login` | Successful login |
+| `auth.login_failed` | Failed login attempt |
+| `auth.login_blocked_suspended` | Login blocked due to suspension |
+| `auth.login_blocked_locked` | Login blocked due to lockout |
+| `auth.account_lockout` | Account locked after threshold exceeded |
+
 ## Related Documentation
 
-For additional security context, see [RATE_LIMITING.md](./RATE_LIMITING.md) for preventing brute force attacks on authentication, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for securing credit-consuming operations, and [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging authentication events.
+For additional security context, see [RATE_LIMITING.md](./RATE_LIMITING.md) for preventing brute force attacks on authentication and distributed attack protection, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for securing credit-consuming operations, and [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging authentication events.

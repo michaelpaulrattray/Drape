@@ -196,6 +196,132 @@ if (!rateCheck.allowed) {
 
 For production systems, integrate with your monitoring solution to alert on unusual patterns of rate limit rejections.
 
+## Per-User Rate Limiting
+
+Standard IP-based rate limiting can be bypassed by distributed attacks where the same user sends requests from multiple IP addresses (using VPNs, proxies, or botnets). Per-user rate limiting addresses this by tracking requests per authenticated user regardless of their IP address.
+
+### When to Use Per-User Limits
+
+Use per-user rate limiting for authenticated endpoints where abuse could come from a single compromised or malicious account operating across multiple IPs. This is especially important for expensive operations like AI generation, billing actions, and bulk data operations.
+
+### Implementation
+
+Use the `checkUserRateLimit` function instead of `checkRateLimit` for authenticated endpoints:
+
+```typescript
+import { checkUserRateLimit, USER_RATE_LIMITS, rateLimitError } from "./rateLimit";
+
+generateImage: protectedProcedure
+  .input(z.object({ prompt: z.string() }))
+  .mutation(async ({ ctx, input }) => {
+    // Per-user rate limit (regardless of IP)
+    const rateCheck = checkUserRateLimit(
+      ctx.user.id,
+      USER_RATE_LIMITS.userGeneration
+    );
+    if (!rateCheck.allowed) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: rateLimitError(rateCheck.resetIn),
+      });
+    }
+    
+    return await generateCastingImage(input.prompt);
+  }),
+```
+
+### Pre-Configured Per-User Limits
+
+The `USER_RATE_LIMITS` object provides configurations for common authenticated operations:
+
+| Category | Window | Max Requests | Use Case |
+|----------|--------|--------------|----------|
+| `apiGeneral` | 1 minute | 60 per user | General API calls |
+| `userGeneration` | 1 minute | 20 per user | AI generation requests |
+| `userBilling` | 1 minute | 5 per user | Billing and checkout actions |
+
+### Combining IP and User Limits
+
+For maximum protection, combine both IP-based and per-user rate limiting:
+
+```typescript
+// Check IP-based limit first (catches bot networks)
+const ipCheck = checkRateLimit(getClientIp(ctx.req), RATE_LIMITS.generation);
+if (!ipCheck.allowed) {
+  throw new TRPCError({ code: "TOO_MANY_REQUESTS", ... });
+}
+
+// Then check per-user limit (catches distributed attacks from one account)
+const userCheck = checkUserRateLimit(ctx.user.id, USER_RATE_LIMITS.userGeneration);
+if (!userCheck.allowed) {
+  throw new TRPCError({ code: "TOO_MANY_REQUESTS", ... });
+}
+```
+
+## Global Attack Detection
+
+Beyond individual rate limits, FormaStudio monitors for system-wide attack patterns. This detects coordinated attacks that might stay under individual limits but collectively indicate malicious activity.
+
+### How It Works
+
+The global attack detection system tracks failed login attempts across all users and IPs within a sliding 5-minute window. When the total exceeds configured thresholds, the system triggers alerts and logs security events.
+
+### Thresholds
+
+| Level | Threshold | Action |
+|-------|-----------|--------|
+| Warning | 50 failed logins in 5 min | Log `abuse.global_attack_detected` event |
+| Critical | 100 failed logins in 5 min | Log event + notify owner via `notifyOwner` |
+
+### Implementation
+
+The OAuth callback automatically records failed logins and checks for attack patterns:
+
+```typescript
+import { 
+  recordGlobalFailedLogin, 
+  shouldSendGlobalAttackAlert, 
+  markGlobalAttackAlertSent 
+} from "./rateLimit";
+
+// After a failed login attempt
+const attackStatus = recordGlobalFailedLogin();
+
+if (attackStatus.underAttack && shouldSendGlobalAttackAlert()) {
+  markGlobalAttackAlertSent();
+  
+  await notifyOwner({
+    title: `🚨 ${attackStatus.severity === 'critical' ? 'CRITICAL' : 'WARNING'}: Possible Attack Detected`,
+    content: `${attackStatus.failedCount} failed login attempts detected in the last 5 minutes.`,
+  });
+  
+  await logAuditEvent({
+    action: AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK,
+    severity: "critical",
+    metadata: { failedCount: attackStatus.failedCount },
+  });
+}
+```
+
+### Checking Attack Status
+
+You can check the current attack status programmatically:
+
+```typescript
+import { isSystemUnderAttack } from "./rateLimit";
+
+const status = isSystemUnderAttack();
+// Returns: { underAttack: boolean, severity: 'none' | 'warning' | 'critical', failedCount: number, windowRemaining: number }
+
+if (status.underAttack) {
+  console.warn(`System under ${status.severity} attack: ${status.failedCount} failed logins`);
+}
+```
+
+### Alert Deduplication
+
+To prevent alert fatigue, the system only sends one notification per attack window. The `markGlobalAttackAlertSent()` function marks that an alert has been sent, and `shouldSendGlobalAttackAlert()` returns false until the window resets.
+
 ## Related Documentation
 
-For additional security context, see [AUTHENTICATION.md](./AUTHENTICATION.md) for protecting endpoints before rate limiting applies, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for credit-based rate limiting on generation endpoints, and [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging rate limit violations.
+For additional security context, see [AUTHENTICATION.md](./AUTHENTICATION.md) for protecting endpoints before rate limiting applies and account lockout configuration, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for credit-based rate limiting on generation endpoints, and [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging rate limit violations and abuse detection events.
