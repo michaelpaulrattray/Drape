@@ -2741,3 +2741,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix pending_execution status enum mismatch in listChangeRequests (routers.ts) and db.ts
 - [x] Fix selectedRequest variable declaration order in AdminChangeRequests.tsx (used before declared)
 - [x] Verify 0 TS errors and all 518 tests pass (27 files)
+
+## Critical Security Fixes
+- [x] Webhook idempotency: check for duplicate referenceId in addCredits before granting credits
+- [x] Chargeback handler: add charge.dispute.created and charge.dispute.closed webhook handlers
+- [x] Chargeback Slack alert: send critical alert to #admin-actions + #audit-log on dispute filed/resolved
+- [x] Tests for idempotency (duplicate session.id rejected) — 6 tests
+- [x] Tests for chargeback handler — 6 tests + 2 edge case tests
+- [x] Verify all tests pass (532 tests, 28 files)

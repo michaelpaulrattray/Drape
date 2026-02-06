@@ -19,6 +19,7 @@ import {
   addTopupCredits,
   getUserCredits,
 } from "./db";
+import { SlackAlerts } from "./slackNotification";
 import { CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
 import { PlanTier } from "../drizzle/schema";
 
@@ -64,6 +65,12 @@ export async function handleStripeWebhook(
       case "invoice.payment_failed":
         return await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
 
+      case "charge.dispute.created":
+        return await handleDisputeCreated(event.data.object as Stripe.Dispute);
+
+      case "charge.dispute.closed":
+        return await handleDisputeClosed(event.data.object as Stripe.Dispute);
+
       default:
         console.log(`[Webhook] Unhandled event type: ${event.type}`);
         return { success: true, message: `Unhandled event type: ${event.type}` };
@@ -98,6 +105,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     
     if (!result.success) {
       return { success: false, message: "Failed to add credits", error: result.error };
+    }
+
+    if (result.duplicate) {
+      console.warn(`[Webhook] Duplicate checkout session ${session.id} for user ${userId} — credits already granted. Skipping.`);
+      return { success: true, message: `Duplicate session ${session.id}, credits already granted` };
     }
 
     console.log(`[Webhook] Added ${credits} credits to user ${userId} from top-up`);
@@ -249,4 +261,93 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
 
   console.log(`[Webhook] Payment failed for user ${userId}, marked as past_due`);
   return { success: true, message: `Payment failed for user ${userId}` };
+}
+
+/**
+ * Handle charge.dispute.created event
+ * Sends a critical Slack alert when a chargeback/dispute is filed.
+ */
+async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookResult> {
+  const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id || "unknown";
+  const amount = dispute.amount;
+  const currency = dispute.currency;
+  const reason = dispute.reason || "not_specified";
+
+  // Try to identify the user from the payment_intent → customer chain
+  let userId: number | undefined;
+  let userName: string | undefined;
+
+  const customerId = typeof dispute.payment_intent === "string"
+    ? undefined // Can't resolve customer from just the PI ID without an API call
+    : (dispute as any).customer;
+
+  // Try to get customer ID from the charge metadata or customer field
+  const disputeCustomerId = (dispute as any).customer as string | undefined;
+
+  if (disputeCustomerId) {
+    const userWithCredits = await getUserByStripeCustomerId(disputeCustomerId);
+    if (userWithCredits) {
+      userId = userWithCredits.id;
+      userName = userWithCredits.name || userWithCredits.email || `User #${userWithCredits.id}`;
+    }
+  }
+
+  // Send critical Slack alert
+  await SlackAlerts.chargebackFiled(
+    dispute.id,
+    chargeId,
+    amount,
+    currency,
+    reason,
+    userId,
+    userName
+  );
+
+  console.log(`[Webhook] Dispute created: ${dispute.id}, amount: ${amount} ${currency}, reason: ${reason}`);
+  return {
+    success: true,
+    message: `Dispute ${dispute.id} filed — Slack alert sent`,
+  };
+}
+
+/**
+ * Handle charge.dispute.closed event
+ * Sends a Slack alert with the dispute outcome (won/lost).
+ */
+async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResult> {
+  const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id || "unknown";
+  const amount = dispute.amount;
+  const currency = dispute.currency;
+  const status = dispute.status; // "won", "lost", "warning_closed", etc.
+
+  // Try to identify the user
+  let userId: number | undefined;
+  let userName: string | undefined;
+
+  const disputeCustomerId = (dispute as any).customer as string | undefined;
+
+  if (disputeCustomerId) {
+    const userWithCredits = await getUserByStripeCustomerId(disputeCustomerId);
+    if (userWithCredits) {
+      userId = userWithCredits.id;
+      userName = userWithCredits.name || userWithCredits.email || `User #${userWithCredits.id}`;
+    }
+  }
+
+  // Send Slack alert with outcome
+  await SlackAlerts.chargebackResolved(
+    dispute.id,
+    chargeId,
+    amount,
+    currency,
+    status,
+    userId,
+    userName
+  );
+
+  console.log(`[Webhook] Dispute closed: ${dispute.id}, status: ${status}`);
+  return {
+    success: true,
+    message: `Dispute ${dispute.id} closed (${status}) — Slack alert sent`,
+  };
 }

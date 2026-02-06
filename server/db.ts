@@ -243,13 +243,34 @@ export async function addCredits(
   type: "generation" | "purchase" | "bonus" | "refund" | "signup" | "topup" | "subscription",
   description: string,
   referenceId?: string
-): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+): Promise<{ success: boolean; newBalance?: number; error?: string; duplicate?: boolean }> {
   const db = await getDb();
   if (!db) {
     return { success: false, error: "Database not available" };
   }
 
   try {
+    // IDEMPOTENCY CHECK: If referenceId is provided, check for duplicate transaction
+    // This prevents double-crediting from Stripe webhook replays
+    if (referenceId) {
+      const existing = await db
+        .select({ id: creditTransactions.id })
+        .from(creditTransactions)
+        .where(
+          and(
+            eq(creditTransactions.referenceId, referenceId),
+            eq(creditTransactions.userId, userId)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        console.warn(`[Database] Duplicate transaction detected: referenceId=${referenceId}, userId=${userId}. Skipping.`);
+        const userCredits = await getUserCredits(userId);
+        return { success: true, newBalance: userCredits?.balance ?? 0, duplicate: true };
+      }
+    }
+
     // Get current balance
     const userCredits = await getUserCredits(userId);
     if (!userCredits) {
@@ -852,7 +873,7 @@ export async function addTopupCredits(
   userId: number,
   credits: number,
   referenceId: string
-): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+): Promise<{ success: boolean; newBalance?: number; error?: string; duplicate?: boolean }> {
   return addCredits(
     userId,
     credits,

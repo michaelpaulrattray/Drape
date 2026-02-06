@@ -433,4 +433,84 @@ export const SlackAlerts = {
 
     return result;
   },
+
+  /**
+   * Alert when a chargeback/dispute is filed
+   * → #admin-actions + #audit-log (critical — direct financial impact)
+   */
+  chargebackFiled: async (
+    disputeId: string,
+    chargeId: string,
+    amount: number,
+    currency: string,
+    reason: string,
+    userId?: number,
+    userName?: string
+  ): Promise<boolean> => {
+    const amountFormatted = `$${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
+    const userInfo = userName ? `*${userName}* (ID: ${userId})` : "Unknown user";
+
+    const result = await dispatchAdminActionWithAudit({
+      title: "\u26a0\ufe0f Chargeback / Dispute Filed",
+      description: `A chargeback has been filed for ${amountFormatted}. User: ${userInfo}.`,
+      severity: "critical",
+      fields: [
+        { title: "Dispute ID", value: disputeId, short: true },
+        { title: "Charge ID", value: chargeId, short: true },
+        { title: "Amount", value: amountFormatted, short: true },
+        { title: "Reason", value: reason || "Not specified", short: true },
+        ...(userName ? [{ title: "User", value: `${userName} (ID: ${userId})`, short: true }] : []),
+      ],
+      auditTitle: "Chargeback / Dispute Filed",
+      auditDescription: `Dispute ${disputeId} filed for ${amountFormatted}. User: ${userInfo}. Reason: ${reason || "N/A"}.`,
+      auditFields: [
+        { title: "Dispute ID", value: disputeId, short: true },
+        { title: "Charge ID", value: chargeId, short: true },
+        { title: "Amount", value: amountFormatted, short: true },
+        { title: "Reason", value: reason || "Not specified", short: true },
+        ...(userName ? [{ title: "User", value: `${userName} (ID: ${userId})`, short: true }] : []),
+      ],
+    });
+
+    return result;
+  },
+
+  /**
+   * Alert when a chargeback/dispute is resolved
+   * → #admin-actions + #audit-log
+   */
+  chargebackResolved: async (
+    disputeId: string,
+    chargeId: string,
+    amount: number,
+    currency: string,
+    status: string,
+    userId?: number,
+    userName?: string
+  ): Promise<boolean> => {
+    const amountFormatted = `$${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
+    const userInfo = userName ? `*${userName}* (ID: ${userId})` : "Unknown user";
+    const won = status === "won";
+    const statusEmoji = won ? "\u2705" : "\u274c";
+
+    return dispatchAdminActionWithAudit({
+      title: `${statusEmoji} Chargeback / Dispute ${won ? "Won" : "Lost"}`,
+      description: `Dispute ${disputeId} for ${amountFormatted} has been ${status}. User: ${userInfo}.`,
+      severity: won ? "info" : "critical",
+      fields: [
+        { title: "Dispute ID", value: disputeId, short: true },
+        { title: "Outcome", value: status.toUpperCase(), short: true },
+        { title: "Amount", value: amountFormatted, short: true },
+        ...(userName ? [{ title: "User", value: `${userName} (ID: ${userId})`, short: true }] : []),
+      ],
+      auditTitle: `Chargeback / Dispute ${won ? "Won" : "Lost"}`,
+      auditDescription: `Dispute ${disputeId} for ${amountFormatted} resolved: ${status}. User: ${userInfo}.`,
+      auditFields: [
+        { title: "Dispute ID", value: disputeId, short: true },
+        { title: "Outcome", value: status.toUpperCase(), short: true },
+        { title: "Amount", value: amountFormatted, short: true },
+        ...(userName ? [{ title: "User", value: `${userName} (ID: ${userId})`, short: true }] : []),
+      ],
+    });
+  },
 };
