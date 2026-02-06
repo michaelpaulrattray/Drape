@@ -565,3 +565,111 @@ export async function getAllCustomerInvoices(
   }
 }
 
+
+
+/**
+ * Get the payment intent ID from a checkout session.
+ * Needed for issuing refunds since we store session IDs, not payment intent IDs.
+ */
+export async function getPaymentIntentFromSession(sessionId: string): Promise<string | null> {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const paymentIntent = session.payment_intent;
+    if (!paymentIntent) return null;
+    return typeof paymentIntent === "string" ? paymentIntent : paymentIntent.id;
+  } catch (error) {
+    console.error(`[Stripe] Failed to retrieve session ${sessionId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Issue a Stripe refund for a payment.
+ * Supports full or partial refunds via amountCents parameter.
+ * 
+ * @param sessionId - The original Stripe checkout session ID
+ * @param amountCents - Refund amount in cents (omit for full refund)
+ * @param reason - Reason for the refund
+ * @returns Refund result with Stripe refund ID and status
+ */
+export async function issueStripeRefund(
+  sessionId: string,
+  amountCents?: number,
+  reason?: string
+): Promise<{ success: boolean; refundId?: string; status?: string; error?: string }> {
+  try {
+    const paymentIntentId = await getPaymentIntentFromSession(sessionId);
+    if (!paymentIntentId) {
+      return { success: false, error: `No payment intent found for session ${sessionId}` };
+    }
+
+    const refundParams: Stripe.RefundCreateParams = {
+      payment_intent: paymentIntentId,
+      reason: "requested_by_customer",
+    };
+
+    if (amountCents && amountCents > 0) {
+      refundParams.amount = amountCents;
+    }
+
+    if (reason) {
+      refundParams.metadata = { reason };
+    }
+
+    const refund = await stripe.refunds.create(refundParams);
+
+    console.log(`[Stripe] Refund ${refund.id} issued for session ${sessionId}: ${refund.status} ($${(refund.amount / 100).toFixed(2)})`);
+
+    return {
+      success: true,
+      refundId: refund.id,
+      status: refund.status ?? undefined,
+    };
+  } catch (error: any) {
+    console.error(`[Stripe] Failed to issue refund for session ${sessionId}:`, error);
+    return {
+      success: false,
+      error: error.message || "Failed to issue Stripe refund",
+    };
+  }
+}
+
+/**
+ * Calculate proportional refund amount based on credits used.
+ * Credits to deduct is floored at the user's current balance (never goes negative).
+ * Refund amount is proportional to the credits we can actually claw back.
+ * 
+ * @param originalAmountCents - Original purchase amount in cents
+ * @param originalCredits - Credits from the original purchase
+ * @param currentBalance - User's current credit balance
+ * @returns Object with refund amount and credits to deduct
+ */
+export function calculateProportionalRefund(
+  originalAmountCents: number,
+  originalCredits: number,
+  currentBalance: number
+): {
+  refundAmountCents: number;
+  creditsToDeduct: number;
+  creditsUsed: number;
+  unusedCredits: number;
+} {
+   // Guard against zero division
+  if (originalCredits === 0) {
+    return { refundAmountCents: 0, creditsToDeduct: 0, creditsUsed: 0, unusedCredits: 0 };
+  }
+  // Credits to deduct is the lesser of original credits and current balance (floor at 0)
+  const creditsToDeduct = Math.min(originalCredits, currentBalance);
+  // Unused credits = what we can actually claw back
+  const unusedCredits = creditsToDeduct;
+  const creditsUsed = originalCredits - unusedCredits;
+  // Proportional refund: (unused / original) * price
+  const refundAmountCents = Math.round((unusedCredits / originalCredits) * originalAmountCents);
+
+  return {
+    refundAmountCents,
+    creditsToDeduct,
+    creditsUsed,
+    unusedCredits,
+  };
+}

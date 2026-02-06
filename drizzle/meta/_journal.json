@@ -127,6 +127,13 @@
       "when": 1770373399667,
       "tag": "0017_smiling_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1770383183129,
+      "tag": "0018_loving_young_avengers",
+      "breakpoints": true
     }
   ]
 }

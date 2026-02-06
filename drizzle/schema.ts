@@ -232,6 +232,7 @@ export const AUDIT_ACTIONS = {
   CREDITS_ADDED: "credits.admin_added",
   CREDITS_DEDUCTED: "credits.admin_deducted",
   CREDITS_REFUNDED: "credits.refunded",
+  STRIPE_REFUND_ISSUED: "billing.stripe_refund_issued",
   
   // Model events
   MODEL_CREATED: "model.created",
@@ -335,6 +336,7 @@ export const CHANGE_REQUEST_TYPES = [
   "suspend_user",
   "unsuspend_user",
   "block_ip",
+  "stripe_refund",
   "other",
 ] as const;
 
@@ -367,7 +369,7 @@ export type ChangeRequestPriority = typeof CHANGE_REQUEST_PRIORITIES[number];
 export const changeRequests = mysqlTable("change_requests", {
   id: int("id").autoincrement().primaryKey(),
   // Request metadata
-  type: mysqlEnum("type", ["refund_credits", "add_credits", "flag_account", "note_incident", "suspend_user", "unsuspend_user", "block_ip", "other"]).notNull(),
+  type: mysqlEnum("type", ["refund_credits", "add_credits", "flag_account", "note_incident", "suspend_user", "unsuspend_user", "block_ip", "stripe_refund", "other"]).notNull(),
   status: mysqlEnum("status", ["pending", "approved", "denied", "cancelled", "expired", "pending_execution"]).default("pending").notNull(),
   priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal").notNull(),
   // Who submitted
@@ -386,6 +388,12 @@ export const changeRequests = mysqlTable("change_requests", {
   creditReason: varchar("creditReason", { length: 512 }), // Specific reason for credit change
   // For IP-related requests
   ipAddress: varchar("ipAddress", { length: 45 }), // IP to block (for block_ip type)
+  // For Stripe refund requests
+  stripeSessionId: varchar("stripeSessionId", { length: 128 }), // Original Stripe checkout session ID
+  refundType: mysqlEnum("refundType", ["full", "proportional"]), // Type of Stripe refund
+  refundAmountCents: int("refundAmountCents"), // Calculated refund amount in cents
+  originalCredits: int("originalCredits"), // Credits from the original purchase
+  creditsToDeduct: int("creditsToDeduct"), // Credits to deduct (floored at 0 balance)
   // Admin review
   reviewedById: int("reviewedById"), // Admin who reviewed
   reviewedByName: varchar("reviewedByName", { length: 256 }),

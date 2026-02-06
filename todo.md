@@ -2794,3 +2794,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove subscription cancellation Slack alert from webhook handler
 - [x] Only alert on final payment failure (when auto-cancelling), skip retry failures
 - [x] Remove large purchase alert trigger from handleCheckoutCompleted
+
+## Stripe Refund via Change Request Workflow
+- [x] Add stripe_refund to CHANGE_REQUEST_TYPES and add refund fields to schema
+- [x] Add issueStripeRefund helper in stripeService.ts
+- [x] Add stripe_refund execution logic in approval handler (proportional/full, credits floored at 0)
+- [x] Add stripeRefundIssued Slack alert template
+- [x] Add stripe_refund to createChangeRequest input validation
+- [x] Add mod dashboard UI for requesting Stripe refunds
+- [x] Write tests for refund calculation and execution logic (11 tests, 578 total)
+- [x] Update security/billing docs (BILLING_ALERTS.md updated with refund workflow, noise reduction, auto-cancel)

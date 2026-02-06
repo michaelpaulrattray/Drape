@@ -145,7 +145,7 @@ export default function ModeratorDashboard() {
 
   // Change request modal state
   const [changeRequestOpen, setChangeRequestOpen] = useState(false);
-  const [crType, setCrType] = useState<"refund_credits" | "add_credits" | "flag_account" | "note_incident" | "suspend_user" | "unsuspend_user" | "block_ip" | "other">("note_incident");
+  const [crType, setCrType] = useState<"refund_credits" | "add_credits" | "flag_account" | "note_incident" | "suspend_user" | "unsuspend_user" | "block_ip" | "stripe_refund" | "other">("note_incident");
   const [crPriority, setCrPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
   const [crTargetUserId, setCrTargetUserId] = useState("");
   const [crTargetUserName, setCrTargetUserName] = useState("");
@@ -156,6 +156,10 @@ export default function ModeratorDashboard() {
   const [crCreditAmount, setCrCreditAmount] = useState("");
   const [crCreditReason, setCrCreditReason] = useState("");
   const [crIpAddress, setCrIpAddress] = useState("");
+  const [crStripeSessionId, setCrStripeSessionId] = useState("");
+  const [crRefundType, setCrRefundType] = useState<"full" | "proportional">("proportional");
+  const [crOriginalAmountCents, setCrOriginalAmountCents] = useState(0);
+  const [crOriginalCredits, setCrOriginalCredits] = useState(0);
 
   // User investigation state
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -324,6 +328,10 @@ export default function ModeratorDashboard() {
     setCrCreditAmount("");
     setCrCreditReason("");
     setCrIpAddress("");
+    setCrStripeSessionId("");
+    setCrRefundType("proportional");
+    setCrOriginalAmountCents(0);
+    setCrOriginalCredits(0);
   };
 
   const openChangeRequest = (options?: {
@@ -332,6 +340,9 @@ export default function ModeratorDashboard() {
     targetUserName?: string;
     relatedAuditLogId?: number;
     ipAddress?: string;
+    stripeSessionId?: string;
+    originalAmountCents?: number;
+    originalCredits?: number;
   }) => {
     resetChangeRequestForm();
     if (options?.type) setCrType(options.type);
@@ -339,6 +350,9 @@ export default function ModeratorDashboard() {
     if (options?.targetUserName) setCrTargetUserName(options.targetUserName);
     if (options?.relatedAuditLogId) setCrRelatedAuditLogId(String(options.relatedAuditLogId));
     if (options?.ipAddress) setCrIpAddress(options.ipAddress);
+    if (options?.stripeSessionId) setCrStripeSessionId(options.stripeSessionId);
+    if (options?.originalAmountCents) setCrOriginalAmountCents(options.originalAmountCents);
+    if (options?.originalCredits) setCrOriginalCredits(options.originalCredits);
     setChangeRequestOpen(true);
   };
 
@@ -363,6 +377,10 @@ export default function ModeratorDashboard() {
       toast.error("Please specify an IP address");
       return;
     }
+    if (crType === "stripe_refund" && !crStripeSessionId) {
+      toast.error("Stripe session ID is required for refund requests");
+      return;
+    }
 
     createChangeRequestMutation.mutate({
       type: crType,
@@ -376,6 +394,10 @@ export default function ModeratorDashboard() {
       creditAmount: crCreditAmount ? parseInt(crCreditAmount) : undefined,
       creditReason: crCreditReason || undefined,
       ipAddress: crIpAddress || undefined,
+      stripeSessionId: crStripeSessionId || undefined,
+      refundType: crType === "stripe_refund" ? crRefundType : undefined,
+      originalAmountCents: crType === "stripe_refund" ? crOriginalAmountCents : undefined,
+      originalCredits: crType === "stripe_refund" ? crOriginalCredits : undefined,
     });
   };
 
@@ -1186,7 +1208,32 @@ export default function ModeratorDashboard() {
                                   )}
                                   <div className="flex items-center justify-between mt-1">
                                     <span className="text-xs text-white/30">{formatDate(new Date(tx.createdAt))}</span>
-                                    <span className="text-xs text-white/30">Balance: {tx.balanceAfter}</span>
+                                    <div className="flex items-center gap-2">
+                                      {tx.type === "topup" && tx.referenceId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-5 px-1.5 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                                          onClick={() => {
+                                            // Look up price from known packages, fallback to $0.015/credit
+                                            const PACKAGE_PRICES: Record<number, number> = { 100: 150, 500: 675, 1000: 1275, 5000: 6000 };
+                                            const amountCents = PACKAGE_PRICES[tx.amount] || Math.round(tx.amount * 1.5);
+                                            openChangeRequest({
+                                              type: "stripe_refund",
+                                              targetUserId: String(selectedUserId),
+                                              targetUserName: userDetailsQuery.data?.user?.name || "",
+                                              stripeSessionId: tx.referenceId!,
+                                              originalAmountCents: amountCents,
+                                              originalCredits: tx.amount,
+                                            });
+                                          }}
+                                        >
+                                          <CreditCard className="w-3 h-3 mr-0.5" />
+                                          Refund
+                                        </Button>
+                                      )}
+                                      <span className="text-xs text-white/30">Balance: {tx.balanceAfter}</span>
+                                    </div>
                                   </div>
                                 </div>
                               ))}
@@ -1572,6 +1619,7 @@ export default function ModeratorDashboard() {
                     <SelectItem value="suspend_user">Suspend User</SelectItem>
                     <SelectItem value="unsuspend_user">Unsuspend User</SelectItem>
                     <SelectItem value="block_ip">Block IP</SelectItem>
+                    <SelectItem value="stripe_refund">Stripe Refund</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1648,6 +1696,63 @@ export default function ModeratorDashboard() {
                   placeholder="e.g., 192.168.1.1"
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
                 />
+              </div>
+            )}
+
+            {crType === "stripe_refund" && (
+              <div className="space-y-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                <p className="text-xs text-amber-400 font-medium">Stripe Refund Details</p>
+                <div>
+                  <label className="text-xs text-white/40 mb-1 block">Stripe Session ID *</label>
+                  <Input
+                    value={crStripeSessionId}
+                    onChange={(e) => setCrStripeSessionId(e.target.value)}
+                    placeholder="cs_test_..."
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30 font-mono text-xs"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-white/40 mb-1 block">Original Amount (cents)</label>
+                    <Input
+                      type="number"
+                      value={crOriginalAmountCents || ""}
+                      onChange={(e) => setCrOriginalAmountCents(parseInt(e.target.value) || 0)}
+                      placeholder="e.g., 1500"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                    />
+                    {crOriginalAmountCents > 0 && (
+                      <p className="text-xs text-white/30 mt-0.5">${(crOriginalAmountCents / 100).toFixed(2)}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 mb-1 block">Original Credits</label>
+                    <Input
+                      type="number"
+                      value={crOriginalCredits || ""}
+                      onChange={(e) => setCrOriginalCredits(parseInt(e.target.value) || 0)}
+                      placeholder="e.g., 100"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-white/40 mb-1 block">Refund Type</label>
+                  <Select value={crRefundType} onValueChange={(v) => setCrRefundType(v as "full" | "proportional")}>
+                    <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="proportional">Proportional (unused credits only)</SelectItem>
+                      <SelectItem value="full">Full Refund (goodwill)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-white/30 mt-1">
+                    {crRefundType === "proportional"
+                      ? "Refunds only the unused portion. Credits deducted, balance floors at 0."
+                      : "Refunds full amount regardless of usage. Credits deducted, balance floors at 0."}
+                  </p>
+                </div>
               </div>
             )}
 

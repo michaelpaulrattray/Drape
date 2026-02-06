@@ -558,6 +558,96 @@ async function executeApprovedAdminAction(
       return { message: `IP ${ipAddress} blocked via change request #${changeRequestId}` };
     }
     
+    case "cr_stripeRefund": {
+      const { getUserById: getUser, getUserCredits: getCredits, updateChangeRequestStatus: updateCR } = await import("./db");
+      const { issueStripeRefund, calculateProportionalRefund } = await import("./stripeService");
+      const userId = Number(pendingAction.targetId);
+      const changeRequestId = params.changeRequestId as number;
+      const stripeSessionId = params.stripeSessionId as string;
+      const refundType = (params.refundType as string) || "proportional";
+      const originalCredits = params.originalCredits as number;
+      const originalAmountCents = params.originalAmountCents as number;
+
+      if (!stripeSessionId) throw new Error("Missing Stripe session ID for refund");
+      if (!originalCredits || !originalAmountCents) throw new Error("Missing original purchase details");
+
+      const targetUser = await getUser(userId);
+      if (!targetUser) throw new Error("User not found");
+
+      const userCredits = await getCredits(userId);
+      const currentBalance = userCredits?.balance ?? 0;
+
+      let refundAmountCents: number;
+      let creditsToDeduct: number;
+
+      if (refundType === "full") {
+        refundAmountCents = originalAmountCents;
+        creditsToDeduct = Math.min(originalCredits, currentBalance);
+      } else {
+        const calc = calculateProportionalRefund(originalAmountCents, originalCredits, currentBalance);
+        refundAmountCents = calc.refundAmountCents;
+        creditsToDeduct = calc.creditsToDeduct;
+      }
+
+      const refundResult = await issueStripeRefund(stripeSessionId, refundAmountCents, `Change request #${changeRequestId}`);
+      if (!refundResult.success) {
+        throw new Error(`Stripe refund failed: ${refundResult.error}`);
+      }
+
+      if (creditsToDeduct > 0) {
+        const { adjustUserCredits } = await import("./db");
+        const deductResult = await adjustUserCredits(userId, -creditsToDeduct, `Stripe refund via CR #${changeRequestId}`, ctx.user.id);
+        if (!deductResult.success) {
+          console.error(`[Refund] Credit deduction failed after Stripe refund ${refundResult.refundId}: ${deductResult.error}`);
+        }
+      }
+
+      await updateCR(changeRequestId, {
+        status: "approved",
+        reviewNotes: `Stripe refund ${refundResult.refundId}: $${(refundAmountCents / 100).toFixed(2)} (${refundType}). ${creditsToDeduct} credits deducted.`,
+      }, "pending_execution");
+
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.STRIPE_REFUND_ISSUED,
+        resourceType: "billing",
+        resourceId: refundResult.refundId || stripeSessionId,
+        metadata: {
+          targetUserId: userId,
+          targetUserEmail: targetUser.email,
+          stripeSessionId,
+          stripeRefundId: refundResult.refundId,
+          refundType,
+          refundAmountCents,
+          originalAmountCents,
+          originalCredits,
+          creditsDeducted: creditsToDeduct,
+          newBalance: currentBalance - creditsToDeduct,
+          changeRequestId,
+          approvedViaSlack: true,
+          approvedBy: pendingAction.resolvedBy,
+        },
+        severity: "critical",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+
+      await writeImmutableLog("stripe_refund_issued", {
+        adminId: ctx.user.id,
+        adminName,
+        targetUserId: userId,
+        targetUserEmail: targetUser.email,
+        stripeRefundId: refundResult.refundId,
+        refundAmountCents,
+        refundType,
+        creditsDeducted: creditsToDeduct,
+        changeRequestId,
+        slackApprovedBy: pendingAction.resolvedBy,
+      });
+
+      return { message: `Stripe refund of $${(refundAmountCents / 100).toFixed(2)} issued (${refundType}). ${creditsToDeduct} credits deducted. Refund ID: ${refundResult.refundId}` };
+    }
+
     default:
       throw new Error(`Unknown action type: ${pendingAction.action}`);
   }
@@ -2569,7 +2659,7 @@ export const appRouter = router({
     // Request Slack approval for a sensitive admin action
     requestApproval: adminProcedure
       .input(z.object({
-        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP", "cr_suspendUser", "cr_unsuspendUser", "cr_refundCredits", "cr_addCredits", "cr_blockIP"]),
+        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP", "cr_suspendUser", "cr_unsuspendUser", "cr_refundCredits", "cr_addCredits", "cr_blockIP", "cr_stripeRefund"]),
         targetId: z.string(),
         description: z.string().min(1).max(1000),
         params: z.record(z.string(), z.unknown()).optional().default({}),
@@ -3387,11 +3477,11 @@ export const appRouter = router({
           suspend_user: "Suspend User",
           unsuspend_user: "Unsuspend User",
           block_ip: "Block IP",
+          stripe_refund: "Stripe Refund",
           other: "Other",
         };
-
         // Sensitive types that require Slack approval before execution
-        const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits"];
+        const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "block_ip", "refund_credits", "add_credits", "stripe_refund"];;
         const isSensitive = SENSITIVE_TYPES.includes(request.type);
 
         // Map change request types to Slack approval action types
@@ -3401,6 +3491,7 @@ export const appRouter = router({
           refund_credits: "cr_refundCredits",
           add_credits: "cr_addCredits",
           block_ip: "cr_blockIP",
+          stripe_refund: "cr_stripeRefund",
         };
 
         const actionVerb = input.action === "approved" ? "Approved" : "Denied";
@@ -3913,7 +4004,7 @@ export const appRouter = router({
     // Submit a structured change request for admin review
     createChangeRequest: moderatorProcedure
       .input(z.object({
-        type: z.enum(["refund_credits", "add_credits", "flag_account", "note_incident", "suspend_user", "unsuspend_user", "block_ip", "other"]),
+        type: z.enum(["refund_credits", "add_credits", "flag_account", "note_incident", "suspend_user", "unsuspend_user", "block_ip", "stripe_refund", "other"]),
         priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
         targetUserId: z.number(),
         targetUserName: z.string().optional(),
@@ -3924,6 +4015,10 @@ export const appRouter = router({
         creditAmount: z.number().min(1).optional(),
         creditReason: z.string().max(512).optional(),
         ipAddress: z.string().max(45).optional(),
+        stripeSessionId: z.string().max(128).optional(),
+        refundType: z.enum(["full", "proportional"]).optional(),
+        originalAmountCents: z.number().min(1).optional(),
+        originalCredits: z.number().min(1).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { createChangeRequest } = await import("./db");
@@ -3939,6 +4034,12 @@ export const appRouter = router({
         }
         if (input.type === "block_ip" && !input.ipAddress) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "IP address is required for block IP requests" });
+        }
+        if (input.type === "stripe_refund") {
+          if (!input.stripeSessionId) throw new TRPCError({ code: "BAD_REQUEST", message: "Stripe session ID is required for refund requests" });
+          if (!input.refundType) throw new TRPCError({ code: "BAD_REQUEST", message: "Refund type (full/proportional) is required" });
+          if (!input.originalAmountCents) throw new TRPCError({ code: "BAD_REQUEST", message: "Original purchase amount is required" });
+          if (!input.originalCredits) throw new TRPCError({ code: "BAD_REQUEST", message: "Original credit amount is required" });
         }
 
         // Create the change request in the database
@@ -3956,6 +4057,14 @@ export const appRouter = router({
           creditAmount: input.creditAmount || null,
           creditReason: input.creditReason || null,
           ipAddress: input.ipAddress || null,
+          stripeSessionId: input.stripeSessionId || null,
+          refundType: input.refundType || null,
+          originalCredits: input.originalCredits || null,
+          // Calculate refund amount based on type — stored for admin review
+          ...(input.type === "stripe_refund" && input.refundType === "full" ? {
+            refundAmountCents: input.originalAmountCents || null,
+            creditsToDeduct: input.originalCredits || null,
+          } : {}),
         });
 
         if (!result.success) {
@@ -3970,10 +4079,10 @@ export const appRouter = router({
           note_incident: "Note Incident",
           suspend_user: "Suspend User",
           unsuspend_user: "Unsuspend User",
-          block_ip: "Block IP",
+           block_ip: "Block IP",
+          stripe_refund: "Stripe Refund",
           other: "Other",
         };
-
         const priorityEmoji: Record<string, string> = {
           low: "⬜",
           normal: "🟦",

@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `change_requests` MODIFY COLUMN `type` enum('refund_credits','add_credits','flag_account','note_incident','suspend_user','unsuspend_user','block_ip','stripe_refund','other') NOT NULL;\nALTER TABLE `change_requests` ADD `stripeSessionId` varchar(128);\nALTER TABLE `change_requests` ADD `refundType` enum('full','proportional');\nALTER TABLE `change_requests` ADD `refundAmountCents` int;\nALTER TABLE `change_requests` ADD `originalCredits` int;\nALTER TABLE `change_requests` ADD `creditsToDeduct` int;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute ALTER TABLE `change_requests` MODIFY COLUMN `type` enum('refund_credits','add_credits','flag_account','note_incident','suspend_user','unsuspend_user','block_ip','stripe_refund','other') NOT NULL;\nALTER TABLE `change_requests` ADD `stripeSessionId` varchar(128);\nALTER TABLE `change_requests` ADD `refundType` enum('full','proportional');\nALTER TABLE `change_requests` ADD `refundAmountCents` int;\nALTER TABLE `change_requests` ADD `originalCredits` int;\nALTER TABLE `change_requests` ADD `creditsToDeduct` int;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 5206
+}

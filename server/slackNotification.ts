@@ -619,6 +619,37 @@ export const SlackAlerts = {
   },
 
   /**
+   * Alert when a Stripe refund is issued via change request
+   * → #billing-alerts + #audit-log
+   */
+  stripeRefundIssued: async (data: {
+    userId: number;
+    userName: string;
+    refundAmountCents: number;
+    refundType: string;
+    creditsDeducted: number;
+    stripeRefundId: string;
+    changeRequestId: number;
+    approvedBy: string;
+  }): Promise<boolean> => {
+    return dispatchBillingAlertWithAudit({
+      title: "Stripe Refund Issued",
+      description: `Refund of *$${(data.refundAmountCents / 100).toFixed(2)}* issued for *${data.userName}* (ID: ${data.userId}).`,
+      severity: "warning",
+      fields: [
+        { title: "User", value: `${data.userName} (ID: ${data.userId})`, short: true },
+        { title: "Refund Amount", value: `$${(data.refundAmountCents / 100).toFixed(2)}`, short: true },
+        { title: "Refund Type", value: data.refundType, short: true },
+        { title: "Credits Deducted", value: `${data.creditsDeducted}`, short: true },
+        { title: "Stripe Refund ID", value: data.stripeRefundId, short: true },
+        { title: "Change Request", value: `#${data.changeRequestId}`, short: true },
+        { title: "Approved By", value: data.approvedBy, short: true },
+      ],
+      auditTitle: "Stripe Refund Issued",
+      auditDescription: `Refund of $${(data.refundAmountCents / 100).toFixed(2)} (${data.refundType}) issued for ${data.userName}. ${data.creditsDeducted} credits deducted. CR #${data.changeRequestId}.`,
+    });
+  },
+  /**
    * Alert when credit purchase velocity limit is hit
    * → #billing-alerts
    */

@@ -24,30 +24,31 @@ When a chargeback is filed, the system automatically suspends the user account, 
 **Auto-actions:** On win: unsuspend + restore credits. On loss: keep suspended + cancel subscription.  
 **Template:** `SlackAlerts.chargebackResolved()`
 
-### Subscription Cancelled
+### Payment Failed (Final) + Auto-Cancel
 
-**Trigger:** `customer.subscription.deleted` webhook event  
+**Trigger:** `invoice.payment_failed` webhook event where `next_payment_attempt` is null (Stripe exhausted all retries)  
 **Channel:** `#billing-alerts`  
-**Template:** `SlackAlerts.subscriptionCancelled()`
-
-Fires when a user's subscription is deleted (cancelled). Includes user info, previous plan, and cancellation reason if available.
-
-### Payment Failed
-
-**Trigger:** `invoice.payment_failed` webhook event  
-**Channel:** `#billing-alerts`  
-**Auto-actions:** Mark subscription as `past_due`  
+**Auto-actions:** Cancel subscription via Stripe API, downgrade user to free tier, mark subscription as `canceled`  
 **Template:** `SlackAlerts.paymentFailed()`
 
-Fires when a subscription invoice payment fails. Includes amount, currency, and failure reason.
+Stripe retries failed payments ~3 times over 2 weeks. Only the **final failure** (when Stripe gives up) triggers this alert. Intermediate retries silently mark the subscription as `past_due` (which blocks generation) without alerting. On final failure, the subscription is automatically cancelled and the user is downgraded to the free plan.
 
-### Large Credit Purchase
+### Stripe Refund Issued
 
-**Trigger:** Successful top-up checkout with >= 500 credits  
+**Trigger:** Admin approves a `stripe_refund` change request  
 **Channel:** `#billing-alerts`  
-**Template:** `SlackAlerts.largeCreditPurchase()`
+**Auto-actions:** Issue Stripe refund, deduct credits (floored at 0), audit log  
+**Template:** `SlackAlerts.stripeRefundIssued()`
 
-Fires after a large credit top-up is successfully processed. Threshold is 500 credits (large and xl packages).
+Fires when an admin approves a moderator-initiated Stripe refund. Includes refund type (full/proportional), amount, credits deducted, and user info.
+
+### Alerts NOT Sent (Noise Reduction)
+
+The following events are handled silently — no Slack alerts:
+
+- **Subscription cancelled** — users cancel for many reasons; not actionable
+- **Large credit purchase** — informational only; velocity limits catch fraud
+- **Intermediate payment failures** — Stripe retries automatically; only final failure alerts
 
 ### Velocity Limit Triggered
 
@@ -108,6 +109,33 @@ The constants are defined in `VELOCITY_LIMITS` within the `createTopupCheckout` 
 4. Add tests in `server/velocityLimits.test.ts` or a new test file
 5. Update this document
 
+## Stripe Refund Workflow
+
+Moderators can request Stripe refunds through the existing change request system:
+
+1. **Moderator** finds the user's topup transaction in the mod dashboard
+2. **Moderator** clicks "Refund" button → selects refund type (full or proportional)
+3. **System** calculates refund amount and creates a change request
+4. **Admin** approves or denies via Slack interactive message
+5. **On approval:** System issues Stripe refund, deducts credits (floored at 0), logs audit entry, sends Slack alert
+
+### Refund Types
+
+| Type | Calculation | Use Case |
+|------|-------------|----------|
+| **Proportional** | `(unused_credits / original_credits) × original_price` | User consumed some credits, refund the rest |
+| **Full** | Full original amount, deduct all purchased credits | Goodwill refund, user barely used the product |
+
+Credits are deducted down to a floor of 0 — balances never go negative.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `server/stripeService.ts` | `issueStripeRefund()`, `calculateProportionalRefund()`, `getPaymentIntentFromSession()` |
+| `server/stripeRefund.test.ts` | 11 tests for proportional refund calculation |
+| `drizzle/schema.ts` | `stripeSessionId`, `refundType`, `refundAmountCents`, `creditsToDeduct`, `originalCredits` on `changeRequests` |
+
 ## Files
 
 | File | Purpose |
@@ -119,4 +147,4 @@ The constants are defined in `VELOCITY_LIMITS` within the `createTopupCheckout` 
 | `server/db.ts` | `getRecentTopupCount`, `getRecentTopupCredits` query helpers |
 | `server/velocityLimits.test.ts` | Tests for velocity limits and alert templates |
 
-Last updated: February 6, 2026
+Last updated: February 6, 2026 (v2 — added refund workflow, noise reduction, auto-cancel)

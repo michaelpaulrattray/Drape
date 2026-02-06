@@ -31,7 +31,8 @@ export type ApprovalAction =
   | "cr_unsuspendUser"
   | "cr_refundCredits"
   | "cr_addCredits"
-  | "cr_blockIP";
+  | "cr_blockIP"
+  | "cr_stripeRefund";
 
 export type ApprovalStatus = "pending" | "approved" | "denied" | "expired" | "executed" | "failed";
 
@@ -109,6 +110,7 @@ const ACTION_LABELS: Record<ApprovalAction, string> = {
   cr_refundCredits: "Change Request: Refund Credits",
   cr_addCredits: "Change Request: Add Credits",
   cr_blockIP: "Change Request: Block IP",
+  cr_stripeRefund: "Change Request: Stripe Refund",
 };
 
 const ACTION_EMOJI: Record<ApprovalAction, string> = {
@@ -122,6 +124,7 @@ const ACTION_EMOJI: Record<ApprovalAction, string> = {
   cr_refundCredits: "📋💰",
   cr_addCredits: "📋💰",
   cr_blockIP: "📋🚫",
+  cr_stripeRefund: "📋💳",
 };
 
 // ============ Core Functions ============
