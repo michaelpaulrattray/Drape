@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "wouter";
-import { Menu, X, Plus, Play, ChevronLeft, ChevronRight, ArrowRight, Loader2, Check } from "lucide-react";
+import { Menu, X, Plus, Play, Loader2, Check } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 import { Button, NavLink, SocialLink, FooterLink, ConveyorText, ConveyorTextColor, ConveyorIcon } from "@/components/design-system";
@@ -40,15 +40,6 @@ const staggerContainer: Variants = {
   }
 };
 
-const staggerItem: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { duration: 0.5, ease: easeOut }
-  }
-};
-
 const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: { 
@@ -58,9 +49,62 @@ const scaleIn: Variants = {
   }
 };
 
+// ============ TYPES ============
+
+interface ClientLogo {
+  name: string;
+  logo: string;
+}
+
+interface StatsMarqueeItem {
+  value: string;
+  label: string;
+}
+
+interface Project {
+  name: string;
+  year: string;
+  category: string;
+  image: string;
+}
+
+interface Service {
+  title: string;
+  number: number;
+  description: string;
+  items: string[];
+  image: string;
+}
+
+interface ProcessStep {
+  title: string;
+  number: number;
+  description: string;
+}
+
+interface Testimonial {
+  quote: string;
+  name: string;
+  title: string;
+  image: string;
+}
+
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+interface BlogPost {
+  date: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  image: string;
+}
+
 // ============ DATA ============
 
-const clientLogos = [
+const clientLogos: ClientLogo[] = [
   { name: "Google", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/KWvxGyeHeOdCWDBA.svg" },
   { name: "Shopify", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/RrYrMQAByeXLDYvF.svg" },
   { name: "Meta", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/IVQzagtquxBRPCYL.svg" },
@@ -69,7 +113,7 @@ const clientLogos = [
   { name: "Instagram", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/mikmpxOOFgYakoyl.svg" },
 ];
 
-const statsMarqueeItems = [
+const statsMarqueeItems: StatsMarqueeItem[] = [
   { value: "97%", label: "Customer satisfaction rate" },
   { value: "6", label: "Industry awards" },
   { value: "15+", label: "Years of Experience" },
@@ -77,7 +121,7 @@ const statsMarqueeItems = [
   { value: "100+", label: "Customer satisfaction rate" },
 ];
 
-const projects = [
+const projects: Project[] = [
   { name: "Lune", year: "2025", category: "App Visual Direction", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80" },
   { name: "Aren", year: "2025", category: "Fashion Brand Launch", image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80" },
   { name: "Oura", year: "2024", category: "Brand Refinement", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80" },
@@ -86,7 +130,7 @@ const projects = [
   { name: "Velin", year: "2022", category: "Skincare Rebrand", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80" },
 ];
 
-const services = [
+const services: Service[] = [
   {
     title: "Model Identity",
     number: 1,
@@ -117,30 +161,20 @@ const services = [
   },
 ];
 
-const processSteps = [
+const processSteps: ProcessStep[] = [
   { title: "Discover", number: 1, description: "We begin by listening, gaining a deep understanding of your goals, audience, and creative vision through research and conversation." },
   { title: "Define", number: 2, description: "We distill insights into a clear direction. Strategy, model specifications, and creative foundations are established to guide the work forward." },
   { title: "Generate", number: 3, description: "Ideas take shape through AI generation. We explore, refine, and iterate with intention, always rooted in purpose and brand alignment." },
   { title: "Deliver", number: 4, description: "We finalize and hand off with care. Every asset is prepared for implementation with clarity, consistency, and attention to detail." },
 ];
 
-const pricingFeatures = [
-  "Unlimited generation requests",
-  "One active project at a time",
-  "Weekly progress calls",
-  "Fast turnaround times",
-  "Brand consistency across all deliverables",
-  "Priority support",
-  "Pause or cancel anytime",
-];
-
-const testimonials = [
+const testimonials: Testimonial[] = [
   { quote: "FormaStudio understood our brand better than we did. Their ability to generate the perfect model identities is what sets them apart.", name: "Sofia Ford", title: "Creative Director", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80" },
   { quote: "Working with FormaStudio felt effortless. They have a rare ability to take complex briefs and distill them into something beautifully simple.", name: "Emma V.", title: "Founder", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80" },
   { quote: "FormaStudio doesn't just generate images—they listen, interpret, and then create with precision.", name: "Julian M.", title: "Creative Director", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80" },
 ];
 
-const faqs = [
+const faqs: FAQ[] = [
   { question: "What kind of clients do you work with?", answer: "We work with fashion brands, e-commerce companies, and creative teams who value consistency, speed, and photorealistic quality. Whether you're launching something new or scaling an existing presence, we adapt our approach to your needs." },
   { question: "What services do you offer?", answer: "Our core services include AI model casting, outfit generation, campaign production, and brand consistency systems. We often work across multiple touchpoints to ensure cohesion in everything we create." },
   { question: "How do you price your projects?", answer: "We price based on scope, timeline, and deliverables—never by the hour. After a discovery call, we'll provide a custom proposal aligned with your goals and budget." },
@@ -150,7 +184,7 @@ const faqs = [
   { question: "How many variations or revisions are included?", answer: "Our process is collaborative and structured. Rather than presenting dozens of options, we focus on one strong direction—refined through feedback. The number of revisions depends on the scope, but clarity and alignment are our priority from the start." },
 ];
 
-const blogPosts = [
+const blogPosts: BlogPost[] = [
   { date: "May 30, 2025", title: "The Power of AI in Fashion Photography", excerpt: "A look at how AI-generated models can sharpen brand communication and increase campaign impact.", category: "Insights", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" },
   { date: "May 23, 2025", title: "Designing for Scale: AI Beyond the Shoot", excerpt: "An exploration of how AI model generation enables unlimited variations without traditional constraints.", category: "Technology", image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80" },
   { date: "May 16, 2025", title: "Building a Timeless Brand Identity", excerpt: "A guide to creating consistent model personas that transcend trends and seasonal campaigns.", category: "Strategy", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80" },
@@ -196,8 +230,8 @@ function Header() {
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [isMegaMenuOpen, isMobileMenuOpen]);
 
-  // Format time for display
-  const formatTime = () => {
+  // Format time for display - memoized since it only changes when currentTime changes
+  const formattedTime = useMemo(() => {
     const options: Intl.DateTimeFormatOptions = {
       month: 'short',
       day: 'numeric',
@@ -207,7 +241,7 @@ function Header() {
       timeZone: 'Australia/Sydney'
     };
     return currentTime.toLocaleString('en-US', options).replace(',', '');
-  };
+  }, [currentTime]);
 
   return (
     <>
@@ -236,11 +270,10 @@ function Header() {
             <img 
               src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
               alt="Forma®" 
-              className="h-6"
-              style={{ width: 31, height: 31 }}
+              className="w-[31px] h-[31px]"
             />
           </Link>
-          <span className="text-sm hidden sm:inline text-gray-secondary">{formatTime()}</span>
+          <span className="text-sm hidden sm:inline text-gray-secondary">{formattedTime}</span>
         </div>
 
         {/* Desktop Navigation - Hidden when mega menu is open */}
@@ -261,6 +294,8 @@ function Header() {
           <button 
             className="w-10 h-10 flex items-center justify-center rounded-full border border-[#0A0A0A]/10 hover:bg-[#0A0A0A]/5 transition-colors"
             onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+            aria-label={isMegaMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMegaMenuOpen}
           >
             <Plus className={`w-4 h-4 transition-transform duration-300 ${isMegaMenuOpen ? '-rotate-45' : ''}`} />
           </button>
@@ -270,6 +305,8 @@ function Header() {
         <button
           className="md:hidden w-10 h-10 flex items-center justify-center"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? "Close mobile menu" : "Open mobile menu"}
+          aria-expanded={isMobileMenuOpen}
         >
           {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -324,9 +361,8 @@ function Header() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.03 + 0.05, duration: 0.3 }}
-                        className="group flex items-center justify-between py-2 border-b transition-colors overflow-hidden"
+                        className="group flex items-center justify-between py-2 border-b border-gray-300 transition-colors overflow-hidden"
                         onClick={() => setIsMegaMenuOpen(false)}
-                        style={{ borderColor: '#d4d4d4' }}
                       >
                         {/* Nav item name with conveyor effect */}
                         <span className="overflow-hidden h-7 text-card-title font-inter">
@@ -461,8 +497,7 @@ function HeroSection() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#0A0A0A]" 
-            style={{ marginBottom: '-78px', marginTop: 35 }}
+            className="text-[clamp(4rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#0A0A0A] -mb-[78px] mt-[35px]"
           >
             Forma®
           </motion.h1>
@@ -485,8 +520,7 @@ function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="flex items-center gap-6 py-6 border-y border-[#0A0A0A]/10" 
-          style={{ borderWidth: 0 }}
+          className="flex items-center gap-6 py-6"
         >
           {/* Logo Marquee with gradient fades */}
           <LogoMarquee />
@@ -617,7 +651,7 @@ function AboutSection() {
           <SectionLabel label="About us" number="01" />
         </motion.div>
 
-        {/* Two-tone Headline - Kanso Style with font-medium, smaller size */}
+        {/* Two-tone Headline - Forma Style with font-medium, smaller size */}
         <motion.h2 
           initial="hidden"
           whileInView="visible"
@@ -636,8 +670,7 @@ function AboutSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeIn}
-          className="flex items-center gap-6 py-6 mb-16" 
-          style={{ marginBottom: -10 }}
+          className="flex items-center gap-6 py-6 -mb-[10px]"
         >
           {/* Stats Marquee with gradient fades */}
           <StatsMarquee />
@@ -937,17 +970,17 @@ function WhyUsSection() {
                 ))}
               </div>
               <blockquote className="text-body-md text-[#0A0A0A] mb-4">
-                "Kanso understood our brand better than we did. Their ability to find the essential and express it simply is what sets them apart."
+                "{testimonials[0].quote}"
               </blockquote>
               <div className="flex items-center gap-3">
                 <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80"
-                  alt="Sofia Ford"
+                  src={testimonials[0].image}
+                  alt={testimonials[0].name}
                   className="w-9 h-9 rounded-full object-cover"
                 />
                 <div>
-                  <p className="text-sm font-medium text-[#0A0A0A]">Sofia Ford</p>
-                  <p className="text-xs text-[#757575]">Founder</p>
+                  <p className="text-sm font-medium text-[#0A0A0A]">{testimonials[0].name}</p>
+                  <p className="text-xs text-[#757575]">{testimonials[0].title}</p>
                 </div>
               </div>
             </div>
@@ -1290,7 +1323,7 @@ function BlogSection() {
           </Button>
         </motion.div>
 
-        {/* Blog Grid - Kanso style: Featured (50%) + Two cards side by side (25% each) */}
+        {/* Blog Grid - Forma style: Featured (50%) + Two cards side by side (25% each) */}
         <motion.div 
           initial="hidden"
           whileInView="visible"
@@ -1565,8 +1598,16 @@ function Footer() {
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
+      {/* Skip to main content link for accessibility */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-white focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]"
+      >
+        Skip to main content
+      </a>
       <Header />
-      <HeroSection />
+      <main id="main-content">
+        <HeroSection />
       <AboutSection />
       <WorkSection />
       <WhyUsSection />
@@ -1574,6 +1615,7 @@ export default function Home() {
       <ProcessSection />
       <FAQSection />
       <BlogSection />
+      </main>
       <Footer />
     </div>
   );

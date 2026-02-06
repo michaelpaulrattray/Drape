@@ -2465,3 +2465,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Audit credit deduction flow for race conditions and bypass vulnerabilities
 - [x] Add rate limiting to public endpoints (waitlist, newsletter)
 - [x] Add rate limiting to generation endpoints to prevent API abuse
+- [x] Remove unused imports (ChevronLeft, ChevronRight, ArrowRight)
+- [x] Remove unused variables (staggerItem, pricingFeatures)
+- [x] Fix "Kanso" → "Forma" in testimonial
+- [x] Use testimonials array instead of hardcoded quote
+- [x] Add TypeScript interfaces for data arrays (Project, Service, FAQ, BlogPost)
+- [x] Memoize formatTime function
+- [x] Convert remaining inline styles to Tailwind classes (partial - some complex styles kept inline)
+- [x] Add ARIA labels to navigation buttons
+- [x] Add skip link for accessibility
