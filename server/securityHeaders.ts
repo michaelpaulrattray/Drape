@@ -45,7 +45,7 @@ const CSP_DIRECTIVES = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  isDev ? "frame-ancestors *" : "frame-ancestors 'none'",
 ].join("; ");
 
 export function securityHeaders(req: Request, res: Response, next: NextFunction): void {
@@ -56,7 +56,10 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   res.setHeader("Content-Security-Policy", CSP_DIRECTIVES);
 
   // Prevent clickjacking by disallowing framing
-  res.setHeader("X-Frame-Options", "DENY");
+  // In dev mode, allow framing for Manus preview panel
+  if (!isDev) {
+    res.setHeader("X-Frame-Options", "DENY");
+  }
 
   // Prevent MIME-type sniffing
   res.setHeader("X-Content-Type-Options", "nosniff");
