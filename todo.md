@@ -2788,3 +2788,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update SECURITY_AUDIT.md with current audit findings
 - [x] Update docs/SECURITY_OVERVIEW.md with current status
 - [x] Create docs/BILLING_ALERTS.md for billing alerts and velocity limits
+
+## Billing Alert Noise Reduction
+- [x] Auto-cancel subscription after Stripe exhausts retries (next_payment_attempt is null)
+- [x] Remove subscription cancellation Slack alert from webhook handler
+- [x] Only alert on final payment failure (when auto-cancelling), skip retry failures
+- [x] Remove large purchase alert trigger from handleCheckoutCompleted

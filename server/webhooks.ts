@@ -117,21 +117,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       return { success: true, message: `Duplicate session ${session.id}, credits already granted` };
     }
 
-    // Send large purchase alert for top-ups >= 500 credits ($25+)
-    const LARGE_PURCHASE_THRESHOLD = 500;
-    if (credits >= LARGE_PURCHASE_THRESHOLD) {
-      const pkg = CREDIT_TOPUP_PRODUCTS[packageId];
-      const amountCents = pkg ? pkg.priceInCents : 0;
-      const userName = session.metadata?.customer_name || session.metadata?.customer_email || `User #${userId}`;
-      await SlackAlerts.largeCreditPurchase(
-        userId,
-        userName,
-        credits,
-        amountCents,
-        session.currency || "usd"
-      );
-    }
-
     console.log(`[Webhook] Added ${credits} credits to user ${userId} from top-up`);
     return { success: true, message: `Added ${credits} credits to user ${userId}` };
   }
@@ -202,16 +187,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     currentPeriodEnd: null,
   });
 
-  // Send billing alert for subscription cancellation
-  const userName = userWithCredits.name || userWithCredits.email || `User #${userId}`;
-  await SlackAlerts.subscriptionCancelled(
-    userId,
-    userName,
-    previousPlan,
-    subscription.cancellation_details?.reason || undefined
-  );
-
-  console.log(`[Webhook] Subscription deleted for user ${userId}, downgraded to free tier`);
+  console.log(`[Webhook] Subscription deleted for user ${userId} (was ${previousPlan}), downgraded to free tier`);
   return { success: true, message: `Subscription deleted for user ${userId}` };
 }
 
@@ -285,27 +261,53 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
 
   const userId = userWithCredits.id;
 
-  // Update subscription status to past_due
-  await updateUserSubscription(userId, {
-    subscriptionStatus: "past_due",
-  });
+  // Check if Stripe has exhausted all retries (next_payment_attempt is null)
+  const nextAttempt = (invoice as any).next_payment_attempt;
+  const isFinalFailure = !nextAttempt;
 
-  // Send billing alert for failed payment
-  const userName = userWithCredits.name || userWithCredits.email || `User #${userId}`;
-  const amountDue = (invoice as any).amount_due || 0;
-  const invoiceCurrency = invoice.currency || "usd";
-  const failureMessage = (invoice as any).last_finalization_error?.message
-    || (invoice as any).charge?.failure_message
-    || "Unknown reason";
-  await SlackAlerts.paymentFailed(
-    userId,
-    userName,
-    amountDue,
-    invoiceCurrency,
-    failureMessage
-  );
+  if (isFinalFailure) {
+    // Final retry exhausted — auto-cancel the subscription and downgrade to free
+    console.log(`[Webhook] Final payment failure for user ${userId}, auto-cancelling subscription`);
 
-  console.log(`[Webhook] Payment failed for user ${userId}, marked as past_due`);
+    try {
+      await cancelSubscription(subscriptionId);
+    } catch (cancelErr) {
+      console.error(`[Webhook] Failed to cancel subscription ${subscriptionId}:`, cancelErr);
+    }
+
+    await updateUserSubscription(userId, {
+      subscriptionStatus: "canceled",
+      planTier: "free",
+      stripeSubscriptionId: null,
+      planExpiresAt: null,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+    });
+
+    // Only alert on final failure / auto-cancel
+    const userName = userWithCredits.name || userWithCredits.email || `User #${userId}`;
+    const amountDue = (invoice as any).amount_due || 0;
+    const invoiceCurrency = invoice.currency || "usd";
+    const failureMessage = (invoice as any).last_finalization_error?.message
+      || (invoice as any).charge?.failure_message
+      || "Unknown reason";
+    await SlackAlerts.paymentFailed(
+      userId,
+      userName,
+      amountDue,
+      invoiceCurrency,
+      `FINAL FAILURE — subscription auto-cancelled. Reason: ${failureMessage}`
+    );
+
+    console.log(`[Webhook] User ${userId} subscription auto-cancelled after final payment failure`);
+  } else {
+    // Intermediate retry failure — mark as past_due, no alert
+    await updateUserSubscription(userId, {
+      subscriptionStatus: "past_due",
+    });
+
+    console.log(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
+  }
   return { success: true, message: `Payment failed for user ${userId}` };
 }
 
