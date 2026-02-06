@@ -2531,3 +2531,20 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update AUTHENTICATION.md with suspension/lockout documentation
 - [x] Update RATE_LIMITING.md with per-user rate limiting and global attack detection
 - [x] Update Login.tsx with error message UI for suspended/locked users
+
+
+## IP Blocking & Slack Notifications
+- [x] Create blocked_ips database table with IP, reason, blockedBy, expiresAt fields
+- [x] Create emergency_tokens table for secure action tokens
+- [x] Add IP blocking check to rate limiter middleware
+- [x] Create admin.blockIP and admin.unblockIP procedures
+- [x] Create admin.listBlockedIPs procedure
+- [x] Add "Block IP" button to audit logs page for IP-related events
+- [x] Create blocked IPs management section in audit logs page (Blocked IPs tab)
+- [x] Implement Slack notification system with interactive buttons
+- [x] Create /api/slack/interactions endpoint for button actions
+- [x] Add SLACK_WEBHOOK_URL and SLACK_SIGNING_SECRET secrets (to be configured)
+- [x] Integrate Slack notifications into abuse detection
+- [x] Update RATE_LIMITING.md with IP blocking documentation
+- [x] Create NOTIFICATIONS.md security guide
+- [x] Write vitest tests for IP blocking and Slack notifications (242 tests total)

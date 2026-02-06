@@ -85,6 +85,13 @@
       "when": 1770352556668,
       "tag": "0011_worthless_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1770354676550,
+      "tag": "0012_lying_gideon",
+      "breakpoints": true
     }
   ]
 }

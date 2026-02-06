@@ -228,6 +228,11 @@ async function handleAbuseDetection(
   // Log the abuse detection event
   const db = await getDb();
   if (!db) return;
+
+  // Get user info for notifications
+  const { getUserById } = await import("./db");
+  const user = await getUserById(userId);
+  const userName = user?.name || `User ${userId}`;
   
   await db.insert(auditLogs).values({
     userId,
@@ -244,7 +249,42 @@ async function handleAbuseDetection(
     severity: pattern.severity,
   });
 
-  // Notify owner for critical patterns
+  // Send Slack notification with emergency action buttons
+  try {
+    const { SlackAlerts } = await import("./slackNotification");
+    
+    if (pattern.name === "Credits Exploit Attempt") {
+      await SlackAlerts.creditsExploit(userId, userName, eventCount);
+    } else if (pattern.name === "Rapid Model Deletion") {
+      await SlackAlerts.rapidDeletion(userId, userName, eventCount);
+    } else if (pattern.name === "Billing Anomaly") {
+      await SlackAlerts.billingAnomaly(userId, userName, pattern.name, pattern.description);
+    } else {
+      // Generic alert for other patterns
+      const { sendSlackAlert } = await import("./slackNotification");
+      await sendSlackAlert({
+        title: `Security Alert: ${pattern.name}`,
+        description: pattern.description,
+        severity: pattern.severity,
+        fields: [
+          { title: "User", value: userName, short: true },
+          { title: "User ID", value: String(userId), short: true },
+          { title: "Events", value: String(eventCount), short: true },
+          { title: "Threshold", value: String(pattern.threshold), short: true },
+        ],
+        userId,
+        userName,
+        alertContext: {
+          patternName: pattern.name,
+          eventCount,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("[AbuseDetection] Failed to send Slack alert:", error);
+  }
+
+  // Also notify owner via in-app notification for critical patterns
   if (pattern.severity === "critical") {
     try {
       await notifyOwner({

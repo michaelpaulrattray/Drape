@@ -322,6 +322,100 @@ if (status.underAttack) {
 
 To prevent alert fatigue, the system only sends one notification per attack window. The `markGlobalAttackAlertSent()` function marks that an alert has been sent, and `shouldSendGlobalAttackAlert()` returns false until the window resets.
 
+## IP Blocking
+
+For persistent threats, FormaStudio supports blocking specific IP addresses entirely. Blocked IPs cannot access any endpoint, including public pages.
+
+### Blocking an IP
+
+Admins can block IPs through the admin dashboard or programmatically:
+
+```typescript
+import { blockIp, unblockIp, isIpBlocked } from "./db";
+
+// Block an IP permanently
+await blockIp(
+  "192.168.1.100",           // IP address
+  "Repeated abuse attempts", // Reason
+  ctx.user.id,               // Admin who blocked
+  null                       // No expiry (permanent)
+);
+
+// Block an IP temporarily (24 hours)
+await blockIp(
+  "192.168.1.100",
+  "Suspicious activity",
+  ctx.user.id,
+  new Date(Date.now() + 24 * 60 * 60 * 1000) // Expires in 24 hours
+);
+
+// Check if an IP is blocked
+const blocked = await isIpBlocked("192.168.1.100");
+if (blocked) {
+  // Reject the request
+}
+
+// Unblock an IP
+await unblockIp("192.168.1.100");
+```
+
+### Automatic IP Checking
+
+The `checkIpBlocked` function in `rateLimit.ts` is designed to be called early in the request pipeline:
+
+```typescript
+import { checkIpBlocked, getClientIp } from "./rateLimit";
+
+// In middleware or at the start of procedures
+const clientIp = getClientIp(ctx.req);
+const blockResult = await checkIpBlocked(clientIp);
+
+if (!blockResult.allowed) {
+  throw new TRPCError({
+    code: "FORBIDDEN",
+    message: "Access denied",
+  });
+}
+```
+
+### Admin Interface
+
+The admin audit logs page (`/admin/audit-logs`) includes a "Blocked IPs" tab where admins can:
+
+- View all currently blocked IPs
+- See block reason and expiration
+- Manually block new IPs with custom duration
+- Unblock IPs when threats are resolved
+
+Admins can also block IPs directly from audit log entries by clicking the "Block IP" button when viewing log details.
+
+### Emergency Blocking via Slack
+
+When Slack notifications are configured, critical security alerts include a "Block IP" button that allows immediate blocking without accessing the admin dashboard. This is useful during active attacks when the dashboard may be slow or inaccessible.
+
+See [NOTIFICATIONS.md](./NOTIFICATIONS.md) for Slack integration setup.
+
+### Database Schema
+
+Blocked IPs are stored in the `blocked_ips` table:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | int | Primary key |
+| `ipAddress` | varchar | The blocked IP address |
+| `reason` | text | Why the IP was blocked |
+| `blockedBy` | int | Admin user ID who blocked |
+| `expiresAt` | datetime | When the block expires (null = permanent) |
+| `createdAt` | datetime | When the block was created |
+
+### Audit Trail
+
+All IP blocking actions are logged:
+
+- `security.ip_blocked` - When an IP is blocked
+- `security.ip_unblocked` - When an IP is unblocked
+- `security.emergency_action_executed` - When blocked via Slack button
+
 ## Related Documentation
 
-For additional security context, see [AUTHENTICATION.md](./AUTHENTICATION.md) for protecting endpoints before rate limiting applies and account lockout configuration, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for credit-based rate limiting on generation endpoints, and [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging rate limit violations and abuse detection events.
+For additional security context, see [AUTHENTICATION.md](./AUTHENTICATION.md) for protecting endpoints before rate limiting applies and account lockout configuration, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for credit-based rate limiting on generation endpoints, [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging rate limit violations and abuse detection events, and [NOTIFICATIONS.md](./NOTIFICATIONS.md) for Slack alerts and emergency actions.

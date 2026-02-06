@@ -259,6 +259,50 @@ export const AUDIT_ACTIONS = {
   ABUSE_PATTERN_BILLING: "abuse.billing_anomaly",
   ABUSE_CREDENTIAL_STUFFING: "abuse.credential_stuffing",
   ABUSE_GLOBAL_ATTACK: "abuse.global_attack_detected",
+  
+  // IP blocking events
+  IP_BLOCKED: "admin.ip_blocked",
+  IP_UNBLOCKED: "admin.ip_unblocked",
+  IP_BLOCKED_REQUEST: "security.ip_blocked_request",
+  
+  // Emergency actions (from Slack buttons)
+  EMERGENCY_ACTION_EXECUTED: "security.emergency_action",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
+
+
+/**
+ * Blocked IPs table for IP-based access control
+ * Blocked IPs are denied access to all endpoints
+ */
+export const blockedIps = mysqlTable("blocked_ips", {
+  id: int("id").autoincrement().primaryKey(),
+  ipAddress: varchar("ipAddress", { length: 45 }).notNull(), // IPv6 max length
+  reason: text("reason").notNull(),
+  blockedBy: int("blockedBy").notNull(), // Admin user ID who blocked
+  expiresAt: timestamp("expiresAt"), // null = permanent block
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type BlockedIp = typeof blockedIps.$inferSelect;
+export type InsertBlockedIp = typeof blockedIps.$inferInsert;
+
+/**
+ * Emergency action tokens for Slack button interactions
+ * Single-use tokens that allow emergency actions without authentication
+ */
+export const emergencyTokens = mysqlTable("emergency_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  token: varchar("token", { length: 64 }).notNull().unique(), // UUID v4
+  action: mysqlEnum("action", ["block_ip", "suspend_user"]).notNull(),
+  targetId: varchar("targetId", { length: 128 }).notNull(), // IP address or user ID
+  metadata: json("metadata"), // Additional context (reason, alert details)
+  expiresAt: timestamp("expiresAt").notNull(),
+  usedAt: timestamp("usedAt"), // null = not yet used
+  usedBy: varchar("usedBy", { length: 128 }), // Slack user ID who clicked
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmergencyToken = typeof emergencyTokens.$inferSelect;
+export type InsertEmergencyToken = typeof emergencyTokens.$inferInsert;

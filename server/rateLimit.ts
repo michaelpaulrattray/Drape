@@ -306,6 +306,34 @@ export function shouldSendGlobalAttackAlert(): boolean {
          globalAttackWindow.failedLogins >= GLOBAL_ATTACK_CONFIG.threshold;
 }
 
+// ============ IP Blocking Check ============
+// Checks if an IP is blocked before processing any request
+
+import { isIpBlocked } from "./db";
+
+/**
+ * Check if an IP is blocked and should be denied access
+ * This should be called early in request processing
+ */
+export async function checkIpBlocked(
+  ipAddress: string
+): Promise<{ blocked: boolean; reason?: string }> {
+  if (!ipAddress || ipAddress === 'unknown') {
+    return { blocked: false };
+  }
+
+  try {
+    const result = await isIpBlocked(ipAddress);
+    return {
+      blocked: result.blocked,
+      reason: result.reason,
+    };
+  } catch (error) {
+    console.error("[RateLimit] Error checking IP block:", error);
+    return { blocked: false }; // Fail open to avoid blocking legitimate users
+  }
+}
+
 // Per-user rate limits for authenticated endpoints
 export const USER_RATE_LIMITS = {
   // API calls per user per minute

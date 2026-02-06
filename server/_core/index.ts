@@ -58,6 +58,16 @@ async function startServer() {
       }
     }
   );
+
+  // Slack interactions endpoint (for button callbacks)
+  app.post(
+    "/api/slack/interactions",
+    express.urlencoded({ extended: true }),
+    async (req, res) => {
+      const { handleSlackInteraction } = await import("../slackInteractions");
+      await handleSlackInteraction(req, res);
+    }
+  );
   
   // tRPC API
   app.use(

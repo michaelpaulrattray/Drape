@@ -22,6 +22,9 @@ import {
   Ban,
   UserCheck,
   Loader2,
+  Globe,
+  Unlock,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,6 +128,11 @@ export default function AdminAuditLogs() {
   const [suspendModalOpen, setSuspendModalOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
   const [suspendingUserId, setSuspendingUserId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"logs" | "blocked-ips">("logs");
+  const [blockIpModalOpen, setBlockIpModalOpen] = useState(false);
+  const [blockIpAddress, setBlockIpAddress] = useState("");
+  const [blockIpReason, setBlockIpReason] = useState("");
+  const [blockIpDuration, setBlockIpDuration] = useState<string>("permanent");
 
   // Queries
   const logsQuery = trpc.admin.getAuditLogs.useQuery(
@@ -157,10 +165,18 @@ export default function AdminAuditLogs() {
     { refetchInterval: autoRefresh ? 60000 : false }
   );
 
+  // Blocked IPs query
+  const blockedIpsQuery = trpc.admin.listBlockedIPs.useQuery(
+    { limit: 50, offset: 0 },
+    { enabled: activeTab === "blocked-ips" }
+  );
+
   // Mutations
   const exportMutation = trpc.admin.exportAuditLogs.useMutation();
   const suspendMutation = trpc.admin.suspendUser.useMutation();
   const unsuspendMutation = trpc.admin.unsuspendUser.useMutation();
+  const blockIpMutation = trpc.admin.blockIP.useMutation();
+  const unblockIpMutation = trpc.admin.unblockIP.useMutation();
   const userDetailsQuery = trpc.admin.getUserDetails.useQuery(
     { userId: selectedLog?.userId || 0 },
     { enabled: !!selectedLog?.userId }
@@ -265,6 +281,54 @@ export default function AdminAuditLogs() {
       const message = error instanceof Error ? error.message : "Failed to unsuspend user";
       toast.error(message);
     }
+  };
+
+  const handleBlockIp = async () => {
+    if (!blockIpAddress.trim() || !blockIpReason.trim()) {
+      toast.error("Please provide IP address and reason");
+      return;
+    }
+    
+    try {
+      const expiresInHours = blockIpDuration === "permanent" ? undefined :
+        blockIpDuration === "1h" ? 1 :
+        blockIpDuration === "24h" ? 24 :
+        blockIpDuration === "7d" ? 168 :
+        blockIpDuration === "30d" ? 720 : undefined;
+
+      await blockIpMutation.mutateAsync({
+        ipAddress: blockIpAddress.trim(),
+        reason: blockIpReason.trim(),
+        expiresInHours,
+      });
+      toast.success(`IP ${blockIpAddress} blocked successfully`);
+      setBlockIpModalOpen(false);
+      setBlockIpAddress("");
+      setBlockIpReason("");
+      setBlockIpDuration("permanent");
+      blockedIpsQuery.refetch();
+      logsQuery.refetch();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to block IP";
+      toast.error(message);
+    }
+  };
+
+  const handleUnblockIp = async (ipAddress: string) => {
+    try {
+      await unblockIpMutation.mutateAsync({ ipAddress });
+      toast.success(`IP ${ipAddress} unblocked successfully`);
+      blockedIpsQuery.refetch();
+      logsQuery.refetch();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to unblock IP";
+      toast.error(message);
+    }
+  };
+
+  const openBlockIpModal = (ip?: string) => {
+    if (ip) setBlockIpAddress(ip);
+    setBlockIpModalOpen(true);
   };
 
   return (
@@ -384,6 +448,34 @@ export default function AdminAuditLogs() {
           </Card>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="flex gap-2 border-b border-white/10 pb-2">
+          <Button
+            variant={activeTab === "logs" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("logs")}
+            className={activeTab === "logs" ? "bg-emerald-600 hover:bg-emerald-700" : "text-white/60 hover:text-white"}
+          >
+            <Activity className="w-4 h-4 mr-2" />
+            Audit Logs
+          </Button>
+          <Button
+            variant={activeTab === "blocked-ips" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("blocked-ips")}
+            className={activeTab === "blocked-ips" ? "bg-emerald-600 hover:bg-emerald-700" : "text-white/60 hover:text-white"}
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            Blocked IPs
+            {blockedIpsQuery.data?.total ? (
+              <Badge className="ml-2 bg-red-500/20 text-red-400">{blockedIpsQuery.data.total}</Badge>
+            ) : null}
+          </Button>
+        </div>
+
+        {/* Audit Logs Tab Content */}
+        {activeTab === "logs" && (
+          <>
         {/* Abuse Alerts Panel */}
         {(alertsQuery.data?.criticalCount || 0) > 0 && (
           <Card className="bg-red-500/5 border-red-500/20">
@@ -564,6 +656,88 @@ export default function AdminAuditLogs() {
             )}
           </CardContent>
         </Card>
+        </>
+        )}
+
+        {/* Blocked IPs Tab Content */}
+        {activeTab === "blocked-ips" && (
+          <Card className="bg-white/5 border-white/10">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-red-400" />
+                  Blocked IP Addresses
+                </CardTitle>
+                <Button
+                  size="sm"
+                  onClick={() => openBlockIpModal()}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  <Ban className="w-4 h-4 mr-2" />
+                  Block IP
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {blockedIpsQuery.isLoading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full bg-white/10" />
+                  ))}
+                </div>
+              ) : blockedIpsQuery.data?.ips.length === 0 ? (
+                <div className="text-center py-12 text-white/40">
+                  <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No blocked IP addresses</p>
+                  <p className="text-sm mt-1">Block malicious IPs from the audit logs or manually add them here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {blockedIpsQuery.data?.ips.map((ip: { id: number; ipAddress: string; reason: string; blockedBy: number; expiresAt: string | null; createdAt: string }) => (
+                    <div
+                      key={ip.id}
+                      className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-white">{ip.ipAddress}</span>
+                          {ip.expiresAt ? (
+                            new Date(ip.expiresAt) > new Date() ? (
+                              <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+                                Expires {formatDate(new Date(ip.expiresAt!))}
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-white/10 text-white/40">Expired</Badge>
+                            )
+                          ) : (
+                            <Badge className="bg-red-500/10 text-red-400 border-red-500/20">Permanent</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-white/60 mt-1">{ip.reason}</p>
+                        <p className="text-xs text-white/40 mt-1">
+                          Blocked {formatDate(new Date(ip.createdAt))} by Admin #{ip.blockedBy}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUnblockIp(ip.ipAddress)}
+                        disabled={unblockIpMutation.isPending}
+                        className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10"
+                      >
+                        {unblockIpMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Unlock className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       {/* Log Details Modal */}
@@ -700,6 +874,18 @@ export default function AdminAuditLogs() {
                     Unsuspend User
                   </Button>
                 )}
+
+                {selectedLog.ipAddress && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => openBlockIpModal(selectedLog.ipAddress!)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Globe className="w-4 h-4 mr-2" />
+                    Block IP
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -752,6 +938,83 @@ export default function AdminAuditLogs() {
                   <Ban className="w-4 h-4 mr-2" />
                 )}
                 Confirm Suspension
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Block IP Modal */}
+      <Dialog open={blockIpModalOpen} onOpenChange={setBlockIpModalOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <Globe className="w-5 h-5" />
+              Block IP Address
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-white/60">
+              This will block all requests from this IP address. Blocked IPs cannot access any part of the platform.
+            </p>
+            <div>
+              <label className="text-xs text-white/40 uppercase mb-2 block">IP Address</label>
+              <Input
+                value={blockIpAddress}
+                onChange={(e) => setBlockIpAddress(e.target.value)}
+                placeholder="e.g., 192.168.1.1"
+                className="bg-white/5 border-white/10 text-white font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/40 uppercase mb-2 block">Reason</label>
+              <Input
+                value={blockIpReason}
+                onChange={(e) => setBlockIpReason(e.target.value)}
+                placeholder="Enter reason for blocking..."
+                className="bg-white/5 border-white/10 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/40 uppercase mb-2 block">Duration</label>
+              <Select value={blockIpDuration} onValueChange={setBlockIpDuration}>
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1a1a1a] border-white/10">
+                  <SelectItem value="1h">1 Hour</SelectItem>
+                  <SelectItem value="24h">24 Hours</SelectItem>
+                  <SelectItem value="7d">7 Days</SelectItem>
+                  <SelectItem value="30d">30 Days</SelectItem>
+                  <SelectItem value="permanent">Permanent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setBlockIpModalOpen(false);
+                  setBlockIpAddress("");
+                  setBlockIpReason("");
+                  setBlockIpDuration("permanent");
+                }}
+                className="border-white/20 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleBlockIp}
+                disabled={!blockIpAddress.trim() || !blockIpReason.trim() || blockIpMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {blockIpMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Ban className="w-4 h-4 mr-2" />
+                )}
+                Block IP
               </Button>
             </div>
           </div>
