@@ -2005,6 +2005,52 @@ export const appRouter = router({
 
   // ============ Admin: Audit Logs ============
   admin: router({
+    // ============ Confirmation Tokens ============
+    
+    // Generate a confirmation token for a sensitive action
+    generateConfirmationToken: adminProcedure
+      .input(z.object({
+        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP", "deleteModel"]),
+        targetId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const token = generateConfirmationToken(
+          ctx.user.id,
+          input.action,
+          input.targetId
+        );
+        
+        return {
+          token,
+          expiresIn: 300, // 5 minutes in seconds
+          action: input.action,
+          targetId: input.targetId,
+        };
+      }),
+
+    // Validate a confirmation token (for checking before executing)
+    validateToken: adminProcedure
+      .input(z.object({
+        token: z.string(),
+        action: z.enum(["suspendUser", "unsuspendUser", "adjustCredits", "blockIP", "unblockIP", "deleteModel"]),
+        targetId: z.string(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const result = validateConfirmationToken(
+          input.token,
+          ctx.user.id,
+          input.action,
+          input.targetId
+        );
+        
+        return {
+          valid: result.valid,
+          reason: result.reason,
+        };
+      }),
+
+    // ============ Audit Logs ============
+    
     // Get paginated audit logs with filters
     getAuditLogs: adminProcedure
       .input(z.object({
@@ -2059,9 +2105,26 @@ export const appRouter = router({
       .input(z.object({
         userId: z.number(),
         reason: z.string().min(1).max(500),
+        confirmationToken: z.string().optional(), // Required for UI confirmation flow
       }))
       .mutation(async ({ ctx, input }) => {
         const { suspendUser, getUserById } = await import("./db");
+        
+        // Validate confirmation token if provided
+        if (input.confirmationToken) {
+          const tokenResult = validateConfirmationToken(
+            input.confirmationToken,
+            ctx.user.id,
+            "suspendUser",
+            input.userId.toString()
+          );
+          if (!tokenResult.valid) {
+            throw new TRPCError({ 
+              code: "BAD_REQUEST", 
+              message: tokenResult.reason || "Invalid confirmation token" 
+            });
+          }
+        }
         
         // Get target user info for audit log
         const targetUser = await getUserById(input.userId);
@@ -2130,9 +2193,26 @@ export const appRouter = router({
     unsuspendUser: adminProcedure
       .input(z.object({
         userId: z.number(),
+        confirmationToken: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { unsuspendUser, getUserById } = await import("./db");
+        
+        // Validate confirmation token if provided
+        if (input.confirmationToken) {
+          const tokenResult = validateConfirmationToken(
+            input.confirmationToken,
+            ctx.user.id,
+            "unsuspendUser",
+            input.userId.toString()
+          );
+          if (!tokenResult.valid) {
+            throw new TRPCError({ 
+              code: "BAD_REQUEST", 
+              message: tokenResult.reason || "Invalid confirmation token" 
+            });
+          }
+        }
         
         const targetUser = await getUserById(input.userId);
         if (!targetUser) {
@@ -2164,6 +2244,27 @@ export const appRouter = router({
           severity: "info",
           ipAddress: getClientIp(ctx.req),
           userAgent: ctx.req.headers["user-agent"] || null,
+        });
+
+        // Log admin action with Slack notification
+        await logAdminAction({
+          adminId: ctx.user.id,
+          adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
+          action: "unsuspendUser",
+          targetType: "user",
+          targetId: input.userId.toString(),
+          details: `Unsuspended user ${targetUser.email || targetUser.name} - Previous reason: ${targetUser.suspendedReason}`,
+          ipAddress: getClientIp(ctx.req),
+          userAgent: ctx.req.headers["user-agent"] || undefined,
+        });
+
+        // Write to immutable log for critical action
+        await writeImmutableLog("user_unsuspended", {
+          adminId: ctx.user.id,
+          adminName: ctx.user.name,
+          targetUserId: input.userId,
+          targetUserEmail: targetUser.email,
+          previousReason: targetUser.suspendedReason,
         });
 
         return { success: true };
@@ -2248,9 +2349,26 @@ export const appRouter = router({
         ipAddress: z.string().min(1),
         reason: z.string().min(1).max(500),
         expiresInHours: z.number().min(1).max(8760).optional(), // Max 1 year, null = permanent
+        confirmationToken: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { blockIp } = await import("./db");
+        
+        // Validate confirmation token if provided
+        if (input.confirmationToken) {
+          const tokenResult = validateConfirmationToken(
+            input.confirmationToken,
+            ctx.user.id,
+            "blockIP",
+            input.ipAddress
+          );
+          if (!tokenResult.valid) {
+            throw new TRPCError({ 
+              code: "BAD_REQUEST", 
+              message: tokenResult.reason || "Invalid confirmation token" 
+            });
+          }
+        }
         
         const expiresAt = input.expiresInHours 
           ? new Date(Date.now() + input.expiresInHours * 60 * 60 * 1000)
@@ -2312,9 +2430,26 @@ export const appRouter = router({
     unblockIP: adminProcedure
       .input(z.object({
         ipAddress: z.string().min(1),
+        confirmationToken: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { unblockIp } = await import("./db");
+        
+        // Validate confirmation token if provided
+        if (input.confirmationToken) {
+          const tokenResult = validateConfirmationToken(
+            input.confirmationToken,
+            ctx.user.id,
+            "unblockIP",
+            input.ipAddress
+          );
+          if (!tokenResult.valid) {
+            throw new TRPCError({ 
+              code: "BAD_REQUEST", 
+              message: tokenResult.reason || "Invalid confirmation token" 
+            });
+          }
+        }
         
         const success = await unblockIp(input.ipAddress);
 
@@ -2334,6 +2469,25 @@ export const appRouter = router({
           metadata: {},
           severity: "info",
           req: ctx.req,
+        });
+
+        // Log admin action with Slack notification
+        await logAdminAction({
+          adminId: ctx.user.id,
+          adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
+          action: "unblockIP",
+          targetType: "ip",
+          targetId: input.ipAddress,
+          details: `Unblocked IP ${input.ipAddress}`,
+          ipAddress: getClientIp(ctx.req),
+          userAgent: ctx.req.headers["user-agent"] || undefined,
+        });
+
+        // Write to immutable log for critical action
+        await writeImmutableLog("ip_unblocked", {
+          adminId: ctx.user.id,
+          adminName: ctx.user.name,
+          ipAddress: input.ipAddress,
         });
 
         return { success: true };
@@ -2439,9 +2593,26 @@ export const appRouter = router({
         userId: z.number(),
         amount: z.number().min(-100000).max(100000),
         reason: z.string().min(1).max(500),
+        confirmationToken: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { adjustUserCredits, getUserById } = await import("./db");
+        
+        // Validate confirmation token if provided
+        if (input.confirmationToken) {
+          const tokenResult = validateConfirmationToken(
+            input.confirmationToken,
+            ctx.user.id,
+            "adjustCredits",
+            input.userId.toString()
+          );
+          if (!tokenResult.valid) {
+            throw new TRPCError({ 
+              code: "BAD_REQUEST", 
+              message: tokenResult.reason || "Invalid confirmation token" 
+            });
+          }
+        }
         
         // Get target user info
         const targetUser = await getUserById(input.userId);
