@@ -2645,3 +2645,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add moderator option to role filter dropdown
 - [x] Add ROLE_CHANGED audit action
 - [x] Write vitest tests for role change procedure (14 tests)
+
+
+## Phase 1: Credit & Generation Log Viewers for Moderators (Complete)
+- [x] Review database schema for credit transactions and generation tables
+- [x] Add getModeratorCreditHistory db helper function (with summary, pagination, type filter)
+- [x] Add getModeratorGenerationHistory db helper function (with summary, pagination, status/type filters)
+- [x] Add moderator.getUserCreditHistory tRPC procedure (read-only)
+- [x] Add moderator.getUserGenerationHistory tRPC procedure (read-only)
+- [x] Build credit transaction log tab in moderator user detail panel (summary cards, type filter, paginated list)
+- [x] Build generation history tab in moderator user detail panel (summary cards, status/type filters, paginated list)
+- [x] Add Activity/Credits/Generations sub-tab navigation in user detail sidebar
+- [x] Write vitest tests for new procedures (14 tests, 405 total passing)

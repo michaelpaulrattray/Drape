@@ -23,6 +23,15 @@ import {
   Users,
   Ban,
   Loader2,
+  Coins,
+  Image,
+  CreditCard,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  CheckCircle,
+  XCircle,
+  Clock as ClockIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,6 +129,12 @@ function formatAction(action: string): string {
 export default function ModeratorDashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<"audit-logs" | "users" | "blocked-ips">("audit-logs");
+  const [userDetailTab, setUserDetailTab] = useState<"overview" | "credits" | "generations" | "activity">("overview");
+  const [creditTypeFilter, setCreditTypeFilter] = useState<string>("all");
+  const [creditPage, setCreditPage] = useState(0);
+  const [genStatusFilter, setGenStatusFilter] = useState<string>("all");
+  const [genTypeFilter, setGenTypeFilter] = useState<string>("all");
+  const [genPage, setGenPage] = useState(0);
   const [page, setPage] = useState(0);
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -188,6 +203,27 @@ export default function ModeratorDashboard() {
     { enabled: !!selectedUserId }
   );
 
+  const creditHistoryQuery = trpc.moderator.getUserCreditHistory.useQuery(
+    {
+      userId: selectedUserId!,
+      limit: 20,
+      offset: creditPage * 20,
+      type: creditTypeFilter as any,
+    },
+    { enabled: !!selectedUserId && userDetailTab === "credits" }
+  );
+
+  const generationHistoryQuery = trpc.moderator.getUserGenerationHistory.useQuery(
+    {
+      userId: selectedUserId!,
+      limit: 20,
+      offset: genPage * 20,
+      status: genStatusFilter as any,
+      type: genTypeFilter as any,
+    },
+    { enabled: !!selectedUserId && userDetailTab === "generations" }
+  );
+
   // Escalation mutation
   const escalateMutation = trpc.moderator.escalateToAdmin.useMutation({
     onSuccess: (result) => {
@@ -231,6 +267,16 @@ export default function ModeratorDashboard() {
     toast.error("Access denied. Moderator or admin privileges required.");
     return <Redirect to="/dashboard" />;
   }
+
+  // Reset user detail sub-tab state when user changes
+  useEffect(() => {
+    setUserDetailTab("overview");
+    setCreditPage(0);
+    setGenPage(0);
+    setCreditTypeFilter("all");
+    setGenStatusFilter("all");
+    setGenTypeFilter("all");
+  }, [selectedUserId]);
 
   const handleRefresh = () => {
     logsQuery.refetch();
@@ -829,8 +875,9 @@ export default function ModeratorDashboard() {
               <div>
                 {selectedUserId ? (
                   <div className="space-y-4">
+                    {/* User Profile Header */}
                     <Card className="bg-white/5 border-white/10">
-                      <CardHeader>
+                      <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
                           <User className="w-4 h-4 text-blue-400" />
                           User Details
@@ -842,12 +889,12 @@ export default function ModeratorDashboard() {
                       <CardContent>
                         {userDetailsQuery.isLoading ? (
                           <div className="space-y-3">
-                            {Array.from({ length: 6 }).map((_, i) => (
+                            {Array.from({ length: 4 }).map((_, i) => (
                               <Skeleton key={i} className="h-5 w-full bg-white/10" />
                             ))}
                           </div>
                         ) : userDetailsQuery.data ? (
-                          <div className="space-y-3 text-sm">
+                          <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-white/40">Name</span>
                               <span>{userDetailsQuery.data.user.name || "—"}</span>
@@ -868,15 +915,7 @@ export default function ModeratorDashboard() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/40">Credits</span>
-                              <span>{userDetailsQuery.data.credits?.balance ?? "—"}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-white/40">Models</span>
-                              <span>{userDetailsQuery.data.stats.totalModels}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-white/40">Generations</span>
-                              <span>{userDetailsQuery.data.stats.totalGenerations}</span>
+                              <span className="font-medium">{userDetailsQuery.data.credits?.balance ?? "—"}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/40">Joined</span>
@@ -910,44 +949,350 @@ export default function ModeratorDashboard() {
                       </CardContent>
                     </Card>
 
-                    {/* User Activity */}
-                    <Card className="bg-white/5 border-white/10">
-                      <CardHeader>
-                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                          <Activity className="w-4 h-4 text-blue-400" />
-                          Recent Activity
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {userActivityQuery.isLoading ? (
-                          <div className="space-y-2">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Skeleton key={i} className="h-10 w-full bg-white/10" />
-                            ))}
-                          </div>
-                        ) : userActivityQuery.data?.logs.length === 0 ? (
-                          <p className="text-white/40 text-sm text-center py-4">No activity found</p>
-                        ) : (
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                            {userActivityQuery.data?.logs.map((log) => (
-                              <div
-                                key={log.id}
-                                className="p-2 rounded bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-                                onClick={() => setSelectedLog(log as AuditLog)}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Badge className={`${SEVERITY_COLORS[log.severity as keyof typeof SEVERITY_COLORS]} text-xs`}>
-                                    {log.severity}
-                                  </Badge>
-                                  <span className="text-xs text-white/80 truncate">{formatAction(log.action)}</span>
+                    {/* User Detail Sub-Tabs */}
+                    <div className="flex gap-1 border-b border-white/10 pb-1">
+                      <Button
+                        variant={userDetailTab === "overview" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setUserDetailTab("overview")}
+                        className={`text-xs ${userDetailTab === "overview" ? "bg-blue-600 hover:bg-blue-700" : "text-white/60 hover:text-white"}`}
+                      >
+                        <Activity className="w-3 h-3 mr-1" />
+                        Activity
+                      </Button>
+                      <Button
+                        variant={userDetailTab === "credits" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setUserDetailTab("credits")}
+                        className={`text-xs ${userDetailTab === "credits" ? "bg-blue-600 hover:bg-blue-700" : "text-white/60 hover:text-white"}`}
+                      >
+                        <Coins className="w-3 h-3 mr-1" />
+                        Credits
+                      </Button>
+                      <Button
+                        variant={userDetailTab === "generations" ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setUserDetailTab("generations")}
+                        className={`text-xs ${userDetailTab === "generations" ? "bg-blue-600 hover:bg-blue-700" : "text-white/60 hover:text-white"}`}
+                      >
+                        <Image className="w-3 h-3 mr-1" />
+                        Generations
+                      </Button>
+                    </div>
+
+                    {/* Activity Sub-Tab */}
+                    {userDetailTab === "overview" && (
+                      <Card className="bg-white/5 border-white/10">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-blue-400" />
+                            Recent Activity
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {userActivityQuery.isLoading ? (
+                            <div className="space-y-2">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Skeleton key={i} className="h-10 w-full bg-white/10" />
+                              ))}
+                            </div>
+                          ) : userActivityQuery.data?.logs.length === 0 ? (
+                            <p className="text-white/40 text-sm text-center py-4">No activity found</p>
+                          ) : (
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                              {userActivityQuery.data?.logs.map((log) => (
+                                <div
+                                  key={log.id}
+                                  className="p-2 rounded bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                                  onClick={() => setSelectedLog(log as AuditLog)}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Badge className={`${SEVERITY_COLORS[log.severity as keyof typeof SEVERITY_COLORS]} text-xs`}>
+                                      {log.severity}
+                                    </Badge>
+                                    <span className="text-xs text-white/80 truncate">{formatAction(log.action)}</span>
+                                  </div>
+                                  <p className="text-xs text-white/40 mt-1">{formatDate(log.createdAt)}</p>
                                 </div>
-                                <p className="text-xs text-white/40 mt-1">{formatDate(log.createdAt)}</p>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Credits Sub-Tab */}
+                    {userDetailTab === "credits" && (
+                      <Card className="bg-white/5 border-white/10">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <Coins className="w-4 h-4 text-emerald-400" />
+                            Credit History
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {/* Credit Summary */}
+                          {creditHistoryQuery.data?.summary && (
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                              <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-center">
+                                <p className="text-xs text-emerald-400/60">Added</p>
+                                <p className="text-sm font-bold text-emerald-400">+{creditHistoryQuery.data.summary.totalCreditsEarned}</p>
                               </div>
-                            ))}
+                              <div className="p-2 rounded bg-red-500/10 border border-red-500/20 text-center">
+                                <p className="text-xs text-red-400/60">Used</p>
+                                <p className="text-sm font-bold text-red-400">-{creditHistoryQuery.data.summary.totalCreditsSpent}</p>
+                              </div>
+                              <div className="p-2 rounded bg-blue-500/10 border border-blue-500/20 text-center">
+                                <p className="text-xs text-blue-400/60">Balance</p>
+                                <p className="text-sm font-bold text-blue-400">{creditHistoryQuery.data.summary.netChange}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Credit Type Filter */}
+                          <div className="flex gap-2 mb-3">
+                            <Select value={creditTypeFilter} onValueChange={(v) => { setCreditTypeFilter(v); setCreditPage(0); }}>
+                              <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-xs h-8">
+                                <SelectValue placeholder="Filter by type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Types</SelectItem>
+                                <SelectItem value="purchase">Purchases</SelectItem>
+                                <SelectItem value="usage">Usage</SelectItem>
+                                <SelectItem value="admin_adjustment">Admin Adjustments</SelectItem>
+                                <SelectItem value="refund">Refunds</SelectItem>
+                                <SelectItem value="bonus">Bonuses</SelectItem>
+                                <SelectItem value="expiry">Expired</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
+
+                          {/* Credit Transaction List */}
+                          {creditHistoryQuery.isLoading ? (
+                            <div className="space-y-2">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Skeleton key={i} className="h-12 w-full bg-white/10" />
+                              ))}
+                            </div>
+                          ) : creditHistoryQuery.data?.transactions.length === 0 ? (
+                            <p className="text-white/40 text-sm text-center py-4">No credit transactions found</p>
+                          ) : (
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                              {creditHistoryQuery.data?.transactions.map((tx) => (
+                                <div key={tx.id} className="p-2.5 rounded bg-white/5 border border-white/5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      {tx.amount > 0 ? (
+                                        <ArrowUp className="w-3.5 h-3.5 text-emerald-400" />
+                                      ) : (
+                                        <ArrowDown className="w-3.5 h-3.5 text-red-400" />
+                                      )}
+                                      <span className={`text-sm font-medium ${tx.amount > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                        {tx.amount > 0 ? "+" : ""}{tx.amount}
+                                      </span>
+                                    </div>
+                                    <Badge className={
+                                      tx.type === "purchase" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                                      tx.type === "usage" ? "bg-orange-500/10 text-orange-400 border-orange-500/20" :
+                                      tx.type === "admin_adjustment" ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
+                                      tx.type === "refund" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                                      tx.type === "bonus" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
+                                      "bg-gray-500/10 text-gray-400 border-gray-500/20"
+                                    }>
+                                      {tx.type.replace("_", " ")}
+                                    </Badge>
+                                  </div>
+                                  {tx.description && (
+                                    <p className="text-xs text-white/50 mt-1 truncate">{tx.description}</p>
+                                  )}
+                                  <div className="flex items-center justify-between mt-1">
+                                    <span className="text-xs text-white/30">{formatDate(new Date(tx.createdAt))}</span>
+                                    <span className="text-xs text-white/30">Balance: {tx.balanceAfter}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Credit Pagination */}
+                          {(creditHistoryQuery.data?.total || 0) > 20 && (
+                            <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-3">
+                              <span className="text-xs text-white/40">
+                                Page {creditPage + 1} of {Math.ceil((creditHistoryQuery.data?.total || 0) / 20)}
+                              </span>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCreditPage(p => Math.max(0, p - 1))}
+                                  disabled={creditPage === 0}
+                                  className="border-white/20 text-white h-7 w-7 p-0"
+                                >
+                                  <ChevronLeft className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCreditPage(p => p + 1)}
+                                  disabled={(creditPage + 1) * 20 >= (creditHistoryQuery.data?.total || 0)}
+                                  className="border-white/20 text-white h-7 w-7 p-0"
+                                >
+                                  <ChevronRight className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Generations Sub-Tab */}
+                    {userDetailTab === "generations" && (
+                      <Card className="bg-white/5 border-white/10">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <Image className="w-4 h-4 text-violet-400" />
+                            Generation History
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {/* Generation Summary */}
+                          {generationHistoryQuery.data?.summary && (
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                              <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-center">
+                                <p className="text-xs text-emerald-400/60">Completed</p>
+                                <p className="text-sm font-bold text-emerald-400">{generationHistoryQuery.data.summary.completedCount}</p>
+                              </div>
+                              <div className="p-2 rounded bg-red-500/10 border border-red-500/20 text-center">
+                                <p className="text-xs text-red-400/60">Failed</p>
+                                <p className="text-sm font-bold text-red-400">{generationHistoryQuery.data.summary.failedCount}</p>
+                              </div>
+                              <div className="p-2 rounded bg-blue-500/10 border border-blue-500/20 text-center">
+                                <p className="text-xs text-blue-400/60">Credits Used</p>
+                                <p className="text-sm font-bold text-blue-400">{generationHistoryQuery.data.summary.totalCreditsUsed}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Generation Filters */}
+                          <div className="flex gap-2 mb-3">
+                            <Select value={genStatusFilter} onValueChange={(v) => { setGenStatusFilter(v); setGenPage(0); }}>
+                              <SelectTrigger className="w-1/2 bg-white/5 border-white/10 text-white text-xs h-8">
+                                <SelectValue placeholder="Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="failed">Failed</SelectItem>
+                                <SelectItem value="processing">Processing</SelectItem>
+                                <SelectItem value="queued">Queued</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Select value={genTypeFilter} onValueChange={(v) => { setGenTypeFilter(v); setGenPage(0); }}>
+                              <SelectTrigger className="w-1/2 bg-white/5 border-white/10 text-white text-xs h-8">
+                                <SelectValue placeholder="Type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Types</SelectItem>
+                                <SelectItem value="headshot">Headshot</SelectItem>
+                                <SelectItem value="full_body">Full Body</SelectItem>
+                                <SelectItem value="creative">Creative</SelectItem>
+                                <SelectItem value="background_swap">BG Swap</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Generation List */}
+                          {generationHistoryQuery.isLoading ? (
+                            <div className="space-y-2">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Skeleton key={i} className="h-14 w-full bg-white/10" />
+                              ))}
+                            </div>
+                          ) : generationHistoryQuery.data?.generations.length === 0 ? (
+                            <p className="text-white/40 text-sm text-center py-4">No generations found</p>
+                          ) : (
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                              {generationHistoryQuery.data?.generations.map((gen) => (
+                                <div key={gen.id} className="p-2.5 rounded bg-white/5 border border-white/5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      {gen.status === "completed" ? (
+                                        <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                      ) : gen.status === "failed" ? (
+                                        <XCircle className="w-3.5 h-3.5 text-red-400" />
+                                      ) : (
+                                        <ClockIcon className="w-3.5 h-3.5 text-amber-400" />
+                                      )}
+                                      <span className="text-sm text-white/80">#{gen.id}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge className={
+                                        gen.status === "completed" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                                        gen.status === "failed" ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                                        gen.status === "processing" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                                        "bg-gray-500/10 text-gray-400 border-gray-500/20"
+                                      }>
+                                        {gen.status}
+                                      </Badge>
+                                      {gen.pointsCost > 0 && (
+                                        <span className="text-xs text-white/40">{gen.pointsCost} cr</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge className="bg-violet-500/10 text-violet-400 border-violet-500/20 text-xs">
+                                      {(gen.type || "unknown").replace("_", " ")}
+                                    </Badge>
+                                    {gen.modelName && (
+                                      <span className="text-xs text-white/40 truncate">Model: {gen.modelName}</span>
+                                    )}
+                                  </div>
+                                  {gen.errorMessage && (
+                                    <p className="text-xs text-red-400/80 mt-1 truncate">Error: {gen.errorMessage}</p>
+                                  )}
+                                  <div className="flex items-center justify-between mt-1">
+                                    <span className="text-xs text-white/30">{formatDate(new Date(gen.createdAt))}</span>
+                                    {gen.completedAt && gen.createdAt && (
+                                      <span className="text-xs text-white/30">{((new Date(gen.completedAt).getTime() - new Date(gen.createdAt).getTime()) / 1000).toFixed(1)}s</span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Generation Pagination */}
+                          {(generationHistoryQuery.data?.total || 0) > 20 && (
+                            <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-3">
+                              <span className="text-xs text-white/40">
+                                Page {genPage + 1} of {Math.ceil((generationHistoryQuery.data?.total || 0) / 20)}
+                              </span>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setGenPage(p => Math.max(0, p - 1))}
+                                  disabled={genPage === 0}
+                                  className="border-white/20 text-white h-7 w-7 p-0"
+                                >
+                                  <ChevronLeft className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setGenPage(p => p + 1)}
+                                  disabled={(genPage + 1) * 20 >= (generationHistoryQuery.data?.total || 0)}
+                                  className="border-white/20 text-white h-7 w-7 p-0"
+                                >
+                                  <ChevronRight className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 ) : (
                   <Card className="bg-white/5 border-white/10">

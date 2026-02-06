@@ -3218,6 +3218,50 @@ export const appRouter = router({
         return await getUserStatistics();
       }),
 
+    // View user credit transaction history (read-only, for complaint investigation)
+    getUserCreditHistory: moderatorProcedure
+      .input(z.object({
+        userId: z.number(),
+        limit: z.number().min(1).max(100).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        type: z.enum(["generation", "purchase", "bonus", "refund", "signup", "topup", "subscription", "admin_add", "admin_deduct", "all"]).optional().default("all"),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const { getDetailedCreditHistory } = await import("./db");
+        return await getDetailedCreditHistory(input.userId, {
+          limit: input.limit,
+          offset: input.offset,
+          type: input.type === "all" ? undefined : input.type,
+          startDate: input.startDate ? new Date(input.startDate) : undefined,
+          endDate: input.endDate ? new Date(input.endDate) : undefined,
+        });
+      }),
+
+    // View user generation history (read-only, for complaint investigation)
+    getUserGenerationHistory: moderatorProcedure
+      .input(z.object({
+        userId: z.number(),
+        limit: z.number().min(1).max(100).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        status: z.enum(["pending", "processing", "completed", "failed", "all"]).optional().default("all"),
+        type: z.enum(["masterPrompt", "castingImage", "fullBody", "multiView", "iteration", "upscale", "all"]).optional().default("all"),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const { getDetailedGenerationHistory } = await import("./db");
+        return await getDetailedGenerationHistory(input.userId, {
+          limit: input.limit,
+          offset: input.offset,
+          status: input.status === "all" ? undefined : input.status,
+          type: input.type === "all" ? undefined : input.type,
+          startDate: input.startDate ? new Date(input.startDate) : undefined,
+          endDate: input.endDate ? new Date(input.endDate) : undefined,
+        });
+      }),
+
     // ============ Escalation (the only write operation for moderators) ============
 
     // Escalate an issue to #admin-actions channel via Slack
