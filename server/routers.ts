@@ -45,6 +45,7 @@ import { TRPCError } from "@trpc/server";
 import { generatePremiumIdentityPdf, PdfModelData } from "./pdfService";
 import { newsletterSignup, testConnection as testKlaviyoConnection } from "./klaviyo";
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "./rateLimit";
+import { withAtomicCredits } from "./atomicCredits";
 
 export const appRouter = router({
   system: systemRouter,
@@ -547,20 +548,23 @@ export const appRouter = router({
     fullBody: protectedProcedure
       .input(z.object({ modelId: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        const userPoints = await getUserPoints(ctx.user.id);
-        if (!userPoints || userPoints.balance < POINT_COSTS.fullBody) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Insufficient points. Need ${POINT_COSTS.fullBody} points.`,
-          });
-        }
-
+        // Validate model ownership first (cheap operation)
         const model = await getModelById(input.modelId);
         if (!model) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
         }
         if (model.userId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Get existing headshot for reference (cheap operation)
+        const assets = await getModelAssets(input.modelId);
+        const headshot = assets.find(a => a.viewType === "frontClose");
+        if (!headshot?.storageUrl) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No headshot found for full body generation",
+          });
         }
 
         const genResult = await createGeneration({
@@ -572,42 +576,31 @@ export const appRouter = router({
         });
 
         try {
-          // Get existing headshot for reference
-          const assets = await getModelAssets(input.modelId);
-          const headshot = assets.find(a => a.viewType === "frontClose");
+          // ATOMIC CREDITS: Deduct before generation, refund on failure
+          const result = await withAtomicCredits(
+            {
+              userId: ctx.user.id,
+              amount: POINT_COSTS.fullBody,
+              description: "Full body image generation",
+              referenceId: `gen-${genResult.generationId}`,
+            },
+            async () => {
+              const gender = (model.preferences as any)?.gender || 'female';
+              const genResult = await generateFullBody(
+                model.masterPrompt,
+                headshot.storageUrl,
+                gender
+              );
 
-          if (!headshot?.storageUrl) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "No headshot found for full body generation",
-            });
-          }
+              if (!genResult.imageUrl) {
+                throw new TRPCError({
+                  code: "INTERNAL_SERVER_ERROR",
+                  message: "Failed to generate full body image",
+                });
+              }
 
-          const gender = (model.preferences as any)?.gender || 'female';
-          const result = await generateFullBody(
-            model.masterPrompt,
-            headshot.storageUrl,
-            gender
-          );
-
-          if (!result.imageUrl) {
-            await updateGeneration(genResult.generationId!, {
-              status: "failed",
-              errorMessage: "No image generated",
-              completedAt: new Date(),
-            });
-            throw new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "Failed to generate full body image",
-            });
-          }
-
-          await deductPoints(
-            ctx.user.id,
-            POINT_COSTS.fullBody,
-            "generation",
-            "Full body image generation",
-            `gen-${genResult.generationId}`
+              return genResult;
+            }
           );
 
           const assetResult = await createModelAsset({
@@ -647,20 +640,23 @@ export const appRouter = router({
         viewType: z.enum(["side", "back", "walk"]),
       }))
       .mutation(async ({ ctx, input }) => {
-        const userPoints = await getUserPoints(ctx.user.id);
-        if (!userPoints || userPoints.balance < POINT_COSTS.multiView) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Insufficient points. Need ${POINT_COSTS.multiView} points.`,
-          });
-        }
-
+        // Validate model ownership first (cheap operation)
         const model = await getModelById(input.modelId);
         if (!model) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
         }
         if (model.userId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Get reference image (cheap operation)
+        const assets = await getModelAssets(input.modelId);
+        const reference = assets.find(a => a.viewType === "frontClose" || a.viewType === "frontFull");
+        if (!reference?.storageUrl) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No reference image found for multi-view generation",
+          });
         }
 
         const genResult = await createGeneration({
@@ -673,42 +669,32 @@ export const appRouter = router({
         });
 
         try {
-          const assets = await getModelAssets(input.modelId);
-          const reference = assets.find(a => a.viewType === "frontClose" || a.viewType === "frontFull");
+          // ATOMIC CREDITS: Deduct before generation, refund on failure
+          const result = await withAtomicCredits(
+            {
+              userId: ctx.user.id,
+              amount: POINT_COSTS.multiView,
+              description: `${input.viewType} view generation`,
+              referenceId: `gen-${genResult.generationId}`,
+            },
+            async () => {
+              const gender = (model.technicalSchema as any)?.subject?.sex || 'female';
+              const genResult = await generateRemainingViews(
+                model.masterPrompt,
+                reference.storageUrl,
+                gender,
+                input.viewType
+              );
 
-          if (!reference?.storageUrl) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "No reference image found for multi-view generation",
-            });
-          }
+              if (!genResult.imageUrl) {
+                throw new TRPCError({
+                  code: "INTERNAL_SERVER_ERROR",
+                  message: "Failed to generate view",
+                });
+              }
 
-          const gender = (model.technicalSchema as any)?.subject?.sex || 'female';
-          const result = await generateRemainingViews(
-            model.masterPrompt,
-            reference.storageUrl,
-            gender,
-            input.viewType
-          );
-
-          if (!result.imageUrl) {
-            await updateGeneration(genResult.generationId!, {
-              status: "failed",
-              errorMessage: "No image generated",
-              completedAt: new Date(),
-            });
-            throw new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "Failed to generate view",
-            });
-          }
-
-          await deductPoints(
-            ctx.user.id,
-            POINT_COSTS.multiView,
-            "generation",
-            `${input.viewType} view generation`,
-            `gen-${genResult.generationId}`
+              return genResult;
+            }
           );
 
           const assetViewType = input.viewType === "side" ? "sideClose" : input.viewType === "walk" ? "sideFull" : "backFull";
@@ -749,20 +735,24 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const totalCost = POINT_COSTS.multiView * 3; // 3 views
-        const userPoints = await getUserPoints(ctx.user.id);
-        if (!userPoints || userPoints.balance < totalCost) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Insufficient points. Need ${totalCost} points for all views.`,
-          });
-        }
-
+        
+        // Validate model ownership first (cheap operation)
         const model = await getModelById(input.modelId);
         if (!model) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
         }
         if (model.userId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Get reference image (cheap operation)
+        const assets = await getModelAssets(input.modelId);
+        const reference = assets.find(a => a.viewType === "frontFull" || a.viewType === "frontClose");
+        if (!reference?.storageUrl) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No reference image found for multi-view generation",
+          });
         }
 
         const genResult = await createGeneration({
@@ -775,32 +765,26 @@ export const appRouter = router({
         });
 
         try {
-          const assets = await getModelAssets(input.modelId);
-          const reference = assets.find(a => a.viewType === "frontFull" || a.viewType === "frontClose");
+          // ATOMIC CREDITS: Deduct before generation, refund on failure
+          const results = await withAtomicCredits(
+            {
+              userId: ctx.user.id,
+              amount: totalCost,
+              description: "All views generation (side, walk, back)",
+              referenceId: `gen-${genResult.generationId}`,
+            },
+            async () => {
+              const gender = (model.technicalSchema as any)?.subject?.sex || 'female';
+              
+              // Generate all 3 views in parallel
+              const [sideResult, walkResult, backResult] = await Promise.all([
+                generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'side'),
+                generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'walk'),
+                generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'back'),
+              ]);
 
-          if (!reference?.storageUrl) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "No reference image found for multi-view generation",
-            });
-          }
-
-          const gender = (model.technicalSchema as any)?.subject?.sex || 'female';
-          
-          // Generate all 3 views in parallel
-          const [sideResult, walkResult, backResult] = await Promise.all([
-            generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'side'),
-            generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'walk'),
-            generateRemainingViews(model.masterPrompt, reference.storageUrl, gender, 'back'),
-          ]);
-
-          // Deduct points for all 3 views
-          await deductPoints(
-            ctx.user.id,
-            totalCost,
-            "generation",
-            "All views generation (side, walk, back)",
-            `gen-${genResult.generationId}`
+              return { sideResult, walkResult, backResult };
+            }
           );
 
           // Create assets for all 3 views
@@ -809,21 +793,21 @@ export const appRouter = router({
               modelId: input.modelId,
               viewType: "sideClose",
               resolution: "1K",
-              storageUrl: sideResult.imageUrl,
+              storageUrl: results.sideResult.imageUrl,
               pointsCost: POINT_COSTS.multiView,
             }),
             createModelAsset({
               modelId: input.modelId,
               viewType: "sideFull",
               resolution: "1K",
-              storageUrl: walkResult.imageUrl,
+              storageUrl: results.walkResult.imageUrl,
               pointsCost: POINT_COSTS.multiView,
             }),
             createModelAsset({
               modelId: input.modelId,
               viewType: "backFull",
               resolution: "1K",
-              storageUrl: backResult.imageUrl,
+              storageUrl: results.backResult.imageUrl,
               pointsCost: POINT_COSTS.multiView,
             }),
           ]);
@@ -836,9 +820,9 @@ export const appRouter = router({
           return {
             success: true,
             views: {
-              sideClose: { imageUrl: sideResult.imageUrl, assetId: sideAsset.assetId },
-              sideFull: { imageUrl: walkResult.imageUrl, assetId: walkAsset.assetId },
-              backFull: { imageUrl: backResult.imageUrl, assetId: backAsset.assetId },
+              sideClose: { imageUrl: results.sideResult.imageUrl, assetId: sideAsset.assetId },
+              sideFull: { imageUrl: results.walkResult.imageUrl, assetId: walkAsset.assetId },
+              backFull: { imageUrl: results.backResult.imageUrl, assetId: backAsset.assetId },
             },
             pointsCost: totalCost,
           };
@@ -861,14 +845,7 @@ export const appRouter = router({
         maskBase64: z.string().optional(), // Base64 encoded mask image for surgical edit/eraser
       }))
       .mutation(async ({ ctx, input }) => {
-        const userPoints = await getUserPoints(ctx.user.id);
-        if (!userPoints || userPoints.balance < POINT_COSTS.iterate) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Insufficient points. Need ${POINT_COSTS.iterate} points.`,
-          });
-        }
-
+        // Validate model ownership first (cheap operation)
         const model = await getModelById(input.modelId);
         if (!model) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -877,6 +854,7 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
+        // Validate asset exists (cheap operation)
         const assets = await getModelAssets(input.modelId);
         const targetAsset = assets.find(a => a.id === input.assetId);
         if (!targetAsset) {
@@ -893,47 +871,47 @@ export const appRouter = router({
         });
 
         try {
-          // Regenerate master prompt with iteration feedback
-          const updatedPromptResult = await generateMasterPrompt(
+          // ATOMIC CREDITS: Deduct before generation, refund on failure
+          const result = await withAtomicCredits(
             {
-              ...model.preferences as any,
-              userPrompt: input.feedback,
-              previousMasterPrompt: model.masterPrompt,
+              userId: ctx.user.id,
+              amount: POINT_COSTS.iterate,
+              description: "Model iteration",
+              referenceId: `gen-${genResult.generationId}`,
             },
-            'ITERATE'
-          );
-          const updatedMasterPrompt = updatedPromptResult.naturalDescription;
-          const updatedSchema = updatedPromptResult.technicalSchema;
+            async () => {
+              // Regenerate master prompt with iteration feedback
+              const updatedPromptResult = await generateMasterPrompt(
+                {
+                  ...model.preferences as any,
+                  userPrompt: input.feedback,
+                  previousMasterPrompt: model.masterPrompt,
+                },
+                'ITERATE'
+              );
+              const updatedMasterPrompt = updatedPromptResult.naturalDescription;
+              const updatedSchema = updatedPromptResult.technicalSchema;
 
-          const result = await iterateModel(
-            updatedMasterPrompt,
-            targetAsset.storageUrl,
-            input.feedback,
-            {
-              castingBrand: (model.technicalSchema as any)?.context?.casting_for,
-              frame: targetAsset.viewType === 'frontClose' ? 'HEADSHOT' : 'FULL_BODY',
-              maskBase64: input.maskBase64, // Pass mask for surgical edit/eraser
+              const iterResult = await iterateModel(
+                updatedMasterPrompt,
+                targetAsset.storageUrl,
+                input.feedback,
+                {
+                  castingBrand: (model.technicalSchema as any)?.context?.casting_for,
+                  frame: targetAsset.viewType === 'frontClose' ? 'HEADSHOT' : 'FULL_BODY',
+                  maskBase64: input.maskBase64,
+                }
+              );
+
+              if (!iterResult.imageUrl) {
+                throw new TRPCError({
+                  code: "INTERNAL_SERVER_ERROR",
+                  message: "Failed to iterate model",
+                });
+              }
+
+              return { imageUrl: iterResult.imageUrl, updatedMasterPrompt, updatedSchema };
             }
-          );
-
-          if (!result.imageUrl) {
-            await updateGeneration(genResult.generationId!, {
-              status: "failed",
-              errorMessage: "No image generated",
-              completedAt: new Date(),
-            });
-            throw new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "Failed to iterate model",
-            });
-          }
-
-          await deductPoints(
-            ctx.user.id,
-            POINT_COSTS.iterate,
-            "generation",
-            "Model iteration",
-            `gen-${genResult.generationId}`
           );
 
           const assetResult = await createModelAsset({
@@ -946,8 +924,8 @@ export const appRouter = router({
 
           // Update model with new master prompt
           await updateModel(input.modelId, {
-            masterPrompt: updatedMasterPrompt,
-            technicalSchema: updatedSchema,
+            masterPrompt: result.updatedMasterPrompt,
+            technicalSchema: result.updatedSchema,
           });
 
           await updateGeneration(genResult.generationId!, {
@@ -960,8 +938,8 @@ export const appRouter = router({
             success: true,
             imageUrl: result.imageUrl,
             pointsCost: POINT_COSTS.iterate,
-            masterPrompt: updatedMasterPrompt,
-            technicalSchema: updatedSchema,
+            masterPrompt: result.updatedMasterPrompt,
+            technicalSchema: result.updatedSchema,
             assetId: assetResult.assetId,
           };
         } catch (error) {
@@ -992,34 +970,29 @@ export const appRouter = router({
         resolution: z.enum(['1K', '2K', '4K']),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Check points for upscaling (use iterate cost)
-        const userPoints = await getUserPoints(ctx.user.id);
         const upscaleCost = POINT_COSTS.iterate;
-        if (!userPoints || userPoints.balance < upscaleCost) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Insufficient points. Need ${upscaleCost} points.`,
-          });
-        }
+        const referenceId = `upscale-${Date.now()}`;
 
         try {
-          // Map resolution string to ImageResolution enum
-          const resolutionMap: Record<string, ImageResolution> = {
-            '1K': ImageResolution.STANDARD,
-            '2K': ImageResolution.HIGH,
-            '4K': ImageResolution.ULTRA,
-          };
-          const targetRes = resolutionMap[input.resolution] || ImageResolution.STANDARD;
+          // ATOMIC CREDITS: Deduct before upscale, refund on failure
+          const result = await withAtomicCredits(
+            {
+              userId: ctx.user.id,
+              amount: upscaleCost,
+              description: `Upscale to ${input.resolution}`,
+              referenceId,
+            },
+            async () => {
+              // Map resolution string to ImageResolution enum
+              const resolutionMap: Record<string, ImageResolution> = {
+                '1K': ImageResolution.STANDARD,
+                '2K': ImageResolution.HIGH,
+                '4K': ImageResolution.ULTRA,
+              };
+              const targetRes = resolutionMap[input.resolution] || ImageResolution.STANDARD;
 
-          const result = await upscaleImage(input.imageUrl, targetRes);
-
-          // Deduct points
-          await deductPoints(
-            ctx.user.id,
-            upscaleCost,
-            "generation",
-            `Upscale to ${input.resolution}`,
-            `upscale-${Date.now()}`
+              return await upscaleImage(input.imageUrl, targetRes);
+            }
           );
 
           return {

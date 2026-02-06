@@ -2474,3 +2474,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Convert remaining inline styles to Tailwind classes (partial - some complex styles kept inline)
 - [x] Add ARIA labels to navigation buttons
 - [x] Add skip link for accessibility
+- [x] Create reusable withAtomicCredits helper for universal credit deduction security
+- [x] Apply atomic credit pattern to fullBody generation endpoint
+- [x] Apply atomic credit pattern to multiView generation endpoint
+- [x] Apply atomic credit pattern to generateAllViews endpoint
+- [x] Apply atomic credit pattern to iterate endpoint
+- [x] Apply atomic credit pattern to upscale endpoint
+- [ ] Add developer documentation for atomic credit pattern
