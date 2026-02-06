@@ -2823,3 +2823,4 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fixes
 - [x] Fix React hooks order violation in ProfileSettingsModal (deleteAccountMutation after early return)
+- [x] Reduce session cookie maxAge from 1 year to 30 days (security hardening)
