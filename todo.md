@@ -3310,3 +3310,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] History view: back arrow (‹) + "Invitation history" title + close X (matching reference)
 - [x] Keep Redeem Code as a separate overlay modal (no change)
 - [x] Remove InvitationHistoryModal separate modal usage from ReferralModal
+
+## Bug Fix: Referral Modal History View Height
+- [x] Maintain same modal height when switching between share and history views (min-h-[480px] + flex-col + flex-1)

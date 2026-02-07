@@ -104,8 +104,8 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
           onClick={handleClose}
         />
 
-        {/* Modal shell — fixed size so view switch doesn't jump */}
-        <div className="relative w-full max-w-md mx-4 bg-card text-card-foreground rounded-2xl shadow-2xl border border-border overflow-hidden">
+        {/* Modal shell — min-h keeps height consistent across views */}
+        <div className="relative w-full max-w-md mx-4 bg-card text-card-foreground rounded-2xl shadow-2xl border border-border overflow-hidden min-h-[480px] flex flex-col">
           {/* Close button (always visible) */}
           <button
             onClick={handleClose}
@@ -263,8 +263,8 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
                 </h3>
               </div>
 
-              {/* History list */}
-              <div className="px-6 pb-6 max-h-80 overflow-y-auto">
+              {/* History list — flex-1 fills remaining modal height */}
+              <div className="px-6 pb-6 flex-1 overflow-y-auto">
                 {historyLoading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
@@ -275,7 +275,7 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
                     ))}
                   </div>
                 ) : !history || history.length === 0 ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-12 flex flex-col items-center justify-center h-full">
                     <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
                       <Mail className="w-5 h-5 text-muted-foreground" />
                     </div>
