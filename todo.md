@@ -3196,3 +3196,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Step 2b: Update BillingModal to handle expanded tiers + BillingTab dynamic labels
 - [x] Step 2c: Build passes, 0 TS errors, 591 tests pass
 - [x] Checkpoint
+
+## Bug Fix: CreditTopupModal pricing and dropdown display
+- [x] Fix: "due today" price correct — free users see full tier price, existing subscribers see Stripe prorated amount
+- [x] Fix: Dropdown now shows only "+ X monthly credits" with no plan names

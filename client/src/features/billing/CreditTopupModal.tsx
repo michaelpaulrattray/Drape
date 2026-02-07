@@ -21,6 +21,86 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
   const { data: status } = trpc.billing.getStatus.useQuery();
   const { data: subDetails } = trpc.billing.getSubscriptionDetails.useQuery();
 
+  // Derive tier data
+  const currentPlan = status?.planTier || "free";
+  const planOrder = plans?.planOrder || [];
+  const tiers = plans?.tiers;
+  const hasSubscription = status?.hasSubscription ?? false;
+  const isFreeUser = currentPlan === "free" || !hasSubscription;
+
+  // Available upgrade options (tiers above current)
+  const upgradeOptions = useMemo(() => {
+    if (!tiers || !planOrder.length) return [];
+    const currentIdx = planOrder.indexOf(currentPlan);
+    return planOrder
+      .slice(currentIdx + 1)
+      .map((key) => {
+        const tier = tiers[key as keyof typeof tiers];
+        if (!tier) return null;
+        const currentTier = tiers[currentPlan as keyof typeof tiers];
+        const creditDelta = tier.monthlyCredits - (currentTier?.monthlyCredits || 0);
+        return { key, ...tier, creditDelta };
+      })
+      .filter(Boolean) as Array<{
+        key: string; name: string; monthlyCredits: number;
+        price: number; rolloverPercent: number; creditDelta: number;
+      }>;
+  }, [tiers, planOrder, currentPlan]);
+
+  // Default to next tier up
+  const effectiveSelectedKey = selectedTierKey || upgradeOptions[0]?.key || null;
+  const selectedOption = upgradeOptions.find((o) => o.key === effectiveSelectedKey);
+
+  // Fetch proration preview for existing subscribers
+  const { data: prorationPreview } = trpc.billing.previewPlanChange.useQuery(
+    { newPlan: effectiveSelectedKey as any },
+    { enabled: !isFreeUser && !!effectiveSelectedKey }
+  );
+
+  // Price calculations
+  const newMonthlyPrice = selectedOption?.price || 0;
+
+  // "Due today" calculation:
+  // - Free users: full price of the new tier (with annual discount if toggled)
+  // - Existing subscribers: prorated immediate charge from Stripe
+  const getDueToday = () => {
+    if (isFreeUser) {
+      const fullPrice = newMonthlyPrice;
+      return isAnnual ? Math.round(fullPrice * (1 - ANNUAL_DISCOUNT)) : fullPrice;
+    }
+    // Existing subscriber: use Stripe's prorated amount
+    if (prorationPreview) {
+      return prorationPreview.immediateCharge;
+    }
+    return 0;
+  };
+
+  const dueToday = getDueToday();
+
+  // Strikethrough: show full monthly price when annual is toggled (for free users)
+  const showStrikethrough = isAnnual && isFreeUser;
+  const strikethroughPrice = newMonthlyPrice;
+
+  // New monthly rate going forward
+  const newMonthlyRate = isAnnual
+    ? Math.round(newMonthlyPrice * (1 - ANNUAL_DISCOUNT))
+    : newMonthlyPrice;
+
+  // Renewal date
+  const renewalDate = subDetails?.renewalDate
+    ? new Date(subDetails.renewalDate)
+    : null;
+
+  const formatPrice = (cents: number) => {
+    const dollars = cents / 100;
+    return dollars >= 1000
+      ? `$${dollars.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+      : `$${dollars.toFixed(0)}`;
+  };
+
+  const formatRenewalDate = (date: Date) =>
+    date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
   const createCheckout = trpc.billing.createSubscriptionCheckout.useMutation({
     onSuccess: (data) => {
       window.open(data.checkoutUrl, "_blank");
@@ -46,69 +126,12 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
     },
   });
 
-  // Derive tier data
-  const currentPlan = status?.planTier || "free";
-  const planOrder = plans?.planOrder || [];
-  const tiers = plans?.tiers;
-
-  // Available upgrade options (tiers above current)
-  const upgradeOptions = useMemo(() => {
-    if (!tiers || !planOrder.length) return [];
-    const currentIdx = planOrder.indexOf(currentPlan);
-    return planOrder
-      .slice(currentIdx + 1)
-      .map((key) => {
-        const tier = tiers[key as keyof typeof tiers];
-        if (!tier) return null;
-        const currentTier = tiers[currentPlan as keyof typeof tiers];
-        const creditDelta = tier.monthlyCredits - (currentTier?.monthlyCredits || 0);
-        return { key, ...tier, creditDelta };
-      })
-      .filter(Boolean) as Array<{
-        key: string; name: string; monthlyCredits: number;
-        price: number; rolloverPercent: number; creditDelta: number;
-      }>;
-  }, [tiers, planOrder, currentPlan]);
-
-  // Default to next tier up
-  const effectiveSelectedKey = selectedTierKey || upgradeOptions[0]?.key || null;
-  const selectedOption = upgradeOptions.find((o) => o.key === effectiveSelectedKey);
-
-  // Price calculations
-  const currentTier = tiers?.[currentPlan as keyof typeof tiers];
-  const currentMonthlyPrice = currentTier?.price || 0;
-  const newMonthlyPrice = selectedOption?.price || 0;
-
-  const monthlyDifference = newMonthlyPrice - currentMonthlyPrice;
-  const annualMonthlyDifference = Math.round(monthlyDifference * (1 - ANNUAL_DISCOUNT));
-  const effectiveDifference = isAnnual ? annualMonthlyDifference : monthlyDifference;
-
-  // Strikethrough price (full monthly price of new tier, not the delta)
-  const fullNewPrice = isAnnual
-    ? Math.round(newMonthlyPrice * (1 - ANNUAL_DISCOUNT))
-    : newMonthlyPrice;
-
-  // Renewal date
-  const renewalDate = subDetails?.renewalDate
-    ? new Date(subDetails.renewalDate)
-    : null;
-
-  const formatPrice = (cents: number) => {
-    const dollars = cents / 100;
-    return dollars >= 1000
-      ? `$${dollars.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
-      : `$${dollars.toFixed(0)}`;
-  };
-
-  const formatRenewalDate = (date: Date) =>
-    date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
   const handleUpgrade = () => {
     if (!effectiveSelectedKey) return;
     setIsUpgrading(true);
 
     const planKey = effectiveSelectedKey as any;
-    if (currentPlan === "free" || !status?.hasSubscription) {
+    if (isFreeUser) {
       createCheckout.mutate({ plan: planKey, interval: isAnnual ? "annual" : "monthly" });
     } else {
       changePlan.mutate({ newPlan: planKey });
@@ -145,7 +168,6 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
         </div>
 
         {isMaxTier ? (
-          /* Max tier state */
           <div className="px-6 pb-6">
             <div className="text-center py-8">
               <p className="text-[#0A0A0A] font-medium">You're on the highest plan</p>
@@ -182,13 +204,13 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
 
               {/* Price display */}
               <div className="flex items-baseline gap-2 mb-3">
-                {isAnnual && (
+                {showStrikethrough && (
                   <span className="text-lg text-[#BDBDBD] line-through">
-                    {formatPrice(monthlyDifference)}
+                    {formatPrice(strikethroughPrice)}
                   </span>
                 )}
                 <span className="text-3xl font-bold text-[#0A0A0A]">
-                  {formatPrice(effectiveDifference)}
+                  {formatPrice(dueToday)}
                 </span>
                 <span className="text-sm text-[#757575]">due today</span>
               </div>
@@ -216,7 +238,7 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
                           setSelectedTierKey(option.key);
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-[#F5F5F5] transition-colors ${
+                        className={`w-full text-left px-4 py-3 text-sm hover:bg-[#F5F5F5] transition-colors ${
                           option.key === effectiveSelectedKey
                             ? "bg-[#F5F5F5] font-medium"
                             : ""
@@ -224,9 +246,6 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
                       >
                         <span className="text-[#0A0A0A]">
                           + {option.creditDelta.toLocaleString()} monthly credits
-                        </span>
-                        <span className="text-[#757575] text-xs">
-                          {option.name} — {formatPrice(option.price)}/mo
                         </span>
                       </button>
                     ))}
@@ -249,7 +268,7 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
                 <Check className="w-4 h-4 text-[#0A0A0A] mt-0.5 shrink-0" />
                 <span className="text-sm text-[#424242]">
                   Your plan will update to{" "}
-                  <strong>{formatPrice(isAnnual ? fullNewPrice : newMonthlyPrice)} / month</strong>{" "}
+                  <strong>{formatPrice(newMonthlyRate)} / month</strong>{" "}
                   for{" "}
                   <strong>{selectedOption?.monthlyCredits.toLocaleString()}</strong>{" "}
                   credits
