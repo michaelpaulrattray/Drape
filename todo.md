@@ -2859,3 +2859,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Redesign login page: two-column layout (form left, testimonial + social proof right)
 - [x] Style login page consistently with homepage design language
 - [x] Mobile-responsive login page (stacks to single column on mobile)
+- [x] Fix login page style inconsistencies: colors, buttons, animations, background must match homepage exactly

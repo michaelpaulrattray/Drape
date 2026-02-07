@@ -1,7 +1,7 @@
 import { getLoginUrl } from "@/const";
-import { Button } from "@/components/ui/button";
+import { Button as DSButton, ConveyorTextColor } from "@/components/design-system";
 import { ArrowRight, AlertCircle, Clock, ShieldOff } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 // ─── Error configurations ──────────────────────────────────────────────────
 const ERROR_MESSAGES = {
@@ -41,7 +41,7 @@ const BRAND_LOGOS = [
   { name: "Instagram", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/mikmpxOOFgYakoyl.svg" },
 ];
 
-// ─── Testimonial data ──────────────────────────────────────────────────────
+// ─── Testimonial ───────────────────────────────────────────────────────────
 const TESTIMONIAL = {
   quote: "FormaStudio understood our brand better than we did. Their ability to generate the perfect model identities is what sets them apart.",
   name: "Sofia Ford",
@@ -59,12 +59,12 @@ function ErrorBanner({ errorType, lockMinutes }: { errorType: string; lockMinute
       : ERROR_MESSAGES.error;
 
   return (
-    <div className={`mb-6 p-4 rounded-xl border ${errorConfig.bgColor} ${errorConfig.borderColor}`}>
+    <div className={`mb-6 p-4 rounded-2xl border ${errorConfig.bgColor} ${errorConfig.borderColor}`}>
       <div className="flex items-start gap-3">
         <errorConfig.icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${errorConfig.iconColor}`} />
         <div>
-          <h3 className="font-semibold text-obsidian text-sm">{errorConfig.title}</h3>
-          <p className="text-sm text-gray-600 mt-1">
+          <h3 className="font-semibold text-[#0A0A0A] text-sm">{errorConfig.title}</h3>
+          <p className="text-sm text-[#757575] mt-1">
             {errorType === "locked" && lockMinutes
               ? `Your account has been temporarily locked due to multiple failed login attempts. Please try again in ${lockMinutes} minute${parseInt(lockMinutes) !== 1 ? "s" : ""}.`
               : errorConfig.message}
@@ -72,45 +72,13 @@ function ErrorBanner({ errorType, lockMinutes }: { errorType: string; lockMinute
           {errorType === "suspended" && (
             <a
               href="mailto:support@formastudio.ai"
-              className="inline-flex items-center gap-1 text-sm font-medium text-slate-accent hover:underline mt-2"
+              className="inline-flex items-center gap-1 text-sm font-medium text-[#0A0A0A] hover:text-[#0A0A0A]/70 mt-2 transition-colors duration-300"
             >
               Contact Support <ArrowRight className="w-3 h-3" />
             </a>
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function LoginForm({ loginUrl, isSuspended }: { loginUrl: string; isSuspended: boolean }) {
-  return (
-    <div className="space-y-3">
-      {/* Google */}
-      {isSuspended ? (
-        <Button variant="outline" className="w-full h-12 bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed" disabled>
-          <GoogleIcon disabled /> Sign in with Google
-        </Button>
-      ) : (
-        <a href={loginUrl} className="block">
-          <Button variant="outline" className="w-full h-12 bg-white hover:bg-gray-50 border-gray-200 hover:border-[#6E7F8D] text-obsidian transition-all duration-300">
-            <GoogleIcon /> Sign in with Google
-          </Button>
-        </a>
-      )}
-
-      {/* Apple */}
-      {isSuspended ? (
-        <Button variant="outline" className="w-full h-12 bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed" disabled>
-          <AppleIcon disabled /> Sign in with Apple
-        </Button>
-      ) : (
-        <a href={loginUrl} className="block">
-          <Button variant="outline" className="w-full h-12 bg-white hover:bg-gray-50 border-gray-200 hover:border-[#6E7F8D] text-obsidian transition-all duration-300">
-            <AppleIcon /> Sign in with Apple
-          </Button>
-        </a>
-      )}
     </div>
   );
 }
@@ -135,6 +103,27 @@ function AppleIcon({ disabled }: { disabled?: boolean }) {
   );
 }
 
+function OAuthButton({ href, disabled, children }: { href: string; disabled: boolean; children: React.ReactNode }) {
+  if (disabled) {
+    return (
+      <button
+        className="w-full h-12 inline-flex items-center justify-center rounded-full bg-[#EBEBEB]/50 border border-[#D4D4D4] text-[#D4D4D4] cursor-not-allowed text-sm font-medium"
+        disabled
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <a
+      href={href}
+      className="group w-full h-12 inline-flex items-center justify-center rounded-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] hover:border-[#0A0A0A]/30 transition-all duration-300 text-sm font-medium"
+    >
+      {children}
+    </a>
+  );
+}
+
 function SocialProofPanel() {
   return (
     <div className="hidden lg:flex flex-col items-center justify-center px-12 xl:px-16">
@@ -143,21 +132,21 @@ function SocialProofPanel() {
         <img
           src={TESTIMONIAL.image}
           alt={TESTIMONIAL.name}
-          className="w-20 h-20 rounded-full object-cover mx-auto mb-8 border-2 border-gray-200"
+          className="w-20 h-20 rounded-full object-cover mx-auto mb-8 border border-[#0A0A0A]/10"
         />
-        <blockquote className="text-lg md:text-xl font-medium leading-relaxed text-obsidian mb-6 font-geist tracking-tight">
+        <blockquote className="text-lg md:text-xl font-medium leading-relaxed text-[#0A0A0A] mb-6 tracking-tight">
           &ldquo;{TESTIMONIAL.quote}&rdquo;
         </blockquote>
-        <p className="text-sm font-semibold text-obsidian">@{TESTIMONIAL.name.toLowerCase().replace(" ", "")}</p>
-        <p className="text-xs text-subtle mt-1">{TESTIMONIAL.title}</p>
+        <p className="text-sm font-semibold text-[#0A0A0A]">@{TESTIMONIAL.name.toLowerCase().replace(" ", "")}</p>
+        <p className="text-xs text-[#757575] mt-1">{TESTIMONIAL.title}</p>
       </div>
 
       {/* Divider */}
-      <div className="w-16 h-px bg-gray-200 my-10" />
+      <div className="w-16 h-px bg-[#D4D4D4] my-10" />
 
       {/* Trust stat */}
-      <p className="text-sm text-center text-subtle mb-6">
-        <span className="text-slate-accent font-semibold">100+</span> brands trust FormaStudio to craft their visual identity.
+      <p className="text-sm text-center text-[#757575] mb-6">
+        <span className="text-[#0A0A0A] font-semibold">100+</span> brands trust FormaStudio to craft their visual identity.
       </p>
 
       {/* Brand logos grid */}
@@ -167,7 +156,7 @@ function SocialProofPanel() {
             key={brand.name}
             src={brand.logo}
             alt={brand.name}
-            className="h-6 w-auto object-contain opacity-40 grayscale"
+            className="h-6 w-auto object-contain opacity-30"
           />
         ))}
       </div>
@@ -186,33 +175,28 @@ export default function Login() {
   const isSuspended = errorType === "suspended";
 
   return (
-    <div className="min-h-screen bg-canvas text-obsidian selection:bg-slate-accent selection:text-white">
-      {/* Technical Grid Background */}
-      <div className="fixed inset-0 technical-grid pointer-events-none z-0" />
-      <div className="fixed inset-0 bg-gradient-to-br from-white/50 via-transparent to-[#EFF2F9]/30 pointer-events-none z-0" />
-
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center">
-        <a href="/" className="group flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-slate-accent flex items-center justify-center">
+    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
+      {/* Navigation — matches homepage header style */}
+      <header className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] relative">
+        <div className="flex items-center justify-between h-14">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2">
             <img
               src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png"
-              alt="Forma Studio"
-              className="w-5 h-5 invert opacity-90"
+              alt="Forma®"
+              className="w-[31px] h-[31px]"
             />
-          </div>
-          <span className="text-lg font-semibold text-obsidian tracking-tight">FormaStudio</span>
-        </a>
-        <a
-          href="/#contact"
-          className="px-5 py-2.5 rounded-full border border-gray-200 bg-white hover:bg-slate-accent hover:text-white hover:border-slate-accent transition-all duration-300 text-sm font-medium shadow-sm"
-        >
-          Contact Us
-        </a>
-      </nav>
+          </Link>
+
+          {/* CTA */}
+          <DSButton href="/#contact" variant="primary" size="md">
+            Start a project
+          </DSButton>
+        </div>
+      </header>
 
       {/* Main Content — Two Column */}
-      <div className="min-h-screen flex items-center justify-center px-4 py-24 md:py-8 relative z-10">
+      <div className="min-h-[calc(100vh-56px)] flex items-center justify-center px-6 lg:px-12 py-12 relative">
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-0 items-center">
 
           {/* ─── Left Column: Login Form ─────────────────────────────── */}
@@ -221,67 +205,71 @@ export default function Login() {
             {errorType && <ErrorBanner errorType={errorType} lockMinutes={lockMinutes} />}
 
             {/* Card */}
-            <div className="card-soft rounded-2xl p-8 md:p-10">
+            <div className="bg-white rounded-2xl p-8 md:p-10 border border-[#0A0A0A]/5">
               <div className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight text-obsidian font-geist">
+                <h1 className="text-3xl font-medium tracking-tight text-[#0A0A0A]">
                   Sign in
                 </h1>
-                <p className="text-subtle text-sm mt-2">
+                <p className="text-[#757575] text-sm mt-2 font-medium">
                   Welcome back to your creative studio
                 </p>
               </div>
 
               {/* OAuth Buttons */}
-              <LoginForm loginUrl={loginUrl} isSuspended={isSuspended} />
+              <div className="space-y-3">
+                <OAuthButton href={loginUrl} disabled={isSuspended}>
+                  <GoogleIcon disabled={isSuspended} /> Sign in with Google
+                </OAuthButton>
+                <OAuthButton href={loginUrl} disabled={isSuspended}>
+                  <AppleIcon disabled={isSuspended} /> Sign in with Apple
+                </OAuthButton>
+              </div>
 
               {/* Divider */}
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-[#0A0A0A]/10" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-3 text-subtle">or</span>
+                  <span className="bg-white px-3 text-[#757575]">or</span>
                 </div>
               </div>
 
-              {/* Email Login */}
+              {/* Email Login — uses design-system Button with conveyor animation */}
               {isSuspended ? (
-                <Button className="w-full h-12 bg-gray-300 text-gray-500 cursor-not-allowed" disabled>
-                  Continue with Email <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                <button
+                  className="w-full h-12 inline-flex items-center justify-center rounded-full bg-[#D4D4D4] text-[#757575] cursor-not-allowed text-sm font-medium"
+                  disabled
+                >
+                  Continue with Email
+                </button>
               ) : (
-                <a href={loginUrl} className="block">
-                  <Button className="w-full h-12 btn-slate font-semibold transition-all duration-300 group shadow-lg">
-                    Continue with Email
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </a>
+                <DSButton href={loginUrl} variant="primary" size="lg" fullWidth>
+                  Continue with Email
+                </DSButton>
               )}
 
               {/* Legal */}
-              <p className="text-xs text-subtle mt-6 leading-relaxed">
+              <p className="text-xs text-[#757575] mt-6 leading-relaxed font-medium">
                 By continuing, you agree to our{" "}
-                <a href="#" className="underline underline-offset-2 hover:text-slate-accent transition-colors">
+                <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
                   Terms & Conditions
                 </a>
                 {" "}and{" "}
-                <a href="#" className="underline underline-offset-2 hover:text-slate-accent transition-colors">
+                <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
                   Privacy Policy
                 </a>.
               </p>
 
               {/* Sign up link */}
-              <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
-                <p className="text-sm text-subtle">Don't have an account?</p>
+              <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#0A0A0A]/5">
+                <p className="text-sm text-[#757575] font-medium">Don't have an account?</p>
                 {isSuspended ? (
-                  <span className="text-sm text-gray-400 font-medium">Sign up</span>
+                  <span className="text-sm text-[#D4D4D4] font-medium">Sign up</span>
                 ) : (
-                  <a
-                    href={loginUrl}
-                    className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-obsidian hover:border-[#6E7F8D] hover:text-slate-accent transition-all duration-300"
-                  >
+                  <DSButton href={loginUrl} variant="outline" size="sm">
                     Sign up
-                  </a>
+                  </DSButton>
                 )}
               </div>
             </div>
