@@ -21,6 +21,7 @@ import { adminRouter } from "./routes/admin";
 import { moderatorRouter } from "./routes/moderator";
 import { moderatorExportsRouter } from "./routes/moderatorExports";
 import { moderatorAttachmentsRouter } from "./routes/moderatorAttachments";
+import { moderatorReconciliationRouter } from "./routes/moderatorReconciliation";
 import { referralRouter } from "./routes/referral";
 
 export const appRouter = router({
@@ -40,6 +41,7 @@ export const appRouter = router({
   moderator: moderatorRouter,
   moderatorExports: moderatorExportsRouter,
   moderatorAttachments: moderatorAttachmentsRouter,
+  moderatorReconciliation: moderatorReconciliationRouter,
   referral: referralRouter,
 });
 

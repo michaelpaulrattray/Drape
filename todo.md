@@ -3386,3 +3386,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire frontend download logic (Blob download, timestamped filename, toast with failed count + credits used)
 - [x] Pass userId prop through UserInvestigationTab to GenerationsSubTab
 - [x] 659 tests passing, 0 TypeScript errors
+
+## Feature: Credit Reconciliation View
+- [x] Add backend getUserCreditReconciliation procedure (credits deducted vs successful generations)
+- [x] Create ReconciliationSubTab component with side-by-side comparison
+- [x] Add "Reconciliation" tab to user detail tabs in UserInvestigationTab
+- [x] Show discrepancy alerts when credits deducted > successful generation costs
+- [x] Support date range filtering
+- [x] Fix reconciliation to compute summaries from date-filtered rows (not unfiltered summary)
+- [x] Extract UserTable and UserDetailCard from UserInvestigationTab.tsx (488→235 lines)
+- [x] Write 17 reconciliation unit tests (676 total tests passing)
