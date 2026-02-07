@@ -3,6 +3,7 @@
  * Serves cached S3 URLs at /api/hero/:asset with proper CORS headers.
  */
 import { Router, type Request, type Response } from "express";
+import { gzipSync } from "node:zlib";
 import { storageGet } from "./storage";
 
 const router = Router();
@@ -14,7 +15,11 @@ const HERO_ASSETS: Record<string, string> = {
 };
 
 // Cache fetched images in memory (they're static assets, ~2MB each)
-const imageCache = new Map<string, { buffer: Buffer; contentType: string }>();
+// Stores both raw and gzipped versions for fast delivery
+const imageCache = new Map<
+  string,
+  { buffer: Buffer; gzipped: Buffer; contentType: string }
+>();
 
 router.get("/api/hero/:asset", async (req: Request, res: Response) => {
   const assetKey = req.params.asset;
@@ -33,7 +38,13 @@ router.get("/api/hero/:asset", async (req: Request, res: Response) => {
   const cached = imageCache.get(assetKey);
   if (cached) {
     res.setHeader("Content-Type", cached.contentType);
-    res.send(cached.buffer);
+    const acceptsGzip = req.headers["accept-encoding"]?.includes("gzip");
+    if (acceptsGzip) {
+      res.setHeader("Content-Encoding", "gzip");
+      res.send(cached.gzipped);
+    } else {
+      res.send(cached.buffer);
+    }
     return;
   }
 
@@ -49,11 +60,18 @@ router.get("/api/hero/:asset", async (req: Request, res: Response) => {
     const buffer = Buffer.from(await response.arrayBuffer());
     const contentType = response.headers.get("content-type") || "image/png";
 
-    // Cache in memory
-    imageCache.set(assetKey, { buffer, contentType });
+    // Pre-compress and cache both versions
+    const gzipped = gzipSync(buffer, { level: 6 });
+    imageCache.set(assetKey, { buffer, gzipped, contentType });
 
     res.setHeader("Content-Type", contentType);
-    res.send(buffer);
+    const acceptsGzip = req.headers["accept-encoding"]?.includes("gzip");
+    if (acceptsGzip) {
+      res.setHeader("Content-Encoding", "gzip");
+      res.send(gzipped);
+    } else {
+      res.send(buffer);
+    }
   } catch (err: any) {
     console.error(`[Hero Proxy] Error fetching ${assetKey}:`, err.message);
     res.status(500).json({ error: "Internal error" });

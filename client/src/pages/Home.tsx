@@ -533,7 +533,7 @@ function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4, ease: easeOut }}
-          className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5 h-hero-image"
+          className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden h-hero-image"
         >
           <Suspense fallback={
             <img

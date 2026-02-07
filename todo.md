@@ -2845,3 +2845,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Increase reveal radius (0.15 → 0.5, tuned iteratively)
 - [x] Fix shadow at reveal edge (apply same parallax to both textures)
 - [x] Tune parallax strength to 0.012 (sweet spot before double-image)
+- [x] Fix dark overlay on hero image (disable Three.js ACESFilmic tone mapping, remove bg tint)

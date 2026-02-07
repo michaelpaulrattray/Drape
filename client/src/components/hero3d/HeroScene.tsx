@@ -50,6 +50,11 @@ function useHeroTextures() {
             tex.colorSpace = isSRGB
               ? THREE.SRGBColorSpace
               : THREE.LinearSRGBColorSpace;
+            // Sharper rendering with mipmaps and anisotropic filtering
+            tex.generateMipmaps = true;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.anisotropy = 16;
             resolve(tex);
           },
           undefined,
@@ -136,6 +141,7 @@ function RevealPlane({
         fragmentShader={fragmentShader}
         uniforms={uniforms}
         transparent
+        toneMapped={false}
       />
     </mesh>
   );
@@ -226,6 +232,7 @@ export default function HeroScene() {
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
         dpr={[1, 2]}
+        flat
         gl={{ antialias: true, alpha: true }}
         style={{
           width: "100%",
