@@ -24,7 +24,7 @@ const IMAGE_ASPECT = 2048 / 1143;
 /** Reveal circle radius in UV space (0–1). */
 const REVEAL_RADIUS = 0.5;
 /** Parallax strength — very subtle to avoid warping. */
-const PARALLAX_STRENGTH = 0.012;
+const PARALLAX_STRENGTH = 0.010;
 
 // ─── Shared mouse state (set by DOM, read by R3F) ─────────────────────────
 const sharedMouse = { x: 0.5, y: 0.5, hovering: false };

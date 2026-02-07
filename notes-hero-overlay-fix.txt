@@ -1,8 +1,0 @@
-Hero overlay fix observation (post-fix):
-- The hero image is rendering and visible in the viewport
-- The image appears brighter and more true-to-source compared to before
-- The gray background of the original photo is clearly visible without any dark tint
-- The skin tones look natural and not washed out or darkened
-- The Three.js canvas is rendering correctly with flat (no tone mapping) enabled
-- The bg-[#0A0A0A]/5 dark tint has been removed from the container
-- Changes: flat prop on Canvas, toneMapped={false} on material, removed bg tint class
