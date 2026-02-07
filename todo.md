@@ -2854,3 +2854,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add frameloop="demand" to Canvas — only re-render on mouse interaction
 - [x] Add touch parallax support for tablets (768–1024px)
 - [x] Add WebGL capability detection fallback for broken/missing GPU drivers
+- [ ] Add shimmer skeleton loading state to hero container while WebGL textures load
+- [ ] Add subtle shimmer animation to the loading skeleton
+- [x] Redesign login page: two-column layout (form left, testimonial + social proof right)
+- [x] Style login page consistently with homepage design language
+- [x] Mobile-responsive login page (stacks to single column on mobile)
