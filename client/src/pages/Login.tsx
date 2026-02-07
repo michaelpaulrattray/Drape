@@ -275,6 +275,14 @@ export default function Login() {
             </div>
           </div>
 
+          {/* ─── Mobile: Back to home ────────────────────────────────── */}
+          <div className="lg:hidden text-center mt-2">
+            <Link href="/" className="group inline-flex items-center gap-1.5 text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300">
+              <span className="transition-transform duration-300 group-hover:-translate-x-0.5">←</span>
+              Back to home
+            </Link>
+          </div>
+
           {/* ─── Right Column: Social Proof ──────────────────────────── */}
           <SocialProofPanel />
         </div>

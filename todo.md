@@ -2860,3 +2860,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Style login page consistently with homepage design language
 - [x] Mobile-responsive login page (stacks to single column on mobile)
 - [x] Fix login page style inconsistencies: colors, buttons, animations, background must match homepage exactly
+- [x] Add "Back to home" link on mobile login view (lg:hidden, below card)
