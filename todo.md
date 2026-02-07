@@ -2936,4 +2936,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Create generation/index.ts to merge sub-routers (21 lines)
 - [x] Update routers.ts import to point to generation/index.ts (no change needed — already imports from ./routes/generation)
 - [x] Verify: TypeScript 0 errors, 589 tests pass
+- [x] Save checkpoint (version: af549408)
+
+## AdminActions Split — server/lib/adminActions.ts (608 lines → sub-modules)
+- [x] Create server/lib/adminActions/ directory
+- [x] Extract directActions.ts (suspendUser, unsuspendUser, blockIP, unblockIP, adjustCredits — 280 lines)
+- [x] Extract changeRequestActions.ts (cr_suspendUser, cr_unsuspendUser, cr_refundCredits, cr_addCredits, cr_blockIP, cr_stripeRefund — 341 lines)
+- [x] Create adminActions/index.ts dispatcher (36 lines, exports executeApprovedAdminAction + AdminActionContext type)
+- [x] Remove old server/lib/adminActions.ts
+- [x] Verify: TypeScript 0 errors, 589 tests pass
 - [ ] Save checkpoint
