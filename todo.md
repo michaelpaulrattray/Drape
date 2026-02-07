@@ -3317,3 +3317,6 @@ The entry and configuration files are properly set up with several enhancements 
 ## Feature: Add Credit Button in Dashboard
 - [x] Add subtle "+" button next to credits display in dashboard profile area
 - [x] Button opens CreditTopupModal (upgrade/add credits flow)
+
+## Bug Fix: Moderator User Investigation — Show User IDs
+- [x] Add user ID display to moderator user investigation tab (matching admin panel: font-mono #id prefix)

@@ -251,7 +251,10 @@ function UserTable({
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-white">{u.name || "Unnamed"}</p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs text-white/30">#{u.id}</span>
+                          <p className="text-sm font-medium text-white">{u.name || "Unnamed"}</p>
+                        </div>
                         <p className="text-xs text-white/40">{u.email}</p>
                       </div>
                     </div>
