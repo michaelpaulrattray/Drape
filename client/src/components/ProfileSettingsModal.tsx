@@ -100,82 +100,113 @@ function BillingTabContent({
     }
   };
 
+  // Get plan monthly credits allocation
+  const getPlanCredits = (tier: string) => {
+    switch (tier) {
+      case "starter": return 1500;
+      case "pro": return 4000;
+      case "studio": return 10000;
+      case "enterprise": return 50000;
+      default: return 100;
+    }
+  };
+
+  const monthlyAllocation = getPlanCredits(planTier);
+  const freeCredits = planTier === "free" ? creditsBalance : 0;
+  const monthlyCredits = planTier !== "free" ? (billingStatus?.creditsPurchased || 0) : 0;
+  const rolloverCredits = billingStatus?.rolloverCredits || 0;
+
   return (
     <div className="space-y-6">
-      {/* Current Plan Card - Light Theme */}
-      <div className="p-5 rounded-xl bg-gray-50 border border-gray-200">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">{getPlanLabel(planTier)}</h3>
-            {subscriptionDetails?.renewalDate && (
-              <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-1">
-                <Calendar className="w-3.5 h-3.5" />
-                Renewal date {formatDate(subscriptionDetails.renewalDate)}
-              </p>
-            )}
-            {subscriptionDetails?.cancelAtPeriodEnd && (
-              <p className="text-sm text-amber-600 mt-1">
-                Cancels at end of billing period
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                onClose();
-                onOpenBilling?.();
-              }}
-              className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all"
-            >
-              Manage
-            </button>
-            <button
-              onClick={() => {
-                onClose();
-                onOpenTopup?.();
-              }}
-              className="px-4 py-2 rounded-lg bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 text-sm font-medium transition-all"
-            >
-              Add credits
-            </button>
+      {/* Current Plan Card */}
+      <div className="rounded-xl border border-[#D4D4D4] overflow-hidden">
+        {/* Plan Header */}
+        <div className="p-5 bg-[#FAFAFA]">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-[#0A0A0A]">{getPlanLabel(planTier)}</h3>
+              {subscriptionDetails?.renewalDate && (
+                <p className="text-sm text-[#757575] mt-0.5">
+                  Renewal date {formatDate(subscriptionDetails.renewalDate)}
+                </p>
+              )}
+              {subscriptionDetails?.cancelAtPeriodEnd && (
+                <p className="text-sm text-amber-600 mt-0.5">
+                  Cancels at end of billing period
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenBilling?.();
+                }}
+                className="px-4 py-1.5 rounded-lg bg-white border border-[#D4D4D4] text-[#0A0A0A] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
+              >
+                Manage
+              </button>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenBilling?.();
+                }}
+                className="px-4 py-1.5 rounded-lg border border-[#0A0A0A] text-[#0A0A0A] text-sm font-medium hover:bg-[#0A0A0A] hover:text-white transition-colors"
+              >
+                Add credits
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Credits Breakdown */}
-        <div className="space-y-3 pt-4 border-t border-gray-200">
+        <div className="px-5 py-4 space-y-3">
+          {/* Total Credits */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-gray-600" />
-              <span className="text-sm text-gray-500">Credits</span>
+              <Sparkles className="w-4 h-4 text-[#757575]" />
+              <span className="text-sm font-medium text-[#0A0A0A]">Credits</span>
             </div>
-            <span className="text-lg font-semibold text-gray-900">{creditsBalance.toLocaleString()}</span>
+            <span className="text-base font-semibold text-[#0A0A0A]">{creditsBalance.toLocaleString()}</span>
           </div>
-          
-          {billingStatus && planTier !== "free" && (
+
+          {/* Sub-items */}
+          {planTier === "free" ? (
+            <div className="flex items-center justify-between text-sm pl-6">
+              <span className="text-[#757575]">Free credits</span>
+              <span className="text-[#4D4D4D]">{creditsBalance.toLocaleString()}</span>
+            </div>
+          ) : (
             <>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Rollover credits</span>
-                <span className="text-gray-700">{(billingStatus.rolloverCredits || 0).toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Monthly credits</span>
-                <span className="text-gray-700">
-                  {((billingStatus.creditsPurchased || 0) - (billingStatus.rolloverCredits || 0)).toLocaleString()}
+              {rolloverCredits > 0 && (
+                <div className="flex items-center justify-between text-sm pl-6">
+                  <span className="text-[#757575]">Rollover credits</span>
+                  <span className="text-[#4D4D4D]">{rolloverCredits.toLocaleString()}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm pl-6">
+                <span className="text-[#757575]">Monthly credits</span>
+                <span className="text-[#4D4D4D]">
+                  {(monthlyCredits - rolloverCredits).toLocaleString()} / {monthlyAllocation.toLocaleString()}
                 </span>
               </div>
             </>
           )}
 
-          {planTier !== "free" && subscriptionDetails?.renewalDate && (
-            <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200">
+          {/* Monthly Credit Refresh */}
+          {planTier !== "free" && (
+            <div className="flex items-center justify-between pt-3 border-t border-[#EBEBEB]">
               <div className="flex items-center gap-2">
-                <RefreshCw className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-500">Monthly credit refresh</span>
+                <RefreshCw className="w-4 h-4 text-[#757575]" />
+                <span className="text-sm font-medium text-[#0A0A0A]">Monthly credit refresh</span>
               </div>
-              <span className="text-gray-700">
-                Refreshes on {formatDate(subscriptionDetails.renewalDate)}
-              </span>
+              <span className="text-base font-semibold text-[#0A0A0A]">{monthlyAllocation.toLocaleString()}</span>
             </div>
+          )}
+          {planTier !== "free" && subscriptionDetails?.renewalDate && (
+            <p className="text-xs text-[#757575] pl-6">
+              Refreshes on {formatDate(subscriptionDetails.renewalDate)}
+            </p>
           )}
         </div>
       </div>

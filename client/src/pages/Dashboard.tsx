@@ -674,6 +674,7 @@ export default function Dashboard() {
       <BillingModal
         isOpen={isBillingOpen}
         onClose={() => setIsBillingOpen(false)}
+        onOpenTopup={() => setIsTopupOpen(true)}
       />
 
       {/* Credit Top-up Modal */}

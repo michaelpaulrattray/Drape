@@ -2868,3 +2868,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Dashboard redesign Step 5: Update LowBalanceBanner to Forma design system (already clean)
 - [x] Fix usage tab layout/formatting in ProfileSettingsModal (stats cards, chart, transaction table)
 - [x] Move Upgrade Plan button next to Add Credits and rename to "Manage" in billing tab
+- [x] Redesign billing tab: Manus-style layout (plan card with Manage + Add credits buttons, credits breakdown, recent activity with download links)
+- [x] Redesign BillingModal as manage subscription page (plan comparison cards, upgrade/downgrade, monthly/annual toggle, add credits section)
+- [x] Credits system: adding credits upgrades to next tier (same as Manus model)
+- [x] Redesign BillingModal as "Manage your subscription" (plan comparison cards, monthly/annual toggle, Expand credit limit section, footer links)
+- [x] Transform CreditTopupModal into "Add more credits" (Manus-style tier-based credit expansion)
+- [x] Ensure dashboard Add Credits button opens the new CreditTopupModal

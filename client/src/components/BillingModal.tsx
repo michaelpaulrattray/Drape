@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { X, Check, Zap, Crown, Building2, Sparkles, Loader2, ArrowRight, AlertCircle } from "lucide-react";
+import { X, Check, Zap, Crown, Building2, Sparkles, Loader2, ArrowRight, AlertCircle, ChevronDown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 interface BillingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenTopup?: () => void;
 }
 
 interface PlanChangePreview {
@@ -22,7 +23,7 @@ interface PlanChangePreview {
   creditAdjustment: number;
 }
 
-export function BillingModal({ isOpen, onClose }: BillingModalProps) {
+export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [confirmingPlan, setConfirmingPlan] = useState<string | null>(null);
   const [planPreview, setPlanPreview] = useState<PlanChangePreview | null>(null);
@@ -70,14 +71,12 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
   const handleSubscribe = async (plan: "starter" | "pro" | "studio") => {
     const currentPlan = status?.planTier || "free";
     
-    // If user has no subscription, go to checkout
     if (currentPlan === "free" || !status?.hasSubscription) {
       setLoadingPlan(plan);
       createSubscriptionCheckout.mutate({ plan, interval: billingInterval });
       return;
     }
     
-    // If user has a subscription, show plan change confirmation
     setLoadingPlan(plan);
     try {
       const preview = await utils.billing.previewPlanChange.fetch({ newPlan: plan });
@@ -100,21 +99,8 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
     setPlanPreview(null);
   };
 
-  const handleManageSubscription = () => {
+  const handleEditBilling = () => {
     createPortalSession.mutate();
-  };
-
-  const getPlanIcon = (planId: string) => {
-    switch (planId) {
-      case "starter":
-        return <Zap className="w-5 h-5" />;
-      case "pro":
-        return <Crown className="w-5 h-5" />;
-      case "studio":
-        return <Building2 className="w-5 h-5" />;
-      default:
-        return <Sparkles className="w-5 h-5" />;
-    }
   };
 
   const formatPrice = (cents: number) => {
@@ -125,11 +111,9 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
     return `$${(cents / 100).toFixed(2)}`;
   };
 
-  // Calculate annual price with 17% discount
   const getAnnualPrice = (monthlyCents: number) => {
     const annualTotal = monthlyCents * 12;
-    const discountedTotal = Math.round(annualTotal * 0.83); // 17% off
-    return discountedTotal;
+    return Math.round(annualTotal * 0.83);
   };
 
   const getMonthlyEquivalent = (monthlyCents: number) => {
@@ -138,6 +122,16 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
   };
 
   const currentPlan = status?.planTier || "free";
+
+  const getPlanOrder = (plan: string) => {
+    switch (plan) {
+      case "free": return 0;
+      case "starter": return 1;
+      case "pro": return 2;
+      case "studio": return 3;
+      default: return 0;
+    }
+  };
 
   // Plan Change Confirmation Dialog
   if (confirmingPlan && planPreview) {
@@ -148,7 +142,7 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
           onClick={handleCancelPlanChange}
         />
         
-        <div className="relative w-full max-w-md mx-4 bg-white border border-gray-200 rounded-2xl shadow-2xl p-6">
+        <div className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className={`p-3 rounded-xl ${planPreview.isUpgrade ? "bg-green-50" : "bg-amber-50"}`}>
               {planPreview.isUpgrade ? (
@@ -158,45 +152,43 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
               )}
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-[#0A0A0A]">
                 {planPreview.isUpgrade ? "Upgrade" : "Downgrade"} to {confirmingPlan.charAt(0).toUpperCase() + confirmingPlan.slice(1)}
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[#757575]">
                 {planPreview.daysRemaining} days remaining in current period
               </p>
             </div>
           </div>
 
           <div className="space-y-4 mb-6">
-            {/* Price Change */}
-            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div className="p-4 rounded-xl bg-[#FAFAFA] border border-[#EBEBEB]">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-500">Current Plan</span>
-                <span className="text-gray-900 font-medium capitalize">
+                <span className="text-[#757575]">Current Plan</span>
+                <span className="text-[#0A0A0A] font-medium capitalize">
                   {planPreview.currentPlan} ({formatPrice(planPreview.currentPlanPrice)}/mo)
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-500">New Plan</span>
-                <span className="text-gray-900 font-medium capitalize">
+                <span className="text-[#757575]">New Plan</span>
+                <span className="text-[#0A0A0A] font-medium capitalize">
                   {planPreview.newPlan} ({formatPrice(planPreview.newPlanPrice)}/mo)
                 </span>
               </div>
             </div>
 
-            {/* Proration Details */}
-            <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div className="p-4 rounded-xl bg-[#FAFAFA] border border-[#EBEBEB]">
               {planPreview.isUpgrade ? (
                 <>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-500">Prorated charge today</span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-[#757575]">Prorated charge today</span>
+                    <span className="text-[#0A0A0A] font-medium">
                       {formatPriceCents(planPreview.immediateCharge)}
                     </span>
                   </div>
                   {planPreview.creditAdjustment > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Bonus credits</span>
+                      <span className="text-[#757575]">Bonus credits</span>
                       <span className="text-green-600 font-medium">
                         +{planPreview.creditAdjustment} credits
                       </span>
@@ -206,19 +198,18 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-500">Credit to account</span>
+                    <span className="text-[#757575]">Credit to account</span>
                     <span className="text-green-600 font-medium">
                       {formatPriceCents(planPreview.creditBalance)}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-[#757575] mt-2">
                     Credit will be applied to your next invoice. Changes take effect immediately.
                   </p>
                 </>
               )}
             </div>
 
-            {/* Warning for downgrade */}
             {!planPreview.isUpgrade && (
               <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
                 <p className="text-sm text-amber-700">
@@ -231,7 +222,7 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
           <div className="flex gap-3">
             <button
               onClick={handleCancelPlanChange}
-              className="flex-1 py-3 rounded-xl font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+              className="flex-1 py-3 rounded-xl font-medium bg-[#F5F5F5] hover:bg-[#EBEBEB] text-[#4D4D4D] transition-colors"
             >
               Cancel
             </button>
@@ -261,162 +252,96 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
       
-      {/* Modal */}
-      <div className="relative w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto bg-white border border-gray-200 rounded-2xl shadow-2xl">
+      <div className="relative w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Upgrade Your Plan</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Get more credits and unlock premium features
-            </p>
-          </div>
+        <div className="sticky top-0 z-10 flex items-center justify-between p-6 pb-4 bg-white">
+          <h2 className="text-2xl font-semibold text-[#0A0A0A] tracking-tight">
+            Manage your subscription
+          </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full hover:bg-[#F5F5F5] transition-colors"
           >
-            <X className="w-5 h-5 text-gray-400" />
+            <X className="w-5 h-5 text-[#757575]" />
           </button>
         </div>
 
         {/* Billing Interval Toggle */}
-        <div className="flex justify-center pt-6">
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-gray-100">
+        <div className="flex justify-center px-6 pb-6">
+          <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-[#F5F5F5]">
             <button
               onClick={() => setBillingInterval("monthly")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                 billingInterval === "monthly"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#0A0A0A] text-white shadow-sm"
+                  : "text-[#757575] hover:text-[#4D4D4D]"
               }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setBillingInterval("annual")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
                 billingInterval === "annual"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-[#0A0A0A] text-white shadow-sm"
+                  : "text-[#757575] hover:text-[#4D4D4D]"
               }`}
             >
-              Annual
-              <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                Save 17%
+              Annually
+              <span className={`text-xs ${billingInterval === "annual" ? "text-white/70" : "text-green-600"}`}>
+                · Save 17%
               </span>
             </button>
           </div>
         </div>
 
-        {/* Current Plan Banner */}
-        {currentPlan !== "free" && (
-          <div className="mx-6 mt-6 p-4 rounded-xl bg-gray-50 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gray-100">
-                  {getPlanIcon(currentPlan)}
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Current Plan</p>
-                  <p className="text-gray-900 font-medium capitalize">{currentPlan}</p>
-                </div>
-              </div>
-              {status?.canManage && (
-                <button
-                  onClick={handleManageSubscription}
-                  className="px-4 py-2 text-sm rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Manage Subscription
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Pricing Cards */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Plan Cards */}
+        <div className="px-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           {plans?.subscriptions.map((plan) => {
             const isCurrentPlan = currentPlan === plan.id;
             const isLoading = loadingPlan === plan.id;
-            const isPro = plan.id === "pro";
-            const isUpgrade = currentPlan === "free" || 
-              (currentPlan === "starter" && (plan.id === "pro" || plan.id === "studio")) ||
-              (currentPlan === "pro" && plan.id === "studio");
+            const currentOrder = getPlanOrder(currentPlan);
+            const planOrder = getPlanOrder(plan.id);
+            const isUpgrade = planOrder > currentOrder;
+            const isDowngrade = planOrder < currentOrder;
 
             const displayPrice = billingInterval === "annual" 
               ? getMonthlyEquivalent(plan.priceInCents)
               : plan.priceInCents;
 
-            const annualTotal = billingInterval === "annual"
-              ? getAnnualPrice(plan.priceInCents)
-              : null;
-
             return (
               <div
                 key={plan.id}
                 className={`relative rounded-xl border p-6 transition-all ${
-                  isPro
-                    ? "border-[#0A0A0A] bg-gray-50"
-                    : "border-gray-200 bg-white"
-                } ${isCurrentPlan ? "ring-2 ring-[#0A0A0A]" : ""}`}
+                  isCurrentPlan
+                    ? "border-[#0A0A0A] ring-1 ring-[#0A0A0A]"
+                    : "border-[#D4D4D4]"
+                }`}
               >
-                {isPro && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#0A0A0A] text-xs font-medium text-white">
-                    Most Popular
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 mb-4">
-                  <div className={`p-2 rounded-lg ${isPro ? "bg-[#0A0A0A] text-white" : "bg-gray-100 text-gray-600"}`}>
-                    {getPlanIcon(plan.id)}
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">{plan.name.replace("FormaStudio ", "")}</h3>
+                {/* Price */}
+                <div className="mb-1">
+                  <span className="text-3xl font-bold text-[#0A0A0A]">{formatPrice(displayPrice)}</span>
+                  <span className="text-[#757575] text-sm ml-1">/ month</span>
                 </div>
 
-                <div className="mb-4">
-                  {billingInterval === "annual" && (
-                    <span className="text-lg text-gray-400 line-through mr-2">
-                      {formatPrice(plan.priceInCents)}
-                    </span>
-                  )}
-                  <span className="text-3xl font-bold text-gray-900">{formatPrice(displayPrice)}</span>
-                  <span className="text-gray-500">/month</span>
-                  {billingInterval === "annual" && annualTotal && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {formatPrice(annualTotal)} billed annually
-                    </p>
-                  )}
-                </div>
+                {/* Description */}
+                <p className="text-sm text-[#757575] mb-4">{plan.description}</p>
 
-                <div className="mb-4 p-3 rounded-lg bg-gray-100">
-                  <p className="text-2xl font-bold text-gray-900">{plan.credits.toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">credits per month</p>
-                </div>
-
-                <ul className="space-y-2 mb-6">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-600">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
+                {/* Action Button */}
                 <button
                   onClick={() => handleSubscribe(plan.id as "starter" | "pro" | "studio")}
                   disabled={isCurrentPlan || isLoading}
-                  className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 mb-5 ${
                     isCurrentPlan
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : isPro
+                      ? "bg-[#F5F5F5] text-[#757575] cursor-not-allowed"
+                      : isUpgrade
                       ? "bg-[#0A0A0A] hover:bg-[#0A0A0A]/90 text-white"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+                      : "bg-white border border-[#D4D4D4] text-[#0A0A0A] hover:bg-[#F5F5F5]"
                   }`}
                 >
                   {isLoading ? (
@@ -426,36 +351,80 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
                     </>
                   ) : isCurrentPlan ? (
                     "Current Plan"
-                  ) : status?.hasSubscription ? (
-                    isUpgrade ? "Upgrade" : "Downgrade"
+                  ) : isUpgrade ? (
+                    "Upgrade"
                   ) : (
-                    "Subscribe"
+                    "Downgrade"
                   )}
                 </button>
+
+                {/* Credits highlight */}
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-[#EBEBEB]">
+                  <Sparkles className="w-4 h-4 text-[#757575]" />
+                  <span className="text-sm font-medium text-[#0A0A0A]">
+                    {plan.credits.toLocaleString()} credits / month
+                  </span>
+                </div>
+
+                {/* Features */}
+                <ul className="space-y-2">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-[#0A0A0A] mt-0.5 flex-shrink-0" />
+                      <span className="text-[#4D4D4D]">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             );
           })}
         </div>
 
-        {/* Free Tier Info */}
-        <div className="mx-6 mb-6 p-4 rounded-xl bg-gray-50 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-900 font-medium">Free Tier</p>
-              <p className="text-sm text-gray-500">100 credits to get started • No credit card required</p>
+        {/* Expand Credit Limit Section */}
+        <div className="mx-6 mt-6 flex items-center justify-between p-4 rounded-xl border border-[#D4D4D4] bg-[#FAFAFA]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-white border border-[#EBEBEB]">
+              <Sparkles className="w-5 h-5 text-[#0A0A0A]" />
             </div>
-            {currentPlan === "free" && (
-              <span className="px-3 py-1 rounded-full bg-gray-200 text-gray-600 text-xs">
-                Your Current Plan
-              </span>
-            )}
+            <div>
+              <p className="text-sm font-medium text-[#0A0A0A]">Expand credit limit</p>
+              <p className="text-xs text-[#757575]">Upgrade your monthly credits</p>
+            </div>
           </div>
+          <button
+            onClick={() => {
+              onClose();
+              onOpenTopup?.();
+            }}
+            className="px-4 py-2 rounded-lg border border-[#D4D4D4] bg-white text-[#0A0A0A] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
+          >
+            Add credits
+          </button>
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6 text-center text-sm text-gray-500">
-          <p>All plans include access to all generation features. Credits roll over based on your plan tier.</p>
-          <p className="mt-1">Questions? Contact us at support@formastudio.app</p>
+        <div className="flex items-center justify-between px-6 py-5 mt-4 border-t border-[#EBEBEB]">
+          <p className="text-sm text-[#757575]">
+            Questions? Contact us at support@formastudio.app
+          </p>
+          <div className="flex items-center gap-4">
+            {currentPlan !== "free" && status?.hasSubscription && (
+              <button
+                onClick={() => handleSubscribe("starter")}
+                className="text-sm text-[#757575] hover:text-[#0A0A0A] underline transition-colors"
+              >
+                Downgrade to Free
+              </button>
+            )}
+            {status?.canManage && (
+              <button
+                onClick={handleEditBilling}
+                className="text-sm text-[#757575] hover:text-[#0A0A0A] transition-colors flex items-center gap-1"
+              >
+                Edit billing <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
