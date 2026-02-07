@@ -3474,3 +3474,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Build 5 card components: HealthMetrics, UserGrowthCard, CreditEconomyCard, GovernanceCard, AlertsFeed
 - [x] Light theme (#EBEBEB bg, #0A0A0A text) matching design requirements
 - [x] Quick nav links to Users, Audit Logs, Change Requests, Moderator from header
+
+## Feature: Server Resilience & Error Handling Hardening
+- [x] Add process.on('uncaughtException') handler with logging + Slack alert
+- [x] Add process.on('unhandledRejection') handler with logging + Slack alert
+- [x] Add tRPC onError hook for centralized server-side error logging
+- [x] Add graceful shutdown on SIGTERM/SIGINT (drain HTTP connections, close DB)
+- [x] Write tests for resilience logic (21 new tests, 807 total passing)

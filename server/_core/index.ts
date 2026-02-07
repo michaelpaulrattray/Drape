@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { createServer } from "http";
+import { createServer, type Server as HttpServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -10,6 +10,47 @@ import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../stripe/webhooks";
 import { securityHeaders } from "../security/securityHeaders";
 import heroProxyRouter from "../heroProxy";
+
+// ============================================================================
+// GLOBAL ERROR HANDLERS
+// ============================================================================
+
+/**
+ * Attempt to send a critical Slack alert for unhandled errors.
+ * Best-effort — if Slack itself fails, we just log to stderr.
+ */
+async function alertCriticalError(label: string, error: unknown): Promise<void> {
+  try {
+    const { dispatch } = await import("../slack/slackCore");
+    await dispatch({
+      type: "critical_security_server_crash",
+      severity: "critical",
+      title: `Server ${label}`,
+      description: error instanceof Error
+        ? `${error.message}\n\`\`\`${error.stack?.slice(0, 500)}\`\`\``
+        : String(error),
+    });
+  } catch {
+    // Slack dispatch itself failed — nothing more we can do
+  }
+}
+
+process.on("uncaughtException", async (error: Error) => {
+  console.error("[FATAL] Uncaught exception:", error);
+  await alertCriticalError("Uncaught Exception", error);
+  // Give Slack alert a moment to send, then exit
+  setTimeout(() => process.exit(1), 2000);
+});
+
+process.on("unhandledRejection", async (reason: unknown) => {
+  console.error("[FATAL] Unhandled promise rejection:", reason);
+  await alertCriticalError("Unhandled Rejection", reason);
+  // Don't exit for rejections — log and continue
+});
+
+// ============================================================================
+// PORT DISCOVERY
+// ============================================================================
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -30,9 +71,60 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+// ============================================================================
+// GRACEFUL SHUTDOWN
+// ============================================================================
+
+let httpServer: HttpServer | null = null;
+
+function registerShutdownHandlers(): void {
+  let shuttingDown = false;
+
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[Shutdown] Received ${signal}, draining connections...`);
+
+    // Stop accepting new connections
+    if (httpServer) {
+      httpServer.close(() => {
+        console.log("[Shutdown] HTTP server closed");
+      });
+    }
+
+    // Allow in-flight requests up to 10 seconds to finish
+    const forceExitTimer = setTimeout(() => {
+      console.warn("[Shutdown] Force exit after timeout");
+      process.exit(0);
+    }, 10_000);
+    forceExitTimer.unref(); // Don't keep the process alive just for this timer
+
+    // Close DB pool if available
+    try {
+      const { getDb } = await import("../db/connection");
+      const db = await getDb();
+      if (db && typeof (db as any).$client?.end === "function") {
+        await (db as any).$client.end();
+        console.log("[Shutdown] Database connection closed");
+      }
+    } catch {
+      // DB cleanup is best-effort
+    }
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+}
+
+// ============================================================================
+// SERVER BOOTSTRAP
+// ============================================================================
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  httpServer = server;
+
   // Security headers on all responses
   app.use(securityHeaders);
 
@@ -77,14 +169,23 @@ async function startServer() {
   // Hero texture proxy (serves S3 images with CORS headers)
   app.use(heroProxyRouter);
 
-  // tRPC API
+  // tRPC API with centralized error logging
   app.use(
     "/api/trpc",
     createExpressMiddleware({
       router: appRouter,
       createContext,
+      onError({ error, path, type }) {
+        // Log all server-side tRPC errors for observability
+        const severity = error.code === "INTERNAL_SERVER_ERROR" ? "ERROR" : "WARN";
+        console.error(
+          `[tRPC ${severity}] ${type} ${path ?? "unknown"}: ${error.message}`,
+          error.code === "INTERNAL_SERVER_ERROR" ? error.cause ?? "" : ""
+        );
+      },
     })
   );
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
@@ -119,6 +220,9 @@ async function startServer() {
     setTimeout(runReferralExpiration, 30_000);
     setInterval(runReferralExpiration, TWENTY_FOUR_HOURS);
   });
+
+  // Register shutdown handlers after server is listening
+  registerShutdownHandlers();
 }
 
 startServer().catch(console.error);
