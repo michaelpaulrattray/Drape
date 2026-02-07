@@ -2996,4 +2996,74 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Verify: TypeScript 0 errors, 589 tests pass
 
 ### Final
+- [x] Save checkpoint (version: 1de51a35)
+
+## P2: Split + Move Large Client Components to features/
+
+### Step 1: Home.tsx (1,614 lines) → features/home/
+- [x] Create features/home/ directory
+- [x] Extract homeData.ts (types, data, animation variants — 190 lines)
+- [x] Extract SectionLabel.tsx (shared utility — 11 lines)
+- [x] Extract Header.tsx (258 lines)
+- [x] Extract HeroSection.tsx (109 lines)
+- [x] Extract AboutSection.tsx (229 lines)
+- [x] Extract WorkSection.tsx (78 lines)
+- [x] Extract WhyUsSection.tsx (160 lines)
+- [x] Extract ServicesSection.tsx (143 lines)
+- [x] Extract ProcessSection.tsx (59 lines)
+- [x] Extract FAQSection.tsx (80 lines)
+- [x] Extract BlogSection.tsx (116 lines)
+- [x] Extract Footer.tsx (193 lines)
+- [x] Create barrel index.ts
+- [x] Rewrite Home.tsx as thin shell (42 lines)
+- [x] Verify: TypeScript 0 errors, build passes, 589 tests pass
+
+### Step 2: ProfileSettingsModal.tsx → features/profile/
+- [x] Create features/profile/ directory
+- [x] Extract BillingTab.tsx (251 lines)
+- [x] Extract UsageTab.tsx (239 lines)
+- [x] Extract ProfileTab.tsx (392 lines)
+- [x] Extract NotificationsTab.tsx (39 lines)
+- [x] Extract SecurityTab.tsx (135 lines)
+- [x] Create barrel index.ts
+- [x] Rewrite ProfileSettingsModal.tsx as thin shell (158 lines)
+- [x] Verify: TypeScript 0 errors, build passes, 589 tests pass
+
+### Step 3: ModeratorDashboard.tsx → features/moderator/
+- [x] Create features/moderator/ directory
+- [x] Extract moderatorConstants.ts (106 lines — types, helpers, constants)
+- [x] Extract AuditLogsTab.tsx (304 lines)
+- [x] Extract UserInvestigationTab.tsx (417 lines — user list + detail card + sub-tab routing)
+- [x] Extract ActivitySubTab.tsx (60 lines)
+- [x] Extract CreditsSubTab.tsx (196 lines)
+- [x] Extract GenerationsSubTab.tsx (190 lines)
+- [x] Extract BlockedIPsTab.tsx (63 lines)
+- [x] Extract MyRequestsTab.tsx (160 lines)
+- [x] Extract LogDetailModal.tsx (124 lines)
+- [x] Extract ChangeRequestModal.tsx (322 lines)
+- [x] Extract DashboardHeader.tsx (82 lines)
+- [x] Extract StatsCards.tsx (65 lines)
+- [x] Extract TabNavigation.tsx (69 lines)
+- [x] Create barrel index.ts (11 lines)
+- [x] Rewrite ModeratorDashboard.tsx as thin shell (296 lines)
+- [x] Verify: TypeScript 0 errors, build passes, 589 tests pass
+
+### Step 4: CastingStudio.tsx → features/casting/
+- [x] Create features/casting/ directory + hooks/ subdirectory
+- [x] Extract castingHelpers.tsx (294 lines — constants, icons, CollapsibleSection, utils)
+- [x] Extract hooks/useCastingGeneration.ts (363 lines — initial gen + iteration + refine + enhance)
+- [x] Extract hooks/useCastingViewGeneration.ts (303 lines — full body + multi-view + nextStage)
+- [x] Extract hooks/useCastingExport.ts (177 lines — export/mint/upscale/PDF/ZIP)
+- [x] Extract hooks/useCastingCanvas.ts (178 lines — canvas drawing + mask overlay)
+- [x] Extract ControlPanel.tsx (199 lines — left sidebar form sections)
+- [x] Extract ImageViewerPanel.tsx (415 lines — right panel image viewer + tools)
+- [x] Extract StageLockModal.tsx (29 lines)
+- [x] Extract ExportModal.tsx (93 lines)
+- [x] Extract ReferenceNode.tsx (128 lines — drag-drop image upload)
+- [x] Extract ElapsedTimeDisplay.tsx (45 lines — loading tips animation)
+- [x] Create barrel index.ts (10 lines)
+- [x] Rewrite CastingStudio.tsx as thin shell (229 lines)
+- [x] Verify: TypeScript 0 errors, build passes, 589 tests pass
+
+### Final
 - [ ] Save checkpoint
