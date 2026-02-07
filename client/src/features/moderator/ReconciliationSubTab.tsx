@@ -9,7 +9,10 @@ import {
   Calendar,
   X,
   ArrowRightLeft,
+  Download,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { downloadReconciliationCsv } from "./reconciliation-csv";
 
 interface ReconciliationSubTabProps {
   userId: number;
@@ -65,7 +68,7 @@ export function ReconciliationSubTab({
 
   return (
     <div className="space-y-3">
-      {/* Date Range Filter */}
+      {/* Date Range Filter + Export */}
       <div className="flex items-center gap-2 flex-wrap">
         <Calendar className="w-3.5 h-3.5 text-white/40" />
         <span className="text-xs text-white/40">Date Range:</span>
@@ -95,6 +98,17 @@ export function ReconciliationSubTab({
               <X className="w-3 h-3 text-white/40 hover:text-white" />
             </button>
           )}
+        </div>
+        <div className="ml-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5 border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+            onClick={() => downloadReconciliationCsv(data, userId, startDate || undefined, endDate || undefined)}
+          >
+            <Download className="w-3 h-3" />
+            Export CSV
+          </Button>
         </div>
       </div>
 

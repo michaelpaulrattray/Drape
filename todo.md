@@ -3406,3 +3406,9 @@ The entry and configuration files are properly set up with several enhancements 
 ## Fix: Reconciliation — Improve discrepancy messaging with likely cause
 - [x] Detect failed generations without matching refunds and explain in summary
 - [x] Update tests for new messaging logic (24 reconciliation tests, 683 total passing)
+
+## Feature: Reconciliation CSV Export
+- [x] Add CSV generation utility for reconciliation data (reconciliation-csv.ts, 136 lines)
+- [x] Add "Download CSV" button to ReconciliationSubTab
+- [x] Include user info, credit summary, generation summary, reconciliation details, and type breakdowns
+- [x] Write tests for CSV generation logic (10 tests, 693 total passing)
