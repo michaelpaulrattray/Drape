@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CREDIT_TOPUP_PRODUCTS } from "./stripe/stripeProducts";
 
 /**
  * Tests for credit purchase velocity limits and billing alert integration.
  * These are unit tests that verify the logic without hitting the database.
+ * 
+ * Note: One-time topup packages have been removed. Credits are now added
+ * exclusively through subscription plan upgrades (Manus-style).
+ * These velocity limit tests remain relevant for any future credit purchase flow.
  */
 
-// ── Velocity Limit Constants (mirrored from routers.ts) ──
+// ── Velocity Limit Constants (mirrored from billing route) ──
 const VELOCITY_LIMITS = {
   HOURLY_MAX: 3,
   DAILY_MAX: 10,
@@ -51,26 +54,26 @@ describe("Credit Purchase Velocity Limits", () => {
   describe("Daily credit cap ($500/day ≈ 33333 credits)", () => {
     it("should allow small purchase when under daily cap", () => {
       const dailyCredits = 1000;
-      const pkg = CREDIT_TOPUP_PRODUCTS.small;
-      expect(dailyCredits + pkg.credits <= VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
+      const purchaseCredits = 100;
+      expect(dailyCredits + purchaseCredits <= VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
     });
 
     it("should allow purchase that exactly reaches the cap", () => {
-      const dailyCredits = 33333 - CREDIT_TOPUP_PRODUCTS.small.credits;
-      const pkg = CREDIT_TOPUP_PRODUCTS.small;
-      expect(dailyCredits + pkg.credits <= VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
+      const purchaseCredits = 100;
+      const dailyCredits = VELOCITY_LIMITS.DAILY_CREDIT_CAP - purchaseCredits;
+      expect(dailyCredits + purchaseCredits <= VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
     });
 
     it("should block purchase that would exceed the cap", () => {
       const dailyCredits = 30000;
-      const pkg = CREDIT_TOPUP_PRODUCTS.xl; // 5000 credits
-      expect(dailyCredits + pkg.credits > VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
+      const purchaseCredits = 5000;
+      expect(dailyCredits + purchaseCredits > VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
     });
 
     it("should block any purchase when already at the cap", () => {
       const dailyCredits = 33333;
-      const pkg = CREDIT_TOPUP_PRODUCTS.small; // 100 credits
-      expect(dailyCredits + pkg.credits > VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
+      const purchaseCredits = 100;
+      expect(dailyCredits + purchaseCredits > VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
     });
   });
 
@@ -88,52 +91,6 @@ describe("Credit Purchase Velocity Limits", () => {
       const diff = now.getTime() - oneDayAgo.getTime();
       expect(diff).toBe(86400000); // 24 hours in ms
     });
-  });
-});
-
-describe("Top-up Package Validation", () => {
-  it("should have all expected package IDs", () => {
-    expect(CREDIT_TOPUP_PRODUCTS.small).toBeDefined();
-    expect(CREDIT_TOPUP_PRODUCTS.medium).toBeDefined();
-    expect(CREDIT_TOPUP_PRODUCTS.large).toBeDefined();
-    expect(CREDIT_TOPUP_PRODUCTS.xl).toBeDefined();
-  });
-
-  it("should have positive credit amounts for all packages", () => {
-    for (const [id, pkg] of Object.entries(CREDIT_TOPUP_PRODUCTS)) {
-      expect(pkg.credits).toBeGreaterThan(0);
-    }
-  });
-
-  it("should have positive prices for all packages", () => {
-    for (const [id, pkg] of Object.entries(CREDIT_TOPUP_PRODUCTS)) {
-      expect(pkg.priceInCents).toBeGreaterThan(0);
-    }
-  });
-
-  it("should have increasing credits with larger packages", () => {
-    expect(CREDIT_TOPUP_PRODUCTS.medium.credits).toBeGreaterThan(CREDIT_TOPUP_PRODUCTS.small.credits);
-    expect(CREDIT_TOPUP_PRODUCTS.large.credits).toBeGreaterThan(CREDIT_TOPUP_PRODUCTS.medium.credits);
-    expect(CREDIT_TOPUP_PRODUCTS.xl.credits).toBeGreaterThan(CREDIT_TOPUP_PRODUCTS.large.credits);
-  });
-
-  it("should have the daily credit cap high enough for at least 6 xl packages", () => {
-    // Ensure the cap is reasonable — at least 6 xl purchases should be allowed per day
-    const xlCredits = CREDIT_TOPUP_PRODUCTS.xl.credits;
-    expect(VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBeGreaterThanOrEqual(xlCredits * 6);
-  });
-});
-
-describe("Large Purchase Alert Threshold", () => {
-  const LARGE_PURCHASE_THRESHOLD = 500; // from webhooks.ts
-
-  it("should flag large and xl packages as large purchases", () => {
-    expect(CREDIT_TOPUP_PRODUCTS.large.credits).toBeGreaterThanOrEqual(LARGE_PURCHASE_THRESHOLD);
-    expect(CREDIT_TOPUP_PRODUCTS.xl.credits).toBeGreaterThanOrEqual(LARGE_PURCHASE_THRESHOLD);
-  });
-
-  it("should not flag small packages as large purchases", () => {
-    expect(CREDIT_TOPUP_PRODUCTS.small.credits).toBeLessThan(LARGE_PURCHASE_THRESHOLD);
   });
 });
 

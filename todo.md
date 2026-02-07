@@ -3262,3 +3262,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Cleaned up duplicate templates from failed runs
 - [x] Configure email template with referrer name, referral link, reward amount (dynamic via {{ event.* }} variables)
 - [x] End-to-end flow verified: sendInvite → Klaviyo event → Flow triggers → email delivery
+
+## Feature: Remove One-Time Credit Topup System (Dead Code)
+- [x] Remove CREDIT_TOPUP_PRODUCTS from stripeProducts.ts
+- [x] Remove createTopupCheckout route from billing.ts
+- [x] Remove createTopupCheckoutSession from stripeService.ts
+- [x] Remove topup webhook handling from webhooks.ts
+- [x] Remove topup-related tests from billing.test.ts, velocityLimits.test.ts, and webhookSecurity.test.ts
+- [x] Clean up imports and type references across all files
+- [x] All 639 tests passing, 0 TypeScript errors

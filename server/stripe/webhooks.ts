@@ -17,7 +17,6 @@ import {
   updateUserSubscription, 
   getUserByStripeCustomerId, 
   refreshMonthlyCredits,
-  addTopupCredits,
   getUserCredits,
   suspendUser,
   unsuspendUser,
@@ -26,7 +25,7 @@ import {
   creditReferrerOnPaidAction,
 } from "../db";
 import { SlackAlerts } from "../slack/slackNotification";
-import { CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
+import { SubscriptionPlan } from "./stripeProducts";
 import { PlanTier } from "../../drizzle/schema";
 
 export interface WebhookResult {
@@ -96,30 +95,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 
   if (!userId) {
     return { success: false, message: "Missing userId in session metadata" };
-  }
-
-  if (type === "topup") {
-    // Handle credit top-up
-    const packageId = session.metadata?.packageId as CreditTopupPackage;
-    const credits = parseInt(session.metadata?.credits || "0", 10);
-
-    if (!packageId || !credits) {
-      return { success: false, message: "Missing package info in session metadata" };
-    }
-
-    const result = await addTopupCredits(userId, credits, session.id);
-    
-    if (!result.success) {
-      return { success: false, message: "Failed to add credits", error: result.error };
-    }
-
-    if (result.duplicate) {
-      console.warn(`[Webhook] Duplicate checkout session ${session.id} for user ${userId} — credits already granted. Skipping.`);
-      return { success: true, message: `Duplicate session ${session.id}, credits already granted` };
-    }
-
-    console.log(`[Webhook] Added ${credits} credits to user ${userId} from top-up`);
-    return { success: true, message: `Added ${credits} credits to user ${userId}` };
   }
 
   // For subscriptions — trigger referral credit for referrer on first paid action
@@ -373,9 +348,7 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
       console.error(`[Webhook] Failed to suspend user ${userId}: ${suspendResult.error}`);
     }
 
-    // 2. Revoke credits — calculate how many credits the disputed amount corresponds to
-    //    We use the dispute amount in cents. For topups, we stored the credit count in the transaction.
-    //    As a safe approach, revoke the user's entire current balance (they can be restored on win).
+    // 2. Revoke credits — as a safe approach, revoke the user's entire current balance (they can be restored on win).
     //    The idempotency referenceId `dispute_{disputeId}` prevents double-revocation on webhook replays.
     const currentBalance = userCreditsBalance ?? 0;
     if (currentBalance > 0) {

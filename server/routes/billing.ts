@@ -4,13 +4,10 @@ import {
   getSubscriptionByUserId,
   updateUserSubscription,
   addCredits,
-  getRecentTopupCount,
-  getRecentTopupCredits,
 } from "../db";
 import {
   getOrCreateStripeCustomer,
   createSubscriptionCheckoutSession,
-  createTopupCheckoutSession,
   createCustomerPortalSession,
   getSubscriptionDetails,
   cancelSubscription,
@@ -21,7 +18,7 @@ import {
   getCustomerInvoices,
   getAllCustomerInvoices,
 } from "../stripe/stripeService";
-import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage, PAID_PLAN_ORDER, PLAN_ORDER } from "../stripe/stripeProducts";
+import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan, PAID_PLAN_ORDER, PLAN_ORDER } from "../stripe/stripeProducts";
 import { PLAN_TIERS } from "../../drizzle/schema";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { SlackAlerts } from "../slack/slackNotification";
@@ -40,13 +37,6 @@ export const billingRouter = router({
         credits: plan.credits,
         features: plan.features,
         interval: plan.interval,
-      })),
-      topups: Object.entries(CREDIT_TOPUP_PRODUCTS).map(([key, pkg]) => ({
-        id: key as CreditTopupPackage,
-        name: pkg.name,
-        description: pkg.description,
-        priceInCents: pkg.priceInCents,
-        credits: pkg.credits,
       })),
       tiers: PLAN_TIERS,
       planOrder: PLAN_ORDER,
@@ -135,106 +125,6 @@ export const billingRouter = router({
         metadata: {
           plan: input.plan,
           interval: input.interval,
-          stage: "checkout_initiated",
-        },
-        req: ctx.req,
-      });
-
-      return { checkoutUrl };
-    }),
-
-  // Create checkout session for credit top-up
-  createTopupCheckout: protectedProcedure
-    .input(z.object({
-      packageId: z.enum(["small", "medium", "large", "xl"]),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      // Get user info
-      const user = await getUserById(ctx.user.id);
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      }
-
-      // ── Credit Purchase Velocity Limits ──
-      const VELOCITY_LIMITS = {
-        HOURLY_MAX: 3,        // max 3 top-ups per hour
-        DAILY_MAX: 10,        // max 10 top-ups per 24 hours
-        DAILY_CREDIT_CAP: 33333, // ~$500 worth of credits per 24h (xl pack = 5000 credits/$60, so $500 ≈ 33333 credits)
-      };
-
-      const now = new Date();
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-      const [hourlyCount, dailyCount, dailyCredits] = await Promise.all([
-        getRecentTopupCount(ctx.user.id, oneHourAgo),
-        getRecentTopupCount(ctx.user.id, oneDayAgo),
-        getRecentTopupCredits(ctx.user.id, oneDayAgo),
-      ]);
-
-      const userName = user.displayName || user.name || user.email || `User #${ctx.user.id}`;
-
-      if (hourlyCount >= VELOCITY_LIMITS.HOURLY_MAX) {
-        // Fire-and-forget Slack alert
-        SlackAlerts.velocityLimitHit(ctx.user.id, userName, "hourly (3/hr)", hourlyCount, VELOCITY_LIMITS.HOURLY_MAX).catch(() => {});
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "You've reached the maximum number of credit purchases per hour. Please try again later.",
-        });
-      }
-
-      if (dailyCount >= VELOCITY_LIMITS.DAILY_MAX) {
-        SlackAlerts.velocityLimitHit(ctx.user.id, userName, "daily (10/day)", dailyCount, VELOCITY_LIMITS.DAILY_MAX).catch(() => {});
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "You've reached the maximum number of credit purchases per day. Please try again tomorrow.",
-        });
-      }
-
-      const pkg = CREDIT_TOPUP_PRODUCTS[input.packageId];
-      if (dailyCredits + pkg.credits > VELOCITY_LIMITS.DAILY_CREDIT_CAP) {
-        SlackAlerts.velocityLimitHit(ctx.user.id, userName, "daily spend cap ($500/day)", dailyCredits + pkg.credits, VELOCITY_LIMITS.DAILY_CREDIT_CAP).catch(() => {});
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "You've reached the daily credit purchase limit. Please try again tomorrow.",
-        });
-      }
-
-      // Get or create Stripe customer
-      const subscription = await getSubscriptionByUserId(ctx.user.id);
-      const customerId = await getOrCreateStripeCustomer(
-        ctx.user.id,
-        user.email || `user-${ctx.user.id}@formastudio.app`,
-        user.displayName || user.name || undefined,
-        subscription?.stripeCustomerId
-      );
-
-      // Save customer ID if new
-      if (!subscription?.stripeCustomerId) {
-        await updateUserSubscription(ctx.user.id, { stripeCustomerId: customerId });
-      }
-
-      // Create checkout session
-      const baseUrl = process.env.NODE_ENV === "production" 
-        ? "https://formastudio.app" 
-        : "http://localhost:3000";
-      
-      const checkoutUrl = await createTopupCheckoutSession(
-        customerId,
-        input.packageId,
-        `${baseUrl}/dashboard?topup=success`,
-        `${baseUrl}/dashboard?topup=canceled`,
-        ctx.user.id
-      );
-
-      // Audit log: credit top-up checkout initiated
-      await logAuditEvent({
-        userId: ctx.user.id,
-        action: AUDIT_ACTIONS.CREDITS_PURCHASED,
-        resourceType: "credits",
-        resourceId: customerId,
-        metadata: {
-          packageId: input.packageId,
           stage: "checkout_initiated",
         },
         req: ctx.req,

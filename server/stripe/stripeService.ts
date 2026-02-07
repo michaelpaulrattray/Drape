@@ -6,7 +6,7 @@
 
 import Stripe from "stripe";
 import { ENV } from "../_core/env";
-import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
+import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan } from "./stripeProducts";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 
 // Initialize Stripe client
@@ -111,49 +111,6 @@ export async function createSubscriptionCheckoutSession(
   });
 
   console.log(`[Stripe] Created ${interval} subscription checkout session ${session.id} for plan ${plan}`);
-  return session.url!;
-}
-
-/**
- * Create a Stripe Checkout session for credit top-up
- */
-export async function createTopupCheckoutSession(
-  customerId: string,
-  packageId: CreditTopupPackage,
-  successUrl: string,
-  cancelUrl: string,
-  userId: number
-): Promise<string> {
-  const topupPackage = CREDIT_TOPUP_PRODUCTS[packageId];
-  
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "payment",
-    payment_method_types: ["card"],
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: topupPackage.name,
-            description: topupPackage.description,
-          },
-          unit_amount: topupPackage.priceInCents,
-        },
-        quantity: 1,
-      },
-    ],
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    metadata: {
-      userId: userId.toString(),
-      packageId,
-      credits: topupPackage.credits.toString(),
-      type: "topup",
-    },
-  });
-
-  console.log(`[Stripe] Created topup checkout session ${session.id} for ${topupPackage.credits} credits`);
   return session.url!;
 }
 

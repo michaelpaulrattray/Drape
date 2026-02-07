@@ -190,33 +190,4 @@ export const SUBSCRIPTION_PRODUCTS: Record<string, {
   },
 };
 
-// Credit Top-up Packages (one-time purchases)
-export const CREDIT_TOPUP_PRODUCTS = {
-  small: {
-    name: "100 Credits",
-    description: "One-time credit top-up",
-    priceInCents: 150, // $1.50
-    credits: 100,
-  },
-  medium: {
-    name: "500 Credits",
-    description: "One-time credit top-up (save 10%)",
-    priceInCents: 675, // $6.75 (normally $7.50)
-    credits: 500,
-  },
-  large: {
-    name: "1,000 Credits",
-    description: "One-time credit top-up (save 15%)",
-    priceInCents: 1275, // $12.75 (normally $15)
-    credits: 1000,
-  },
-  xl: {
-    name: "5,000 Credits",
-    description: "One-time credit top-up (save 20%)",
-    priceInCents: 6000, // $60 (normally $75)
-    credits: 5000,
-  },
-} as const;
-
 export type SubscriptionPlan = keyof typeof SUBSCRIPTION_PRODUCTS;
-export type CreditTopupPackage = keyof typeof CREDIT_TOPUP_PRODUCTS;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PLAN_TIERS, PlanTier } from "../drizzle/schema";
-import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS } from "./stripe/stripeProducts";
+import { SUBSCRIPTION_PRODUCTS } from "./stripe/stripeProducts";
 import { calculateRolloverCredits, getMonthlyCredits, mapStripeStatus, mapPlanToTier } from "./stripe/stripeService";
 
 describe("Billing - Plan Tiers Configuration", () => {
@@ -80,39 +80,6 @@ describe("Billing - Subscription Products", () => {
     expect(SUBSCRIPTION_PRODUCTS.pro.features.length).toBeGreaterThan(0);
     expect(Array.isArray(SUBSCRIPTION_PRODUCTS.studio.features)).toBe(true);
     expect(SUBSCRIPTION_PRODUCTS.studio.features.length).toBeGreaterThan(0);
-  });
-});
-
-describe("Billing - Credit Top-up Products", () => {
-  it("should have all required top-up packages", () => {
-    expect(CREDIT_TOPUP_PRODUCTS.small).toBeDefined();
-    expect(CREDIT_TOPUP_PRODUCTS.medium).toBeDefined();
-    expect(CREDIT_TOPUP_PRODUCTS.large).toBeDefined();
-    expect(CREDIT_TOPUP_PRODUCTS.xl).toBeDefined();
-  });
-
-  it("should have correct credit amounts", () => {
-    expect(CREDIT_TOPUP_PRODUCTS.small.credits).toBe(100);
-    expect(CREDIT_TOPUP_PRODUCTS.medium.credits).toBe(500);
-    expect(CREDIT_TOPUP_PRODUCTS.large.credits).toBe(1000);
-    expect(CREDIT_TOPUP_PRODUCTS.xl.credits).toBe(5000);
-  });
-
-  it("should have volume discounts for larger packages", () => {
-    // Base rate: $1.50 per 100 credits
-    const baseRate = CREDIT_TOPUP_PRODUCTS.small.priceInCents / CREDIT_TOPUP_PRODUCTS.small.credits;
-    
-    // Medium should be cheaper per credit
-    const mediumRate = CREDIT_TOPUP_PRODUCTS.medium.priceInCents / CREDIT_TOPUP_PRODUCTS.medium.credits;
-    expect(mediumRate).toBeLessThan(baseRate);
-    
-    // Large should be cheaper than medium
-    const largeRate = CREDIT_TOPUP_PRODUCTS.large.priceInCents / CREDIT_TOPUP_PRODUCTS.large.credits;
-    expect(largeRate).toBeLessThan(mediumRate);
-    
-    // XL should be cheapest
-    const xlRate = CREDIT_TOPUP_PRODUCTS.xl.priceInCents / CREDIT_TOPUP_PRODUCTS.xl.credits;
-    expect(xlRate).toBeLessThan(largeRate);
   });
 });
 

@@ -14,7 +14,6 @@ vi.mock("../db", () => ({
   updateUserSubscription: vi.fn().mockResolvedValue(undefined),
   getUserByStripeCustomerId: vi.fn().mockResolvedValue(null),
   refreshMonthlyCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 100 }),
-  addTopupCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 150 }),
   getUserCredits: vi.fn().mockResolvedValue({ balance: 100 }),
   suspendUser: vi.fn().mockResolvedValue({ success: true }),
   unsuspendUser: vi.fn().mockResolvedValue({ success: true }),
@@ -34,7 +33,6 @@ import { handleStripeWebhook } from "./webhooks";
 import { constructWebhookEvent } from "./stripeService";
 import { cancelSubscription } from "./stripeService";
 import {
-  addTopupCredits,
   getUserByStripeCustomerId,
   suspendUser,
   unsuspendUser,
@@ -79,123 +77,6 @@ const mockUser = {
 describe("Webhook Security", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  // ============================================================
-  // IDEMPOTENCY TESTS
-  // ============================================================
-  describe("Webhook Idempotency (checkout.session.completed)", () => {
-    it("should add credits on first topup checkout", async () => {
-      const session = {
-        id: "cs_test_unique_123",
-        metadata: {
-          userId: "42",
-          type: "topup",
-          packageId: "starter_pack",
-          credits: "50",
-        },
-      };
-
-      const event = makeEvent("checkout.session.completed", session);
-      vi.mocked(constructWebhookEvent).mockReturnValue(event);
-      vi.mocked(addTopupCredits).mockResolvedValue({ success: true, newBalance: 150 });
-
-      const result = await handleStripeWebhook("payload", "sig");
-
-      expect(result.success).toBe(true);
-      expect(result.message).toContain("Added 50 credits");
-      expect(addTopupCredits).toHaveBeenCalledWith(42, 50, "cs_test_unique_123");
-    });
-
-    it("should detect duplicate topup and skip credit grant", async () => {
-      const session = {
-        id: "cs_test_duplicate_456",
-        metadata: {
-          userId: "42",
-          type: "topup",
-          packageId: "starter_pack",
-          credits: "50",
-        },
-      };
-
-      const event = makeEvent("checkout.session.completed", session);
-      vi.mocked(constructWebhookEvent).mockReturnValue(event);
-      vi.mocked(addTopupCredits).mockResolvedValue({
-        success: true,
-        newBalance: 150,
-        duplicate: true,
-      });
-
-      const result = await handleStripeWebhook("payload", "sig");
-
-      expect(result.success).toBe(true);
-      expect(result.message).toContain("Duplicate session");
-      expect(result.message).toContain("credits already granted");
-      expect(addTopupCredits).toHaveBeenCalledTimes(1);
-    });
-
-    it("should handle addTopupCredits failure gracefully", async () => {
-      const session = {
-        id: "cs_test_fail_789",
-        metadata: {
-          userId: "42",
-          type: "topup",
-          packageId: "starter_pack",
-          credits: "50",
-        },
-      };
-
-      const event = makeEvent("checkout.session.completed", session);
-      vi.mocked(constructWebhookEvent).mockReturnValue(event);
-      vi.mocked(addTopupCredits).mockResolvedValue({
-        success: false,
-        error: "Database not available",
-      });
-
-      const result = await handleStripeWebhook("payload", "sig");
-
-      expect(result.success).toBe(false);
-      expect(result.message).toContain("Failed to add credits");
-    });
-
-    it("should reject topup with missing userId", async () => {
-      const session = {
-        id: "cs_test_no_user",
-        metadata: {
-          type: "topup",
-          packageId: "starter_pack",
-          credits: "50",
-        },
-      };
-
-      const event = makeEvent("checkout.session.completed", session);
-      vi.mocked(constructWebhookEvent).mockReturnValue(event);
-
-      const result = await handleStripeWebhook("payload", "sig");
-
-      expect(result.success).toBe(false);
-      expect(result.message).toContain("Missing userId");
-      expect(addTopupCredits).not.toHaveBeenCalled();
-    });
-
-    it("should reject topup with missing package info", async () => {
-      const session = {
-        id: "cs_test_no_pkg",
-        metadata: {
-          userId: "42",
-          type: "topup",
-        },
-      };
-
-      const event = makeEvent("checkout.session.completed", session);
-      vi.mocked(constructWebhookEvent).mockReturnValue(event);
-
-      const result = await handleStripeWebhook("payload", "sig");
-
-      expect(result.success).toBe(false);
-      expect(result.message).toContain("Missing package info");
-      expect(addTopupCredits).not.toHaveBeenCalled();
-    });
   });
 
   // ============================================================
