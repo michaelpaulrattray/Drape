@@ -38,7 +38,7 @@ export const fragmentShader = /* glsl */ `
     vec2 parallaxOffset = mouseOffset * parallaxDepth * uParallaxStrength;
 
     // ── Fade parallax to zero near edges to prevent ghost/double-image ──
-    float edgeMargin = 0.08; // fade zone width in UV space
+    float edgeMargin = 0.12; // fade zone width in UV space
     float edgeFadeX = smoothstep(0.0, edgeMargin, vUv.x) * smoothstep(0.0, edgeMargin, 1.0 - vUv.x);
     float edgeFadeY = smoothstep(0.0, edgeMargin, vUv.y) * smoothstep(0.0, edgeMargin, 1.0 - vUv.y);
     parallaxOffset *= edgeFadeX * edgeFadeY;
