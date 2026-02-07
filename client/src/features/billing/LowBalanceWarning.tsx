@@ -3,7 +3,7 @@ import { AlertTriangle, X, Coins } from "lucide-react";
 import { toast } from "sonner";
 
 // Warning threshold - show warning when balance drops below this
-export const LOW_BALANCE_THRESHOLD = 50;
+export const LOW_BALANCE_THRESHOLD = 2500; // ~7 generations remaining
 
 interface LowBalanceWarningProps {
   balance: number;
@@ -33,7 +33,7 @@ export function LowBalanceBanner({
     return null;
   }
 
-  const isVeryLow = balance < 10;
+  const isVeryLow = balance < 500;
   const isCritical = balance === 0;
 
   return (
@@ -113,7 +113,7 @@ export function showLowBalanceToast(balance: number, onTopUp: () => void) {
   }
 
   const isCritical = balance === 0;
-  const isVeryLow = balance < 10;
+  const isVeryLow = balance < 500;
 
   toast.warning(
     isCritical 
@@ -157,6 +157,6 @@ export function useLowBalanceCheck(
   return {
     isLow: balance !== undefined && balance < LOW_BALANCE_THRESHOLD,
     isCritical: balance !== undefined && balance === 0,
-    isVeryLow: balance !== undefined && balance < 10,
+    isVeryLow: balance !== undefined && balance < 500,
   };
 }

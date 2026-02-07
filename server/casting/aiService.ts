@@ -53,15 +53,15 @@ export interface GenerationResult {
 // 1 credit ≈ $0.01 | Pro model costs, Flash fallback = 50% cost
 
 export const CREDIT_COSTS = {
-  // Generation costs (Pro model)
-  castingImage: 7,   // Initial headshot generation (Text Pro + Image Pro)
-  fullBody: 6,       // Full body from headshot (Image Pro)
-  multiView: 6,      // Single view: side/walk/back (Image Pro)
-  allViews: 18,      // All 3 views at once (Image Pro x3)
-  iterate: 7,        // Surgical edit / iteration (Text Pro + Image Pro)
-  eraser: 7,         // Magic eraser (Text Pro + Image Pro)
-  upscale: 6,        // Upscale existing image (Image Pro)
-  exportPack: 30,    // Full export pack (Image Pro x5)
+  // Generation costs (Pro model) — 50x display multiplier applied
+  castingImage: 350,   // Initial headshot generation (Text Pro + Image Pro)
+  fullBody: 300,       // Full body from headshot (Image Pro)
+  multiView: 300,      // Single view: side/walk/back (Image Pro)
+  allViews: 900,       // All 3 views at once (Image Pro x3)
+  iterate: 350,        // Surgical edit / iteration (Text Pro + Image Pro)
+  eraser: 350,         // Magic eraser (Text Pro + Image Pro)
+  upscale: 300,        // Upscale existing image (Image Pro)
+  exportPack: 1500,    // Full export pack (Image Pro x5)
   
   // Flash fallback multiplier (50% of Pro cost)
   flashMultiplier: 0.5,

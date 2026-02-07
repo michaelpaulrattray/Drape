@@ -41,20 +41,20 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Plan tier configuration with credit allocations
  */
-// Pricing: 2x margin on ~$0.009/credit cost. Volume discounts at higher tiers.
+// Pricing: 50x display multiplier applied. Volume discounts at higher tiers.
 export const PLAN_TIERS = {
-  free: { name: 'Free', monthlyCredits: 100, price: 0, rolloverPercent: 0 },
-  starter: { name: 'Starter', monthlyCredits: 1500, price: 2700, rolloverPercent: 50 },           // $27/mo  — $0.018/cr, 50% margin
-  pro: { name: 'Pro', monthlyCredits: 4000, price: 6800, rolloverPercent: 75 },                   // $68/mo  — $0.017/cr, 47% margin
-  studio: { name: 'Studio', monthlyCredits: 10000, price: 15900, rolloverPercent: 100 },           // $159/mo — $0.0159/cr, 44% margin
-  studio_plus: { name: 'Studio Plus', monthlyCredits: 25000, price: 37500, rolloverPercent: 100 }, // $375/mo — $0.015/cr, 40% margin
-  business: { name: 'Business', monthlyCredits: 60000, price: 84000, rolloverPercent: 100 },       // $840/mo — $0.014/cr, 36% margin
-  business_plus: { name: 'Business Plus', monthlyCredits: 150000, price: 195000, rolloverPercent: 100 }, // $1,950/mo — $0.013/cr, 31% margin
-  scale: { name: 'Scale', monthlyCredits: 400000, price: 480000, rolloverPercent: 100 },           // $4,800/mo — $0.012/cr, 25% margin
-  scale_plus: { name: 'Scale Plus', monthlyCredits: 800000, price: 880000, rolloverPercent: 100 }, // $8,800/mo — $0.011/cr, 18% margin
-  enterprise: { name: 'Enterprise', monthlyCredits: 1500000, price: 1500000, rolloverPercent: 100 }, // $15,000/mo — $0.010/cr, 10% margin
-  enterprise_plus: { name: 'Enterprise Plus', monthlyCredits: 3000000, price: 2700000, rolloverPercent: 100 }, // $27,000/mo — $0.009/cr, at cost
-  ultimate: { name: 'Ultimate', monthlyCredits: 6000000, price: 4800000, rolloverPercent: 100 },   // $48,000/mo — $0.008/cr, loss leader
+  free: { name: 'Free', monthlyCredits: 5000, price: 0, rolloverPercent: 0 },
+  starter: { name: 'Starter', monthlyCredits: 75000, price: 2700, rolloverPercent: 50 },              // $27/mo  — $0.00036/cr
+  pro: { name: 'Pro', monthlyCredits: 200000, price: 6800, rolloverPercent: 75 },                     // $68/mo  — $0.00034/cr
+  studio: { name: 'Studio', monthlyCredits: 500000, price: 15900, rolloverPercent: 100 },              // $159/mo — $0.000318/cr
+  studio_plus: { name: 'Studio Plus', monthlyCredits: 1250000, price: 37500, rolloverPercent: 100 },   // $375/mo — $0.0003/cr
+  business: { name: 'Business', monthlyCredits: 3000000, price: 84000, rolloverPercent: 100 },         // $840/mo — $0.00028/cr
+  business_plus: { name: 'Business Plus', monthlyCredits: 7500000, price: 195000, rolloverPercent: 100 }, // $1,950/mo — $0.00026/cr
+  scale: { name: 'Scale', monthlyCredits: 20000000, price: 480000, rolloverPercent: 100 },             // $4,800/mo — $0.00024/cr
+  scale_plus: { name: 'Scale Plus', monthlyCredits: 40000000, price: 880000, rolloverPercent: 100 },   // $8,800/mo — $0.00022/cr
+  enterprise: { name: 'Enterprise', monthlyCredits: 75000000, price: 1500000, rolloverPercent: 100 },  // $15,000/mo — $0.0002/cr
+  enterprise_plus: { name: 'Enterprise Plus', monthlyCredits: 150000000, price: 2700000, rolloverPercent: 100 }, // $27,000/mo — $0.00018/cr
+  ultimate: { name: 'Ultimate', monthlyCredits: 300000000, price: 4800000, rolloverPercent: 100 },     // $48,000/mo — $0.00016/cr
 } as const;
 
 export type PlanTier = keyof typeof PLAN_TIERS;
@@ -66,7 +66,7 @@ export type PlanTier = keyof typeof PLAN_TIERS;
 export const credits = mysqlTable("points", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
-  balance: int("balance").notNull().default(100),
+  balance: int("balance").notNull().default(5000),
   planTier: mysqlEnum("planTier", ["free", "starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]).default("free").notNull(),
   planExpiresAt: timestamp("planExpiresAt"),
   // Stripe subscription tracking
@@ -438,11 +438,11 @@ export type InsertChangeRequest = typeof changeRequests.$inferInsert;
  * Flow: pending → signed_up → completed (referee first gen, referee gets credits)
  *                            → subscribed (referee pays, referrer gets credits)
  *
- * Reward: 250 credits per party. Referee on first generation, referrer on first paid action.
- * Lifetime cap: 5,000 credits earned via referrals per user.
+ * Reward: 12,500 credits per party. Referee on first generation, referrer on first paid action.
+ * Lifetime cap: 250,000 credits earned via referrals per user.
  */
-export const REFERRAL_REWARD_CREDITS = 250;
-export const REFERRAL_LIFETIME_CAP = 5000; // Max credits a user can earn from referrals
+export const REFERRAL_REWARD_CREDITS = 12500;
+export const REFERRAL_LIFETIME_CAP = 250000; // Max credits a user can earn from referrals
 
 export const referrals = mysqlTable("referrals", {
   id: int("id").autoincrement().primaryKey(),

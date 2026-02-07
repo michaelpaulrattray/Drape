@@ -7,12 +7,12 @@ import { CREDIT_COSTS, calculateCreditCost } from "./aiService";
  */
 
 describe("AI Service - Credit Costs", () => {
-  it("should have correct credit costs defined", () => {
-    expect(CREDIT_COSTS.castingImage).toBe(7);
-    expect(CREDIT_COSTS.fullBody).toBe(6);
-    expect(CREDIT_COSTS.multiView).toBe(6);
-    expect(CREDIT_COSTS.iterate).toBe(7);
-    expect(CREDIT_COSTS.upscale).toBe(6);
+  it("should have correct credit costs defined (50x multiplier)", () => {
+    expect(CREDIT_COSTS.castingImage).toBe(350);
+    expect(CREDIT_COSTS.fullBody).toBe(300);
+    expect(CREDIT_COSTS.multiView).toBe(300);
+    expect(CREDIT_COSTS.iterate).toBe(350);
+    expect(CREDIT_COSTS.upscale).toBe(300);
   });
 
   it("should have all generation types with positive costs", () => {
@@ -36,11 +36,11 @@ describe("AI Service - Credit Costs", () => {
   it("should calculate credit cost with flash fallback discount", () => {
     // Pro model - full cost
     const proCost = calculateCreditCost(CREDIT_COSTS.castingImage, "gemini-3-pro-image-preview");
-    expect(proCost).toBe(7);
+    expect(proCost).toBe(350);
 
     // Flash model - 50% discount
     const flashCost = calculateCreditCost(CREDIT_COSTS.castingImage, "gemini-2.5-flash-image");
-    expect(flashCost).toBe(4); // 7 * 0.5 = 3.5, rounded up to 4
+    expect(flashCost).toBe(175); // 350 * 0.5 = 175
   });
 });
 

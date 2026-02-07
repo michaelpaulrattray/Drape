@@ -67,35 +67,35 @@ import { CREDIT_COSTS } from "./casting/aiService";
 import type { ModelPreferences } from "./casting/aiService";
 
 describe("AI Service - Credit Costs", () => {
-  it("should have correct credit costs defined", () => {
-    expect(CREDIT_COSTS.castingImage).toBe(7);
-    expect(CREDIT_COSTS.fullBody).toBe(6);
-    expect(CREDIT_COSTS.multiView).toBe(6);
-    expect(CREDIT_COSTS.iterate).toBe(7);
-    expect(CREDIT_COSTS.upscale).toBe(6);
+  it("should have correct credit costs defined (50x multiplier)", () => {
+    expect(CREDIT_COSTS.castingImage).toBe(350);
+    expect(CREDIT_COSTS.fullBody).toBe(300);
+    expect(CREDIT_COSTS.multiView).toBe(300);
+    expect(CREDIT_COSTS.iterate).toBe(350);
+    expect(CREDIT_COSTS.upscale).toBe(300);
   });
 
-  it("should have total initial generation cost of 7 credits", () => {
+  it("should have total initial generation cost of 350 credits", () => {
     const totalInitialCost = CREDIT_COSTS.castingImage;
-    expect(totalInitialCost).toBe(7);
+    expect(totalInitialCost).toBe(350);
   });
 
   it("should calculate full model generation cost", () => {
     // Headshot + full body + 3 views
     const fullCost = CREDIT_COSTS.castingImage + CREDIT_COSTS.fullBody + CREDIT_COSTS.multiView * 3;
-    expect(fullCost).toBe(7 + 6 + 6 * 3); // 31 credits
+    expect(fullCost).toBe(350 + 300 + 300 * 3); // 1,550 credits
   });
 
   it("should calculate iteration workflow cost", () => {
     // Headshot + 3 iterations
     const iterationCost = CREDIT_COSTS.castingImage + CREDIT_COSTS.iterate * 3;
-    expect(iterationCost).toBe(7 + 7 * 3); // 28 credits
+    expect(iterationCost).toBe(350 + 350 * 3); // 1,400 credits
   });
 
   it("should apply flash fallback discount", () => {
     const proCost = CREDIT_COSTS.castingImage;
     const flashCost = Math.ceil(proCost * CREDIT_COSTS.flashMultiplier);
-    expect(flashCost).toBe(4); // 7 * 0.5 = 3.5, rounded up
+    expect(flashCost).toBe(175); // 350 * 0.5 = 175
   });
 });
 

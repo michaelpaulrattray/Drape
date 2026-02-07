@@ -20,18 +20,18 @@ describe("Billing - Plan Tiers Configuration", () => {
   });
 
   it("should have correct monthly credits for all tiers", () => {
-    expect(PLAN_TIERS.free.monthlyCredits).toBe(100);
-    expect(PLAN_TIERS.starter.monthlyCredits).toBe(1500);
-    expect(PLAN_TIERS.pro.monthlyCredits).toBe(4000);
-    expect(PLAN_TIERS.studio.monthlyCredits).toBe(10000);
-    expect(PLAN_TIERS.studio_plus.monthlyCredits).toBe(25000);
-    expect(PLAN_TIERS.business.monthlyCredits).toBe(60000);
-    expect(PLAN_TIERS.business_plus.monthlyCredits).toBe(150000);
-    expect(PLAN_TIERS.scale.monthlyCredits).toBe(400000);
-    expect(PLAN_TIERS.scale_plus.monthlyCredits).toBe(800000);
-    expect(PLAN_TIERS.enterprise.monthlyCredits).toBe(1500000);
-    expect(PLAN_TIERS.enterprise_plus.monthlyCredits).toBe(3000000);
-    expect(PLAN_TIERS.ultimate.monthlyCredits).toBe(6000000);
+    expect(PLAN_TIERS.free.monthlyCredits).toBe(5000);
+    expect(PLAN_TIERS.starter.monthlyCredits).toBe(75000);
+    expect(PLAN_TIERS.pro.monthlyCredits).toBe(200000);
+    expect(PLAN_TIERS.studio.monthlyCredits).toBe(500000);
+    expect(PLAN_TIERS.studio_plus.monthlyCredits).toBe(1250000);
+    expect(PLAN_TIERS.business.monthlyCredits).toBe(3000000);
+    expect(PLAN_TIERS.business_plus.monthlyCredits).toBe(7500000);
+    expect(PLAN_TIERS.scale.monthlyCredits).toBe(20000000);
+    expect(PLAN_TIERS.scale_plus.monthlyCredits).toBe(40000000);
+    expect(PLAN_TIERS.enterprise.monthlyCredits).toBe(75000000);
+    expect(PLAN_TIERS.enterprise_plus.monthlyCredits).toBe(150000000);
+    expect(PLAN_TIERS.ultimate.monthlyCredits).toBe(300000000);
   });
 
   it("should have correct rollover percentages", () => {
@@ -117,18 +117,18 @@ describe("Billing - Rollover Calculation", () => {
 
 describe("Billing - Monthly Credits", () => {
   it("should return correct monthly credits for each tier", () => {
-    expect(getMonthlyCredits("free")).toBe(100);
-    expect(getMonthlyCredits("starter")).toBe(1500);
-    expect(getMonthlyCredits("pro")).toBe(4000);
-    expect(getMonthlyCredits("studio")).toBe(10000);
-    expect(getMonthlyCredits("studio_plus")).toBe(25000);
-    expect(getMonthlyCredits("business")).toBe(60000);
-    expect(getMonthlyCredits("business_plus")).toBe(150000);
-    expect(getMonthlyCredits("scale")).toBe(400000);
-    expect(getMonthlyCredits("scale_plus")).toBe(800000);
-    expect(getMonthlyCredits("enterprise")).toBe(1500000);
-    expect(getMonthlyCredits("enterprise_plus")).toBe(3000000);
-    expect(getMonthlyCredits("ultimate")).toBe(6000000);
+    expect(getMonthlyCredits("free")).toBe(5000);
+    expect(getMonthlyCredits("starter")).toBe(75000);
+    expect(getMonthlyCredits("pro")).toBe(200000);
+    expect(getMonthlyCredits("studio")).toBe(500000);
+    expect(getMonthlyCredits("studio_plus")).toBe(1250000);
+    expect(getMonthlyCredits("business")).toBe(3000000);
+    expect(getMonthlyCredits("business_plus")).toBe(7500000);
+    expect(getMonthlyCredits("scale")).toBe(20000000);
+    expect(getMonthlyCredits("scale_plus")).toBe(40000000);
+    expect(getMonthlyCredits("enterprise")).toBe(75000000);
+    expect(getMonthlyCredits("enterprise_plus")).toBe(150000000);
+    expect(getMonthlyCredits("ultimate")).toBe(300000000);
   });
 });
 
@@ -171,11 +171,11 @@ describe("Billing - Plan to Tier Mapping", () => {
 import { calculateCreditAdjustment } from "./stripe/stripeService";
 
 describe("Billing - Low Balance Warning", () => {
-  const LOW_BALANCE_THRESHOLD = 50;
+  const LOW_BALANCE_THRESHOLD = 2500; // 50x multiplier (was 50)
 
   it("should trigger warning when balance is below threshold", () => {
-    expect(49 < LOW_BALANCE_THRESHOLD).toBe(true);
-    expect(50 < LOW_BALANCE_THRESHOLD).toBe(false);
+    expect(2499 < LOW_BALANCE_THRESHOLD).toBe(true);
+    expect(2500 < LOW_BALANCE_THRESHOLD).toBe(false);
     expect(0 < LOW_BALANCE_THRESHOLD).toBe(true);
   });
 
@@ -183,15 +183,15 @@ describe("Billing - Low Balance Warning", () => {
     const isCritical = (balance: number) => balance === 0;
     expect(isCritical(0)).toBe(true);
     expect(isCritical(1)).toBe(false);
-    expect(isCritical(50)).toBe(false);
+    expect(isCritical(2500)).toBe(false);
   });
 
-  it("should identify very low balance under 10", () => {
-    const isVeryLow = (balance: number) => balance < 10;
+  it("should identify very low balance under 500", () => {
+    const isVeryLow = (balance: number) => balance < 500; // 50x multiplier (was 10)
     expect(isVeryLow(0)).toBe(true);
-    expect(isVeryLow(9)).toBe(true);
-    expect(isVeryLow(10)).toBe(false);
-    expect(isVeryLow(49)).toBe(false);
+    expect(isVeryLow(499)).toBe(true);
+    expect(isVeryLow(500)).toBe(false);
+    expect(isVeryLow(2499)).toBe(false);
   });
 });
 
@@ -206,38 +206,38 @@ describe("Billing - Credit Adjustment for Plan Changes", () => {
   });
 
   it("should calculate prorated credits for upgrade", () => {
-    // Starter (1500) to Pro (4000), 15 days remaining of 30
-    // Additional credits: 4000 - 1500 = 2500
-    // Prorated: 2500 * (15/30) = 1250
-    expect(calculateCreditAdjustment("starter", "pro", 15, 30)).toBe(1250);
+    // Starter (75,000) to Pro (200,000), 15 days remaining of 30
+    // Additional credits: 200,000 - 75,000 = 125,000
+    // Prorated: 125,000 * (15/30) = 62,500
+    expect(calculateCreditAdjustment("starter", "pro", 15, 30)).toBe(62500);
   });
 
   it("should calculate full credits for upgrade at start of period", () => {
     // Starter to Pro, 30 days remaining of 30
-    // Additional credits: 2500
-    // Prorated: 2500 * (30/30) = 2500
-    expect(calculateCreditAdjustment("starter", "pro", 30, 30)).toBe(2500);
+    // Additional credits: 125,000
+    // Prorated: 125,000 * (30/30) = 125,000
+    expect(calculateCreditAdjustment("starter", "pro", 30, 30)).toBe(125000);
   });
 
   it("should calculate minimal credits for upgrade near end of period", () => {
     // Starter to Pro, 1 day remaining of 30
-    // Additional credits: 2500
-    // Prorated: 2500 * (1/30) = 83
-    expect(calculateCreditAdjustment("starter", "pro", 1, 30)).toBe(83);
+    // Additional credits: 125,000
+    // Prorated: 125,000 * (1/30) = 4,166
+    expect(calculateCreditAdjustment("starter", "pro", 1, 30)).toBe(4166);
   });
 
   it("should handle upgrade from free tier", () => {
-    // Free (100) to Starter (1500), 15 days remaining of 30
-    // Additional credits: 1500 - 100 = 1400
-    // Prorated: 1400 * (15/30) = 700
-    expect(calculateCreditAdjustment("free", "starter", 15, 30)).toBe(700);
+    // Free (5,000) to Starter (75,000), 15 days remaining of 30
+    // Additional credits: 75,000 - 5,000 = 70,000
+    // Prorated: 70,000 * (15/30) = 35,000
+    expect(calculateCreditAdjustment("free", "starter", 15, 30)).toBe(35000);
   });
 
   it("should handle upgrade to studio tier", () => {
-    // Pro (4000) to Studio (10000), 20 days remaining of 30
-    // Additional credits: 10000 - 4000 = 6000
-    // Prorated: 6000 * (20/30) = 4000
-    expect(calculateCreditAdjustment("pro", "studio", 20, 30)).toBe(4000);
+    // Pro (200,000) to Studio (500,000), 20 days remaining of 30
+    // Additional credits: 500,000 - 200,000 = 300,000
+    // Prorated: 300,000 * (20/30) = 200,000
+    expect(calculateCreditAdjustment("pro", "studio", 20, 30)).toBe(200000);
   });
 
   it("should return 0 for same plan", () => {

@@ -3292,3 +3292,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Show only 3 relevant credit expansion tiers based on user's current plan (.slice(0, 3))
 - [x] Filter out plans below current tier and limit to next 3 tiers above
 - [x] All 639 tests passing, 0 TypeScript errors
+
+## Feature: Credit Economy Rebalancing (Perceived Value Multiplier)
+- [x] Apply 50x multiplier to PLAN_TIERS monthlyCredits (5,000 free → 300M ultimate)
+- [x] Apply 50x multiplier to CREDIT_COSTS (casting 350, full body 300, iterate 350, upscale 300, export 1500)
+- [x] Apply 50x multiplier to free tier balance (default 5,000)
+- [x] Apply 50x multiplier to referral rewards (12,500) and lifetime cap (250,000)
+- [x] Apply 50x multiplier to velocity limits (daily cap 1,666,650)
+- [x] Update LowBalanceWarning thresholds (2,500 warning, 500 very low)
+- [x] Update moderator CreditsSubTab per-credit rate
+- [x] Update Klaviyo referral flow reward credits (12,500)
+- [x] Update all test assertions (8 test files: aiService, billing, castingStudio, models, referral, referral-enhancements, velocityLimits)
+- [x] Verify 639 tests passing, 0 TypeScript errors

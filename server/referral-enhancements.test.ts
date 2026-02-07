@@ -79,7 +79,7 @@ describe("Klaviyo Referral Invite Email", () => {
       inviteeEmail: "friend@example.com",
       referrerName: "John Doe",
       referralLink: "https://formastudio.ai?ref=FORMA-ABC123",
-      rewardCredits: 250,
+      rewardCredits: 12500,
     });
 
     expect(result.success).toBe(true);
@@ -87,7 +87,7 @@ describe("Klaviyo Referral Invite Email", () => {
       inviteeEmail: "friend@example.com",
       referrerName: "John Doe",
       referralLink: "https://formastudio.ai?ref=FORMA-ABC123",
-      rewardCredits: 250,
+      rewardCredits: 12500,
     });
   });
 
@@ -101,7 +101,7 @@ describe("Klaviyo Referral Invite Email", () => {
       inviteeEmail: "friend@example.com",
       referrerName: "John Doe",
       referralLink: "https://formastudio.ai?ref=FORMA-ABC123",
-      rewardCredits: 250,
+      rewardCredits: 12500,
     });
 
     expect(result.success).toBe(false);

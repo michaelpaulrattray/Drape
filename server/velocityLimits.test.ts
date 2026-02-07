@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const VELOCITY_LIMITS = {
   HOURLY_MAX: 3,
   DAILY_MAX: 10,
-  DAILY_CREDIT_CAP: 33333,
+  DAILY_CREDIT_CAP: 1666650, // 50x multiplier (was 33,333)
 };
 
 describe("Credit Purchase Velocity Limits", () => {
@@ -51,28 +51,28 @@ describe("Credit Purchase Velocity Limits", () => {
     });
   });
 
-  describe("Daily credit cap ($500/day ≈ 33333 credits)", () => {
+  describe("Daily credit cap ($500/day ≈ 1,666,650 credits with 50x multiplier)", () => {
     it("should allow small purchase when under daily cap", () => {
-      const dailyCredits = 1000;
-      const purchaseCredits = 100;
+      const dailyCredits = 50000;
+      const purchaseCredits = 5000;
       expect(dailyCredits + purchaseCredits <= VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
     });
 
     it("should allow purchase that exactly reaches the cap", () => {
-      const purchaseCredits = 100;
+      const purchaseCredits = 5000;
       const dailyCredits = VELOCITY_LIMITS.DAILY_CREDIT_CAP - purchaseCredits;
       expect(dailyCredits + purchaseCredits <= VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
     });
 
     it("should block purchase that would exceed the cap", () => {
-      const dailyCredits = 30000;
-      const purchaseCredits = 5000;
+      const dailyCredits = 1500000;
+      const purchaseCredits = 250000;
       expect(dailyCredits + purchaseCredits > VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
     });
 
     it("should block any purchase when already at the cap", () => {
-      const dailyCredits = 33333;
-      const purchaseCredits = 100;
+      const dailyCredits = 1666650;
+      const purchaseCredits = 5000;
       expect(dailyCredits + purchaseCredits > VELOCITY_LIMITS.DAILY_CREDIT_CAP).toBe(true);
     });
   });

@@ -94,13 +94,12 @@ describe("Model Creation - Validation", () => {
 });
 
 describe("Credit Cost Calculations", () => {
-  it("should have correct credit costs defined", () => {
-    // Verify all credit costs are defined (1 credit ≈ $0.01)
-    expect(CREDIT_COSTS.castingImage).toBe(7);
-    expect(CREDIT_COSTS.fullBody).toBe(6);
-    expect(CREDIT_COSTS.multiView).toBe(6);
-    expect(CREDIT_COSTS.iterate).toBe(7);
-    expect(CREDIT_COSTS.upscale).toBe(6);
+  it("should have correct credit costs defined (50x multiplier)", () => {
+    expect(CREDIT_COSTS.castingImage).toBe(350);
+    expect(CREDIT_COSTS.fullBody).toBe(300);
+    expect(CREDIT_COSTS.multiView).toBe(300);
+    expect(CREDIT_COSTS.iterate).toBe(350);
+    expect(CREDIT_COSTS.upscale).toBe(300);
   });
 
   it("should calculate total cost for full model generation", () => {
@@ -110,12 +109,12 @@ describe("Credit Cost Calculations", () => {
       CREDIT_COSTS.fullBody +
       CREDIT_COSTS.multiView * 3;
 
-    expect(totalCost).toBe(7 + 6 + 6 * 3); // 31 credits
+    expect(totalCost).toBe(350 + 300 + 300 * 3); // 1,550 credits
   });
 
   it("should calculate cost for minimal model (just headshot)", () => {
     const minimalCost = CREDIT_COSTS.castingImage;
-    expect(minimalCost).toBe(7);
+    expect(minimalCost).toBe(350);
   });
 
   it("should calculate cost for iteration workflow", () => {
@@ -124,7 +123,7 @@ describe("Credit Cost Calculations", () => {
       CREDIT_COSTS.castingImage +
       CREDIT_COSTS.iterate * 3;
 
-    expect(iterationCost).toBe(7 + 7 * 3); // 28 credits
+    expect(iterationCost).toBe(350 + 350 * 3); // 1,400 credits
   });
 
   it("should apply flash fallback discount", () => {
@@ -132,7 +131,7 @@ describe("Credit Cost Calculations", () => {
     const proCost = CREDIT_COSTS.castingImage;
     const flashCost = Math.ceil(proCost * CREDIT_COSTS.flashMultiplier);
     
-    expect(flashCost).toBe(4); // 7 * 0.5 = 3.5, rounded up to 4
+    expect(flashCost).toBe(175); // 350 * 0.5 = 175
   });
 });
 

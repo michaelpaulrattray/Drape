@@ -204,36 +204,36 @@ describe("Referral System", () => {
 
   describe("Lifetime Referral Cap", () => {
     it("should track lifetime referral credits earned", async () => {
-      mockGetReferralCreditsEarned.mockResolvedValue(2500);
+      mockGetReferralCreditsEarned.mockResolvedValue(125000);
       const earned = await getReferralCreditsEarned(1);
-      expect(earned).toBe(2500);
+      expect(earned).toBe(125000);
     });
 
     it("should block referrer credit when lifetime cap reached", async () => {
-      // When earned >= 5000, creditReferrerOnPaidAction returns false
+      // When earned >= 250,000, creditReferrerOnPaidAction returns false
       mockCreditReferrerOnPaidAction.mockResolvedValue(false);
-      mockGetReferralCreditsEarned.mockResolvedValue(5000);
+      mockGetReferralCreditsEarned.mockResolvedValue(250000);
       const result = await creditReferrerOnPaidAction(2);
       expect(result).toBe(false);
     });
 
     it("should still allow credits when under cap", async () => {
       mockCreditReferrerOnPaidAction.mockResolvedValue(true);
-      mockGetReferralCreditsEarned.mockResolvedValue(4750);
+      mockGetReferralCreditsEarned.mockResolvedValue(237500);
       const result = await creditReferrerOnPaidAction(2);
       expect(result).toBe(true);
     });
   });
 
-  describe("Reward Calibration", () => {
-    it("should award 250 credits per successful referral", async () => {
+  describe("Reward Calibration (50x multiplier)", () => {
+    it("should award 12,500 credits per successful referral", async () => {
       const { REFERRAL_REWARD_CREDITS } = await import("../drizzle/schema");
-      expect(REFERRAL_REWARD_CREDITS).toBe(250);
+      expect(REFERRAL_REWARD_CREDITS).toBe(12500);
     });
 
-    it("should have a lifetime cap of 5000 credits", async () => {
+    it("should have a lifetime cap of 250,000 credits", async () => {
       const { REFERRAL_LIFETIME_CAP } = await import("../drizzle/schema");
-      expect(REFERRAL_LIFETIME_CAP).toBe(5000);
+      expect(REFERRAL_LIFETIME_CAP).toBe(250000);
     });
   });
 
@@ -242,15 +242,15 @@ describe("Referral System", () => {
       mockGetReferralStats.mockResolvedValue({
         totalReferrals: 5,
         completedReferrals: 3,
-        totalCreditsEarned: 750,
-        lifetimeCap: 5000,
+        totalCreditsEarned: 37500,
+        lifetimeCap: 250000,
         referralCode: "FORMA-ABC123",
       });
       const stats = await getReferralStats(1);
       expect(stats.totalReferrals).toBe(5);
       expect(stats.completedReferrals).toBe(3);
-      expect(stats.totalCreditsEarned).toBe(750);
-      expect(stats.lifetimeCap).toBe(5000);
+      expect(stats.totalCreditsEarned).toBe(37500);
+      expect(stats.lifetimeCap).toBe(250000);
       expect(stats.referralCode).toBe("FORMA-ABC123");
     });
 
@@ -259,13 +259,13 @@ describe("Referral System", () => {
         totalReferrals: 0,
         completedReferrals: 0,
         totalCreditsEarned: 0,
-        lifetimeCap: 5000,
+        lifetimeCap: 250000,
         referralCode: null,
       });
       const stats = await getReferralStats(99);
       expect(stats.totalReferrals).toBe(0);
       expect(stats.totalCreditsEarned).toBe(0);
-      expect(stats.lifetimeCap).toBe(5000);
+      expect(stats.lifetimeCap).toBe(250000);
     });
   });
 

@@ -138,8 +138,8 @@ export function CreditsSubTab({
                         size="sm"
                         className="h-5 px-1.5 text-[10px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
                         onClick={() => {
-                          const PACKAGE_PRICES: Record<number, number> = { 100: 150, 500: 675, 1000: 1275, 5000: 6000 };
-                          const amountCents = PACKAGE_PRICES[tx.amount] || Math.round(tx.amount * 1.5);
+                          // Estimate refund amount based on subscription credit value
+                          const amountCents = Math.round(tx.amount * 0.00072); // ~$0.0000072/credit at starter rate (50x multiplier)
                           onOpenChangeRequest({
                             type: "stripe_refund",
                             targetUserId: String(selectedUserId),

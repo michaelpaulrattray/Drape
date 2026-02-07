@@ -113,12 +113,12 @@ export const BODY_TYPES = [
 
 export const CREDIT_COSTS = {
   masterPrompt: 0,      // Included with castingImage
-  castingImage: 7,      // Initial headshot generation
-  fullBody: 6,          // Full body from headshot
-  multiView: 6,         // Single view: side/walk/back
-  iteration: 7,         // Surgical edit / iteration
-  eraser: 7,            // Magic eraser
-  upscale: 6,           // Upscale existing image
+  castingImage: 350,    // Initial headshot generation (50x multiplier)
+  fullBody: 300,        // Full body from headshot
+  multiView: 300,       // Single view: side/walk/back
+  iteration: 350,       // Surgical edit / iteration
+  eraser: 350,          // Magic eraser
+  upscale: 300,         // Upscale existing image
 };
 
 // ============ Types ============

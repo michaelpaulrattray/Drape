@@ -162,6 +162,13 @@
       "when": 1770471233109,
       "tag": "0022_flat_liz_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1770475475186,
+      "tag": "0023_sturdy_excalibur",
+      "breakpoints": true
     }
   ]
 }

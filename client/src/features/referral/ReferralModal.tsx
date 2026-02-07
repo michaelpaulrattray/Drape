@@ -53,7 +53,7 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
     sendInviteMutation.mutate({ email: email.trim() });
   };
 
-  const rewardCredits = codeData?.rewardCredits ?? 250;
+  const rewardCredits = codeData?.rewardCredits ?? 12500;
 
   return (
     <>
@@ -166,7 +166,7 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
                 <div className="text-lg font-semibold">
                   {(stats?.totalCreditsEarned ?? 0).toLocaleString()}
                   <span className="text-xs text-muted-foreground font-normal">
-                    /{(stats?.lifetimeCap ?? 5000).toLocaleString()}
+                    /{(stats?.lifetimeCap ?? 250000).toLocaleString()}
                   </span>
                 </div>
               </div>

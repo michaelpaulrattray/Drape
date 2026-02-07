@@ -40,7 +40,7 @@ const LOGO_URL =
   "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png";
 const FROM_EMAIL = "hello@formastudio.ai";
 const FROM_LABEL = "FormaStudio";
-const REWARD_CREDITS = 250;
+const REWARD_CREDITS = 12500;
 
 // ── 1. Email template HTML ──
 const EMAIL_HTML = `<!DOCTYPE html>

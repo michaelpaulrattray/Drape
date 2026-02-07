@@ -16,7 +16,7 @@ import {
 } from "../../drizzle/schema";
 import { getDb } from "./connection";
 
-const INITIAL_CREDITS = 100; // Free tier starting credits
+const INITIAL_CREDITS = 5000; // Free tier starting credits (50x display multiplier)
 
 export async function initializeUserCredits(userId: number): Promise<void> {
   const db = await getDb();
