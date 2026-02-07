@@ -3313,3 +3313,7 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Referral Modal History View Height
 - [x] Maintain same modal height when switching between share and history views (min-h-[480px] + flex-col + flex-1)
+
+## Feature: Add Credit Button in Dashboard
+- [x] Add subtle "+" button next to credits display in dashboard profile area
+- [x] Button opens CreditTopupModal (upgrade/add credits flow)
