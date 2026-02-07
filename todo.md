@@ -3412,3 +3412,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add "Download CSV" button to ReconciliationSubTab
 - [x] Include user info, credit summary, generation summary, reconciliation details, and type breakdowns
 - [x] Write tests for CSV generation logic (10 tests, 693 total passing)
+
+## Feature: Auto-Flag Discrepancy Threshold on Moderator Dashboard
+- [x] Create backend getUsersWithDiscrepancies query (SQL aggregation, no N+1)
+- [x] Add getFlaggedUsers tRPC procedure with configurable threshold
+- [x] Build FlaggedDiscrepanciesCard widget on moderator dashboard overview
+- [x] Wire card into ModeratorDashboard with click-to-navigate to user reconciliation
+- [x] Extract discrepancyQueries.ts from moderatorQueries.ts (file size compliance)
+- [x] Write tests for discrepancy computation logic (15 tests, 708 total passing)

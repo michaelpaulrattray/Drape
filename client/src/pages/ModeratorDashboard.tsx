@@ -13,6 +13,7 @@ import {
   ChangeRequestModal,
   DashboardHeader,
   StatsCards,
+  FlaggedDiscrepanciesCard,
   TabNavigation,
   PAGE_SIZE,
   type AuditLog,
@@ -262,6 +263,14 @@ export default function ModeratorDashboard() {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <StatsCards statsQuery={statsQuery} alertsQuery={alertsQuery} />
+
+        <FlaggedDiscrepanciesCard
+          onSelectUser={(userId) => {
+            setSelectedUserId(userId);
+            setActiveTab("users");
+          }}
+          autoRefreshInterval={autoRefresh ? 60000 : false}
+        />
 
         <TabNavigation
           activeTab={activeTab}

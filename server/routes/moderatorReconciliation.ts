@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { moderatorProcedure, router } from "../_core/trpc";
-import { getDetailedCreditHistory, getDetailedGenerationHistory } from "../db/moderatorQueries";
+import { getDetailedCreditHistory, getDetailedGenerationHistory, getUsersWithDiscrepancies } from "../db/moderatorQueries";
 
 /** Build a human-readable summary explaining the reconciliation result. */
 function buildSummary(ctx: {
@@ -49,6 +49,17 @@ export const moderatorReconciliationRouter = router({
    *   net generation cost = generation deductions − refunds
    *   vs. completed generation recorded costs
    */
+  /** Returns users whose credit discrepancy exceeds the given threshold. */
+  getFlaggedUsers: moderatorProcedure
+    .input(
+      z.object({
+        threshold: z.number().min(1).default(50),
+      })
+    )
+    .query(async ({ input }) => {
+      return getUsersWithDiscrepancies(input.threshold);
+    }),
+
   getUserReconciliation: moderatorProcedure
     .input(
       z.object({

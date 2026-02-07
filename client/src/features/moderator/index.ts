@@ -7,6 +7,7 @@ export { LogDetailModal } from "./LogDetailModal";
 export { ChangeRequestModal } from "./ChangeRequestModal";
 export { DashboardHeader } from "./DashboardHeader";
 export { StatsCards } from "./StatsCards";
+export { FlaggedDiscrepanciesCard } from "./FlaggedDiscrepanciesCard";
 export { TabNavigation } from "./TabNavigation";
 export type { ModeratorTab } from "./TabNavigation";
 export * from "./moderatorConstants";

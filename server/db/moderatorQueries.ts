@@ -504,3 +504,7 @@ export async function getFlaggedReferrals(
 
   return { items: enriched, total };
 }
+
+
+// Re-export discrepancy queries from dedicated module
+export { getUsersWithDiscrepancies, type FlaggedUserDiscrepancy } from "./discrepancyQueries";
