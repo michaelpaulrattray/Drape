@@ -2874,3 +2874,56 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Redesign BillingModal as "Manage your subscription" (plan comparison cards, monthly/annual toggle, Expand credit limit section, footer links)
 - [x] Transform CreditTopupModal into "Add more credits" (Manus-style tier-based credit expansion)
 - [x] Ensure dashboard Add Credits button opens the new CreditTopupModal
+
+## Router Refactor — server/routers.ts (4,209 lines → feature-based modules)
+
+### Step 1: Extract adminActions helper + create directory structure
+- [x] Create server/routes/ directory
+- [x] Create server/lib/ directory
+- [x] Extract executeApprovedAdminAction (lines 62-654) to server/lib/adminActions.ts
+- [x] Update routers.ts to import from server/lib/adminActions.ts
+- [x] Verify: TypeScript 0 errors, 589 tests pass
+
+### Step 2: Extract auth, credits, waitlist, newsletter (small, low-risk)
+- [x] Extract auth router (lines 659-691, 33 lines) to server/routes/auth.ts
+- [x] Extract credits + points routers (lines 692-827, 136 lines) to server/routes/credits.ts
+- [x] Extract waitlist router (lines 828-885, 58 lines) to server/routes/waitlist.ts
+- [x] Extract newsletter router (lines 2633-2678, 46 lines) to server/routes/newsletter.ts
+- [x] Update routers.ts to import from new route files
+- [x] Verify: TypeScript 0 errors, 589 tests pass (3,365 lines remaining)
+
+### Step 3: Extract models, profile, registry (medium complexity)
+- [x] Extract models router (lines 886-1063, 178 lines) to server/routes/models.ts
+- [x] Extract profile router (lines 1843-2012, 170 lines) to server/routes/profile.ts
+- [x] Extract registry router (lines 2013-2081, 69 lines) to server/routes/registry.ts
+- [x] Update routers.ts to import from new route files
+- [x] Verify: TypeScript 0 errors, 589 tests pass (2,954 lines remaining)
+
+### Step 4: Extract generation router (large, high-dependency)
+- [x] Extract generation router (lines 1064-1842, 779 lines) to server/routes/generation.ts
+- [x] Update routers.ts to import from new route file
+- [x] Verify: TypeScript 0 errors, 589 tests pass (2,180 lines remaining)
+
+### Step 5: Extract billing and usage routers
+- [x] Extract billing router (lines 2082-2594, 513 lines) to server/routes/billing.ts
+- [x] Extract usage router (lines 2595-2632, 38 lines) to server/routes/usage.ts
+- [x] Update routers.ts to import from new route files
+- [x] Verify: TypeScript 0 errors, 589 tests pass (1,634 lines remaining)
+
+### Step 6: Extract admin router (split into sub-modules)
+- [ ] Create server/routes/admin/ directory
+- [ ] Extract Slack Approval (lines 2680-2787, 108 lines) to server/routes/admin/slackApproval.ts
+- [ ] Extract Audit Logs (lines 2788-3045, 258 lines) to server/routes/admin/auditLogs.ts
+- [ ] Extract Role Management (lines 3046-3131, 86 lines) to server/routes/admin/roles.ts
+- [ ] Extract IP Blocking (lines 3132-3276, 145 lines) to server/routes/admin/ipBlocking.ts
+- [ ] Extract User Management (lines 3277-3435, 159 lines) to server/routes/admin/users.ts
+- [ ] Extract Change Request Review (lines 3436-3801, 366 lines) to server/routes/admin/changeRequests.ts
+- [x] Create server/routes/admin/index.ts to combine admin sub-routers
+- [x] Update routers.ts to import adminRouter from server/routes/admin/index.ts
+- [x] Verify: TypeScript 0 errors, 589 tests pass (512 lines remaining)
+
+### Step 7: Extract moderator router + finalize routers.ts
+- [x] Extract moderator router (lines 3803-4209, 407 lines) to server/routes/moderator.ts
+- [x] Rewrite routers.ts as slim index (40 lines) combining all sub-routers
+- [x] Verify: TypeScript 0 errors, 589 tests pass
+- [ ] Save checkpoint
