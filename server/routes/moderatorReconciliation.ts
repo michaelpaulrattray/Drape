@@ -4,6 +4,7 @@ import { getDetailedCreditHistory, getDetailedGenerationHistory, getUsersWithDis
 import { freezeUser, unfreezeUser } from "../db";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { SlackAlerts } from "../slack/slackNotification";
+import { sendAccountFrozenEmail } from "../klaviyo";
 import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -91,6 +92,21 @@ export const moderatorReconciliationRouter = router({
                     trigger: "discrepancy_scan",
                   },
                 });
+
+                // Send freeze notification email (non-blocking)
+                const [frozenUser] = await db
+                  .select({ email: users.email })
+                  .from(users)
+                  .where(eq(users.id, flagged.userId))
+                  .limit(1);
+                if (frozenUser?.email) {
+                  sendAccountFrozenEmail({
+                    userEmail: frozenUser.email,
+                    userName: flagged.userName || `User ${flagged.userId}`,
+                    freezeReason: reason,
+                    frozenBy: "system",
+                  }).catch((err) => console.error("[Klaviyo] Auto-freeze email failed:", err));
+                }
               }
             }
           }
@@ -278,6 +294,16 @@ export const moderatorReconciliationRouter = router({
           trigger: "moderator_manual",
         },
       });
+
+      // Send freeze notification email (non-blocking)
+      if (user.email) {
+        sendAccountFrozenEmail({
+          userEmail: user.email,
+          userName: user.name || `User ${input.userId}`,
+          freezeReason: reason,
+          frozenBy: ctx.user.name || `Moderator ${ctx.user.id}`,
+        }).catch((err) => console.error("[Klaviyo] Manual freeze email failed:", err));
+      }
 
       return { success: true };
     }),

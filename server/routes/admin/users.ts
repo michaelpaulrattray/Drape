@@ -1,5 +1,6 @@
 import { adminProcedure, router } from "../../_core/trpc";
 import { logAuditEvent, AUDIT_ACTIONS } from "../../auditLog";
+import { sendAccountFrozenEmail } from "../../klaviyo";
 import { logAdminAction, writeImmutableLog } from "../../security/adminSecurity";
 import { getClientIp } from "../../security/rateLimit";
 import { z } from "zod";
@@ -214,6 +215,16 @@ export const usersRouter = router({
         ipAddress: getClientIp(ctx.req),
         userAgent: ctx.req.headers["user-agent"] || undefined,
       });
+
+      // Send freeze notification email (non-blocking)
+      if (targetUser.email) {
+        sendAccountFrozenEmail({
+          userEmail: targetUser.email,
+          userName: targetUser.name || `User ${input.userId}`,
+          freezeReason: reason,
+          frozenBy: ctx.user.name || `Admin ${ctx.user.id}`,
+        }).catch((err) => console.error("[Klaviyo] Admin freeze email failed:", err));
+      }
 
       return { success: true };
     }),

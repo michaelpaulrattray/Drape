@@ -3448,3 +3448,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update FlaggedDiscrepanciesCard threshold options (100/250/500/1000/2000/5000)
 - [x] Update severity tiers: critical >= 2000, warning >= 1000
 - [x] Update tests for new threshold values (745 total passing)
+
+## Feature: Freeze Notification Email via Klaviyo
+- [x] Create sendAccountFrozenEmail helper using Klaviyo trackEvent pattern (consistent with referral email)
+- [x] Trigger email on auto-freeze (discrepancy scan) — non-blocking
+- [x] Trigger email on manual moderator freeze — non-blocking
+- [x] Trigger email on admin freeze — non-blocking
+- [x] Event properties: user_name, freeze_reason, frozen_by, frozen_date, support_url, app_name
+- [x] Write tests for email sending logic (5 new tests, 750 total passing)

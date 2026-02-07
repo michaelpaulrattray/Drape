@@ -303,6 +303,43 @@ export async function sendReferralInviteEmail(params: {
 }
 
 /**
+ * Send account frozen notification email via Klaviyo event (triggers a Flow)
+ * Set up a Klaviyo Flow triggered by "Account Frozen" metric.
+ * Use the same email template styling as the referral invite flow for brand consistency.
+ */
+export async function sendAccountFrozenEmail(params: {
+  userEmail: string;
+  userName: string;
+  freezeReason: string;
+  frozenBy: string;
+  supportUrl?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  // Ensure the profile exists in Klaviyo with latest info
+  await createOrUpdateProfile({
+    email: params.userEmail,
+    first_name: params.userName,
+    properties: {
+      account_frozen: true,
+      last_freeze_date: new Date().toISOString(),
+    },
+  });
+
+  // Fire the event to trigger the Klaviyo Flow
+  return trackEvent(params.userEmail, "Account Frozen", {
+    user_name: params.userName,
+    freeze_reason: params.freezeReason,
+    frozen_by: params.frozenBy,
+    frozen_date: new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    support_url: params.supportUrl || "https://formastudio.ai/support",
+    app_name: "FormaStudio",
+  });
+}
+
+/**
  * Test the Klaviyo API connection
  */
 export async function testConnection(): Promise<{ success: boolean; error?: string }> {
