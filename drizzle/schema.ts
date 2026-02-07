@@ -311,6 +311,7 @@ export const AUDIT_ACTIONS = {
   
   // Export events
   AUDIT_LOG_EXPORTED: "audit_log.exported",
+  CREDIT_HISTORY_EXPORTED: "credit_history.exported",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
@@ -434,6 +435,24 @@ export const changeRequests = mysqlTable("change_requests", {
 
 export type ChangeRequest = typeof changeRequests.$inferSelect;
 export type InsertChangeRequest = typeof changeRequests.$inferInsert;
+
+/**
+ * Attachments for change requests — files/images uploaded by moderators as evidence.
+ */
+export const changeRequestAttachments = mysqlTable("change_request_attachments", {
+  id: int("id").autoincrement().primaryKey(),
+  changeRequestId: int("changeRequestId"), // Null until linked to a request
+  filename: varchar("filename", { length: 256 }).notNull(),
+  fileKey: varchar("fileKey", { length: 512 }).notNull(), // S3 key
+  url: text("url").notNull(), // Public S3 URL
+  mimeType: varchar("mimeType", { length: 128 }).notNull(),
+  size: int("size").notNull(), // File size in bytes
+  uploadedById: int("uploadedById").notNull(), // Moderator who uploaded
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChangeRequestAttachment = typeof changeRequestAttachments.$inferSelect;
+export type InsertChangeRequestAttachment = typeof changeRequestAttachments.$inferInsert;
 
 /**
  * Referrals table for tracking user-to-user referrals.

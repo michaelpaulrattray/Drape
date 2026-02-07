@@ -199,7 +199,9 @@ export default function ModeratorDashboard() {
     setChangeRequestOpen(true);
   };
 
-  const handleSubmitChangeRequest = () => {
+  const linkAttachmentsMutation = trpc.moderatorAttachments.linkAttachments.useMutation();
+
+  const handleSubmitChangeRequest = (attachmentIds: number[]) => {
     if (!crTitle || crTitle.length < 5) return toast.error("Please provide a title (at least 5 characters)");
     if (!crDescription || crDescription.length < 10) return toast.error("Please provide a description (at least 10 characters)");
     if (!crTargetUserId || isNaN(parseInt(crTargetUserId))) return toast.error("Please specify a valid target user ID");
@@ -221,6 +223,12 @@ export default function ModeratorDashboard() {
       refundType: crType === "stripe_refund" ? crRefundType : undefined,
       originalAmountCents: crType === "stripe_refund" ? crOriginalAmountCents : undefined,
       originalCredits: crType === "stripe_refund" ? crOriginalCredits : undefined,
+    }, {
+      onSuccess: (result) => {
+        if (attachmentIds.length > 0 && result.requestId) {
+          linkAttachmentsMutation.mutate({ changeRequestId: result.requestId, attachmentIds });
+        }
+      },
     });
   };
 

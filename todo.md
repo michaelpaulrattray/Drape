@@ -3354,3 +3354,19 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire frontend: refetch on click, Blob download with timestamped filename, toast notification
 - [x] Write vitest test (8 tests: header, single entry, null fields, comma escaping, quote escaping, newlines, simple strings, multiple entries)
 - [x] 647 tests passing, 0 TypeScript errors
+
+## Feature: Moderator Credit History CSV Export
+- [x] Add exportUserCreditHistoryCsv procedure to moderatorExports router (up to 5000 filtered entries)
+- [x] Add Export CSV button to CreditsSubTab UI (same pattern as audit logs)
+- [x] Wire frontend download logic (Blob download, timestamped filename, toast)
+
+## Feature: Change Request File Attachments
+- [x] Add change_request_attachments table to schema (id, changeRequestId, filename, fileKey, url, mimeType, size, uploadedById, createdAt)
+- [x] Push DB migration via SQL
+- [x] Create moderatorAttachments router (upload to S3, link to change request, list by change request)
+- [x] Update ChangeRequestModal with file upload UI (drag/drop area, previews, remove, max 5 files, 10MB each)
+- [x] Update onSubmit to pass attachmentIds and link after creation
+- [x] Add AttachmentsSection to admin ChangeRequestDetail (images rendered inline, files as download links)
+- [x] Extract AttachmentsSection into separate file (ChangeRequestAttachments.tsx)
+- [x] Write vitest tests (12 tests: MIME validation, size limits, filename sanitization, base64 decoding, link ownership, image detection)
+- [x] 659 tests passing, 0 TypeScript errors

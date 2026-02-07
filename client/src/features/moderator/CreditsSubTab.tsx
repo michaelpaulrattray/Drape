@@ -1,6 +1,9 @@
 /**
  * Credits sub-tab within User Investigation — shows credit history, summary, and refund actions.
  */
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import {
   Coins,
   CreditCard,
@@ -9,6 +12,7 @@ import {
   ArrowUp,
   ArrowDown,
   Calendar,
+  Download,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,12 +57,58 @@ export function CreditsSubTab({
   selectedUserId,
   onOpenChangeRequest,
 }: CreditsSubTabProps) {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportQuery = trpc.moderatorExports.exportUserCreditHistoryCsv.useQuery(
+    {
+      userId: selectedUserId,
+      type: creditTypeFilter as any,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
+    { enabled: false }
+  );
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportQuery.refetch();
+      if (result.data) {
+        const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        const timestamp = new Date().toISOString().slice(0, 10);
+        link.download = `credit-history-user-${selectedUserId}-${timestamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success(`Exported ${result.data.total} credit transactions`);
+      }
+    } catch {
+      toast.error("Failed to export credit history");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <Card className="bg-white/5 border-white/10">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
           <Coins className="w-4 h-4 text-emerald-400" />
           Credit History
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting || creditHistoryQuery.isLoading}
+            className="ml-auto border-white/20 text-white/60 hover:text-white hover:bg-white/10 h-7 text-xs"
+          >
+            <Download className="w-3.5 h-3.5 mr-1" />
+            {isExporting ? "Exporting..." : "CSV"}
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>

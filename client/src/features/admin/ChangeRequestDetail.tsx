@@ -10,6 +10,7 @@ import {
   Loader2,
   Timer,
 } from "lucide-react";
+import { AttachmentsSection } from "./ChangeRequestAttachments";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -180,6 +181,9 @@ export function ChangeRequestDetail({
             </p>
           </div>
         )}
+
+        {/* Attachments */}
+        <AttachmentsSection changeRequestId={selectedRequest.id} />
 
         {/* Related Audit Log */}
         {selectedRequest.relatedAuditLogId && (
@@ -375,3 +379,4 @@ function PendingExecutionBanner({ request, slackStatus }: { request: any; slackS
     </div>
   );
 }
+

@@ -84,7 +84,7 @@ export function AuditLogsTab({
 }: AuditLogsTabProps) {
   const [isExporting, setIsExporting] = useState(false);
 
-  const exportQuery = trpc.moderator.exportAuditLogsCsv.useQuery(
+  const exportQuery = trpc.moderatorExports.exportAuditLogsCsv.useQuery(
     {
       severity: severityFilter as any,
       actionCategory: categoryFilter as any,

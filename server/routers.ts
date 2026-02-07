@@ -19,6 +19,8 @@ import { billingRouter } from "./routes/billing";
 import { usageRouter } from "./routes/usage";
 import { adminRouter } from "./routes/admin";
 import { moderatorRouter } from "./routes/moderator";
+import { moderatorExportsRouter } from "./routes/moderatorExports";
+import { moderatorAttachmentsRouter } from "./routes/moderatorAttachments";
 import { referralRouter } from "./routes/referral";
 
 export const appRouter = router({
@@ -36,6 +38,8 @@ export const appRouter = router({
   newsletter: newsletterRouter,
   admin: adminRouter,
   moderator: moderatorRouter,
+  moderatorExports: moderatorExportsRouter,
+  moderatorAttachments: moderatorAttachmentsRouter,
   referral: referralRouter,
 });
 
