@@ -3149,4 +3149,25 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Verify: build passes, 0 TS errors, 589 tests pass
 
 ### Final
-- [ ] Save checkpoint
+- [x] Save checkpoint (version: 898e1620)
+
+## P4: Final Cleanup
+
+### Step 1: Delete dead code
+- [x] Delete client/src/pages/HomeOld.tsx (dead — zero imports)
+- [x] Delete client/src/pages/ComponentShowcase.tsx (dead — zero imports)
+- [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+### Step 2: Move research/audit markdown files to docs/archive/
+- [x] Create docs/archive/ directory
+- [x] Move 16 markdown files to docs/archive/
+- [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+### Step 3: Move casting stores to features/casting/stores/
+- [x] Create features/casting/stores/ directory
+- [x] Move useCastingFormStore.ts, useCastingGenerationStore.ts, useCastingUIStore.ts
+- [x] Update 26 imports across casting feature files + fix 3 relative imports to constants
+- [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+### Final
+- [x] Save checkpoint

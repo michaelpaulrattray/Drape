@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCastingGenerationStore } from '@/features/casting/useCastingGenerationStore';
+import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 
 // ============ Main Component ============
 

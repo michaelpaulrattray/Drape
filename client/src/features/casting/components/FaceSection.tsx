@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Tooltip from "@/components/Tooltip";
-import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
+import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 
 // ============ Constants ============
 

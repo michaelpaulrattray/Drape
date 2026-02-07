@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type ModelPreferences, type CastingVibe } from './constants';
+import { type ModelPreferences, type CastingVibe } from '../constants';
 
 // Default preferences for a new model
 const DEFAULT_PREFERENCES: ModelPreferences = {

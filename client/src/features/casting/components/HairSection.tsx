@@ -1,7 +1,7 @@
 import { useState } from "react";
 import HairColorWheel from "@/components/HairColorWheel";
 import Tooltip from "@/components/Tooltip";
-import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
+import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 
 // ============ Constants ============
 

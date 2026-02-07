@@ -1,5 +1,5 @@
 import { EYE_PRESETS } from "@/features/casting/constants";
-import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
+import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 
 // ============ Types ============
 

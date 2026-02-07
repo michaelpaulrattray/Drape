@@ -1,4 +1,4 @@
-import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
+import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 
 // ============ Types ============
 

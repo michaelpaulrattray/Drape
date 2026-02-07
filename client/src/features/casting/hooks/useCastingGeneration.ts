@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
-import { useCastingGenerationStore } from "@/features/casting/useCastingGenerationStore";
-import { useCastingUIStore } from "@/features/casting/useCastingUIStore";
+import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
+import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
+import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
 import {
   CREDIT_COSTS,

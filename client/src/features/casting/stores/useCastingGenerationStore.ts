@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type GeneratedAsset, type GenerationState } from './constants';
+import { type GeneratedAsset, type GenerationState } from '../constants';
 
 // Default generation state
 const DEFAULT_GEN_STATE: GenerationState = {

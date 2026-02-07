@@ -8,9 +8,9 @@ import { SkinSection } from "./components/SkinSection";
 import { FaceSection } from "./components/FaceSection";
 import { BrandSelector } from "./components/BrandSelector";
 import { PhysiqueSelector } from "./components/PhysiqueSelector";
-import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
-import { useCastingGenerationStore } from "@/features/casting/useCastingGenerationStore";
-import { useCastingUIStore } from "@/features/casting/useCastingUIStore";
+import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
+import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
+import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { CollapsibleSection, generateRandomPreferences } from "./castingHelpers";
 import type { GenerationState, GeneratedAsset } from "@/features/casting/constants";
 
