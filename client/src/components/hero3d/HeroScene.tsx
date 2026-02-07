@@ -55,6 +55,8 @@ function useHeroTextures() {
             tex.minFilter = THREE.LinearMipmapLinearFilter;
             tex.magFilter = THREE.LinearFilter;
             tex.anisotropy = 16;
+            tex.wrapS = THREE.ClampToEdgeWrapping;
+            tex.wrapT = THREE.ClampToEdgeWrapping;
             resolve(tex);
           },
           undefined,

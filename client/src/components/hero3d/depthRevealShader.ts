@@ -37,7 +37,13 @@ export const fragmentShader = /* glsl */ `
     float parallaxDepth = (depth - 0.5) * 2.0;
     vec2 parallaxOffset = mouseOffset * parallaxDepth * uParallaxStrength;
 
-    vec2 baseUv = vUv + parallaxOffset;
+    // ── Fade parallax to zero near edges to prevent ghost/double-image ──
+    float edgeMargin = 0.08; // fade zone width in UV space
+    float edgeFadeX = smoothstep(0.0, edgeMargin, vUv.x) * smoothstep(0.0, edgeMargin, 1.0 - vUv.x);
+    float edgeFadeY = smoothstep(0.0, edgeMargin, vUv.y) * smoothstep(0.0, edgeMargin, 1.0 - vUv.y);
+    parallaxOffset *= edgeFadeX * edgeFadeY;
+
+    vec2 baseUv = clamp(vUv + parallaxOffset, 0.0, 1.0);
 
     // ── Radial reveal mask ──────────────────────────────────
     // Aspect ratio correction (image is ~1.79:1)

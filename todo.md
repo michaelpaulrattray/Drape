@@ -2847,3 +2847,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Tune parallax strength to 0.012 (sweet spot before double-image)
 - [x] Fix dark overlay on hero image (disable Three.js ACESFilmic tone mapping, remove bg tint)
 - [x] Reduce parallax depth strength from 0.012 to 0.010
+- [x] Fix double-image ghost edge artifact when cursor is at edge of hero container
