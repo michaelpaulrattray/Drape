@@ -10,6 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../stripe/webhooks";
 import { securityHeaders } from "../security/securityHeaders";
 import heroProxyRouter from "../heroProxy";
+import { healthHandler } from "../health";
 
 // ============================================================================
 // GLOBAL ERROR HANDLERS
@@ -166,6 +167,9 @@ async function startServer() {
     }
   );
   
+  // Deep-check health endpoint (DB ping + latency)
+  app.get("/api/health", healthHandler);
+
   // Hero texture proxy (serves S3 images with CORS headers)
   app.use(heroProxyRouter);
 

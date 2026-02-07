@@ -3481,3 +3481,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add tRPC onError hook for centralized server-side error logging
 - [x] Add graceful shutdown on SIGTERM/SIGINT (drain HTTP connections, close DB)
 - [x] Write tests for resilience logic (21 new tests, 807 total passing)
+
+## Feature: Deep-Check Health Endpoint (/api/health)
+- [x] Create server/health.ts with DB ping + latency measurement
+- [x] Register GET /api/health Express route in server/_core/index.ts
+- [x] Return status, uptime, DB latency, and timestamp
+- [x] Rate-limit the endpoint to prevent abuse (10 req/min per IP)
+- [x] Write tests for health check logic (15 new tests, 822 total passing)
