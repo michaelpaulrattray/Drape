@@ -3456,3 +3456,21 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Trigger email on admin freeze — non-blocking
 - [x] Event properties: user_name, freeze_reason, frozen_by, frozen_date, support_url, app_name
 - [x] Write tests for email sending logic (5 new tests, 750 total passing)
+
+## Feature: Admin Dashboard Overview (Real-Time KPIs)
+- [x] Audit schema tables for all required metrics
+- [x] Create adminOverviewQueries.ts with aggregation queries (380 lines, 5 query functions)
+- [x] Create admin overview tRPC procedure (adminProcedure, parallel Promise.all)
+- [x] Build AdminOverview.tsx page with KPI cards (197 lines)
+- [x] Real-time health: generation success rate (24h), pending/failed gens, active users (24h)
+- [x] User growth: total users, new signups (7d), frozen accounts, suspended accounts, plan distribution
+- [x] Credit economy: credits consumed (24h), credits purchased (7d), refunded (7d), in circulation, generation type breakdown
+- [x] Alerts feed: last 15 critical audit events (auto-freezes, security, billing, abuse)
+- [x] Wire into admin navigation and App.tsx routing (/admin/overview)
+- [ ] Add admin freeze UI buttons to admin user detail modal
+- [x] Auto-refresh with 30s interval (toggleable live/paused)
+- [x] Write tests for admin overview queries (36 new tests, 786 total passing)
+- [x] Fix success rate edge case: pending/processing-only gens no longer return NaN
+- [x] Build 5 card components: HealthMetrics, UserGrowthCard, CreditEconomyCard, GovernanceCard, AlertsFeed
+- [x] Light theme (#EBEBEB bg, #0A0A0A text) matching design requirements
+- [x] Quick nav links to Users, Audit Logs, Change Requests, Moderator from header

@@ -12,6 +12,7 @@ import AdminAuditLogs from "./pages/AdminAuditLogs";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import AdminChangeRequests from "./pages/AdminChangeRequests";
+import AdminOverview from "./pages/AdminOverview";
 
 function Router() {
   return (
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/casting-studio" component={CastingStudio} />
+      <Route path="/admin/overview" component={AdminOverview} />
       <Route path="/admin/audit-logs" component={AdminAuditLogs} />
       <Route path="/admin/users" component={AdminUserManagement} />
       <Route path="/admin/change-requests" component={AdminChangeRequests} />
