@@ -389,7 +389,6 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
           </div>
           <button
             onClick={() => {
-              onClose();
               onOpenTopup?.();
             }}
             className="px-4 py-2 rounded-lg border border-[#D4D4D4] bg-white text-[#0A0A0A] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"

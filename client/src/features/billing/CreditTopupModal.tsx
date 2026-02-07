@@ -147,7 +147,7 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
   const isMaxTier = upgradeOptions.length === 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">

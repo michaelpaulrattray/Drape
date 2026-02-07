@@ -3215,3 +3215,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Stripe products already read from PLAN_TIERS dynamically — no changes needed
 - [x] Update billing test expected values
 - [x] Build passes, 0 TS errors, 591 tests pass
+
+## Bug Fix: CreditTopupModal should overlay parent modals, not close them
+- [x] Profile Settings → Billing → Add Credits: overlays on top of profile settings
+- [x] BillingModal (Manage) → Add Credits: overlays on top of BillingModal

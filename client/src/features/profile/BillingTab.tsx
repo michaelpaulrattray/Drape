@@ -97,7 +97,6 @@ export function BillingTab({
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  onClose();
                   onOpenBilling?.();
                 }}
                 className="px-4 py-1.5 rounded-lg bg-white border border-[#D4D4D4] text-[#0A0A0A] text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
@@ -106,7 +105,6 @@ export function BillingTab({
               </button>
               <button
                 onClick={() => {
-                  onClose();
                   onOpenTopup?.();
                 }}
                 className="px-4 py-1.5 rounded-lg border border-[#0A0A0A] text-[#0A0A0A] text-sm font-medium hover:bg-[#0A0A0A] hover:text-white transition-colors"
