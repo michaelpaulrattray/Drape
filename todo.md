@@ -3327,3 +3327,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix generation status filter: "queued" → "pending" to match backend enum
 - [x] Fix generation type filter: headshot/full_body/creative/background_swap → masterPrompt/castingImage/fullBody/multiView/iteration/upscale to match backend enum
 - [x] 639 tests passing, 0 TypeScript errors
+
+## Feature: Moderator Date Range Filters
+- [x] Add date range state (startDate/endDate) for credits in ModeratorDashboard
+- [x] Add date range state (startDate/endDate) for generations in ModeratorDashboard
+- [x] Wire date range into getUserCreditHistory query
+- [x] Wire date range into getUserGenerationHistory query
+- [x] Add date input UI to CreditsSubTab filter row (calendar icon, dark theme, clear button)
+- [x] Add date input UI to GenerationsSubTab filter row (calendar icon, dark theme, clear button)
+- [x] Pass date state + setters through UserInvestigationTab props
+- [x] Reset dates when selecting a new user
+- [x] 639 tests passing, 0 TypeScript errors

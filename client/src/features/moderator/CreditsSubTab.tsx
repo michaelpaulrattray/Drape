@@ -8,6 +8,8 @@ import {
   ChevronRight,
   ArrowUp,
   ArrowDown,
+  Calendar,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +31,10 @@ interface CreditsSubTabProps {
   setCreditTypeFilter: (v: string) => void;
   creditPage: number;
   setCreditPage: (fn: (p: number) => number) => void;
+  startDate: string;
+  setStartDate: (v: string) => void;
+  endDate: string;
+  setEndDate: (v: string) => void;
   selectedUserId: number;
   onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
 }
@@ -40,6 +46,10 @@ export function CreditsSubTab({
   setCreditTypeFilter,
   creditPage,
   setCreditPage,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
   selectedUserId,
   onOpenChangeRequest,
 }: CreditsSubTabProps) {
@@ -71,7 +81,7 @@ export function CreditsSubTab({
         )}
 
         {/* Credit Type Filter */}
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-2">
           <Select value={creditTypeFilter} onValueChange={(v) => { setCreditTypeFilter(v); setCreditPage(() => 0); }}>
             <SelectTrigger className="w-full bg-white/5 border-white/10 text-white text-xs h-8">
               <SelectValue placeholder="Filter by type" />
@@ -89,6 +99,42 @@ export function CreditsSubTab({
               <SelectItem value="admin_deduct">Admin Deduct</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Date Range Filter */}
+        <div className="flex gap-2 mb-3 items-center">
+          <div className="relative flex-1">
+            <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/30 pointer-events-none" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => { setStartDate(e.target.value); setCreditPage(() => 0); }}
+              className="w-full h-8 pl-7 pr-2 rounded-md bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
+              placeholder="From"
+            />
+          </div>
+          <span className="text-white/30 text-xs">–</span>
+          <div className="relative flex-1">
+            <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/30 pointer-events-none" />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => { setEndDate(e.target.value); setCreditPage(() => 0); }}
+              className="w-full h-8 pl-7 pr-2 rounded-md bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
+              placeholder="To"
+            />
+          </div>
+          {(startDate || endDate) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setStartDate(""); setEndDate(""); setCreditPage(() => 0); }}
+              className="h-8 w-8 p-0 text-white/40 hover:text-white"
+              title="Clear dates"
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
         </div>
 
         {/* Credit Transaction List */}

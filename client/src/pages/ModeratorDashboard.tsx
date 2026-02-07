@@ -59,9 +59,13 @@ export default function ModeratorDashboard() {
   // User detail filter state (lifted from UserInvestigationTab so queries get real values)
   const [creditTypeFilter, setCreditTypeFilter] = useState("all");
   const [creditPage, setCreditPage] = useState(0);
+  const [creditStartDate, setCreditStartDate] = useState("");
+  const [creditEndDate, setCreditEndDate] = useState("");
   const [genStatusFilter, setGenStatusFilter] = useState("all");
   const [genTypeFilter, setGenTypeFilter] = useState("all");
   const [genPage, setGenPage] = useState(0);
+  const [genStartDate, setGenStartDate] = useState("");
+  const [genEndDate, setGenEndDate] = useState("");
 
   // Flagged referrals state
   const [flaggedPage, setFlaggedPage] = useState(0);
@@ -110,12 +114,18 @@ export default function ModeratorDashboard() {
   );
 
   const creditHistoryQuery = trpc.moderator.getUserCreditHistory.useQuery(
-    { userId: selectedUserId!, limit: 20, offset: creditPage * 20, type: creditTypeFilter as any },
+    {
+      userId: selectedUserId!, limit: 20, offset: creditPage * 20, type: creditTypeFilter as any,
+      startDate: creditStartDate || undefined, endDate: creditEndDate || undefined,
+    },
     { enabled: !!selectedUserId }
   );
 
   const generationHistoryQuery = trpc.moderator.getUserGenerationHistory.useQuery(
-    { userId: selectedUserId!, limit: 20, offset: genPage * 20, status: genStatusFilter as any, type: genTypeFilter as any },
+    {
+      userId: selectedUserId!, limit: 20, offset: genPage * 20, status: genStatusFilter as any, type: genTypeFilter as any,
+      startDate: genStartDate || undefined, endDate: genEndDate || undefined,
+    },
     { enabled: !!selectedUserId }
   );
 
@@ -273,9 +283,13 @@ export default function ModeratorDashboard() {
             onSelectLog={setSelectedLog} onOpenChangeRequest={openChangeRequest}
             creditTypeFilter={creditTypeFilter} setCreditTypeFilter={setCreditTypeFilter}
             creditPage={creditPage} setCreditPage={setCreditPage}
+            creditStartDate={creditStartDate} setCreditStartDate={setCreditStartDate}
+            creditEndDate={creditEndDate} setCreditEndDate={setCreditEndDate}
             genStatusFilter={genStatusFilter} setGenStatusFilter={setGenStatusFilter}
             genTypeFilter={genTypeFilter} setGenTypeFilter={setGenTypeFilter}
             genPage={genPage} setGenPage={setGenPage}
+            genStartDate={genStartDate} setGenStartDate={setGenStartDate}
+            genEndDate={genEndDate} setGenEndDate={setGenEndDate}
           />
         )}
 

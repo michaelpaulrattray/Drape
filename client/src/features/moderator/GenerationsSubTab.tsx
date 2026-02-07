@@ -8,6 +8,8 @@ import {
   CheckCircle,
   XCircle,
   Clock as ClockIcon,
+  Calendar,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +32,10 @@ interface GenerationsSubTabProps {
   setGenTypeFilter: (v: string) => void;
   genPage: number;
   setGenPage: (fn: (p: number) => number) => void;
+  startDate: string;
+  setStartDate: (v: string) => void;
+  endDate: string;
+  setEndDate: (v: string) => void;
 }
 
 export function GenerationsSubTab({
@@ -40,6 +46,10 @@ export function GenerationsSubTab({
   setGenTypeFilter,
   genPage,
   setGenPage,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
 }: GenerationsSubTabProps) {
   return (
     <Card className="bg-white/5 border-white/10">
@@ -96,6 +106,42 @@ export function GenerationsSubTab({
               <SelectItem value="upscale">Upscale</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Date Range Filter */}
+        <div className="flex gap-2 mb-3 items-center">
+          <div className="relative flex-1">
+            <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/30 pointer-events-none" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => { setStartDate(e.target.value); setGenPage(() => 0); }}
+              className="w-full h-8 pl-7 pr-2 rounded-md bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-violet-500/50 [color-scheme:dark]"
+              placeholder="From"
+            />
+          </div>
+          <span className="text-white/30 text-xs">–</span>
+          <div className="relative flex-1">
+            <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white/30 pointer-events-none" />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => { setEndDate(e.target.value); setGenPage(() => 0); }}
+              className="w-full h-8 pl-7 pr-2 rounded-md bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-violet-500/50 [color-scheme:dark]"
+              placeholder="To"
+            />
+          </div>
+          {(startDate || endDate) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setStartDate(""); setEndDate(""); setGenPage(() => 0); }}
+              className="h-8 w-8 p-0 text-white/40 hover:text-white"
+              title="Clear dates"
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
         </div>
 
         {/* Generation List */}

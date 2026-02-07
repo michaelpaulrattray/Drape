@@ -54,6 +54,14 @@ interface UserInvestigationTabProps {
   setGenTypeFilter: (v: string) => void;
   genPage: number;
   setGenPage: (fn: (p: number) => number) => void;
+  creditStartDate: string;
+  setCreditStartDate: (v: string) => void;
+  creditEndDate: string;
+  setCreditEndDate: (v: string) => void;
+  genStartDate: string;
+  setGenStartDate: (v: string) => void;
+  genEndDate: string;
+  setGenEndDate: (v: string) => void;
 }
 
 export function UserInvestigationTab({
@@ -81,6 +89,14 @@ export function UserInvestigationTab({
   setGenTypeFilter,
   genPage,
   setGenPage,
+  creditStartDate,
+  setCreditStartDate,
+  creditEndDate,
+  setCreditEndDate,
+  genStartDate,
+  setGenStartDate,
+  genEndDate,
+  setGenEndDate,
 }: UserInvestigationTabProps) {
   const [userDetailTab, setUserDetailTab] = useState<"overview" | "credits" | "generations">("overview");
 
@@ -92,6 +108,10 @@ export function UserInvestigationTab({
     setCreditTypeFilter("all");
     setGenStatusFilter("all");
     setGenTypeFilter("all");
+    setCreditStartDate("");
+    setCreditEndDate("");
+    setGenStartDate("");
+    setGenEndDate("");
   };
 
   return (
@@ -173,6 +193,10 @@ export function UserInvestigationTab({
                   setCreditTypeFilter={setCreditTypeFilter}
                   creditPage={creditPage}
                   setCreditPage={setCreditPage}
+                  startDate={creditStartDate}
+                  setStartDate={setCreditStartDate}
+                  endDate={creditEndDate}
+                  setEndDate={setCreditEndDate}
                   selectedUserId={selectedUserId}
                   onOpenChangeRequest={onOpenChangeRequest}
                 />
@@ -186,6 +210,10 @@ export function UserInvestigationTab({
                   setGenTypeFilter={setGenTypeFilter}
                   genPage={genPage}
                   setGenPage={setGenPage}
+                  startDate={genStartDate}
+                  setStartDate={setGenStartDate}
+                  endDate={genEndDate}
+                  setEndDate={setGenEndDate}
                 />
               )}
             </div>
