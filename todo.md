@@ -3502,3 +3502,21 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix SQL GROUP BY for MySQL only_full_group_by mode (raw SQL with aliases)
 - [x] Write tests for time-series helper functions (18 new tests, 840 total passing)
 - [x] Light theme preserved (#EBEBEB bg, #0A0A0A text, white cards)
+
+## Feature: Announcement/Maintenance Banner System
+- [x] Add announcements table to schema (id, title, message, type, isActive, startsAt, endsAt, createdBy, createdAt, updatedAt)
+- [x] Run DB migration via direct SQL (CREATE TABLE announcements)
+- [x] Create announcementQueries.ts with CRUD + getActiveBanners + getActiveBannerCount (147 lines)
+- [x] Create admin announcements router (create, toggle, list, delete — 107 lines)
+- [x] Create public getActiveBanners procedure (server/routes/announcements.ts)
+- [x] Build admin BannerManagement component on overview page (223 lines)
+- [x] Build global AnnouncementBanner component (dismissible, color-coded by type, 82 lines)
+- [x] Wire AnnouncementBanner into App.tsx above all routes
+- [x] Add 5 banner audit actions to AUDIT_ACTIONS constant
+- [x] Write tests for announcement queries and logic (36 new tests, 876 total passing)
+
+## Feature: System Status Card on Admin Overview
+- [x] Build SystemStatusCard component (uptime, DB latency, active banners — 128 lines)
+- [x] Add system status data (activeBanners, serverStartedAt) to admin overview procedure
+- [x] Wire SystemStatusCard into AdminOverview page (right column, above banners)
+- [x] Write tests for system status logic (formatUptime, latencyColor — included in announcements.test.ts)

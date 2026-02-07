@@ -13,6 +13,7 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import AdminChangeRequests from "./pages/AdminChangeRequests";
 import AdminOverview from "./pages/AdminOverview";
+import { AnnouncementBanner } from "./components/AnnouncementBanner";
 
 function Router() {
   return (
@@ -61,6 +62,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
+          <AnnouncementBanner />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

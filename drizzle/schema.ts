@@ -321,6 +321,13 @@ export const AUDIT_ACTIONS = {
   AUDIT_LOG_EXPORTED: "audit_log.exported",
   CREDIT_HISTORY_EXPORTED: "credit_history.exported",
   GENERATION_HISTORY_EXPORTED: "generation_history.exported",
+  
+  // Announcement / banner events
+  BANNER_CREATED: "admin.banner_created",
+  BANNER_UPDATED: "admin.banner_updated",
+  BANNER_ACTIVATED: "admin.banner_activated",
+  BANNER_DEACTIVATED: "admin.banner_deactivated",
+  BANNER_DELETED: "admin.banner_deleted",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
@@ -498,3 +505,25 @@ export const referrals = mysqlTable("referrals", {
 
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = typeof referrals.$inferInsert;
+
+// ============================================================================
+// ANNOUNCEMENTS / MAINTENANCE BANNERS
+// ============================================================================
+
+export const ANNOUNCEMENT_TYPES = ["info", "warning", "maintenance", "feature"] as const;
+
+export const announcements = mysqlTable("announcements", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  message: text("message").notNull(),
+  type: mysqlEnum("type", ["info", "warning", "maintenance", "feature"]).default("info").notNull(),
+  isActive: boolean("isActive").default(false).notNull(),
+  startsAt: timestamp("startsAt"), // null = immediately when activated
+  endsAt: timestamp("endsAt"), // null = no auto-expiry
+  createdBy: int("createdBy").notNull(), // admin user ID
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type Announcement = typeof announcements.$inferSelect;
+export type InsertAnnouncement = typeof announcements.$inferInsert;

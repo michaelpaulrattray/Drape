@@ -10,12 +10,16 @@ import {
   getGovernanceMetrics,
   getRecentAlerts,
 } from "../../db/adminOverviewQueries";
+import { getActiveBannerCount } from "../../db/announcementQueries";
 import {
   getDailyGenerationStats,
   getDailySignupStats,
   getDailyCreditFlow,
   getChangeRequestDistribution,
 } from "../../db/adminTimeSeriesQueries";
+
+/** Captured at module load — gives us server uptime. */
+const serverStartTime = new Date();
 
 export const overviewRouter = router({
   /**
@@ -30,6 +34,7 @@ export const overviewRouter = router({
       creditEconomy,
       governance,
       alerts,
+      activeBanners,
     ] = await Promise.all([
       getGenerationHealth(),
       getActiveUsers24h(),
@@ -37,6 +42,7 @@ export const overviewRouter = router({
       getCreditEconomyMetrics(),
       getGovernanceMetrics(),
       getRecentAlerts(15),
+      getActiveBannerCount(),
     ]);
 
     return {
@@ -48,6 +54,10 @@ export const overviewRouter = router({
       credits: creditEconomy,
       governance,
       alerts,
+      system: {
+        activeBanners,
+        serverStartedAt: serverStartTime,
+      },
       fetchedAt: new Date(),
     };
   }),

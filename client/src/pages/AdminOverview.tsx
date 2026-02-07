@@ -20,6 +20,8 @@ import {
   CreditEconomyCard,
   GovernanceCard,
   AlertsFeed,
+  BannerManagement,
+  SystemStatusCard,
 } from "@/features/admin/overview";
 
 const REFRESH_INTERVAL_MS = 30_000;
@@ -202,7 +204,12 @@ export default function AdminOverview() {
               </div>
 
               {/* Right — 2 cols */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 space-y-6">
+                <SystemStatusCard
+                  activeBanners={data.system.activeBanners}
+                  serverStartedAt={data.system.serverStartedAt}
+                />
+                <BannerManagement />
                 <AlertsFeed alerts={data.alerts} />
               </div>
             </div>

@@ -23,6 +23,7 @@ import { moderatorExportsRouter } from "./routes/moderatorExports";
 import { moderatorAttachmentsRouter } from "./routes/moderatorAttachments";
 import { moderatorReconciliationRouter } from "./routes/moderatorReconciliation";
 import { referralRouter } from "./routes/referral";
+import { publicAnnouncementsRouter } from "./routes/announcements";
 
 export const appRouter = router({
   system: systemRouter,
@@ -43,6 +44,7 @@ export const appRouter = router({
   moderatorAttachments: moderatorAttachmentsRouter,
   moderatorReconciliation: moderatorReconciliationRouter,
   referral: referralRouter,
+  announcements: publicAnnouncementsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -6,6 +6,7 @@ import { rolesRouter } from "./roles";
 import { ipBlockingRouter } from "./ipBlocking";
 import { changeRequestsRouter } from "./changeRequests";
 import { overviewRouter } from "./overview";
+import { announcementsRouter } from "./announcements";
 
 /**
  * Admin router — combines all admin sub-routers into a flat namespace.
@@ -29,4 +30,6 @@ export const adminRouter = router({
   ...changeRequestsRouter._def.procedures,
   // Dashboard Overview KPIs
   ...overviewRouter._def.procedures,
+  // Announcement / Banner Management
+  ...announcementsRouter._def.procedures,
 });
