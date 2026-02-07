@@ -52,6 +52,129 @@ export const ALL_STATUSES = ["pending", "approved", "denied", "pending_execution
 export const ALL_PRIORITIES = ["all", "low", "normal", "high", "urgent"];
 export const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "stripe_refund"];
 
+// ─── Contextual Action Config per Type ───────────────────────────────────────
+// Defines what the approve/deny buttons should say and what the modal copy should be
+// for each change request type, so the admin response makes semantic sense.
+
+export interface ActionConfig {
+  approveLabel: string;
+  denyLabel: string;
+  modalApproveTitle: string;
+  modalDenyTitle: string;
+  modalApproveDesc: string;
+  modalDenyDesc: string;
+  approveNotesPlaceholder: string;
+  denyNotesPlaceholder: string;
+}
+
+const DEFAULT_ACTION: ActionConfig = {
+  approveLabel: "Approve",
+  denyLabel: "Decline",
+  modalApproveTitle: "Approve Request",
+  modalDenyTitle: "Decline Request",
+  modalApproveDesc: "This will approve the request and trigger the associated action.",
+  modalDenyDesc: "This will decline the request. No action will be taken.",
+  approveNotesPlaceholder: "Any notes about this approval...",
+  denyNotesPlaceholder: "Reason for declining...",
+};
+
+export const ACTION_CONFIG: Record<string, ActionConfig> = {
+  refund_credits: {
+    approveLabel: "Approve Refund",
+    denyLabel: "Decline Refund",
+    modalApproveTitle: "Approve Credit Refund",
+    modalDenyTitle: "Decline Credit Refund",
+    modalApproveDesc: "This will refund the specified credits to the user's account.",
+    modalDenyDesc: "This will decline the refund request. The user's balance will remain unchanged.",
+    approveNotesPlaceholder: "Notes about this refund approval...",
+    denyNotesPlaceholder: "Reason for declining the refund...",
+  },
+  add_credits: {
+    approveLabel: "Approve Credits",
+    denyLabel: "Decline",
+    modalApproveTitle: "Approve Credit Addition",
+    modalDenyTitle: "Decline Credit Addition",
+    modalApproveDesc: "This will add the specified credits to the user's account.",
+    modalDenyDesc: "This will decline the credit addition. No credits will be added.",
+    approveNotesPlaceholder: "Notes about this credit addition...",
+    denyNotesPlaceholder: "Reason for declining...",
+  },
+  flag_account: {
+    approveLabel: "Acknowledge",
+    denyLabel: "Dismiss",
+    modalApproveTitle: "Acknowledge Account Flag",
+    modalDenyTitle: "Dismiss Account Flag",
+    modalApproveDesc: "Acknowledging marks this flag as reviewed. The account concern has been noted — no automated action will be taken.",
+    modalDenyDesc: "Dismissing indicates the flag is unwarranted or no longer relevant. No action will be taken.",
+    approveNotesPlaceholder: "Notes on what was reviewed or any follow-up needed...",
+    denyNotesPlaceholder: "Reason for dismissing this flag...",
+  },
+  note_incident: {
+    approveLabel: "Acknowledge",
+    denyLabel: "Dismiss",
+    modalApproveTitle: "Acknowledge Incident Report",
+    modalDenyTitle: "Dismiss Incident Report",
+    modalApproveDesc: "Acknowledging marks this incident as reviewed and recorded. No automated action will be taken.",
+    modalDenyDesc: "Dismissing indicates this incident report does not require further attention.",
+    approveNotesPlaceholder: "Notes on the incident review or follow-up actions taken...",
+    denyNotesPlaceholder: "Reason for dismissing this incident report...",
+  },
+  suspend_user: {
+    approveLabel: "Confirm Suspend",
+    denyLabel: "Decline Suspend",
+    modalApproveTitle: "Confirm User Suspension",
+    modalDenyTitle: "Decline User Suspension",
+    modalApproveDesc: "This will suspend the user's account, preventing them from logging in or using the platform.",
+    modalDenyDesc: "This will decline the suspension request. The user's account will remain active.",
+    approveNotesPlaceholder: "Notes about this suspension...",
+    denyNotesPlaceholder: "Reason for declining the suspension...",
+  },
+  unsuspend_user: {
+    approveLabel: "Confirm Unsuspend",
+    denyLabel: "Decline",
+    modalApproveTitle: "Confirm Account Reinstatement",
+    modalDenyTitle: "Decline Account Reinstatement",
+    modalApproveDesc: "This will reinstate the user's account, restoring their access to the platform.",
+    modalDenyDesc: "This will decline the reinstatement. The user's account will remain suspended.",
+    approveNotesPlaceholder: "Notes about this reinstatement...",
+    denyNotesPlaceholder: "Reason for keeping the account suspended...",
+  },
+  block_ip: {
+    approveLabel: "Confirm Block",
+    denyLabel: "Decline Block",
+    modalApproveTitle: "Confirm IP Block",
+    modalDenyTitle: "Decline IP Block",
+    modalApproveDesc: "This will block the specified IP address from accessing the platform.",
+    modalDenyDesc: "This will decline the IP block request. The IP will remain accessible.",
+    approveNotesPlaceholder: "Notes about this IP block...",
+    denyNotesPlaceholder: "Reason for declining the IP block...",
+  },
+  stripe_refund: {
+    approveLabel: "Approve Refund",
+    denyLabel: "Decline Refund",
+    modalApproveTitle: "Approve Stripe Refund",
+    modalDenyTitle: "Decline Stripe Refund",
+    modalApproveDesc: "This will issue a refund through Stripe and deduct the corresponding credits from the user's balance.",
+    modalDenyDesc: "This will decline the Stripe refund. No money will be returned and credits will remain unchanged.",
+    approveNotesPlaceholder: "Notes about this Stripe refund...",
+    denyNotesPlaceholder: "Reason for declining the refund...",
+  },
+  other: {
+    approveLabel: "Acknowledge",
+    denyLabel: "Decline",
+    modalApproveTitle: "Acknowledge Request",
+    modalDenyTitle: "Decline Request",
+    modalApproveDesc: "Acknowledging marks this request as reviewed. Follow up manually if needed.",
+    modalDenyDesc: "This will decline the request. No action will be taken.",
+    approveNotesPlaceholder: "Notes on this request...",
+    denyNotesPlaceholder: "Reason for declining...",
+  },
+};
+
+export function getActionConfig(type: string): ActionConfig {
+  return ACTION_CONFIG[type] || DEFAULT_ACTION;
+}
+
 // ─── Badge Components ────────────────────────────────────────────────────────
 
 export function StatusBadge({ status }: { status: string }) {

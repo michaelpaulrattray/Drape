@@ -20,6 +20,7 @@ import {
   PriorityBadge,
   TypeIcon,
   formatDate,
+  getActionConfig,
 } from "./ChangeRequestConstants";
 
 interface ChangeRequestDetailProps {
@@ -87,28 +88,32 @@ export function ChangeRequestDetail({
             </div>
           </div>
 
-          {/* Action Buttons — only for pending requests */}
-          {selectedRequest.status === "pending" && (
-            <div className="flex gap-2 shrink-0">
-              <Button
-                size="sm"
-                onClick={onApprove}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                <CheckCircle className="w-4 h-4 mr-1" />
-                {SENSITIVE_TYPES.includes(selectedRequest.type) ? "Approve (Slack)" : "Approve"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onDeny}
-                className="border-red-500/30 text-red-400 hover:bg-red-500/10"
-              >
-                <XCircle className="w-4 h-4 mr-1" />
-                Deny
-              </Button>
-            </div>
-          )}
+          {/* Action Buttons — contextual labels per request type */}
+          {selectedRequest.status === "pending" && (() => {
+            const actionCfg = getActionConfig(selectedRequest.type);
+            const isSensitive = SENSITIVE_TYPES.includes(selectedRequest.type);
+            return (
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  onClick={onApprove}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  {isSensitive ? `${actionCfg.approveLabel} (Slack)` : actionCfg.approveLabel}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onDeny}
+                  className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                >
+                  <XCircle className="w-4 h-4 mr-1" />
+                  {actionCfg.denyLabel}
+                </Button>
+              </div>
+            );
+          })()}
 
           {/* Pending Slack Execution Status */}
           {selectedRequest.status === "pending_execution" && (

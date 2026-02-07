@@ -3370,3 +3370,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Extract AttachmentsSection into separate file (ChangeRequestAttachments.tsx)
 - [x] Write vitest tests (12 tests: MIME validation, size limits, filename sanitization, base64 decoding, link ownership, image detection)
 - [x] 659 tests passing, 0 TypeScript errors
+
+## Feature: Context-Aware Change Request Action Labels
+- [x] Add ACTION_CONFIG per type to ChangeRequestConstants.tsx (9 types, each with approve/deny labels, modal titles, descriptions, placeholders)
+- [x] Add getActionConfig() helper with DEFAULT_ACTION fallback
+- [x] Update ChangeRequestDetail.tsx buttons to use contextual labels per type (e.g., "Confirm Suspend", "Approve Refund")
+- [x] Update ReviewModal.tsx to show contextual titles and descriptions per type (e.g., "Acknowledge Incident Report")
+- [x] Informational types (flag_account, note_incident, other) show "Acknowledge / Dismiss" instead of "Approve / Deny"
+- [x] 659 tests passing, 0 TypeScript errors

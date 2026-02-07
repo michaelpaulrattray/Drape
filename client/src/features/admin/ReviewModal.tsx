@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { SENSITIVE_TYPES } from "./ChangeRequestConstants";
+import { SENSITIVE_TYPES, getActionConfig } from "./ChangeRequestConstants";
 
 interface ReviewModalProps {
   open: boolean;
@@ -35,6 +35,14 @@ export function ReviewModal({
   selectedRequestType,
 }: ReviewModalProps) {
   const isSensitive = selectedRequestType ? SENSITIVE_TYPES.includes(selectedRequestType) : false;
+  const actionCfg = getActionConfig(selectedRequestType || "other");
+
+  const modalTitle = action === "approved" ? actionCfg.modalApproveTitle : actionCfg.modalDenyTitle;
+  const modalDesc = action === "approved" ? actionCfg.modalApproveDesc : actionCfg.modalDenyDesc;
+  const notesPlaceholder = action === "approved" ? actionCfg.approveNotesPlaceholder : actionCfg.denyNotesPlaceholder;
+  const confirmLabel = action === "approved"
+    ? (isSensitive ? `${actionCfg.approveLabel} & Send to Slack` : actionCfg.approveLabel)
+    : actionCfg.denyLabel;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -42,44 +50,28 @@ export function ReviewModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {action === "approved" ? (
-              <>
-                <CheckCircle className="w-5 h-5 text-emerald-400" />
-                Approve Change Request
-              </>
+              <CheckCircle className="w-5 h-5 text-emerald-400" />
             ) : (
-              <>
-                <XCircle className="w-5 h-5 text-red-400" />
-                Deny Change Request
-              </>
+              <XCircle className="w-5 h-5 text-red-400" />
             )}
+            {modalTitle}
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            {action === "approved" ? (
-              <>
-                This will approve request <strong>#{selectedRequestId}</strong>.
-                {isSensitive && (
-                  <span className="block mt-1 text-purple-400 font-medium">
-                    This is a sensitive action. A Slack confirmation will be required before execution.
-                  </span>
-                )}
-                {!isSensitive && (
-                  <span className="block mt-1 text-gray-400">
-                    This will approve the request. No auto-execution for this type.
-                  </span>
-                )}
-              </>
-            ) : (
-              <>This will deny request <strong>#{selectedRequestId}</strong>. No action will be taken.</>
+            <span>Request <strong>#{selectedRequestId}</strong>: {modalDesc}</span>
+            {action === "approved" && isSensitive && (
+              <span className="block mt-1 text-purple-400 font-medium">
+                This is a sensitive action. A Slack confirmation will be required before execution.
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          <label className="text-sm text-gray-400">Review Notes (optional)</label>
+          <label className="text-sm text-gray-400">Notes (optional)</label>
           <Textarea
             value={notes}
             onChange={(e) => onNotesChange(e.target.value)}
-            placeholder={action === "approved" ? "Any notes about this approval..." : "Reason for denial..."}
+            placeholder={notesPlaceholder}
             className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 min-h-[80px]"
           />
         </div>
@@ -108,9 +100,7 @@ export function ReviewModal({
             ) : (
               <XCircle className="w-4 h-4 mr-2" />
             )}
-            {action === "approved"
-              ? (isSensitive ? "Approve & Send to Slack" : "Approve")
-              : "Deny Request"}
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
