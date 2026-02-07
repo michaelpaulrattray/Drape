@@ -3304,3 +3304,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update Klaviyo referral flow reward credits (12,500)
 - [x] Update all test assertions (8 test files: aiService, billing, castingStudio, models, referral, referral-enhancements, velocityLimits)
 - [x] Verify 639 tests passing, 0 TypeScript errors
+
+## Feature: Referral Modal — Inline History View Switch
+- [x] Keep "Invitation history ›" footer button in place, clicking switches to history view inline
+- [x] History view: back arrow (‹) + "Invitation history" title + close X (matching reference)
+- [x] Keep Redeem Code as a separate overlay modal (no change)
+- [x] Remove InvitationHistoryModal separate modal usage from ReferralModal
