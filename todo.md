@@ -2850,3 +2850,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix double-image ghost edge artifact when cursor is at edge of hero container
 - [x] Fix persistent double-image lines at hero edges (depth map blur + strength 0.008)
 - [x] Pre-blur depth map offline (8px Gaussian) and remove shader-side blur for better performance
+- [x] Performance audit: hero WebGL on mid-range devices, mobile fallback verification
+- [x] Add frameloop="demand" to Canvas — only re-render on mouse interaction
+- [x] Add touch parallax support for tablets (768–1024px)
+- [x] Add WebGL capability detection fallback for broken/missing GPU drivers
