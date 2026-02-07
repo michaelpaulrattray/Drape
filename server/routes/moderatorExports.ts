@@ -92,4 +92,60 @@ export const moderatorExportsRouter = router({
 
       return { csv: [header, ...rows].join("\n"), total: result.transactions.length };
     }),
+
+  exportUserGenerationHistoryCsv: moderatorProcedure
+    .input(z.object({
+      userId: z.number(),
+      status: z.enum(["pending", "processing", "completed", "failed", "all"]).optional().default("all"),
+      type: z.enum(["masterPrompt", "castingImage", "fullBody", "multiView", "iteration", "upscale", "all"]).optional().default("all"),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const { getDetailedGenerationHistory } = await import("../db");
+      const { logAuditEvent } = await import("../auditLog");
+      const { AUDIT_ACTIONS } = await import("../../drizzle/schema");
+
+      const result = await getDetailedGenerationHistory(input.userId, {
+        limit: 5000,
+        offset: 0,
+        status: input.status === "all" ? undefined : input.status,
+        type: input.type === "all" ? undefined : input.type,
+        startDate: input.startDate ? new Date(input.startDate) : undefined,
+        endDate: input.endDate ? new Date(input.endDate) : undefined,
+      });
+
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.GENERATION_HISTORY_EXPORTED,
+        resourceType: "generation_history",
+        metadata: {
+          targetUserId: input.userId,
+          totalExported: result.generations.length,
+          filters: input,
+          summary: result.summary,
+        },
+        severity: "info",
+      });
+
+      const header = "ID,Timestamp,Type,Status,Credits Cost,Model Name,Model ID,Result URL,Error Message,Completed At";
+      const rows = result.generations.map((gen) => {
+        const ts = new Date(gen.createdAt).toISOString();
+        const completedTs = gen.completedAt ? new Date(gen.completedAt).toISOString() : "";
+        return [
+          gen.id, ts, gen.type, gen.status, gen.pointsCost,
+          gen.modelName ? escapeCsv(gen.modelName) : "",
+          gen.modelId ?? "",
+          gen.resultUrl ? escapeCsv(gen.resultUrl) : "",
+          gen.errorMessage ? escapeCsv(gen.errorMessage) : "",
+          completedTs,
+        ].join(",");
+      });
+
+      return {
+        csv: [header, ...rows].join("\n"),
+        total: result.generations.length,
+        summary: result.summary,
+      };
+    }),
 });

@@ -10,6 +10,8 @@ import {
   Clock as ClockIcon,
   Calendar,
   X,
+  Download,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "./moderatorConstants";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 interface GenerationsSubTabProps {
   generationHistoryQuery: any;
@@ -36,6 +40,7 @@ interface GenerationsSubTabProps {
   setStartDate: (v: string) => void;
   endDate: string;
   setEndDate: (v: string) => void;
+  userId: number;
 }
 
 export function GenerationsSubTab({
@@ -50,14 +55,52 @@ export function GenerationsSubTab({
   setStartDate,
   endDate,
   setEndDate,
+  userId,
 }: GenerationsSubTabProps) {
+  const exportQuery = trpc.moderatorExports.exportUserGenerationHistoryCsv.useQuery(
+    {
+      userId,
+      status: genStatusFilter as any,
+      type: genTypeFilter as any,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
+    { enabled: false }
+  );
+
+  const handleExportCsv = async () => {
+    const result = await exportQuery.refetch();
+    if (result.data) {
+      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `generation-history-user-${userId}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${result.data.total} generation records (${result.data.summary.failedCount} failed, ${result.data.summary.totalCreditsUsed} credits used)`);
+    }
+  };
+
   return (
     <Card className="bg-white/5 border-white/10">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
-          <Image className="w-4 h-4 text-violet-400" />
-          Generation History
-        </CardTitle>
+        <div className="flex items-center justify-between w-full">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
+            <Image className="w-4 h-4 text-violet-400" />
+            Generation History
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={exportQuery.isFetching}
+            className="h-7 text-xs border-white/10 text-white/60 hover:text-white hover:bg-white/5"
+          >
+            {exportQuery.isFetching ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
+            Export CSV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {/* Generation Summary */}

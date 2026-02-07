@@ -214,6 +214,7 @@ export function UserInvestigationTab({
                   setStartDate={setGenStartDate}
                   endDate={genEndDate}
                   setEndDate={setGenEndDate}
+                  userId={selectedUserId!}
                 />
               )}
             </div>

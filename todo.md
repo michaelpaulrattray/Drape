@@ -3378,3 +3378,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update ReviewModal.tsx to show contextual titles and descriptions per type (e.g., "Acknowledge Incident Report")
 - [x] Informational types (flag_account, note_incident, other) show "Acknowledge / Dismiss" instead of "Approve / Deny"
 - [x] 659 tests passing, 0 TypeScript errors
+
+## Feature: Moderator Generation History CSV Export
+- [x] Add exportUserGenerationHistoryCsv procedure to moderatorExports router (up to 5000 entries, includes summary stats)
+- [x] Add GENERATION_HISTORY_EXPORTED audit action to schema
+- [x] Add Export CSV button to GenerationsSubTab header (with spinner, download icon)
+- [x] Wire frontend download logic (Blob download, timestamped filename, toast with failed count + credits used)
+- [x] Pass userId prop through UserInvestigationTab to GenerationsSubTab
+- [x] 659 tests passing, 0 TypeScript errors

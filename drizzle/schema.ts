@@ -312,6 +312,7 @@ export const AUDIT_ACTIONS = {
   // Export events
   AUDIT_LOG_EXPORTED: "audit_log.exported",
   CREDIT_HISTORY_EXPORTED: "credit_history.exported",
+  GENERATION_HISTORY_EXPORTED: "generation_history.exported",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
