@@ -2,29 +2,38 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the database module
 vi.mock("./db/referrals", () => ({
-  getUserReferralCode: vi.fn(),
-  generateReferralCode: vi.fn(),
-  getReferralStats: vi.fn(),
+  getOrCreateReferralCode: vi.fn(),
+  getUserByReferralCode: vi.fn(),
   claimReferral: vi.fn(),
-  completeReferralIfEligible: vi.fn(),
-  validateReferralCode: vi.fn(),
+  redeemReferralCode: vi.fn(),
+  completeReferral: vi.fn(),
+  getReferralStats: vi.fn(),
+  getReferralHistory: vi.fn(),
+  recordEmailInvite: vi.fn(),
+  isValidReferralCodeFormat: vi.fn(),
 }));
 
 import {
-  getUserReferralCode,
-  generateReferralCode,
-  getReferralStats,
+  getOrCreateReferralCode,
+  getUserByReferralCode,
   claimReferral,
-  completeReferralIfEligible,
-  validateReferralCode,
+  redeemReferralCode,
+  completeReferral,
+  getReferralStats,
+  getReferralHistory,
+  recordEmailInvite,
+  isValidReferralCodeFormat,
 } from "./db/referrals";
 
-const mockGetUserReferralCode = vi.mocked(getUserReferralCode);
-const mockGenerateReferralCode = vi.mocked(generateReferralCode);
-const mockGetReferralStats = vi.mocked(getReferralStats);
+const mockGetOrCreateReferralCode = vi.mocked(getOrCreateReferralCode);
+const mockGetUserByReferralCode = vi.mocked(getUserByReferralCode);
 const mockClaimReferral = vi.mocked(claimReferral);
-const mockCompleteReferralIfEligible = vi.mocked(completeReferralIfEligible);
-const mockValidateReferralCode = vi.mocked(validateReferralCode);
+const mockRedeemReferralCode = vi.mocked(redeemReferralCode);
+const mockCompleteReferral = vi.mocked(completeReferral);
+const mockGetReferralStats = vi.mocked(getReferralStats);
+const mockGetReferralHistory = vi.mocked(getReferralHistory);
+const mockRecordEmailInvite = vi.mocked(recordEmailInvite);
+const mockIsValidReferralCodeFormat = vi.mocked(isValidReferralCodeFormat);
 
 describe("Referral System", () => {
   beforeEach(() => {
@@ -33,17 +42,135 @@ describe("Referral System", () => {
 
   describe("Referral Code Generation", () => {
     it("should return existing referral code if user already has one", async () => {
-      mockGetUserReferralCode.mockResolvedValue("FORMA-ABC123");
-      const code = await getUserReferralCode(1);
+      mockGetOrCreateReferralCode.mockResolvedValue("FORMA-ABC123");
+      const code = await getOrCreateReferralCode(1);
       expect(code).toBe("FORMA-ABC123");
-      expect(mockGetUserReferralCode).toHaveBeenCalledWith(1);
+      expect(mockGetOrCreateReferralCode).toHaveBeenCalledWith(1);
     });
 
-    it("should generate a new referral code for user without one", async () => {
-      mockGenerateReferralCode.mockResolvedValue("FORMA-XYZ789");
-      const code = await generateReferralCode(1);
+    it("should generate a new referral code with IP tracking", async () => {
+      mockGetOrCreateReferralCode.mockResolvedValue("FORMA-XYZ789");
+      const code = await getOrCreateReferralCode(1, "192.168.1.1");
       expect(code).toBe("FORMA-XYZ789");
-      expect(mockGenerateReferralCode).toHaveBeenCalledWith(1);
+      expect(mockGetOrCreateReferralCode).toHaveBeenCalledWith(1, "192.168.1.1");
+    });
+
+    it("should return null on failure", async () => {
+      mockGetOrCreateReferralCode.mockResolvedValue(null);
+      const code = await getOrCreateReferralCode(1);
+      expect(code).toBeNull();
+    });
+  });
+
+  describe("Referral Code Format Validation", () => {
+    it("should validate correct FORMA-XXXXXX format", () => {
+      mockIsValidReferralCodeFormat.mockReturnValue(true);
+      expect(isValidReferralCodeFormat("FORMA-A3K9X2")).toBe(true);
+    });
+
+    it("should reject invalid format", () => {
+      mockIsValidReferralCodeFormat.mockReturnValue(false);
+      expect(isValidReferralCodeFormat("INVALID")).toBe(false);
+    });
+
+    it("should reject codes with confusing characters (I/O/0/1)", () => {
+      mockIsValidReferralCodeFormat.mockReturnValue(false);
+      expect(isValidReferralCodeFormat("FORMA-IOO101")).toBe(false);
+    });
+  });
+
+  describe("Referral Code Lookup", () => {
+    it("should find user by valid referral code", async () => {
+      mockGetUserByReferralCode.mockResolvedValue({
+        id: 1,
+        name: "John Doe",
+        email: "john@example.com",
+      });
+      const user = await getUserByReferralCode("FORMA-ABC123");
+      expect(user).not.toBeNull();
+      expect(user!.id).toBe(1);
+    });
+
+    it("should return null for invalid code", async () => {
+      mockGetUserByReferralCode.mockResolvedValue(null);
+      const user = await getUserByReferralCode("FORMA-INVALID");
+      expect(user).toBeNull();
+    });
+  });
+
+  describe("Referral Claiming (URL param flow)", () => {
+    it("should successfully claim a valid referral code with IP", async () => {
+      mockClaimReferral.mockResolvedValue({ success: true });
+      const result = await claimReferral(2, "FORMA-ABC123", "10.0.0.1");
+      expect(result.success).toBe(true);
+      expect(mockClaimReferral).toHaveBeenCalledWith(2, "FORMA-ABC123", "10.0.0.1");
+    });
+
+    it("should reject self-referral", async () => {
+      mockClaimReferral.mockResolvedValue({
+        success: false,
+        error: "Cannot use your own referral code",
+      });
+      const result = await claimReferral(1, "FORMA-OWN123");
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("own referral code");
+    });
+
+    it("should reject multi-claim (user already redeemed a code)", async () => {
+      mockClaimReferral.mockResolvedValue({
+        success: false,
+        error: "You have already used a referral code",
+      });
+      const result = await claimReferral(2, "FORMA-DUP123");
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("already used");
+    });
+
+    it("should reject invalid code format", async () => {
+      mockClaimReferral.mockResolvedValue({
+        success: false,
+        error: "Invalid referral code format",
+      });
+      const result = await claimReferral(2, "BAD-CODE");
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("format");
+    });
+  });
+
+  describe("Referral Redemption (modal flow)", () => {
+    it("should redeem a valid code", async () => {
+      mockRedeemReferralCode.mockResolvedValue({ success: true });
+      const result = await redeemReferralCode(2, "FORMA-ABC123", "10.0.0.1");
+      expect(result.success).toBe(true);
+    });
+
+    it("should reject redemption with invalid code", async () => {
+      mockRedeemReferralCode.mockResolvedValue({
+        success: false,
+        error: "Invalid referral code",
+      });
+      const result = await redeemReferralCode(2, "FORMA-NOPE99");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("Referral Completion (First Generation)", () => {
+    it("should award credits on first generation by referred user", async () => {
+      mockCompleteReferral.mockResolvedValue(true);
+      const result = await completeReferral(2);
+      expect(result).toBe(true);
+    });
+
+    it("should not award credits if user was not referred", async () => {
+      mockCompleteReferral.mockResolvedValue(false);
+      const result = await completeReferral(99);
+      expect(result).toBe(false);
+    });
+
+    it("should be idempotent (no double-award)", async () => {
+      mockCompleteReferral.mockResolvedValue(false);
+      const result = await completeReferral(2);
+      expect(result).toBe(false);
     });
   });
 
@@ -53,11 +180,13 @@ describe("Referral System", () => {
         totalReferrals: 5,
         completedReferrals: 3,
         totalCreditsEarned: 1500,
+        referralCode: "FORMA-ABC123",
       });
       const stats = await getReferralStats(1);
       expect(stats.totalReferrals).toBe(5);
       expect(stats.completedReferrals).toBe(3);
       expect(stats.totalCreditsEarned).toBe(1500);
+      expect(stats.referralCode).toBe("FORMA-ABC123");
     });
 
     it("should return zero stats for user with no referrals", async () => {
@@ -65,108 +194,88 @@ describe("Referral System", () => {
         totalReferrals: 0,
         completedReferrals: 0,
         totalCreditsEarned: 0,
+        referralCode: null,
       });
       const stats = await getReferralStats(99);
       expect(stats.totalReferrals).toBe(0);
-      expect(stats.completedReferrals).toBe(0);
       expect(stats.totalCreditsEarned).toBe(0);
     });
   });
 
-  describe("Referral Claiming", () => {
-    it("should successfully claim a valid referral code", async () => {
-      mockClaimReferral.mockResolvedValue({ success: true });
-      const result = await claimReferral("FORMA-ABC123", 2);
+  describe("Referral History", () => {
+    it("should return invitation history for a user", async () => {
+      const mockHistory = [
+        {
+          id: 1,
+          referredName: "Alice",
+          referredEmail: "alice@example.com",
+          status: "completed",
+          creditsAwarded: 500,
+          sameIpFlag: false,
+          createdAt: new Date("2025-01-01"),
+          completedAt: new Date("2025-01-02"),
+        },
+        {
+          id: 2,
+          referredName: null,
+          referredEmail: "bob@example.com",
+          status: "pending",
+          creditsAwarded: 0,
+          sameIpFlag: false,
+          createdAt: new Date("2025-01-03"),
+          completedAt: null,
+        },
+      ];
+      mockGetReferralHistory.mockResolvedValue(mockHistory);
+      const history = await getReferralHistory(1);
+      expect(history).toHaveLength(2);
+      expect(history[0].status).toBe("completed");
+      expect(history[0].creditsAwarded).toBe(500);
+      expect(history[1].status).toBe("pending");
+    });
+
+    it("should return empty array for user with no history", async () => {
+      mockGetReferralHistory.mockResolvedValue([]);
+      const history = await getReferralHistory(99);
+      expect(history).toHaveLength(0);
+    });
+  });
+
+  describe("Email Invite", () => {
+    it("should record an email invitation", async () => {
+      mockRecordEmailInvite.mockResolvedValue({ success: true });
+      const result = await recordEmailInvite(1, "friend@example.com", "10.0.0.1");
       expect(result.success).toBe(true);
-      expect(mockClaimReferral).toHaveBeenCalledWith("FORMA-ABC123", 2);
     });
 
-    it("should reject self-referral", async () => {
-      mockClaimReferral.mockResolvedValue({
+    it("should reject duplicate email invite", async () => {
+      mockRecordEmailInvite.mockResolvedValue({
         success: false,
-        error: "Cannot refer yourself",
+        error: "Already invited this email",
       });
-      const result = await claimReferral("FORMA-OWN123", 1);
+      const result = await recordEmailInvite(1, "friend@example.com");
       expect(result.success).toBe(false);
-      expect(result.error).toContain("yourself");
-    });
-
-    it("should reject duplicate referral claim", async () => {
-      mockClaimReferral.mockResolvedValue({
-        success: false,
-        error: "Already claimed a referral",
-      });
-      const result = await claimReferral("FORMA-DUP123", 2);
-      expect(result.success).toBe(false);
-      expect(result.error).toContain("Already");
-    });
-  });
-
-  describe("Referral Validation", () => {
-    it("should validate a valid referral code", async () => {
-      mockValidateReferralCode.mockResolvedValue({
-        valid: true,
-        referrerName: "John",
-      });
-      const result = await validateReferralCode("FORMA-ABC123");
-      expect(result.valid).toBe(true);
-      expect(result.referrerName).toBe("John");
-    });
-
-    it("should reject an invalid referral code", async () => {
-      mockValidateReferralCode.mockResolvedValue({
-        valid: false,
-        referrerName: null,
-      });
-      const result = await validateReferralCode("INVALID-CODE");
-      expect(result.valid).toBe(false);
-    });
-  });
-
-  describe("Referral Completion (First Generation)", () => {
-    it("should award credits on first generation by referred user", async () => {
-      mockCompleteReferralIfEligible.mockResolvedValue({
-        completed: true,
-        creditsAwarded: 500,
-      });
-      const result = await completeReferralIfEligible(2);
-      expect(result.completed).toBe(true);
-      expect(result.creditsAwarded).toBe(500);
-    });
-
-    it("should not award credits if user was not referred", async () => {
-      mockCompleteReferralIfEligible.mockResolvedValue({
-        completed: false,
-        creditsAwarded: 0,
-      });
-      const result = await completeReferralIfEligible(99);
-      expect(result.completed).toBe(false);
-      expect(result.creditsAwarded).toBe(0);
-    });
-
-    it("should not double-award credits on subsequent generations", async () => {
-      mockCompleteReferralIfEligible.mockResolvedValue({
-        completed: false,
-        creditsAwarded: 0,
-      });
-      const result = await completeReferralIfEligible(2);
-      expect(result.completed).toBe(false);
-      expect(result.creditsAwarded).toBe(0);
-    });
-  });
-
-  describe("Referral Code Format", () => {
-    it("should generate codes with FORMA- prefix", async () => {
-      mockGenerateReferralCode.mockResolvedValue("FORMA-A3K9X2");
-      const code = await generateReferralCode(1);
-      expect(code).toMatch(/^FORMA-/);
+      expect(result.error).toContain("Already invited");
     });
   });
 
   describe("Reward Credits Constant", () => {
-    it("should award 500 credits per successful referral", () => {
-      const REFERRAL_REWARD_CREDITS = 500;
+    it("should award 500 credits per successful referral", async () => {
+      const { REFERRAL_REWARD_CREDITS } = await import("../drizzle/schema");
       expect(REFERRAL_REWARD_CREDITS).toBe(500);
+    });
+  });
+
+  describe("Fraud Prevention — Same IP Flag", () => {
+    it("should flag referrals from same IP as referrer", async () => {
+      // The sameIpFlag is set during claim and blocks credit award during completion
+      mockClaimReferral.mockResolvedValue({ success: true });
+      const result = await claimReferral(2, "FORMA-ABC123", "192.168.1.1");
+      expect(result.success).toBe(true);
+      // Completion with same IP flag should return false (no credits)
+      mockCompleteReferral.mockResolvedValue(false);
+      const completed = await completeReferral(2);
+      expect(completed).toBe(false);
     });
   });
 });

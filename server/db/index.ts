@@ -137,6 +137,10 @@ export {
   getOrCreateReferralCode,
   getUserByReferralCode,
   claimReferral,
+  redeemReferralCode,
   completeReferral,
   getReferralStats,
+  getReferralHistory,
+  recordEmailInvite,
+  isValidReferralCodeFormat,
 } from "./referrals";

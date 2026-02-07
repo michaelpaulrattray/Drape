@@ -2,12 +2,21 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getOrCreateReferralCode,
   claimReferral,
+  redeemReferralCode,
   getReferralStats,
+  getReferralHistory,
   getUserByReferralCode,
+  recordEmailInvite,
+  isValidReferralCodeFormat,
 } from "../db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
+import { checkRateLimit, getClientIp } from "../security/rateLimit";
+
+/** Rate limit configs */
+const INVITE_RATE = { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000, keyPrefix: "ref-invite" };
+const REDEEM_RATE = { maxRequests: 5, windowMs: 60 * 60 * 1000, keyPrefix: "ref-redeem" };
 
 export const referralRouter = router({
   /**
@@ -15,7 +24,8 @@ export const referralRouter = router({
    * Auto-generates a code if one doesn't exist.
    */
   getMyCode: protectedProcedure.query(async ({ ctx }) => {
-    const code = await getOrCreateReferralCode(ctx.user.id);
+    const ip = getClientIp(ctx.req);
+    const code = await getOrCreateReferralCode(ctx.user.id, ip);
     if (!code) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
@@ -45,18 +55,107 @@ export const referralRouter = router({
   }),
 
   /**
+   * Get referral history (invitation list) for the current user.
+   * Scoped to current user only (authorization enforced).
+   */
+  getHistory: protectedProcedure.query(async ({ ctx }) => {
+    const history = await getReferralHistory(ctx.user.id);
+    return history;
+  }),
+
+  /**
+   * Send an email invitation (records the invite, email delivery is future).
+   * Rate limited: 10/day per user.
+   */
+  sendInvite: protectedProcedure
+    .input(
+      z.object({
+        email: z.string().email().max(320),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const ip = getClientIp(ctx.req);
+
+      // Rate limit: 10 invites per day
+      const rateCheck = checkRateLimit(`${ctx.user.id}`, INVITE_RATE);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Invite limit reached. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+        });
+      }
+
+      // Block self-invite
+      if (ctx.user.email && input.email.toLowerCase() === ctx.user.email.toLowerCase()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot invite yourself",
+        });
+      }
+
+      const result = await recordEmailInvite(ctx.user.id, input.email, ip);
+      if (!result.success) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: result.error || "Failed to send invite",
+        });
+      }
+
+      return { sent: true };
+    }),
+
+  /**
+   * Redeem a referral code (explicit action from Redeem modal).
+   * Rate limited: 5/hour per user.
+   * Validation: code format, self-referral, one-time per user.
+   */
+  redeem: protectedProcedure
+    .input(
+      z.object({
+        code: z.string().min(1).max(20).transform((v) => v.toUpperCase()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const ip = getClientIp(ctx.req);
+
+      // Rate limit: 5 redemptions per hour
+      const rateCheck = checkRateLimit(`${ctx.user.id}`, REDEEM_RATE);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Too many attempts. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+        });
+      }
+
+      // Validate code format
+      if (!isValidReferralCodeFormat(input.code)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid referral code format. Expected: FORMA-XXXXXX",
+        });
+      }
+
+      const result = await redeemReferralCode(ctx.user.id, input.code, ip);
+      if (!result.success) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: result.error || "Failed to redeem code",
+        });
+      }
+
+      return { redeemed: true, rewardCredits: REFERRAL_REWARD_CREDITS };
+    }),
+
+  /**
    * Claim a referral code during/after signup.
    * Called by the frontend after OAuth callback when ?ref= param was captured.
    */
   claim: protectedProcedure
     .input(z.object({ referralCode: z.string().min(1).max(20) }))
     .mutation(async ({ ctx, input }) => {
-      const success = await claimReferral(ctx.user.id, input.referralCode);
-      if (!success) {
-        // Silently fail — could be self-referral, duplicate, or invalid code
-        return { claimed: false };
-      }
-      return { claimed: true };
+      const ip = getClientIp(ctx.req);
+      const result = await claimReferral(ctx.user.id, input.referralCode, ip);
+      return { claimed: result.success };
     }),
 
   /**
@@ -68,7 +167,7 @@ export const referralRouter = router({
       const user = await getUserByReferralCode(input.code);
       return {
         valid: !!user,
-        referrerName: user?.name ? user.name.split(" ")[0] : null, // First name only
+        referrerName: user?.name ? user.name.split(" ")[0] : null,
       };
     }),
 });

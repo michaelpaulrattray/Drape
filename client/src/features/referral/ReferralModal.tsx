@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { X, Copy, Check, Gift, Users, Coins } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { X, Copy, Check, Gift, Send, Coins, Users } from "lucide-react";
 import { toast } from "sonner";
+import { RedeemCodeModal } from "./RedeemCodeModal";
+import { InvitationHistoryModal } from "./InvitationHistoryModal";
 
 interface ReferralModalProps {
   open: boolean;
@@ -11,11 +14,24 @@ interface ReferralModalProps {
 
 export function ReferralModal({ open, onClose }: ReferralModalProps) {
   const [copied, setCopied] = useState(false);
+  const [email, setEmail] = useState("");
+  const [showRedeem, setShowRedeem] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const { data: codeData, isLoading: codeLoading } =
     trpc.referral.getMyCode.useQuery(undefined, { enabled: open });
   const { data: stats } = trpc.referral.getStats.useQuery(undefined, {
     enabled: open,
+  });
+
+  const sendInviteMutation = trpc.referral.sendInvite.useMutation({
+    onSuccess: () => {
+      toast.success("Invitation sent!");
+      setEmail("");
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
   });
 
   if (!open) return null;
@@ -32,58 +48,66 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
     }
   };
 
+  const handleSendInvite = () => {
+    if (!email.trim()) return;
+    sendInviteMutation.mutate({ email: email.trim() });
+  };
+
   const rewardCredits = codeData?.rewardCredits ?? 500;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-card text-card-foreground rounded-2xl shadow-2xl border border-border overflow-hidden">
-        {/* Close button */}
-        <button
+    <>
+      <div className="fixed inset-0 z-[70] flex items-center justify-center">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted transition-colors"
-        >
-          <X className="w-4 h-4 text-muted-foreground" />
-        </button>
+        />
 
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-            <Gift className="w-6 h-6 text-primary" />
+        {/* Modal */}
+        <div className="relative w-full max-w-md mx-4 bg-card text-card-foreground rounded-2xl shadow-2xl border border-border overflow-hidden">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted transition-colors z-10"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+
+          {/* Header — centered icon + title */}
+          <div className="px-6 pt-6 pb-4 text-center">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+              <Gift className="w-6 h-6 text-primary" />
+            </div>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Share Forma with a friend
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              You both get{" "}
+              <span className="font-medium text-foreground">
+                {rewardCredits.toLocaleString()} credits
+              </span>{" "}
+              when they complete their first generation.
+            </p>
           </div>
-          <h2 className="text-xl font-semibold tracking-tight">
-            Share Forma with a friend
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Get {rewardCredits.toLocaleString()} credits each when your friend
-            completes their first generation.
-          </p>
-        </div>
 
-        {/* Referral Link */}
-        <div className="px-6 pb-4">
-          <div className="bg-muted/50 border border-border rounded-xl p-4">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
-              Your referral link
+          {/* Share Link */}
+          <div className="px-6 pb-3">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
+              Share link
             </label>
             {codeLoading ? (
               <div className="h-10 bg-muted animate-pulse rounded-lg" />
             ) : (
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono truncate">
+                <div className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm font-mono truncate text-muted-foreground">
                   {codeData?.referralLink || "—"}
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleCopy}
-                  className="shrink-0 gap-1.5"
+                  className="shrink-0 gap-1.5 bg-background"
                 >
                   {copied ? (
                     <>
@@ -100,85 +124,88 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
               </div>
             )}
           </div>
-        </div>
 
-        {/* How it works */}
-        <div className="px-6 pb-4">
-          <h3 className="text-sm font-medium mb-3">How it works</h3>
-          <div className="space-y-2.5">
-            <StepItem
-              number={1}
-              text="Share your unique link with a friend"
-            />
-            <StepItem number={2} text="They sign up and create their first generation" />
-            <StepItem
-              number={3}
-              text={`You both receive ${rewardCredits.toLocaleString()} bonus credits`}
-            />
-          </div>
-        </div>
-
-        {/* Stats */}
-        {stats && (stats.totalReferrals > 0 || stats.totalCreditsEarned > 0) && (
+          {/* Email Invite */}
           <div className="px-6 pb-4">
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard
-                icon={<Users className="w-4 h-4" />}
-                label="Referred"
-                value={stats.totalReferrals}
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
+              Invite by email
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="email"
+                placeholder="friend@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendInvite()}
+                className="flex-1"
               />
-              <StatCard
-                icon={<Check className="w-4 h-4" />}
-                label="Completed"
-                value={stats.completedReferrals}
-              />
-              <StatCard
-                icon={<Coins className="w-4 h-4" />}
-                label="Earned"
-                value={stats.totalCreditsEarned.toLocaleString()}
-              />
+              <Button
+                size="sm"
+                onClick={handleSendInvite}
+                disabled={!email.trim() || sendInviteMutation.isPending}
+                className="shrink-0 gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {sendInviteMutation.isPending ? "Sending..." : "Send"}
+              </Button>
             </div>
           </div>
-        )}
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-border bg-muted/30">
-          <Button onClick={onClose} variant="outline" className="w-full">
-            Done
-          </Button>
+          {/* Stats Row */}
+          <div className="px-6 pb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-muted/40 border border-border rounded-lg p-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                  <Coins className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium">Credits earned</span>
+                </div>
+                <div className="text-lg font-semibold">
+                  {(stats?.totalCreditsEarned ?? 0).toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-muted/40 border border-border rounded-lg p-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                  <Users className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium">Referrals</span>
+                </div>
+                <div className="text-lg font-semibold">
+                  {stats?.completedReferrals ?? 0}
+                  <span className="text-sm text-muted-foreground font-normal">
+                    /{stats?.totalReferrals ?? 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer with links */}
+          <div className="px-6 py-3 border-t border-border bg-muted/20 flex items-center justify-between">
+            <button
+              onClick={() => setShowRedeem(true)}
+              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              Redeem a code
+            </button>
+            <button
+              onClick={() => setShowHistory(true)}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              Invitation history
+              <span className="text-xs">›</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-function StepItem({ number, text }: { number: number; text: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
-        {number}
-      </div>
-      <p className="text-sm text-muted-foreground">{text}</p>
-    </div>
-  );
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-}) {
-  return (
-    <div className="bg-muted/50 border border-border rounded-lg p-3 text-center">
-      <div className="flex items-center justify-center text-muted-foreground mb-1">
-        {icon}
-      </div>
-      <div className="text-lg font-semibold">{value}</div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-    </div>
+      {/* Secondary modals — overlay on top */}
+      <RedeemCodeModal
+        open={showRedeem}
+        onClose={() => setShowRedeem(false)}
+      />
+      <InvitationHistoryModal
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
+    </>
   );
 }

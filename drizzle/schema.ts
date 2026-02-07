@@ -278,6 +278,15 @@ export const AUDIT_ACTIONS = {
   IP_UNBLOCKED: "admin.ip_unblocked",
   IP_BLOCKED_REQUEST: "security.ip_blocked_request",
   
+  // Referral events
+  REFERRAL_CODE_GENERATED: "referral.code_generated",
+  REFERRAL_INVITE_SENT: "referral.invite_sent",
+  REFERRAL_CLAIMED: "referral.claimed",
+  REFERRAL_REDEEMED: "referral.redeemed",
+  REFERRAL_COMPLETED: "referral.completed",
+  REFERRAL_SAME_IP_FLAG: "referral.same_ip_flagged",
+  REFERRAL_MULTI_CLAIM_BLOCKED: "referral.multi_claim_blocked",
+  
   // Emergency actions (from Slack buttons)
   EMERGENCY_ACTION_EXECUTED: "security.emergency_action",
   
@@ -442,6 +451,9 @@ export const referrals = mysqlTable("referrals", {
   referrerCredited: boolean("referrerCredited").default(false).notNull(),
   referredCredited: boolean("referredCredited").default(false).notNull(),
   creditsAwarded: int("creditsAwarded").default(0).notNull(), // Credits given to each party
+  referrerIp: varchar("referrerIp", { length: 45 }), // IP of referrer when invite sent
+  referredIp: varchar("referredIp", { length: 45 }), // IP of referred user on claim
+  sameIpFlag: boolean("sameIpFlag").default(false).notNull(), // Fraud flag: same IP as referrer
   completedAt: timestamp("completedAt"), // When first generation happened
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

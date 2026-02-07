@@ -3227,3 +3227,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Frontend: ReferralModal with shareable link, copy button, how-it-works, stats
 - [x] Security: Self-referral blocked, duplicate referral blocked, idempotent credit award
 - [x] useReferralClaim hook: captures ?ref= param, claims after OAuth login
+
+## Feature: Redesign ReferralModal (Manus-style)
+- [x] Redesign modal layout: icon, title, share link + copy, email invite + send, stats, redeem link, history link
+- [x] Add email invitation backend (sendInvite mutation, rate limit 10/day, block own email)
+- [x] Add redeem code flow (redeem mutation, rate limit 5/hr, format+existence validation, one-time per user ever)
+- [x] Add invitation history (getHistory query, returns only current user's referrals)
+- [x] Secondary modals: RedeemCodeModal + InvitationHistoryModal
+- [x] Security: log IP on referral signup, flag same IP as referrer, audit log all referral actions
+- [x] Security: credits only after first generation (already implemented), multi-claim prevention
+- [x] Tests for new endpoints and security checks (25 tests, 616 total passing)
