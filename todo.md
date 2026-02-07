@@ -3346,3 +3346,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add date picker UI to AuditLogsTab (calendar icon, dark theme, clear button)
 - [x] Include dates in handleResetFilters / Clear Filters button
 - [x] 639 tests passing, 0 TypeScript errors
+
+## Feature: Export Filtered Audit Logs to CSV
+- [x] Add exportAuditLogsCsv tRPC procedure (up to 5000 filtered logs, CSV generation on server)
+- [x] Add AUDIT_LOG_EXPORTED action to AUDIT_ACTIONS for audit trail
+- [x] Add "Export CSV" button to AuditLogsTab filter row (ml-auto, outline style)
+- [x] Wire frontend: refetch on click, Blob download with timestamped filename, toast notification
+- [x] Write vitest test (8 tests: header, single entry, null fields, comma escaping, quote escaping, newlines, simple strings, multiple entries)
+- [x] 647 tests passing, 0 TypeScript errors

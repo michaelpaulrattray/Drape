@@ -12,7 +12,11 @@ import {
   AlertCircle,
   Info,
   Calendar,
+  Download,
 } from "lucide-react";
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -78,6 +82,43 @@ export function AuditLogsTab({
   onOpenChangeRequest,
   onResetFilters,
 }: AuditLogsTabProps) {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportQuery = trpc.moderator.exportAuditLogsCsv.useQuery(
+    {
+      severity: severityFilter as any,
+      actionCategory: categoryFilter as any,
+      userId: userIdSearch && !isNaN(parseInt(userIdSearch)) ? parseInt(userIdSearch) : undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
+    { enabled: false }
+  );
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportQuery.refetch();
+      if (result.data) {
+        const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        const timestamp = new Date().toISOString().slice(0, 10);
+        link.download = `audit-logs-${timestamp}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success(`Exported ${result.data.total} audit log entries`);
+      }
+    } catch {
+      toast.error("Failed to export audit logs");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <>
       {/* Abuse Alerts Panel */}
@@ -169,6 +210,18 @@ export function AuditLogsTab({
             Clear Filters
           </Button>
         )}
+        <div className="ml-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting || logsQuery.isLoading}
+            className="border-white/20 text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <Download className="w-4 h-4 mr-1.5" />
+            {isExporting ? "Exporting..." : "Export CSV"}
+          </Button>
+        </div>
       </div>
 
       {/* Date Range Filter */}

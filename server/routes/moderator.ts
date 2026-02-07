@@ -415,4 +415,60 @@ export const moderatorRouter = router({
         offset: input?.offset || 0,
       });
     }),
+
+  exportAuditLogsCsv: moderatorProcedure
+    .input(z.object({
+      severity: z.enum(["info", "warning", "critical", "all"]).optional().default("all"),
+      actionCategory: z.enum(["billing", "model", "security", "abuse", "all"]).optional().default("all"),
+      userId: z.number().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const { getFilteredAuditLogs, logAuditEvent } = await import("../auditLog");
+      const result = await getFilteredAuditLogs({
+        limit: 5000,
+        offset: 0,
+        severity: input?.severity === "all" ? undefined : input?.severity,
+        actionCategory: input?.actionCategory === "all" ? undefined : input?.actionCategory,
+        userId: input?.userId,
+        startDate: input?.startDate ? new Date(input.startDate) : undefined,
+        endDate: input?.endDate ? new Date(input.endDate) : undefined,
+      });
+
+      const { AUDIT_ACTIONS } = await import("../../drizzle/schema");
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.AUDIT_LOG_EXPORTED,
+        resourceType: "audit_log",
+        metadata: { totalExported: result.logs.length, filters: input },
+        severity: "info",
+      });
+
+      const escapeCsv = (val: string) => {
+        if (val.includes('"') || val.includes(',') || val.includes('\n')) {
+          return `"${val.replace(/"/g, '""')}"`;
+        }
+        return val;
+      };
+
+      const header = "ID,Timestamp,Severity,Action,User ID,IP Address,Resource Type,Resource ID,Metadata";
+      const rows = result.logs.map((log) => {
+        const ts = new Date(log.createdAt).toISOString();
+        const meta = log.metadata ? escapeCsv(JSON.stringify(log.metadata)) : "";
+        return [
+          log.id,
+          ts,
+          log.severity,
+          escapeCsv(log.action),
+          log.userId ?? "",
+          log.ipAddress ?? "",
+          log.resourceType ?? "",
+          log.resourceId ?? "",
+          meta,
+        ].join(",");
+      });
+
+      return { csv: [header, ...rows].join("\n"), total: result.logs.length };
+    }),
 });

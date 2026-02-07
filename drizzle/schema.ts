@@ -308,6 +308,9 @@ export const AUDIT_ACTIONS = {
   
   // Account lifecycle events
   ACCOUNT_DELETED: "account.deleted",
+  
+  // Export events
+  AUDIT_LOG_EXPORTED: "audit_log.exported",
 } as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[keyof typeof AUDIT_ACTIONS];
