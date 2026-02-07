@@ -3271,3 +3271,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove topup-related tests from billing.test.ts, velocityLimits.test.ts, and webhookSecurity.test.ts
 - [x] Clean up imports and type references across all files
 - [x] All 639 tests passing, 0 TypeScript errors
+
+## Feature: Billing Manage Modal Redesign (Manus-style)
+- [x] Free users: show top 3 strategic plans (Starter, Pro, Studio) with Upgrade buttons
+- [x] Paid users: show current plan + next tier up (2-column layout)
+- [x] Max tier users: "You're on the highest plan" message
+- [x] Add "Edit billing" link in footer (opens Stripe portal)
+- [x] Add "Downgrade to Free" link in footer with loading state (cancels subscription)
+- [x] Match Manus reference design: monthly/annual toggle, plan cards with features, expand credit section
+- [x] All 639 tests passing, 0 TypeScript errors
