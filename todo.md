@@ -3402,3 +3402,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update reconciliation logic so failed generations don't count toward credits used
 - [x] Update reconciliation summary messaging
 - [x] Update tests to reflect correct behavior (20 tests, 679 total passing)
+
+## Fix: Reconciliation — Improve discrepancy messaging with likely cause
+- [x] Detect failed generations without matching refunds and explain in summary
+- [x] Update tests for new messaging logic (24 reconciliation tests, 683 total passing)

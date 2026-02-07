@@ -2,6 +2,42 @@ import { z } from "zod";
 import { moderatorProcedure, router } from "../_core/trpc";
 import { getDetailedCreditHistory, getDetailedGenerationHistory } from "../db/moderatorQueries";
 
+/** Build a human-readable summary explaining the reconciliation result. */
+function buildSummary(ctx: {
+  hasDiscrepancy: boolean;
+  discrepancy: number;
+  failedCount: number;
+  totalRefunds: number;
+  creditsOnFailed: number;
+}): string {
+  const { hasDiscrepancy, discrepancy, failedCount, totalRefunds, creditsOnFailed } = ctx;
+
+  if (!hasDiscrepancy) {
+    if (failedCount > 0) {
+      return `No discrepancy. ${totalRefunds.toLocaleString()} credits refunded for ${failedCount} failed generation(s).`;
+    }
+    return "No discrepancies found. All credits align with generation records.";
+  }
+
+  const absDisc = Math.abs(discrepancy).toLocaleString();
+
+  // Check if failed generations without refunds explain the gap
+  const unrefundedFailureCost = creditsOnFailed - totalRefunds;
+  if (failedCount > 0 && unrefundedFailureCost > 0 && Math.abs(discrepancy - unrefundedFailureCost) <= 1) {
+    return `Discrepancy of ${absDisc} credits — likely caused by ${failedCount} failed generation(s) without matching refunds (pre-atomic-credits or refund failure).`;
+  }
+
+  if (failedCount > 0 && totalRefunds === 0) {
+    return `Discrepancy of ${absDisc} credits. ${failedCount} failed generation(s) found with no refund transactions — credits may have been deducted before automatic refunds were enabled.`;
+  }
+
+  if (failedCount > 0 && unrefundedFailureCost > 0) {
+    return `Discrepancy of ${absDisc} credits. Partial refunds detected: ${totalRefunds.toLocaleString()} credits refunded but ${creditsOnFailed.toLocaleString()} expected for ${failedCount} failed generation(s).`;
+  }
+
+  return `Discrepancy of ${absDisc} credits detected between net credit cost and generation records.`;
+}
+
 export const moderatorReconciliationRouter = router({
   /**
    * Fetches a reconciliation summary comparing credits deducted
@@ -142,11 +178,13 @@ export const moderatorReconciliationRouter = router({
           pendingGenerationCost: creditsOnPending,
           discrepancy,
           hasDiscrepancy,
-          summary: hasDiscrepancy
-            ? `Discrepancy of ${Math.abs(discrepancy).toLocaleString()} credits detected between net credit cost and generation records.`
-            : failedCount > 0
-              ? `No discrepancy. ${totalRefunds.toLocaleString()} credits refunded for ${failedCount} failed generation(s).`
-              : "No discrepancies found. All credits align with generation records.",
+          summary: buildSummary({
+            hasDiscrepancy,
+            discrepancy,
+            failedCount,
+            totalRefunds,
+            creditsOnFailed,
+          }),
         },
       };
     }),
