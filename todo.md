@@ -3338,3 +3338,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Pass date state + setters through UserInvestigationTab props
 - [x] Reset dates when selecting a new user
 - [x] 639 tests passing, 0 TypeScript errors
+
+## Feature: Audit Logs Date Range Filters
+- [x] Backend getAuditLogs already supports startDate/endDate params
+- [x] Add date range state (logStartDate/logEndDate) to ModeratorDashboard
+- [x] Wire date range into getAuditLogs query
+- [x] Add date picker UI to AuditLogsTab (calendar icon, dark theme, clear button)
+- [x] Include dates in handleResetFilters / Clear Filters button
+- [x] 639 tests passing, 0 TypeScript errors

@@ -11,6 +11,7 @@ import {
   ChevronRight,
   AlertCircle,
   Info,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,10 @@ interface AuditLogsTabProps {
   setCategoryFilter: (v: string) => void;
   userIdSearch: string;
   setUserIdSearch: (v: string) => void;
+  startDate: string;
+  setStartDate: (v: string) => void;
+  endDate: string;
+  setEndDate: (v: string) => void;
   totalPages: number;
   onSelectLog: (log: AuditLog) => void;
   onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
@@ -64,6 +69,10 @@ export function AuditLogsTab({
   setCategoryFilter,
   userIdSearch,
   setUserIdSearch,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate,
   totalPages,
   onSelectLog,
   onOpenChangeRequest,
@@ -154,10 +163,46 @@ export function AuditLogsTab({
             <SelectItem value="abuse">Abuse</SelectItem>
           </SelectContent>
         </Select>
-        {(severityFilter !== "all" || categoryFilter !== "all" || userIdSearch) && (
+        {(severityFilter !== "all" || categoryFilter !== "all" || userIdSearch || startDate || endDate) && (
           <Button variant="ghost" size="sm" onClick={onResetFilters} className="text-white/60 hover:text-white">
             <X className="w-4 h-4 mr-1" />
             Clear Filters
+          </Button>
+        )}
+      </div>
+
+      {/* Date Range Filter */}
+      <div className="flex gap-2 items-center max-w-md">
+        <div className="relative flex-1">
+          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => { setStartDate(e.target.value); setPage(() => 0); }}
+            className="w-full h-9 pl-8 pr-2 rounded-md bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
+            placeholder="From"
+          />
+        </div>
+        <span className="text-white/30 text-sm">–</span>
+        <div className="relative flex-1">
+          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => { setEndDate(e.target.value); setPage(() => 0); }}
+            className="w-full h-9 pl-8 pr-2 rounded-md bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
+            placeholder="To"
+          />
+        </div>
+        {(startDate || endDate) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setStartDate(""); setEndDate(""); setPage(() => 0); }}
+            className="h-9 w-9 p-0 text-white/40 hover:text-white"
+            title="Clear dates"
+          >
+            <X className="w-4 h-4" />
           </Button>
         )}
       </div>

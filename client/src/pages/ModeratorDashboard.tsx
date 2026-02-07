@@ -67,6 +67,10 @@ export default function ModeratorDashboard() {
   const [genStartDate, setGenStartDate] = useState("");
   const [genEndDate, setGenEndDate] = useState("");
 
+  // Audit log date range state
+  const [logStartDate, setLogStartDate] = useState("");
+  const [logEndDate, setLogEndDate] = useState("");
+
   // Flagged referrals state
   const [flaggedPage, setFlaggedPage] = useState(0);
 
@@ -79,6 +83,8 @@ export default function ModeratorDashboard() {
       severity: severityFilter as "info" | "warning" | "critical" | "all",
       actionCategory: categoryFilter as "billing" | "model" | "security" | "abuse" | "all",
       userId: userIdSearch && !isNaN(parseInt(userIdSearch)) ? parseInt(userIdSearch) : undefined,
+      startDate: logStartDate || undefined,
+      endDate: logEndDate || undefined,
     },
     { refetchInterval: autoRefresh ? 30000 : false }
   );
@@ -168,7 +174,7 @@ export default function ModeratorDashboard() {
   };
 
   const handleResetFilters = () => {
-    setSeverityFilter("all"); setCategoryFilter("all"); setUserIdSearch(""); setPage(0);
+    setSeverityFilter("all"); setCategoryFilter("all"); setUserIdSearch(""); setLogStartDate(""); setLogEndDate(""); setPage(0);
   };
 
   const resetChangeRequestForm = () => {
@@ -264,6 +270,8 @@ export default function ModeratorDashboard() {
             severityFilter={severityFilter} setSeverityFilter={setSeverityFilter}
             categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter}
             userIdSearch={userIdSearch} setUserIdSearch={setUserIdSearch}
+            startDate={logStartDate} setStartDate={setLogStartDate}
+            endDate={logEndDate} setEndDate={setLogEndDate}
             totalPages={totalPages}
             onSelectLog={setSelectedLog}
             onOpenChangeRequest={openChangeRequest}
