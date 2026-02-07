@@ -24,7 +24,7 @@ const IMAGE_ASPECT = 2048 / 1143;
 /** Reveal circle radius in UV space (0–1). */
 const REVEAL_RADIUS = 0.5;
 /** Parallax strength — very subtle to avoid warping. */
-const PARALLAX_STRENGTH = 0.010;
+const PARALLAX_STRENGTH = 0.008;
 
 // ─── Shared mouse state (set by DOM, read by R3F) ─────────────────────────
 const sharedMouse = { x: 0.5, y: 0.5, hovering: false };
@@ -100,6 +100,7 @@ function RevealPlane({
       uRevealProgress: { value: 0 },
       uRevealRadius: { value: REVEAL_RADIUS },
       uParallaxStrength: { value: PARALLAX_STRENGTH },
+      uTexelSize: { value: new THREE.Vector2(3.0 / 2048, 3.0 / 1143) },
     }),
     [baseTexture, styledTexture, depthTexture]
   );

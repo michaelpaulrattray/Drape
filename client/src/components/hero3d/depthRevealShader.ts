@@ -25,12 +25,23 @@ export const fragmentShader = /* glsl */ `
   uniform float uRevealProgress;
   uniform float uRevealRadius;
   uniform float uParallaxStrength;
+  uniform vec2 uTexelSize;
 
   varying vec2 vUv;
 
+  // 5-tap box blur on depth map to smooth silhouette discontinuities
+  float sampleDepthBlurred(vec2 uv) {
+    float center = texture2D(uDepthMap, uv).r;
+    float left   = texture2D(uDepthMap, uv + vec2(-uTexelSize.x, 0.0)).r;
+    float right  = texture2D(uDepthMap, uv + vec2( uTexelSize.x, 0.0)).r;
+    float up     = texture2D(uDepthMap, uv + vec2(0.0,  uTexelSize.y)).r;
+    float down   = texture2D(uDepthMap, uv + vec2(0.0, -uTexelSize.y)).r;
+    return (center + left + right + up + down) / 5.0;
+  }
+
   void main() {
     // ── Depth-based parallax (base image only) ──────────────
-    float rawDepth = texture2D(uDepthMap, vUv).r;
+    float rawDepth = sampleDepthBlurred(vUv);
     // Compress depth range [0,1] → [0.35, 0.65] to reduce boundary artifacts
     float depth = mix(0.35, 0.65, rawDepth);
     vec2 mouseOffset = (uMouse - 0.5) * 2.0;
