@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { X, Check, Loader2, ChevronDown, Crown } from "lucide-react";
+import { X, Check, Loader2, ChevronDown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -162,9 +162,11 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
         {/* Header */}
         <div className="px-6 pt-6 pb-2">
           <div className="mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A0A0A] to-[#404040] flex items-center justify-center mb-4">
-              <Crown className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png"
+              alt="FormaStudio"
+              className="w-10 h-10 mb-4"
+            />
             <h2 className="text-xl font-semibold text-[#0A0A0A] tracking-tight">
               Add more credits
             </h2>

@@ -3206,3 +3206,6 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Toggle button in CreditTopupModal is visually broken
 - [x] Fix annual/monthly toggle button — replaced custom CSS toggle with shadcn Switch component
+
+## Bug Fix: CreditTopupModal icon should be logo mark, not Crown
+- [x] Replace Crown icon with FormaStudio logo icon mark
