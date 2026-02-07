@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { X, Check, Loader2, ChevronDown, Crown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 interface CreditTopupModalProps {
   isOpen: boolean;
@@ -190,18 +191,11 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
                   <span className="text-xs font-medium text-emerald-600">
                     Annual (Save 17%)
                   </span>
-                  <button
-                    onClick={() => setIsAnnual(!isAnnual)}
-                    className={`relative w-9 h-5 rounded-full transition-colors ${
-                      isAnnual ? "bg-[#0A0A0A]" : "bg-[#D4D4D4]"
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                        isAnnual ? "translate-x-4" : "translate-x-0.5"
-                      }`}
-                    />
-                  </button>
+                  <Switch
+                    checked={isAnnual}
+                    onCheckedChange={setIsAnnual}
+                    className="data-[state=checked]:bg-[#0A0A0A] data-[state=unchecked]:bg-[#D4D4D4]"
+                  />
                 </div>
               </div>
 

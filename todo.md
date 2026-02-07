@@ -3203,3 +3203,6 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Annual pricing should show full year upfront cost
 - [x] Annual "due today" = monthly price × 12 × (1 - 0.17), strikethrough = monthly × 12
+
+## Bug Fix: Toggle button in CreditTopupModal is visually broken
+- [x] Fix annual/monthly toggle button — replaced custom CSS toggle with shadcn Switch component
