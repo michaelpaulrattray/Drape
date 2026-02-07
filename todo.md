@@ -3252,3 +3252,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire up Klaviyo email delivery for sendInvite flow (trackEvent + sendReferralInviteEmail)
 - [x] Referral expiration job: daily setInterval expires pending referrals >30 days old
 - [x] Tests for all 4 enhancements (20 new tests, 654 total passing)
+
+## Feature: Klaviyo Flow for Referral Invite Email
+- [x] Research Klaviyo Flows API for programmatic flow creation
+- [x] Create branded HTML email template (Tm2PNj) with FormaStudio styling
+- [x] Create Klaviyo Flow (TTqC5y) triggered by "Referral Invite Sent" metric (VKhfQH)
+- [x] Flow set to LIVE — sends email with referrer name, referral link, and 250 credit reward
+- [x] Setup script: server/scripts/setupKlaviyoReferralFlow.mjs (idempotent, with fallback instructions)
+- [x] Cleaned up duplicate templates from failed runs
+- [x] Configure email template with referrer name, referral link, reward amount (dynamic via {{ event.* }} variables)
+- [x] End-to-end flow verified: sendInvite → Klaviyo event → Flow triggers → email delivery
