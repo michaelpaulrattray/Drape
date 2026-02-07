@@ -131,3 +131,12 @@ export {
   getRecentTopupCount,
   getRecentTopupCredits,
 } from "./moderatorQueries";
+
+// Referrals
+export {
+  getOrCreateReferralCode,
+  getUserByReferralCode,
+  claimReferral,
+  completeReferral,
+  getReferralStats,
+} from "./referrals";

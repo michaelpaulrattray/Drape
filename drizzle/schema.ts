@@ -24,6 +24,9 @@ export const users = mysqlTable("users", {
   suspendedAt: timestamp("suspendedAt"), // When account was suspended (null = active)
   suspendedReason: text("suspendedReason"), // Reason for suspension
   suspendedBy: int("suspendedBy"), // Admin user ID who suspended
+  // Referral system
+  referralCode: varchar("referralCode", { length: 16 }).unique(), // Auto-generated unique code (e.g., FORMA-A3K9X2)
+  referredByUserId: int("referredByUserId"), // User ID who referred this user
   // Account lockout fields (for failed login protection)
   failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
   lockedUntil: timestamp("lockedUntil"), // Temporary lockout expiry
@@ -419,3 +422,29 @@ export const changeRequests = mysqlTable("change_requests", {
 
 export type ChangeRequest = typeof changeRequests.$inferSelect;
 export type InsertChangeRequest = typeof changeRequests.$inferInsert;
+
+/**
+ * Referrals table for tracking user-to-user referrals.
+ * Credits awarded to both parties when referred user completes first generation.
+ */
+export const REFERRAL_REWARD_CREDITS = 500;
+
+export const referrals = mysqlTable("referrals", {
+  id: int("id").autoincrement().primaryKey(),
+  referrerUserId: int("referrerUserId").notNull(), // User who shared the link
+  referredUserId: int("referredUserId"), // User who signed up (null until signup)
+  referredEmail: varchar("referredEmail", { length: 320 }), // Optional: track invited email
+  status: mysqlEnum("status", ["pending", "signed_up", "completed", "expired"]).default("pending").notNull(),
+  // pending = link shared but no signup yet
+  // signed_up = referred user created account
+  // completed = referred user did first generation, credits awarded
+  // expired = referral link expired (optional TTL)
+  referrerCredited: boolean("referrerCredited").default(false).notNull(),
+  referredCredited: boolean("referredCredited").default(false).notNull(),
+  creditsAwarded: int("creditsAwarded").default(0).notNull(), // Credits given to each party
+  completedAt: timestamp("completedAt"), // When first generation happened
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;

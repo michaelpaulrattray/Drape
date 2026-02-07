@@ -22,6 +22,20 @@ export async function createGeneration(
       .where(eq(generations.userId, data.userId))
       .orderBy(desc(generations.createdAt))
       .limit(1);
+
+    // Check if this is the user's first generation — trigger referral reward
+    const allGens = await db
+      .select({ id: generations.id })
+      .from(generations)
+      .where(eq(generations.userId, data.userId))
+      .limit(2);
+    if (allGens.length === 1) {
+      // First generation ever — try to complete referral (async, non-blocking)
+      import("./referrals").then(({ completeReferral }) => {
+        completeReferral(data.userId).catch(() => {});
+      }).catch(() => {});
+    }
+
     return { success: true, generationId: inserted[0]?.id };
   } catch (error) {
     console.error("[Database] Failed to create generation:", error);

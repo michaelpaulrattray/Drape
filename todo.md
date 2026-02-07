@@ -3219,3 +3219,11 @@ The entry and configuration files are properly set up with several enhancements 
 ## Bug Fix: CreditTopupModal should overlay parent modals, not close them
 - [x] Profile Settings → Billing → Add Credits: overlays on top of profile settings
 - [x] BillingModal (Manage) → Add Credits: overlays on top of BillingModal
+
+## Feature: Share/Referral System (replace Get Credits button)
+- [x] DB: Create referrals table + user referralCode/referredByUserId fields
+- [x] Backend: Generate unique referral codes, track referrals, award 500 credits on first generation
+- [x] Frontend: Replace "Get Credits" button with "Share Forma" CTA
+- [x] Frontend: ReferralModal with shareable link, copy button, how-it-works, stats
+- [x] Security: Self-referral blocked, duplicate referral blocked, idempotent credit award
+- [x] useReferralClaim hook: captures ?ref= param, claims after OAuth login

@@ -31,6 +31,8 @@ import ProfileSettingsModal from "@/components/ProfileSettingsModal";
 import { BillingModal } from "@/features/billing/BillingModal";
 import { CreditTopupModal } from "@/features/billing/CreditTopupModal";
 import { LowBalanceBanner, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
+import { ReferralModal } from "@/features/referral/ReferralModal";
+import { useReferralClaim } from "@/features/referral/useReferralClaim";
 import { Loader2, Coins } from "lucide-react";
 
 // Image compression utility
@@ -82,6 +84,8 @@ export default function Dashboard() {
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [isBillingOpen, setIsBillingOpen] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
+  const [isReferralOpen, setIsReferralOpen] = useState(false);
+  useReferralClaim();
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -526,11 +530,11 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-3 pb-2">
                 <button 
-                  onClick={() => setIsTopupOpen(true)}
+                  onClick={() => setIsReferralOpen(true)}
                   className="group px-5 py-2.5 rounded-full bg-[#0A0A0A] text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg hover:bg-[#0A0A0A]/90"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  Get Credits
+                  <Gift className="w-4 h-4" />
+                  Share Forma
                 </button>
                 <button className="p-2.5 rounded-full bg-white border border-[#D4D4D4] text-[#757575] hover:text-[#0A0A0A] hover:border-[#0A0A0A]/30 transition-colors shadow-sm">
                   <Bell className="w-5 h-5" />
@@ -682,6 +686,10 @@ export default function Dashboard() {
         isOpen={isTopupOpen}
         onClose={() => setIsTopupOpen(false)}
         currentBalance={creditsData?.balance || 0}
+      />
+      <ReferralModal
+        open={isReferralOpen}
+        onClose={() => setIsReferralOpen(false)}
       />
     </div>
   );

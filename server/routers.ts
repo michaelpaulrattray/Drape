@@ -19,6 +19,7 @@ import { billingRouter } from "./routes/billing";
 import { usageRouter } from "./routes/usage";
 import { adminRouter } from "./routes/admin";
 import { moderatorRouter } from "./routes/moderator";
+import { referralRouter } from "./routes/referral";
 
 export const appRouter = router({
   system: systemRouter,
@@ -35,6 +36,7 @@ export const appRouter = router({
   newsletter: newsletterRouter,
   admin: adminRouter,
   moderator: moderatorRouter,
+  referral: referralRouter,
 });
 
 export type AppRouter = typeof appRouter;
