@@ -3280,3 +3280,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add "Downgrade to Free" link in footer with loading state (cancels subscription)
 - [x] Match Manus reference design: monthly/annual toggle, plan cards with features, expand credit section
 - [x] All 639 tests passing, 0 TypeScript errors
+
+## Feature: Downgrade Confirmation Modal
+- [x] Add DowngradeConfirmModal with best-value plan retention offer (dark theme, matching reference)
+- [x] Match Manus reference: AlertTriangle icon, title, subtitle, best-value plan card with price/savings/features, two CTAs
+- [x] Smart best-value suggestion: Starter for most users, Pro if already on Starter
+- [x] All hooks before early return to prevent React ordering errors
+- [x] All 639 tests passing, 0 TypeScript errors

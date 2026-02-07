@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { X, Check, Sparkles, Loader2, ArrowRight, AlertCircle, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { DowngradeConfirmModal } from "./DowngradeConfirmModal";
 
 interface BillingModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
   const [planPreview, setPlanPreview] = useState<PlanChangePreview | null>(null);
   const [billingInterval, setBillingInterval] = useState<"monthly" | "annual">("monthly");
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false);
 
   const { data: plans } = trpc.billing.getPlans.useQuery();
   const { data: status, refetch: refetchStatus } = trpc.billing.getStatus.useQuery();
@@ -109,6 +111,21 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
     return result;
   }, [isFreeUser, allSubscriptions, currentPlan, currentPlanIdx, planOrder]);
 
+  // Compute best-value plan for retention offer (Starter = cheapest paid plan)
+  const bestValuePlan = useMemo(() => {
+    const starter = allSubscriptions.find((p) => p.id === "starter");
+    if (!starter || currentPlan === "starter") {
+      const pro = allSubscriptions.find((p) => p.id === "pro");
+      return pro ? { id: pro.id, name: pro.name, priceInCents: pro.priceInCents, credits: pro.credits, features: pro.features } : null;
+    }
+    return { id: starter.id, name: starter.name, priceInCents: starter.priceInCents, credits: starter.credits, features: starter.features };
+  }, [allSubscriptions, currentPlan]);
+
+  const currentPlanPrice = useMemo(() => {
+    const sub = allSubscriptions.find((p) => p.id === currentPlan);
+    return sub?.priceInCents || 0;
+  }, [allSubscriptions, currentPlan]);
+
   if (!isOpen) return null;
 
   const isMaxTier = !isFreeUser && currentPlanIdx >= planOrder.length - 1;
@@ -155,8 +172,13 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
   };
 
   const handleDowngradeToFree = () => {
+    setShowDowngradeConfirm(true);
+  };
+
+  const handleConfirmDowngradeToFree = () => {
     setIsCancelling(true);
     cancelSubscription.mutate();
+    setShowDowngradeConfirm(false);
   };
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
@@ -459,14 +481,7 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
                 disabled={isCancelling}
                 className="text-sm text-[#757575] hover:text-[#0A0A0A] underline transition-colors flex items-center gap-1"
               >
-                {isCancelling ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Cancelling...
-                  </>
-                ) : (
-                  "Downgrade to Free"
-                )}
+                Downgrade to Free
               </button>
             )}
             {status?.canManage && (
@@ -480,6 +495,16 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
           </div>
         </div>
       </div>
+
+      {/* Downgrade Confirmation Modal */}
+      <DowngradeConfirmModal
+        isOpen={showDowngradeConfirm}
+        onClose={() => setShowDowngradeConfirm(false)}
+        onConfirmDowngrade={handleConfirmDowngradeToFree}
+        isCancelling={isCancelling}
+        bestValuePlan={bestValuePlan}
+        currentPlanPrice={currentPlanPrice}
+      />
     </div>
   );
 }
