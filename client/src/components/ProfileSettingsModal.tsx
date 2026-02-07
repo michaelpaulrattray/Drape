@@ -120,17 +120,15 @@ function BillingTabContent({
             )}
           </div>
           <div className="flex gap-2">
-            {planTier !== "free" && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenBilling?.();
-                }}
-                className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all"
-              >
-                Manage
-              </button>
-            )}
+            <button
+              onClick={() => {
+                onClose();
+                onOpenBilling?.();
+              }}
+              className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-all"
+            >
+              Manage
+            </button>
             <button
               onClick={() => {
                 onClose();
@@ -182,28 +180,16 @@ function BillingTabContent({
         </div>
       </div>
 
-      {/* Upgrade Button for Free Users */}
-      {planTier === "free" && (
-        <button
-          onClick={() => {
-            onClose();
-            onOpenBilling?.();
-          }}
-          className="w-full px-4 py-3 rounded-xl bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 text-sm font-medium transition-all flex items-center justify-center gap-2"
-        >
-          <Sparkles className="w-4 h-4" />
-          Upgrade Plan
-        </button>
-      )}
+
 
       {/* Recent Activity / Invoices */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-zinc-400">Recent activity</label>
+          <label className="text-sm font-medium text-[#757575]">Recent activity</label>
           {(hasMoreInvoices || showAllInvoices) && (
             <button
               onClick={() => setShowAllInvoices(!showAllInvoices)}
-              className="text-sm text-zinc-500 hover:text-white transition-colors flex items-center gap-1"
+              className="text-sm text-[#757575] hover:text-[#0A0A0A] transition-colors flex items-center gap-1"
             >
               {showAllInvoices ? "Show less" : "View all invoices"}
               <ChevronRight className={`w-4 h-4 transition-transform ${showAllInvoices ? "rotate-90" : ""}`} />
@@ -331,18 +317,18 @@ function UsageTabContent() {
 
   return (
     <div className="space-y-6">
-      {/* Period Selector */}
+      {/* Header with Period Selector */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[#0A0A0A]">Usage Analytics</h3>
-        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+        <h3 className="text-lg font-semibold text-[#0A0A0A] tracking-tight">Usage Analytics</h3>
+        <div className="flex gap-0.5 p-0.5 bg-gray-100 rounded-full">
           {([7, 30, 90] as const).map((days) => (
             <button
               key={days}
               onClick={() => setPeriod(days)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+              className={`px-4 py-1.5 text-xs font-medium rounded-full transition-all ${
                 period === days
                   ? "bg-[#0A0A0A] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-900"
+                  : "text-[#757575] hover:text-[#0A0A0A]"
               }`}
             >
               {days}d
@@ -351,68 +337,54 @@ function UsageTabContent() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Activity className="w-4 h-4 text-gray-600" />
-            <span className="text-xs text-gray-500 uppercase">Credits Used</span>
+      {/* Stats Cards — horizontal row */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { icon: Activity, label: "Credits Used", value: stats?.totalCreditsUsed, color: "text-[#0A0A0A]" },
+          { icon: Sparkles, label: "Generations", value: stats?.totalGenerations, color: "text-[#0A0A0A]" },
+          { icon: TrendingUp, label: "Daily Avg", value: stats?.averagePerDay, color: "text-[#0A0A0A]" },
+        ].map((card, idx) => (
+          <div key={idx} className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <div className="flex items-center gap-1.5 mb-3">
+              <card.icon className="w-3.5 h-3.5 text-[#757575]" />
+              <span className="text-[11px] font-medium text-[#757575] uppercase tracking-wider">{card.label}</span>
+            </div>
+            {isLoadingStats ? (
+              <Loader2 className="w-5 h-5 animate-spin text-gray-300" />
+            ) : (
+              <p className={`text-2xl font-semibold ${card.color} tracking-tight`}>
+                {(card.value ?? 0).toLocaleString()}
+              </p>
+            )}
           </div>
-          {isLoadingStats ? (
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-          ) : (
-            <p className="text-2xl font-bold text-[#0A0A0A]">{stats?.totalCreditsUsed.toLocaleString() || 0}</p>
-          )}
-        </div>
-        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-purple-500" />
-            <span className="text-xs text-gray-500 uppercase">Generations</span>
-          </div>
-          {isLoadingStats ? (
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-          ) : (
-            <p className="text-2xl font-bold text-[#0A0A0A]">{stats?.totalGenerations.toLocaleString() || 0}</p>
-          )}
-        </div>
-        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-cyan-500" />
-            <span className="text-xs text-gray-500 uppercase">Daily Avg</span>
-          </div>
-          {isLoadingStats ? (
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-          ) : (
-            <p className="text-2xl font-bold text-[#0A0A0A]">{stats?.averagePerDay || 0}</p>
-          )}
-        </div>
+        ))}
       </div>
 
       {/* Usage Chart */}
       <div>
-        <label className="block text-sm font-medium text-[#4D4D4D] mb-3">Daily Usage</label>
-        <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+        <label className="block text-sm font-medium text-[#4D4D4D] mb-2">Daily Usage</label>
+        <div className="p-5 rounded-xl bg-gray-50 border border-gray-200">
           {isLoadingDaily ? (
-            <div className="flex items-center justify-center h-32">
-              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            <div className="flex items-center justify-center h-36">
+              <Loader2 className="w-5 h-5 animate-spin text-gray-300" />
             </div>
           ) : dailyUsage && dailyUsage.length > 0 ? (
-            <div className="h-32">
-              {/* Simple bar chart */}
-              <div className="flex items-end justify-between h-full gap-1">
+            <div>
+              {/* Bar chart */}
+              <div className="flex items-end gap-[2px] h-36">
                 {dailyUsage.map((day, idx) => {
                   const height = maxCredits > 0 ? (day.creditsUsed / maxCredits) * 100 : 0;
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center group relative">
                       <div
-                        className="w-full bg-gray-400 rounded-t transition-all hover:bg-gray-500"
+                        className="w-full bg-[#0A0A0A]/20 rounded-sm transition-all duration-200 hover:bg-[#0A0A0A]/50"
                         style={{ height: `${Math.max(height, 2)}%` }}
                       />
                       {/* Tooltip */}
                       <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
-                        <div className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs whitespace-nowrap shadow-lg">
-                          <p className="text-gray-900 font-medium">{day.creditsUsed} credits</p>
-                          <p className="text-gray-500">{formatDate(day.date)}</p>
+                        <div className="bg-[#0A0A0A] text-white rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-xl">
+                          <p className="font-medium">{day.creditsUsed} credits</p>
+                          <p className="text-white/60 text-[10px] mt-0.5">{formatDate(day.date)}</p>
                         </div>
                       </div>
                     </div>
@@ -420,13 +392,13 @@ function UsageTabContent() {
                 })}
               </div>
               {/* X-axis labels */}
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <div className="flex justify-between mt-3 text-[11px] text-[#757575]">
                 <span>{formatDate(dailyUsage[0]?.date || new Date())}</span>
                 <span>{formatDate(dailyUsage[dailyUsage.length - 1]?.date || new Date())}</span>
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
+            <div className="flex items-center justify-center h-36 text-[#757575] text-sm">
               No usage data yet
             </div>
           )}
@@ -435,42 +407,48 @@ function UsageTabContent() {
 
       {/* Transaction History */}
       <div>
-        <label className="block text-sm font-medium text-[#4D4D4D] mb-3">Transaction History</label>
+        <label className="block text-sm font-medium text-[#4D4D4D] mb-2">Transaction History</label>
         {isLoadingHistory ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-gray-300" />
           </div>
         ) : historyData && historyData.transactions.length > 0 ? (
           <>
             <div className="rounded-xl border border-gray-200 overflow-hidden">
-              {/* Table Header */}
-              <div className="grid grid-cols-4 gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <span className="text-xs font-medium text-gray-500 uppercase">Type</span>
-                <span className="text-xs font-medium text-gray-500 uppercase">Description</span>
-                <span className="text-xs font-medium text-gray-500 uppercase text-right">Credits</span>
-                <span className="text-xs font-medium text-gray-500 uppercase text-right">Date</span>
-              </div>
-
-              {/* Transaction Rows */}
-              {historyData.transactions.map((tx) => (
+              {historyData.transactions.map((tx, idx) => (
                 <div
                   key={tx.id}
-                  className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors bg-white"
+                  className={`flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors ${
+                    idx < historyData.transactions.length - 1 ? "border-b border-gray-100" : ""
+                  }`}
                 >
-                  <span className={`text-sm font-medium ${getTypeColor(tx.type)}`}>
-                    {getTypeLabel(tx.type)}
-                  </span>
-                  <span className="text-sm text-gray-600 truncate" title={tx.description || undefined}>
-                    {tx.description || "—"}
-                  </span>
-                  <span className={`text-sm font-medium text-right ${
-                    tx.amount > 0 ? "text-green-600" : "text-gray-500"
-                  }`}>
-                    {tx.amount > 0 ? "+" : ""}{tx.amount}
-                  </span>
-                  <span className="text-sm text-gray-500 text-right">
-                    {formatFullDate(tx.createdAt)}
-                  </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      tx.amount > 0 ? "bg-green-50" : "bg-gray-100"
+                    }`}>
+                      {tx.amount > 0 ? (
+                        <TrendingUp className="w-3.5 h-3.5 text-green-600" />
+                      ) : (
+                        <Activity className="w-3.5 h-3.5 text-[#757575]" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-[#0A0A0A]">{getTypeLabel(tx.type)}</span>
+                      </div>
+                      <p className="text-xs text-[#757575] truncate max-w-[200px]" title={tx.description || undefined}>
+                        {tx.description || formatFullDate(tx.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-4">
+                    <p className={`text-sm font-semibold ${
+                      tx.amount > 0 ? "text-green-600" : "text-[#0A0A0A]"
+                    }`}>
+                      {tx.amount > 0 ? "+" : ""}{tx.amount}
+                    </p>
+                    <p className="text-[11px] text-[#757575]">{formatDate(tx.createdAt)}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -478,21 +456,21 @@ function UsageTabContent() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between mt-4">
-                <span className="text-sm text-gray-500">
-                  Showing {historyPage * pageSize + 1}-{Math.min((historyPage + 1) * pageSize, historyData.total)} of {historyData.total}
+                <span className="text-xs text-[#757575]">
+                  {historyPage * pageSize + 1}–{Math.min((historyPage + 1) * pageSize, historyData.total)} of {historyData.total}
                 </span>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <button
                     onClick={() => setHistoryPage(p => Math.max(0, p - 1))}
                     disabled={historyPage === 0}
-                    className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-200 text-[#4D4D4D] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setHistoryPage(p => Math.min(totalPages - 1, p + 1))}
                     disabled={historyPage >= totalPages - 1}
-                    className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-200 text-[#4D4D4D] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
                   >
                     Next
                   </button>
@@ -501,7 +479,7 @@ function UsageTabContent() {
             )}
           </>
         ) : (
-          <div className="text-center py-8 text-gray-500 text-sm">
+          <div className="text-center py-8 text-[#757575] text-sm">
             No transactions yet
           </div>
         )}

@@ -2866,3 +2866,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Dashboard redesign Step 3: Update ProfileSettingsModal to Forma design system
 - [x] Dashboard redesign Step 4: Update BillingModal and CreditTopupModal to Forma design system
 - [x] Dashboard redesign Step 5: Update LowBalanceBanner to Forma design system (already clean)
+- [x] Fix usage tab layout/formatting in ProfileSettingsModal (stats cards, chart, transaction table)
+- [x] Move Upgrade Plan button next to Add Credits and rename to "Manage" in billing tab
