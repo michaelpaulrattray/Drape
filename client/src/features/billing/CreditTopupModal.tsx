@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Sparkles, Loader2, ArrowRight, Check, Zap, Crown, Building2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { X, Check, Loader2, ChevronDown, Crown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -9,215 +9,295 @@ interface CreditTopupModalProps {
   currentBalance?: number;
 }
 
-const PLAN_ORDER = ["free", "starter", "pro", "studio"] as const;
-
-const PLAN_META: Record<string, { icon: typeof Sparkles; label: string; color: string; bgColor: string }> = {
-  free: { icon: Sparkles, label: "Free", color: "text-[#757575]", bgColor: "bg-[#F5F5F5]" },
-  starter: { icon: Zap, label: "Starter", color: "text-blue-600", bgColor: "bg-blue-50" },
-  pro: { icon: Crown, label: "Pro", color: "text-violet-600", bgColor: "bg-violet-50" },
-  studio: { icon: Building2, label: "Studio", color: "text-amber-600", bgColor: "bg-amber-50" },
-};
+const ANNUAL_DISCOUNT = 0.17; // 17% savings
 
 export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: CreditTopupModalProps) {
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [isAnnual, setIsAnnual] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedTierKey, setSelectedTierKey] = useState<string | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
 
   const { data: plans } = trpc.billing.getPlans.useQuery();
   const { data: status } = trpc.billing.getStatus.useQuery();
+  const { data: subDetails } = trpc.billing.getSubscriptionDetails.useQuery();
 
-  const createSubscriptionCheckout = trpc.billing.createSubscriptionCheckout.useMutation({
+  const createCheckout = trpc.billing.createSubscriptionCheckout.useMutation({
     onSuccess: (data) => {
-      window.location.href = data.checkoutUrl;
+      window.open(data.checkoutUrl, "_blank");
+      toast.info("Redirecting to checkout...");
+      setIsUpgrading(false);
+      onClose();
     },
     onError: (error) => {
       toast.error(error.message);
-      setLoadingPlan(null);
+      setIsUpgrading(false);
     },
   });
 
   const changePlan = trpc.billing.changePlan.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
-      setLoadingPlan(null);
+      setIsUpgrading(false);
       onClose();
     },
     onError: (error) => {
       toast.error(error.message);
-      setLoadingPlan(null);
+      setIsUpgrading(false);
     },
   });
 
-  if (!isOpen) return null;
-
+  // Derive tier data
   const currentPlan = status?.planTier || "free";
-  const currentIndex = PLAN_ORDER.indexOf(currentPlan as typeof PLAN_ORDER[number]);
+  const planOrder = plans?.planOrder || [];
+  const tiers = plans?.tiers;
 
-  // Get available upgrade tiers (everything above current plan)
-  const upgradeTiers = plans?.subscriptions.filter((plan) => {
-    const planIndex = PLAN_ORDER.indexOf(plan.id as typeof PLAN_ORDER[number]);
-    return planIndex > currentIndex;
-  }) || [];
+  // Available upgrade options (tiers above current)
+  const upgradeOptions = useMemo(() => {
+    if (!tiers || !planOrder.length) return [];
+    const currentIdx = planOrder.indexOf(currentPlan);
+    return planOrder
+      .slice(currentIdx + 1)
+      .map((key) => {
+        const tier = tiers[key as keyof typeof tiers];
+        if (!tier) return null;
+        const currentTier = tiers[currentPlan as keyof typeof tiers];
+        const creditDelta = tier.monthlyCredits - (currentTier?.monthlyCredits || 0);
+        return { key, ...tier, creditDelta };
+      })
+      .filter(Boolean) as Array<{
+        key: string; name: string; monthlyCredits: number;
+        price: number; rolloverPercent: number; creditDelta: number;
+      }>;
+  }, [tiers, planOrder, currentPlan]);
 
-  const handleUpgrade = (planId: string) => {
-    setLoadingPlan(planId);
+  // Default to next tier up
+  const effectiveSelectedKey = selectedTierKey || upgradeOptions[0]?.key || null;
+  const selectedOption = upgradeOptions.find((o) => o.key === effectiveSelectedKey);
 
+  // Price calculations
+  const currentTier = tiers?.[currentPlan as keyof typeof tiers];
+  const currentMonthlyPrice = currentTier?.price || 0;
+  const newMonthlyPrice = selectedOption?.price || 0;
+
+  const monthlyDifference = newMonthlyPrice - currentMonthlyPrice;
+  const annualMonthlyDifference = Math.round(monthlyDifference * (1 - ANNUAL_DISCOUNT));
+  const effectiveDifference = isAnnual ? annualMonthlyDifference : monthlyDifference;
+
+  // Strikethrough price (full monthly price of new tier, not the delta)
+  const fullNewPrice = isAnnual
+    ? Math.round(newMonthlyPrice * (1 - ANNUAL_DISCOUNT))
+    : newMonthlyPrice;
+
+  // Renewal date
+  const renewalDate = subDetails?.renewalDate
+    ? new Date(subDetails.renewalDate)
+    : null;
+
+  const formatPrice = (cents: number) => {
+    const dollars = cents / 100;
+    return dollars >= 1000
+      ? `$${dollars.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+      : `$${dollars.toFixed(0)}`;
+  };
+
+  const formatRenewalDate = (date: Date) =>
+    date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  const handleUpgrade = () => {
+    if (!effectiveSelectedKey) return;
+    setIsUpgrading(true);
+
+    const planKey = effectiveSelectedKey as any;
     if (currentPlan === "free" || !status?.hasSubscription) {
-      createSubscriptionCheckout.mutate({
-        plan: planId as "starter" | "pro" | "studio",
-        interval: "monthly",
-      });
+      createCheckout.mutate({ plan: planKey, interval: isAnnual ? "annual" : "monthly" });
     } else {
-      changePlan.mutate({
-        newPlan: planId as "starter" | "pro" | "studio",
-      });
+      changePlan.mutate({ newPlan: planKey });
     }
   };
 
-  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+  if (!isOpen) return null;
 
-  const currentTierData = plans?.tiers?.[currentPlan as keyof typeof plans.tiers];
-  const currentCredits = currentTierData?.monthlyCredits || 0;
+  const isMaxTier = upgradeOptions.length === 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-[#F5F5F5] transition-colors z-10"
+        >
+          <X className="w-4 h-4 text-[#757575]" />
+        </button>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-4">
-          <div>
+        <div className="px-6 pt-6 pb-2">
+          <div className="mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A0A0A] to-[#404040] flex items-center justify-center mb-4">
+              <Crown className="w-5 h-5 text-white" />
+            </div>
             <h2 className="text-xl font-semibold text-[#0A0A0A] tracking-tight">
               Add more credits
             </h2>
-            <p className="text-sm text-[#757575] mt-1">
-              Upgrade your plan to increase your monthly credit allocation
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-[#F5F5F5] transition-colors"
-          >
-            <X className="w-5 h-5 text-[#757575]" />
-          </button>
-        </div>
-
-        {/* Current Plan Summary */}
-        <div className="mx-6 mb-4 p-4 rounded-xl bg-[#FAFAFA] border border-[#EBEBEB]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${PLAN_META[currentPlan]?.bgColor || "bg-[#F5F5F5]"}`}>
-                {(() => {
-                  const Icon = PLAN_META[currentPlan]?.icon || Sparkles;
-                  return <Icon className={`w-4 h-4 ${PLAN_META[currentPlan]?.color || "text-[#757575]"}`} />;
-                })()}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[#0A0A0A]">
-                  Current: {PLAN_META[currentPlan]?.label || "Free"} plan
-                </p>
-                <p className="text-xs text-[#757575]">
-                  {currentCredits.toLocaleString()} credits/month
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-medium text-[#0A0A0A]">
-                {currentBalance.toLocaleString()}
-              </p>
-              <p className="text-xs text-[#757575]">credits remaining</p>
-            </div>
           </div>
         </div>
 
-        {/* Upgrade Options */}
-        <div className="px-6 space-y-3">
-          {upgradeTiers.length === 0 ? (
+        {isMaxTier ? (
+          /* Max tier state */
+          <div className="px-6 pb-6">
             <div className="text-center py-8">
-              <div className="p-3 rounded-full bg-[#F5F5F5] inline-flex mb-3">
-                <Crown className="w-6 h-6 text-[#757575]" />
-              </div>
               <p className="text-[#0A0A0A] font-medium">You're on the highest plan</p>
               <p className="text-sm text-[#757575] mt-1">
-                You already have the maximum credit allocation available.
+                You already have the maximum credit allocation.
               </p>
             </div>
-          ) : (
-            upgradeTiers.map((plan) => {
-              const meta = PLAN_META[plan.id] || PLAN_META.free;
-              const Icon = meta.icon;
-              const isLoading = loadingPlan === plan.id;
-              const creditIncrease = plan.credits - currentCredits;
-              const isRecommended = upgradeTiers.length > 1 && plan.id === upgradeTiers[0].id;
-
-              return (
-                <div
-                  key={plan.id}
-                  className={`relative p-4 rounded-xl border transition-all ${
-                    isRecommended
-                      ? "border-[#0A0A0A] ring-1 ring-[#0A0A0A]"
-                      : "border-[#D4D4D4]"
-                  }`}
-                >
-                  {isRecommended && (
-                    <span className="absolute -top-2.5 left-4 px-2 py-0.5 bg-[#0A0A0A] text-white text-[10px] font-medium rounded-full uppercase tracking-wider">
-                      Recommended
-                    </span>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${meta.bgColor}`}>
-                        <Icon className={`w-5 h-5 ${meta.color}`} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-[#0A0A0A]">{meta.label}</p>
-                          <span className="text-sm text-[#757575]">
-                            {formatPrice(plan.priceInCents)}/mo
-                          </span>
-                        </div>
-                        <p className="text-sm text-[#757575]">
-                          {plan.credits.toLocaleString()} credits/month
-                          <span className="text-green-600 ml-1">
-                            (+{creditIncrease.toLocaleString()})
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleUpgrade(plan.id)}
-                      disabled={!!loadingPlan}
-                      className="px-4 py-2 rounded-lg bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Processing
-                        </>
-                      ) : (
-                        <>
-                          Upgrade
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </>
-                      )}
-                    </button>
-                  </div>
+          </div>
+        ) : (
+          <>
+            {/* Billing adjustment card */}
+            <div className="mx-6 p-4 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA]">
+              {/* Top row: label + annual toggle */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-[#757575]">Billing adjustment</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-emerald-600">
+                    Annual (Save 17%)
+                  </span>
+                  <button
+                    onClick={() => setIsAnnual(!isAnnual)}
+                    className={`relative w-9 h-5 rounded-full transition-colors ${
+                      isAnnual ? "bg-[#0A0A0A]" : "bg-[#D4D4D4]"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                        isAnnual ? "translate-x-4" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
                 </div>
-              );
-            })
-          )}
-        </div>
+              </div>
 
-        {/* Footer */}
-        <div className="px-6 py-5 mt-4 border-t border-[#EBEBEB]">
-          <p className="text-xs text-[#757575] text-center">
-            Credits roll over each month based on your plan's rollover percentage.
-            Upgrades take effect immediately with prorated billing.
-          </p>
-        </div>
+              {/* Price display */}
+              <div className="flex items-baseline gap-2 mb-3">
+                {isAnnual && (
+                  <span className="text-lg text-[#BDBDBD] line-through">
+                    {formatPrice(monthlyDifference)}
+                  </span>
+                )}
+                <span className="text-3xl font-bold text-[#0A0A0A]">
+                  {formatPrice(effectiveDifference)}
+                </span>
+                <span className="text-sm text-[#757575]">due today</span>
+              </div>
+
+              {/* Tier dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#1A1A1A] transition-colors"
+                >
+                  <span>
+                    + {selectedOption?.creditDelta.toLocaleString()} monthly credits
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#E0E0E0] shadow-lg z-20 max-h-64 overflow-y-auto">
+                    {upgradeOptions.map((option) => (
+                      <button
+                        key={option.key}
+                        onClick={() => {
+                          setSelectedTierKey(option.key);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-[#F5F5F5] transition-colors ${
+                          option.key === effectiveSelectedKey
+                            ? "bg-[#F5F5F5] font-medium"
+                            : ""
+                        }`}
+                      >
+                        <span className="text-[#0A0A0A]">
+                          + {option.creditDelta.toLocaleString()} monthly credits
+                        </span>
+                        <span className="text-[#757575] text-xs">
+                          {option.name} — {formatPrice(option.price)}/mo
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bullet points */}
+            <div className="px-6 py-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <Check className="w-4 h-4 text-[#0A0A0A] mt-0.5 shrink-0" />
+                <span className="text-sm text-[#424242]">
+                  You will receive{" "}
+                  <strong>{selectedOption?.creditDelta.toLocaleString()}</strong>{" "}
+                  monthly credits immediately
+                </span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Check className="w-4 h-4 text-[#0A0A0A] mt-0.5 shrink-0" />
+                <span className="text-sm text-[#424242]">
+                  Your plan will update to{" "}
+                  <strong>{formatPrice(isAnnual ? fullNewPrice : newMonthlyPrice)} / month</strong>{" "}
+                  for{" "}
+                  <strong>{selectedOption?.monthlyCredits.toLocaleString()}</strong>{" "}
+                  credits
+                </span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Check className="w-4 h-4 text-[#0A0A0A] mt-0.5 shrink-0" />
+                <span className="text-sm text-[#424242]">Downgrade anytime</span>
+              </div>
+            </div>
+
+            {/* Renewal date */}
+            {renewalDate && (
+              <div className="px-6 pb-2">
+                <p className="text-xs text-[#9E9E9E]">
+                  Next billing cycle and plan renew{" "}
+                  <strong className="text-[#616161]">
+                    {formatRenewalDate(renewalDate)}
+                  </strong>
+                </p>
+              </div>
+            )}
+
+            {/* Footer buttons */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#EBEBEB]">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-[#424242] hover:text-[#0A0A0A] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpgrade}
+                disabled={isUpgrading || !effectiveSelectedKey}
+                className="px-5 py-2 rounded-lg bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#1A1A1A] transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isUpgrading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Upgrade"
+                )}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

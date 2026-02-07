@@ -21,7 +21,7 @@ import {
   getCustomerInvoices,
   getAllCustomerInvoices,
 } from "../stripe/stripeService";
-import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "../stripe/stripeProducts";
+import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage, PAID_PLAN_ORDER, PLAN_ORDER } from "../stripe/stripeProducts";
 import { PLAN_TIERS } from "../../drizzle/schema";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { SlackAlerts } from "../slack/slackNotification";
@@ -49,6 +49,7 @@ export const billingRouter = router({
         credits: pkg.credits,
       })),
       tiers: PLAN_TIERS,
+      planOrder: PLAN_ORDER,
     };
   }),
 
@@ -77,7 +78,7 @@ export const billingRouter = router({
       currentPeriodStart: subscription.currentPeriodStart,
       currentPeriodEnd: subscription.currentPeriodEnd,
       lastRefreshAt: subscription.lastRefreshAt,
-      canUpgrade: subscription.planTier !== "studio" && subscription.planTier !== "enterprise",
+      canUpgrade: subscription.planTier !== "ultimate",
       canManage: !!subscription.stripeSubscriptionId,
       stripeCustomerId: subscription.stripeCustomerId,
       hasSubscription: !!subscription.stripeSubscriptionId && subscription.subscriptionStatus === "active",
@@ -87,7 +88,7 @@ export const billingRouter = router({
   // Create checkout session for subscription
   createSubscriptionCheckout: protectedProcedure
     .input(z.object({
-      plan: z.enum(["starter", "pro", "studio"]),
+      plan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
       interval: z.enum(["monthly", "annual"]).optional().default("monthly"),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -328,7 +329,7 @@ export const billingRouter = router({
   // Preview proration for plan change
   previewPlanChange: protectedProcedure
     .input(z.object({
-      newPlan: z.enum(["starter", "pro", "studio"]),
+      newPlan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
     }))
     .query(async ({ ctx, input }) => {
       const subscription = await getSubscriptionByUserId(ctx.user.id);
@@ -450,7 +451,7 @@ export const billingRouter = router({
   // Change subscription plan with proration
   changePlan: protectedProcedure
     .input(z.object({
-      newPlan: z.enum(["starter", "pro", "studio"]),
+      newPlan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
     }))
     .mutation(async ({ ctx, input }) => {
       const subscription = await getSubscriptionByUserId(ctx.user.id);

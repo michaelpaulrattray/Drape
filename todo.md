@@ -3178,3 +3178,21 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Add Credits button opens wrong modal
 - [x] Add Credits button in billing tab should open CreditTopupModal directly, not BillingModal
+
+## Feature: Progressive Tier-Based Credit System (Manus-style)
+- [ ] Investigate current billing/credit system
+- [ ] Design progressive tier structure
+- [ ] Redesign CreditTopupModal UI
+- [ ] Update billing routes/backend for tier upgrades
+- [ ] Update Stripe integration for prorated tier changes
+- [ ] Verify and checkpoint
+
+### Implementation Steps
+- [x] Step 1a: Update PLAN_TIERS in drizzle/schema.ts with 12 tiers + update planTier enum
+- [x] Step 1b: Update stripeProducts.ts with new subscription products + PLAN_ORDER export
+- [x] Step 1c: Update billing routes to accept new tier names + canUpgrade logic
+- [x] Step 1d: ALTER TABLE for enum, build passes, 0 TS errors, 591 tests pass
+- [x] Step 2a: Rewrite CreditTopupModal with Manus-style design (light theme)
+- [x] Step 2b: Update BillingModal to handle expanded tiers + BillingTab dynamic labels
+- [x] Step 2c: Build passes, 0 TS errors, 591 tests pass
+- [x] Checkpoint

@@ -1,0 +1,1 @@
+ALTER TABLE `points` MODIFY COLUMN `planTier` enum('free','starter','pro','studio','studio_plus','business','business_plus','scale','scale_plus','enterprise','enterprise_plus','ultimate') NOT NULL DEFAULT 'free';

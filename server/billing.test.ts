@@ -6,9 +6,17 @@ import { calculateRolloverCredits, getMonthlyCredits, mapStripeStatus, mapPlanTo
 describe("Billing - Plan Tiers Configuration", () => {
   it("should have correct pricing for all tiers", () => {
     expect(PLAN_TIERS.free.price).toBe(0);
-    expect(PLAN_TIERS.starter.price).toBe(1200); // $12
-    expect(PLAN_TIERS.pro.price).toBe(2900); // $29
-    expect(PLAN_TIERS.studio.price).toBe(5900); // $59
+    expect(PLAN_TIERS.starter.price).toBe(1200);
+    expect(PLAN_TIERS.pro.price).toBe(2900);
+    expect(PLAN_TIERS.studio.price).toBe(5900);
+    expect(PLAN_TIERS.studio_plus.price).toBe(12900);
+    expect(PLAN_TIERS.business.price).toBe(27900);
+    expect(PLAN_TIERS.business_plus.price).toBe(59900);
+    expect(PLAN_TIERS.scale.price).toBe(129900);
+    expect(PLAN_TIERS.scale_plus.price).toBe(249900);
+    expect(PLAN_TIERS.enterprise.price).toBe(499900);
+    expect(PLAN_TIERS.enterprise_plus.price).toBe(899900);
+    expect(PLAN_TIERS.ultimate.price).toBe(1499900);
   });
 
   it("should have correct monthly credits for all tiers", () => {
@@ -16,6 +24,14 @@ describe("Billing - Plan Tiers Configuration", () => {
     expect(PLAN_TIERS.starter.monthlyCredits).toBe(1500);
     expect(PLAN_TIERS.pro.monthlyCredits).toBe(4000);
     expect(PLAN_TIERS.studio.monthlyCredits).toBe(10000);
+    expect(PLAN_TIERS.studio_plus.monthlyCredits).toBe(25000);
+    expect(PLAN_TIERS.business.monthlyCredits).toBe(60000);
+    expect(PLAN_TIERS.business_plus.monthlyCredits).toBe(150000);
+    expect(PLAN_TIERS.scale.monthlyCredits).toBe(400000);
+    expect(PLAN_TIERS.scale_plus.monthlyCredits).toBe(800000);
+    expect(PLAN_TIERS.enterprise.monthlyCredits).toBe(1500000);
+    expect(PLAN_TIERS.enterprise_plus.monthlyCredits).toBe(3000000);
+    expect(PLAN_TIERS.ultimate.monthlyCredits).toBe(6000000);
   });
 
   it("should have correct rollover percentages", () => {
@@ -23,6 +39,18 @@ describe("Billing - Plan Tiers Configuration", () => {
     expect(PLAN_TIERS.starter.rolloverPercent).toBe(50);
     expect(PLAN_TIERS.pro.rolloverPercent).toBe(75);
     expect(PLAN_TIERS.studio.rolloverPercent).toBe(100);
+    expect(PLAN_TIERS.ultimate.rolloverPercent).toBe(100);
+  });
+
+  it("should have 12 total tiers", () => {
+    expect(Object.keys(PLAN_TIERS).length).toBe(12);
+  });
+
+  it("should have progressively increasing credits", () => {
+    const tiers = Object.values(PLAN_TIERS);
+    for (let i = 1; i < tiers.length; i++) {
+      expect(tiers[i].monthlyCredits).toBeGreaterThan(tiers[i - 1].monthlyCredits);
+    }
   });
 });
 
@@ -126,7 +154,14 @@ describe("Billing - Monthly Credits", () => {
     expect(getMonthlyCredits("starter")).toBe(1500);
     expect(getMonthlyCredits("pro")).toBe(4000);
     expect(getMonthlyCredits("studio")).toBe(10000);
-    expect(getMonthlyCredits("enterprise")).toBe(50000);
+    expect(getMonthlyCredits("studio_plus")).toBe(25000);
+    expect(getMonthlyCredits("business")).toBe(60000);
+    expect(getMonthlyCredits("business_plus")).toBe(150000);
+    expect(getMonthlyCredits("scale")).toBe(400000);
+    expect(getMonthlyCredits("scale_plus")).toBe(800000);
+    expect(getMonthlyCredits("enterprise")).toBe(1500000);
+    expect(getMonthlyCredits("enterprise_plus")).toBe(3000000);
+    expect(getMonthlyCredits("ultimate")).toBe(6000000);
   });
 });
 

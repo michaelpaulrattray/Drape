@@ -124,13 +124,9 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
   const currentPlan = status?.planTier || "free";
 
   const getPlanOrder = (plan: string) => {
-    switch (plan) {
-      case "free": return 0;
-      case "starter": return 1;
-      case "pro": return 2;
-      case "studio": return 3;
-      default: return 0;
-    }
+    const order = plans?.planOrder || [];
+    const idx = order.indexOf(plan as any);
+    return idx >= 0 ? idx : 0;
   };
 
   // Plan Change Confirmation Dialog
@@ -334,7 +330,7 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
 
                 {/* Action Button */}
                 <button
-                  onClick={() => handleSubscribe(plan.id as "starter" | "pro" | "studio")}
+                  onClick={() => handleSubscribe(plan.id as any)}
                   disabled={isCurrentPlan || isLoading}
                   className={`w-full py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 mb-5 ${
                     isCurrentPlan

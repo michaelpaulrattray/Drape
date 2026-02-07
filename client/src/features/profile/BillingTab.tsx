@@ -56,25 +56,18 @@ export function BillingTab({
     return `$${(cents / 100).toFixed(2)}`;
   };
 
+  const { data: plans } = trpc.billing.getPlans.useQuery();
+
   const getPlanLabel = (tier: string) => {
-    switch (tier) {
-      case "starter": return "FormaStudio Starter";
-      case "pro": return "FormaStudio Pro";
-      case "studio": return "FormaStudio Studio";
-      case "enterprise": return "FormaStudio Enterprise";
-      default: return "Free Plan";
-    }
+    const tierData = plans?.tiers?.[tier as keyof typeof plans.tiers];
+    if (tierData && tier !== "free") return `FormaStudio ${tierData.name}`;
+    return "Free Plan";
   };
 
   // Get plan monthly credits allocation
   const getPlanCredits = (tier: string) => {
-    switch (tier) {
-      case "starter": return 1500;
-      case "pro": return 4000;
-      case "studio": return 10000;
-      case "enterprise": return 50000;
-      default: return 100;
-    }
+    const tierData = plans?.tiers?.[tier as keyof typeof plans.tiers];
+    return tierData?.monthlyCredits || 100;
   };
 
   const monthlyAllocation = getPlanCredits(planTier);

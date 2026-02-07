@@ -40,10 +40,17 @@ export type InsertUser = typeof users.$inferInsert;
  */
 export const PLAN_TIERS = {
   free: { name: 'Free', monthlyCredits: 100, price: 0, rolloverPercent: 0 },
-  starter: { name: 'Starter', monthlyCredits: 1500, price: 1200, rolloverPercent: 50 }, // $12/month in cents
-  pro: { name: 'Pro', monthlyCredits: 4000, price: 2900, rolloverPercent: 75 }, // $29/month
-  studio: { name: 'Studio', monthlyCredits: 10000, price: 5900, rolloverPercent: 100 }, // $59/month
-  enterprise: { name: 'Enterprise', monthlyCredits: 50000, price: 0, rolloverPercent: 100 }, // Custom pricing
+  starter: { name: 'Starter', monthlyCredits: 1500, price: 1200, rolloverPercent: 50 },           // $12/mo
+  pro: { name: 'Pro', monthlyCredits: 4000, price: 2900, rolloverPercent: 75 },                   // $29/mo
+  studio: { name: 'Studio', monthlyCredits: 10000, price: 5900, rolloverPercent: 100 },            // $59/mo
+  studio_plus: { name: 'Studio Plus', monthlyCredits: 25000, price: 12900, rolloverPercent: 100 }, // $129/mo
+  business: { name: 'Business', monthlyCredits: 60000, price: 27900, rolloverPercent: 100 },       // $279/mo
+  business_plus: { name: 'Business Plus', monthlyCredits: 150000, price: 59900, rolloverPercent: 100 }, // $599/mo
+  scale: { name: 'Scale', monthlyCredits: 400000, price: 129900, rolloverPercent: 100 },           // $1,299/mo
+  scale_plus: { name: 'Scale Plus', monthlyCredits: 800000, price: 249900, rolloverPercent: 100 }, // $2,499/mo
+  enterprise: { name: 'Enterprise', monthlyCredits: 1500000, price: 499900, rolloverPercent: 100 }, // $4,999/mo
+  enterprise_plus: { name: 'Enterprise Plus', monthlyCredits: 3000000, price: 899900, rolloverPercent: 100 }, // $8,999/mo
+  ultimate: { name: 'Ultimate', monthlyCredits: 6000000, price: 1499900, rolloverPercent: 100 },   // $14,999/mo
 } as const;
 
 export type PlanTier = keyof typeof PLAN_TIERS;
@@ -56,7 +63,7 @@ export const credits = mysqlTable("points", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
   balance: int("balance").notNull().default(100),
-  planTier: mysqlEnum("planTier", ["free", "starter", "pro", "studio", "enterprise"]).default("free").notNull(),
+  planTier: mysqlEnum("planTier", ["free", "starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]).default("free").notNull(),
   planExpiresAt: timestamp("planExpiresAt"),
   // Stripe subscription tracking
   stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
