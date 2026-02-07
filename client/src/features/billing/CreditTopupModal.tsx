@@ -61,12 +61,15 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
   const newMonthlyPrice = selectedOption?.price || 0;
 
   // "Due today" calculation:
-  // - Free users: full price of the new tier (with annual discount if toggled)
+  // - Free users monthly: full monthly price of the new tier
+  // - Free users annual: full year upfront (monthly × 12 × (1 - discount))
   // - Existing subscribers: prorated immediate charge from Stripe
+  const annualFullYear = newMonthlyPrice * 12;
+  const annualDiscounted = Math.round(annualFullYear * (1 - ANNUAL_DISCOUNT));
+
   const getDueToday = () => {
     if (isFreeUser) {
-      const fullPrice = newMonthlyPrice;
-      return isAnnual ? Math.round(fullPrice * (1 - ANNUAL_DISCOUNT)) : fullPrice;
+      return isAnnual ? annualDiscounted : newMonthlyPrice;
     }
     // Existing subscriber: use Stripe's prorated amount
     if (prorationPreview) {
@@ -77,11 +80,11 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
 
   const dueToday = getDueToday();
 
-  // Strikethrough: show full monthly price when annual is toggled (for free users)
+  // Strikethrough: show full year price (without discount) when annual is toggled
   const showStrikethrough = isAnnual && isFreeUser;
-  const strikethroughPrice = newMonthlyPrice;
+  const strikethroughPrice = annualFullYear;
 
-  // New monthly rate going forward
+  // New monthly rate going forward (for the bullet point)
   const newMonthlyRate = isAnnual
     ? Math.round(newMonthlyPrice * (1 - ANNUAL_DISCOUNT))
     : newMonthlyPrice;
