@@ -114,7 +114,7 @@ export function BillingTab({
               <button
                 onClick={() => {
                   onClose();
-                  onOpenBilling?.();
+                  onOpenTopup?.();
                 }}
                 className="px-4 py-1.5 rounded-lg border border-[#0A0A0A] text-[#0A0A0A] text-sm font-medium hover:bg-[#0A0A0A] hover:text-white transition-colors"
               >

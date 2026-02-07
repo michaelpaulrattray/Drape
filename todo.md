@@ -3175,3 +3175,6 @@ The entry and configuration files are properly set up with several enhancements 
 ## P4 Addendum: Delete dead .txt files
 - [x] Delete layout-analysis.txt, layout-check.txt, layout-observations.txt
 - [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+## Bug Fix: Add Credits button opens wrong modal
+- [x] Add Credits button in billing tab should open CreditTopupModal directly, not BillingModal
