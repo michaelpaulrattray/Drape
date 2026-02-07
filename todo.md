@@ -3320,3 +3320,10 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Moderator User Investigation — Show User IDs
 - [x] Add user ID display to moderator user investigation tab (matching admin panel: font-mono #id prefix)
+
+## Bug Fix: Moderator User Detail — Filters Not Working
+- [x] Lift filter state (creditTypeFilter, creditPage, genStatusFilter, genTypeFilter, genPage) from UserInvestigationTab to ModeratorDashboard
+- [x] Wire filter state into getUserCreditHistory and getUserGenerationHistory query inputs
+- [x] Fix generation status filter: "queued" → "pending" to match backend enum
+- [x] Fix generation type filter: headshot/full_body/creative/background_swap → masterPrompt/castingImage/fullBody/multiView/iteration/upscale to match backend enum
+- [x] 639 tests passing, 0 TypeScript errors

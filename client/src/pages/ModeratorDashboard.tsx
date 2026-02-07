@@ -56,6 +56,13 @@ export default function ModeratorDashboard() {
   const [userPage, setUserPage] = useState(0);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
+  // User detail filter state (lifted from UserInvestigationTab so queries get real values)
+  const [creditTypeFilter, setCreditTypeFilter] = useState("all");
+  const [creditPage, setCreditPage] = useState(0);
+  const [genStatusFilter, setGenStatusFilter] = useState("all");
+  const [genTypeFilter, setGenTypeFilter] = useState("all");
+  const [genPage, setGenPage] = useState(0);
+
   // Flagged referrals state
   const [flaggedPage, setFlaggedPage] = useState(0);
 
@@ -103,12 +110,12 @@ export default function ModeratorDashboard() {
   );
 
   const creditHistoryQuery = trpc.moderator.getUserCreditHistory.useQuery(
-    { userId: selectedUserId!, limit: 20, offset: 0, type: "all" as any },
+    { userId: selectedUserId!, limit: 20, offset: creditPage * 20, type: creditTypeFilter as any },
     { enabled: !!selectedUserId }
   );
 
   const generationHistoryQuery = trpc.moderator.getUserGenerationHistory.useQuery(
-    { userId: selectedUserId!, limit: 20, offset: 0, status: "all" as any, type: "all" as any },
+    { userId: selectedUserId!, limit: 20, offset: genPage * 20, status: genStatusFilter as any, type: genTypeFilter as any },
     { enabled: !!selectedUserId }
   );
 
@@ -264,6 +271,11 @@ export default function ModeratorDashboard() {
             selectedUserId={selectedUserId} setSelectedUserId={setSelectedUserId}
             userTotalPages={userTotalPages}
             onSelectLog={setSelectedLog} onOpenChangeRequest={openChangeRequest}
+            creditTypeFilter={creditTypeFilter} setCreditTypeFilter={setCreditTypeFilter}
+            creditPage={creditPage} setCreditPage={setCreditPage}
+            genStatusFilter={genStatusFilter} setGenStatusFilter={setGenStatusFilter}
+            genTypeFilter={genTypeFilter} setGenTypeFilter={setGenTypeFilter}
+            genPage={genPage} setGenPage={setGenPage}
           />
         )}
 

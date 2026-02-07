@@ -44,6 +44,16 @@ interface UserInvestigationTabProps {
   userTotalPages: number;
   onSelectLog: (log: AuditLog) => void;
   onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
+  creditTypeFilter: string;
+  setCreditTypeFilter: (v: string) => void;
+  creditPage: number;
+  setCreditPage: (fn: (p: number) => number) => void;
+  genStatusFilter: string;
+  setGenStatusFilter: (v: string) => void;
+  genTypeFilter: string;
+  setGenTypeFilter: (v: string) => void;
+  genPage: number;
+  setGenPage: (fn: (p: number) => number) => void;
 }
 
 export function UserInvestigationTab({
@@ -61,19 +71,24 @@ export function UserInvestigationTab({
   userTotalPages,
   onSelectLog,
   onOpenChangeRequest,
+  creditTypeFilter,
+  setCreditTypeFilter,
+  creditPage,
+  setCreditPage,
+  genStatusFilter,
+  setGenStatusFilter,
+  genTypeFilter,
+  setGenTypeFilter,
+  genPage,
+  setGenPage,
 }: UserInvestigationTabProps) {
   const [userDetailTab, setUserDetailTab] = useState<"overview" | "credits" | "generations">("overview");
-  const [creditTypeFilter, setCreditTypeFilter] = useState("all");
-  const [creditPage, setCreditPage] = useState(0);
-  const [genStatusFilter, setGenStatusFilter] = useState("all");
-  const [genTypeFilter, setGenTypeFilter] = useState("all");
-  const [genPage, setGenPage] = useState(0);
 
   const handleSelectUser = (id: number) => {
     setSelectedUserId(id);
     setUserDetailTab("overview");
-    setCreditPage(0);
-    setGenPage(0);
+    setCreditPage(() => 0);
+    setGenPage(() => 0);
     setCreditTypeFilter("all");
     setGenStatusFilter("all");
     setGenTypeFilter("all");

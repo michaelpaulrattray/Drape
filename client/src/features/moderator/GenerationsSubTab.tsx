@@ -79,7 +79,7 @@ export function GenerationsSubTab({
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
               <SelectItem value="processing">Processing</SelectItem>
-              <SelectItem value="queued">Queued</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
             </SelectContent>
           </Select>
           <Select value={genTypeFilter} onValueChange={(v) => { setGenTypeFilter(v); setGenPage(() => 0); }}>
@@ -88,10 +88,12 @@ export function GenerationsSubTab({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="headshot">Headshot</SelectItem>
-              <SelectItem value="full_body">Full Body</SelectItem>
-              <SelectItem value="creative">Creative</SelectItem>
-              <SelectItem value="background_swap">BG Swap</SelectItem>
+              <SelectItem value="masterPrompt">Master Prompt</SelectItem>
+              <SelectItem value="castingImage">Casting Image</SelectItem>
+              <SelectItem value="fullBody">Full Body</SelectItem>
+              <SelectItem value="multiView">Multi View</SelectItem>
+              <SelectItem value="iteration">Iteration</SelectItem>
+              <SelectItem value="upscale">Upscale</SelectItem>
             </SelectContent>
           </Select>
         </div>
