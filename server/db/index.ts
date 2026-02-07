@@ -139,6 +139,8 @@ export {
   claimReferral,
   redeemReferralCode,
   completeReferral,
+  creditReferrerOnPaidAction,
+  getReferralCreditsEarned,
   getReferralStats,
   getReferralHistory,
   recordEmailInvite,

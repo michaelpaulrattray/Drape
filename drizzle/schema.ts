@@ -434,27 +434,34 @@ export type InsertChangeRequest = typeof changeRequests.$inferInsert;
 
 /**
  * Referrals table for tracking user-to-user referrals.
- * Credits awarded to both parties when referred user completes first generation.
+ *
+ * Flow: pending → signed_up → completed (referee first gen, referee gets credits)
+ *                            → subscribed (referee pays, referrer gets credits)
+ *
+ * Reward: 250 credits per party. Referee on first generation, referrer on first paid action.
+ * Lifetime cap: 5,000 credits earned via referrals per user.
  */
-export const REFERRAL_REWARD_CREDITS = 500;
+export const REFERRAL_REWARD_CREDITS = 250;
+export const REFERRAL_LIFETIME_CAP = 5000; // Max credits a user can earn from referrals
 
 export const referrals = mysqlTable("referrals", {
   id: int("id").autoincrement().primaryKey(),
   referrerUserId: int("referrerUserId").notNull(), // User who shared the link
   referredUserId: int("referredUserId"), // User who signed up (null until signup)
   referredEmail: varchar("referredEmail", { length: 320 }), // Optional: track invited email
-  status: mysqlEnum("status", ["pending", "signed_up", "completed", "expired"]).default("pending").notNull(),
+  status: mysqlEnum("status", ["pending", "signed_up", "completed", "subscribed", "expired"]).default("pending").notNull(),
   // pending = link shared but no signup yet
   // signed_up = referred user created account
-  // completed = referred user did first generation, credits awarded
+  // completed = referred user did first generation → referee credited
+  // subscribed = referred user made first paid subscription → referrer credited
   // expired = referral link expired (optional TTL)
   referrerCredited: boolean("referrerCredited").default(false).notNull(),
   referredCredited: boolean("referredCredited").default(false).notNull(),
   creditsAwarded: int("creditsAwarded").default(0).notNull(), // Credits given to each party
   referrerIp: varchar("referrerIp", { length: 45 }), // IP of referrer when invite sent
   referredIp: varchar("referredIp", { length: 45 }), // IP of referred user on claim
-  sameIpFlag: boolean("sameIpFlag").default(false).notNull(), // Fraud flag: same IP as referrer
-  completedAt: timestamp("completedAt"), // When first generation happened
+  sameIpFlag: boolean("sameIpFlag").default(false).notNull(), // Fraud flag: same IP within 24hrs
+  completedAt: timestamp("completedAt"), // When referee first generation happened
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

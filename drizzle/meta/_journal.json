@@ -155,6 +155,13 @@
       "when": 1770470547343,
       "tag": "0021_parched_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1770471233109,
+      "tag": "0022_flat_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

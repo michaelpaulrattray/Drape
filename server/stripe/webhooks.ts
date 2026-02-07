@@ -23,6 +23,7 @@ import {
   unsuspendUser,
   deductCredits,
   addCredits,
+  creditReferrerOnPaidAction,
 } from "../db";
 import { SlackAlerts } from "../slack/slackNotification";
 import { CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
@@ -121,7 +122,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     return { success: true, message: `Added ${credits} credits to user ${userId}` };
   }
 
-  // For subscriptions, the subscription.created event will handle the rest
+  // For subscriptions — trigger referral credit for referrer on first paid action
+  try {
+    const credited = await creditReferrerOnPaidAction(userId);
+    if (credited) {
+      console.log(`[Webhook] Referrer credited for user ${userId}'s first paid subscription`);
+    }
+  } catch (err) {
+    console.error(`[Webhook] Failed to credit referrer for user ${userId}:`, err);
+    // Non-blocking — don't fail the webhook for referral credit issues
+  }
+
   return { success: true, message: "Checkout completed, subscription will be processed separately" };
 }
 

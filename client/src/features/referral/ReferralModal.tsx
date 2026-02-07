@@ -53,7 +53,7 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
     sendInviteMutation.mutate({ email: email.trim() });
   };
 
-  const rewardCredits = codeData?.rewardCredits ?? 500;
+  const rewardCredits = codeData?.rewardCredits ?? 250;
 
   return (
     <>
@@ -83,11 +83,15 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
               Share Forma with a friend
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              You both get{" "}
+              You get{" "}
               <span className="font-medium text-foreground">
                 {rewardCredits.toLocaleString()} credits
               </span>{" "}
-              when they complete their first generation.
+              when they subscribe. They get{" "}
+              <span className="font-medium text-foreground">
+                {rewardCredits.toLocaleString()} credits
+              </span>{" "}
+              on their first generation.
             </p>
           </div>
 
@@ -161,6 +165,9 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
                 </div>
                 <div className="text-lg font-semibold">
                   {(stats?.totalCreditsEarned ?? 0).toLocaleString()}
+                  <span className="text-xs text-muted-foreground font-normal">
+                    /{(stats?.lifetimeCap ?? 5000).toLocaleString()}
+                  </span>
                 </div>
               </div>
               <div className="bg-muted/40 border border-border rounded-lg p-3 text-center">

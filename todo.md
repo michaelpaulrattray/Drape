@@ -3237,3 +3237,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Security: log IP on referral signup, flag same IP as referrer, audit log all referral actions
 - [x] Security: credits only after first generation (already implemented), multi-claim prevention
 - [x] Tests for new endpoints and security checks (25 tests, 616 total passing)
+
+## Feature: Referral Fraud Prevention (Proxy-Resistant)
+- [x] Block disposable email domains on sendInvite (guerrillamail, tempmail, mailinator, etc.)
+- [x] Change credit award trigger: referrer gets credits only after referee completes first PAID action (Stripe webhook)
+- [x] Cap lifetime referral earnings per user (5,000 credits max)
+- [x] Calibrate referral reward amount to 250 credits per party (was 500)
+- [x] Change same-IP behavior: soft flag for moderator review within 24hr window (no auto-block)
+- [x] Update tests for all new fraud prevention rules (43 referral tests, 634 total passing)

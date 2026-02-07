@@ -1,0 +1,1 @@
+ALTER TABLE `referrals` MODIFY COLUMN `status` enum('pending','signed_up','completed','subscribed','expired') NOT NULL DEFAULT 'pending';

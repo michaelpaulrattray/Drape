@@ -13,6 +13,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
+import { isDisposableEmail } from "../security/disposableEmails";
 
 /** Rate limit configs */
 const INVITE_RATE = { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000, keyPrefix: "ref-invite" };
@@ -90,6 +91,14 @@ export const referralRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "You cannot invite yourself",
+        });
+      }
+
+      // Block disposable email domains
+      if (isDisposableEmail(input.email)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Please use a permanent email address",
         });
       }
 

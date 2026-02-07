@@ -7,6 +7,8 @@ vi.mock("./db/referrals", () => ({
   claimReferral: vi.fn(),
   redeemReferralCode: vi.fn(),
   completeReferral: vi.fn(),
+  creditReferrerOnPaidAction: vi.fn(),
+  getReferralCreditsEarned: vi.fn(),
   getReferralStats: vi.fn(),
   getReferralHistory: vi.fn(),
   recordEmailInvite: vi.fn(),
@@ -19,17 +21,23 @@ import {
   claimReferral,
   redeemReferralCode,
   completeReferral,
+  creditReferrerOnPaidAction,
+  getReferralCreditsEarned,
   getReferralStats,
   getReferralHistory,
   recordEmailInvite,
   isValidReferralCodeFormat,
 } from "./db/referrals";
 
+import { isDisposableEmail } from "./security/disposableEmails";
+
 const mockGetOrCreateReferralCode = vi.mocked(getOrCreateReferralCode);
 const mockGetUserByReferralCode = vi.mocked(getUserByReferralCode);
 const mockClaimReferral = vi.mocked(claimReferral);
 const mockRedeemReferralCode = vi.mocked(redeemReferralCode);
 const mockCompleteReferral = vi.mocked(completeReferral);
+const mockCreditReferrerOnPaidAction = vi.mocked(creditReferrerOnPaidAction);
+const mockGetReferralCreditsEarned = vi.mocked(getReferralCreditsEarned);
 const mockGetReferralStats = vi.mocked(getReferralStats);
 const mockGetReferralHistory = vi.mocked(getReferralHistory);
 const mockRecordEmailInvite = vi.mocked(recordEmailInvite);
@@ -154,8 +162,8 @@ describe("Referral System", () => {
     });
   });
 
-  describe("Referral Completion (First Generation)", () => {
-    it("should award credits on first generation by referred user", async () => {
+  describe("Split Credit Flow — Referee on First Generation", () => {
+    it("should award credits to REFEREE on first generation", async () => {
       mockCompleteReferral.mockResolvedValue(true);
       const result = await completeReferral(2);
       expect(result).toBe(true);
@@ -174,18 +182,75 @@ describe("Referral System", () => {
     });
   });
 
-  describe("Referral Stats", () => {
-    it("should return referral statistics for a user", async () => {
+  describe("Split Credit Flow — Referrer on First Paid Action", () => {
+    it("should award credits to REFERRER when referee subscribes", async () => {
+      mockCreditReferrerOnPaidAction.mockResolvedValue(true);
+      const result = await creditReferrerOnPaidAction(2);
+      expect(result).toBe(true);
+    });
+
+    it("should not award if referee has no referral record", async () => {
+      mockCreditReferrerOnPaidAction.mockResolvedValue(false);
+      const result = await creditReferrerOnPaidAction(99);
+      expect(result).toBe(false);
+    });
+
+    it("should be idempotent (no double-award on multiple webhooks)", async () => {
+      mockCreditReferrerOnPaidAction.mockResolvedValue(false);
+      const result = await creditReferrerOnPaidAction(2);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("Lifetime Referral Cap", () => {
+    it("should track lifetime referral credits earned", async () => {
+      mockGetReferralCreditsEarned.mockResolvedValue(2500);
+      const earned = await getReferralCreditsEarned(1);
+      expect(earned).toBe(2500);
+    });
+
+    it("should block referrer credit when lifetime cap reached", async () => {
+      // When earned >= 5000, creditReferrerOnPaidAction returns false
+      mockCreditReferrerOnPaidAction.mockResolvedValue(false);
+      mockGetReferralCreditsEarned.mockResolvedValue(5000);
+      const result = await creditReferrerOnPaidAction(2);
+      expect(result).toBe(false);
+    });
+
+    it("should still allow credits when under cap", async () => {
+      mockCreditReferrerOnPaidAction.mockResolvedValue(true);
+      mockGetReferralCreditsEarned.mockResolvedValue(4750);
+      const result = await creditReferrerOnPaidAction(2);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe("Reward Calibration", () => {
+    it("should award 250 credits per successful referral", async () => {
+      const { REFERRAL_REWARD_CREDITS } = await import("../drizzle/schema");
+      expect(REFERRAL_REWARD_CREDITS).toBe(250);
+    });
+
+    it("should have a lifetime cap of 5000 credits", async () => {
+      const { REFERRAL_LIFETIME_CAP } = await import("../drizzle/schema");
+      expect(REFERRAL_LIFETIME_CAP).toBe(5000);
+    });
+  });
+
+  describe("Referral Stats (includes lifetimeCap)", () => {
+    it("should return referral statistics with lifetime cap", async () => {
       mockGetReferralStats.mockResolvedValue({
         totalReferrals: 5,
         completedReferrals: 3,
-        totalCreditsEarned: 1500,
+        totalCreditsEarned: 750,
+        lifetimeCap: 5000,
         referralCode: "FORMA-ABC123",
       });
       const stats = await getReferralStats(1);
       expect(stats.totalReferrals).toBe(5);
       expect(stats.completedReferrals).toBe(3);
-      expect(stats.totalCreditsEarned).toBe(1500);
+      expect(stats.totalCreditsEarned).toBe(750);
+      expect(stats.lifetimeCap).toBe(5000);
       expect(stats.referralCode).toBe("FORMA-ABC123");
     });
 
@@ -194,11 +259,13 @@ describe("Referral System", () => {
         totalReferrals: 0,
         completedReferrals: 0,
         totalCreditsEarned: 0,
+        lifetimeCap: 5000,
         referralCode: null,
       });
       const stats = await getReferralStats(99);
       expect(stats.totalReferrals).toBe(0);
       expect(stats.totalCreditsEarned).toBe(0);
+      expect(stats.lifetimeCap).toBe(5000);
     });
   });
 
@@ -209,8 +276,8 @@ describe("Referral System", () => {
           id: 1,
           referredName: "Alice",
           referredEmail: "alice@example.com",
-          status: "completed",
-          creditsAwarded: 500,
+          status: "subscribed",
+          creditsAwarded: 250,
           sameIpFlag: false,
           createdAt: new Date("2025-01-01"),
           completedAt: new Date("2025-01-02"),
@@ -229,8 +296,8 @@ describe("Referral System", () => {
       mockGetReferralHistory.mockResolvedValue(mockHistory);
       const history = await getReferralHistory(1);
       expect(history).toHaveLength(2);
-      expect(history[0].status).toBe("completed");
-      expect(history[0].creditsAwarded).toBe(500);
+      expect(history[0].status).toBe("subscribed");
+      expect(history[0].creditsAwarded).toBe(250);
       expect(history[1].status).toBe("pending");
     });
 
@@ -259,23 +326,61 @@ describe("Referral System", () => {
     });
   });
 
-  describe("Reward Credits Constant", () => {
-    it("should award 500 credits per successful referral", async () => {
-      const { REFERRAL_REWARD_CREDITS } = await import("../drizzle/schema");
-      expect(REFERRAL_REWARD_CREDITS).toBe(500);
+  describe("Disposable Email Blocking", () => {
+    it("should block guerrillamail.com", () => {
+      expect(isDisposableEmail("user@guerrillamail.com")).toBe(true);
+    });
+
+    it("should block tempmail.com", () => {
+      expect(isDisposableEmail("user@tempmail.com")).toBe(true);
+    });
+
+    it("should block mailinator.com", () => {
+      expect(isDisposableEmail("user@mailinator.com")).toBe(true);
+    });
+
+    it("should block yopmail.com", () => {
+      expect(isDisposableEmail("user@yopmail.com")).toBe(true);
+    });
+
+    it("should block throwaway.email", () => {
+      expect(isDisposableEmail("user@throwaway.email")).toBe(true);
+    });
+
+    it("should block 10minutemail.com", () => {
+      expect(isDisposableEmail("user@10minutemail.com")).toBe(true);
+    });
+
+    it("should allow gmail.com", () => {
+      expect(isDisposableEmail("user@gmail.com")).toBe(false);
+    });
+
+    it("should allow outlook.com", () => {
+      expect(isDisposableEmail("user@outlook.com")).toBe(false);
+    });
+
+    it("should allow custom domains", () => {
+      expect(isDisposableEmail("mike@formastudio.ai")).toBe(false);
+    });
+
+    it("should be case-insensitive", () => {
+      expect(isDisposableEmail("user@GUERRILLAMAIL.COM")).toBe(true);
     });
   });
 
-  describe("Fraud Prevention — Same IP Flag", () => {
-    it("should flag referrals from same IP as referrer", async () => {
-      // The sameIpFlag is set during claim and blocks credit award during completion
+  describe("Fraud Prevention — Soft IP Flagging", () => {
+    it("should flag referrals from same IP but still allow claim", async () => {
+      // Same IP within 24hrs = soft flag, NOT auto-block
       mockClaimReferral.mockResolvedValue({ success: true });
       const result = await claimReferral(2, "FORMA-ABC123", "192.168.1.1");
       expect(result.success).toBe(true);
-      // Completion with same IP flag should return false (no credits)
-      mockCompleteReferral.mockResolvedValue(false);
-      const completed = await completeReferral(2);
-      expect(completed).toBe(false);
+    });
+
+    it("should still award referee credits on first generation even if IP flagged", async () => {
+      // Soft flag means credits still flow, just flagged for review
+      mockCompleteReferral.mockResolvedValue(true);
+      const result = await completeReferral(2);
+      expect(result).toBe(true);
     });
   });
 });

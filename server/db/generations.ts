@@ -23,14 +23,15 @@ export async function createGeneration(
       .orderBy(desc(generations.createdAt))
       .limit(1);
 
-    // Check if this is the user's first generation — trigger referral reward
+    // Check if this is the user's first generation — trigger REFEREE credit (welcome bonus)
+    // Referrer credit is awarded separately on first paid subscription (Stripe webhook)
     const allGens = await db
       .select({ id: generations.id })
       .from(generations)
       .where(eq(generations.userId, data.userId))
       .limit(2);
     if (allGens.length === 1) {
-      // First generation ever — try to complete referral (async, non-blocking)
+      // First generation ever — award referee welcome bonus (async, non-blocking)
       import("./referrals").then(({ completeReferral }) => {
         completeReferral(data.userId).catch(() => {});
       }).catch(() => {});

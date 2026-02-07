@@ -1,5 +1,11 @@
-import { eq, and, sql, desc } from "drizzle-orm";
-import { users, referrals, REFERRAL_REWARD_CREDITS, AUDIT_ACTIONS } from "../../drizzle/schema";
+import { eq, and, sql, desc, gte } from "drizzle-orm";
+import {
+  users,
+  referrals,
+  REFERRAL_REWARD_CREDITS,
+  REFERRAL_LIFETIME_CAP,
+  AUDIT_ACTIONS,
+} from "../../drizzle/schema";
 import { addCredits } from "./credits";
 import { getDb } from "./connection";
 import { logAuditEvent } from "../auditLog";
@@ -94,8 +100,57 @@ export async function getUserByReferralCode(
 }
 
 /**
+ * Get total referral credits earned by a user (as referrer).
+ * Used to enforce the lifetime cap.
+ */
+export async function getReferralCreditsEarned(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const rows = await db
+    .select({ creditsAwarded: referrals.creditsAwarded })
+    .from(referrals)
+    .where(
+      and(
+        eq(referrals.referrerUserId, userId),
+        eq(referrals.referrerCredited, true)
+      )
+    );
+
+  return rows.reduce((sum, r) => sum + r.creditsAwarded, 0);
+}
+
+/**
+ * Check if referrer IP was used by referred user within 24 hours.
+ * Soft flag — does NOT block, just marks for moderator review.
+ */
+async function checkSameIpWithin24h(
+  referrerId: number,
+  referredIp: string | undefined
+): Promise<boolean> {
+  if (!referredIp) return false;
+  const db = await getDb();
+  if (!db) return false;
+
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  // Check referrer's own IP from recent referrals they sent
+  const recentReferrals = await db
+    .select({ referrerIp: referrals.referrerIp })
+    .from(referrals)
+    .where(
+      and(
+        eq(referrals.referrerUserId, referrerId),
+        gte(referrals.createdAt, twentyFourHoursAgo)
+      )
+    );
+
+  return recentReferrals.some((r) => r.referrerIp === referredIp);
+}
+
+/**
  * Claim a referral code during/after signup.
- * Security: one-time claim per user ever, self-referral blocked, IP flagging.
+ * Security: one-time claim per user ever, self-referral blocked, IP soft-flagging.
  */
 export async function claimReferral(
   referredUserId: number,
@@ -138,14 +193,8 @@ export async function claimReferral(
     return { success: false, error: "You have already used a referral code" };
   }
 
-  // Check IP match with referrer for fraud detection
-  const [referrerReferrals] = await db
-    .select({ referrerIp: referrals.referrerIp })
-    .from(referrals)
-    .where(eq(referrals.referrerUserId, referrer.id))
-    .limit(1);
-
-  const isSameIp = referredIp && referrerReferrals?.referrerIp === referredIp;
+  // Soft IP flag: check if referred IP matches referrer IP within 24hrs
+  const isSameIp = await checkSameIpWithin24h(referrer.id, referredIp);
 
   // Create the referral record
   await db.insert(referrals).values({
@@ -154,7 +203,7 @@ export async function claimReferral(
     referredEmail: null,
     status: "signed_up",
     referredIp: referredIp || null,
-    sameIpFlag: !!isSameIp,
+    sameIpFlag: isSameIp,
   });
 
   // Update the referred user's record
@@ -169,14 +218,11 @@ export async function claimReferral(
     action: AUDIT_ACTIONS.REFERRAL_CLAIMED,
     resourceType: "referral",
     resourceId: referralCode,
-    metadata: {
-      referrerId: referrer.id,
-      sameIpFlag: !!isSameIp,
-    },
+    metadata: { referrerId: referrer.id, sameIpFlag: isSameIp },
     ipAddress: referredIp,
   });
 
-  // Flag same IP
+  // Soft flag same IP for moderator review (don't block)
   if (isSameIp) {
     await logAuditEvent({
       userId: referredUserId,
@@ -186,6 +232,7 @@ export async function claimReferral(
       metadata: {
         referrerId: referrer.id,
         sharedIp: referredIp,
+        note: "Flagged for moderator review — same IP within 24hrs",
       },
       severity: "warning",
       ipAddress: referredIp,
@@ -221,8 +268,10 @@ export async function redeemReferralCode(
 }
 
 /**
- * Complete a referral and award credits to both parties.
+ * Complete a referral — REFEREE side only.
  * Called when the referred user completes their first generation.
+ * Awards credits to the REFEREE (welcome bonus).
+ * Referrer credits are awarded separately on first paid action.
  * Idempotent: safe to call multiple times.
  */
 export async function completeReferral(referredUserId: number): Promise<boolean> {
@@ -241,55 +290,25 @@ export async function completeReferral(referredUserId: number): Promise<boolean>
     .limit(1);
 
   if (!referral) return false;
-  if (referral.referrerCredited && referral.referredCredited) return false;
-
-  // Block credit award if same IP flagged (fraud prevention)
-  if (referral.sameIpFlag) {
-    await logAuditEvent({
-      userId: referredUserId,
-      action: AUDIT_ACTIONS.REFERRAL_SAME_IP_FLAG,
-      resourceType: "referral",
-      resourceId: String(referral.id),
-      metadata: { blocked: true, reason: "Same IP as referrer" },
-      severity: "warning",
-    });
-    // Still mark as completed but don't award credits
-    await db
-      .update(referrals)
-      .set({ status: "completed", completedAt: new Date() })
-      .where(eq(referrals.id, referral.id));
-    return false;
-  }
+  if (referral.referredCredited) return false;
 
   const reward = REFERRAL_REWARD_CREDITS;
 
-  if (!referral.referrerCredited) {
-    await addCredits(
-      referral.referrerUserId,
-      reward,
-      "bonus",
-      `Referral bonus: friend completed first generation`,
-      `referral-referrer-${referral.id}`
-    );
-  }
+  // Award credits to REFEREE (welcome bonus)
+  await addCredits(
+    referredUserId,
+    reward,
+    "bonus",
+    `Welcome bonus: referred by a friend`,
+    `referral-referred-${referral.id}`
+  );
 
-  if (!referral.referredCredited) {
-    await addCredits(
-      referredUserId,
-      reward,
-      "bonus",
-      `Welcome bonus: referred by a friend`,
-      `referral-referred-${referral.id}`
-    );
-  }
-
+  // Mark status as completed (referee credited), referrer awaits paid action
   await db
     .update(referrals)
     .set({
       status: "completed",
-      referrerCredited: true,
       referredCredited: true,
-      creditsAwarded: reward,
       completedAt: new Date(),
     })
     .where(eq(referrals.id, referral.id));
@@ -301,7 +320,95 @@ export async function completeReferral(referredUserId: number): Promise<boolean>
     resourceId: String(referral.id),
     metadata: {
       referrerId: referral.referrerUserId,
+      refereeCredited: reward,
+      note: "Referee credited on first generation. Referrer awaits first paid action.",
+    },
+  });
+
+  return true;
+}
+
+/**
+ * Complete referrer credit — called when referee makes first PAID subscription.
+ * Triggered from Stripe webhook (checkout.session.completed for subscription).
+ * Enforces lifetime cap. Respects same-IP flag (still awards, but logged).
+ * Idempotent: safe to call multiple times.
+ */
+export async function creditReferrerOnPaidAction(
+  referredUserId: number
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  // Find the referral where referee has been credited but referrer hasn't
+  const [referral] = await db
+    .select()
+    .from(referrals)
+    .where(
+      and(
+        eq(referrals.referredUserId, referredUserId),
+        eq(referrals.referrerCredited, false)
+      )
+    )
+    .limit(1);
+
+  if (!referral) return false;
+
+  const reward = REFERRAL_REWARD_CREDITS;
+
+  // Check lifetime cap for referrer
+  const earned = await getReferralCreditsEarned(referral.referrerUserId);
+  if (earned >= REFERRAL_LIFETIME_CAP) {
+    await logAuditEvent({
+      userId: referral.referrerUserId,
+      action: AUDIT_ACTIONS.REFERRAL_COMPLETED,
+      resourceType: "referral",
+      resourceId: String(referral.id),
+      metadata: {
+        blocked: true,
+        reason: "Lifetime referral cap reached",
+        lifetimeEarned: earned,
+        cap: REFERRAL_LIFETIME_CAP,
+      },
+      severity: "info",
+    });
+    // Mark referral as subscribed but don't award credits
+    await db
+      .update(referrals)
+      .set({ status: "subscribed", referrerCredited: true, creditsAwarded: 0 })
+      .where(eq(referrals.id, referral.id));
+    return false;
+  }
+
+  // Award credits to referrer
+  await addCredits(
+    referral.referrerUserId,
+    reward,
+    "bonus",
+    `Referral bonus: friend subscribed to a paid plan`,
+    `referral-referrer-${referral.id}`
+  );
+
+  await db
+    .update(referrals)
+    .set({
+      status: "subscribed",
+      referrerCredited: true,
       creditsAwarded: reward,
+    })
+    .where(eq(referrals.id, referral.id));
+
+  await logAuditEvent({
+    userId: referral.referrerUserId,
+    action: AUDIT_ACTIONS.REFERRAL_COMPLETED,
+    resourceType: "referral",
+    resourceId: String(referral.id),
+    metadata: {
+      referredUserId,
+      referrerCredited: reward,
+      sameIpFlag: referral.sameIpFlag,
+      lifetimeEarned: earned + reward,
+      note: "Referrer credited on referee's first paid subscription.",
     },
   });
 
@@ -315,17 +422,25 @@ export async function getReferralStats(userId: number): Promise<{
   totalReferrals: number;
   completedReferrals: number;
   totalCreditsEarned: number;
+  lifetimeCap: number;
   referralCode: string | null;
 }> {
   const db = await getDb();
   if (!db) {
-    return { totalReferrals: 0, completedReferrals: 0, totalCreditsEarned: 0, referralCode: null };
+    return {
+      totalReferrals: 0,
+      completedReferrals: 0,
+      totalCreditsEarned: 0,
+      lifetimeCap: REFERRAL_LIFETIME_CAP,
+      referralCode: null,
+    };
   }
 
   const allReferrals = await db
     .select({
       status: referrals.status,
       creditsAwarded: referrals.creditsAwarded,
+      referrerCredited: referrals.referrerCredited,
     })
     .from(referrals)
     .where(eq(referrals.referrerUserId, userId));
@@ -336,17 +451,15 @@ export async function getReferralStats(userId: number): Promise<{
     .where(eq(users.id, userId))
     .limit(1);
 
-  const completed = allReferrals.filter(
-    (r: { status: string }) => r.status === "completed"
+  const credited = allReferrals.filter(
+    (r) => r.referrerCredited && r.creditsAwarded > 0
   );
 
   return {
     totalReferrals: allReferrals.length,
-    completedReferrals: completed.length,
-    totalCreditsEarned: completed.reduce(
-      (sum: number, r: { creditsAwarded: number }) => sum + r.creditsAwarded,
-      0
-    ),
+    completedReferrals: credited.length,
+    totalCreditsEarned: credited.reduce((sum, r) => sum + r.creditsAwarded, 0),
+    lifetimeCap: REFERRAL_LIFETIME_CAP,
     referralCode: user?.referralCode || null,
   };
 }
