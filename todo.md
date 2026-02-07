@@ -3287,3 +3287,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Smart best-value suggestion: Starter for most users, Pro if already on Starter
 - [x] All hooks before early return to prevent React ordering errors
 - [x] All 639 tests passing, 0 TypeScript errors
+
+## Feature: Context-Aware Credit Expansion Options
+- [x] Show only 3 relevant credit expansion tiers based on user's current plan (.slice(0, 3))
+- [x] Filter out plans below current tier and limit to next 3 tiers above
+- [x] All 639 tests passing, 0 TypeScript errors

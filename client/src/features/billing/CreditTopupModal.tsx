@@ -42,7 +42,8 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
         const creditDelta = tier.monthlyCredits - (currentTier?.monthlyCredits || 0);
         return { key, ...tier, creditDelta };
       })
-      .filter(Boolean) as Array<{
+      .filter(Boolean)
+      .slice(0, 3) as Array<{
         key: string; name: string; monthlyCredits: number;
         price: number; rolloverPercent: number; creditDelta: number;
       }>;
