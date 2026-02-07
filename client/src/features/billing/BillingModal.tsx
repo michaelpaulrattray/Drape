@@ -86,23 +86,18 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
     },
   });
 
-  if (!isOpen) return null;
-
   const currentPlan = status?.planTier || "free";
   const isFreeUser = currentPlan === "free" || !status?.hasSubscription;
   const planOrder = plans?.planOrder || [];
   const allSubscriptions = plans?.subscriptions || [];
-  const tiers = plans?.tiers;
 
   const currentPlanIdx = planOrder.indexOf(currentPlan as any);
 
-  // Determine which plans to display
+  // Determine which plans to display — must be before early return to respect Rules of Hooks
   const displayPlans = useMemo(() => {
     if (isFreeUser) {
-      // Free users: show top 3 strategic plans
       return allSubscriptions.filter((p) => FREE_USER_PLANS.includes(p.id));
     }
-    // Paid users: show current plan + next tier up
     const currentSub = allSubscriptions.find((p) => p.id === currentPlan);
     const nextIdx = currentPlanIdx + 1;
     const nextPlanKey = nextIdx < planOrder.length ? planOrder[nextIdx] : null;
@@ -113,6 +108,8 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
     if (nextSub) result.push(nextSub);
     return result;
   }, [isFreeUser, allSubscriptions, currentPlan, currentPlanIdx, planOrder]);
+
+  if (!isOpen) return null;
 
   const isMaxTier = !isFreeUser && currentPlanIdx >= planOrder.length - 1;
 
