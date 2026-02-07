@@ -3209,3 +3209,9 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: CreditTopupModal icon should be logo mark, not Crown
 - [x] Replace Crown icon with FormaStudio logo icon mark
+
+## Feature: Update tier pricing to 2x margin (Option A)
+- [x] Update PLAN_TIERS prices in drizzle/schema.ts (2x margin)
+- [x] Stripe products already read from PLAN_TIERS dynamically — no changes needed
+- [x] Update billing test expected values
+- [x] Build passes, 0 TS errors, 591 tests pass

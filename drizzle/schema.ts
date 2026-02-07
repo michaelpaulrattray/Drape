@@ -38,19 +38,20 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Plan tier configuration with credit allocations
  */
+// Pricing: 2x margin on ~$0.009/credit cost. Volume discounts at higher tiers.
 export const PLAN_TIERS = {
   free: { name: 'Free', monthlyCredits: 100, price: 0, rolloverPercent: 0 },
-  starter: { name: 'Starter', monthlyCredits: 1500, price: 1200, rolloverPercent: 50 },           // $12/mo
-  pro: { name: 'Pro', monthlyCredits: 4000, price: 2900, rolloverPercent: 75 },                   // $29/mo
-  studio: { name: 'Studio', monthlyCredits: 10000, price: 5900, rolloverPercent: 100 },            // $59/mo
-  studio_plus: { name: 'Studio Plus', monthlyCredits: 25000, price: 12900, rolloverPercent: 100 }, // $129/mo
-  business: { name: 'Business', monthlyCredits: 60000, price: 27900, rolloverPercent: 100 },       // $279/mo
-  business_plus: { name: 'Business Plus', monthlyCredits: 150000, price: 59900, rolloverPercent: 100 }, // $599/mo
-  scale: { name: 'Scale', monthlyCredits: 400000, price: 129900, rolloverPercent: 100 },           // $1,299/mo
-  scale_plus: { name: 'Scale Plus', monthlyCredits: 800000, price: 249900, rolloverPercent: 100 }, // $2,499/mo
-  enterprise: { name: 'Enterprise', monthlyCredits: 1500000, price: 499900, rolloverPercent: 100 }, // $4,999/mo
-  enterprise_plus: { name: 'Enterprise Plus', monthlyCredits: 3000000, price: 899900, rolloverPercent: 100 }, // $8,999/mo
-  ultimate: { name: 'Ultimate', monthlyCredits: 6000000, price: 1499900, rolloverPercent: 100 },   // $14,999/mo
+  starter: { name: 'Starter', monthlyCredits: 1500, price: 2700, rolloverPercent: 50 },           // $27/mo  — $0.018/cr, 50% margin
+  pro: { name: 'Pro', monthlyCredits: 4000, price: 6800, rolloverPercent: 75 },                   // $68/mo  — $0.017/cr, 47% margin
+  studio: { name: 'Studio', monthlyCredits: 10000, price: 15900, rolloverPercent: 100 },           // $159/mo — $0.0159/cr, 44% margin
+  studio_plus: { name: 'Studio Plus', monthlyCredits: 25000, price: 37500, rolloverPercent: 100 }, // $375/mo — $0.015/cr, 40% margin
+  business: { name: 'Business', monthlyCredits: 60000, price: 84000, rolloverPercent: 100 },       // $840/mo — $0.014/cr, 36% margin
+  business_plus: { name: 'Business Plus', monthlyCredits: 150000, price: 195000, rolloverPercent: 100 }, // $1,950/mo — $0.013/cr, 31% margin
+  scale: { name: 'Scale', monthlyCredits: 400000, price: 480000, rolloverPercent: 100 },           // $4,800/mo — $0.012/cr, 25% margin
+  scale_plus: { name: 'Scale Plus', monthlyCredits: 800000, price: 880000, rolloverPercent: 100 }, // $8,800/mo — $0.011/cr, 18% margin
+  enterprise: { name: 'Enterprise', monthlyCredits: 1500000, price: 1500000, rolloverPercent: 100 }, // $15,000/mo — $0.010/cr, 10% margin
+  enterprise_plus: { name: 'Enterprise Plus', monthlyCredits: 3000000, price: 2700000, rolloverPercent: 100 }, // $27,000/mo — $0.009/cr, at cost
+  ultimate: { name: 'Ultimate', monthlyCredits: 6000000, price: 4800000, rolloverPercent: 100 },   // $48,000/mo — $0.008/cr, loss leader
 } as const;
 
 export type PlanTier = keyof typeof PLAN_TIERS;

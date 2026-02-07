@@ -6,17 +6,17 @@ import { calculateRolloverCredits, getMonthlyCredits, mapStripeStatus, mapPlanTo
 describe("Billing - Plan Tiers Configuration", () => {
   it("should have correct pricing for all tiers", () => {
     expect(PLAN_TIERS.free.price).toBe(0);
-    expect(PLAN_TIERS.starter.price).toBe(1200);
-    expect(PLAN_TIERS.pro.price).toBe(2900);
-    expect(PLAN_TIERS.studio.price).toBe(5900);
-    expect(PLAN_TIERS.studio_plus.price).toBe(12900);
-    expect(PLAN_TIERS.business.price).toBe(27900);
-    expect(PLAN_TIERS.business_plus.price).toBe(59900);
-    expect(PLAN_TIERS.scale.price).toBe(129900);
-    expect(PLAN_TIERS.scale_plus.price).toBe(249900);
-    expect(PLAN_TIERS.enterprise.price).toBe(499900);
-    expect(PLAN_TIERS.enterprise_plus.price).toBe(899900);
-    expect(PLAN_TIERS.ultimate.price).toBe(1499900);
+    expect(PLAN_TIERS.starter.price).toBe(2700);
+    expect(PLAN_TIERS.pro.price).toBe(6800);
+    expect(PLAN_TIERS.studio.price).toBe(15900);
+    expect(PLAN_TIERS.studio_plus.price).toBe(37500);
+    expect(PLAN_TIERS.business.price).toBe(84000);
+    expect(PLAN_TIERS.business_plus.price).toBe(195000);
+    expect(PLAN_TIERS.scale.price).toBe(480000);
+    expect(PLAN_TIERS.scale_plus.price).toBe(880000);
+    expect(PLAN_TIERS.enterprise.price).toBe(1500000);
+    expect(PLAN_TIERS.enterprise_plus.price).toBe(2700000);
+    expect(PLAN_TIERS.ultimate.price).toBe(4800000);
   });
 
   it("should have correct monthly credits for all tiers", () => {
