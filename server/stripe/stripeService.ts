@@ -5,9 +5,9 @@
  */
 
 import Stripe from "stripe";
-import { ENV } from "./_core/env";
+import { ENV } from "../_core/env";
 import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
-import { PLAN_TIERS, PlanTier } from "../drizzle/schema";
+import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 
 // Initialize Stripe client
 const stripe = new Stripe(ENV.stripeSecretKey);

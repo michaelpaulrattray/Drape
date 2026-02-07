@@ -3,7 +3,7 @@ import {
   createModel, getModelById, getUserModels, updateModel, deleteModel,
   getModelAssets,
 } from "../db";
-import { generateMasterPrompt, ModelPreferences } from "../aiService";
+import { generateMasterPrompt, ModelPreferences } from "../casting/aiService";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";

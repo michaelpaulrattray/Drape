@@ -14,7 +14,7 @@
  */
 
 import { eq, sql } from "drizzle-orm";
-import { getDb, getUserCredits, getUserById } from "./db";
+import { getDb, getUserCredits, getUserById } from "../db";
 import {
   users,
   credits,
@@ -24,10 +24,10 @@ import {
   auditLogs,
   changeRequests,
   AUDIT_ACTIONS,
-} from "../drizzle/schema";
-import { storageDelete } from "./storage";
-import { stripe } from "./stripeService";
-import { logAuditEvent } from "./auditLog";
+} from "../../drizzle/schema";
+import { storageDelete } from "../storage";
+import { stripe } from "../stripe/stripeService";
+import { logAuditEvent } from "../auditLog";
 
 export interface DeleteUserResult {
   success: boolean;

@@ -6,7 +6,7 @@
  *   changeRequestActions  — moderator-escalated actions (cr_suspend, cr_refund, cr_stripeRefund, etc.)
  */
 
-import { type PendingAction } from "../../slackApproval";
+import { type PendingAction } from "../../slack/slackApproval";
 import { executeDirectAction } from "./directActions";
 import { executeChangeRequestAction } from "./changeRequestActions";
 

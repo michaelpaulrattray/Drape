@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CREDIT_TOPUP_PRODUCTS } from "./stripeProducts";
+import { CREDIT_TOPUP_PRODUCTS } from "./stripe/stripeProducts";
 
 /**
  * Tests for credit purchase velocity limits and billing alert integration.
@@ -140,7 +140,7 @@ describe("Large Purchase Alert Threshold", () => {
 describe("Billing Alert Templates", () => {
   it("should have all required billing alert methods on SlackAlerts", async () => {
     // Dynamic import to avoid issues with env vars during test
-    const { SlackAlerts } = await import("./slackNotification");
+    const { SlackAlerts } = await import("./slack/slackNotification");
     
     expect(typeof SlackAlerts.chargebackFiled).toBe("function");
     expect(typeof SlackAlerts.chargebackResolved).toBe("function");
@@ -154,7 +154,7 @@ describe("Billing Alert Templates", () => {
 
 describe("Billing Alerts Channel Routing", () => {
   it("should have billing-alerts as a valid channel type", async () => {
-    const { dispatchBillingAlert } = await import("./slackDispatcher");
+    const { dispatchBillingAlert } = await import("./slack/slackDispatcher");
     expect(typeof dispatchBillingAlert).toBe("function");
   });
 });

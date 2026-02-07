@@ -10,7 +10,7 @@ vi.mock("./stripeService", () => ({
   cancelSubscription: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("./db", () => ({
+vi.mock("../db", () => ({
   updateUserSubscription: vi.fn().mockResolvedValue(undefined),
   getUserByStripeCustomerId: vi.fn().mockResolvedValue(null),
   refreshMonthlyCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 100 }),
@@ -23,7 +23,7 @@ vi.mock("./db", () => ({
   getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("./slackNotification", () => ({
+vi.mock("../slack/slackNotification", () => ({
   SlackAlerts: {
     chargebackFiled: vi.fn().mockResolvedValue(true),
     chargebackResolved: vi.fn().mockResolvedValue(true),
@@ -41,8 +41,8 @@ import {
   deductCredits,
   addCredits,
   getCreditTransactionByRef,
-} from "./db";
-import { SlackAlerts } from "./slackNotification";
+} from "../db";
+import { SlackAlerts } from "../slack/slackNotification";
 import type Stripe from "stripe";
 
 function makeEvent(type: string, data: any): Stripe.Event {

@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock db module
-vi.mock("./db", () => ({
+vi.mock("../db", () => ({
   getDb: vi.fn(),
   getUserById: vi.fn(),
   getUserCredits: vi.fn(),
 }));
 
 // Mock storage
-vi.mock("./storage", () => ({
+vi.mock("../storage", () => ({
   storageDelete: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 // Mock stripe
-vi.mock("./stripeService", () => ({
+vi.mock("../stripe/stripeService", () => ({
   stripe: {
     subscriptions: {
       cancel: vi.fn().mockResolvedValue({ id: "sub_123", status: "canceled" }),
@@ -22,15 +22,15 @@ vi.mock("./stripeService", () => ({
 }));
 
 // Mock audit logging
-vi.mock("./auditLog", () => ({
+vi.mock("../auditLog", () => ({
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
   AUDIT_ACTIONS: { ACCOUNT_DELETED: "account.deleted" },
 }));
 
-import { getUserById, getUserCredits, getDb } from "./db";
-import { storageDelete } from "./storage";
-import { stripe } from "./stripeService";
-import { logAuditEvent } from "./auditLog";
+import { getUserById, getUserCredits, getDb } from "../db";
+import { storageDelete } from "../storage";
+import { stripe } from "../stripe/stripeService";
+import { logAuditEvent } from "../auditLog";
 import { deleteUserData } from "./deleteUserData";
 
 /**

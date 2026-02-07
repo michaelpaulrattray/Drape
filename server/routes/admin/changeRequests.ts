@@ -1,12 +1,12 @@
 import { adminProcedure, router } from "../../_core/trpc";
-import { getClientIp } from "../../rateLimit";
+import { getClientIp } from "../../security/rateLimit";
 import { executeApprovedAdminAction } from "../../lib/adminActions";
 import {
   requestApproval as requestSlackApproval,
   getApprovalStatus as getSlackApprovalStatus,
   markExecuted as markSlackActionExecuted,
   markFailed as markSlackActionFailed,
-} from "../../slackApproval";
+} from "../../slack/slackApproval";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -52,10 +52,10 @@ export const changeRequestsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const { getChangeRequestById, updateChangeRequestStatus } = await import("../../db");
-      const { sendAdminActionNotification } = await import("../../slackNotification");
+      const { sendAdminActionNotification } = await import("../../slack/slackNotification");
       const { logAuditEvent } = await import("../../auditLog");
       const { AUDIT_ACTIONS } = await import("../../../drizzle/schema");
-      const { writeImmutableLog } = await import("../../adminSecurity");
+      const { writeImmutableLog } = await import("../../security/adminSecurity");
 
       const adminName = ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`;
 

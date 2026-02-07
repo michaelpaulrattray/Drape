@@ -4,9 +4,9 @@
  */
 
 import { logAuditEvent, AUDIT_ACTIONS } from "../../auditLog";
-import { getClientIp } from "../../rateLimit";
-import { logAdminAction, writeImmutableLog } from "../../adminSecurity";
-import { type PendingAction } from "../../slackApproval";
+import { getClientIp } from "../../security/rateLimit";
+import { logAdminAction, writeImmutableLog } from "../../security/adminSecurity";
+import { type PendingAction } from "../../slack/slackApproval";
 import { type AdminActionContext } from "./index";
 
 export async function executeDirectAction(

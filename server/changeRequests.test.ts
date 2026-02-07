@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the slackNotification module
-vi.mock("./slackNotification", () => ({
+vi.mock("./slack/slackNotification", () => ({
   sendAdminActionNotification: vi.fn().mockResolvedValue(true),
   sendAuditLogEntry: vi.fn().mockResolvedValue(true),
   sendSlackAlert: vi.fn().mockResolvedValue(true),
@@ -24,7 +24,7 @@ vi.mock("./auditLog", () => ({
 }));
 
 // Mock the adminSecurity module
-vi.mock("./adminSecurity", () => ({
+vi.mock("./security/adminSecurity", () => ({
   logAdminAction: vi.fn().mockResolvedValue(undefined),
   isSensitiveAction: vi.fn().mockReturnValue(false),
   writeImmutableLog: vi.fn().mockResolvedValue(undefined),
@@ -551,7 +551,7 @@ describe("Change Request - Moderator Procedures", () => {
   describe("createChangeRequest mutation", () => {
     it("should validate input and call createChangeRequest", async () => {
       const { createChangeRequest } = await import("./db");
-      const { sendAdminActionNotification } = await import("./slackNotification");
+      const { sendAdminActionNotification } = await import("./slack/slackNotification");
       const { logAuditEvent } = await import("./auditLog");
 
       const input = {
@@ -739,7 +739,7 @@ describe("Change Request - Admin Review Procedures", () => {
     it("should approve a change request", async () => {
       const { getChangeRequestById, updateChangeRequestStatus } = await import("./db");
       const { logAuditEvent } = await import("./auditLog");
-      const { sendAdminActionNotification } = await import("./slackNotification");
+      const { sendAdminActionNotification } = await import("./slack/slackNotification");
 
       // Simulate the procedure flow
       const request = await getChangeRequestById(1);
@@ -821,7 +821,7 @@ describe("Change Request - Admin Review Procedures", () => {
     });
 
     it("should send Slack notification on approval", async () => {
-      const { sendAdminActionNotification } = await import("./slackNotification");
+      const { sendAdminActionNotification } = await import("./slack/slackNotification");
 
       await sendAdminActionNotification({
         title: "✅ Change Request Approved: Refund Credits",
@@ -843,7 +843,7 @@ describe("Change Request - Admin Review Procedures", () => {
     });
 
     it("should send Slack notification on denial", async () => {
-      const { sendAdminActionNotification } = await import("./slackNotification");
+      const { sendAdminActionNotification } = await import("./slack/slackNotification");
 
       await sendAdminActionNotification({
         title: "❌ Change Request Denied: Refund Credits",
@@ -865,7 +865,7 @@ describe("Change Request - Admin Review Procedures", () => {
     });
 
     it("should write immutable audit log for review actions", async () => {
-      const { writeImmutableLog } = await import("./adminSecurity");
+      const { writeImmutableLog } = await import("./security/adminSecurity");
 
       await writeImmutableLog("change_request_reviewed", {
         requestId: 1,
@@ -1355,7 +1355,7 @@ describe("Change Request - Auto-Execute on Approval", () => {
 
   describe("Slack notification for auto-execution", () => {
     it("should send Slack notification after successful auto-execution", async () => {
-      const { sendAdminActionNotification } = await import("./slackNotification");
+      const { sendAdminActionNotification } = await import("./slack/slackNotification");
 
       await sendAdminActionNotification({
         title: "⚙️✅ Auto-Executed: Refund Credits",
@@ -1378,7 +1378,7 @@ describe("Change Request - Auto-Execute on Approval", () => {
     });
 
     it("should send critical Slack notification after failed auto-execution", async () => {
-      const { sendAdminActionNotification } = await import("./slackNotification");
+      const { sendAdminActionNotification } = await import("./slack/slackNotification");
 
       await sendAdminActionNotification({
         title: "⚙️❌ Auto-Executed: Suspend User",

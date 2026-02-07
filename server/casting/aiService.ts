@@ -5,7 +5,7 @@
  */
 
 import * as gemini from "./geminiService";
-import { storagePut } from "./storage";
+import { storagePut } from "../storage";
 
 // Re-export types from geminiService
 export type { ModelPreferences } from "./geminiService";

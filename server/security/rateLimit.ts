@@ -309,7 +309,7 @@ export function shouldSendGlobalAttackAlert(): boolean {
 // ============ IP Blocking Check ============
 // Checks if an IP is blocked before processing any request
 
-import { isIpBlocked } from "./db";
+import { isIpBlocked } from "../db";
 
 /**
  * Check if an IP is blocked and should be denied access

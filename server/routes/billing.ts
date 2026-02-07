@@ -20,11 +20,11 @@ import {
   calculateCreditAdjustment,
   getCustomerInvoices,
   getAllCustomerInvoices,
-} from "../stripeService";
-import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "../stripeProducts";
+} from "../stripe/stripeService";
+import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "../stripe/stripeProducts";
 import { PLAN_TIERS } from "../../drizzle/schema";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
-import { SlackAlerts } from "../slackNotification";
+import { SlackAlerts } from "../slack/slackNotification";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 

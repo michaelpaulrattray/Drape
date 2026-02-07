@@ -4,9 +4,9 @@
  */
 
 import { logAuditEvent, AUDIT_ACTIONS } from "../../auditLog";
-import { getClientIp } from "../../rateLimit";
-import { writeImmutableLog } from "../../adminSecurity";
-import { type PendingAction } from "../../slackApproval";
+import { getClientIp } from "../../security/rateLimit";
+import { writeImmutableLog } from "../../security/adminSecurity";
+import { type PendingAction } from "../../slack/slackApproval";
 import { type AdminActionContext } from "./index";
 
 export async function executeChangeRequestAction(
@@ -247,7 +247,7 @@ export async function executeChangeRequestAction(
 
     case "cr_stripeRefund": {
       const { getUserById: getUser, getUserCredits: getCredits, updateChangeRequestStatus: updateCR } = await import("../../db");
-      const { issueStripeRefund, calculateProportionalRefund } = await import("../../stripeService");
+      const { issueStripeRefund, calculateProportionalRefund } = await import("../../stripe/stripeService");
       const userId = Number(pendingAction.targetId);
       const changeRequestId = params.changeRequestId as number;
       const stripeSessionId = params.stripeSessionId as string;

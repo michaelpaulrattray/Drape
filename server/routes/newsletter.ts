@@ -1,7 +1,7 @@
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "../rateLimit";
+import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import { newsletterSignup, testConnection as testKlaviyoConnection } from "../klaviyo";
 
 export const newsletterRouter = router({

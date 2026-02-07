@@ -22,8 +22,8 @@ import {
   sendEmergencyActionsToAdminChannel,
   sendAuditLogEntry,
 } from "./slackNotification";
-import { consumeEmergencyToken, blockIp, getUserById } from "./db";
-import { logAuditEvent, AUDIT_ACTIONS } from "./auditLog";
+import { consumeEmergencyToken, blockIp, getUserById } from "../db";
+import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { approveAction, denyAction } from "./slackApproval";
 
 interface SlackInteractionPayload {
@@ -308,7 +308,7 @@ async function handleSuspendUserAction(
   }
 
   // Suspend the user
-  const { suspendUser } = await import("./db");
+  const { suspendUser } = await import("../db");
   const reason = `Emergency suspension via Slack by ${slackUser}. Original alert: ${(tokenData.metadata as any)?.alertTitle || "Security Alert"}`;
   const success = await suspendUser(userId, reason, 0);
 

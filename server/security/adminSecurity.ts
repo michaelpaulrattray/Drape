@@ -8,9 +8,9 @@
  * 4. Immutable Audit Log - Append-only critical log storage
  */
 
-import { SlackAlerts, sendAuditLogEntry } from "./slackNotification";
-import { logAuditEvent } from "./auditLog";
-import { AUDIT_ACTIONS } from "../drizzle/schema";
+import { SlackAlerts, sendAuditLogEntry } from "../slack/slackNotification";
+import { logAuditEvent } from "../auditLog";
+import { AUDIT_ACTIONS } from "../../drizzle/schema";
 
 /**
  * ADMIN ALLOWLIST

@@ -247,7 +247,7 @@ export const moderatorRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const { createChangeRequest } = await import("../db");
-      const { sendAdminActionNotification, sendAuditLogEntry } = await import("../slackNotification");
+      const { sendAdminActionNotification, sendAuditLogEntry } = await import("../slack/slackNotification");
       const { logAuditEvent } = await import("../auditLog");
       const { AUDIT_ACTIONS } = await import("../../drizzle/schema");
 

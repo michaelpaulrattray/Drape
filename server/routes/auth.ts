@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { checkRateLimit, getClientIp } from "../rateLimit";
+import { checkRateLimit, getClientIp } from "../security/rateLimit";
 
 export const authRouter = router({
   me: publicProcedure.query(opts => opts.ctx.user),
@@ -22,7 +22,7 @@ export const authRouter = router({
         throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Please wait before trying again." });
       }
 
-      const { deleteUserData } = await import("../deleteUserData");
+      const { deleteUserData } = await import("../security/deleteUserData");
       const result = await deleteUserData(ctx.user.id, ip, ctx.req.headers["user-agent"] as string | undefined);
 
       if (!result.success) {

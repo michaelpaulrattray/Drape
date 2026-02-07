@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the geminiService
-vi.mock("./geminiService", () => ({
+vi.mock("./casting/geminiService", () => ({
   generateMasterPrompt: vi.fn().mockResolvedValue({
     natural: "Professional fashion model headshot. A confident female model with medium brown hair...",
     schema: {
@@ -63,8 +63,8 @@ vi.mock("./storage", () => ({
 }));
 
 // Import after mocks
-import { CREDIT_COSTS } from "./aiService";
-import type { ModelPreferences } from "./aiService";
+import { CREDIT_COSTS } from "./casting/aiService";
+import type { ModelPreferences } from "./casting/aiService";
 
 describe("AI Service - Credit Costs", () => {
   it("should have correct credit costs defined", () => {

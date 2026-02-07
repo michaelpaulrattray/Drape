@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { 
   getUserCredits, getCreditTransactions, deductCredits, addCredits,
 } from "../db";
-import { CREDIT_COSTS } from "../aiService";
+import { CREDIT_COSTS } from "../casting/aiService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 

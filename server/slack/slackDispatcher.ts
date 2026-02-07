@@ -16,7 +16,7 @@
  * should route through this dispatcher instead of calling sendToChannel directly.
  */
 
-import { createEmergencyToken } from "./db";
+import { createEmergencyToken } from "../db";
 
 // ============ Channel Config ============
 

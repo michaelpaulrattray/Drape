@@ -34,8 +34,8 @@ import {
   getUserById,
 } from "./db";
 
-import { sendSlackAlert, SlackAlerts, verifySlackSignature } from "./slackNotification";
-import { checkIpBlocked } from "./rateLimit";
+import { sendSlackAlert, SlackAlerts, verifySlackSignature } from "./slack/slackNotification";
+import { checkIpBlocked } from "./security/rateLimit";
 
 describe("IP Blocking System", () => {
   beforeEach(() => {

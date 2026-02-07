@@ -7,8 +7,8 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { handleStripeWebhook } from "../webhooks";
-import { securityHeaders } from "../securityHeaders";
+import { handleStripeWebhook } from "../stripe/webhooks";
+import { securityHeaders } from "../security/securityHeaders";
 import heroProxyRouter from "../heroProxy";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -69,7 +69,7 @@ async function startServer() {
     "/api/slack/interactions",
     express.urlencoded({ extended: true }),
     async (req, res) => {
-      const { handleSlackInteraction } = await import("../slackInteractions");
+      const { handleSlackInteraction } = await import("../slack/slackInteractions");
       await handleSlackInteraction(req, res);
     }
   );

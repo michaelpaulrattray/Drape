@@ -1,12 +1,12 @@
 import { adminProcedure, router } from "../../_core/trpc";
-import { getClientIp } from "../../rateLimit";
+import { getClientIp } from "../../security/rateLimit";
 import { executeApprovedAdminAction } from "../../lib/adminActions";
 import {
   requestApproval as requestSlackApproval,
   getApprovalStatus as getSlackApprovalStatus,
   markExecuted as markSlackActionExecuted,
   markFailed as markSlackActionFailed,
-} from "../../slackApproval";
+} from "../../slack/slackApproval";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 

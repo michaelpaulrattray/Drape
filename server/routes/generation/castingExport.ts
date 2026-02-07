@@ -2,8 +2,8 @@ import { publicProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getUserGenerations, getUserById, mintModel,
 } from "../../db";
-import { POINT_COSTS } from "../../aiService";
-import { generatePremiumIdentityPdf, PdfModelData } from "../../pdfService";
+import { POINT_COSTS } from "../../casting/aiService";
+import { generatePremiumIdentityPdf, PdfModelData } from "../../casting/pdfService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 

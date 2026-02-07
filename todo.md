@@ -2926,7 +2926,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Extract moderator router (lines 3803-4209, 407 lines) to server/routes/moderator.ts
 - [x] Rewrite routers.ts as slim index (40 lines) combining all sub-routers
 - [x] Verify: TypeScript 0 errors, 589 tests pass
-- [x] Save checkpoint (version: 3cb0cdee)
+- [ ] Save checkpoint (version: 3cb0cdee)
 
 ## Generation Router Split — server/routes/generation.ts (798 lines → sub-modules)
 - [x] Create server/routes/generation/ directory
@@ -2961,3 +2961,39 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Step 10: Extract admin domain to server/db/admin.ts + delete legacy db.ts
 - [x] Step 10b: Split admin.ts (763 lines) into admin.ts (384) + moderatorQueries.ts (397) — both under 500
 - [x] Final: Run full tests, verify all 589 pass, save checkpoint
+
+## P1: Group server files by domain
+
+### Step 1: server/slack/
+- [x] Create server/slack/ directory
+- [x] Move slackNotification.ts, slackDispatcher.ts, slackApproval.ts, slackInteractions.ts
+- [x] Move 5 test files (slackThreeChannel, slackChannels, slackDispatcher, slackApproval, slackWebhook)
+- [x] Update imports in: _core/index.ts, adminSecurity.ts, webhooks.ts, routes/billing.ts, routes/admin/slackApproval.ts, routes/admin/changeRequests.ts, lib/adminActions/directActions.ts, lib/adminActions/changeRequestActions.ts, lib/adminActions/index.ts
+- [x] Update internal cross-refs within slack/ files + dynamic imports + vi.mock paths in 7 test files
+- [x] Verify: TypeScript 0 errors, 589 tests pass
+
+### Step 2: server/stripe/
+- [x] Create server/stripe/ directory
+- [x] Move stripeService.ts, stripeProducts.ts, webhooks.ts
+- [x] Move 2 test files (stripeRefund, webhookSecurity)
+- [x] Update imports in: _core/index.ts, deleteUserData.ts, routes/billing.ts, lib/adminActions/changeRequestActions.ts
+- [x] Update internal cross-refs within stripe/ files + drizzle/schema paths + dynamic imports + vi.mock paths in 4 test files
+- [x] Verify: TypeScript 0 errors, 589 tests pass
+
+### Step 3: server/casting/
+- [x] Create server/casting/ directory
+- [x] Move aiService.ts, geminiService.ts, pdfService.ts, atomicCredits.ts
+- [x] Move 3 test files (aiService, gemini, pdfService)
+- [x] Update imports in: routes/credits.ts, routes/models.ts, routes/generation/castingImaging.ts, routes/generation/castingRefinement.ts, routes/generation/castingExport.ts
+- [x] Update internal cross-refs within casting/ files + vi.mock paths in castingStudio.test.ts, models.test.ts
+- [x] Verify: TypeScript 0 errors, 589 tests pass
+
+### Step 4: server/security/
+- [x] Create server/security/ directory
+- [x] Move adminSecurity.ts, rateLimit.ts, securityHeaders.ts, deleteUserData.ts
+- [x] Move test files (adminSecurity, rateLimit, securityHeaders, deleteUserData)
+- [x] Update imports in: _core/index.ts, _core/trpc.ts, _core/oauth.ts, routes/auth.ts, routes/waitlist.ts, routes/newsletter.ts, routes/admin/*, routes/generation/castingImaging.ts, lib/adminActions/*
+- [x] Verify: TypeScript 0 errors, 589 tests pass
+
+### Final
+- [ ] Save checkpoint

@@ -9,7 +9,7 @@ import {
 } from "./adminSecurity";
 
 // Mock the Slack notifications
-vi.mock("./slackNotification", () => ({
+vi.mock("../slack/slackNotification", () => ({
   SlackAlerts: {
     adminAction: vi.fn().mockResolvedValue(undefined),
     sensitiveAdminAction: vi.fn().mockResolvedValue(undefined),
@@ -111,7 +111,7 @@ describe("Admin Security", () => {
     });
 
     it("should log admin actions", async () => {
-      const { SlackAlerts } = await import("./slackNotification");
+      const { SlackAlerts } = await import("../slack/slackNotification");
       
       await logAdminAction({
         adminId: 1,
@@ -126,7 +126,7 @@ describe("Admin Security", () => {
     });
 
     it("should use sensitive alert for sensitive actions", async () => {
-      const { SlackAlerts } = await import("./slackNotification");
+      const { SlackAlerts } = await import("../slack/slackNotification");
       
       await logAdminAction({
         adminId: 1,
@@ -147,7 +147,7 @@ describe("Admin Security", () => {
     });
 
     it("should log unauthorized access attempts", async () => {
-      const { SlackAlerts } = await import("./slackNotification");
+      const { SlackAlerts } = await import("../slack/slackNotification");
       
       await logUnauthorizedAdminAccess({
         userId: 99999,

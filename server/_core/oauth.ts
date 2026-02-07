@@ -4,7 +4,7 @@ import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
-import { getClientIp, recordGlobalFailedLogin, shouldSendGlobalAttackAlert, markGlobalAttackAlertSent } from "../rateLimit";
+import { getClientIp, recordGlobalFailedLogin, shouldSendGlobalAttackAlert, markGlobalAttackAlertSent } from "../security/rateLimit";
 import { notifyOwner } from "./notification";
 
 function getQueryParam(req: Request, key: string): string | undefined {

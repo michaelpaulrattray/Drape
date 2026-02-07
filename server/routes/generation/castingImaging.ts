@@ -7,9 +7,9 @@ import { deductPoints, addCredits } from "../../db";
 import {
   generateCastingImage, generateFullBody, generateRemainingViews,
   POINT_COSTS,
-} from "../../aiService";
-import { withAtomicCredits } from "../../atomicCredits";
-import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../rateLimit";
+} from "../../casting/aiService";
+import { withAtomicCredits } from "../../casting/atomicCredits";
+import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 

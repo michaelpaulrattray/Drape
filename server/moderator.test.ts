@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the slackNotification module
-vi.mock("./slackNotification", () => ({
+vi.mock("./slack/slackNotification", () => ({
   sendEmergencyActionsToAdminChannel: vi.fn().mockResolvedValue(true),
   sendAdminActionNotification: vi.fn().mockResolvedValue(true),
   sendAuditLogEntry: vi.fn().mockResolvedValue(true),
@@ -374,7 +374,7 @@ describe("Moderator Role - Change Requests (replaces Escalation)", () => {
     });
 
     it("should send Slack notification for new change request", async () => {
-      const { sendAdminActionNotification } = await import("./slackNotification");
+      const { sendAdminActionNotification } = await import("./slack/slackNotification");
       
       await sendAdminActionNotification({
         title: "📋 New Change Request: Refund Credits",

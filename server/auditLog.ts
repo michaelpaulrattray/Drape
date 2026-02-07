@@ -251,7 +251,7 @@ async function handleAbuseDetection(
 
   // Send Slack notification with emergency action buttons
   try {
-    const { SlackAlerts } = await import("./slackNotification");
+    const { SlackAlerts } = await import("./slack/slackNotification");
     
     if (pattern.name === "Credits Exploit Attempt") {
       await SlackAlerts.creditsExploit(userId, userName, eventCount);
@@ -261,7 +261,7 @@ async function handleAbuseDetection(
       await SlackAlerts.billingAnomaly(userId, userName, pattern.name, pattern.description);
     } else {
       // Generic alert for other patterns
-      const { sendSlackAlert } = await import("./slackNotification");
+      const { sendSlackAlert } = await import("./slack/slackNotification");
       await sendSlackAlert({
         title: `Security Alert: ${pattern.name}`,
         description: pattern.description,

@@ -12,7 +12,7 @@ vi.mock("./auditLog", () => ({
 }));
 
 // Mock admin security
-vi.mock("./adminSecurity", () => ({
+vi.mock("./security/adminSecurity", () => ({
   logAdminAction: vi.fn().mockResolvedValue(undefined),
   writeImmutableLog: vi.fn().mockResolvedValue(undefined),
   validateAdminAccess: vi.fn().mockResolvedValue({ allowed: true }),
@@ -163,7 +163,7 @@ describe("Role Management", () => {
   describe("Security logging for role changes", () => {
     it("should log role changes to audit, admin actions, and immutable log", async () => {
       const { logAuditEvent } = await import("./auditLog");
-      const { logAdminAction, writeImmutableLog } = await import("./adminSecurity");
+      const { logAdminAction, writeImmutableLog } = await import("./security/adminSecurity");
 
       mockGetUserById.mockResolvedValue({
         id: 42,

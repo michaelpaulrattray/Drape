@@ -22,7 +22,7 @@
  * ```
  */
 
-import { deductCredits, addCredits } from "./db";
+import { deductCredits, addCredits } from "../db";
 import { TRPCError } from "@trpc/server";
 
 export interface AtomicCreditOptions {

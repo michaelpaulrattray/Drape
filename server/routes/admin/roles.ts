@@ -1,7 +1,7 @@
 import { adminProcedure, router } from "../../_core/trpc";
 import { logAuditEvent, AUDIT_ACTIONS } from "../../auditLog";
-import { logAdminAction, writeImmutableLog } from "../../adminSecurity";
-import { getClientIp } from "../../rateLimit";
+import { logAdminAction, writeImmutableLog } from "../../security/adminSecurity";
+import { getClientIp } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 

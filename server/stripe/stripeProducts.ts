@@ -5,7 +5,7 @@
  * Prices are in cents (USD).
  */
 
-import { PLAN_TIERS } from "../drizzle/schema";
+import { PLAN_TIERS } from "../../drizzle/schema";
 
 // Subscription Plans
 export const SUBSCRIPTION_PRODUCTS = {

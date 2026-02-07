@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PLAN_TIERS, PlanTier } from "../drizzle/schema";
-import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS } from "./stripeProducts";
-import { calculateRolloverCredits, getMonthlyCredits, mapStripeStatus, mapPlanToTier } from "./stripeService";
+import { SUBSCRIPTION_PRODUCTS, CREDIT_TOPUP_PRODUCTS } from "./stripe/stripeProducts";
+import { calculateRolloverCredits, getMonthlyCredits, mapStripeStatus, mapPlanToTier } from "./stripe/stripeService";
 
 describe("Billing - Plan Tiers Configuration", () => {
   it("should have correct pricing for all tiers", () => {
@@ -166,7 +166,7 @@ describe("Billing - Plan to Tier Mapping", () => {
 });
 
 
-import { calculateCreditAdjustment } from "./stripeService";
+import { calculateCreditAdjustment } from "./stripe/stripeService";
 
 describe("Billing - Low Balance Warning", () => {
   const LOW_BALANCE_THRESHOLD = 50;

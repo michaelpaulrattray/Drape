@@ -9,7 +9,7 @@ import {
 } from "./slackNotification";
 
 // Mock createEmergencyToken from db
-vi.mock("./db", () => ({
+vi.mock("../db", () => ({
   createEmergencyToken: vi.fn().mockResolvedValue({ token: "test-token-123" }),
 }));
 
@@ -312,7 +312,7 @@ describe("Three-Channel Slack Routing", () => {
 
   describe("Emergency Actions to Admin Channel", () => {
     it("should create emergency tokens for IP blocking", async () => {
-      const { createEmergencyToken } = await import("./db");
+      const { createEmergencyToken } = await import("../db");
 
       await sendEmergencyActionsToAdminChannel(
         "Test Alert",
@@ -332,7 +332,7 @@ describe("Three-Channel Slack Routing", () => {
     });
 
     it("should create emergency tokens for user suspension", async () => {
-      const { createEmergencyToken } = await import("./db");
+      const { createEmergencyToken } = await import("../db");
 
       await sendEmergencyActionsToAdminChannel(
         "Test Alert",

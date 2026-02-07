@@ -6,8 +6,8 @@ import {
 import {
   generateMasterPrompt, iterateModel, enhanceUserPrompt, upscaleImage,
   POINT_COSTS, ImageResolution,
-} from "../../aiService";
-import { withAtomicCredits } from "../../atomicCredits";
+} from "../../casting/aiService";
+import { withAtomicCredits } from "../../casting/atomicCredits";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 

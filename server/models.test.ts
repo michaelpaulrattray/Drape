@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CREDIT_COSTS } from "./aiService";
+import { CREDIT_COSTS } from "./casting/aiService";
 
 /**
  * Tests for Model and Generation endpoints

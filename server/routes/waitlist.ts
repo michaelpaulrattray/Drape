@@ -2,7 +2,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { addToWaitlist, getWaitlistCount } from "../db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "../rateLimit";
+import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 
 export const waitlistRouter = router({
   // Join the waitlist

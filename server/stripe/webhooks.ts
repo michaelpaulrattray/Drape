@@ -23,10 +23,10 @@ import {
   unsuspendUser,
   deductCredits,
   addCredits,
-} from "./db";
-import { SlackAlerts } from "./slackNotification";
+} from "../db";
+import { SlackAlerts } from "../slack/slackNotification";
 import { CREDIT_TOPUP_PRODUCTS, SubscriptionPlan, CreditTopupPackage } from "./stripeProducts";
-import { PlanTier } from "../drizzle/schema";
+import { PlanTier } from "../../drizzle/schema";
 
 export interface WebhookResult {
   success: boolean;
@@ -449,7 +449,7 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     // 2. Restore the revoked credits
     //    Look up how many credits were deducted by the dispute_created handler
     //    by finding the transaction with referenceId `dispute_{disputeId}`
-    const { getCreditTransactionByRef } = await import("./db");
+    const { getCreditTransactionByRef } = await import("../db");
     const revokeTransaction = await getCreditTransactionByRef(userId, disputeRef);
     if (revokeTransaction && revokeTransaction.amount < 0) {
       const creditsToRestore = Math.abs(revokeTransaction.amount);
