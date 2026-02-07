@@ -2926,4 +2926,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Extract moderator router (lines 3803-4209, 407 lines) to server/routes/moderator.ts
 - [x] Rewrite routers.ts as slim index (40 lines) combining all sub-routers
 - [x] Verify: TypeScript 0 errors, 589 tests pass
+- [x] Save checkpoint (version: 3cb0cdee)
+
+## Generation Router Split — server/routes/generation.ts (798 lines → sub-modules)
+- [x] Create server/routes/generation/ directory
+- [x] Extract castingImaging.ts (castingImage, fullBody, multiView, generateAllViews — 434 lines)
+- [x] Extract castingRefinement.ts (iterate, upscale, proxyImage, enhance — 226 lines)
+- [x] Extract castingExport.ts (generatePdf, mint, history, costs — 158 lines)
+- [x] Create generation/index.ts to merge sub-routers (21 lines)
+- [x] Update routers.ts import to point to generation/index.ts (no change needed — already imports from ./routes/generation)
+- [x] Verify: TypeScript 0 errors, 589 tests pass
 - [ ] Save checkpoint
