@@ -22,7 +22,7 @@ import {
   AlertsFeed,
 } from "@/features/admin/overview";
 
-const REFRESH_INTERVAL_MS = 30_000; // 30 seconds
+const REFRESH_INTERVAL_MS = 30_000;
 
 const NAV_LINKS = [
   { href: "/admin/users", icon: Users, label: "Users" },
@@ -36,13 +36,20 @@ export default function AdminOverview() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
+  const isAdmin = isAuthenticated && user?.role === "admin";
+
   const overviewQuery = trpc.admin.getOverview.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAdmin,
     refetchInterval: autoRefresh ? REFRESH_INTERVAL_MS : false,
     staleTime: 10_000,
   });
 
-  // Update last-refresh timestamp when data arrives
+  const timeSeriesQuery = trpc.admin.getTimeSeries.useQuery(undefined, {
+    enabled: isAdmin,
+    refetchInterval: autoRefresh ? REFRESH_INTERVAL_MS : false,
+    staleTime: 10_000,
+  });
+
   useEffect(() => {
     if (overviewQuery.dataUpdatedAt) {
       setLastRefresh(new Date(overviewQuery.dataUpdatedAt));
@@ -51,8 +58,9 @@ export default function AdminOverview() {
 
   const handleRefresh = useCallback(() => {
     overviewQuery.refetch();
+    timeSeriesQuery.refetch();
     toast.success("Dashboard refreshed");
-  }, [overviewQuery]);
+  }, [overviewQuery, timeSeriesQuery]);
 
   // Auth guards
   if (authLoading) {
@@ -69,6 +77,8 @@ export default function AdminOverview() {
   }
 
   const data = overviewQuery.data;
+  const ts = timeSeriesQuery.data;
+  const isLoading = overviewQuery.isLoading && !data;
 
   return (
     <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
@@ -78,7 +88,7 @@ export default function AdminOverview() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-[#757575] hover:text-[#0A0A0A]">
+                <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A]">
                   <LayoutDashboard className="w-4 h-4 mr-2" />
                   Dashboard
                 </Button>
@@ -90,11 +100,11 @@ export default function AdminOverview() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Quick nav links */}
+              {/* Quick nav */}
               <div className="hidden md:flex items-center gap-1 mr-3">
                 {NAV_LINKS.map(({ href, icon: Icon, label }) => (
                   <Link key={href} href={href}>
-                    <Button variant="ghost" size="sm" className="text-[#757575] hover:text-[#0A0A0A] text-xs">
+                    <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A] text-xs">
                       <Icon className="w-3.5 h-3.5 mr-1" />
                       {label}
                     </Button>
@@ -102,7 +112,7 @@ export default function AdminOverview() {
                 ))}
               </div>
 
-              <span className="text-[10px] text-[#999] hidden sm:inline">
+              <span className="text-[10px] text-[#bbb] hidden sm:inline tabular-nums">
                 {lastRefresh.toLocaleTimeString()}
               </span>
               <Button
@@ -115,7 +125,7 @@ export default function AdminOverview() {
                 className={
                   autoRefresh
                     ? "bg-[#0A0A0A] hover:bg-[#222] text-white text-xs"
-                    : "border-[#D5D5D5] text-[#757575] text-xs"
+                    : "border-[#D5D5D5] text-[#999] text-xs"
                 }
               >
                 <Clock className="w-3.5 h-3.5 mr-1" />
@@ -126,7 +136,7 @@ export default function AdminOverview() {
                 size="sm"
                 onClick={handleRefresh}
                 disabled={overviewQuery.isRefetching}
-                className="border-[#D5D5D5] text-[#757575] text-xs"
+                className="border-[#D5D5D5] text-[#999] text-xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${overviewQuery.isRefetching ? "animate-spin" : ""}`} />
               </Button>
@@ -136,12 +146,19 @@ export default function AdminOverview() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Loading state */}
-        {overviewQuery.isLoading && !data && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-32 animate-pulse" />
-            ))}
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-28 animate-pulse" />
+              ))}
+            </div>
+            <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-56 animate-pulse" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-80 animate-pulse" />
+              <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 h-80 animate-pulse" />
+            </div>
           </div>
         )}
 
@@ -158,30 +175,40 @@ export default function AdminOverview() {
 
         {data && (
           <>
-            {/* Health metrics row */}
-            <HealthMetrics data={data.health} />
+            {/* Health metrics + generation chart (full width) */}
+            <HealthMetrics
+              data={data.health}
+              chartData={ts?.dailyGenerations}
+            />
 
-            {/* Main grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left column */}
-              <div className="space-y-6">
-                <UserGrowthCard data={data.users} />
-                <GovernanceCard data={data.governance} />
+            {/* Two-column layout: left charts, right alerts */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+              {/* Left — 3 cols */}
+              <div className="lg:col-span-3 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <UserGrowthCard
+                    data={data.users}
+                    chartData={ts?.dailySignups}
+                  />
+                  <GovernanceCard
+                    data={data.governance}
+                    chartData={ts?.changeRequestDist}
+                  />
+                </div>
+                <CreditEconomyCard
+                  data={data.credits}
+                  chartData={ts?.dailyCreditFlow}
+                />
               </div>
 
-              {/* Center column */}
-              <div>
-                <CreditEconomyCard data={data.credits} />
-              </div>
-
-              {/* Right column — alerts feed */}
-              <div>
+              {/* Right — 2 cols */}
+              <div className="lg:col-span-2">
                 <AlertsFeed alerts={data.alerts} />
               </div>
             </div>
 
-            {/* Fetched-at footer */}
-            <div className="text-center text-[10px] text-[#999] pb-4">
+            {/* Footer */}
+            <div className="text-center text-[10px] text-[#bbb] pb-4">
               Data as of {new Date(data.fetchedAt).toLocaleString()}
               {overviewQuery.isRefetching && (
                 <Badge variant="secondary" className="ml-2 text-[10px]">

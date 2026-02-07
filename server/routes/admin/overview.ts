@@ -10,6 +10,12 @@ import {
   getGovernanceMetrics,
   getRecentAlerts,
 } from "../../db/adminOverviewQueries";
+import {
+  getDailyGenerationStats,
+  getDailySignupStats,
+  getDailyCreditFlow,
+  getChangeRequestDistribution,
+} from "../../db/adminTimeSeriesQueries";
 
 export const overviewRouter = router({
   /**
@@ -42,6 +48,32 @@ export const overviewRouter = router({
       credits: creditEconomy,
       governance,
       alerts,
+      fetchedAt: new Date(),
+    };
+  }),
+
+  /**
+   * Get time-series data for charts (14-day windows).
+   * Separate procedure to allow independent caching/polling.
+   */
+  getTimeSeries: adminProcedure.query(async () => {
+    const [
+      dailyGenerations,
+      dailySignups,
+      dailyCreditFlow,
+      changeRequestDist,
+    ] = await Promise.all([
+      getDailyGenerationStats(14),
+      getDailySignupStats(14),
+      getDailyCreditFlow(14),
+      getChangeRequestDistribution(),
+    ]);
+
+    return {
+      dailyGenerations,
+      dailySignups,
+      dailyCreditFlow,
+      changeRequestDist,
       fetchedAt: new Date(),
     };
   }),

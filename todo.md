@@ -3488,3 +3488,17 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Return status, uptime, DB latency, and timestamp
 - [x] Rate-limit the endpoint to prevent abuse (10 req/min per IP)
 - [x] Write tests for health check logic (15 new tests, 822 total passing)
+
+## Feature: Admin Overview Visual Redesign (Charts & Graphs)
+- [x] Recharts already installed
+- [x] Create adminTimeSeriesQueries.ts with 4 daily aggregation queries (183 lines)
+- [x] Add getTimeSeries tRPC procedure to admin overview router
+- [x] Rebuild HealthMetrics with area chart (generation success/failure trends 14d)
+- [x] Rebuild UserGrowthCard with bar chart (daily signups 14d)
+- [x] Rebuild CreditEconomyCard with stacked area chart (credit consumed/purchased/refunded 14d)
+- [x] Rebuild GovernanceCard with donut chart (change request status distribution)
+- [x] Rebuild AlertsFeed with timeline layout + severity color badges
+- [x] Rebuild AdminOverview.tsx with 2-column layout (224 lines)
+- [x] Fix SQL GROUP BY for MySQL only_full_group_by mode (raw SQL with aliases)
+- [x] Write tests for time-series helper functions (18 new tests, 840 total passing)
+- [x] Light theme preserved (#EBEBEB bg, #0A0A0A text, white cards)
