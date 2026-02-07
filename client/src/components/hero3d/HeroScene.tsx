@@ -100,7 +100,6 @@ function RevealPlane({
       uRevealProgress: { value: 0 },
       uRevealRadius: { value: REVEAL_RADIUS },
       uParallaxStrength: { value: PARALLAX_STRENGTH },
-      uTexelSize: { value: new THREE.Vector2(3.0 / 2048, 3.0 / 1143) },
     }),
     [baseTexture, styledTexture, depthTexture]
   );

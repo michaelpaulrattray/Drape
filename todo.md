@@ -2849,3 +2849,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Reduce parallax depth strength from 0.012 to 0.010
 - [x] Fix double-image ghost edge artifact when cursor is at edge of hero container
 - [x] Fix persistent double-image lines at hero edges (depth map blur + strength 0.008)
+- [x] Pre-blur depth map offline (8px Gaussian) and remove shader-side blur for better performance

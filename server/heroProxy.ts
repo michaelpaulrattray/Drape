@@ -11,7 +11,7 @@ const router = Router();
 const HERO_ASSETS: Record<string, string> = {
   base: "hero/hero-base-v1.png",
   styled: "hero/hero-styled-v1.png",
-  depth: "hero/hero-depth-v1.png",
+  depth: "hero/hero-depth-v1-blurred.png",
 };
 
 // Cache fetched images in memory (they're static assets, ~2MB each)
