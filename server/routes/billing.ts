@@ -82,10 +82,16 @@ export const billingRouter = router({
       interval: z.enum(["monthly", "annual"]).optional().default("monthly"),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Get user info
+      // Check if account is frozen (blocks purchases)
       const user = await getUserById(ctx.user.id);
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      if (user.frozenAt) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Your account is currently under review. Purchases are temporarily paused while we verify your billing records. This usually resolves within 24-48 hours.",
+        });
       }
 
       // Get or create Stripe customer
@@ -344,6 +350,15 @@ export const billingRouter = router({
       newPlan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Check if account is frozen
+      const frozenUser = await getUserById(ctx.user.id);
+      if (frozenUser?.frozenAt) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Your account is currently under review. Plan changes are temporarily paused while we verify your billing records.",
+        });
+      }
+
       const subscription = await getSubscriptionByUserId(ctx.user.id);
       
       if (!subscription?.stripeSubscriptionId) {

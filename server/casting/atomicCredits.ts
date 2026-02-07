@@ -24,6 +24,9 @@
 
 import { deductCredits, addCredits } from "../db";
 import { TRPCError } from "@trpc/server";
+import { getDb } from "../db/connection";
+import { users } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export interface AtomicCreditOptions {
   /** User ID to deduct credits from */
@@ -62,6 +65,22 @@ export async function withAtomicCredits<T>(
 ): Promise<T> {
   const { userId, amount, description, referenceId, engineUsed } = options;
   
+  // Step 0: Check if account is frozen (blocks all generation)
+  const db = await getDb();
+  if (db) {
+    const [user] = await db
+      .select({ frozenAt: users.frozenAt })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (user?.frozenAt) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Your account is currently under review. Generations are temporarily paused while we verify your billing records. This usually resolves within 24-48 hours.",
+      });
+    }
+  }
+
   // Step 1: Atomically deduct credits BEFORE the operation
   const deductResult = await deductCredits(
     userId,

@@ -91,6 +91,8 @@ export {
 export {
   suspendUser,
   unsuspendUser,
+  freezeUser,
+  unfreezeUser,
   updateUserRole,
   recordFailedLogin,
   resetFailedLogins,

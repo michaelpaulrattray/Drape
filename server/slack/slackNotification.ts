@@ -671,4 +671,27 @@ export const SlackAlerts = {
       ],
     });
   },
+
+  /**
+   * Alert when an account is auto-frozen due to credit discrepancy
+   * → #billing-alerts (critical)
+   */
+  accountAutoFrozen: async (
+    userId: number,
+    userName: string,
+    discrepancy: number,
+    threshold: number
+  ): Promise<boolean> => {
+    return dispatchBillingAlert({
+      title: "🧊 Account Auto-Frozen: Credit Discrepancy",
+      description: `User *${userName}* (ID: ${userId}) has been automatically frozen due to a credit discrepancy of *${discrepancy} credits* (threshold: ${threshold}).`,
+      severity: "critical",
+      fields: [
+        { title: "User", value: `${userName} (ID: ${userId})`, short: true },
+        { title: "Discrepancy", value: `${discrepancy} credits`, short: true },
+        { title: "Threshold", value: `${threshold} credits`, short: true },
+        { title: "Action Required", value: "Moderator review needed", short: true },
+      ],
+    });
+  },
 };

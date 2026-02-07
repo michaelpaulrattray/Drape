@@ -62,6 +62,61 @@ export async function unsuspendUser(
 }
 
 /**
+ * Freeze a user account (blocks generation and purchases, but user can still log in).
+ * Used for automated billing discrepancy investigation.
+ */
+export async function freezeUser(
+  userId: number,
+  reason: string,
+  frozenBy: string // "system" for auto-freeze, or moderator user ID as string
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    await db
+      .update(users)
+      .set({
+        frozenAt: new Date(),
+        frozenReason: reason,
+        frozenBy,
+      })
+      .where(eq(users.id, userId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to freeze user:", error);
+    return { success: false, error: "Failed to freeze user" };
+  }
+}
+
+/**
+ * Unfreeze a user account after moderator review.
+ */
+export async function unfreezeUser(
+  userId: number
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+
+  try {
+    await db
+      .update(users)
+      .set({
+        frozenAt: null,
+        frozenReason: null,
+        frozenBy: null,
+      })
+      .where(eq(users.id, userId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Database] Failed to unfreeze user:", error);
+    return { success: false, error: "Failed to unfreeze user" };
+  }
+}
+
+/**
  * Update a user's role (promote/demote between user and moderator).
  * Only admins can change roles, and they cannot change their own role or promote to admin.
  */

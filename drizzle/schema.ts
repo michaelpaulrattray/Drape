@@ -24,6 +24,10 @@ export const users = mysqlTable("users", {
   suspendedAt: timestamp("suspendedAt"), // When account was suspended (null = active)
   suspendedReason: text("suspendedReason"), // Reason for suspension
   suspendedBy: int("suspendedBy"), // Admin user ID who suspended
+  // Account freeze fields (lighter than suspension — blocks generation/purchase only)
+  frozenAt: timestamp("frozenAt"), // When account was frozen (null = not frozen)
+  frozenReason: text("frozenReason"), // Reason for freeze (e.g., "Credit discrepancy of 206 credits detected")
+  frozenBy: varchar("frozenBy", { length: 64 }), // "system" for auto-freeze, or moderator user ID
   // Referral system
   referralCode: varchar("referralCode", { length: 16 }).unique(), // Auto-generated unique code (e.g., FORMA-A3K9X2)
   referredByUserId: int("referredByUserId"), // User ID who referred this user
@@ -305,6 +309,10 @@ export const AUDIT_ACTIONS = {
   CHANGE_REQUEST_APPROVED: "admin.change_request_approved",
   CHANGE_REQUEST_DENIED: "admin.change_request_denied",
   CHANGE_REQUEST_CANCELLED: "moderator.change_request_cancelled",
+  
+  // Account freeze events (billing investigation)
+  ACCOUNT_AUTO_FROZEN: "account.auto_frozen",
+  ACCOUNT_UNFROZEN: "account.unfrozen",
   
   // Account lifecycle events
   ACCOUNT_DELETED: "account.deleted",

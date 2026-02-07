@@ -10,9 +10,13 @@ import {
   X,
   ArrowRightLeft,
   Download,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadReconciliationCsv } from "./reconciliation-csv";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface ReconciliationSubTabProps {
   userId: number;
@@ -33,14 +37,37 @@ export function ReconciliationSubTab({
   endDate,
   setEndDate,
 }: ReconciliationSubTabProps) {
+  const [unfreezeNotes, setUnfreezeNotes] = useState("");
+  const [showUnfreezeForm, setShowUnfreezeForm] = useState(false);
+
+  const utils = trpc.useUtils();
+
   const { data, isLoading } = trpc.moderatorReconciliation.getUserReconciliation.useQuery(
-    {
-      userId,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-    },
+    { userId, startDate: startDate || undefined, endDate: endDate || undefined },
     { enabled: !!userId }
   );
+
+  // Check if user is frozen
+  const userQuery = trpc.moderator.getUserDetails.useQuery(
+    { userId },
+    { enabled: !!userId }
+  );
+  const isFrozen = !!userQuery.data?.user?.frozenAt;
+  const frozenAt = userQuery.data?.user?.frozenAt;
+  const frozenReason = userQuery.data?.user?.frozenReason;
+
+  const unfreezeMutation = trpc.moderatorReconciliation.unfreezeAccount.useMutation({
+    onSuccess: () => {
+      toast.success("Account unfrozen successfully");
+      setShowUnfreezeForm(false);
+      setUnfreezeNotes("");
+      utils.moderator.getUserDetails.invalidate({ userId });
+      utils.moderatorReconciliation.getFlaggedUsers.invalidate();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to unfreeze account");
+    },
+  });
 
   if (isLoading) {
     return (
@@ -68,6 +95,66 @@ export function ReconciliationSubTab({
 
   return (
     <div className="space-y-3">
+      {/* Frozen Account Banner (moderator view) */}
+      {isFrozen && (
+        <Card className="border border-amber-500/40 bg-amber-950/30">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-300">Account Frozen</p>
+                <p className="text-xs text-amber-200/70 mt-0.5">
+                  Frozen {frozenAt ? new Date(frozenAt).toLocaleDateString() : ""}
+                  {frozenReason ? ` — ${frozenReason}` : ""}
+                </p>
+                {!showUnfreezeForm ? (
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-amber-500/30 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200"
+                      onClick={() => setShowUnfreezeForm(true)}
+                    >
+                      <ShieldCheck className="w-3 h-3 mr-1" />
+                      Unfreeze Account
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    <textarea
+                      value={unfreezeNotes}
+                      onChange={(e) => setUnfreezeNotes(e.target.value)}
+                      placeholder="Review notes (required) — explain why the account is being unfrozen..."
+                      className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white/80 placeholder:text-white/30 resize-none"
+                      rows={2}
+                      maxLength={500}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                        disabled={!unfreezeNotes.trim() || unfreezeMutation.isPending}
+                        onClick={() => unfreezeMutation.mutate({ userId, notes: unfreezeNotes.trim() })}
+                      >
+                        {unfreezeMutation.isPending ? "Unfreezing..." : "Confirm Unfreeze"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs text-white/50 hover:text-white"
+                        onClick={() => { setShowUnfreezeForm(false); setUnfreezeNotes(""); }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Date Range Filter + Export */}
       <div className="flex items-center gap-2 flex-wrap">
         <Calendar className="w-3.5 h-3.5 text-white/40" />

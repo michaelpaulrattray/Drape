@@ -3420,3 +3420,16 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire card into ModeratorDashboard with click-to-navigate to user reconciliation
 - [x] Extract discrepancyQueries.ts from moderatorQueries.ts (file size compliance)
 - [x] Write tests for discrepancy computation logic (15 tests, 708 total passing)
+
+## Feature: Auto-Freeze Accounts with Large Credit Discrepancies
+- [x] Add frozenAt, frozenReason, frozenBy fields to users table + push migration
+- [x] Create freezeUser() / unfreezeUser() DB helpers in security.ts
+- [x] Add freeze check in withAtomicCredits (blocks all generation)
+- [x] Add freeze check in billing checkout session creation + changePlan
+- [x] Auto-trigger freeze in discrepancy scan when threshold >= 200 credits
+- [x] Send Slack alert on auto-freeze
+- [x] Log freeze/unfreeze in audit log (ACCOUNT_AUTO_FROZEN, ACCOUNT_UNFROZEN)
+- [x] Build AccountFrozenBanner component for dashboard (shown to frozen users)
+- [x] Add frozenAt/frozenReason/frozenBy to moderator getUserDetails response
+- [x] Add moderator direct-unfreeze button in ReconciliationSubTab (with required notes)
+- [x] Write tests for freeze enforcement, auto-trigger, and unfreeze (26 tests, 734 total passing)

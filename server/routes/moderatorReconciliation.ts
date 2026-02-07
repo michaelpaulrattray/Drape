@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { moderatorProcedure, router } from "../_core/trpc";
 import { getDetailedCreditHistory, getDetailedGenerationHistory, getUsersWithDiscrepancies } from "../db/moderatorQueries";
+import { freezeUser, unfreezeUser } from "../db";
+import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
+import { SlackAlerts } from "../slack/slackNotification";
+import { getDb } from "../db/connection";
+import { users } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+
+/** Auto-freeze threshold: users with discrepancy >= this are frozen automatically. */
+const AUTO_FREEZE_THRESHOLD = 200;
 
 /** Build a human-readable summary explaining the reconciliation result. */
 function buildSummary(ctx: {
@@ -39,16 +49,6 @@ function buildSummary(ctx: {
 }
 
 export const moderatorReconciliationRouter = router({
-  /**
-   * Fetches a reconciliation summary comparing credits deducted
-   * vs successful generations for a user within an optional date range.
-   *
-   * Key accounting rule: failed generations are refunded via a "refund" credit
-   * transaction, so they should NOT count toward net credits used. The
-   * reconciliation compares:
-   *   net generation cost = generation deductions − refunds
-   *   vs. completed generation recorded costs
-   */
   /** Returns users whose credit discrepancy exceeds the given threshold. */
   getFlaggedUsers: moderatorProcedure
     .input(
@@ -57,7 +57,47 @@ export const moderatorReconciliationRouter = router({
       })
     )
     .query(async ({ input }) => {
-      return getUsersWithDiscrepancies(input.threshold);
+      const result = await getUsersWithDiscrepancies(input.threshold);
+
+      // Auto-freeze: freeze users with discrepancy >= AUTO_FREEZE_THRESHOLD who aren't already frozen
+      if (result.users.length > 0) {
+        const db = await getDb();
+        if (db) {
+          for (const flagged of result.users) {
+            if (Math.abs(flagged.discrepancy) >= AUTO_FREEZE_THRESHOLD) {
+              const [user] = await db
+                .select({ frozenAt: users.frozenAt, name: users.name })
+                .from(users)
+                .where(eq(users.id, flagged.userId))
+                .limit(1);
+
+              if (user && !user.frozenAt) {
+                const reason = `Auto-frozen: credit discrepancy of ${Math.abs(flagged.discrepancy)} credits detected (threshold: ${AUTO_FREEZE_THRESHOLD})`;
+                await freezeUser(flagged.userId, reason, "system");
+                await SlackAlerts.accountAutoFrozen(
+                  flagged.userId,
+                  flagged.userName || `User ${flagged.userId}`,
+                  Math.abs(flagged.discrepancy),
+                  AUTO_FREEZE_THRESHOLD
+                );
+                await logAuditEvent({
+                  userId: flagged.userId,
+                  action: AUDIT_ACTIONS.ACCOUNT_AUTO_FROZEN,
+                  resourceType: "user",
+                  resourceId: String(flagged.userId),
+                  metadata: {
+                    discrepancy: flagged.discrepancy,
+                    threshold: AUTO_FREEZE_THRESHOLD,
+                    trigger: "discrepancy_scan",
+                  },
+                });
+              }
+            }
+          }
+        }
+      }
+
+      return result;
     }),
 
   getUserReconciliation: moderatorProcedure
@@ -139,19 +179,13 @@ export const moderatorReconciliationRouter = router({
         : 0;
 
       // ── Discrepancy detection ──
-      // Generation deductions are negative amounts on "generation" type txns
       const generationCreditTxn = creditsByType["generation"] || { count: 0, totalAmount: 0 };
       const grossGenerationDeductions = Math.abs(generationCreditTxn.totalAmount);
 
-      // Refunds for failed generations appear as positive "refund" type txns
       const refundCreditTxn = creditsByType["refund"] || { count: 0, totalAmount: 0 };
       const totalRefunds = Math.max(0, refundCreditTxn.totalAmount);
 
-      // Net credits consumed = gross deductions minus refunds
       const netGenerationCost = grossGenerationDeductions - totalRefunds;
-
-      // Compare net cost against completed generation costs only
-      // (failed gens are refunded, pending gens are still in-flight)
       const discrepancy = netGenerationCost - creditsOnCompleted - creditsOnPending;
       const hasDiscrepancy = Math.abs(discrepancy) > 0;
 
@@ -198,5 +232,46 @@ export const moderatorReconciliationRouter = router({
           }),
         },
       };
+    }),
+
+  /** Moderator direct-unfreeze: lighter than suspension, mods can resolve directly. */
+  unfreezeAccount: moderatorProcedure
+    .input(z.object({
+      userId: z.number(),
+      notes: z.string().min(1, "Review notes are required").max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [user] = await db
+        .select({ frozenAt: users.frozenAt, name: users.name, email: users.email })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      if (!user.frozenAt) throw new TRPCError({ code: "BAD_REQUEST", message: "User is not frozen" });
+
+      const result = await unfreezeUser(input.userId);
+      if (!result.success) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to unfreeze" });
+      }
+
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.ACCOUNT_UNFROZEN,
+        resourceType: "user",
+        resourceId: String(input.userId),
+        metadata: {
+          targetUserName: user.name,
+          targetUserEmail: user.email,
+          reviewNotes: input.notes,
+          unfrozenBy: ctx.user.id,
+          unfrozenByName: ctx.user.name,
+        },
+      });
+
+      return { success: true };
     }),
 });
