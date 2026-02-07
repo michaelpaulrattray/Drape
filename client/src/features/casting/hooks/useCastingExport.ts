@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import JSZip from "jszip";
-import type { GeneratedAsset, GenerationState, ImageResolution } from "@/constants/casting";
+import type { GeneratedAsset, GenerationState, ImageResolution } from "@/features/casting/constants";
 
 interface UseCastingExportParams {
   currentModelId: number | null;

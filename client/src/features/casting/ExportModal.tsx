@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
-import { ImageResolution } from "@/constants/casting";
+import { ImageResolution } from "@/features/casting/constants";
 
 export const ExportModal = ({
   isOpen,

@@ -28,9 +28,9 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
-import { BillingModal } from "@/components/BillingModal";
-import { CreditTopupModal } from "@/components/CreditTopupModal";
-import { LowBalanceBanner, LOW_BALANCE_THRESHOLD } from "@/components/LowBalanceWarning";
+import { BillingModal } from "@/features/billing/BillingModal";
+import { CreditTopupModal } from "@/features/billing/CreditTopupModal";
+import { LowBalanceBanner, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
 import { Loader2, Coins } from "lucide-react";
 
 // Image compression utility

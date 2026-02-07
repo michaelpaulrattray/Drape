@@ -2,17 +2,17 @@ import React from "react";
 import { useLocation } from "wouter";
 import { Loader2, ChevronLeft, Zap, X, Menu } from "lucide-react";
 import { toast } from "sonner";
-import { HairSection } from "@/components/CastingStudio/HairSection";
-import { EyeSection } from "@/components/CastingStudio/EyeSection";
-import { SkinSection } from "@/components/CastingStudio/SkinSection";
-import { FaceSection } from "@/components/CastingStudio/FaceSection";
-import { BrandSelector } from "@/components/CastingStudio/BrandSelector";
-import { PhysiqueSelector } from "@/components/CastingStudio/PhysiqueSelector";
-import { useCastingFormStore } from "@/stores/useCastingFormStore";
-import { useCastingGenerationStore } from "@/stores/useCastingGenerationStore";
-import { useCastingUIStore } from "@/stores/useCastingUIStore";
+import { HairSection } from "./components/HairSection";
+import { EyeSection } from "./components/EyeSection";
+import { SkinSection } from "./components/SkinSection";
+import { FaceSection } from "./components/FaceSection";
+import { BrandSelector } from "./components/BrandSelector";
+import { PhysiqueSelector } from "./components/PhysiqueSelector";
+import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
+import { useCastingGenerationStore } from "@/features/casting/useCastingGenerationStore";
+import { useCastingUIStore } from "@/features/casting/useCastingUIStore";
 import { CollapsibleSection, generateRandomPreferences } from "./castingHelpers";
-import type { GenerationState, GeneratedAsset } from "@/constants/casting";
+import type { GenerationState, GeneratedAsset } from "@/features/casting/constants";
 
 interface ControlPanelProps {
   user: { role?: string } | null;

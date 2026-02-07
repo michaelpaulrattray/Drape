@@ -22,7 +22,7 @@ import {
   FACE_SHAPES,
   ImageResolution,
   type ModelPreferences,
-} from "@/constants/casting";
+} from "@/features/casting/constants";
 
 // ============ Utility Functions ============
 

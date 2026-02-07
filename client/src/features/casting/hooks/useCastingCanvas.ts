@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { EditTool } from "@/constants/casting";
+import type { EditTool } from "@/features/casting/constants";
 
 export function useCastingCanvas(
   activeTool: EditTool,

@@ -1,5 +1,5 @@
-import { EYE_PRESETS } from "@/constants/casting";
-import { useCastingFormStore } from "@/stores/useCastingFormStore";
+import { EYE_PRESETS } from "@/features/casting/constants";
+import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
 
 // ============ Types ============
 

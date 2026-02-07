@@ -1,12 +1,12 @@
 import React, { useRef } from "react";
 import { toast } from "sonner";
 import { DNAHelix } from "@/components/DNAHelix";
-import { ViewTabs, RefinePanel, ToolsBar } from "@/components/CastingStudio/ImageViewer";
-import { DirectorsNote } from "@/components/CastingStudio/DirectorsNote";
-import { useCastingFormStore } from "@/stores/useCastingFormStore";
-import { useCastingGenerationStore } from "@/stores/useCastingGenerationStore";
-import { useCastingUIStore } from "@/stores/useCastingUIStore";
-import { ImageResolution, type GenerationState, type GeneratedAsset, type EditTool } from "@/constants/casting";
+import { ViewTabs, RefinePanel, ToolsBar } from "./components/ImageViewer";
+import { DirectorsNote } from "./components/DirectorsNote";
+import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
+import { useCastingGenerationStore } from "@/features/casting/useCastingGenerationStore";
+import { useCastingUIStore } from "@/features/casting/useCastingUIStore";
+import { ImageResolution, type GenerationState, type GeneratedAsset, type EditTool } from "@/features/casting/constants";
 import { ConnectorLine } from "./castingHelpers";
 import { ReferenceNode } from "./ReferenceNode";
 import { ElapsedTimeDisplay } from "./ElapsedTimeDisplay";

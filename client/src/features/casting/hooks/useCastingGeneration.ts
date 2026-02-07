@@ -1,15 +1,15 @@
 import { useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useCastingFormStore } from "@/stores/useCastingFormStore";
-import { useCastingGenerationStore } from "@/stores/useCastingGenerationStore";
-import { useCastingUIStore } from "@/stores/useCastingUIStore";
-import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/components/LowBalanceWarning";
+import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
+import { useCastingGenerationStore } from "@/features/casting/useCastingGenerationStore";
+import { useCastingUIStore } from "@/features/casting/useCastingUIStore";
+import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
 import {
   CREDIT_COSTS,
   type GeneratedAsset,
   type EditTool,
-} from "@/constants/casting";
+} from "@/features/casting/constants";
 
 interface UseCastingGenerationParams {
   isAuthenticated: boolean;

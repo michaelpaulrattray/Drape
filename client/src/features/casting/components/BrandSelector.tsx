@@ -1,7 +1,7 @@
 import Tooltip from "@/components/Tooltip";
 import TriBlendSelector from "@/components/TriBlendSelector";
-import { useCastingFormStore } from "@/stores/useCastingFormStore";
-import { type CastingVibe } from "@/constants/casting";
+import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
+import { type CastingVibe } from "@/features/casting/constants";
 
 // ============ Types ============
 

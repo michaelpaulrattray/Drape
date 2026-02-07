@@ -1,5 +1,5 @@
-import { useCastingGenerationStore } from '@/stores/useCastingGenerationStore';
-import { useCastingUIStore } from '@/stores/useCastingUIStore';
+import { useCastingGenerationStore } from '@/features/casting/useCastingGenerationStore';
+import { useCastingUIStore } from '@/features/casting/useCastingUIStore';
 
 // ============ Types ============
 

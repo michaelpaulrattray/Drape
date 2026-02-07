@@ -1,7 +1,7 @@
 import { RefObject } from 'react';
 import { Loader2 } from 'lucide-react';
 import Tooltip from '@/components/Tooltip';
-import { useCastingUIStore } from '@/stores/useCastingUIStore';
+import { useCastingUIStore } from '@/features/casting/useCastingUIStore';
 
 // ============ Types ============
 

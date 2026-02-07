@@ -1,5 +1,5 @@
 import Tooltip from "@/components/Tooltip";
-import { useCastingFormStore } from "@/stores/useCastingFormStore";
+import { useCastingFormStore } from "@/features/casting/useCastingFormStore";
 
 // ============ Types ============
 

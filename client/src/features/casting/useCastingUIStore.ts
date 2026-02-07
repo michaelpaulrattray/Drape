@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type EditTool, ImageResolution } from '@/constants/casting';
+import { type EditTool, ImageResolution } from './constants';
 
 // View type for the image viewer (using string for compatibility with ViewTabs)
 

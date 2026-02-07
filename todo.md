@@ -3066,4 +3066,87 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Verify: TypeScript 0 errors, build passes, 589 tests pass
 
 ### Final
+- [x] Save checkpoint (version: f0ff3ba9)
+
+## P3: Co-locate Orphaned Components + Split Oversized Modules
+
+### Group 1: Move components/CastingStudio/ → features/casting/components/
+- [x] Move BrandSelector.tsx
+- [x] Move DirectorsNote.tsx
+- [x] Move EyeSection.tsx
+- [x] Move FaceSection.tsx
+- [x] Move HairSection.tsx
+- [x] Move PhysiqueSelector.tsx
+- [x] Move SkinSection.tsx
+- [x] Move ImageViewer/RefinePanel.tsx
+- [x] Move ImageViewer/ToolsBar.tsx
+- [x] Move ImageViewer/ViewTabs.tsx
+- [x] Move ImageViewer/index.tsx
+- [x] Update all imports (ControlPanel.tsx + ImageViewerPanel.tsx)
+- [x] Remove old components/CastingStudio/ directory
+- [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+### Group 4: Move billing components → features/billing/
+- [x] Move BillingModal.tsx (432 lines)
+- [x] Move CreditTopupModal.tsx (224 lines)
+- [x] Move LowBalanceWarning.tsx (162 lines)
+- [x] Create barrel index.ts
+- [x] Update imports in Dashboard.tsx, CastingStudio.tsx, useCastingGeneration.ts, useCastingViewGeneration.ts
+- [x] Remove old files from components/
+- [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+### Group 5: Move casting globals → features/casting/
+- [x] Move constants/casting.ts → features/casting/constants.ts (193 lines)
+- [x] Remove types/castingStudio.ts (dead file — zero imports)
+- [x] Move useCastingFormStore.ts (130 lines) → features/casting/
+- [x] Move useCastingGenerationStore.ts (147 lines) → features/casting/
+- [x] Move useCastingUIStore.ts (157 lines) → features/casting/
+- [x] Remove hooks/useCastingForm.ts (dead file — zero external imports)
+- [x] Remove hooks/useGenerationState.ts (dead file — zero external imports)
+- [x] Update 30+ import sites across features/casting/ and pages/CastingStudio.tsx
+- [x] Remove empty stores/, constants/, types/ directories
+- [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+### Group 6: Co-locate orphaned client test files
+- [x] Audit complete — no orphaned client test files found
+- [x] All test files are server-side; 14 already co-located in P1, 19 router-level tests correctly in server/ root
+- [x] No-op — no moves needed
+
+### Group 2: Split oversized server modules
+- [x] Split server/casting/geminiService.ts (1,036 → 6 files)
+  - geminiTypes.ts (75 lines — types & enums)
+  - geminiClient.ts (47 lines — client factory, safety, utilities)
+  - geminiPrompts.ts (186 lines — prompt constants, brand/skin helpers)
+  - geminiGeneration.ts (497 lines — master prompt, enhance, casting image)
+  - geminiViews.ts (290 lines — full body, multi-view, single view, upscale)
+  - geminiService.ts (38 lines — barrel re-export)
+- [x] Split server/slack/slackDispatcher.ts (720 → 3 files)
+  - slackCore.ts (347 lines — channel config, dedup, dispatch, routing, signature)
+  - slackConvenienceHelpers.ts (333 lines — security, emergency, audit, admin, billing helpers)
+  - slackDispatcher.ts (32 lines — barrel re-export)
+- [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+### Group 3: Split admin pages → features/admin/
+- [x] Create shared adminConstants.ts (93 lines) + barrel index.ts (29 lines)
+- [x] Split AdminAuditLogs.tsx (1,025 → 357 lines)
+  - AuditLogsFilters.tsx (227 lines)
+  - AuditLogTable.tsx (133 lines)
+  - AuditLogDetailModal.tsx (203 lines)
+  - AuditActionModals.tsx (192 lines)
+  - BlockedIPsTab.tsx (115 lines)
+- [x] Split AdminUserManagement.tsx (947 → 224 lines)
+  - UserBadges.tsx (61 lines)
+  - UserStatsCards.tsx (43 lines)
+  - UserFilters.tsx (102 lines)
+  - UserTable.tsx (146 lines)
+  - UserDetailModal.tsx (349 lines)
+  - UserActionModals.tsx (221 lines)
+- [x] Split AdminChangeRequests.tsx (847 → 320 lines)
+  - ChangeRequestConstants.tsx (112 lines)
+  - ChangeRequestList.tsx (124 lines)
+  - ChangeRequestDetail.tsx (377 lines)
+  - ReviewModal.tsx (119 lines)
+- [x] Verify: build passes, 0 TS errors, 589 tests pass
+
+### Final
 - [ ] Save checkpoint
