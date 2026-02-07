@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 /** Auto-freeze threshold: users with discrepancy >= this are frozen automatically. */
-const AUTO_FREEZE_THRESHOLD = 200;
+const AUTO_FREEZE_THRESHOLD = 2000;
 
 /** Build a human-readable summary explaining the reconciliation result. */
 function buildSummary(ctx: {

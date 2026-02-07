@@ -22,8 +22,8 @@ interface FlaggedDiscrepanciesCardProps {
   autoRefreshInterval?: number | false;
 }
 
-const DEFAULT_THRESHOLD = 50;
-const THRESHOLDS = [10, 25, 50, 100, 250, 500];
+const DEFAULT_THRESHOLD = 500;
+const THRESHOLDS = [100, 250, 500, 1000, 2000, 5000];
 
 export function FlaggedDiscrepanciesCard({
   onSelectUser,
@@ -47,7 +47,7 @@ export function FlaggedDiscrepanciesCard({
     [expanded, flaggedUsers]
   );
 
-  const hasCritical = flaggedUsers.some((u) => Math.abs(u.discrepancy) >= 500);
+  const hasCritical = flaggedUsers.some((u) => Math.abs(u.discrepancy) >= 2000);
   const hasWarning = flaggedCount > 0;
 
   return (
@@ -201,7 +201,7 @@ interface FlaggedUserRowProps {
 function FlaggedUserRow({ user, onSelect }: FlaggedUserRowProps) {
   const absDisc = Math.abs(user.discrepancy);
   const severity =
-    absDisc >= 500 ? "critical" : absDisc >= 100 ? "warning" : "info";
+    absDisc >= 2000 ? "critical" : absDisc >= 1000 ? "warning" : "info";
 
   return (
     <button

@@ -105,34 +105,34 @@ describe("Account Freeze System", () => {
   });
 
   describe("Auto-freeze trigger logic", () => {
-    const AUTO_FREEZE_THRESHOLD = 200;
+    const AUTO_FREEZE_THRESHOLD = 2000;
 
     function shouldAutoFreeze(discrepancy: number, alreadyFrozen: boolean): boolean {
       return Math.abs(discrepancy) >= AUTO_FREEZE_THRESHOLD && !alreadyFrozen;
     }
 
-    it("should auto-freeze when discrepancy >= 200 and not already frozen", () => {
-      expect(shouldAutoFreeze(250, false)).toBe(true);
+    it("should auto-freeze when discrepancy >= 2000 and not already frozen", () => {
+      expect(shouldAutoFreeze(2500, false)).toBe(true);
     });
 
-    it("should NOT auto-freeze when discrepancy < 200", () => {
-      expect(shouldAutoFreeze(150, false)).toBe(false);
+    it("should NOT auto-freeze when discrepancy < 2000", () => {
+      expect(shouldAutoFreeze(1500, false)).toBe(false);
     });
 
     it("should NOT auto-freeze when already frozen", () => {
-      expect(shouldAutoFreeze(300, true)).toBe(false);
+      expect(shouldAutoFreeze(3000, true)).toBe(false);
     });
 
-    it("should auto-freeze at exactly 200", () => {
-      expect(shouldAutoFreeze(200, false)).toBe(true);
+    it("should auto-freeze at exactly 2000", () => {
+      expect(shouldAutoFreeze(2000, false)).toBe(true);
     });
 
-    it("should auto-freeze for negative discrepancies with abs >= 200", () => {
-      expect(shouldAutoFreeze(-250, false)).toBe(true);
+    it("should auto-freeze for negative discrepancies with abs >= 2000", () => {
+      expect(shouldAutoFreeze(-2500, false)).toBe(true);
     });
 
-    it("should NOT auto-freeze for negative discrepancies with abs < 200", () => {
-      expect(shouldAutoFreeze(-100, false)).toBe(false);
+    it("should NOT auto-freeze for negative discrepancies with abs < 2000", () => {
+      expect(shouldAutoFreeze(-1000, false)).toBe(false);
     });
   });
 

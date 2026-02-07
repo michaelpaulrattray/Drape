@@ -3441,3 +3441,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add frozenAt/frozenReason/frozenBy to admin getUserDetails and getUserFullDetails
 - [x] Block freezing admin accounts (safety guard)
 - [x] Update tests for manual freeze capabilities (37 freeze tests, 745 total passing)
+
+## Fix: Adjust discrepancy thresholds to match credit economy
+- [x] Update flag threshold default from 50 to 500 credits
+- [x] Update auto-freeze threshold from 200 to 2000 credits
+- [x] Update FlaggedDiscrepanciesCard threshold options (100/250/500/1000/2000/5000)
+- [x] Update severity tiers: critical >= 2000, warning >= 1000
+- [x] Update tests for new threshold values (745 total passing)
