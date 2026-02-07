@@ -3396,3 +3396,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix reconciliation to compute summaries from date-filtered rows (not unfiltered summary)
 - [x] Extract UserTable and UserDetailCard from UserInvestigationTab.tsx (488→235 lines)
 - [x] Write 17 reconciliation unit tests (676 total tests passing)
+
+## Fix: Reconciliation — Failed generations should not count toward credits used
+- [x] Investigate credit refund behavior on generation failure
+- [x] Update reconciliation logic so failed generations don't count toward credits used
+- [x] Update reconciliation summary messaging
+- [x] Update tests to reflect correct behavior (20 tests, 679 total passing)

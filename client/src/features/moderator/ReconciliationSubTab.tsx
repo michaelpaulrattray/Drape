@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import {
   AlertTriangle,
@@ -22,14 +21,6 @@ interface ReconciliationSubTabProps {
 
 function formatNumber(n: number): string {
   return n.toLocaleString();
-}
-
-function StatusIcon({ hasIssue }: { hasIssue: boolean }) {
-  return hasIssue ? (
-    <AlertTriangle className="w-4 h-4 text-amber-400" />
-  ) : (
-    <CheckCircle className="w-4 h-4 text-emerald-400" />
-  );
 }
 
 export function ReconciliationSubTab({
@@ -126,7 +117,7 @@ export function ReconciliationSubTab({
             )}
             <div>
               <p className="text-sm font-medium text-white">
-                {reconciliation.hasDiscrepancy ? "Discrepancy Detected" : hasFailures ? "Failed Generations Found" : "All Clear"}
+                {reconciliation.hasDiscrepancy ? "Discrepancy Detected" : hasFailures ? "Failed Generations (Refunded)" : "All Clear"}
               </p>
               <p className="text-xs text-white/60 mt-0.5">{reconciliation.summary}</p>
             </div>
@@ -154,8 +145,18 @@ export function ReconciliationSubTab({
               <span className="text-red-400 font-mono">-{formatNumber(credits.totalSpent)}</span>
             </div>
             <div className="border-t border-white/10 pt-2 flex justify-between text-xs">
-              <span className="text-white/50">Generation Deductions</span>
-              <span className="text-white font-mono font-medium">{formatNumber(credits.generationDeductions)}</span>
+              <span className="text-white/50">Gross Generation Deductions</span>
+              <span className="text-white font-mono">{formatNumber(credits.grossGenerationDeductions)}</span>
+            </div>
+            {credits.totalRefunds > 0 && (
+              <div className="flex justify-between text-xs">
+                <span className="text-emerald-400/80">Refunds (failed gens)</span>
+                <span className="text-emerald-400 font-mono">+{formatNumber(credits.totalRefunds)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-xs font-medium">
+              <span className="text-white/70">Net Generation Cost</span>
+              <span className="text-white font-mono">{formatNumber(credits.netGenerationCost)}</span>
             </div>
             {/* Credit type breakdown */}
             <div className="border-t border-white/10 pt-2 space-y-1">
@@ -190,9 +191,13 @@ export function ReconciliationSubTab({
               <span className="text-emerald-400 font-mono">{formatNumber(generations.completed)}</span>
             </div>
             <div className="flex justify-between text-xs items-center">
-              <span className="text-white/50">Failed</span>
+              <span className="text-white/50">Failed (refunded)</span>
               <span className="flex items-center gap-1">
-                <StatusIcon hasIssue={hasFailures} />
+                {hasFailures ? (
+                  <AlertTriangle className="w-3 h-3 text-amber-400" />
+                ) : (
+                  <CheckCircle className="w-3 h-3 text-emerald-400" />
+                )}
                 <span className={`font-mono ${hasFailures ? "text-amber-400" : "text-white/70"}`}>
                   {formatNumber(generations.failed)}
                 </span>
@@ -207,10 +212,16 @@ export function ReconciliationSubTab({
               <span className="text-white/50">Pending</span>
               <span className="text-white/70 font-mono">{formatNumber(generations.pending)}</span>
             </div>
-            <div className="border-t border-white/10 pt-2 flex justify-between text-xs">
-              <span className="text-white/50">Total Credits Used</span>
-              <span className="text-white font-mono font-medium">{formatNumber(generations.totalCreditsUsed)}</span>
+            <div className="border-t border-white/10 pt-2 flex justify-between text-xs font-medium">
+              <span className="text-white/70">Completed Cost</span>
+              <span className="text-white font-mono">{formatNumber(generations.creditsOnCompleted)}</span>
             </div>
+            {generations.creditsOnPending > 0 && (
+              <div className="flex justify-between text-xs">
+                <span className="text-white/50">Pending Cost</span>
+                <span className="text-yellow-400 font-mono">{formatNumber(generations.creditsOnPending)}</span>
+              </div>
+            )}
             {/* Generation type breakdown */}
             <div className="border-t border-white/10 pt-2 space-y-1">
               <p className="text-[10px] text-white/40 uppercase tracking-wider">By Type</p>
@@ -239,13 +250,29 @@ export function ReconciliationSubTab({
           <table className="w-full text-xs">
             <tbody className="divide-y divide-white/5">
               <tr>
-                <td className="py-1.5 text-white/50">Credits deducted for generations</td>
-                <td className="py-1.5 text-right font-mono text-white">{formatNumber(reconciliation.creditDeductedForGenerations)}</td>
+                <td className="py-1.5 text-white/50">Gross generation deductions</td>
+                <td className="py-1.5 text-right font-mono text-white">{formatNumber(reconciliation.grossGenerationDeductions)}</td>
+              </tr>
+              {reconciliation.totalRefunds > 0 && (
+                <tr>
+                  <td className="py-1.5 text-emerald-400/80">Refunds for failed generations</td>
+                  <td className="py-1.5 text-right font-mono text-emerald-400">-{formatNumber(reconciliation.totalRefunds)}</td>
+                </tr>
+              )}
+              <tr>
+                <td className="py-1.5 text-white/70 font-medium">Net generation cost (credits)</td>
+                <td className="py-1.5 text-right font-mono text-white font-medium">{formatNumber(reconciliation.netGenerationCost)}</td>
               </tr>
               <tr>
-                <td className="py-1.5 text-white/50">Generation records total cost</td>
-                <td className="py-1.5 text-right font-mono text-white">{formatNumber(reconciliation.generationRecordedCost)}</td>
+                <td className="py-1.5 text-white/50">Completed generation recorded cost</td>
+                <td className="py-1.5 text-right font-mono text-white">{formatNumber(reconciliation.completedGenerationCost)}</td>
               </tr>
+              {reconciliation.pendingGenerationCost > 0 && (
+                <tr>
+                  <td className="py-1.5 text-white/50">Pending generation cost</td>
+                  <td className="py-1.5 text-right font-mono text-yellow-400">{formatNumber(reconciliation.pendingGenerationCost)}</td>
+                </tr>
+              )}
               <tr>
                 <td className="py-1.5 text-white/50 font-medium">Discrepancy</td>
                 <td className={`py-1.5 text-right font-mono font-medium ${
@@ -254,24 +281,6 @@ export function ReconciliationSubTab({
                   {reconciliation.discrepancy > 0 ? "+" : ""}{formatNumber(reconciliation.discrepancy)}
                 </td>
               </tr>
-              {generations.creditsOnFailed > 0 && (
-                <tr>
-                  <td className="py-1.5 text-amber-400/80">Credits lost to failed generations</td>
-                  <td className="py-1.5 text-right font-mono text-amber-400">{formatNumber(generations.creditsOnFailed)}</td>
-                </tr>
-              )}
-              {generations.creditsOnCompleted > 0 && (
-                <tr>
-                  <td className="py-1.5 text-white/50">Credits on successful generations</td>
-                  <td className="py-1.5 text-right font-mono text-emerald-400">{formatNumber(generations.creditsOnCompleted)}</td>
-                </tr>
-              )}
-              {generations.creditsOnPending > 0 && (
-                <tr>
-                  <td className="py-1.5 text-white/50">Credits on pending generations</td>
-                  <td className="py-1.5 text-right font-mono text-yellow-400">{formatNumber(generations.creditsOnPending)}</td>
-                </tr>
-              )}
             </tbody>
           </table>
         </CardContent>

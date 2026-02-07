@@ -7,8 +7,11 @@ export const moderatorReconciliationRouter = router({
    * Fetches a reconciliation summary comparing credits deducted
    * vs successful generations for a user within an optional date range.
    *
-   * Summaries are computed from the returned (date-filtered) rows,
-   * NOT from the unfiltered `.summary` fields on the query helpers.
+   * Key accounting rule: failed generations are refunded via a "refund" credit
+   * transaction, so they should NOT count toward net credits used. The
+   * reconciliation compares:
+   *   net generation cost = generation deductions − refunds
+   *   vs. completed generation recorded costs
    */
   getUserReconciliation: moderatorProcedure
     .input(
@@ -60,15 +63,12 @@ export const moderatorReconciliationRouter = router({
       let completedCount = 0;
       let failedCount = 0;
       let pendingCount = 0;
-      let totalGenCreditsUsed = 0;
-      let creditsOnFailed = 0;
       let creditsOnCompleted = 0;
+      let creditsOnFailed = 0;
       let creditsOnPending = 0;
       const gensByType: Record<string, { count: number; totalCost: number }> = {};
 
       for (const gen of genData.generations) {
-        totalGenCreditsUsed += gen.pointsCost;
-
         if (gen.status === "completed") {
           completedCount++;
           creditsOnCompleted += gen.pointsCost;
@@ -92,9 +92,20 @@ export const moderatorReconciliationRouter = router({
         : 0;
 
       // ── Discrepancy detection ──
+      // Generation deductions are negative amounts on "generation" type txns
       const generationCreditTxn = creditsByType["generation"] || { count: 0, totalAmount: 0 };
-      const creditDeductedForGenerations = Math.abs(generationCreditTxn.totalAmount);
-      const discrepancy = creditDeductedForGenerations - totalGenCreditsUsed;
+      const grossGenerationDeductions = Math.abs(generationCreditTxn.totalAmount);
+
+      // Refunds for failed generations appear as positive "refund" type txns
+      const refundCreditTxn = creditsByType["refund"] || { count: 0, totalAmount: 0 };
+      const totalRefunds = Math.max(0, refundCreditTxn.totalAmount);
+
+      // Net credits consumed = gross deductions minus refunds
+      const netGenerationCost = grossGenerationDeductions - totalRefunds;
+
+      // Compare net cost against completed generation costs only
+      // (failed gens are refunded, pending gens are still in-flight)
+      const discrepancy = netGenerationCost - creditsOnCompleted - creditsOnPending;
       const hasDiscrepancy = Math.abs(discrepancy) > 0;
 
       const genTypeBreakdown = Object.entries(gensByType).map(([type, data]) => ({
@@ -108,30 +119,33 @@ export const moderatorReconciliationRouter = router({
           totalEarned: totalCreditsEarned,
           totalSpent: totalCreditsSpent,
           byType: creditsByType,
-          generationDeductions: creditDeductedForGenerations,
+          grossGenerationDeductions,
+          totalRefunds,
+          netGenerationCost,
         },
         generations: {
           total: totalGenerations,
           completed: completedCount,
           failed: failedCount,
           pending: pendingCount,
-          totalCreditsUsed: totalGenCreditsUsed,
-          creditsOnFailed,
           creditsOnCompleted,
+          creditsOnFailed,
           creditsOnPending,
           failureRate,
           byType: genTypeBreakdown,
         },
         reconciliation: {
-          creditDeductedForGenerations,
-          generationRecordedCost: totalGenCreditsUsed,
+          grossGenerationDeductions,
+          totalRefunds,
+          netGenerationCost,
+          completedGenerationCost: creditsOnCompleted,
+          pendingGenerationCost: creditsOnPending,
           discrepancy,
           hasDiscrepancy,
-          creditsLostToFailures: creditsOnFailed,
           summary: hasDiscrepancy
-            ? `Discrepancy of ${Math.abs(discrepancy).toLocaleString()} credits detected between credit transactions and generation records.`
-            : creditsOnFailed > 0
-              ? `No discrepancy found, but ${creditsOnFailed.toLocaleString()} credits were spent on ${failedCount} failed generation(s).`
+            ? `Discrepancy of ${Math.abs(discrepancy).toLocaleString()} credits detected between net credit cost and generation records.`
+            : failedCount > 0
+              ? `No discrepancy. ${totalRefunds.toLocaleString()} credits refunded for ${failedCount} failed generation(s).`
               : "No discrepancies found. All credits align with generation records.",
         },
       };

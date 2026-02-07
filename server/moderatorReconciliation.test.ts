@@ -1,8 +1,12 @@
 /**
  * Tests for the moderator credit reconciliation logic.
  *
- * These tests validate the reconciliation computation that compares
- * credit transactions against generation records to detect discrepancies.
+ * Key accounting rule: failed generations are refunded via a "refund" credit
+ * transaction, so they should NOT count toward net credits used.
+ *
+ * Reconciliation compares:
+ *   net generation cost = gross deductions − refunds
+ *   vs. completed + pending generation recorded costs
  */
 
 // Mock moderatorQueries
@@ -69,7 +73,7 @@ function buildGenData(
   };
 }
 
-// ── Reconciliation logic (extracted from router for direct testing) ──
+// ── Reconciliation logic (mirrors server/routes/moderatorReconciliation.ts) ──
 
 function computeReconciliation(
   creditData: ReturnType<typeof buildCreditData>,
@@ -93,14 +97,12 @@ function computeReconciliation(
   let completedCount = 0;
   let failedCount = 0;
   let pendingCount = 0;
-  let totalGenCreditsUsed = 0;
-  let creditsOnFailed = 0;
   let creditsOnCompleted = 0;
+  let creditsOnFailed = 0;
   let creditsOnPending = 0;
   const gensByType: Record<string, { count: number; totalCost: number }> = {};
 
   for (const gen of genData.generations) {
-    totalGenCreditsUsed += gen.pointsCost;
     if (gen.status === "completed") {
       completedCount++;
       creditsOnCompleted += gen.pointsCost;
@@ -118,14 +120,19 @@ function computeReconciliation(
   }
 
   const totalGenerations = genData.generations.length;
-  const failureRate =
-    totalGenerations > 0
-      ? Math.round((failedCount / totalGenerations) * 10000) / 100
-      : 0;
+  const failureRate = totalGenerations > 0
+    ? Math.round((failedCount / totalGenerations) * 10000) / 100
+    : 0;
 
   const generationCreditTxn = creditsByType["generation"] || { count: 0, totalAmount: 0 };
-  const creditDeductedForGenerations = Math.abs(generationCreditTxn.totalAmount);
-  const discrepancy = creditDeductedForGenerations - totalGenCreditsUsed;
+  const grossGenerationDeductions = Math.abs(generationCreditTxn.totalAmount);
+
+  const refundCreditTxn = creditsByType["refund"] || { count: 0, totalAmount: 0 };
+  const totalRefunds = Math.max(0, refundCreditTxn.totalAmount);
+
+  const netGenerationCost = grossGenerationDeductions - totalRefunds;
+
+  const discrepancy = netGenerationCost - creditsOnCompleted - creditsOnPending;
   const hasDiscrepancy = Math.abs(discrepancy) > 0;
 
   return {
@@ -133,16 +140,17 @@ function computeReconciliation(
       totalEarned: totalCreditsEarned,
       totalSpent: totalCreditsSpent,
       byType: creditsByType,
-      generationDeductions: creditDeductedForGenerations,
+      grossGenerationDeductions,
+      totalRefunds,
+      netGenerationCost,
     },
     generations: {
       total: totalGenerations,
       completed: completedCount,
       failed: failedCount,
       pending: pendingCount,
-      totalCreditsUsed: totalGenCreditsUsed,
-      creditsOnFailed,
       creditsOnCompleted,
+      creditsOnFailed,
       creditsOnPending,
       failureRate,
       byType: Object.entries(gensByType).map(([type, data]) => ({
@@ -152,15 +160,17 @@ function computeReconciliation(
       })),
     },
     reconciliation: {
-      creditDeductedForGenerations,
-      generationRecordedCost: totalGenCreditsUsed,
+      grossGenerationDeductions,
+      totalRefunds,
+      netGenerationCost,
+      completedGenerationCost: creditsOnCompleted,
+      pendingGenerationCost: creditsOnPending,
       discrepancy,
       hasDiscrepancy,
-      creditsLostToFailures: creditsOnFailed,
       summary: hasDiscrepancy
-        ? `Discrepancy of ${Math.abs(discrepancy).toLocaleString()} credits detected between credit transactions and generation records.`
-        : creditsOnFailed > 0
-          ? `No discrepancy found, but ${creditsOnFailed.toLocaleString()} credits were spent on ${failedCount} failed generation(s).`
+        ? `Discrepancy of ${Math.abs(discrepancy).toLocaleString()} credits detected between net credit cost and generation records.`
+        : failedCount > 0
+          ? `No discrepancy. ${totalRefunds.toLocaleString()} credits refunded for ${failedCount} failed generation(s).`
           : "No discrepancies found. All credits align with generation records.",
     },
   };
@@ -174,7 +184,7 @@ describe("Credit Reconciliation Logic", () => {
   });
 
   describe("Perfect alignment — no discrepancy", () => {
-    it("should report no discrepancy when credits match generations", () => {
+    it("should report no discrepancy when net credits match completed generations", () => {
       const credits = buildCreditData([
         { amount: 5000, type: "subscription" },
         { amount: -350, type: "generation" },
@@ -189,8 +199,8 @@ describe("Credit Reconciliation Logic", () => {
 
       expect(result.reconciliation.hasDiscrepancy).toBe(false);
       expect(result.reconciliation.discrepancy).toBe(0);
-      expect(result.reconciliation.creditDeductedForGenerations).toBe(650);
-      expect(result.reconciliation.generationRecordedCost).toBe(650);
+      expect(result.reconciliation.netGenerationCost).toBe(650);
+      expect(result.reconciliation.completedGenerationCost).toBe(650);
       expect(result.reconciliation.summary).toContain("No discrepancies found");
     });
 
@@ -209,12 +219,81 @@ describe("Credit Reconciliation Logic", () => {
       // Should compute from rows, NOT from the fake summary values
       expect(result.credits.totalEarned).toBe(17500);
       expect(result.credits.totalSpent).toBe(350);
-      expect(result.credits.generationDeductions).toBe(350);
+      expect(result.credits.netGenerationCost).toBe(350);
+    });
+  });
+
+  describe("Failed generations with refunds", () => {
+    it("should subtract refunds from gross deductions for net cost", () => {
+      // Scenario: 3 generations attempted, 1 failed and was refunded
+      const credits = buildCreditData([
+        { amount: 5000, type: "subscription" },
+        { amount: -350, type: "generation" },  // casting (completed)
+        { amount: -300, type: "generation" },  // full body (completed)
+        { amount: -350, type: "generation" },  // casting (failed)
+        { amount: 350, type: "refund" },       // refund for failed
+      ]);
+      const gens = buildGenData([
+        { status: "completed", type: "castingImage", pointsCost: 350 },
+        { status: "completed", type: "fullBody", pointsCost: 300 },
+        { status: "failed", type: "castingImage", pointsCost: 350 },
+      ]);
+
+      const result = computeReconciliation(credits, gens);
+
+      expect(result.credits.grossGenerationDeductions).toBe(1000);
+      expect(result.credits.totalRefunds).toBe(350);
+      expect(result.credits.netGenerationCost).toBe(650);
+      expect(result.reconciliation.hasDiscrepancy).toBe(false);
+      expect(result.reconciliation.discrepancy).toBe(0);
+      expect(result.reconciliation.summary).toContain("refunded");
+      expect(result.reconciliation.summary).toContain("1 failed");
+    });
+
+    it("should handle multiple failed generations with refunds", () => {
+      const credits = buildCreditData([
+        { amount: -350, type: "generation" },
+        { amount: -300, type: "generation" },
+        { amount: -350, type: "generation" },
+        { amount: 350, type: "refund" },
+        { amount: 300, type: "refund" },
+      ]);
+      const gens = buildGenData([
+        { status: "completed", type: "castingImage", pointsCost: 350 },
+        { status: "failed", type: "fullBody", pointsCost: 300 },
+        { status: "failed", type: "castingImage", pointsCost: 350 },
+      ]);
+
+      const result = computeReconciliation(credits, gens);
+
+      expect(result.credits.grossGenerationDeductions).toBe(1000);
+      expect(result.credits.totalRefunds).toBe(650);
+      expect(result.credits.netGenerationCost).toBe(350);
+      expect(result.reconciliation.completedGenerationCost).toBe(350);
+      expect(result.reconciliation.hasDiscrepancy).toBe(false);
+    });
+
+    it("should still track creditsOnFailed for informational purposes", () => {
+      const credits = buildCreditData([
+        { amount: -700, type: "generation" },
+        { amount: 350, type: "refund" },
+      ]);
+      const gens = buildGenData([
+        { status: "completed", type: "castingImage", pointsCost: 350 },
+        { status: "failed", type: "castingImage", pointsCost: 350 },
+      ]);
+
+      const result = computeReconciliation(credits, gens);
+
+      // creditsOnFailed is informational — the actual accounting uses refunds
+      expect(result.generations.creditsOnFailed).toBe(350);
+      expect(result.generations.creditsOnCompleted).toBe(350);
     });
   });
 
   describe("Discrepancy detection", () => {
-    it("should detect discrepancy when credits > generation costs", () => {
+    it("should detect discrepancy when net credits > completed + pending costs", () => {
+      // Deducted 700, no refunds, but only 350 in completed generations
       const credits = buildCreditData([
         { amount: -700, type: "generation" },
       ]);
@@ -229,7 +308,7 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.reconciliation.summary).toContain("Discrepancy");
     });
 
-    it("should detect discrepancy when generation costs > credits", () => {
+    it("should detect discrepancy when completed costs > net credits", () => {
       const credits = buildCreditData([
         { amount: -350, type: "generation" },
       ]);
@@ -243,49 +322,28 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.reconciliation.hasDiscrepancy).toBe(true);
       expect(result.reconciliation.discrepancy).toBe(-300); // 350 - 650
     });
-  });
 
-  describe("Failed generations", () => {
-    it("should track credits lost to failed generations", () => {
+    it("should NOT flag discrepancy when refunds account for failed gens", () => {
+      // Without refund awareness, this would show a discrepancy
       const credits = buildCreditData([
-        { amount: -350, type: "generation" },
-        { amount: -300, type: "generation" },
-        { amount: -350, type: "generation" },
+        { amount: -700, type: "generation" },
+        { amount: 350, type: "refund" },
       ]);
       const gens = buildGenData([
         { status: "completed", type: "castingImage", pointsCost: 350 },
-        { status: "failed", type: "fullBody", pointsCost: 300 },
         { status: "failed", type: "castingImage", pointsCost: 350 },
       ]);
 
       const result = computeReconciliation(credits, gens);
 
-      expect(result.generations.creditsOnFailed).toBe(650);
-      expect(result.generations.creditsOnCompleted).toBe(350);
-      expect(result.generations.failed).toBe(2);
-      expect(result.generations.completed).toBe(1);
-      expect(result.reconciliation.creditsLostToFailures).toBe(650);
-    });
-
-    it("should report failed generations in summary when no discrepancy", () => {
-      const credits = buildCreditData([
-        { amount: -650, type: "generation" },
-      ]);
-      const gens = buildGenData([
-        { status: "completed", type: "castingImage", pointsCost: 350 },
-        { status: "failed", type: "fullBody", pointsCost: 300 },
-      ]);
-
-      const result = computeReconciliation(credits, gens);
-
+      // Net cost = 700 - 350 = 350, completed cost = 350 → no discrepancy
+      expect(result.reconciliation.netGenerationCost).toBe(350);
       expect(result.reconciliation.hasDiscrepancy).toBe(false);
-      expect(result.reconciliation.summary).toContain("300");
-      expect(result.reconciliation.summary).toContain("failed generation");
     });
   });
 
   describe("Pending generations", () => {
-    it("should track credits on pending generations separately", () => {
+    it("should include pending costs in reconciliation comparison", () => {
       const credits = buildCreditData([
         { amount: -1000, type: "generation" },
       ]);
@@ -299,6 +357,8 @@ describe("Credit Reconciliation Logic", () => {
 
       expect(result.generations.creditsOnPending).toBe(650);
       expect(result.generations.pending).toBe(2);
+      // Net cost 1000 vs completed 350 + pending 650 = 1000 → no discrepancy
+      expect(result.reconciliation.hasDiscrepancy).toBe(false);
     });
   });
 
@@ -306,6 +366,7 @@ describe("Credit Reconciliation Logic", () => {
     it("should group generations by type with correct counts and costs", () => {
       const credits = buildCreditData([
         { amount: -2050, type: "generation" },
+        { amount: 350, type: "refund" },
       ]);
       const gens = buildGenData([
         { status: "completed", type: "castingImage", pointsCost: 350 },
@@ -331,17 +392,17 @@ describe("Credit Reconciliation Logic", () => {
   });
 
   describe("Credit type breakdown", () => {
-    it("should group credit transactions by type", () => {
+    it("should group credit transactions by type including refunds", () => {
       const credits = buildCreditData([
         { amount: 5000, type: "subscription" },
         { amount: 12500, type: "referral" },
         { amount: -350, type: "generation" },
         { amount: -300, type: "generation" },
-        { amount: 50, type: "refund" },
+        { amount: 300, type: "refund" },
       ]);
       const gens = buildGenData([
         { status: "completed", type: "castingImage", pointsCost: 350 },
-        { status: "completed", type: "fullBody", pointsCost: 300 },
+        { status: "failed", type: "fullBody", pointsCost: 300 },
       ]);
 
       const result = computeReconciliation(credits, gens);
@@ -349,13 +410,16 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.credits.byType["subscription"]).toEqual({ count: 1, totalAmount: 5000 });
       expect(result.credits.byType["referral"]).toEqual({ count: 1, totalAmount: 12500 });
       expect(result.credits.byType["generation"]).toEqual({ count: 2, totalAmount: -650 });
-      expect(result.credits.byType["refund"]).toEqual({ count: 1, totalAmount: 50 });
+      expect(result.credits.byType["refund"]).toEqual({ count: 1, totalAmount: 300 });
     });
   });
 
   describe("Failure rate calculation", () => {
     it("should calculate failure rate as percentage", () => {
-      const credits = buildCreditData([{ amount: -1000, type: "generation" }]);
+      const credits = buildCreditData([
+        { amount: -1000, type: "generation" },
+        { amount: 350, type: "refund" },
+      ]);
       const gens = buildGenData([
         { status: "completed", type: "castingImage", pointsCost: 350 },
         { status: "failed", type: "castingImage", pointsCost: 350 },
@@ -379,7 +443,10 @@ describe("Credit Reconciliation Logic", () => {
     });
 
     it("should return 100% failure rate when all failed", () => {
-      const credits = buildCreditData([{ amount: -700, type: "generation" }]);
+      const credits = buildCreditData([
+        { amount: -700, type: "generation" },
+        { amount: 700, type: "refund" },
+      ]);
       const gens = buildGenData([
         { status: "failed", type: "castingImage", pointsCost: 350 },
         { status: "failed", type: "fullBody", pointsCost: 350 },
@@ -388,6 +455,8 @@ describe("Credit Reconciliation Logic", () => {
       const result = computeReconciliation(credits, gens);
 
       expect(result.generations.failureRate).toBe(100);
+      // Net cost should be 0 since all refunded
+      expect(result.credits.netGenerationCost).toBe(0);
     });
   });
 
@@ -400,6 +469,7 @@ describe("Credit Reconciliation Logic", () => {
 
       expect(result.credits.totalEarned).toBe(0);
       expect(result.credits.totalSpent).toBe(0);
+      expect(result.credits.netGenerationCost).toBe(0);
       expect(result.generations.total).toBe(0);
       expect(result.reconciliation.hasDiscrepancy).toBe(false);
       expect(result.reconciliation.summary).toContain("No discrepancies found");
@@ -414,7 +484,8 @@ describe("Credit Reconciliation Logic", () => {
 
       const result = computeReconciliation(credits, gens);
 
-      expect(result.credits.generationDeductions).toBe(0);
+      expect(result.credits.grossGenerationDeductions).toBe(0);
+      expect(result.credits.netGenerationCost).toBe(0);
       expect(result.reconciliation.hasDiscrepancy).toBe(false);
     });
 
@@ -431,8 +502,6 @@ describe("Credit Reconciliation Logic", () => {
     });
 
     it("should NOT use the unfiltered summary from query helpers", () => {
-      // The mock summary has intentionally wrong values (999999, etc.)
-      // Reconciliation should compute from rows instead
       const credits = buildCreditData([
         { amount: 5000, type: "subscription" },
         { amount: -350, type: "generation" },
@@ -443,7 +512,6 @@ describe("Credit Reconciliation Logic", () => {
 
       const result = computeReconciliation(credits, gens);
 
-      // These should NOT be the fake summary values
       expect(result.credits.totalEarned).toBe(5000);
       expect(result.credits.totalEarned).not.toBe(999999);
       expect(result.credits.totalSpent).toBe(350);
@@ -452,7 +520,7 @@ describe("Credit Reconciliation Logic", () => {
       expect(result.generations.total).not.toBe(777777);
     });
 
-    it("should handle mixed credit types correctly for generation deductions", () => {
+    it("should handle mixed credit types correctly for net generation cost", () => {
       const credits = buildCreditData([
         { amount: 5000, type: "subscription" },
         { amount: -350, type: "generation" },
@@ -467,10 +535,34 @@ describe("Credit Reconciliation Logic", () => {
 
       const result = computeReconciliation(credits, gens);
 
-      // Only "generation" type credit transactions count toward deductions
-      expect(result.credits.generationDeductions).toBe(650);
+      // Only "generation" type credit transactions count toward gross deductions
+      expect(result.credits.grossGenerationDeductions).toBe(650);
+      // Refunds subtract from gross
+      expect(result.credits.totalRefunds).toBe(50);
+      expect(result.credits.netGenerationCost).toBe(600);
       // Total spent includes all negative transactions
       expect(result.credits.totalSpent).toBe(750); // 350 + 100 + 300
+    });
+
+    it("should report correct summary when all generations failed and refunded", () => {
+      const credits = buildCreditData([
+        { amount: -350, type: "generation" },
+        { amount: -300, type: "generation" },
+        { amount: 350, type: "refund" },
+        { amount: 300, type: "refund" },
+      ]);
+      const gens = buildGenData([
+        { status: "failed", type: "castingImage", pointsCost: 350 },
+        { status: "failed", type: "fullBody", pointsCost: 300 },
+      ]);
+
+      const result = computeReconciliation(credits, gens);
+
+      expect(result.credits.netGenerationCost).toBe(0);
+      expect(result.reconciliation.completedGenerationCost).toBe(0);
+      expect(result.reconciliation.hasDiscrepancy).toBe(false);
+      expect(result.reconciliation.summary).toContain("refunded");
+      expect(result.reconciliation.summary).toContain("2 failed");
     });
   });
 });
