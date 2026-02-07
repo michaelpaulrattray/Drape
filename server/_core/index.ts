@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../webhooks";
 import { securityHeaders } from "../securityHeaders";
+import heroProxyRouter from "../heroProxy";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -73,6 +74,9 @@ async function startServer() {
     }
   );
   
+  // Hero texture proxy (serves S3 images with CORS headers)
+  app.use(heroProxyRouter);
+
   // tRPC API
   app.use(
     "/api/trpc",

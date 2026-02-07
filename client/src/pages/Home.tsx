@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { Link } from "wouter";
 import { Menu, X, Plus, Play, Loader2, Check } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 import { Button, NavLink, SocialLink, FooterLink, ConveyorText, ConveyorTextColor, ConveyorIcon } from "@/components/design-system";
-import { motion, useScroll, useTransform, useSpring, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
+
+const HeroScene = lazy(() => import("@/components/hero3d/HeroScene"));
 
 // ============ ANIMATION VARIANTS ============
 
@@ -474,19 +476,6 @@ function LogoMarquee() {
 }
 
 function HeroSection() {
-  const imageContainerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: imageContainerRef,
-    offset: ["start end", "end end"]
-  });
-  // Clamp scale to never go below 1.0
-  const imageScale = useTransform(scrollYProgress, [0, 1], [1.25, 1.0], { clamp: true });
-  const smoothScale = useSpring(imageScale, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
-
   return (
     <section className="min-h-screen pt-20 pb-[120px] bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
@@ -539,20 +528,23 @@ function HeroSection() {
           </div>
         </motion.div>
 
-        {/* Hero Image with scroll-unzoom effect */}
+        {/* Hero Image with interactive 3D depth/reveal */}
         <motion.div 
-          ref={imageContainerRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4, ease: easeOut }}
           className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-[#0A0A0A]/5 h-hero-image"
         >
-          <motion.img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1600&q=80"
-            alt="AI Generated Model"
-            className="w-full h-full object-cover grayscale contrast-125"
-            style={{ scale: smoothScale }}
-          />
+          <Suspense fallback={
+            <img
+              src="/api/hero/base"
+              alt="AI Generated Model"
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
+          }>
+            <HeroScene />
+          </Suspense>
         </motion.div>
       </div>
     </section>

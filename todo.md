@@ -2827,3 +2827,21 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix NaN userId error on /moderator page (tRPC query receiving NaN instead of number)
 - [x] Show visible user ID numbers in moderator dashboard (users tab, audit logs, user details)
 - [x] Show visible user ID numbers in admin user management dashboard
+- [x] Research & propose interactive 3D hero image (Lando Norris style depth map + mouse tracking)
+
+## Interactive 3D Hero Image
+- [x] Generate depth map from hero-image-default.png
+- [x] Upload hero images (default + secondary) and depth map to S3
+- [x] Install React Three Fiber + drei dependencies
+- [x] Create HeroScene.tsx component with depth-map parallax
+- [x] Create depth/reveal shaders (depthRevealShader.ts)
+- [x] Implement soft radial crossfade reveal between base and styled images
+- [x] Integrate HeroScene into existing HeroSection layout
+- [x] Add mobile fallback (static image for screens < 768px)
+- [x] Performance test and polish (60fps, lazy loading)
+- [x] Add liquid metaball trailing effect to crossfade reveal shader (reverted — cleaner without trail)
+- [x] Fix reveal blob radius — tuned to 0.5 UV space
+- [x] Fix trail flashing — resolved by reverting to clean radial reveal
+- [x] Increase reveal radius (0.15 → 0.5, tuned iteratively)
+- [x] Fix shadow at reveal edge (apply same parallax to both textures)
+- [x] Tune parallax strength to 0.012 (sweet spot before double-image)
