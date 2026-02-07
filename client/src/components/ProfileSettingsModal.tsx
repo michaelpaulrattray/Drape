@@ -136,7 +136,7 @@ function BillingTabContent({
                 onClose();
                 onOpenTopup?.();
               }}
-              className="px-4 py-2 rounded-lg btn-slate text-sm font-medium transition-all"
+              className="px-4 py-2 rounded-lg bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 text-sm font-medium transition-all"
             >
               Add credits
             </button>
@@ -189,7 +189,7 @@ function BillingTabContent({
             onClose();
             onOpenBilling?.();
           }}
-          className="w-full px-4 py-3 rounded-xl btn-slate text-sm font-medium transition-all flex items-center justify-center gap-2"
+          className="w-full px-4 py-3 rounded-xl bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 text-sm font-medium transition-all flex items-center justify-center gap-2"
         >
           <Sparkles className="w-4 h-4" />
           Upgrade Plan
@@ -333,7 +333,7 @@ function UsageTabContent() {
     <div className="space-y-6">
       {/* Period Selector */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-obsidian">Usage Analytics</h3>
+        <h3 className="text-lg font-semibold text-[#0A0A0A]">Usage Analytics</h3>
         <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
           {([7, 30, 90] as const).map((days) => (
             <button
@@ -341,7 +341,7 @@ function UsageTabContent() {
               onClick={() => setPeriod(days)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                 period === days
-                  ? "bg-slate-accent text-white shadow-sm"
+                  ? "bg-[#0A0A0A] text-white shadow-sm"
                   : "text-gray-500 hover:text-gray-900"
               }`}
             >
@@ -361,7 +361,7 @@ function UsageTabContent() {
           {isLoadingStats ? (
             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           ) : (
-            <p className="text-2xl font-bold text-obsidian">{stats?.totalCreditsUsed.toLocaleString() || 0}</p>
+            <p className="text-2xl font-bold text-[#0A0A0A]">{stats?.totalCreditsUsed.toLocaleString() || 0}</p>
           )}
         </div>
         <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
@@ -372,7 +372,7 @@ function UsageTabContent() {
           {isLoadingStats ? (
             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           ) : (
-            <p className="text-2xl font-bold text-obsidian">{stats?.totalGenerations.toLocaleString() || 0}</p>
+            <p className="text-2xl font-bold text-[#0A0A0A]">{stats?.totalGenerations.toLocaleString() || 0}</p>
           )}
         </div>
         <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
@@ -383,14 +383,14 @@ function UsageTabContent() {
           {isLoadingStats ? (
             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           ) : (
-            <p className="text-2xl font-bold text-obsidian">{stats?.averagePerDay || 0}</p>
+            <p className="text-2xl font-bold text-[#0A0A0A]">{stats?.averagePerDay || 0}</p>
           )}
         </div>
       </div>
 
       {/* Usage Chart */}
       <div>
-        <label className="block text-sm font-medium text-charcoal mb-3">Daily Usage</label>
+        <label className="block text-sm font-medium text-[#4D4D4D] mb-3">Daily Usage</label>
         <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
           {isLoadingDaily ? (
             <div className="flex items-center justify-center h-32">
@@ -435,7 +435,7 @@ function UsageTabContent() {
 
       {/* Transaction History */}
       <div>
-        <label className="block text-sm font-medium text-charcoal mb-3">Transaction History</label>
+        <label className="block text-sm font-medium text-[#4D4D4D] mb-3">Transaction History</label>
         {isLoadingHistory ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -754,12 +754,12 @@ export default function ProfileSettingsModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-semibold text-obsidian tracking-tight">Settings</h2>
-            <p className="text-sm text-subtle mt-0.5">Manage your account preferences</p>
+            <h2 className="text-xl font-semibold text-[#0A0A0A] tracking-tight">Settings</h2>
+            <p className="text-sm text-[#757575] mt-0.5">Manage your account preferences</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-gray-400 hover:text-obsidian hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full text-gray-400 hover:text-[#0A0A0A] hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -782,11 +782,11 @@ export default function ProfileSettingsModal({
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                   activeTab === tab.id
-                    ? "bg-white text-obsidian shadow-sm border border-gray-200"
-                    : "text-subtle hover:text-obsidian hover:bg-white/50"
+                    ? "bg-white text-[#0A0A0A] shadow-sm border border-gray-200"
+                    : "text-[#757575] hover:text-[#0A0A0A] hover:bg-white/50"
                 }`}
               >
-                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-slate-accent" : ""}`} />
+                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? "text-[#0A0A0A]" : ""}`} />
                 {tab.label}
               </button>
             ))}
@@ -798,7 +798,7 @@ export default function ProfileSettingsModal({
               <div className="space-y-6">
                 {/* Banner Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-charcoal mb-3">
+                  <label className="block text-sm font-medium text-[#4D4D4D] mb-3">
                     Cover Image
                   </label>
                   <div className="relative h-32 rounded-xl overflow-hidden border border-gray-200 group">
@@ -813,7 +813,7 @@ export default function ProfileSettingsModal({
                       <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
                         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-lg">
                           <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                          <span className="text-sm text-obsidian">Uploading...</span>
+                          <span className="text-sm text-[#0A0A0A]">Uploading...</span>
                         </div>
                       </div>
                     )}
@@ -822,7 +822,7 @@ export default function ProfileSettingsModal({
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <button
                           onClick={() => bannerInputRef.current?.click()}
-                          className="px-4 py-2 rounded-md bg-white/90 border border-gray-200 text-obsidian text-sm font-medium hover:bg-white transition-colors flex items-center gap-2"
+                          className="px-4 py-2 rounded-md bg-white/90 border border-gray-200 text-[#0A0A0A] text-sm font-medium hover:bg-white transition-colors flex items-center gap-2"
                         >
                           <Upload className="w-4 h-4" />
                           Change Cover
@@ -837,12 +837,12 @@ export default function ProfileSettingsModal({
                       onChange={handleBannerImageUpload}
                     />
                   </div>
-                  <p className="text-xs text-subtle mt-2">JPG, PNG or WebP. Max 10MB.</p>
+                  <p className="text-xs text-[#757575] mt-2">JPG, PNG or WebP. Max 10MB.</p>
                 </div>
 
                 {/* Avatar Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-charcoal mb-3">
+                  <label className="block text-sm font-medium text-[#4D4D4D] mb-3">
                     Profile Picture
                   </label>
                   <div className="flex items-center gap-4">
@@ -878,15 +878,15 @@ export default function ProfileSettingsModal({
                       />
                     </div>
                     <div>
-                      <p className="text-sm text-charcoal">Upload a new profile picture</p>
-                      <p className="text-xs text-subtle">JPG, PNG or WebP. Max 5MB.</p>
+                      <p className="text-sm text-[#4D4D4D]">Upload a new profile picture</p>
+                      <p className="text-xs text-[#757575]">JPG, PNG or WebP. Max 5MB.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Display Name */}
                 <div>
-                  <label className="block text-sm font-medium text-charcoal mb-2">
+                  <label className="block text-sm font-medium text-[#4D4D4D] mb-2">
                     Display Name
                   </label>
                   <input
@@ -894,15 +894,15 @@ export default function ProfileSettingsModal({
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
                     maxLength={100}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-obsidian text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/20 transition-all"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#0A0A0A] text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/20 transition-all"
                     placeholder="Your display name"
                   />
-                  <p className="text-xs text-subtle mt-1.5">{editedName.length}/100 characters</p>
+                  <p className="text-xs text-[#757575] mt-1.5">{editedName.length}/100 characters</p>
                 </div>
 
                 {/* Bio */}
                 <div>
-                  <label className="block text-sm font-medium text-charcoal mb-2">
+                  <label className="block text-sm font-medium text-[#4D4D4D] mb-2">
                     Bio
                   </label>
                   <textarea
@@ -910,41 +910,41 @@ export default function ProfileSettingsModal({
                     onChange={(e) => setEditedBio(e.target.value)}
                     maxLength={500}
                     rows={3}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-obsidian text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/20 transition-all resize-none"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#0A0A0A] text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900/20 transition-all resize-none"
                     placeholder="Tell us about yourself..."
                   />
-                  <p className="text-xs text-subtle mt-1.5">{editedBio.length}/500 characters</p>
+                  <p className="text-xs text-[#757575] mt-1.5">{editedBio.length}/500 characters</p>
                 </div>
 
                 {/* Email (read-only) */}
                 <div>
-                  <label className="block text-sm font-medium text-charcoal mb-2">
+                  <label className="block text-sm font-medium text-[#4D4D4D] mb-2">
                     Email Address
                   </label>
                   <input
                     type="email"
                     value={profileData?.email || user?.email || ""}
                     readOnly
-                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-subtle text-sm cursor-not-allowed"
+                    className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-[#757575] text-sm cursor-not-allowed"
                   />
-                  <p className="text-xs text-subtle mt-1.5">Email cannot be changed</p>
+                  <p className="text-xs text-[#757575] mt-1.5">Email cannot be changed</p>
                 </div>
 
                 {/* Storage Usage */}
                 {storageInfo && (
                   <div>
-                    <label className="block text-sm font-medium text-charcoal mb-2">
+                    <label className="block text-sm font-medium text-[#4D4D4D] mb-2">
                       Storage Usage
                     </label>
                     <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <HardDrive className="w-4 h-4 text-subtle" />
-                          <span className="text-sm text-obsidian">
+                          <HardDrive className="w-4 h-4 text-[#757575]" />
+                          <span className="text-sm text-[#0A0A0A]">
                             {formatBytes(storageInfo.used)} / {formatBytes(storageInfo.limit)}
                           </span>
                         </div>
-                        <span className="text-xs text-subtle">{storageInfo.percentage}% used</span>
+                        <span className="text-xs text-[#757575]">{storageInfo.percentage}% used</span>
                       </div>
                       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div 
@@ -964,7 +964,7 @@ export default function ProfileSettingsModal({
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-6 py-3 rounded-xl btn-slate text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50"
+                    className="px-6 py-3 rounded-xl bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
@@ -999,7 +999,7 @@ export default function ProfileSettingsModal({
             {activeTab === "notifications" && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-charcoal mb-3">
+                  <label className="block text-sm font-medium text-[#4D4D4D] mb-3">
                     Email Notifications
                   </label>
                   <div className="space-y-3">
@@ -1010,12 +1010,12 @@ export default function ProfileSettingsModal({
                     ].map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
                         <div>
-                          <p className="text-sm text-obsidian">{item.label}</p>
-                          <p className="text-xs text-subtle">{item.description}</p>
+                          <p className="text-sm text-[#0A0A0A]">{item.label}</p>
+                          <p className="text-xs text-[#757575]">{item.description}</p>
                         </div>
                         <button
                           className={`w-12 h-6 rounded-full transition-colors relative ${
-                            item.enabled ? "bg-slate-accent" : "bg-gray-200"
+                            item.enabled ? "bg-[#0A0A0A]" : "bg-gray-200"
                           }`}
                         >
                           <div
@@ -1034,7 +1034,7 @@ export default function ProfileSettingsModal({
             {activeTab === "security" && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-charcoal mb-3">
+                  <label className="block text-sm font-medium text-[#4D4D4D] mb-3">
                     Connected Accounts
                   </label>
                   <div className="space-y-3">
@@ -1053,25 +1053,25 @@ export default function ProfileSettingsModal({
                                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                               </svg>
                             ) : (
-                              <svg className="w-5 h-5 text-obsidian" viewBox="0 0 24 24" fill="currentColor">
+                              <svg className="w-5 h-5 text-[#0A0A0A]" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                               </svg>
                             )}
                           </div>
                           <div>
-                            <p className="text-sm text-obsidian">{item.provider}</p>
+                            <p className="text-sm text-[#0A0A0A]">{item.provider}</p>
                             {item.connected ? (
-                              <p className="text-xs text-subtle">{item.email}</p>
+                              <p className="text-xs text-[#757575]">{item.email}</p>
                             ) : (
-                              <p className="text-xs text-subtle">Not connected</p>
+                              <p className="text-xs text-[#757575]">Not connected</p>
                             )}
                           </div>
                         </div>
                         <button
                           className={`px-4 py-2 rounded-xl text-xs font-medium transition-all ${
                             item.connected
-                              ? "bg-white border border-gray-200 text-charcoal hover:bg-gray-50"
-                              : "btn-slate"
+                              ? "bg-white border border-gray-200 text-[#4D4D4D] hover:bg-gray-50"
+                              : "bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90"
                           }`}
                         >
                           {item.connected ? "Disconnect" : "Connect"}
@@ -1082,7 +1082,7 @@ export default function ProfileSettingsModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-charcoal mb-3">
+                  <label className="block text-sm font-medium text-[#4D4D4D] mb-3">
                     Danger Zone
                   </label>
                   <div className="p-5 rounded-xl bg-red-50 border border-red-200">

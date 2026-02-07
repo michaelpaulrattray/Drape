@@ -116,10 +116,10 @@ export default function Dashboard() {
 
   if (loading || profileLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-canvas">
+      <div className="h-screen w-screen flex items-center justify-center bg-[#EBEBEB]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-          <span className="text-subtle text-sm font-medium">Loading...</span>
+          <div className="w-8 h-8 border-2 border-[#0A0A0A] border-t-transparent rounded-full animate-spin" />
+          <span className="text-[#757575] text-sm font-medium">Loading...</span>
         </div>
       </div>
     );
@@ -182,16 +182,16 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="h-screen w-screen flex bg-canvas text-obsidian overflow-hidden selection:bg-gray-900/20">
-      {/* Technical Grid Background */}
-      <div className="fixed inset-0 technical-grid pointer-events-none z-0" />
+    <div className="h-screen w-screen flex bg-[#EBEBEB] text-[#0A0A0A] overflow-hidden selection:bg-[#0A0A0A]/20">
+      {/* Subtle background texture */}
+      <div className="fixed inset-0 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(10,10,10,0.03) 1px, transparent 0)', backgroundSize: '32px 32px' }} />
       
       {/* Sidebar - Clean Light */}
-      <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-light bg-white relative z-10">
+      <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-[#D4D4D4] bg-white relative z-10">
         {/* Logo */}
         <div className="px-6 pt-6 pb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-slate-accent flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-[#0A0A0A] flex items-center justify-center">
               <img 
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
                 alt="Forma Studio" 
@@ -199,8 +199,8 @@ export default function Dashboard() {
               />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-obsidian tracking-tight">FormaStudio</h1>
-              <p className="text-xs text-subtle">Creative Suite</p>
+              <h1 className="text-lg font-semibold text-[#0A0A0A] tracking-tight">FormaStudio</h1>
+              <p className="text-xs text-[#757575]">Creative Suite</p>
             </div>
           </div>
         </div>
@@ -215,14 +215,14 @@ export default function Dashboard() {
                 onClick={() => setActiveNav(item.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   activeNav === item.id
-                    ? "bg-gray-100 text-obsidian"
-                    : "text-subtle hover:text-obsidian hover:bg-gray-50"
+                    ? "bg-[#0A0A0A]/5 text-[#0A0A0A]"
+                    : "text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.03]"
                 }`}
               >
-                <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-slate-accent" : ""}`} />
+                <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-[#0A0A0A]" : ""}`} />
                 <span className="text-sm font-medium">{item.label}</span>
                 {activeNav === item.id && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-slate-accent" />
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#0A0A0A]" />
                 )}
               </button>
             ))}
@@ -230,7 +230,7 @@ export default function Dashboard() {
 
           {/* Tools Section */}
           <div>
-            <h3 className="px-4 text-xs font-medium text-subtle uppercase tracking-wider mb-3">
+            <h3 className="px-4 text-xs font-medium text-[#757575] uppercase tracking-wider mb-3">
               Studios
             </h3>
             <nav className="space-y-1">
@@ -240,11 +240,11 @@ export default function Dashboard() {
                   onClick={() => setActiveNav(item.id)}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
                     activeNav === item.id
-                      ? "bg-gray-100 text-obsidian"
-                      : "text-subtle hover:text-obsidian hover:bg-gray-50"
+                      ? "bg-[#0A0A0A]/5 text-[#0A0A0A]"
+                      : "text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.03]"
                   }`}
                 >
-                  <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-slate-accent" : ""}`} />
+                  <item.icon className={`w-[18px] h-[18px] ${activeNav === item.id ? "text-[#0A0A0A]" : ""}`} />
                   <span className="text-sm font-medium">{item.label}</span>
                 </button>
               ))}
@@ -253,14 +253,14 @@ export default function Dashboard() {
 
           {/* Resources */}
           <div>
-            <h3 className="px-4 text-xs font-medium text-subtle uppercase tracking-wider mb-3">
+            <h3 className="px-4 text-xs font-medium text-[#757575] uppercase tracking-wider mb-3">
               Resources
             </h3>
             <nav className="space-y-1">
               {resources.map((resource, idx) => (
                 <button
                   key={idx}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-subtle hover:text-obsidian hover:bg-gray-50 transition-all group"
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.03] transition-all group"
                 >
                   <div className="flex items-center gap-3">
                     <resource.icon className="w-[18px] h-[18px]" />
@@ -275,13 +275,13 @@ export default function Dashboard() {
           {/* Moderator Section - Visible to moderators */}
           {user?.role === 'moderator' && (
             <div>
-              <h3 className="px-4 text-xs font-medium text-subtle uppercase tracking-wider mb-3">
+              <h3 className="px-4 text-xs font-medium text-[#757575] uppercase tracking-wider mb-3">
                 Moderation
               </h3>
               <nav className="space-y-1">
                 <Link href="/moderator">
                   <button
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-subtle hover:text-obsidian hover:bg-gray-50 transition-all group"
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.03] transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <Eye className="w-[18px] h-[18px]" />
@@ -297,13 +297,13 @@ export default function Dashboard() {
           {/* Admin Section - Only visible to admins */}
           {user?.role === 'admin' && (
             <div>
-              <h3 className="px-4 text-xs font-medium text-subtle uppercase tracking-wider mb-3">
+              <h3 className="px-4 text-xs font-medium text-[#757575] uppercase tracking-wider mb-3">
                 Admin
               </h3>
               <nav className="space-y-1">
                 <Link href="/admin/audit-logs">
                   <button
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-subtle hover:text-obsidian hover:bg-gray-50 transition-all group"
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.03] transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <Shield className="w-[18px] h-[18px]" />
@@ -314,7 +314,7 @@ export default function Dashboard() {
                 </Link>
                 <Link href="/admin/users">
                   <button
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-subtle hover:text-obsidian hover:bg-gray-50 transition-all group"
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.03] transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <Users className="w-[18px] h-[18px]" />
@@ -325,7 +325,7 @@ export default function Dashboard() {
                 </Link>
                 <Link href="/admin/change-requests">
                   <button
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-subtle hover:text-obsidian hover:bg-gray-50 transition-all group"
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.03] transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <ClipboardList className="w-[18px] h-[18px]" />
@@ -336,7 +336,7 @@ export default function Dashboard() {
                 </Link>
                 <Link href="/moderator">
                   <button
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-subtle hover:text-obsidian hover:bg-gray-50 transition-all group"
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.03] transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <Eye className="w-[18px] h-[18px]" />
@@ -351,7 +351,7 @@ export default function Dashboard() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-light">
+        <div className="p-4 border-t border-[#D4D4D4]">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
             <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden bg-gray-100">
               {profileImage ? (
@@ -369,19 +369,19 @@ export default function Dashboard() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-obsidian truncate">{displayName}</p>
-              <p className="text-xs text-subtle truncate">{creditsData?.balance || 0} credits</p>
+              <p className="text-sm font-medium text-[#0A0A0A] truncate">{displayName}</p>
+              <p className="text-xs text-[#757575] truncate">{creditsData?.balance || 0} credits</p>
             </div>
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="text-subtle hover:text-obsidian transition-colors p-2 rounded-lg hover:bg-gray-200"
+              className="text-[#757575] hover:text-[#0A0A0A] transition-colors p-2 rounded-lg hover:bg-[#0A0A0A]/5"
               title="Settings"
             >
               <Settings className="w-4 h-4" />
             </button>
             <button 
               onClick={() => logout()}
-              className="text-subtle hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-gray-200"
+              className="text-[#757575] hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-[#0A0A0A]/5"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -391,7 +391,7 @@ export default function Dashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto relative bg-canvas" style={{ scrollbarWidth: 'thin' }}>
+      <main className="flex-1 overflow-y-auto relative bg-[#EBEBEB]" style={{ scrollbarWidth: 'thin' }}>
         {/* Header with Profile Banner */}
         <div className="relative">
           {/* Banner - Light Mode */}
@@ -437,14 +437,14 @@ export default function Dashboard() {
               <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-lg">
                   <Loader2 className="w-4 h-4 text-gray-900 animate-spin" />
-                  <span className="text-sm text-obsidian">Uploading...</span>
+                  <span className="text-sm text-[#0A0A0A]">Uploading...</span>
                 </div>
               </div>
             )}
             <button 
               onClick={() => bannerInputRef.current?.click()}
               disabled={isUploadingBanner}
-              className="absolute top-6 right-10 px-4 py-2 rounded-full bg-white/90 backdrop-blur-sm text-obsidian text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white border border-gray-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="absolute top-6 right-10 px-4 py-2 rounded-full bg-white/90 backdrop-blur-sm text-[#0A0A0A] text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white border border-[#D4D4D4] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload className="w-3.5 h-3.5" />
               Change Cover
@@ -456,7 +456,7 @@ export default function Dashboard() {
             <div className="flex items-end gap-6">
               {/* Profile Avatar */}
               <div className="relative group/avatar">
-                <div className="w-28 h-28 rounded-2xl ring-4 ring-canvas border border-gray-200 relative overflow-hidden shadow-xl bg-white">
+                <div className="w-28 h-28 rounded-2xl ring-4 ring-[#EBEBEB] border border-[#D4D4D4] relative overflow-hidden shadow-xl bg-white">
                   {profileImage ? (
                     <img 
                       src={profileImage}
@@ -516,7 +516,7 @@ export default function Dashboard() {
               <div className="flex-1 pb-2">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl font-semibold text-white tracking-tight drop-shadow-md">{displayName}</h1>
-                  <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-obsidian text-xs font-medium shadow-sm">
+                  <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#0A0A0A] text-xs font-medium shadow-sm">
                     {creditsData?.planTier?.toUpperCase() || "FREE"}
                   </span>
                 </div>
@@ -527,15 +527,15 @@ export default function Dashboard() {
               <div className="flex items-center gap-3 pb-2">
                 <button 
                   onClick={() => setIsTopupOpen(true)}
-                  className="group px-5 py-2.5 rounded-full btn-slate text-sm font-medium transition-all flex items-center gap-2 shadow-lg"
+                  className="group px-5 py-2.5 rounded-full bg-[#0A0A0A] text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg hover:bg-[#0A0A0A]/90"
                 >
                   <Sparkles className="w-4 h-4" />
                   Get Credits
                 </button>
-                <button className="p-2.5 rounded-full bg-white border border-gray-200 text-subtle hover:text-obsidian hover:border-gray-300 transition-colors shadow-sm">
+                <button className="p-2.5 rounded-full bg-white border border-[#D4D4D4] text-[#757575] hover:text-[#0A0A0A] hover:border-[#0A0A0A]/30 transition-colors shadow-sm">
                   <Bell className="w-5 h-5" />
                 </button>
-                <button className="p-2.5 rounded-full bg-white border border-gray-200 text-subtle hover:text-obsidian hover:border-gray-300 transition-colors shadow-sm">
+                <button className="p-2.5 rounded-full bg-white border border-[#D4D4D4] text-[#757575] hover:text-[#0A0A0A] hover:border-[#0A0A0A]/30 transition-colors shadow-sm">
                   <Search className="w-5 h-5" />
                 </button>
               </div>
@@ -557,10 +557,10 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-semibold text-obsidian tracking-tight mb-1">Recent Work</h2>
-                <p className="text-sm text-subtle">Your latest creations</p>
+                <h2 className="text-2xl font-semibold text-[#0A0A0A] tracking-tight mb-1">Recent Work</h2>
+                <p className="text-sm text-[#757575]">Your latest creations</p>
               </div>
-              <button className="flex items-center gap-2 text-sm font-medium text-white transition-colors group px-5 py-2.5 rounded-full btn-slate">
+              <button className="flex items-center gap-2 text-sm font-medium text-white transition-colors group px-5 py-2.5 rounded-full bg-[#0A0A0A] hover:bg-[#0A0A0A]/90">
                 View all
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
@@ -569,7 +569,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {recentWork.map((item, idx) => (
                 <div key={idx} className="group cursor-pointer">
-                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4 border border-gray-200 bg-white premium-card">
+                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4 border border-[#D4D4D4] bg-white shadow-sm hover:shadow-md transition-shadow">
                     <img
                       src={item.thumbnail}
                       className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
@@ -581,10 +581,10 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-charcoal leading-snug group-hover:text-obsidian mb-2 line-clamp-2 transition-colors">
+                    <h3 className="text-sm font-medium text-[#4D4D4D] leading-snug group-hover:text-[#0A0A0A] mb-2 line-clamp-2 transition-colors">
                       {item.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-subtle">
+                    <div className="flex items-center gap-2 text-xs text-[#757575]">
                       <span>{item.views}</span>
                       <span className="text-gray-400">·</span>
                       <span>{item.time}</span>
@@ -598,52 +598,52 @@ export default function Dashboard() {
           {/* Quick Actions */}
           <div>
             <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-obsidian tracking-tight mb-1">Quick Actions</h2>
-              <p className="text-sm text-subtle">Start creating</p>
+              <h2 className="text-2xl font-semibold text-[#0A0A0A] tracking-tight mb-1">Quick Actions</h2>
+              <p className="text-sm text-[#757575]">Start creating</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link href="/casting-studio">
-                <div className="group premium-card rounded-2xl p-6 cursor-pointer relative overflow-hidden">
+                <div className="group bg-white border border-[#D4D4D4] rounded-2xl p-6 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-gray-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-slate-accent group-hover:border-slate-accent transition-colors">
-                    <Camera className="w-6 h-6 text-subtle group-hover:text-white transition-colors" />
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-[#0A0A0A] group-hover:border-[#0A0A0A] transition-colors">
+                    <Camera className="w-6 h-6 text-[#757575] group-hover:text-white transition-colors" />
                   </div>
-                  <h3 className="text-obsidian font-semibold mb-2 tracking-tight text-lg">Create New Model</h3>
-                  <p className="text-sm text-subtle">Design and cast AI models for your campaigns</p>
+                  <h3 className="text-[#0A0A0A] font-semibold mb-2 tracking-tight text-lg">Create New Model</h3>
+                  <p className="text-sm text-[#757575]">Design and cast AI models for your campaigns</p>
                   
-                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-slate-accent group-hover:border-slate-accent">
-                    <ArrowRight className="w-4 h-4 text-subtle group-hover:text-white" />
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-[#0A0A0A] group-hover:border-[#0A0A0A]">
+                    <ArrowRight className="w-4 h-4 text-[#757575] group-hover:text-white" />
                   </div>
                 </div>
               </Link>
               <Link href="/wardrobe-studio">
-                <div className="group premium-card rounded-2xl p-6 cursor-pointer relative overflow-hidden">
+                <div className="group bg-white border border-[#D4D4D4] rounded-2xl p-6 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-gray-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-slate-accent group-hover:border-slate-accent transition-colors">
-                    <Shirt className="w-6 h-6 text-subtle group-hover:text-white transition-colors" />
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-[#0A0A0A] group-hover:border-[#0A0A0A] transition-colors">
+                    <Shirt className="w-6 h-6 text-[#757575] group-hover:text-white transition-colors" />
                   </div>
-                  <h3 className="text-obsidian font-semibold mb-2 tracking-tight text-lg">Style Outfits</h3>
-                  <p className="text-sm text-subtle">Dress your models with curated fashion</p>
+                  <h3 className="text-[#0A0A0A] font-semibold mb-2 tracking-tight text-lg">Style Outfits</h3>
+                  <p className="text-sm text-[#757575]">Dress your models with curated fashion</p>
                   
-                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-slate-accent group-hover:border-slate-accent">
-                    <ArrowRight className="w-4 h-4 text-subtle group-hover:text-white" />
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-[#0A0A0A] group-hover:border-[#0A0A0A]">
+                    <ArrowRight className="w-4 h-4 text-[#757575] group-hover:text-white" />
                   </div>
                 </div>
               </Link>
               <Link href="/photo-studio">
-                <div className="group premium-card rounded-2xl p-6 cursor-pointer relative overflow-hidden">
+                <div className="group bg-white border border-[#D4D4D4] rounded-2xl p-6 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-gray-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
-                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-slate-accent group-hover:border-slate-accent transition-colors">
-                    <Image className="w-6 h-6 text-subtle group-hover:text-white transition-colors" />
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-5 group-hover:bg-[#0A0A0A] group-hover:border-[#0A0A0A] transition-colors">
+                    <Image className="w-6 h-6 text-[#757575] group-hover:text-white transition-colors" />
                   </div>
-                  <h3 className="text-obsidian font-semibold mb-2 tracking-tight text-lg">Generate Campaign</h3>
-                  <p className="text-sm text-subtle">Create stunning campaign visuals</p>
+                  <h3 className="text-[#0A0A0A] font-semibold mb-2 tracking-tight text-lg">Generate Campaign</h3>
+                  <p className="text-sm text-[#757575]">Create stunning campaign visuals</p>
                   
-                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-slate-accent group-hover:border-slate-accent">
-                    <ArrowRight className="w-4 h-4 text-subtle group-hover:text-white" />
+                  <div className="absolute bottom-6 right-6 w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all group-hover:bg-[#0A0A0A] group-hover:border-[#0A0A0A]">
+                    <ArrowRight className="w-4 h-4 text-[#757575] group-hover:text-white" />
                   </div>
                 </div>
               </Link>

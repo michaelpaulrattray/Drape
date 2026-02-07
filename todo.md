@@ -2861,3 +2861,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Mobile-responsive login page (stacks to single column on mobile)
 - [x] Fix login page style inconsistencies: colors, buttons, animations, background must match homepage exactly
 - [x] Add "Back to home" link on mobile login view (lg:hidden, below card)
+- [x] Dashboard redesign Step 1: Update sidebar to Forma design system (#0A0A0A, #EBEBEB, #757575, #D4D4D4)
+- [x] Dashboard redesign Step 2: Update main content area (banner, cards, Quick Actions) to Forma design system
+- [x] Dashboard redesign Step 3: Update ProfileSettingsModal to Forma design system
+- [x] Dashboard redesign Step 4: Update BillingModal and CreditTopupModal to Forma design system
+- [x] Dashboard redesign Step 5: Update LowBalanceBanner to Forma design system (already clean)

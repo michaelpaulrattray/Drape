@@ -240,7 +240,7 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
               disabled={changePlan.isPending}
               className={`flex-1 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
                 planPreview.isUpgrade
-                  ? "bg-slate-accent hover:bg-[#5D6E7C] text-white"
+                  ? "bg-[#0A0A0A] hover:bg-[#0A0A0A]/90 text-white"
                   : "bg-amber-500 hover:bg-amber-600 text-white"
               }`}
             >
@@ -362,18 +362,18 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
                 key={plan.id}
                 className={`relative rounded-xl border p-6 transition-all ${
                   isPro
-                    ? "border-slate-accent bg-gray-50"
+                    ? "border-[#0A0A0A] bg-gray-50"
                     : "border-gray-200 bg-white"
-                } ${isCurrentPlan ? "ring-2 ring-slate-accent" : ""}`}
+                } ${isCurrentPlan ? "ring-2 ring-[#0A0A0A]" : ""}`}
               >
                 {isPro && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-slate-accent text-xs font-medium text-white">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#0A0A0A] text-xs font-medium text-white">
                     Most Popular
                   </div>
                 )}
 
                 <div className="flex items-center gap-2 mb-4">
-                  <div className={`p-2 rounded-lg ${isPro ? "bg-slate-accent text-white" : "bg-gray-100 text-gray-600"}`}>
+                  <div className={`p-2 rounded-lg ${isPro ? "bg-[#0A0A0A] text-white" : "bg-gray-100 text-gray-600"}`}>
                     {getPlanIcon(plan.id)}
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900">{plan.name.replace("FormaStudio ", "")}</h3>
@@ -415,7 +415,7 @@ export function BillingModal({ isOpen, onClose }: BillingModalProps) {
                     isCurrentPlan
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : isPro
-                      ? "bg-slate-accent hover:bg-[#5D6E7C] text-white"
+                      ? "bg-[#0A0A0A] hover:bg-[#0A0A0A]/90 text-white"
                       : "bg-gray-100 hover:bg-gray-200 text-gray-900"
                   }`}
                 >
