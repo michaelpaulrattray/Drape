@@ -2945,4 +2945,19 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Create adminActions/index.ts dispatcher (36 lines, exports executeApprovedAdminAction + AdminActionContext type)
 - [x] Remove old server/lib/adminActions.ts
 - [x] Verify: TypeScript 0 errors, 589 tests pass
-- [ ] Save checkpoint
+- [x] Save checkpoint (version: 11c5c9f5)
+
+## P0: Split server/db.ts (2,531 lines → server/db/ domain modules)
+- [x] Setup: Create server/db/ directory + connection.ts + index.ts scaffold
+- [x] Step 1: Extract users domain (196 lines) to server/db/users.ts
+- [x] Step 2: Extract credits domain (247 lines) to server/db/credits.ts
+- [x] Step 3: Extract models domain (247 lines) to server/db/models.ts
+- [x] Step 4: Extract generations domain (85 lines) to server/db/generations.ts
+- [x] Step 5: Extract billing domain (303 lines) to server/db/billing.ts
+- [x] Step 6: Extract waitlist domain (87 lines) to server/db/waitlist.ts
+- [x] Step 7: Extract security domain (196 lines) to server/db/security.ts
+- [x] Step 8: Extract ipBlocking domain (199 lines) to server/db/ipBlocking.ts
+- [x] Step 9: Extract changeRequests domain (270 lines) to server/db/changeRequests.ts
+- [x] Step 10: Extract admin domain to server/db/admin.ts + delete legacy db.ts
+- [x] Step 10b: Split admin.ts (763 lines) into admin.ts (384) + moderatorQueries.ts (397) — both under 500
+- [x] Final: Run full tests, verify all 589 pass, save checkpoint
