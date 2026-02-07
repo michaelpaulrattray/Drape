@@ -227,6 +227,82 @@ export async function newsletterSignup(
 }
 
 /**
+ * Track a custom event in Klaviyo (triggers Flows for transactional emails)
+ */
+export async function trackEvent(
+  email: string,
+  metricName: string,
+  properties: Record<string, unknown> = {}
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`${KLAVIYO_API_URL}/events`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        data: {
+          type: "event",
+          attributes: {
+            metric: {
+              data: {
+                type: "metric",
+                attributes: { name: metricName },
+              },
+            },
+            profile: {
+              data: {
+                type: "profile",
+                attributes: { email },
+              },
+            },
+            properties,
+            time: new Date().toISOString(),
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`[Klaviyo] trackEvent(${metricName}) error:`, response.status, errorData);
+      return { success: false, error: `Klaviyo API error: ${response.status}` };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error(`[Klaviyo] trackEvent(${metricName}) failed:`, error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
+/**
+ * Send a referral invite email via Klaviyo event (triggers a Flow)
+ * Set up a Klaviyo Flow triggered by "Referral Invite Sent" metric
+ */
+export async function sendReferralInviteEmail(params: {
+  inviteeEmail: string;
+  referrerName: string;
+  referralLink: string;
+  rewardCredits: number;
+}): Promise<{ success: boolean; error?: string }> {
+  // Create/update the invitee profile first
+  await createOrUpdateProfile({
+    email: params.inviteeEmail,
+    properties: {
+      referral_invite_received: true,
+      referred_by: params.referrerName,
+    },
+  });
+
+  // Fire the event to trigger the Klaviyo Flow
+  return trackEvent(params.inviteeEmail, "Referral Invite Sent", {
+    referrer_name: params.referrerName,
+    referral_link: params.referralLink,
+    reward_credits: params.rewardCredits,
+    invite_date: new Date().toISOString(),
+  });
+}
+
+/**
  * Test the Klaviyo API connection
  */
 export async function testConnection(): Promise<{ success: boolean; error?: string }> {

@@ -2,6 +2,7 @@ export { AuditLogsTab } from "./AuditLogsTab";
 export { UserInvestigationTab } from "./UserInvestigationTab";
 export { BlockedIPsTab } from "./BlockedIPsTab";
 export { MyRequestsTab } from "./MyRequestsTab";
+export { FlaggedReferralsTab } from "./FlaggedReferralsTab";
 export { LogDetailModal } from "./LogDetailModal";
 export { ChangeRequestModal } from "./ChangeRequestModal";
 export { DashboardHeader } from "./DashboardHeader";

@@ -101,6 +101,23 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+
+    // Daily job: expire stale pending referrals (>30 days old)
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const runReferralExpiration = async () => {
+      try {
+        const { expireStalePendingReferrals } = await import("../db");
+        const count = await expireStalePendingReferrals();
+        if (count > 0) {
+          console.log(`[Scheduler] Expired ${count} stale pending referrals`);
+        }
+      } catch (err) {
+        console.error("[Scheduler] Referral expiration job failed:", err);
+      }
+    };
+    // Run once on startup (after 30s delay to let DB connect), then daily
+    setTimeout(runReferralExpiration, 30_000);
+    setInterval(runReferralExpiration, TWENTY_FOUR_HOURS);
   });
 }
 

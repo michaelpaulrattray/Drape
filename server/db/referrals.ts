@@ -1,4 +1,4 @@
-import { eq, and, sql, desc, gte } from "drizzle-orm";
+import { eq, and, sql, desc, gte, lte } from "drizzle-orm";
 import {
   users,
   referrals,
@@ -569,4 +569,45 @@ export async function recordEmailInvite(
   });
 
   return { success: true };
+}
+
+/**
+ * Expire stale pending referrals older than 30 days.
+ * Called on a daily interval from server startup.
+ * Only affects referrals in "pending" status (link shared but no signup).
+ */
+export async function expireStalePendingReferrals(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const result = await db
+    .update(referrals)
+    .set({ status: "expired" })
+    .where(
+      and(
+        eq(referrals.status, "pending"),
+        lte(referrals.createdAt, thirtyDaysAgo)
+      )
+    );
+
+  const expiredCount = result[0]?.affectedRows ?? 0;
+
+  if (expiredCount > 0) {
+    console.log(`[Referral] Expired ${expiredCount} stale pending referrals (>30 days old)`);
+    await logAuditEvent({
+      action: AUDIT_ACTIONS.REFERRAL_REDEEMED, // reuse closest action
+      resourceType: "referral",
+      resourceId: "batch-expiration",
+      metadata: {
+        expiredCount,
+        cutoffDate: thirtyDaysAgo.toISOString(),
+        reason: "Stale pending referrals expired after 30 days",
+      },
+      severity: "info",
+    });
+  }
+
+  return expiredCount;
 }

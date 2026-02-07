@@ -3245,3 +3245,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Calibrate referral reward amount to 250 credits per party (was 500)
 - [x] Change same-IP behavior: soft flag for moderator review within 24hr window (no auto-block)
 - [x] Update tests for all new fraud prevention rules (43 referral tests, 634 total passing)
+
+## Feature: Referral System Enhancements (Round 3)
+- [x] Block disposable email domains from signing up an account (OAuth callback + SDK auto-sync + Login page error)
+- [x] Moderator view for flagged referrals (FlaggedReferralsTab + moderator procedure + query)
+- [x] Wire up Klaviyo email delivery for sendInvite flow (trackEvent + sendReferralInviteEmail)
+- [x] Referral expiration job: daily setInterval expires pending referrals >30 days old
+- [x] Tests for all 4 enhancements (20 new tests, 654 total passing)

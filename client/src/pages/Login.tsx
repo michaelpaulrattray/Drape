@@ -1,6 +1,6 @@
 import { getLoginUrl } from "@/const";
 import { Button as DSButton, ConveyorTextColor } from "@/components/design-system";
-import { ArrowRight, AlertCircle, Clock, ShieldOff } from "lucide-react";
+import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
 // ─── Error configurations ──────────────────────────────────────────────────
@@ -20,6 +20,14 @@ const ERROR_MESSAGES = {
     iconColor: "text-amber-500",
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200",
+  },
+  disposable_email: {
+    icon: MailX,
+    title: "Email Not Allowed",
+    message: "Disposable or temporary email addresses are not permitted. Please sign up with a permanent email address.",
+    iconColor: "text-orange-500",
+    bgColor: "bg-orange-50",
+    borderColor: "border-orange-200",
   },
   error: {
     icon: AlertCircle,
@@ -56,7 +64,9 @@ function ErrorBanner({ errorType, lockMinutes }: { errorType: string; lockMinute
     ? ERROR_MESSAGES.suspended
     : errorType === "locked"
       ? ERROR_MESSAGES.locked
-      : ERROR_MESSAGES.error;
+      : errorType === "disposable_email"
+        ? ERROR_MESSAGES.disposable_email
+        : ERROR_MESSAGES.error;
 
   return (
     <div className={`mb-6 p-4 rounded-2xl border ${errorConfig.bgColor} ${errorConfig.borderColor}`}>

@@ -8,6 +8,7 @@ import {
   UserInvestigationTab,
   BlockedIPsTab,
   MyRequestsTab,
+  FlaggedReferralsTab,
   LogDetailModal,
   ChangeRequestModal,
   DashboardHeader,
@@ -54,6 +55,9 @@ export default function ModeratorDashboard() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userPage, setUserPage] = useState(0);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+
+  // Flagged referrals state
+  const [flaggedPage, setFlaggedPage] = useState(0);
 
   // ── Queries ──
 
@@ -106,6 +110,11 @@ export default function ModeratorDashboard() {
   const generationHistoryQuery = trpc.moderator.getUserGenerationHistory.useQuery(
     { userId: selectedUserId!, limit: 20, offset: 0, status: "all" as any, type: "all" as any },
     { enabled: !!selectedUserId }
+  );
+
+  const flaggedReferralsQuery = trpc.moderator.getFlaggedReferrals.useQuery(
+    { limit: 20, offset: flaggedPage * 20 },
+    { enabled: activeTab === "flagged-referrals" }
   );
 
   const myRequestsQuery = trpc.moderator.getMyChangeRequests.useQuery(
@@ -227,6 +236,7 @@ export default function ModeratorDashboard() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           blockedIpCount={blockedIpsQuery.data?.total}
+          flaggedReferralCount={flaggedReferralsQuery.data?.total}
           pendingRequestCount={myRequestsQuery.data?.summary?.pendingCount}
         />
 
@@ -258,6 +268,16 @@ export default function ModeratorDashboard() {
         )}
 
         {activeTab === "blocked-ips" && <BlockedIPsTab blockedIpsQuery={blockedIpsQuery} />}
+
+        {activeTab === "flagged-referrals" && (
+          <FlaggedReferralsTab
+            data={flaggedReferralsQuery.data}
+            isLoading={flaggedReferralsQuery.isLoading}
+            page={flaggedPage}
+            setPage={setFlaggedPage}
+            onOpenChangeRequest={openChangeRequest}
+          />
+        )}
 
         {activeTab === "my-requests" && (
           <MyRequestsTab data={myRequestsQuery.data} isLoading={myRequestsQuery.isLoading} refetch={() => myRequestsQuery.refetch()} />

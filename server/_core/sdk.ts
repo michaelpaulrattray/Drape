@@ -7,6 +7,7 @@ import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
+import { isDisposableEmail } from "../security/disposableEmails";
 import type {
   ExchangeTokenRequest,
   ExchangeTokenResponse,
@@ -274,6 +275,11 @@ class SDKServer {
     if (!user) {
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+        // Block disposable email domains from creating accounts
+        if (userInfo.email && isDisposableEmail(userInfo.email)) {
+          console.warn(`[Auth] Blocked disposable email signup: ${userInfo.email}`);
+          throw ForbiddenError("Disposable email addresses are not allowed");
+        }
         await db.upsertUser({
           openId: userInfo.openId,
           name: userInfo.name || null,

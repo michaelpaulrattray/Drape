@@ -6,6 +6,7 @@ import { sdk } from "./sdk";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { getClientIp, recordGlobalFailedLogin, shouldSendGlobalAttackAlert, markGlobalAttackAlertSent } from "../security/rateLimit";
 import { notifyOwner } from "./notification";
+import { isDisposableEmail } from "../security/disposableEmails";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -69,6 +70,24 @@ export function registerOAuthRoutes(app: Express) {
           userAgent,
         });
         res.status(400).json({ error: "openId missing from user info" });
+        return;
+      }
+
+      // Block disposable email domains from creating accounts
+      if (userInfo.email && isDisposableEmail(userInfo.email)) {
+        await logAuditEvent({
+          action: AUDIT_ACTIONS.LOGIN_FAILED,
+          resourceType: "auth",
+          resourceId: userInfo.openId,
+          metadata: {
+            reason: "Disposable email domain blocked",
+            email: userInfo.email,
+          },
+          severity: "warning",
+          ipAddress: clientIp,
+          userAgent,
+        });
+        res.redirect(302, "/login?error=disposable_email");
         return;
       }
 

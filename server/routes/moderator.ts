@@ -389,6 +389,17 @@ export const moderatorRouter = router({
       };
     }),
 
+  // Get referrals flagged for same-IP fraud review
+  getFlaggedReferrals: moderatorProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).optional().default(50),
+      offset: z.number().min(0).optional().default(0),
+    }).optional())
+    .query(async ({ input }) => {
+      const { getFlaggedReferrals } = await import("../db");
+      return await getFlaggedReferrals(input?.limit || 50, input?.offset || 0);
+    }),
+
   // Get change requests submitted by the current moderator
   getMyChangeRequests: moderatorProcedure
     .input(z.object({

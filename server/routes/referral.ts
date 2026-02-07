@@ -14,6 +14,7 @@ import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
+import { sendReferralInviteEmail } from "../klaviyo";
 
 /** Rate limit configs */
 const INVITE_RATE = { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000, keyPrefix: "ref-invite" };
@@ -109,6 +110,20 @@ export const referralRouter = router({
           message: result.error || "Failed to send invite",
         });
       }
+
+      // Send email via Klaviyo (non-blocking — invite is recorded regardless)
+      const baseUrl = ctx.req.headers.origin || "https://formastudio.ai";
+      const code = await getOrCreateReferralCode(ctx.user.id, ip);
+      const referralLink = code ? `${baseUrl}?ref=${code}` : baseUrl;
+
+      sendReferralInviteEmail({
+        inviteeEmail: input.email,
+        referrerName: ctx.user.name || "A FormaStudio user",
+        referralLink,
+        rewardCredits: REFERRAL_REWARD_CREDITS,
+      }).catch((err) => {
+        console.error("[Referral] Klaviyo email delivery failed:", err);
+      });
 
       return { sent: true };
     }),

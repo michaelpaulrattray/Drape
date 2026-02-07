@@ -395,3 +395,112 @@ export async function getRecentTopupCredits(
     );
   return Number(result[0]?.total ?? 0);
 }
+
+// ============================================================================
+// FLAGGED REFERRALS (same-IP fraud detection)
+// ============================================================================
+
+import { referrals, users } from "../../drizzle/schema";
+
+/**
+ * Get referrals flagged with sameIpFlag = true for moderator review.
+ * Joins user info for both referrer and referee.
+ */
+export async function getFlaggedReferrals(
+  limit: number = 50,
+  offset: number = 0
+): Promise<{
+  items: Array<{
+    id: number;
+    referrerUserId: number;
+    referrerName: string | null;
+    referrerEmail: string | null;
+    referredUserId: number | null;
+    referredName: string | null;
+    referredEmail: string | null;
+    referrerIp: string | null;
+    referredIp: string | null;
+    status: string;
+    creditsAwarded: number;
+    referrerCredited: boolean;
+    referredCredited: boolean;
+    createdAt: Date;
+    completedAt: Date | null;
+  }>;
+  total: number;
+}> {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+
+  // Alias for the referred user join
+  const referrerUser = users;
+
+  const flaggedRows = await db
+    .select({
+      id: referrals.id,
+      referrerUserId: referrals.referrerUserId,
+      referredUserId: referrals.referredUserId,
+      referredEmail: referrals.referredEmail,
+      referrerIp: referrals.referrerIp,
+      referredIp: referrals.referredIp,
+      status: referrals.status,
+      creditsAwarded: referrals.creditsAwarded,
+      referrerCredited: referrals.referrerCredited,
+      referredCredited: referrals.referredCredited,
+      createdAt: referrals.createdAt,
+      completedAt: referrals.completedAt,
+    })
+    .from(referrals)
+    .where(eq(referrals.sameIpFlag, true))
+    .orderBy(desc(referrals.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const countResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(referrals)
+    .where(eq(referrals.sameIpFlag, true));
+  const total = Number(countResult[0]?.count ?? 0);
+
+  // Enrich with user names/emails
+  const enriched = await Promise.all(
+    flaggedRows.map(async (row) => {
+      let referrerName: string | null = null;
+      let referrerEmail: string | null = null;
+      let referredName: string | null = null;
+
+      // Get referrer info
+      const referrerRows = await db
+        .select({ name: referrerUser.name, email: referrerUser.email })
+        .from(referrerUser)
+        .where(eq(referrerUser.id, row.referrerUserId))
+        .limit(1);
+      if (referrerRows[0]) {
+        referrerName = referrerRows[0].name;
+        referrerEmail = referrerRows[0].email;
+      }
+
+      // Get referred user info
+      if (row.referredUserId) {
+        const referredRows = await db
+          .select({ name: users.name, email: users.email })
+          .from(users)
+          .where(eq(users.id, row.referredUserId))
+          .limit(1);
+        if (referredRows[0]) {
+          referredName = referredRows[0].name;
+        }
+      }
+
+      return {
+        ...row,
+        referrerName,
+        referrerEmail,
+        referredName,
+        referredEmail: row.referredEmail,
+      };
+    })
+  );
+
+  return { items: enriched, total };
+}

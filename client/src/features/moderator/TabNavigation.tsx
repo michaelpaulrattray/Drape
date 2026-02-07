@@ -1,16 +1,17 @@
 /**
  * Tab navigation bar for the Moderator Dashboard.
  */
-import { Activity, Users, Globe, FileText } from "lucide-react";
+import { Activity, Users, Globe, FileText, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export type ModeratorTab = "audit-logs" | "users" | "blocked-ips" | "my-requests";
+export type ModeratorTab = "audit-logs" | "users" | "blocked-ips" | "flagged-referrals" | "my-requests";
 
 interface TabNavigationProps {
   activeTab: ModeratorTab;
   setActiveTab: (tab: ModeratorTab) => void;
   blockedIpCount?: number;
+  flaggedReferralCount?: number;
   pendingRequestCount?: number;
 }
 
@@ -18,6 +19,7 @@ export function TabNavigation({
   activeTab,
   setActiveTab,
   blockedIpCount,
+  flaggedReferralCount,
   pendingRequestCount,
 }: TabNavigationProps) {
   return (
@@ -50,6 +52,18 @@ export function TabNavigation({
         Blocked IPs
         {blockedIpCount ? (
           <Badge className="ml-2 bg-red-500/20 text-red-400">{blockedIpCount}</Badge>
+        ) : null}
+      </Button>
+      <Button
+        variant={activeTab === "flagged-referrals" ? "default" : "ghost"}
+        size="sm"
+        onClick={() => setActiveTab("flagged-referrals")}
+        className={activeTab === "flagged-referrals" ? "bg-amber-600 hover:bg-amber-700" : "text-white/60 hover:text-white"}
+      >
+        <Flag className="w-4 h-4 mr-2" />
+        Flagged Referrals
+        {flaggedReferralCount ? (
+          <Badge className="ml-2 bg-amber-500/20 text-amber-400">{flaggedReferralCount}</Badge>
         ) : null}
       </Button>
       <Button

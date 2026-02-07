@@ -130,6 +130,7 @@ export {
   getDetailedGenerationHistory,
   getRecentTopupCount,
   getRecentTopupCredits,
+  getFlaggedReferrals,
 } from "./moderatorQueries";
 
 // Referrals
@@ -145,4 +146,5 @@ export {
   getReferralHistory,
   recordEmailInvite,
   isValidReferralCodeFormat,
+  expireStalePendingReferrals,
 } from "./referrals";
