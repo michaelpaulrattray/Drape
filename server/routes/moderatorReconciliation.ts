@@ -234,6 +234,54 @@ export const moderatorReconciliationRouter = router({
       };
     }),
 
+  /** Moderator manual freeze: for immediate action on abuse, exploits, or suspicious activity. */
+  freezeAccount: moderatorProcedure
+    .input(z.object({
+      userId: z.number(),
+      reason: z.string().min(1, "Reason is required").max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const [user] = await db
+        .select({ frozenAt: users.frozenAt, name: users.name, email: users.email, role: users.role })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      if (user.frozenAt) throw new TRPCError({ code: "BAD_REQUEST", message: "User is already frozen" });
+      if (user.role === "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Cannot freeze admin accounts" });
+
+      const reason = `Manual freeze by moderator: ${input.reason}`;
+      await freezeUser(input.userId, reason, String(ctx.user.id));
+
+      await SlackAlerts.accountAutoFrozen(
+        input.userId,
+        user.name || `User ${input.userId}`,
+        0, // no discrepancy — manual freeze
+        0
+      );
+
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.ACCOUNT_AUTO_FROZEN,
+        resourceType: "user",
+        resourceId: String(input.userId),
+        metadata: {
+          targetUserName: user.name,
+          targetUserEmail: user.email,
+          reason: input.reason,
+          frozenBy: ctx.user.id,
+          frozenByName: ctx.user.name,
+          trigger: "moderator_manual",
+        },
+      });
+
+      return { success: true };
+    }),
+
   /** Moderator direct-unfreeze: lighter than suspension, mods can resolve directly. */
   unfreezeAccount: moderatorProcedure
     .input(z.object({

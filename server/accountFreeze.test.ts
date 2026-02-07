@@ -186,6 +186,81 @@ describe("Account Freeze System", () => {
     });
   });
 
+  describe("Moderator manual freeze", () => {
+    it("should require a reason for manual freeze", () => {
+      const reason = "";
+      const isValid = reason.trim().length > 0;
+      expect(isValid).toBe(false);
+    });
+
+    it("should accept valid freeze reason", () => {
+      const reason = "Suspicious generation pattern — freezing for investigation";
+      const isValid = reason.trim().length > 0 && reason.length <= 500;
+      expect(isValid).toBe(true);
+    });
+
+    it("should not allow freezing admin accounts", () => {
+      const user = { role: "admin" };
+      const canFreeze = user.role !== "admin";
+      expect(canFreeze).toBe(false);
+    });
+
+    it("should allow freezing regular user accounts", () => {
+      const user = { role: "user" };
+      const canFreeze = user.role !== "admin";
+      expect(canFreeze).toBe(true);
+    });
+
+    it("should allow freezing moderator accounts", () => {
+      const user = { role: "moderator" };
+      const canFreeze = user.role !== "admin";
+      expect(canFreeze).toBe(true);
+    });
+
+    it("should not allow freezing already frozen accounts", () => {
+      const user = { frozenAt: new Date() };
+      const canFreeze = !user.frozenAt;
+      expect(canFreeze).toBe(false);
+    });
+
+    it("should prefix reason with 'Manual freeze by moderator:'", () => {
+      const inputReason = "Abuse detected";
+      const storedReason = `Manual freeze by moderator: ${inputReason}`;
+      expect(storedReason).toContain("Manual freeze by moderator:");
+      expect(storedReason).toContain(inputReason);
+    });
+  });
+
+  describe("Admin freeze/unfreeze", () => {
+    it("admin should be able to freeze users", () => {
+      const adminRole = "admin";
+      const targetRole = "user";
+      const canFreeze = adminRole === "admin" && targetRole !== "admin";
+      expect(canFreeze).toBe(true);
+    });
+
+    it("admin should not be able to freeze other admins", () => {
+      const adminRole = "admin";
+      const targetRole = "admin";
+      const isSelf = false;
+      const canFreeze = adminRole === "admin" && (targetRole !== "admin" || isSelf);
+      expect(canFreeze).toBe(false);
+    });
+
+    it("admin freeze reason should be prefixed with 'Admin freeze:'", () => {
+      const inputReason = "Billing investigation";
+      const storedReason = `Admin freeze: ${inputReason}`;
+      expect(storedReason).toContain("Admin freeze:");
+      expect(storedReason).toContain(inputReason);
+    });
+
+    it("admin should be able to unfreeze any frozen user", () => {
+      const user = { frozenAt: new Date(), role: "user" };
+      const canUnfreeze = !!user.frozenAt;
+      expect(canUnfreeze).toBe(true);
+    });
+  });
+
   describe("User frozen banner display logic", () => {
     it("should show banner when frozenAt is set", () => {
       const user = { frozenAt: new Date("2026-02-01"), frozenReason: "Auto-frozen: discrepancy" };

@@ -163,6 +163,9 @@ export async function getUserFullDetails(userId: number): Promise<{
     suspendedAt: Date | null;
     suspendedReason: string | null;
     suspendedBy: number | null;
+    frozenAt: Date | null;
+    frozenReason: string | null;
+    frozenBy: string | null;
     lockedUntil: Date | null;
     failedLoginAttempts: number;
     createdAt: Date;
@@ -232,6 +235,9 @@ export async function getUserFullDetails(userId: number): Promise<{
         suspendedAt: user.suspendedAt,
         suspendedReason: user.suspendedReason,
         suspendedBy: user.suspendedBy,
+        frozenAt: user.frozenAt,
+        frozenReason: user.frozenReason,
+        frozenBy: user.frozenBy,
         lockedUntil: user.lockedUntil,
         failedLoginAttempts: user.failedLoginAttempts,
         createdAt: user.createdAt,

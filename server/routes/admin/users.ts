@@ -157,11 +157,113 @@ export const usersRouter = router({
         role: user.role,
         suspendedAt: user.suspendedAt,
         suspendedReason: user.suspendedReason,
+        frozenAt: user.frozenAt,
+        frozenReason: user.frozenReason,
+        frozenBy: user.frozenBy,
         lockedUntil: user.lockedUntil,
         failedLoginAttempts: user.failedLoginAttempts,
         createdAt: user.createdAt,
         lastSignedIn: user.lastSignedIn,
       };
+    }),
+
+  // Freeze a user account (lighter than suspension)
+  freezeUser: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      reason: z.string().min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { freezeUser, getUserById } = await import("../../db");
+
+      const targetUser = await getUserById(input.userId);
+      if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      if (targetUser.frozenAt) throw new TRPCError({ code: "BAD_REQUEST", message: "User is already frozen" });
+      if (targetUser.role === "admin" && input.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot freeze other admin accounts" });
+      }
+
+      const reason = `Admin freeze: ${input.reason}`;
+      await freezeUser(input.userId, reason, String(ctx.user.id));
+
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.ACCOUNT_AUTO_FROZEN,
+        resourceType: "user",
+        resourceId: input.userId.toString(),
+        metadata: {
+          targetUserId: input.userId,
+          targetUserEmail: targetUser.email,
+          reason: input.reason,
+          frozenBy: ctx.user.id,
+          frozenByName: ctx.user.name,
+          trigger: "admin_manual",
+        },
+        severity: "warning",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+
+      await logAdminAction({
+        adminId: ctx.user.id,
+        adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
+        action: "freezeUser",
+        targetType: "user",
+        targetId: input.userId.toString(),
+        details: `Froze user ${targetUser.email || targetUser.name} - Reason: ${input.reason}`,
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || undefined,
+      });
+
+      return { success: true };
+    }),
+
+  // Unfreeze a user account
+  unfreezeUser: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      notes: z.string().min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { unfreezeUser, getUserById } = await import("../../db");
+
+      const targetUser = await getUserById(input.userId);
+      if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      if (!targetUser.frozenAt) throw new TRPCError({ code: "BAD_REQUEST", message: "User is not frozen" });
+
+      const result = await unfreezeUser(input.userId);
+      if (!result.success) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to unfreeze" });
+
+      await logAuditEvent({
+        userId: ctx.user.id,
+        action: AUDIT_ACTIONS.ACCOUNT_UNFROZEN,
+        resourceType: "user",
+        resourceId: input.userId.toString(),
+        metadata: {
+          targetUserId: input.userId,
+          targetUserEmail: targetUser.email,
+          reviewNotes: input.notes,
+          unfrozenBy: ctx.user.id,
+          unfrozenByName: ctx.user.name,
+          previousReason: targetUser.frozenReason,
+        },
+        severity: "info",
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || null,
+      });
+
+      await logAdminAction({
+        adminId: ctx.user.id,
+        adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
+        action: "unfreezeUser",
+        targetType: "user",
+        targetId: input.userId.toString(),
+        details: `Unfroze user ${targetUser.email || targetUser.name} - Notes: ${input.notes}`,
+        ipAddress: getClientIp(ctx.req),
+        userAgent: ctx.req.headers["user-agent"] || undefined,
+      });
+
+      return { success: true };
     }),
 
   // Get paginated list of users with search and filters
@@ -220,6 +322,7 @@ export const usersRouter = router({
         user: {
           ...result.user,
           suspendedAt: result.user.suspendedAt?.toISOString() || null,
+          frozenAt: result.user.frozenAt?.toISOString() || null,
           lockedUntil: result.user.lockedUntil?.toISOString() || null,
           createdAt: result.user.createdAt.toISOString(),
           lastSignedIn: result.user.lastSignedIn.toISOString(),

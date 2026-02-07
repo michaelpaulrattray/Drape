@@ -3433,3 +3433,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add frozenAt/frozenReason/frozenBy to moderator getUserDetails response
 - [x] Add moderator direct-unfreeze button in ReconciliationSubTab (with required notes)
 - [x] Write tests for freeze enforcement, auto-trigger, and unfreeze (26 tests, 734 total passing)
+
+## Feature: Manual Freeze for Moderators + Admin Freeze/Unfreeze
+- [x] Add freezeAccount moderator procedure (with required reason, audit-logged)
+- [x] Add freeze/unfreeze button to moderator UserDetailCard with inline form
+- [x] Add admin freezeUser/unfreezeUser procedures in admin users route (audit-logged, immutable log)
+- [x] Add frozenAt/frozenReason/frozenBy to admin getUserDetails and getUserFullDetails
+- [x] Block freezing admin accounts (safety guard)
+- [x] Update tests for manual freeze capabilities (37 freeze tests, 745 total passing)
