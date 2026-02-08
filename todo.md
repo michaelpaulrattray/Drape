@@ -3563,8 +3563,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Redesign AdminAuditLogs page (light theme, improved layout)
 - [x] Restyle AuditLogTable, AuditLogsFilters, AuditLogDetailModal components
 - [x] Restyle AuditActionModals, BlockedIPsTab components
-- [ ] Redesign AdminChangeRequests page (light theme, improved layout)
-- [ ] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
+- [x] Redesign AdminChangeRequests page (light theme, improved layout)
+- [x] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
 - [ ] Redesign ModeratorDashboard page (light theme)
 - [ ] Restyle all moderator sub-components (DashboardHeader, StatsCards, TabNavigation, etc.)
 - [x] Update AdminOverview to use shared AdminHeader
@@ -3579,8 +3579,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Redesign AdminAuditLogs page (light theme, improved layout)
 - [x] Restyle AuditLogTable, AuditLogsFilters, AuditLogDetailModal components
 - [x] Restyle AuditActionModals, BlockedIPsTab components
-- [ ] Redesign AdminChangeRequests page (light theme, improved layout)
-- [ ] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
+- [x] Redesign AdminChangeRequests page (light theme, improved layout)
+- [x] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
 - [x] Update AdminOverview to use shared AdminHeader
 - [ ] Redesign ModeratorDashboard page (light theme)
 - [ ] Restyle all moderator sub-components

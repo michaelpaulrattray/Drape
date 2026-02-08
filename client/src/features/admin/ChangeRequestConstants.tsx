@@ -17,31 +17,31 @@ import { Badge } from "@/components/ui/badge";
 // ─── Type Config ─────────────────────────────────────────────────────────────
 
 export const TYPE_CONFIG: Record<string, { label: string; icon: typeof Coins; color: string }> = {
-  refund_credits: { label: "Refund Credits", icon: Coins, color: "text-amber-400" },
-  add_credits: { label: "Add Credits", icon: Coins, color: "text-emerald-400" },
-  flag_account: { label: "Flag Account", icon: Flag, color: "text-orange-400" },
-  note_incident: { label: "Note Incident", icon: FileText, color: "text-blue-400" },
-  suspend_user: { label: "Suspend User", icon: Ban, color: "text-red-400" },
-  unsuspend_user: { label: "Unsuspend User", icon: UserCheck, color: "text-green-400" },
-  block_ip: { label: "Block IP", icon: Globe, color: "text-red-400" },
-  stripe_refund: { label: "Stripe Refund", icon: CreditCard, color: "text-violet-400" },
-  other: { label: "Other", icon: HelpCircle, color: "text-gray-400" },
+  refund_credits: { label: "Refund Credits", icon: Coins, color: "text-amber-600" },
+  add_credits: { label: "Add Credits", icon: Coins, color: "text-emerald-600" },
+  flag_account: { label: "Flag Account", icon: Flag, color: "text-orange-600" },
+  note_incident: { label: "Note Incident", icon: FileText, color: "text-blue-600" },
+  suspend_user: { label: "Suspend User", icon: Ban, color: "text-red-600" },
+  unsuspend_user: { label: "Unsuspend User", icon: UserCheck, color: "text-green-600" },
+  block_ip: { label: "Block IP", icon: Globe, color: "text-red-600" },
+  stripe_refund: { label: "Stripe Refund", icon: CreditCard, color: "text-violet-600" },
+  other: { label: "Other", icon: HelpCircle, color: "text-gray-500" },
 };
 
 export const STATUS_CONFIG: Record<string, { label: string; className: string; icon: typeof Clock }> = {
-  pending: { label: "Pending", className: "bg-amber-500/10 text-amber-400 border-amber-500/20", icon: Clock },
-  approved: { label: "Approved", className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", icon: CheckCircle },
-  denied: { label: "Denied", className: "bg-red-500/10 text-red-400 border-red-500/20", icon: XCircle },
-  cancelled: { label: "Cancelled", className: "bg-gray-500/10 text-gray-400 border-gray-500/20", icon: XCircle },
-  expired: { label: "Expired", className: "bg-gray-500/10 text-gray-400 border-gray-500/20", icon: Clock },
-  pending_execution: { label: "Awaiting Slack", className: "bg-purple-500/10 text-purple-400 border-purple-500/20", icon: Timer },
+  pending: { label: "Pending", className: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
+  approved: { label: "Approved", className: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle },
+  denied: { label: "Denied", className: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
+  cancelled: { label: "Cancelled", className: "bg-gray-100 text-gray-600 border-gray-200", icon: XCircle },
+  expired: { label: "Expired", className: "bg-gray-100 text-gray-600 border-gray-200", icon: Clock },
+  pending_execution: { label: "Awaiting Slack", className: "bg-purple-50 text-purple-700 border-purple-200", icon: Timer },
 };
 
 export const PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {
-  low: { label: "Low", className: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
-  normal: { label: "Normal", className: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-  high: { label: "High", className: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
-  urgent: { label: "Urgent", className: "bg-red-500/10 text-red-400 border-red-500/20" },
+  low: { label: "Low", className: "bg-gray-100 text-gray-600 border-gray-200" },
+  normal: { label: "Normal", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  high: { label: "High", className: "bg-orange-50 text-orange-700 border-orange-200" },
+  urgent: { label: "Urgent", className: "bg-red-50 text-red-700 border-red-200" },
 };
 
 export const ALL_TYPES = [

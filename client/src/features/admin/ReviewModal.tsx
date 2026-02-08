@@ -46,20 +46,20 @@ export function ReviewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#141414] border-white/10 text-white">
+      <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-[#0A0A0A]">
             {action === "approved" ? (
-              <CheckCircle className="w-5 h-5 text-emerald-400" />
+              <CheckCircle className="w-5 h-5 text-emerald-600" />
             ) : (
-              <XCircle className="w-5 h-5 text-red-400" />
+              <XCircle className="w-5 h-5 text-red-600" />
             )}
             {modalTitle}
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-[#666]">
             <span>Request <strong>#{selectedRequestId}</strong>: {modalDesc}</span>
             {action === "approved" && isSensitive && (
-              <span className="block mt-1 text-purple-400 font-medium">
+              <span className="block mt-1 text-purple-600 font-medium">
                 This is a sensitive action. A Slack confirmation will be required before execution.
               </span>
             )}
@@ -67,12 +67,12 @@ export function ReviewModal({
         </DialogHeader>
 
         <div className="space-y-3">
-          <label className="text-sm text-gray-400">Notes (optional)</label>
+          <label className="text-sm text-[#666]">Notes (optional)</label>
           <Textarea
             value={notes}
             onChange={(e) => onNotesChange(e.target.value)}
             placeholder={notesPlaceholder}
-            className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 min-h-[80px]"
+            className="bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC] min-h-[80px]"
           />
         </div>
 
@@ -80,7 +80,7 @@ export function ReviewModal({
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="text-gray-400 hover:text-white"
+            className="text-[#999] hover:text-[#0A0A0A]"
           >
             Cancel
           </Button>

@@ -1,10 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Redirect, Link } from "wouter";
+import { Redirect } from "wouter";
 import { useState, useMemo, useEffect } from "react";
 import {
   ClipboardList,
-  ChevronLeft,
   RefreshCw,
   CheckCircle,
   XCircle,
@@ -31,6 +30,7 @@ import {
 import { ChangeRequestList } from "@/features/admin/ChangeRequestList";
 import { ChangeRequestDetail } from "@/features/admin/ChangeRequestDetail";
 import { ReviewModal } from "@/features/admin/ReviewModal";
+import { AdminHeader } from "@/features/admin/AdminHeader";
 
 export default function AdminChangeRequests() {
   const { user, loading: authLoading } = useAuth();
@@ -86,7 +86,6 @@ export default function AdminChangeRequests() {
 
   const selectedRequest = detailQuery.data;
 
-  // Slack approval status polling for pending_execution requests
   const slackStatusQuery = trpc.admin.checkChangeRequestSlackStatus.useQuery(
     { changeRequestId: selectedRequestId! },
     {
@@ -106,7 +105,6 @@ export default function AdminChangeRequests() {
     },
   });
 
-  // Auto-execute when Slack approves
   useEffect(() => {
     if (
       slackStatusQuery.data?.slackStatus === "approved" &&
@@ -121,8 +119,8 @@ export default function AdminChangeRequests() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-white/50" />
+      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#999]" />
       </div>
     );
   }
@@ -155,85 +153,71 @@ export default function AdminChangeRequests() {
   // ─── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Dashboard
-                </Button>
-              </Link>
-              <div className="flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-blue-400" />
-                <h1 className="text-xl font-semibold">Change Requests</h1>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => listQuery.refetch()}
-              className="border-white/10 hover:bg-white/5"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${listQuery.isFetching ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
+      <AdminHeader
+        title="Change Requests"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => listQuery.refetch()}
+            className="border-[#D5D5D5] text-[#999] text-xs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${listQuery.isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        }
+      />
 
-      <main className="container py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
             onClick={() => { setStatusFilter("pending"); setPage(0); }}
-            className={`bg-white/5 rounded-lg p-4 border transition-all text-left ${statusFilter === "pending" ? "border-amber-500/50 ring-1 ring-amber-500/20" : "border-white/10 hover:border-white/20"}`}
+            className={`bg-white rounded-lg p-4 border transition-all text-left ${statusFilter === "pending" ? "border-amber-400 ring-1 ring-amber-200" : "border-[#E5E5E5] hover:border-[#CCC]"}`}
           >
             <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-amber-400" />
-              <span className="text-2xl font-bold text-amber-400">{summary.pendingCount}</span>
+              <Clock className="w-4 h-4 text-amber-600" />
+              <span className="text-2xl font-bold text-amber-600">{summary.pendingCount}</span>
             </div>
-            <div className="text-sm text-gray-400">Pending Review</div>
+            <div className="text-sm text-[#999]">Pending Review</div>
           </button>
           <button
             onClick={() => { setStatusFilter("approved"); setPage(0); }}
-            className={`bg-white/5 rounded-lg p-4 border transition-all text-left ${statusFilter === "approved" ? "border-emerald-500/50 ring-1 ring-emerald-500/20" : "border-white/10 hover:border-white/20"}`}
+            className={`bg-white rounded-lg p-4 border transition-all text-left ${statusFilter === "approved" ? "border-emerald-400 ring-1 ring-emerald-200" : "border-[#E5E5E5] hover:border-[#CCC]"}`}
           >
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-emerald-400" />
-              <span className="text-2xl font-bold text-emerald-400">{summary.approvedCount}</span>
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span className="text-2xl font-bold text-emerald-600">{summary.approvedCount}</span>
             </div>
-            <div className="text-sm text-gray-400">Approved</div>
+            <div className="text-sm text-[#999]">Approved</div>
           </button>
           <button
             onClick={() => { setStatusFilter("denied"); setPage(0); }}
-            className={`bg-white/5 rounded-lg p-4 border transition-all text-left ${statusFilter === "denied" ? "border-red-500/50 ring-1 ring-red-500/20" : "border-white/10 hover:border-white/20"}`}
+            className={`bg-white rounded-lg p-4 border transition-all text-left ${statusFilter === "denied" ? "border-red-400 ring-1 ring-red-200" : "border-[#E5E5E5] hover:border-[#CCC]"}`}
           >
             <div className="flex items-center gap-2 mb-1">
-              <XCircle className="w-4 h-4 text-red-400" />
-              <span className="text-2xl font-bold text-red-400">{summary.deniedCount}</span>
+              <XCircle className="w-4 h-4 text-red-600" />
+              <span className="text-2xl font-bold text-red-600">{summary.deniedCount}</span>
             </div>
-            <div className="text-sm text-gray-400">Denied</div>
+            <div className="text-sm text-[#999]">Denied</div>
           </button>
           <button
             onClick={() => { setStatusFilter("all"); setPage(0); }}
-            className={`bg-white/5 rounded-lg p-4 border transition-all text-left ${statusFilter === "all" ? "border-blue-500/50 ring-1 ring-blue-500/20" : "border-white/10 hover:border-white/20"}`}
+            className={`bg-white rounded-lg p-4 border transition-all text-left ${statusFilter === "all" ? "border-blue-400 ring-1 ring-blue-200" : "border-[#E5E5E5] hover:border-[#CCC]"}`}
           >
             <div className="flex items-center gap-2 mb-1">
-              <ClipboardList className="w-4 h-4 text-blue-400" />
-              <span className="text-2xl font-bold text-blue-400">{summary.totalCount}</span>
+              <ClipboardList className="w-4 h-4 text-blue-600" />
+              <span className="text-2xl font-bold text-blue-600">{summary.totalCount}</span>
             </div>
-            <div className="text-sm text-gray-400">Total Requests</div>
+            <div className="text-sm text-[#999]">Total Requests</div>
           </button>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3">
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[160px] bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-[160px] bg-white border-[#E5E5E5] text-[#0A0A0A]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -246,7 +230,7 @@ export default function AdminChangeRequests() {
           </Select>
 
           <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[180px] bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-[180px] bg-white border-[#E5E5E5] text-[#0A0A0A]">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -260,7 +244,7 @@ export default function AdminChangeRequests() {
           </Select>
 
           <Select value={priorityFilter} onValueChange={(v) => { setPriorityFilter(v); setPage(0); }}>
-            <SelectTrigger className="w-[150px] bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-[150px] bg-white border-[#E5E5E5] text-[#0A0A0A]">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -275,7 +259,6 @@ export default function AdminChangeRequests() {
 
         {/* Content: List + Detail */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Request List */}
           <div className="lg:col-span-2 space-y-2">
             <ChangeRequestList
               requests={requests}
@@ -288,7 +271,6 @@ export default function AdminChangeRequests() {
             />
           </div>
 
-          {/* Detail Panel */}
           <div className="lg:col-span-3">
             <ChangeRequestDetail
               selectedRequestId={selectedRequestId}
@@ -303,7 +285,6 @@ export default function AdminChangeRequests() {
         </div>
       </main>
 
-      {/* Review Modal */}
       <ReviewModal
         open={reviewDialogOpen}
         onOpenChange={setReviewDialogOpen}
