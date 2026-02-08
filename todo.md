@@ -3669,3 +3669,8 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Tweak: Hero Radial Mask Size
 - [x] Reduce reveal radius from 0.65 to 0.45, tighten shader inner (0.35) and outer (1.1) multipliers
+
+## Bug Fix: Hero Section Refinements
+- [x] Fix color space — added #include <colorspace_fragment> to shader for correct sRGB output
+- [x] Make swimming motion feel like a fish gliding across — slow horizontal sweep + gentle vertical undulation
+- [x] Reduce parallax strength from 0.008 to 0.003 — eliminates face distortion at edges

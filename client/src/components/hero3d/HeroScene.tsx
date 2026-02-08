@@ -28,8 +28,8 @@ const IMAGE_ASPECT = 5504 / 3072;
 /** Reveal circle radius in UV space (0–1). */
 const REVEAL_RADIUS = 0.45;
 
-/** Parallax strength — subtle to avoid warping */
-const PARALLAX_STRENGTH = 0.008;
+/** Parallax strength — very subtle to avoid face distortion */
+const PARALLAX_STRENGTH = 0.003;
 
 /** Threshold below which we stop requesting frames (settled state) */
 const SETTLE_THRESHOLD = 0.0001;
@@ -185,26 +185,26 @@ function RevealPlane({
     if (sharedMouse.idle) {
       const t = timeRef.current;
 
-      sharedMouse.targetX =
-        0.5 +
-        Math.sin(t * 0.4) * 0.25 +
-        Math.sin(t * 0.7) * 0.1 +
-        Math.sin(t * 1.1) * 0.05;
+      // Fish-like swimming: directional sweeping arcs across the image
+      // Primary: slow horizontal sweep (like a fish gliding left-to-right)
+      // Secondary: gentle vertical undulation (like a fish's body wave)
+      // Tertiary: subtle figure-8 drift for organic feel
+      const sweepX = Math.sin(t * 0.15) * 0.35; // slow wide horizontal sweep
+      const undulateY = Math.sin(t * 0.35) * 0.08; // gentle vertical wave
+      const driftX = Math.sin(t * 0.25 + 1.5) * 0.08; // subtle drift overlay
+      const driftY = Math.cos(t * 0.2) * 0.05; // subtle vertical drift
 
-      sharedMouse.targetY =
-        0.5 +
-        Math.cos(t * 0.3) * 0.2 +
-        Math.cos(t * 0.6) * 0.08 +
-        Math.cos(t * 0.9) * 0.04;
+      sharedMouse.targetX = 0.5 + sweepX + driftX;
+      sharedMouse.targetY = 0.5 + undulateY + driftY;
 
       // Clamp to valid range with padding
       sharedMouse.targetX = Math.max(
-        0.15,
-        Math.min(0.85, sharedMouse.targetX)
+        0.1,
+        Math.min(0.9, sharedMouse.targetX)
       );
       sharedMouse.targetY = Math.max(
-        0.15,
-        Math.min(0.85, sharedMouse.targetY)
+        0.25,
+        Math.min(0.75, sharedMouse.targetY)
       );
     }
 

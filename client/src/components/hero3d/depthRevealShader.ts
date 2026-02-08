@@ -74,5 +74,8 @@ export const fragmentShader = /* glsl */ `
 
     // Blend between base and styled
     gl_FragColor = mix(baseColor, styledColor, revealMask);
+
+    // Ensure correct sRGB output (Canvas uses flat mode)
+    #include <colorspace_fragment>
   }
 `;
