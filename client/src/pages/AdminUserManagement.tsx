@@ -2,8 +2,14 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Redirect, Link } from "wouter";
 import { useState } from "react";
-import { Users, RefreshCw, ChevronLeft } from "lucide-react";
+import { Users, RefreshCw, ChevronLeft, Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { UserStatsCards } from "@/features/admin/UserStatsCards";
 import { UserFilters } from "@/features/admin/UserFilters";
@@ -39,6 +45,10 @@ export default function AdminUserManagement() {
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [roleChangeTarget, setRoleChangeTarget] = useState<"user" | "moderator">("moderator");
   const [roleChangeReason, setRoleChangeReason] = useState("");
+  const [freezeModalOpen, setFreezeModalOpen] = useState(false);
+  const [freezeReason, setFreezeReason] = useState("");
+  const [unfreezeModalOpen, setUnfreezeModalOpen] = useState(false);
+  const [unfreezeNotes, setUnfreezeNotes] = useState("");
 
   // Queries
   const statsQuery = trpc.admin.getUserStats.useQuery(undefined, {
@@ -88,6 +98,16 @@ export default function AdminUserManagement() {
     onError: (error) => { toast.error(error.message); },
   });
 
+  const freezeMutation = trpc.admin.freezeUser.useMutation({
+    onSuccess: () => { toast.success("Account frozen successfully"); setFreezeModalOpen(false); setFreezeReason(""); usersQuery.refetch(); userDetailsQuery.refetch(); },
+    onError: (error) => { toast.error(error.message); },
+  });
+
+  const unfreezeMutation = trpc.admin.unfreezeUser.useMutation({
+    onSuccess: () => { toast.success("Account unfrozen successfully"); setUnfreezeModalOpen(false); setUnfreezeNotes(""); usersQuery.refetch(); userDetailsQuery.refetch(); },
+    onError: (error) => { toast.error(error.message); },
+  });
+
   // Handlers
   const handleSearch = () => { setSearch(searchInput); setPage(0); };
 
@@ -106,6 +126,16 @@ export default function AdminUserManagement() {
   const handleChangeRole = () => {
     if (!selectedUserId || !roleChangeReason.trim()) return;
     changeRoleMutation.mutate({ userId: selectedUserId, newRole: roleChangeTarget, reason: roleChangeReason });
+  };
+
+  const handleFreeze = () => {
+    if (!selectedUserId || !freezeReason.trim()) return;
+    freezeMutation.mutate({ userId: selectedUserId, reason: freezeReason });
+  };
+
+  const handleUnfreeze = () => {
+    if (!selectedUserId || !unfreezeNotes.trim()) return;
+    unfreezeMutation.mutate({ userId: selectedUserId, notes: unfreezeNotes });
   };
 
   // Auth guards
@@ -186,6 +216,10 @@ export default function AdminUserManagement() {
         onDemote={() => { setRoleChangeTarget("user"); setRoleModalOpen(true); }}
         onAddCredits={() => { setCreditAction("add"); setCreditModalOpen(true); }}
         onDeductCredits={() => { setCreditAction("deduct"); setCreditModalOpen(true); }}
+        onFreeze={() => setFreezeModalOpen(true)}
+        onUnfreeze={() => setUnfreezeModalOpen(true)}
+        freezePending={freezeMutation.isPending}
+        unfreezePending={unfreezeMutation.isPending}
       />
 
       <SuspendModal
@@ -219,6 +253,56 @@ export default function AdminUserManagement() {
         isPending={changeRoleMutation.isPending}
         selectedUser={userDetailsQuery.data ?? undefined}
       />
+
+      {/* Freeze Modal */}
+      <Dialog open={freezeModalOpen} onOpenChange={setFreezeModalOpen}>
+        <DialogContent className="bg-[#0f0f0f] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-cyan-400">
+              <Snowflake className="w-5 h-5" />
+              Freeze Account
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-400">Freezing restricts the user from generating content or spending credits. This is lighter than a full suspension.</p>
+          <textarea
+            value={freezeReason}
+            onChange={(e) => setFreezeReason(e.target.value)}
+            placeholder="Reason for freezing this account..."
+            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 resize-none h-24 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setFreezeModalOpen(false)} className="text-gray-400">Cancel</Button>
+            <Button onClick={handleFreeze} disabled={!freezeReason.trim() || freezeMutation.isPending} className="bg-cyan-600 hover:bg-cyan-700">
+              {freezeMutation.isPending ? "Freezing..." : "Freeze Account"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unfreeze Modal */}
+      <Dialog open={unfreezeModalOpen} onOpenChange={setUnfreezeModalOpen}>
+        <DialogContent className="bg-[#0f0f0f] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-400">
+              <Snowflake className="w-5 h-5" />
+              Unfreeze Account
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-400">This will restore the user's ability to generate content and spend credits.</p>
+          <textarea
+            value={unfreezeNotes}
+            onChange={(e) => setUnfreezeNotes(e.target.value)}
+            placeholder="Notes for unfreezing (e.g., issue resolved, false positive)..."
+            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 resize-none h-24 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setUnfreezeModalOpen(false)} className="text-gray-400">Cancel</Button>
+            <Button onClick={handleUnfreeze} disabled={!unfreezeNotes.trim() || unfreezeMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700">
+              {unfreezeMutation.isPending ? "Unfreezing..." : "Unfreeze Account"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

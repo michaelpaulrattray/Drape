@@ -10,6 +10,7 @@ import {
   Minus,
   AlertTriangle,
   Lock,
+  Snowflake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,9 @@ interface UserDetailData {
     role: "user" | "admin" | "moderator";
     suspendedAt: string | Date | null;
     suspendedReason: string | null;
+    frozenAt: string | Date | null;
+    frozenReason: string | null;
+    frozenBy: string | null;
     lockedUntil: string | Date | null;
     failedLoginAttempts: number;
     createdAt: string | Date;
@@ -72,6 +76,10 @@ interface UserDetailModalProps {
   onDemote: () => void;
   onAddCredits: () => void;
   onDeductCredits: () => void;
+  onFreeze: () => void;
+  onUnfreeze: () => void;
+  freezePending: boolean;
+  unfreezePending: boolean;
 }
 
 export function UserDetailModal({
@@ -90,6 +98,10 @@ export function UserDetailModal({
   onDemote,
   onAddCredits,
   onDeductCredits,
+  onFreeze,
+  onUnfreeze,
+  freezePending,
+  unfreezePending,
 }: UserDetailModalProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -135,6 +147,10 @@ export function UserDetailModal({
                 unsuspendPending={unsuspendPending}
                 onPromote={onPromote}
                 onDemote={onDemote}
+                onFreeze={onFreeze}
+                onUnfreeze={onUnfreeze}
+                freezePending={freezePending}
+                unfreezePending={unfreezePending}
               />
             )}
 
@@ -167,6 +183,10 @@ function ProfileTabContent({
   unsuspendPending,
   onPromote,
   onDemote,
+  onFreeze,
+  onUnfreeze,
+  freezePending,
+  unfreezePending,
 }: {
   selectedUser: UserDetailData;
   onSuspend: () => void;
@@ -174,6 +194,10 @@ function ProfileTabContent({
   unsuspendPending: boolean;
   onPromote: () => void;
   onDemote: () => void;
+  onFreeze: () => void;
+  onUnfreeze: () => void;
+  freezePending: boolean;
+  unfreezePending: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -215,6 +239,20 @@ function ProfileTabContent({
         </div>
       )}
 
+      {selectedUser.user.frozenAt && (
+        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-cyan-400 font-medium">
+            <Snowflake className="w-4 h-4" />
+            Account Frozen
+          </div>
+          <p className="text-sm text-gray-400 mt-1">Reason: {selectedUser.user.frozenReason || "No reason provided"}</p>
+          <p className="text-sm text-gray-400">Since: {formatDate(selectedUser.user.frozenAt)}</p>
+          {selectedUser.user.frozenBy && (
+            <p className="text-sm text-gray-400">By: {selectedUser.user.frozenBy === "system" ? "System (auto-freeze)" : `Admin #${selectedUser.user.frozenBy}`}</p>
+          )}
+        </div>
+      )}
+
       {selectedUser.user.lockedUntil && new Date(selectedUser.user.lockedUntil) > new Date() && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
           <div className="flex items-center gap-2 text-amber-400 font-medium">
@@ -236,6 +274,22 @@ function ProfileTabContent({
           <Button onClick={onSuspend} disabled={selectedUser.user.role === "admin"} variant="destructive">
             <ShieldOff className="w-4 h-4 mr-2" />
             Suspend User
+          </Button>
+        )}
+        {selectedUser.user.frozenAt ? (
+          <Button onClick={onUnfreeze} disabled={unfreezePending} className="bg-cyan-600 hover:bg-cyan-700">
+            <Snowflake className="w-4 h-4 mr-2" />
+            {unfreezePending ? "Unfreezing..." : "Unfreeze Account"}
+          </Button>
+        ) : (
+          <Button
+            onClick={onFreeze}
+            disabled={selectedUser.user.role === "admin" || freezePending}
+            variant="outline"
+            className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+          >
+            <Snowflake className="w-4 h-4 mr-2" />
+            {freezePending ? "Freezing..." : "Freeze Account"}
           </Button>
         )}
         {selectedUser.user.role !== "admin" && (

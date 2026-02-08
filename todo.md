@@ -3520,3 +3520,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add system status data (activeBanners, serverStartedAt) to admin overview procedure
 - [x] Wire SystemStatusCard into AdminOverview page (right column, above banners)
 - [x] Write tests for system status logic (formatUptime, latencyColor — included in announcements.test.ts)
+
+## Feature: Admin Freeze/Unfreeze Buttons in UserDetailModal
+- [x] Audit existing backend freeze/unfreeze procedures (admin.freezeUser, admin.unfreezeUser)
+- [x] Wire freeze/unfreeze buttons into UserDetailModal UI (Snowflake icon, cyan theme)
+- [x] Add confirmation dialogs with reason/notes textarea before freeze/unfreeze
+- [x] Show frozen status banner on user detail (cyan, shows reason, date, frozenBy)
+- [x] Add frozenAt/frozenReason/frozenBy to UserDetailData interface
+- [x] Write tests for freeze/unfreeze UI logic (29 new tests, 905 total passing)
