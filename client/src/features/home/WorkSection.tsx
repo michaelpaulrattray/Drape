@@ -15,7 +15,7 @@ export function WorkSection() {
           className="flex flex-col sm:flex-row items-start justify-between gap-6 sm:gap-0 mb-8 sm:mb-16"
         >
           <div>
-            <h2 className="text-section-title leading-[1.1] tracking-tight text-[#0A0A0A] mb-4">Selected Work.</h2>
+            <h2 className="text-[clamp(2rem,7vw,64px)] font-medium leading-[1.1] tracking-tight text-[#0A0A0A] mb-4">Selected Work.</h2>
             <p className="text-body-md text-gray-muted max-w-sm">
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
