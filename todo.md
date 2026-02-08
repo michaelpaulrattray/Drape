@@ -3607,3 +3607,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Restyle FlaggedReferralsTab, MyRequestsTab to light theme
 - [x] Remove old DashboardHeader component (replaced by ModeratorHeader)
 - [x] Verify TypeScript compilation and visual rendering
+
+## Bug Fix: Moderator User Detail Sub-Tab CSV Export Styling
+- [x] Make CSV export button styling consistent across Credits, Generations, and Reconciliation sub-tabs
+
+## Bug Fix: Admin Back-Navigation from Moderator Page
+- [x] Add intuitive back-navigation for admins visiting the moderator page via admin nav bar
+
+## Feature: Freeze Account Confirmation Modal for Moderators
+- [x] Add confirmation modal before moderator freezes an account (verify this is the only direct action mods can take)

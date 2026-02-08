@@ -9,11 +9,20 @@ import {
   ChevronRight,
   ShieldAlert,
   ShieldCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -160,25 +169,27 @@ export function UserTable({
   );
 }
 
-// ── Freeze Action Button ──
+// ── Freeze Action Button with Confirmation Modal ──
 
 function FreezeActionButton({
   userId,
   isFrozen,
   isAdmin,
+  userName,
 }: {
   userId: number;
   isFrozen: boolean;
   isAdmin: boolean;
+  userName?: string;
 }) {
-  const [showForm, setShowForm] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [reason, setReason] = useState("");
   const utils = trpc.useUtils();
 
   const freezeMutation = trpc.moderatorReconciliation.freezeAccount.useMutation({
     onSuccess: () => {
       toast.success("Account frozen successfully");
-      setShowForm(false);
+      setDialogOpen(false);
       setReason("");
       utils.moderator.getUserDetails.invalidate({ userId });
       utils.moderatorReconciliation.getFlaggedUsers.invalidate();
@@ -189,7 +200,7 @@ function FreezeActionButton({
   const unfreezeMutation = trpc.moderatorReconciliation.unfreezeAccount.useMutation({
     onSuccess: () => {
       toast.success("Account unfrozen successfully");
-      setShowForm(false);
+      setDialogOpen(false);
       setReason("");
       utils.moderator.getUserDetails.invalidate({ userId });
       utils.moderatorReconciliation.getFlaggedUsers.invalidate();
@@ -199,69 +210,108 @@ function FreezeActionButton({
 
   if (isAdmin) return null;
 
-  if (!showForm) {
-    return (
-      <div className="pt-2">
-        <Button
-          size="sm"
-          variant="outline"
-          className={`w-full ${
-            isFrozen
-              ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-              : "border-red-300 text-red-700 hover:bg-red-50"
-          }`}
-          onClick={() => setShowForm(true)}
-        >
-          {isFrozen ? (
-            <><ShieldCheck className="w-3 h-3 mr-2" /> Unfreeze Account</>
-          ) : (
-            <><ShieldAlert className="w-3 h-3 mr-2" /> Freeze Account</>
-          )}
-        </Button>
-      </div>
-    );
-  }
+  const isPending = freezeMutation.isPending || unfreezeMutation.isPending;
+  const displayName = userName || `User #${userId}`;
 
   return (
-    <div className="pt-2 space-y-2">
-      <textarea
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        placeholder={isFrozen ? "Review notes (required)..." : "Reason for freeze (required)..."}
-        className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-2 py-1.5 text-xs text-[#0A0A0A] placeholder:text-[#CCC] resize-none"
-        rows={2}
-        maxLength={500}
-      />
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          className={`h-7 text-xs flex-1 ${
-            isFrozen
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-              : "bg-red-600 hover:bg-red-700 text-white"
-          }`}
-          disabled={!reason.trim() || freezeMutation.isPending || unfreezeMutation.isPending}
-          onClick={() => {
-            if (isFrozen) {
-              unfreezeMutation.mutate({ userId, notes: reason.trim() });
-            } else {
-              freezeMutation.mutate({ userId, reason: reason.trim() });
-            }
-          }}
-        >
-          {(freezeMutation.isPending || unfreezeMutation.isPending)
-            ? (isFrozen ? "Unfreezing..." : "Freezing...")
-            : (isFrozen ? "Confirm Unfreeze" : "Confirm Freeze")}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-xs text-[#999] hover:text-[#0A0A0A]"
-          onClick={() => { setShowForm(false); setReason(""); }}
-        >
-          Cancel
-        </Button>
-      </div>
+    <div className="pt-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className={`w-full ${
+          isFrozen
+            ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+            : "border-red-300 text-red-700 hover:bg-red-50"
+        }`}
+        onClick={() => setDialogOpen(true)}
+      >
+        {isFrozen ? (
+          <><ShieldCheck className="w-3 h-3 mr-2" /> Unfreeze Account</>
+        ) : (
+          <><ShieldAlert className="w-3 h-3 mr-2" /> Freeze Account</>
+        )}
+      </Button>
+
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!isPending) { setDialogOpen(open); if (!open) setReason(""); } }}>
+        <DialogContent className="bg-white border-[#E5E5E5] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#0A0A0A] flex items-center gap-2">
+              {isFrozen ? (
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              )}
+              {isFrozen ? "Unfreeze Account" : "Freeze Account"}
+            </DialogTitle>
+            <DialogDescription className="text-[#666]">
+              {isFrozen
+                ? `You are about to unfreeze ${displayName}'s account. This will restore their ability to generate content and use credits.`
+                : `You are about to freeze ${displayName}'s account. This will prevent them from generating content or using credits until the account is unfrozen.`
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            {!isFrozen && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-xs text-red-700 font-medium">This action will immediately:</p>
+                <ul className="text-xs text-red-600 mt-1 space-y-0.5 list-disc list-inside">
+                  <li>Block all new generations</li>
+                  <li>Prevent credit usage</li>
+                  <li>Show a frozen notice to the user</li>
+                </ul>
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs font-medium text-[#666] block mb-1">
+                {isFrozen ? "Review notes (required)" : "Reason for freezing (required)"}
+              </label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder={isFrozen ? "Explain why the account is being unfrozen..." : "Explain why this account should be frozen..."}
+                className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-2 text-sm text-[#0A0A0A] placeholder:text-[#CCC] resize-none focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/10"
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-[10px] text-[#CCC] mt-1 text-right">{reason.length}/500</p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-[#E5E5E5] text-[#666]"
+              onClick={() => { setDialogOpen(false); setReason(""); }}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className={isFrozen
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                : "bg-red-600 hover:bg-red-700 text-white"
+              }
+              disabled={!reason.trim() || isPending}
+              onClick={() => {
+                if (isFrozen) {
+                  unfreezeMutation.mutate({ userId, notes: reason.trim() });
+                } else {
+                  freezeMutation.mutate({ userId, reason: reason.trim() });
+                }
+              }}
+            >
+              {isPending
+                ? (isFrozen ? "Unfreezing..." : "Freezing...")
+                : (isFrozen ? "Confirm Unfreeze" : "Confirm Freeze")
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -343,6 +393,7 @@ export function UserDetailCard({
               userId={selectedUserId}
               isFrozen={!!userDetailsQuery.data.user.frozenAt}
               isAdmin={userDetailsQuery.data.user.role === "admin"}
+              userName={userDetailsQuery.data.user.name || userDetailsQuery.data.user.email}
             />
             <div className="pt-1">
               <Button

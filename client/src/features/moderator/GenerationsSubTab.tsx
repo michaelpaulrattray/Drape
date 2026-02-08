@@ -96,8 +96,8 @@ export function GenerationsSubTab({
           disabled={exportQuery.isFetching}
           className="h-7 text-xs border-[#E5E5E5] text-[#666] hover:text-[#0A0A0A] hover:bg-[#F5F5F5]"
         >
-          {exportQuery.isFetching ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
-          Export CSV
+          {exportQuery.isFetching ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
+          CSV
         </Button>
       </div>
 

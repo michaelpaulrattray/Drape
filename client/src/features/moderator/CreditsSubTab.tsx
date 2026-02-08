@@ -13,6 +13,7 @@ import {
   ArrowDown,
   Calendar,
   Download,
+  Loader2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,8 +57,6 @@ export function CreditsSubTab({
   selectedUserId,
   onOpenChangeRequest,
 }: CreditsSubTabProps) {
-  const [isExporting, setIsExporting] = useState(false);
-
   const exportQuery = trpc.moderatorExports.exportUserCreditHistoryCsv.useQuery(
     {
       userId: selectedUserId,
@@ -69,7 +68,6 @@ export function CreditsSubTab({
   );
 
   const handleExport = async () => {
-    setIsExporting(true);
     try {
       const result = await exportQuery.refetch();
       if (result.data) {
@@ -87,8 +85,6 @@ export function CreditsSubTab({
       }
     } catch {
       toast.error("Failed to export credit history");
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -104,11 +100,11 @@ export function CreditsSubTab({
           variant="outline"
           size="sm"
           onClick={handleExport}
-          disabled={isExporting || creditHistoryQuery.isLoading}
+          disabled={exportQuery.isFetching || creditHistoryQuery.isLoading}
           className="border-[#E5E5E5] text-[#666] hover:text-[#0A0A0A] hover:bg-[#F5F5F5] h-7 text-xs"
         >
-          <Download className="w-3.5 h-3.5 mr-1" />
-          {isExporting ? "Exporting..." : "CSV"}
+          {exportQuery.isFetching ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
+          CSV
         </Button>
       </div>
 
