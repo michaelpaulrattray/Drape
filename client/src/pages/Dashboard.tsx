@@ -28,7 +28,8 @@ import {
   ClipboardList,
   LayoutDashboard,
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Menu, X } from "lucide-react";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
 import { BillingModal } from "@/features/billing/BillingModal";
 import { CreditTopupModal } from "@/features/billing/CreditTopupModal";
@@ -87,6 +88,8 @@ export default function Dashboard() {
   const [isBillingOpen, setIsBillingOpen] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [isReferralOpen, setIsReferralOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const closeMobileSidebar = useCallback(() => setIsMobileSidebarOpen(false), []);
   useReferralClaim();
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -191,9 +194,16 @@ export default function Dashboard() {
     <div className="h-screen w-screen flex bg-[#EBEBEB] text-[#0A0A0A] overflow-hidden selection:bg-[#0A0A0A]/20">
       {/* Subtle background texture */}
       <div className="fixed inset-0 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(10,10,10,0.03) 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-      
+
+      {/* Mobile sidebar overlay */}
+      {isMobileSidebarOpen && (
+        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={closeMobileSidebar} />
+      )}
+
       {/* Sidebar - Clean Light */}
-      <aside className="w-72 h-full flex flex-col flex-shrink-0 border-r border-[#D4D4D4] bg-white relative z-10">
+      <aside className={`fixed lg:relative w-72 h-full flex flex-col flex-shrink-0 border-r border-[#D4D4D4] bg-white z-50 transition-transform duration-300 ease-in-out ${
+        isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         {/* Logo */}
         <div className="px-6 pt-6 pb-8">
           <div className="flex items-center gap-3">
@@ -376,10 +386,36 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto relative bg-[#EBEBEB]" style={{ scrollbarWidth: 'thin' }}>
+        {/* Mobile Header Bar */}
+        <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-[#D4D4D4]">
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-[#0A0A0A]" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] flex items-center justify-center">
+              <img
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png"
+                alt="Forma Studio"
+                className="w-4 h-4 invert opacity-90"
+              />
+            </div>
+            <span className="text-sm font-semibold text-[#0A0A0A] tracking-tight">FormaStudio</span>
+          </div>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Settings className="w-5 h-5 text-[#757575]" />
+          </button>
+        </div>
+
         {/* Header with Profile Banner */}
         <div className="relative">
           {/* Banner - Light Mode */}
-          <div className="h-56 relative overflow-hidden group">
+          <div className="h-36 lg:h-56 relative overflow-hidden group">
             <div 
               className={`absolute inset-0 bg-cover bg-center ${!bannerImage ? 'bg-gradient-to-br from-gray-100 to-gray-200' : ''}`}
               style={{ 
@@ -428,7 +464,7 @@ export default function Dashboard() {
             <button 
               onClick={() => bannerInputRef.current?.click()}
               disabled={isUploadingBanner}
-              className="absolute top-6 right-10 px-4 py-2 rounded-full bg-white/90 backdrop-blur-sm text-[#0A0A0A] text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white border border-[#D4D4D4] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="absolute top-4 right-4 lg:top-6 lg:right-10 px-3 lg:px-4 py-1.5 lg:py-2 rounded-full bg-white/90 backdrop-blur-sm text-[#0A0A0A] text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 hover:bg-white border border-[#D4D4D4] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload className="w-3.5 h-3.5" />
               Change Cover
@@ -436,11 +472,11 @@ export default function Dashboard() {
           </div>
 
           {/* Profile Info */}
-          <div className="absolute bottom-0 left-0 right-0 px-10 pb-6">
-            <div className="flex items-end gap-6">
+          <div className="absolute bottom-0 left-0 right-0 px-4 lg:px-10 pb-4 lg:pb-6">
+            <div className="flex items-end gap-3 lg:gap-6">
               {/* Profile Avatar */}
               <div className="relative group/avatar">
-                <div className="w-28 h-28 rounded-2xl ring-4 ring-[#EBEBEB] border border-[#D4D4D4] relative overflow-hidden shadow-xl bg-white">
+                <div className="w-16 h-16 lg:w-28 lg:h-28 rounded-xl lg:rounded-2xl ring-2 lg:ring-4 ring-[#EBEBEB] border border-[#D4D4D4] relative overflow-hidden shadow-xl bg-white">
                   {profileImage ? (
                     <img 
                       src={profileImage}
@@ -449,7 +485,7 @@ export default function Dashboard() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                      <span className="text-3xl font-semibold text-gray-500">
+                      <span className="text-xl lg:text-3xl font-semibold text-gray-500">
                         {(displayName || 'U').charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -491,21 +527,21 @@ export default function Dashboard() {
                 <button 
                   onClick={() => profilePicInputRef.current?.click()}
                   disabled={isUploadingAvatar}
-                  className="absolute inset-0 rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity border border-gray-300 disabled:opacity-100"
+                  className="absolute inset-0 rounded-xl lg:rounded-2xl bg-black/30 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity border border-gray-300 disabled:opacity-100"
                 >
                   {!isUploadingAvatar && <Upload className="w-6 h-6 text-white" />}
                 </button>
               </div>
               
-              <div className="flex-1 pb-2">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-semibold text-white tracking-tight drop-shadow-md">{displayName}</h1>
-                  <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#0A0A0A] text-xs font-medium shadow-sm">
+              <div className="flex-1 pb-1 lg:pb-2 min-w-0">
+                <div className="flex items-center gap-2 lg:gap-3 mb-1 lg:mb-2">
+                  <h1 className="text-lg lg:text-3xl font-semibold text-white tracking-tight drop-shadow-md truncate">{displayName}</h1>
+                  <span className="px-2 lg:px-3 py-0.5 lg:py-1 rounded-full bg-white/90 backdrop-blur-sm text-[#0A0A0A] text-[10px] lg:text-xs font-medium shadow-sm flex-shrink-0">
                     {creditsData?.planTier?.toUpperCase() || "FREE"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="text-white/80 text-sm drop-shadow-sm">
+                  <p className="text-white/80 text-xs lg:text-sm drop-shadow-sm">
                     {creditsData?.balance?.toLocaleString() || 0} credits
                   </p>
                   <button
@@ -517,7 +553,7 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-3 pb-2">
+              <div className="hidden lg:flex items-center gap-3 pb-2">
                 <button 
                   onClick={() => setIsReferralOpen(true)}
                   className="group px-5 py-2.5 rounded-full bg-[#0A0A0A] text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg hover:bg-[#0A0A0A]/90"
@@ -536,8 +572,25 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Mobile action bar */}
+        <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-[#D4D4D4] bg-white">
+          <button 
+            onClick={() => setIsReferralOpen(true)}
+            className="flex-1 py-2 rounded-full bg-[#0A0A0A] text-white text-xs font-medium flex items-center justify-center gap-1.5"
+          >
+            <Gift className="w-3.5 h-3.5" />
+            Share Forma
+          </button>
+          <button className="p-2 rounded-full bg-gray-100 text-[#757575]">
+            <Bell className="w-4 h-4" />
+          </button>
+          <button className="p-2 rounded-full bg-gray-100 text-[#757575]">
+            <Search className="w-4 h-4" />
+          </button>
+        </div>
+
         {/* Content Area */}
-        <div className="p-10 pt-8 space-y-12">
+        <div className="p-4 lg:p-10 pt-6 lg:pt-8 space-y-8 lg:space-y-12">
           {/* Low Balance Warning */}
           {creditsData && creditsData.balance < LOW_BALANCE_THRESHOLD && (
             <LowBalanceBanner
@@ -548,18 +601,18 @@ export default function Dashboard() {
 
           {/* Recent Work Section */}
           <div>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6 lg:mb-8">
               <div>
-                <h2 className="text-2xl font-semibold text-[#0A0A0A] tracking-tight mb-1">Recent Work</h2>
-                <p className="text-sm text-[#757575]">Your latest creations</p>
+                <h2 className="text-xl lg:text-2xl font-semibold text-[#0A0A0A] tracking-tight mb-1">Recent Work</h2>
+                <p className="text-xs lg:text-sm text-[#757575]">Your latest creations</p>
               </div>
-              <button className="flex items-center gap-2 text-sm font-medium text-white transition-colors group px-5 py-2.5 rounded-full bg-[#0A0A0A] hover:bg-[#0A0A0A]/90">
+              <button className="flex items-center gap-2 text-xs lg:text-sm font-medium text-white transition-colors group px-3 lg:px-5 py-2 lg:py-2.5 rounded-full bg-[#0A0A0A] hover:bg-[#0A0A0A]/90">
                 View all
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="w-3.5 lg:w-4 h-3.5 lg:h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
               {recentWork.map((item, idx) => (
                 <div key={idx} className="group cursor-pointer">
                   <div className="relative aspect-video rounded-xl overflow-hidden mb-4 border border-[#D4D4D4] bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -590,9 +643,9 @@ export default function Dashboard() {
 
           {/* Quick Actions */}
           <div>
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-[#0A0A0A] tracking-tight mb-1">Quick Actions</h2>
-              <p className="text-sm text-[#757575]">Start creating</p>
+            <div className="mb-6 lg:mb-8">
+              <h2 className="text-xl lg:text-2xl font-semibold text-[#0A0A0A] tracking-tight mb-1">Quick Actions</h2>
+              <p className="text-xs lg:text-sm text-[#757575]">Start creating</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link href="/casting-studio">
