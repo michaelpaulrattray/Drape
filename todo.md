@@ -3585,3 +3585,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Redesign ModeratorDashboard page (light theme)
 - [ ] Restyle all moderator sub-components
 - [ ] Verify TypeScript compilation and all tests pass
+
+## Bug Fix: UserDetailModal Consistent Size
+- [x] Fix UserDetailModal to maintain consistent size when switching between Profile, Credits, and Activity tabs

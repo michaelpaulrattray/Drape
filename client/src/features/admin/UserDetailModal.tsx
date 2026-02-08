@@ -105,7 +105,7 @@ export function UserDetailModal({
 }: UserDetailModalProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl bg-white border-[#E5E5E5] text-[#0A0A0A]">
+      <DialogContent className="max-w-2xl h-[600px] bg-white border-[#E5E5E5] text-[#0A0A0A] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-[#0A0A0A]">
             <UserCog className="w-5 h-5 text-[#666]" />
@@ -114,14 +114,16 @@ export function UserDetailModal({
         </DialogHeader>
 
         {isLoading ? (
-          <div className="py-8 text-center">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#CCC]" />
-            <span className="text-[#999]">Loading user details...</span>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#CCC]" />
+              <span className="text-[#999]">Loading user details...</span>
+            </div>
           </div>
         ) : selectedUser ? (
-          <div className="space-y-4">
+          <div className="flex flex-col flex-1 min-h-0">
             {/* Tabs */}
-            <div className="flex gap-1 border-b border-[#E5E5E5] pb-2">
+            <div className="flex gap-1 border-b border-[#E5E5E5] pb-2 shrink-0">
               {(["profile", "credits", "activity"] as const).map((tab) => (
                 <Button
                   key={tab}
@@ -141,6 +143,7 @@ export function UserDetailModal({
               ))}
             </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto mt-4">
             {activeTab === "profile" && (
               <ProfileTabContent
                 selectedUser={selectedUser}
@@ -165,9 +168,10 @@ export function UserDetailModal({
             {activeTab === "activity" && (
               <ActivityTabContent logs={activityLogs} isLoading={activityLoading} />
             )}
+            </div>
           </div>
         ) : (
-          <div className="py-8 text-center text-[#999]">User not found</div>
+          <div className="flex-1 flex items-center justify-center text-[#999]">User not found</div>
         )}
       </DialogContent>
     </Dialog>
@@ -391,7 +395,7 @@ function ActivityTabContent({
     return <div className="text-center py-8 text-[#999]">No activity found for this user</div>;
   }
   return (
-    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+    <div className="space-y-2">
       {logs.map((log) => (
         <div key={log.id} className="bg-[#F8F8F8] rounded-lg p-3 border border-[#E5E5E5]">
           <div className="flex items-center justify-between">
