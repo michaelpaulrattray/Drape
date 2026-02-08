@@ -1,12 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Redirect, Link } from "wouter";
+import { Redirect } from "wouter";
 import { useState, useEffect } from "react";
 import {
-  Shield,
-  RefreshCw,
-  Clock,
-  Home,
   Download,
   Activity,
   Globe,
@@ -19,6 +15,7 @@ import {
   PAGE_SIZE,
   type AuditLog,
 } from "@/features/admin/adminConstants";
+import { AdminHeader } from "@/features/admin/AdminHeader";
 import { AuditStatsCards, AbuseAlertsPanel, AuditFiltersBar } from "@/features/admin/AuditLogsFilters";
 import { AuditLogTable } from "@/features/admin/AuditLogTable";
 import { AuditLogDetailModal } from "@/features/admin/AuditLogDetailModal";
@@ -90,8 +87,8 @@ export default function AdminAuditLogs() {
   // Auth guards
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white" />
+      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#0A0A0A]" />
       </div>
     );
   }
@@ -205,51 +202,31 @@ export default function AdminAuditLogs() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-[#0a0a0a]/95 backdrop-blur sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-white/60 hover:text-white">
-                  <Home className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
-              <div className="h-6 w-px bg-white/10" />
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-emerald-400" />
-                <h1 className="text-lg font-semibold">Audit Logs</h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-white/40">
-                Last updated: {lastRefresh.toLocaleTimeString()}
-              </span>
-              <Button
-                variant={autoRefresh ? "default" : "outline"}
-                size="sm"
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                className={autoRefresh ? "bg-emerald-600 hover:bg-emerald-700" : "border-white/20 text-white"}
-              >
-                <Clock className="w-4 h-4 mr-2" />
-                {autoRefresh ? "Auto-refresh ON" : "Auto-refresh"}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={logsQuery.isRefetching} className="border-white/20 text-white">
-                <RefreshCw className={`w-4 h-4 mr-2 ${logsQuery.isRefetching ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={exportMutation.isPending} className="border-white/20 text-white">
-                {exportMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-                Export CSV
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
+      <AdminHeader
+        title="Audit Logs"
+        refreshControls={{
+          autoRefresh,
+          onToggleAutoRefresh: () => setAutoRefresh(!autoRefresh),
+          onRefresh: handleRefresh,
+          isRefetching: logsQuery.isRefetching,
+          lastRefresh,
+        }}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={exportMutation.isPending}
+            className="border-[#D5D5D5] text-[#666] text-xs"
+          >
+            {exportMutation.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
+            Export CSV
+          </Button>
+        }
+      />
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <AuditStatsCards
           statsData={statsQuery.data}
           statsLoading={statsQuery.isLoading}
@@ -258,12 +235,15 @@ export default function AdminAuditLogs() {
         />
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-white/10 pb-2">
+        <div className="flex gap-2 border-b border-[#E5E5E5] pb-2">
           <Button
             variant={activeTab === "logs" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("logs")}
-            className={activeTab === "logs" ? "bg-emerald-600 hover:bg-emerald-700" : "text-white/60 hover:text-white"}
+            className={activeTab === "logs"
+              ? "bg-[#0A0A0A] hover:bg-[#222] text-white"
+              : "text-[#999] hover:text-[#0A0A0A] hover:bg-[#F0F0F0]"
+            }
           >
             <Activity className="w-4 h-4 mr-2" />
             Audit Logs
@@ -272,12 +252,15 @@ export default function AdminAuditLogs() {
             variant={activeTab === "blocked-ips" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("blocked-ips")}
-            className={activeTab === "blocked-ips" ? "bg-emerald-600 hover:bg-emerald-700" : "text-white/60 hover:text-white"}
+            className={activeTab === "blocked-ips"
+              ? "bg-[#0A0A0A] hover:bg-[#222] text-white"
+              : "text-[#999] hover:text-[#0A0A0A] hover:bg-[#F0F0F0]"
+            }
           >
             <Globe className="w-4 h-4 mr-2" />
             Blocked IPs
             {blockedIpsQuery.data?.total ? (
-              <Badge className="ml-2 bg-red-500/20 text-red-400">{blockedIpsQuery.data.total}</Badge>
+              <Badge className="ml-2 bg-red-50 text-red-700 border-red-200">{blockedIpsQuery.data.total}</Badge>
             ) : null}
           </Button>
         </div>

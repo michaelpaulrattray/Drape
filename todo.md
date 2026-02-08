@@ -3560,9 +3560,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Redesign AdminUserManagement page (light theme, improved table/filters)
 - [x] Restyle UserTable, UserFilters, UserStatsCards, UserBadges components
 - [x] Restyle UserDetailModal, UserActionModals components
-- [ ] Redesign AdminAuditLogs page (light theme, improved layout)
-- [ ] Restyle AuditLogTable, AuditLogsFilters, AuditLogDetailModal components
-- [ ] Restyle AuditActionModals, BlockedIPsTab components
+- [x] Redesign AdminAuditLogs page (light theme, improved layout)
+- [x] Restyle AuditLogTable, AuditLogsFilters, AuditLogDetailModal components
+- [x] Restyle AuditActionModals, BlockedIPsTab components
 - [ ] Redesign AdminChangeRequests page (light theme, improved layout)
 - [ ] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
 - [ ] Redesign ModeratorDashboard page (light theme)
@@ -3576,9 +3576,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Redesign AdminUserManagement page (light theme, improved table/filters)
 - [x] Restyle UserTable, UserFilters, UserStatsCards, UserBadges components
 - [x] Restyle UserDetailModal, UserActionModals components
-- [ ] Redesign AdminAuditLogs page (light theme, improved layout)
-- [ ] Restyle AuditLogTable, AuditLogsFilters, AuditLogDetailModal components
-- [ ] Restyle AuditActionModals, BlockedIPsTab components
+- [x] Redesign AdminAuditLogs page (light theme, improved layout)
+- [x] Restyle AuditLogTable, AuditLogsFilters, AuditLogDetailModal components
+- [x] Restyle AuditActionModals, BlockedIPsTab components
 - [ ] Redesign AdminChangeRequests page (light theme, improved layout)
 - [ ] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
 - [ ] Update AdminOverview to use shared AdminHeader

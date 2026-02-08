@@ -6,9 +6,9 @@ import {
 
 // ── Severity ──────────────────────────────────────────────
 export const SEVERITY_COLORS = {
-  info: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  warning: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  critical: "bg-red-500/10 text-red-400 border-red-500/20",
+  info: "bg-blue-50 text-blue-700 border-blue-200",
+  warning: "bg-amber-50 text-amber-700 border-amber-200",
+  critical: "bg-red-50 text-red-700 border-red-200",
 } as const;
 
 export const SEVERITY_ICONS = {
@@ -19,10 +19,10 @@ export const SEVERITY_ICONS = {
 
 // ── Category ──────────────────────────────────────────────
 export const CATEGORY_COLORS = {
-  billing: "bg-emerald-500/10 text-emerald-400",
-  model: "bg-purple-500/10 text-purple-400",
-  security: "bg-orange-500/10 text-orange-400",
-  abuse: "bg-red-500/10 text-red-400",
+  billing: "bg-emerald-50 text-emerald-700",
+  model: "bg-purple-50 text-purple-700",
+  security: "bg-orange-50 text-orange-700",
+  abuse: "bg-red-50 text-red-700",
 } as const;
 
 // ── Types ─────────────────────────────────────────────────

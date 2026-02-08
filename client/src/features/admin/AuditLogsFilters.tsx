@@ -8,7 +8,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -65,57 +64,41 @@ export function AuditStatsCards({
 }: Pick<AuditLogsFiltersProps, "statsData" | "statsLoading" | "alertsData" | "alertsLoading">) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-white/60">Total Logs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {statsLoading ? (
-            <Skeleton className="h-8 w-20 bg-white/10" />
-          ) : (
-            <p className="text-2xl font-bold text-white">{statsData?.totalLogs || 0}</p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+        <p className="text-xs text-[#999] font-medium uppercase tracking-wide">Total Logs</p>
+        {statsLoading ? (
+          <Skeleton className="h-8 w-20 mt-1 bg-[#E5E5E5]" />
+        ) : (
+          <p className="text-2xl font-bold text-[#0A0A0A] mt-1">{statsData?.totalLogs || 0}</p>
+        )}
+      </div>
 
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-white/60">Last 24 Hours</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {statsLoading ? (
-            <Skeleton className="h-8 w-20 bg-white/10" />
-          ) : (
-            <p className="text-2xl font-bold text-white">{statsData?.last24Hours || 0}</p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+        <p className="text-xs text-[#999] font-medium uppercase tracking-wide">Last 24 Hours</p>
+        {statsLoading ? (
+          <Skeleton className="h-8 w-20 mt-1 bg-[#E5E5E5]" />
+        ) : (
+          <p className="text-2xl font-bold text-[#0A0A0A] mt-1">{statsData?.last24Hours || 0}</p>
+        )}
+      </div>
 
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-white/60">Critical Alerts</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {alertsLoading ? (
-            <Skeleton className="h-8 w-20 bg-white/10" />
-          ) : (
-            <p className="text-2xl font-bold text-red-400">{alertsData?.criticalCount || 0}</p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+        <p className="text-xs text-[#999] font-medium uppercase tracking-wide">Critical Alerts</p>
+        {alertsLoading ? (
+          <Skeleton className="h-8 w-20 mt-1 bg-[#E5E5E5]" />
+        ) : (
+          <p className="text-2xl font-bold text-red-600 mt-1">{alertsData?.criticalCount || 0}</p>
+        )}
+      </div>
 
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-white/60">Warnings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {alertsLoading ? (
-            <Skeleton className="h-8 w-20 bg-white/10" />
-          ) : (
-            <p className="text-2xl font-bold text-amber-400">{alertsData?.warningCount || 0}</p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+        <p className="text-xs text-[#999] font-medium uppercase tracking-wide">Warnings</p>
+        {alertsLoading ? (
+          <Skeleton className="h-8 w-20 mt-1 bg-[#E5E5E5]" />
+        ) : (
+          <p className="text-2xl font-bold text-amber-600 mt-1">{alertsData?.warningCount || 0}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -127,36 +110,32 @@ export function AbuseAlertsPanel({
   if (!alertsData || (alertsData.criticalCount || 0) === 0) return null;
 
   return (
-    <Card className="bg-red-500/5 border-red-500/20">
-      <CardHeader>
-        <CardTitle className="text-red-400 flex items-center gap-2">
-          <AlertCircle className="w-5 h-5" />
-          Active Abuse Alerts
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {alertsData.alerts.slice(0, 5).map((alert) => (
-            <div
-              key={alert.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
-              onClick={() => onSelectLog(alert as AuditLog)}
-            >
-              <div className="flex items-center gap-3">
-                <Badge className={SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}>
-                  {alert.severity}
-                </Badge>
-                <span className="text-white/80">{formatAction(alert.action)}</span>
-                {alert.userId && (
-                  <span className="text-white/40 text-sm">User #{alert.userId}</span>
-                )}
-              </div>
-              <span className="text-white/40 text-sm">{formatDate(alert.createdAt)}</span>
+    <div className="bg-red-50 rounded-xl border border-red-200 p-4">
+      <h3 className="text-red-700 font-semibold flex items-center gap-2 mb-3">
+        <AlertCircle className="w-5 h-5" />
+        Active Abuse Alerts
+      </h3>
+      <div className="space-y-2">
+        {alertsData.alerts.slice(0, 5).map((alert) => (
+          <div
+            key={alert.id}
+            className="flex items-center justify-between p-3 rounded-lg bg-white hover:bg-red-50/50 cursor-pointer transition-colors border border-red-100"
+            onClick={() => onSelectLog(alert as AuditLog)}
+          >
+            <div className="flex items-center gap-3">
+              <Badge className={SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}>
+                {alert.severity}
+              </Badge>
+              <span className="text-[#0A0A0A]">{formatAction(alert.action)}</span>
+              {alert.userId && (
+                <span className="text-[#999] text-sm">User #{alert.userId}</span>
+              )}
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <span className="text-[#999] text-sm">{formatDate(alert.createdAt)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -171,57 +150,55 @@ export function AuditFiltersBar({
   onResetFilters,
 }: Omit<AuditLogsFiltersProps, "statsData" | "statsLoading" | "alertsData" | "alertsLoading" | "onSelectLog">) {
   return (
-    <Card className="bg-white/5 border-white/10">
-      <CardContent className="pt-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-              <Input
-                placeholder="Search by User ID..."
-                value={userIdSearch}
-                onChange={(e) => {
-                  setUserIdSearch(e.target.value);
-                  setPage(() => 0);
-                }}
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40"
-              />
-            </div>
+    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#CCC]" />
+            <Input
+              placeholder="Search by User ID..."
+              value={userIdSearch}
+              onChange={(e) => {
+                setUserIdSearch(e.target.value);
+                setPage(() => 0);
+              }}
+              className="pl-10 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#CCC]"
+            />
           </div>
-          <Select value={severityFilter} onValueChange={(v) => { setSeverityFilter(v); setPage(() => 0); }}>
-            <SelectTrigger className="w-full md:w-40 bg-white/5 border-white/10 text-white">
-              <SelectValue placeholder="Severity" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#1a1a1a] border-white/10">
-              <SelectItem value="all">All Severities</SelectItem>
-              <SelectItem value="info">Info</SelectItem>
-              <SelectItem value="warning">Warning</SelectItem>
-              <SelectItem value="critical">Critical</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(() => 0); }}>
-            <SelectTrigger className="w-full md:w-40 bg-white/5 border-white/10 text-white">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#1a1a1a] border-white/10">
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="billing">Billing</SelectItem>
-              <SelectItem value="model">Model</SelectItem>
-              <SelectItem value="security">Security</SelectItem>
-              <SelectItem value="abuse">Abuse</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onResetFilters}
-            className="text-white/60 hover:text-white"
-          >
-            <X className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
         </div>
-      </CardContent>
-    </Card>
+        <Select value={severityFilter} onValueChange={(v) => { setSeverityFilter(v); setPage(() => 0); }}>
+          <SelectTrigger className="w-full md:w-40 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
+            <SelectValue placeholder="Severity" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border-[#E5E5E5]">
+            <SelectItem value="all">All Severities</SelectItem>
+            <SelectItem value="info">Info</SelectItem>
+            <SelectItem value="warning">Warning</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(() => 0); }}>
+          <SelectTrigger className="w-full md:w-40 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border-[#E5E5E5]">
+            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="billing">Billing</SelectItem>
+            <SelectItem value="model">Model</SelectItem>
+            <SelectItem value="security">Security</SelectItem>
+            <SelectItem value="abuse">Abuse</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onResetFilters}
+          className="text-[#999] hover:text-[#0A0A0A]"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Reset
+        </Button>
+      </div>
+    </div>
   );
 }
