@@ -3761,3 +3761,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update ProcessSection — "From brief to final asset in four steps", CTA → "Join waitlist"
 - [x] Update Footer — newsletter → "Get launch updates and early access", removed phone, copyright 2026
 - [x] Rewrite Login.tsx — "Welcome" dual-purpose sign-in, replaced fake testimonial with AspirationPanel
+
+## Feature: Pre-Launch Access Gating (Invite Code System)
+- [x] Change header button "Start a project" → "Join waitlist" (desktop + mobile)
+- [x] Login page: inline waitlist email form + restructured as waitlist-first with "Already have access? Sign in" secondary
+- [x] DB schema: added approved (boolean), accessCode (varchar), approvedAt (timestamp) to users table + invite_codes table
+- [x] Server: invite code validation endpoint (access.redeem) with rate limiting + audit logging
+- [x] Server: post-OAuth gating — unapproved users redirected to /login?error=not_approved
+- [x] Server: access.status endpoint reads from ctx.user for testability
+- [x] Frontend: WaitlistPending interstitial page with invite code input form + sign out
+- [x] Frontend: Dashboard + CastingStudio approval gates (redirect unapproved non-admin users to /waitlist-pending)
+- [x] Admin auto-approved in DB; admins bypass all gates
+- [x] Tests: 6 tests for access.status (approved/unapproved/admin) + access.redeem (validation, rate limit, code trimming)

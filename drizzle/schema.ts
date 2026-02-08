@@ -31,6 +31,10 @@ export const users = mysqlTable("users", {
   // Referral system
   referralCode: varchar("referralCode", { length: 16 }).unique(), // Auto-generated unique code (e.g., FORMA-A3K9X2)
   referredByUserId: int("referredByUserId"), // User ID who referred this user
+  // Pre-launch access gating
+  approved: boolean("approved").default(false).notNull(), // Whether user has been approved for access (false = waitlisted)
+  accessCode: varchar("accessCode", { length: 64 }), // Invite code used to gain access
+  approvedAt: timestamp("approvedAt"), // When user was approved
   // Account lockout fields (for failed login protection)
   failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
   lockedUntil: timestamp("lockedUntil"), // Temporary lockout expiry
@@ -527,3 +531,22 @@ export const announcements = mysqlTable("announcements", {
 
 export type Announcement = typeof announcements.$inferSelect;
 export type InsertAnnouncement = typeof announcements.$inferInsert;
+
+// ============================================================================
+// INVITE CODES (Pre-launch access gating)
+// ============================================================================
+
+export const inviteCodes = mysqlTable("invite_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 64 }).notNull().unique(), // e.g., FORMA-EARLYBIRD-A3K9
+  createdBy: int("createdBy").notNull(), // Admin who created the code
+  maxUses: int("maxUses").default(1).notNull(), // How many times this code can be used
+  currentUses: int("currentUses").default(0).notNull(), // How many times it's been used
+  isActive: boolean("isActive").default(true).notNull(), // Can be deactivated
+  expiresAt: timestamp("expiresAt"), // Optional expiry
+  note: text("note"), // Admin note about who this code is for
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type InviteCode = typeof inviteCodes.$inferSelect;
+export type InsertInviteCode = typeof inviteCodes.$inferInsert;

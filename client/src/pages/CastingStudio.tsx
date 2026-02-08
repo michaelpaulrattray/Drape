@@ -103,6 +103,13 @@ export default function CastingStudio() {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
+  // Pre-launch gate: redirect unapproved users to waitlist (admins bypass)
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user && !user.approved && user.role !== "admin") {
+      navigate("/waitlist-pending");
+    }
+  }, [authLoading, isAuthenticated, user, navigate]);
+
   // Auto-resize textarea (used by RefinePanel via textAreaRef)
   const textAreaRef = useCastingUIStore((s) => s.refineInput);
   useEffect(() => {

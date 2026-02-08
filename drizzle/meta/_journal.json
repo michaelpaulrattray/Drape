@@ -190,6 +190,20 @@
       "when": 1770488960024,
       "tag": "0026_large_pyro",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1770540970542,
+      "tag": "0027_regular_hellfire_club",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1770541780733,
+      "tag": "0028_adorable_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

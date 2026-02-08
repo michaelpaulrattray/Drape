@@ -1,7 +1,9 @@
 import { getLoginUrl } from "@/const";
 import { Button as DSButton } from "@/components/design-system";
-import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX } from "lucide-react";
+import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX, Check, Loader2 } from "lucide-react";
 import { useLocation, Link } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { useState } from "react";
 
 // ─── Error configurations ──────────────────────────────────────────────────
 const ERROR_MESSAGES = {
@@ -28,6 +30,14 @@ const ERROR_MESSAGES = {
     iconColor: "text-orange-500",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200",
+  },
+  not_approved: {
+    icon: Clock,
+    title: "Waitlist Pending",
+    message: "Your account is on the waitlist. We'll notify you when your spot is ready. If you have an access code, enter it below.",
+    iconColor: "text-blue-500",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
   },
   error: {
     icon: AlertCircle,
@@ -58,7 +68,9 @@ function ErrorBanner({ errorType, lockMinutes }: { errorType: string; lockMinute
       ? ERROR_MESSAGES.locked
       : errorType === "disposable_email"
         ? ERROR_MESSAGES.disposable_email
-        : ERROR_MESSAGES.error;
+        : errorType === "not_approved"
+          ? ERROR_MESSAGES.not_approved
+          : ERROR_MESSAGES.error;
 
   return (
     <div className={`mb-6 p-4 rounded-2xl border ${errorConfig.bgColor} ${errorConfig.borderColor}`}>
@@ -126,6 +138,64 @@ function OAuthButton({ href, disabled, children }: { href: string; disabled: boo
   );
 }
 
+function WaitlistForm() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+
+  const joinWaitlist = trpc.waitlist.join.useMutation({
+    onSuccess: (data) => {
+      setSubmitted(true);
+      setAlreadyRegistered(data.alreadyRegistered ?? false);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    joinWaitlist.mutate({ email: email.trim(), source: "login_page" });
+  };
+
+  if (submitted) {
+    return (
+      <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#0A0A0A]/5 border border-[#0A0A0A]/10">
+        <div className="w-8 h-8 rounded-full bg-[#0A0A0A] flex items-center justify-center flex-shrink-0">
+          <Check className="w-4 h-4 text-white" />
+        </div>
+        <p className="text-sm text-[#0A0A0A] font-medium">
+          {alreadyRegistered
+            ? "You're already on the list. We'll be in touch soon."
+            : "You're on the list. We'll notify you when your spot is ready."}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+        required
+        className="flex-1 h-12 px-4 rounded-full bg-white border border-[#0A0A0A]/10 text-sm text-[#0A0A0A] placeholder:text-[#757575] focus:outline-none focus:border-[#0A0A0A]/30 transition-colors"
+      />
+      <button
+        type="submit"
+        disabled={joinWaitlist.isPending}
+        className="h-12 px-6 rounded-full bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-60 flex items-center gap-2"
+      >
+        {joinWaitlist.isPending ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          "Join waitlist"
+        )}
+      </button>
+    </form>
+  );
+}
+
 function AspirationPanel() {
   return (
     <div className="hidden lg:flex flex-col items-center justify-center px-12 xl:px-16">
@@ -169,11 +239,15 @@ function AspirationPanel() {
 export default function Login() {
   const loginUrl = getLoginUrl();
   const [location] = useLocation();
+  const [showSignIn, setShowSignIn] = useState(false);
 
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
   const errorType = searchParams.get("error");
   const lockMinutes = searchParams.get("minutes");
   const isSuspended = errorType === "suspended";
+
+  // Auto-show sign-in panel if there's an auth error (user was redirected back)
+  const hasAuthError = errorType === "suspended" || errorType === "locked" || errorType === "disposable_email" || errorType === "not_approved" || errorType === "error";
 
   return (
     <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
@@ -187,9 +261,9 @@ export default function Login() {
               className="w-[31px] h-[31px]"
             />
           </Link>
-          <DSButton href="/#contact" variant="primary" size="md">
-            Join waitlist
-          </DSButton>
+          <Link href="/" className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300">
+            ← Back to home
+          </Link>
         </div>
       </header>
 
@@ -197,68 +271,128 @@ export default function Login() {
       <div className="min-h-[calc(100vh-56px)] flex items-center justify-center px-4 sm:px-6 lg:px-12 py-8 sm:py-12 relative">
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-0 items-center">
 
-          {/* ─── Left Column: Login Form ─────────────────────────────── */}
+          {/* ─── Left Column: Waitlist + Sign In ─────────────────────── */}
           <div className="w-full max-w-md mx-auto lg:mx-0">
             {/* Error Banner */}
             {errorType && <ErrorBanner errorType={errorType} lockMinutes={lockMinutes} />}
 
-            {/* Card */}
-            <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
-              <div className="mb-8">
-                <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
-                  Welcome
-                </h1>
-                <p className="text-[#757575] text-sm mt-2 font-medium">
-                  Sign in to your studio or create an account to get started.
+            {/* Primary Card: Waitlist */}
+            {!hasAuthError && !showSignIn && (
+              <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
+                <div className="mb-6">
+                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                    Join the waitlist
+                  </h1>
+                  <p className="text-[#757575] text-sm mt-2 font-medium">
+                    We're launching soon. Get early access to studio-grade AI model creation.
+                  </p>
+                </div>
+
+                {/* Inline Waitlist Form */}
+                <WaitlistForm />
+
+                {/* What you'll get */}
+                <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5">
+                  <p className="text-xs text-[#757575] uppercase tracking-widest mb-4 font-medium">
+                    Early access includes
+                  </p>
+                  <div className="space-y-3">
+                    {[
+                      "Casting Studio — create and lock model identities",
+                      "Free credits to start generating immediately",
+                      "Priority access to new studios as they launch",
+                    ].map((item) => (
+                      <div key={item} className="flex items-start gap-2.5">
+                        <div className="w-1 h-1 rounded-full bg-[#0A0A0A] mt-2 flex-shrink-0" />
+                        <span className="text-sm text-[#0A0A0A]/80">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sign-in toggle */}
+                <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5 text-center">
+                  <button
+                    onClick={() => setShowSignIn(true)}
+                    className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
+                  >
+                    Already have access? <span className="underline underline-offset-2">Sign in</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Secondary Card: Sign In (shown on toggle or auth error) */}
+            {(hasAuthError || showSignIn) && (
+              <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
+                <div className="mb-8">
+                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                    Sign in
+                  </h1>
+                  <p className="text-[#757575] text-sm mt-2 font-medium">
+                    Welcome back to your studio.
+                  </p>
+                </div>
+
+                {/* OAuth Buttons */}
+                <div className="space-y-3">
+                  <OAuthButton href={loginUrl} disabled={isSuspended}>
+                    <GoogleIcon disabled={isSuspended} /> Continue with Google
+                  </OAuthButton>
+                  <OAuthButton href={loginUrl} disabled={isSuspended}>
+                    <AppleIcon disabled={isSuspended} /> Continue with Apple
+                  </OAuthButton>
+                </div>
+
+                {/* Divider */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#0A0A0A]/10" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-white px-3 text-[#757575]">or</span>
+                  </div>
+                </div>
+
+                {/* Email Login */}
+                {isSuspended ? (
+                  <button
+                    className="w-full h-12 inline-flex items-center justify-center rounded-full bg-[#D4D4D4] text-[#757575] cursor-not-allowed text-sm font-medium"
+                    disabled
+                  >
+                    Continue with Email
+                  </button>
+                ) : (
+                  <DSButton href={loginUrl} variant="primary" size="lg" fullWidth>
+                    Continue with Email
+                  </DSButton>
+                )}
+
+                {/* Legal */}
+                <p className="text-xs text-[#757575] mt-6 leading-relaxed font-medium">
+                  By continuing, you agree to our{" "}
+                  <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
+                    Terms & Conditions
+                  </a>
+                  {" "}and{" "}
+                  <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
+                    Privacy Policy
+                  </a>.
                 </p>
+
+                {/* Back to waitlist toggle */}
+                {!hasAuthError && (
+                  <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5 text-center">
+                    <button
+                      onClick={() => setShowSignIn(false)}
+                      className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
+                    >
+                      Don't have access? <span className="underline underline-offset-2">Join the waitlist</span>
+                    </button>
+                  </div>
+                )}
               </div>
-
-              {/* OAuth Buttons */}
-              <div className="space-y-3">
-                <OAuthButton href={loginUrl} disabled={isSuspended}>
-                  <GoogleIcon disabled={isSuspended} /> Continue with Google
-                </OAuthButton>
-                <OAuthButton href={loginUrl} disabled={isSuspended}>
-                  <AppleIcon disabled={isSuspended} /> Continue with Apple
-                </OAuthButton>
-              </div>
-
-              {/* Divider */}
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#0A0A0A]/10" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-3 text-[#757575]">or</span>
-                </div>
-              </div>
-
-              {/* Email Login */}
-              {isSuspended ? (
-                <button
-                  className="w-full h-12 inline-flex items-center justify-center rounded-full bg-[#D4D4D4] text-[#757575] cursor-not-allowed text-sm font-medium"
-                  disabled
-                >
-                  Continue with Email
-                </button>
-              ) : (
-                <DSButton href={loginUrl} variant="primary" size="lg" fullWidth>
-                  Continue with Email
-                </DSButton>
-              )}
-
-              {/* Legal */}
-              <p className="text-xs text-[#757575] mt-6 leading-relaxed font-medium">
-                By continuing, you agree to our{" "}
-                <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
-                  Terms & Conditions
-                </a>
-                {" "}and{" "}
-                <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
-                  Privacy Policy
-                </a>.
-              </p>
-            </div>
+            )}
           </div>
 
           {/* ─── Mobile: Back to home ────────────────────────────────── */}

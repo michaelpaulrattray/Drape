@@ -111,7 +111,7 @@ export function Header() {
         {/* CTA Button */}
         <div className="hidden md:flex items-center gap-3 lg:gap-4">
           <Button href="/#contact" variant="primary" size="md">
-            Start a project
+            Join waitlist
           </Button>
           <button 
             className="w-10 h-10 flex items-center justify-center rounded-full border border-[#0A0A0A]/10 hover:bg-[#0A0A0A]/5 transition-colors"
@@ -178,7 +178,7 @@ export function Header() {
                 className="mt-6 justify-center w-full"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Start a project
+                Join waitlist
               </Button>
 
               {/* Social links on mobile */}

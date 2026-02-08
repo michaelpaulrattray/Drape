@@ -133,8 +133,37 @@ export function registerOAuthRoutes(app: Express) {
       // Reset failed login attempts on successful login
       await db.resetFailedLogins(userInfo.openId);
 
-      // Get user for audit log
+      // Get user for approval check and audit log
       const user = await db.getUserByOpenId(userInfo.openId);
+
+      // Pre-launch access gate: redirect unapproved users
+      if (user && !user.approved && user.role !== 'admin') {
+        // Still create session so they can submit access codes
+        const sessionToken = await sdk.createSessionToken(userInfo.openId, {
+          name: userInfo.name || "",
+          expiresInMs: SESSION_MAX_AGE_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(req);
+        res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+
+        await logAuditEvent({
+          userId: user.id,
+          action: AUDIT_ACTIONS.LOGIN_SUCCESS,
+          resourceType: "auth",
+          resourceId: userInfo.openId,
+          metadata: {
+            email: userInfo.email,
+            loginMethod: userInfo.loginMethod ?? userInfo.platform,
+            approved: false,
+          },
+          severity: "info",
+          ipAddress: clientIp,
+          userAgent,
+        });
+
+        res.redirect(302, "/waitlist-pending");
+        return;
+      }
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",

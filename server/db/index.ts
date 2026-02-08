@@ -150,3 +150,12 @@ export {
   isValidReferralCodeFormat,
   expireStalePendingReferrals,
 } from "./referrals";
+
+// Invite Codes (Pre-launch access gating)
+export {
+  redeemInviteCode,
+  createInviteCode,
+  listInviteCodes,
+  deactivateInviteCode,
+  approveUserDirectly,
+} from "./inviteCodes";

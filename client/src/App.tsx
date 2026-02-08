@@ -14,6 +14,7 @@ import ModeratorDashboard from "./pages/ModeratorDashboard";
 import AdminChangeRequests from "./pages/AdminChangeRequests";
 import AdminOverview from "./pages/AdminOverview";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
+import WaitlistPending from "./pages/WaitlistPending";
 
 function Router() {
   return (
@@ -21,6 +22,7 @@ function Router() {
       {/* New Kanso-style Home page */}
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
+      <Route path="/waitlist-pending" component={WaitlistPending} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/casting-studio" component={CastingStudio} />
       <Route path="/admin/overview" component={AdminOverview} />
