@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { easeOut, easeInOut, clientLogos } from "./homeData";
+import FlowLines from "@/components/hero3d/FlowLines";
 
 const HeroScene = lazy(() => import("@/components/hero3d/HeroScene"));
 
@@ -92,6 +93,8 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.4, ease: easeOut }}
           className="relative w-full aspect-[4/3] sm:aspect-[16/9] rounded-xl sm:rounded-2xl overflow-hidden sm:h-[950px]"
         >
+          {/* Subtle animated flow lines behind the hero image */}
+          <FlowLines />
           <Suspense fallback={
             <img
               src="/api/hero/base"

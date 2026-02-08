@@ -3681,3 +3681,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Upload all 3 files to S3 and update heroProxy keys to v3
 - [x] Apply Claude's parallax best practices: depth compressed 0.4-0.6, edge fade 12%, UV clamped 0.001-0.999, parallax strength 0.008
 - [x] IMAGE_ASPECT unchanged (5504/3072 = 1.79:1, same as before)
+
+## Feature: Background Flow Lines in Hero
+- [x] Create FlowLines.tsx component with 3 animated SVG flowing curves
+- [x] Integrate behind hero canvas in HeroSection.tsx as absolute-positioned z-0 layer
+- [x] 6% opacity, pointer-events-none, CSS d:path() keyframe morphing (8s/10s/12s cycles)
