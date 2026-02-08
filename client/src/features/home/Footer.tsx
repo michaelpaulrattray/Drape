@@ -233,7 +233,6 @@ export function Footer() {
           className="flex items-center justify-between pt-8 border-t border-white/10 text-sm text-white/40"
         >
           <span>© 2025 All rights reserved</span>
-          <span>Designed with AI</span>
         </motion.div>
       </div>
     </footer>
