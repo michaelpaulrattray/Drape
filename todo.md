@@ -3717,3 +3717,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix orange age slider — added slider-obsidian CSS class with #0A0A0A thumb, #EBEBEB track
 - [x] Restyle Tone & Energy modal (TriBlendSelector) — obsidian puck, bars, chips, borders
 - [x] Restyle Tooltip component — obsidian borders and text colors
+- [x] Restyle hair color selector wheel (HairColorWheel.tsx) — obsidian tabs, puck stroke, swatch borders, tone controls, tooltip pill
