@@ -5,7 +5,7 @@ import { SectionLabel } from "./SectionLabel";
 
 export function BlogSection() {
   return (
-    <section id="blog" className="py-24 bg-white">
+    <section id="blog" className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
@@ -22,11 +22,11 @@ export function BlogSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="flex items-start justify-between mb-16"
+          className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-0 mb-8 sm:mb-16"
         >
           <div>
             <h2 className="text-section-title text-[#0A0A0A] mb-4">Latest insights from our blog.</h2>
-            <p className="text-body-md text-gray-muted w-blog-text">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
+            <p className="text-body-md text-gray-muted w-full sm:w-blog-text">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
           <Button href="#" variant="secondary-invert" showPlus className="hidden md:inline-flex mt-[100px] font-medium">
             View all articles
@@ -39,14 +39,14 @@ export function BlogSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid md:grid-cols-4 gap-1 items-start"
+          className="grid sm:grid-cols-2 md:grid-cols-4 gap-1 items-start"
         >
           {/* Featured Post (First - Large with text overlay, spans 2 columns) */}
           <a
             href="#"
             className="group block rounded-2xl overflow-hidden bg-[#EBEBEB] hover:bg-[#0A0A0A] transition-colors duration-500 md:col-span-2 md:row-span-2"
           >
-            <div className="relative h-full min-h-[500px] overflow-hidden rounded-xl m-1.5">
+            <div className="relative h-full min-h-[300px] sm:min-h-[500px] overflow-hidden rounded-xl m-1.5">
               <img
                 src={blogPosts[0].image}
                 alt={blogPosts[0].title}

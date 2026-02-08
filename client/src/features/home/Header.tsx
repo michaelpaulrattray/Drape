@@ -22,7 +22,7 @@ export function Header() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
+    }, 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -42,7 +42,17 @@ export function Header() {
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [isMegaMenuOpen, isMobileMenuOpen]);
 
-  // Format time for display - memoized since it only changes when currentTime changes
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileMenuOpen]);
+
+  // Format time for display
   const formattedTime = useMemo(() => {
     const options: Intl.DateTimeFormatOptions = {
       month: 'short',
@@ -57,7 +67,7 @@ export function Header() {
 
   return (
     <>
-      {/* Backdrop overlay - OUTSIDE the header so z-index works correctly */}
+      {/* Backdrop overlay */}
       <AnimatePresence>
         {isMegaMenuOpen && (
           <motion.div
@@ -72,7 +82,7 @@ export function Header() {
       </AnimatePresence>
       
       <header 
-        className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] relative rounded-b-xl overflow-hidden"
+        className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-12 bg-[#EBEBEB] relative rounded-b-xl overflow-hidden"
       >
       {/* Header content */}
       <div className="flex items-center justify-between h-14">
@@ -90,7 +100,7 @@ export function Header() {
 
         {/* Desktop Navigation - Hidden when mega menu is open */}
         {!isMegaMenuOpen && (
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8">
             <NavLink href="#about">About</NavLink>
             <NavLink href="#work">Work</NavLink>
             <NavLink href="#services">Services</NavLink>
@@ -99,7 +109,7 @@ export function Header() {
         )}
 
         {/* CTA Button */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-3 lg:gap-4">
           <Button href="/#contact" variant="primary" size="md">
             Start a project
           </Button>
@@ -124,26 +134,56 @@ export function Header() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-14 left-0 right-0 bg-white border-t border-[#0A0A0A]/10 shadow-lg z-50">
-          <nav className="flex flex-col p-6 gap-4">
-            <a href="#about" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</a>
-            <a href="#work" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Work</a>
-            <a href="#services" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Services</a>
-            <a href="#pricing" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
-            <a href="#blog" className="text-lg text-[#0A0A0A]/70 hover:text-[#0A0A0A] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Blog</a>
-            <Button 
-              href="/#contact" 
-              variant="primary" 
-              className="mt-4 justify-center"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Start a project
-            </Button>
-          </nav>
-        </div>
-      )}
+      {/* Mobile Menu — Full screen overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="md:hidden fixed inset-0 top-14 bg-white z-50 overflow-y-auto"
+          >
+            <nav className="flex flex-col p-6 gap-1">
+              {[
+                { name: 'About', href: '#about' },
+                { name: 'Work', href: '#work' },
+                { name: 'Services', href: '#services' },
+                { name: 'Pricing', href: '#pricing' },
+                { name: 'Blog', href: '#blog' },
+                { name: 'Contact', href: '#contact' },
+              ].map((item) => (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className="py-3 text-2xl font-medium text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors border-b border-[#0A0A0A]/5"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </a>
+              ))}
+              <Button 
+                href="/#contact" 
+                variant="primary" 
+                className="mt-6 justify-center w-full"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Start a project
+              </Button>
+
+              {/* Social links on mobile */}
+              <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5">
+                <div className="flex items-center gap-6">
+                  <a href="#" className="text-sm text-[#757575] hover:text-[#0A0A0A] transition-colors">Twitter/X</a>
+                  <a href="#" className="text-sm text-[#757575] hover:text-[#0A0A0A] transition-colors">Instagram</a>
+                  <a href="#" className="text-sm text-[#757575] hover:text-[#0A0A0A] transition-colors">LinkedIn</a>
+                </div>
+                <p className="text-xs text-[#757575] mt-4">hello@formastudio.ai</p>
+              </div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mega Menu Dropdown */}
       <AnimatePresence>
@@ -156,9 +196,9 @@ export function Header() {
               style={{ overflow: 'hidden' }}
             >
               {/* Content wrapper */}
-              <div className="pt-6 pb-8 flex gap-8">
+              <div className="pt-6 pb-8 flex flex-col md:flex-row gap-8">
                 {/* Left Column - Navigation */}
-                <div className="w-1/2 flex flex-col">
+                <div className="w-full md:w-1/2 flex flex-col">
                   <nav className="flex flex-col">
                     {[
                       { name: 'Home', href: '/', index: '01' },
@@ -185,7 +225,7 @@ export function Header() {
                             {item.name}
                           </span>
                         </span>
-                        {/* Index number with conveyor effect like + icon */}
+                        {/* Index number with conveyor effect */}
                         <span className="overflow-hidden h-5 relative w-8">
                           <span className="absolute inset-0 flex items-center justify-center text-sm text-gray-muted font-medium transition-transform duration-500 ease-out group-hover:translate-y-5">({item.index})</span>
                           <span className="absolute inset-0 flex items-center justify-center text-sm text-gray-muted font-medium transition-transform duration-500 ease-out -translate-y-5 group-hover:translate-y-0">({item.index})</span>
@@ -224,17 +264,15 @@ export function Header() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.25, duration: 0.3 }}
-                className="pb-4 flex items-center justify-between"
+                className="pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
               >
                 <div className="flex flex-col gap-0.5">
-                  {/* Email with conveyor effect */}
                   <a href="mailto:hello@formastudio.ai" className="group overflow-hidden">
                     <span className="overflow-hidden h-5 block">
                       <span className="block text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">hello@formastudio.ai</span>
                       <span className="block text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">hello@formastudio.ai</span>
                     </span>
                   </a>
-                  {/* Phone with conveyor effect */}
                   <a href="tel:+11234567890" className="group overflow-hidden">
                     <span className="overflow-hidden h-5 block">
                       <span className="block text-sm text-dark font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">(123) 456-7890</span>
@@ -243,7 +281,6 @@ export function Header() {
                   </a>
                 </div>
                 <div className="flex items-center gap-6">
-                  {/* Social links with conveyor effect */}
                   <SocialLink href="#">Twitter/X</SocialLink>
                   <SocialLink href="#">Instagram</SocialLink>
                   <SocialLink href="#">LinkedIn</SocialLink>

@@ -9,7 +9,7 @@ export function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="py-24 bg-white">
+    <section className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
@@ -20,7 +20,7 @@ export function FAQSection() {
           <SectionLabel label="FAQs" number="08" />
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-16">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-16">
           {/* Left - Headline */}
           <motion.div
             initial="hidden"
@@ -51,7 +51,7 @@ export function FAQSection() {
                     onClick={() => setOpenIndex(openIndex === index ? null : index)}
                     className="w-full flex items-center justify-between p-5 text-left"
                   >
-                    <span className="font-medium text-[#0A0A0A] text-lg">{index + 1}. {faq.question}</span>
+                    <span className="font-medium text-[#0A0A0A] text-base sm:text-lg">{index + 1}. {faq.question}</span>
                     <div className="w-6 h-6 rounded-full border border-[#0A0A0A]/20 flex items-center justify-center flex-shrink-0">
                       <Plus
                         className={`w-3 h-3 text-[#0A0A0A] transition-transform duration-700 ease-out ${

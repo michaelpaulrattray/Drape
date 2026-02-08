@@ -115,7 +115,7 @@ function NewsletterForm() {
 
 export function Footer() {
   return (
-    <footer className="py-24 bg-[#0A0A0A] text-white">
+    <footer className="py-12 sm:py-24 bg-[#0A0A0A] text-white">
       <div className="max-w-[1520px] mx-auto px-6 lg:px-12">
         {/* Large Wordmark */}
         <motion.h2 
@@ -123,7 +123,7 @@ export function Footer() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(3rem,10vw,8rem)] font-bold tracking-tighter mb-16 text-surface"
+          className="text-[clamp(2rem,10vw,8rem)] font-bold tracking-tighter mb-8 sm:mb-16 text-surface"
         >
           Forma® Studio
         </motion.h2>
@@ -133,7 +133,7 @@ export function Footer() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid lg:grid-cols-2 gap-16 mb-16"
+          className="grid lg:grid-cols-2 gap-8 sm:gap-16 mb-8 sm:mb-16"
         >
           {/* Left - Contact */}
           <div>

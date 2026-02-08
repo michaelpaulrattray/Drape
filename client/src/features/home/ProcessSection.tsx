@@ -5,7 +5,7 @@ import { SectionLabel } from "./SectionLabel";
 
 export function ProcessSection() {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
@@ -16,7 +16,7 @@ export function ProcessSection() {
           <SectionLabel label="Process" number="05" />
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-16">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-16">
           {/* Left - Headline */}
           <motion.div
             initial="hidden"

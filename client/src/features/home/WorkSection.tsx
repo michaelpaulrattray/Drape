@@ -4,7 +4,7 @@ import { fadeInUp, staggerContainer, projects } from "./homeData";
 
 export function WorkSection() {
   return (
-    <section id="work" className="py-24 bg-white">
+    <section id="work" className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         {/* Header with subtext and button */}
         <motion.div 
@@ -12,7 +12,7 @@ export function WorkSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="flex items-start justify-between mb-16"
+          className="flex flex-col sm:flex-row items-start justify-between gap-6 sm:gap-0 mb-8 sm:mb-16"
         >
           <div>
             <h2 className="text-section-title leading-[1.1] tracking-tight text-[#0A0A0A] mb-4">Selected Work.</h2>
@@ -20,7 +20,7 @@ export function WorkSection() {
               A curated selection of projects that reflect our commitment to simplicity and purposeful design.
             </p>
           </div>
-          <Button href="#" variant="secondary-invert" showPlus className="mt-[100px] font-medium">
+          <Button href="#" variant="secondary-invert" showPlus className="sm:mt-[100px] font-medium">
             View all projects
           </Button>
         </motion.div>
@@ -31,7 +31,7 @@ export function WorkSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid md:grid-cols-2 gap-1"
+          className="grid sm:grid-cols-2 gap-1"
         >
           {projects.map((project, index) => (
             <a

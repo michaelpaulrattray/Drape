@@ -3629,3 +3629,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add mobile responsive hamburger menu for AdminHeader nav links
 - [x] Add mobile responsive hamburger menu for ModeratorHeader nav links
 - [x] Rename "Moderator Dashboard" title in ModeratorHeader to "Moderator SOC"
+
+## Feature: Responsive & Mobile Optimization — Home Page + Login Page
+- [x] Audit and fix home page responsive layout (typography, spacing, grid, images)
+- [x] Audit and fix login page responsive layout
+- [x] Ensure touch-friendly targets, readable text, and proper viewport scaling on mobile
+- [x] Verify on desktop viewport (mobile breakpoints applied via Tailwind responsive classes)

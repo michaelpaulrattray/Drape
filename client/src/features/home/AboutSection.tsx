@@ -75,7 +75,7 @@ export function AboutSection() {
   };
 
   return (
-    <section id="about" className="py-24 bg-white">
+    <section id="about" className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
@@ -105,13 +105,13 @@ export function AboutSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeIn}
-          className="flex items-center gap-6 py-6 -mb-[10px]"
+          className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 py-4 sm:py-6 -mb-[10px]"
         >
           {/* Stats Marquee with gradient fades */}
           <StatsMarquee />
           
           {/* Description - Right aligned */}
-          <p className="shrink-0 text-body-md text-gray-muted text-right w-about-text">
+          <p className="shrink-0 text-sm sm:text-body-md text-gray-muted sm:text-right w-full sm:w-about-text">
             Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
           </p>
         </motion.div>
@@ -122,7 +122,7 @@ export function AboutSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={scaleIn}
-          className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] cursor-pointer"
+          className="relative w-full aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] cursor-pointer"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -210,7 +210,7 @@ export function AboutSection() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 translate-y-8 mt-4 text-white text-card-title font-semibold z-20"
+                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 translate-y-8 mt-4 text-white text-sm sm:text-card-title font-semibold z-20"
                 
               >
                 Play Showreel

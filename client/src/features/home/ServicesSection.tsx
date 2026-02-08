@@ -12,7 +12,7 @@ export function ServicesSection() {
   };
 
   return (
-    <section id="services" className="py-24 bg-white">
+    <section id="services" className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         {/* Contained dark card */}
         <motion.div
@@ -20,16 +20,16 @@ export function ServicesSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={scaleIn}
-          className="bg-[#121212] rounded-3xl px-8 py-12 lg:px-16 lg:py-16"
+          className="bg-[#121212] rounded-2xl sm:rounded-3xl px-4 py-8 sm:px-8 sm:py-12 lg:px-16 lg:py-16"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-services-header">
-            <span className="text-base font-medium text-white tracking-wide">/ Services</span>
-            <span className="text-sm font-medium text-white/60">(04)</span>
+            <span className="text-sm sm:text-base font-medium text-white tracking-wide">/ Services</span>
+            <span className="text-xs sm:text-sm font-medium text-white/60">(04)</span>
           </div>
 
           {/* Service List - Accordion */}
-          <div className="space-y-1 mb-12">
+          <div className="space-y-1 mb-8 sm:mb-12">
             {services.map((service, index) => {
               const isExpanded = expandedService === index;
               const isHovered = hoveredService === index;
@@ -40,7 +40,7 @@ export function ServicesSection() {
                 <div key={index}>
                   {/* Service Row - Clickable */}
                   <div
-                    className="group cursor-pointer py-4"
+                    className="group cursor-pointer py-3 sm:py-4"
                     onClick={() => toggleService(index)}
                     onMouseEnter={() => setHoveredService(index)}
                     onMouseLeave={() => setHoveredService(null)}
@@ -48,8 +48,8 @@ export function ServicesSection() {
                     <div className="flex items-center justify-between">
                       {/* Left side - Image + Title with slide animation */}
                       <div className="relative flex items-center">
-                        {/* Image thumbnail - always present, revealed on hover/expand */}
-                        <div className="absolute left-0 w-28 h-16 overflow-hidden rounded-xl">
+                        {/* Image thumbnail - hidden on mobile, revealed on hover/expand on desktop */}
+                        <div className="absolute left-0 w-28 h-16 overflow-hidden rounded-xl hidden sm:block">
                           <img
                             src={service.image}
                             alt={service.title}
@@ -59,10 +59,10 @@ export function ServicesSection() {
                           />
                         </div>
                         
-                        {/* Title - slides right on hover/expand to reveal image */}
-                        <span className={`bg-[#121212] rounded-xl px-4 py-2 text-[clamp(1.75rem,4vw,3.5rem)] font-semibold tracking-tight transition-all duration-700 ease-out ${
+                        {/* Title - slides right on hover/expand to reveal image (desktop only) */}
+                        <span className={`bg-[#121212] rounded-xl px-2 sm:px-4 py-1 sm:py-2 text-[clamp(1.25rem,4vw,3.5rem)] font-semibold tracking-tight transition-all duration-700 ease-out ${
                           showImage 
-                            ? "text-white translate-x-36" 
+                            ? "text-white sm:translate-x-36 translate-x-0" 
                             : "text-white/80 translate-x-0 group-hover:text-white"
                         }`}>
                           {service.title}
@@ -70,12 +70,12 @@ export function ServicesSection() {
                       </div>
 
                       {/* Right side - Number / Plus / X transitions */}
-                      <div className="relative w-20 h-20 flex items-center justify-center overflow-hidden">
+                      <div className="relative w-10 h-10 sm:w-20 sm:h-20 flex items-center justify-center overflow-hidden shrink-0">
                         {/* Number - slides out to the LEFT on hover */}
                         <span 
-                          className={`absolute text-[clamp(3rem,6vw,5rem)] font-semibold text-white/25 transition-all duration-700 ease-out ${
+                          className={`absolute text-[clamp(1.5rem,6vw,5rem)] font-semibold text-white/25 transition-all duration-700 ease-out ${
                             showPlus 
-                              ? "-translate-x-24 opacity-0" 
+                              ? "-translate-x-12 sm:-translate-x-24 opacity-0" 
                               : "translate-x-0 opacity-100"
                           }`}
                           style={{ fontFamily: 'Inter, sans-serif' }}
@@ -85,16 +85,16 @@ export function ServicesSection() {
                         
                         {/* Plus - slides in from RIGHT, rotates to X on expand */}
                         <span 
-                          className={`absolute text-[clamp(3rem,6vw,5rem)] font-light text-white/25 transition-all duration-700 ease-out ${
+                          className={`absolute text-[clamp(1.5rem,6vw,5rem)] font-light text-white/25 transition-all duration-700 ease-out ${
                             isExpanded
-                              ? "translate-x-0 -rotate-[135deg]"  /* X shape (counter-clockwise from -90°) */
+                              ? "translate-x-0 -rotate-[135deg]"
                               : isHovered
-                                ? "translate-x-0 -rotate-90"  /* + rotated counter-clockwise */
-                                : "translate-x-24 rotate-0 opacity-0"  /* Hidden to the right */
+                                ? "translate-x-0 -rotate-90"
+                                : "translate-x-12 sm:translate-x-24 rotate-0 opacity-0"
                           } ${
                             showPlus ? "opacity-100" : "opacity-0"
                           }`}
-                          style={{ fontFamily: 'Inter, sans-serif', fontSize: '110px' }}
+                          style={{ fontFamily: 'Inter, sans-serif', fontSize: 'clamp(40px, 10vw, 110px)' }}
                         >
                           +
                         </span>
@@ -108,18 +108,18 @@ export function ServicesSection() {
                       isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                     }`}
                   >
-                    <div className="pb-6 pl-0 lg:pl-[calc(7rem+1.5rem)]">
+                    <div className="pb-4 sm:pb-6 pl-0 lg:pl-[calc(7rem+1.5rem)]">
                       {/* Description */}
-                      <p className="text-white/60 text-base leading-relaxed max-w-xl mb-6">
+                      <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-xl mb-4 sm:mb-6">
                         {service.description}
                       </p>
                       
                       {/* Tags */}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         {service.items.map((item, itemIndex) => (
                           <span
                             key={itemIndex}
-                            className="px-4 py-2 border border-white/20 rounded-full text-sm text-white/80"
+                            className="px-3 py-1.5 sm:px-4 sm:py-2 border border-white/20 rounded-full text-xs sm:text-sm text-white/80"
                           >
                             {item}
                           </span>

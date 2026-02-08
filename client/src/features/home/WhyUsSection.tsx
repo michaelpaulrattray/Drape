@@ -5,7 +5,7 @@ import { SectionLabel } from "./SectionLabel";
 
 export function WhyUsSection() {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
@@ -22,7 +22,7 @@ export function WhyUsSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-16 w-services-headline"
+          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-8 sm:mb-16 w-full lg:w-services-headline"
         >
           <span className="text-section-title text-[#0A0A0A]">We cut through noise to create designs that are </span>
           <span className="text-section-title text-gray-secondary">thoughtful, timeless, and impactful.</span>
@@ -34,7 +34,7 @@ export function WhyUsSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1"
         >
           {/* Card 1 - #EBEBEB outer with 2 inner cards */}
           <div className="bg-[#EBEBEB] rounded-2xl p-2 flex flex-col gap-2">
@@ -137,7 +137,7 @@ export function WhyUsSection() {
           </div>
 
           {/* Column 4 - Tall dark card with silhouette */}
-          <div className="relative rounded-2xl overflow-hidden bg-[#0A0A0A] min-h-[500px] md:min-h-full flex flex-col justify-between">
+          <div className="relative rounded-2xl overflow-hidden bg-[#0A0A0A] min-h-[300px] sm:min-h-[500px] md:min-h-full flex flex-col justify-between">
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80"
               alt="Silhouette"

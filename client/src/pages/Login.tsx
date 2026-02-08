@@ -187,7 +187,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
       {/* Navigation — matches homepage header style */}
-      <header className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-6 lg:px-12 bg-[#EBEBEB] relative">
+      <header className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-12 bg-[#EBEBEB] relative">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
@@ -206,8 +206,8 @@ export default function Login() {
       </header>
 
       {/* Main Content — Two Column */}
-      <div className="min-h-[calc(100vh-56px)] flex items-center justify-center px-6 lg:px-12 py-12 relative">
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-0 items-center">
+      <div className="min-h-[calc(100vh-56px)] flex items-center justify-center px-4 sm:px-6 lg:px-12 py-8 sm:py-12 relative">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-0 items-center">
 
           {/* ─── Left Column: Login Form ─────────────────────────────── */}
           <div className="w-full max-w-md mx-auto lg:mx-0">
@@ -215,9 +215,9 @@ export default function Login() {
             {errorType && <ErrorBanner errorType={errorType} lockMinutes={lockMinutes} />}
 
             {/* Card */}
-            <div className="bg-white rounded-2xl p-8 md:p-10 border border-[#0A0A0A]/5">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
               <div className="mb-8">
-                <h1 className="text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
                   Sign in
                 </h1>
                 <p className="text-[#757575] text-sm mt-2 font-medium">
