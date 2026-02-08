@@ -3635,3 +3635,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Audit and fix login page responsive layout
 - [x] Ensure touch-friendly targets, readable text, and proper viewport scaling on mobile
 - [x] Verify on desktop viewport (mobile breakpoints applied via Tailwind responsive classes)
+
+## Bug Fix: Oversized Section Titles on Mobile
+- [x] Scale down large section headings on mobile across all homepage sections (WhyUs, About, Services, Process, FAQ, Blog, etc.)
+- [x] Convert fixed pixel font sizes in tokens.css to responsive clamp() values
+- [x] Remove text-section-title class overrides from AboutSection and WhyUsSection spans
+- [x] Reduce hero title clamp minimum from 3.5rem to 2.5rem
+- [x] Reduce footer wordmark clamp minimum from 2rem to 1.75rem

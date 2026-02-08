@@ -275,32 +275,32 @@
 
 /* Font Size Utilities */
 .text-hero-title {
-  font-size: 210px;
+  font-size: clamp(3rem, 15vw, 210px);
   font-weight: 500;
   font-family: var(--font-sans);
 }
 
 .text-section-title {
-  font-size: 54px;
+  font-size: clamp(1.5rem, 5vw, 54px);
   font-weight: 500;
   font-family: var(--font-sans);
   line-height: 1.1;
 }
 
 .text-card-title {
-  font-size: 24px;
+  font-size: clamp(1.125rem, 2.5vw, 24px);
   font-weight: 600;
 }
 
 .text-body-lg {
-  font-size: 18px;
+  font-size: clamp(1rem, 2vw, 18px);
   font-weight: 500;
 }
 
 .text-body-md {
-  font-size: 16px;
+  font-size: clamp(0.875rem, 1.5vw, 16px);
   font-weight: 500;
-  line-height: 22px;
+  line-height: 1.5;
 }
 
 /* Color Utilities */

@@ -22,10 +22,10 @@ export function WhyUsSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] mb-8 sm:mb-16 w-full lg:w-services-headline"
+          className="text-[clamp(1.25rem,3.5vw,3rem)] font-medium leading-[1.15] mb-8 sm:mb-16 w-full lg:w-services-headline"
         >
-          <span className="text-section-title text-[#0A0A0A]">We cut through noise to create designs that are </span>
-          <span className="text-section-title text-gray-secondary">thoughtful, timeless, and impactful.</span>
+          <span className="text-[#0A0A0A]">We cut through noise to create designs that are </span>
+          <span className="text-gray-secondary">thoughtful, timeless, and impactful.</span>
         </motion.h2>
 
         {/* 4-Column Bento Grid */}

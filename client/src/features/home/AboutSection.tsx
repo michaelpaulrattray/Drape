@@ -92,11 +92,11 @@ export function AboutSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.75rem,4vw,3rem)] font-medium leading-[1.15] tracking-tight mb-12"
+          className="text-[clamp(1.25rem,3.5vw,3rem)] font-medium leading-[1.15] tracking-tight mb-12"
         >
-          <span className="text-section-title text-[#0A0A0A]">We're a design studio focused on creating</span>
+          <span className="text-[#0A0A0A]">We're a design studio focused on creating</span>
           <br />
-          <span className="text-section-title text-gray-secondary">simple, purposeful, and elegant solutions.</span>
+          <span className="text-gray-secondary">simple, purposeful, and elegant solutions.</span>
         </motion.h2>
 
         {/* Stats Marquee + Description - Inline Layout */}

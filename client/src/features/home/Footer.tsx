@@ -123,7 +123,7 @@ export function Footer() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(2rem,10vw,8rem)] font-bold tracking-tighter mb-8 sm:mb-16 text-surface"
+          className="text-[clamp(1.75rem,10vw,8rem)] font-bold tracking-tighter mb-8 sm:mb-16 text-surface"
         >
           Forma® Studio
         </motion.h2>
