@@ -283,7 +283,7 @@ export const usersRouter = router({
       limit: z.number().min(1).max(100).optional().default(20),
       offset: z.number().min(0).optional().default(0),
       search: z.string().optional(),
-      status: z.enum(["active", "suspended", "locked", "all"]).optional().default("all"),
+      status: z.enum(["active", "suspended", "locked", "frozen", "all"]).optional().default("all"),
       role: z.enum(["user", "admin", "moderator", "all"]).optional().default("all"),
       sortBy: z.enum(["createdAt", "lastSignedIn", "name"]).optional().default("createdAt"),
       sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
@@ -305,6 +305,7 @@ export const usersRouter = router({
         users: result.users.map(user => ({
           ...user,
           suspendedAt: user.suspendedAt?.toISOString() || null,
+          frozenAt: user.frozenAt?.toISOString() || null,
           lockedUntil: user.lockedUntil?.toISOString() || null,
           createdAt: user.createdAt.toISOString(),
           lastSignedIn: user.lastSignedIn.toISOString(),

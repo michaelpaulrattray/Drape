@@ -26,7 +26,7 @@ export default function AdminUserManagement() {
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended" | "locked">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended" | "locked" | "frozen">("all");
   const [roleFilter, setRoleFilter] = useState<"all" | "user" | "admin" | "moderator">("all");
   const [sortBy, setSortBy] = useState<"createdAt" | "lastSignedIn" | "name">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");

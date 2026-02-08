@@ -3528,3 +3528,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Show frozen status banner on user detail (cyan, shows reason, date, frozenBy)
 - [x] Add frozenAt/frozenReason/frozenBy to UserDetailData interface
 - [x] Write tests for freeze/unfreeze UI logic (29 new tests, 905 total passing)
+
+## Feature: Add "Frozen" Filter to Admin User Management Table
+- [x] Update backend listAllUsers query to support "frozen" status filter (isNotNull frozenAt)
+- [x] Update backend listUsers tRPC procedure to accept "frozen" in Zod enum
+- [x] Add frozenAt to listAllUsers select + return type
+- [x] Update frontend statusFilter type to include "frozen" (AdminUserManagement.tsx)
+- [x] Update UserFilters component to show "Frozen" option in dropdown
+- [x] Update UserBadges: StatusBadge + getUserStatus to support "frozen" (cyan/Snowflake)
+- [x] Add frozenAt to UserTable UserRow interface
+- [x] Active filter now also excludes frozen users
+- [x] All 905 tests passing, 0 TypeScript errors

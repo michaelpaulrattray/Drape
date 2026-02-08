@@ -37,7 +37,7 @@ export async function listAllUsers(options: {
   limit?: number;
   offset?: number;
   search?: string;
-  status?: "active" | "suspended" | "locked" | "all";
+  status?: "active" | "suspended" | "locked" | "frozen" | "all";
   role?: "user" | "admin" | "moderator" | "all";
   sortBy?: "createdAt" | "lastSignedIn" | "name";
   sortOrder?: "asc" | "desc";
@@ -51,6 +51,7 @@ export async function listAllUsers(options: {
     role: "user" | "admin" | "moderator";
     suspendedAt: Date | null;
     suspendedReason: string | null;
+    frozenAt: Date | null;
     lockedUntil: Date | null;
     createdAt: Date;
     lastSignedIn: Date;
@@ -88,8 +89,11 @@ export async function listAllUsers(options: {
       conditions.push(isNotNull(users.suspendedAt));
     } else if (status === "locked") {
       conditions.push(gt(users.lockedUntil, new Date()));
+    } else if (status === "frozen") {
+      conditions.push(isNotNull(users.frozenAt));
     } else if (status === "active") {
       conditions.push(isNull(users.suspendedAt));
+      conditions.push(isNull(users.frozenAt));
       conditions.push(
         or(isNull(users.lockedUntil), lte(users.lockedUntil, new Date()))!
       );
@@ -127,6 +131,7 @@ export async function listAllUsers(options: {
         role: users.role,
         suspendedAt: users.suspendedAt,
         suspendedReason: users.suspendedReason,
+        frozenAt: users.frozenAt,
         lockedUntil: users.lockedUntil,
         createdAt: users.createdAt,
         lastSignedIn: users.lastSignedIn,

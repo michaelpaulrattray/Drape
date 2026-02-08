@@ -9,6 +9,7 @@ interface UserRow {
   avatarUrl: string | null;
   role: "user" | "admin" | "moderator";
   suspendedAt: string | null;
+  frozenAt: string | null;
   lockedUntil: string | null;
   createdAt: string;
   lastSignedIn: string;

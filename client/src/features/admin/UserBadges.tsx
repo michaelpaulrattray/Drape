@@ -1,14 +1,16 @@
-import { CheckCircle, ShieldOff, Lock, Crown, Shield, User } from "lucide-react";
+import { CheckCircle, ShieldOff, Lock, Snowflake, Crown, Shield, User } from "lucide-react";
 
-export const StatusBadge = ({ status }: { status: "active" | "suspended" | "locked" }) => {
+export const StatusBadge = ({ status }: { status: "active" | "suspended" | "locked" | "frozen" }) => {
   const styles = {
     active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     suspended: "bg-red-500/10 text-red-400 border-red-500/20",
+    frozen: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
     locked: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   };
   const icons = {
     active: <CheckCircle className="w-3 h-3" />,
     suspended: <ShieldOff className="w-3 h-3" />,
+    frozen: <Snowflake className="w-3 h-3" />,
     locked: <Lock className="w-3 h-3" />,
   };
   return (
@@ -44,8 +46,13 @@ export const RoleBadge = ({ role }: { role: "user" | "admin" | "moderator" }) =>
   );
 };
 
-export const getUserStatus = (user: { suspendedAt: string | Date | null; lockedUntil: string | Date | null }): "active" | "suspended" | "locked" => {
+export const getUserStatus = (user: {
+  suspendedAt: string | Date | null;
+  frozenAt?: string | Date | null;
+  lockedUntil: string | Date | null;
+}): "active" | "suspended" | "frozen" | "locked" => {
   if (user.suspendedAt) return "suspended";
+  if (user.frozenAt) return "frozen";
   if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) return "locked";
   return "active";
 };

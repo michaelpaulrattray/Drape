@@ -13,8 +13,8 @@ interface UserFiltersProps {
   searchInput: string;
   onSearchInputChange: (value: string) => void;
   onSearch: () => void;
-  statusFilter: "all" | "active" | "suspended" | "locked";
-  onStatusFilterChange: (value: "all" | "active" | "suspended" | "locked") => void;
+  statusFilter: "all" | "active" | "suspended" | "locked" | "frozen";
+  onStatusFilterChange: (value: "all" | "active" | "suspended" | "locked" | "frozen") => void;
   roleFilter: "all" | "user" | "admin" | "moderator";
   onRoleFilterChange: (value: "all" | "user" | "admin" | "moderator") => void;
   sortBy: "createdAt" | "lastSignedIn" | "name";
@@ -63,6 +63,7 @@ export function UserFilters({
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="frozen">Frozen</SelectItem>
               <SelectItem value="locked">Locked</SelectItem>
             </SelectContent>
           </Select>
