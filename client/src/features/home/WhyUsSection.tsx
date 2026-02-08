@@ -22,7 +22,7 @@ export function WhyUsSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.25rem,5vw,3.375rem)] font-medium leading-[1.15] mb-8 sm:mb-16 w-full lg:w-[1018px]"
+          className="text-[clamp(1.625rem,5vw,3.375rem)] font-medium leading-[1.15] mb-8 sm:mb-16 w-full lg:w-[1018px]"
         >
           <span className="text-[#0A0A0A]">We cut through noise to create designs that are </span>
           <span className="text-gray-secondary">thoughtful, timeless, and impactful.</span>

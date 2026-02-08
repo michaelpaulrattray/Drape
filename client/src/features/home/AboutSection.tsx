@@ -92,7 +92,7 @@ export function AboutSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.25rem,5vw,3.375rem)] font-medium leading-[1.15] tracking-tight mb-12"
+          className="text-[clamp(1.625rem,5vw,3.375rem)] font-medium leading-[1.15] tracking-tight mb-12"
         >
           <span className="text-[#0A0A0A]">We're a design studio focused on creating</span>
           <br />
