@@ -65,12 +65,12 @@ export function ReferenceNode({
         className={`
           relative w-48 h-64 rounded-xl border-2 transition-all duration-300 group overflow-hidden
           ${disabled
-            ? 'border-gray-200 bg-gray-50/30 cursor-not-allowed'
+            ? 'border-[#0A0A0A]/10 bg-[#F5F5F5]/30 cursor-not-allowed'
             : image
               ? 'border-white shadow-2xl'
               : isDragging
-                ? 'border-white bg-slate-accent scale-105 shadow-xl'
-                : 'border-gray-200 border-dashed bg-gray-100/80 hover:border-slate-accent hover:bg-white/80'
+                ? 'border-[#0A0A0A] bg-[#0A0A0A]/10 scale-105 shadow-xl'
+                : 'border-[#0A0A0A]/15 border-dashed bg-[#F5F5F5]/80 hover:border-[#0A0A0A]/40 hover:bg-white/80'
           }
         `}
         onDragEnter={handleDragEnter}
@@ -81,7 +81,7 @@ export function ReferenceNode({
         {disabled ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <span className="text-xs font-medium text-subtle">Locked</span>
+            <span className="text-xs font-medium text-[#757575]">Locked</span>
           </div>
         ) : image ? (
           <div className="relative w-full h-full group/image">
@@ -94,16 +94,16 @@ export function ReferenceNode({
               >
                 <X className="w-5 h-5" />
               </button>
-              <span className="text-xs font-medium text-obsidian drop-shadow-md">Remove</span>
+              <span className="text-xs font-medium text-[#0A0A0A] drop-shadow-md">Remove</span>
             </div>
           </div>
         ) : (
           <button
             onClick={() => !disabled && inputRef.current?.click()}
-            className="w-full h-full flex flex-col items-center justify-center text-subtle hover:text-gray-700 transition-colors gap-4"
+            className="w-full h-full flex flex-col items-center justify-center text-[#757575] hover:text-[#0A0A0A] transition-colors gap-4"
             disabled={disabled}
           >
-            <div className={`p-5 rounded-full border border-gray-300 bg-gray-50/50 transition-transform duration-300 ${isDragging ? 'scale-110 border-white text-obsidian' : ''}`}>
+            <div className={`p-5 rounded-full border border-[#0A0A0A]/15 bg-[#F5F5F5]/50 transition-transform duration-300 ${isDragging ? 'scale-110 border-[#0A0A0A] text-[#0A0A0A]' : ''}`}>
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
             </div>
             <div className="text-center">

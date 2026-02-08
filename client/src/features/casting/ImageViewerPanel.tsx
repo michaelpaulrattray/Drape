@@ -254,7 +254,7 @@ export function ImageViewerPanel({
                     ref={imageRef}
                     src={currentImageUrl} 
                     alt="Active View" 
-                    className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-gray-200/50 bg-gray-100 blur-loading" 
+                    className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-[#0A0A0A]/10 bg-[#F5F5F5] blur-loading" 
                     style={{marginTop: '70px'}}
                     onLoad={(e) => e.currentTarget.classList.add('loaded')}
                   />
@@ -366,7 +366,7 @@ export function ImageViewerPanel({
             </div>
           </div>
           <div className="text-center space-y-3">
-            <h3 className="text-sm font-medium text-obsidian">{genState.currentStep || 'Processing...'}</h3>
+            <h3 className="text-sm font-medium text-[#0A0A0A]">{genState.currentStep || 'Processing...'}</h3>
             {genState.startTime && (
               <ElapsedTimeDisplay startTime={genState.startTime} estimatedDuration={genState.estimatedDuration} />
             )}

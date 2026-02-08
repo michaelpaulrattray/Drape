@@ -288,18 +288,18 @@ html {
   width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #f3f4f6;
+  background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #c1cbd8;
-  border-radius: 3px;
+  background: rgba(10, 10, 10, 0.15);
+  border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #929fb5;
+  background: rgba(10, 10, 10, 0.3);
 }
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #c1cbd8 #f3f4f6;
+  scrollbar-color: rgba(10, 10, 10, 0.15) transparent;
 }
 
 /* Studio Color Palette for Casting Studio */

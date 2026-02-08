@@ -3718,3 +3718,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Restyle Tone & Energy modal (TriBlendSelector) — obsidian puck, bars, chips, borders
 - [x] Restyle Tooltip component — obsidian borders and text colors
 - [x] Restyle hair color selector wheel (HairColorWheel.tsx) — obsidian tabs, puck stroke, swatch borders, tone controls, tooltip pill
+- [x] Fix ControlPanel scrollbar styling — transparent track, rgba(10,10,10,0.15) thumb, rounded-full
+- [x] Comprehensive audit: grep ALL old design tokens and fix remaining instances
+  - [x] ElapsedTimeDisplay.tsx — text-charcoal/text-subtle → #0A0A0A/#757575
+  - [x] ImageViewerPanel.tsx — border-gray-200, bg-gray-100, text-obsidian → obsidian equivalents
+  - [x] ReferenceNode.tsx — slate-accent, text-subtle, text-obsidian, gray borders → obsidian equivalents
+  - [x] ProfileSettingsModal.tsx — gray-200 borders, gray-50 bg, gray-100 hover → obsidian equivalents
+  - [x] Verified: zero remaining slate-accent/text-subtle/text-charcoal/text-obsidian/bg-canvas in casting + shared components

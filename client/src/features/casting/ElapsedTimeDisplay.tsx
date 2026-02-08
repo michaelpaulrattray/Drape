@@ -31,13 +31,13 @@ export function ElapsedTimeDisplay({ startTime, estimatedDuration }: { startTime
   
   return (
     <div className="text-center space-y-2">
-      <div className="text-xs font-medium text-charcoal">
+      <div className="text-xs font-medium text-[#0A0A0A]">
         <span>{formatTime(elapsed)}</span>
         {estimatedDuration && elapsed < estimatedDuration && (
-          <span className="text-subtle"> / ~{formatTime(estimatedDuration)}</span>
+          <span className="text-[#757575]"> / ~{formatTime(estimatedDuration)}</span>
         )}
       </div>
-      <div className="text-xs font-medium text-subtle max-w-xs mx-auto animate-pulse">
+      <div className="text-xs font-medium text-[#757575] max-w-xs mx-auto animate-pulse">
         {LOADING_TIPS[tipIndex]}
       </div>
     </div>

@@ -72,16 +72,16 @@ export default function ProfileSettingsModal({
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-2xl max-h-[85vh] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-2xl max-h-[85vh] bg-white border border-[#0A0A0A]/10 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#0A0A0A]/10">
           <div>
             <h2 className="text-xl font-semibold text-[#0A0A0A] tracking-tight">Settings</h2>
             <p className="text-sm text-[#757575] mt-0.5">Manage your account preferences</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-gray-400 hover:text-[#0A0A0A] hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full text-[#757575] hover:text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -97,14 +97,14 @@ export default function ProfileSettingsModal({
 
         <div className="flex h-[calc(85vh-80px)]">
           {/* Sidebar Tabs */}
-          <div className="w-52 border-r border-gray-200 p-5 space-y-1 bg-gray-50">
+          <div className="w-52 border-r border-[#0A0A0A]/10 p-5 space-y-1 bg-[#FAFAFA]">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                   activeTab === tab.id
-                    ? "bg-white text-[#0A0A0A] shadow-sm border border-gray-200"
+                    ? "bg-white text-[#0A0A0A] shadow-sm border border-[#0A0A0A]/10"
                     : "text-[#757575] hover:text-[#0A0A0A] hover:bg-white/50"
                 }`}
               >
