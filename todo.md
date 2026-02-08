@@ -3621,3 +3621,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove all admin menu links except Moderator View from main dashboard (kept Admin View + Moderator View)
 - [x] Rename "Overview" to "Admin View" in dashboard sidebar
 - [x] Fix ModeratorHeader: always show "Dashboard" back link instead of "Admin Overview"
+
+## Feature: Moderator SOC Loading Animation
+- [x] Add polished loading skeleton animation for the main data table in Moderator SOC during data fetching
+
+## Feature: Mobile Hamburger Menu + Moderator SOC Rename
+- [x] Add mobile responsive hamburger menu for AdminHeader nav links
+- [x] Add mobile responsive hamburger menu for ModeratorHeader nav links
+- [x] Rename "Moderator Dashboard" title in ModeratorHeader to "Moderator SOC"
