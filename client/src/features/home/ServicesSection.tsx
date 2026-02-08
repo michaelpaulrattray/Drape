@@ -67,6 +67,11 @@ export function ServicesSection() {
                         }`}>
                           {service.title}
                         </span>
+                        {service.number > 1 && (
+                          <span className="ml-2 sm:ml-3 px-2.5 py-0.5 text-[10px] sm:text-xs font-medium tracking-wide uppercase bg-white/10 text-white/50 rounded-full border border-white/10">
+                            Coming Soon
+                          </span>
+                        )}
                       </div>
 
                       {/* Right side - Number / Plus / X transitions */}
@@ -133,8 +138,8 @@ export function ServicesSection() {
           </div>
 
           {/* CTA Button */}
-          <Button href="#pricing" variant="secondary" showPlus>
-            See pricing
+          <Button href="/#contact" variant="secondary" showPlus>
+            Join waitlist
           </Button>
         </motion.div>
       </div>

@@ -1,5 +1,5 @@
 import { getLoginUrl } from "@/const";
-import { Button as DSButton, ConveyorTextColor } from "@/components/design-system";
+import { Button as DSButton } from "@/components/design-system";
 import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
@@ -39,7 +39,7 @@ const ERROR_MESSAGES = {
   },
 } as const;
 
-// ─── Brand logos (same as homepage) ────────────────────────────────────────
+// ─── Brand logos ───────────────────────────────────────────────────────────
 const BRAND_LOGOS = [
   { name: "Google", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/KWvxGyeHeOdCWDBA.svg" },
   { name: "Shopify", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/RrYrMQAByeXLDYvF.svg" },
@@ -48,14 +48,6 @@ const BRAND_LOGOS = [
   { name: "Facebook", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/OeUyRoFtFBfOvhUj.svg" },
   { name: "Instagram", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/mikmpxOOFgYakoyl.svg" },
 ];
-
-// ─── Testimonial ───────────────────────────────────────────────────────────
-const TESTIMONIAL = {
-  quote: "FormaStudio understood our brand better than we did. Their ability to generate the perfect model identities is what sets them apart.",
-  name: "Sofia Ford",
-  title: "Creative Director",
-  image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
-};
 
 // ─── Sub-components ────────────────────────────────────────────────────────
 
@@ -134,32 +126,31 @@ function OAuthButton({ href, disabled, children }: { href: string; disabled: boo
   );
 }
 
-function SocialProofPanel() {
+function AspirationPanel() {
   return (
     <div className="hidden lg:flex flex-col items-center justify-center px-12 xl:px-16">
-      {/* Testimonial */}
+      {/* Aspirational copy */}
       <div className="text-center max-w-md">
-        <img
-          src={TESTIMONIAL.image}
-          alt={TESTIMONIAL.name}
-          className="w-20 h-20 rounded-full object-cover mx-auto mb-8 border border-[#0A0A0A]/10"
-        />
-        <blockquote className="text-lg md:text-xl font-medium leading-relaxed text-[#0A0A0A] mb-6 tracking-tight">
-          &ldquo;{TESTIMONIAL.quote}&rdquo;
-        </blockquote>
-        <p className="text-sm font-semibold text-[#0A0A0A]">@{TESTIMONIAL.name.toLowerCase().replace(" ", "")}</p>
-        <p className="text-xs text-[#757575] mt-1">{TESTIMONIAL.title}</p>
+        <div className="w-16 h-16 rounded-2xl bg-[#0A0A0A] flex items-center justify-center mx-auto mb-8">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-medium tracking-tight text-[#0A0A0A] mb-3">
+          Studio-grade AI creation.
+        </h2>
+        <p className="text-sm text-[#757575] leading-relaxed mb-8">
+          Cast models, lock identity, and produce campaign-ready assets — all without writing a single prompt.
+        </p>
       </div>
 
       {/* Divider */}
-      <div className="w-16 h-px bg-[#D4D4D4] my-10" />
+      <div className="w-16 h-px bg-[#D4D4D4] my-8" />
 
-      {/* Trust stat */}
-      <p className="text-sm text-center text-[#757575] mb-6">
-        <span className="text-[#0A0A0A] font-semibold">100+</span> brands trust FormaStudio to craft their visual identity.
+      {/* Trust line + logos */}
+      <p className="text-xs text-[#757575] uppercase tracking-widest mb-6">
+        Trusted by top creatives working for
       </p>
-
-      {/* Brand logos grid */}
       <div className="flex flex-wrap justify-center items-center gap-6 max-w-sm">
         {BRAND_LOGOS.map((brand) => (
           <img
@@ -186,10 +177,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      {/* Navigation — matches homepage header style */}
+      {/* Navigation */}
       <header className="sticky top-0 z-[100] max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-12 bg-[#EBEBEB] relative">
         <div className="flex items-center justify-between h-14">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <img
               src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png"
@@ -197,10 +187,8 @@ export default function Login() {
               className="w-[31px] h-[31px]"
             />
           </Link>
-
-          {/* CTA */}
           <DSButton href="/#contact" variant="primary" size="md">
-            Start a project
+            Join waitlist
           </DSButton>
         </div>
       </header>
@@ -218,20 +206,20 @@ export default function Login() {
             <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
               <div className="mb-8">
                 <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
-                  Sign in
+                  Welcome
                 </h1>
                 <p className="text-[#757575] text-sm mt-2 font-medium">
-                  Welcome back to your creative studio
+                  Sign in to your studio or create an account to get started.
                 </p>
               </div>
 
               {/* OAuth Buttons */}
               <div className="space-y-3">
                 <OAuthButton href={loginUrl} disabled={isSuspended}>
-                  <GoogleIcon disabled={isSuspended} /> Sign in with Google
+                  <GoogleIcon disabled={isSuspended} /> Continue with Google
                 </OAuthButton>
                 <OAuthButton href={loginUrl} disabled={isSuspended}>
-                  <AppleIcon disabled={isSuspended} /> Sign in with Apple
+                  <AppleIcon disabled={isSuspended} /> Continue with Apple
                 </OAuthButton>
               </div>
 
@@ -245,7 +233,7 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Email Login — uses design-system Button with conveyor animation */}
+              {/* Email Login */}
               {isSuspended ? (
                 <button
                   className="w-full h-12 inline-flex items-center justify-center rounded-full bg-[#D4D4D4] text-[#757575] cursor-not-allowed text-sm font-medium"
@@ -270,18 +258,6 @@ export default function Login() {
                   Privacy Policy
                 </a>.
               </p>
-
-              {/* Sign up link */}
-              <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#0A0A0A]/5">
-                <p className="text-sm text-[#757575] font-medium">Don't have an account?</p>
-                {isSuspended ? (
-                  <span className="text-sm text-[#D4D4D4] font-medium">Sign up</span>
-                ) : (
-                  <DSButton href={loginUrl} variant="outline" size="sm">
-                    Sign up
-                  </DSButton>
-                )}
-              </div>
             </div>
           </div>
 
@@ -293,8 +269,8 @@ export default function Login() {
             </Link>
           </div>
 
-          {/* ─── Right Column: Social Proof ──────────────────────────── */}
-          <SocialProofPanel />
+          {/* ─── Right Column: Aspiration Panel ─────────────────────── */}
+          <AspirationPanel />
         </div>
       </div>
     </div>

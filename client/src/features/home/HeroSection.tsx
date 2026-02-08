@@ -57,7 +57,7 @@ export function HeroSection() {
             className="mt-8 max-w-md ml-auto text-right"
           >
             <p className="text-sm sm:text-base text-gray-secondary">
-              Forma is an AI studio crafting refined model identities and photorealistic campaign assets.
+              Studio-grade AI creation. No prompts. Just create.
             </p>
           </motion.div>
         </div>
@@ -72,17 +72,9 @@ export function HeroSection() {
           {/* Logo Marquee with gradient fades */}
           <LogoMarquee />
           
-          {/* Trust Badge - Below on mobile, right-aligned on desktop */}
-          <div className="flex flex-col items-start sm:items-end shrink-0 sm:pl-4">
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#4D4D4D] fill-current" viewBox="0 0 20 20">
-                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                </svg>
-              ))}
-              <span className="ml-1.5 text-xs sm:text-sm font-medium text-[#0A0A0A]/80">4.9/5</span>
-            </div>
-            <span className="text-xs sm:text-sm text-[#4D4D4D] font-medium">Trusted by <span className="font-medium text-[#0A0A0A]/70">100+</span> businesses</span>
+          {/* Trust Line */}
+          <div className="shrink-0 sm:pl-4">
+            <span className="text-xs sm:text-sm text-[#4D4D4D] font-medium tracking-wide uppercase">Trusted by top creatives working for</span>
           </div>
         </motion.div>
 

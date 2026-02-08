@@ -94,9 +94,9 @@ export function AboutSection() {
           variants={fadeInUp}
           className="text-[clamp(2rem,5vw,3.375rem)] font-medium leading-[1.15] tracking-tight mb-12"
         >
-          <span className="text-[#0A0A0A]">We're a design studio focused on creating</span>
+          <span className="text-[#0A0A0A]">We build reusable model identities that hold up</span>
           <br />
-          <span className="text-gray-secondary">simple, purposeful, and elegant solutions.</span>
+          <span className="text-gray-secondary">across casting, wardrobe, and campaigns.</span>
         </motion.h2>
 
         {/* Stats Marquee + Description - Inline Layout */}
@@ -112,7 +112,7 @@ export function AboutSection() {
           
           {/* Description - Right aligned */}
           <p className="shrink-0 text-sm sm:text-base text-gray-muted sm:text-right w-full sm:w-[380px]">
-            Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
+            FormaStudio replaces prompt engineering with a visual-first creative process. You cast a model, refine their look, and produce campaign-ready assets — all with identity persistence locked in.
           </p>
         </motion.div>
 
@@ -220,7 +220,7 @@ export function AboutSection() {
 
           {/* Forma branding at bottom */}
           <div className="absolute bottom-4 left-0 right-0 text-center z-20">
-            <span className="text-white text-base font-medium">© 2025 Forma®</span>
+            <span className="text-white text-base font-medium">© 2026 Forma®</span>
           </div>
         </motion.div>
       </div>

@@ -61,7 +61,7 @@ function NewsletterForm() {
 
   return (
     <div className="max-w-sm">
-      <p className="text-white/60 mb-4">Sign up for our monthly newsletter.</p>
+      <p className="text-white/60 mb-4">Get launch updates and early access.</p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <input
           type="email"
@@ -88,7 +88,7 @@ function NewsletterForm() {
           {status === "loading" ? (
             <span className="flex items-center justify-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Signing up...
+              Joining...
             </span>
           ) : status === "success" ? (
             "Thank You!"
@@ -97,10 +97,10 @@ function NewsletterForm() {
           ) : (
             <span className="overflow-hidden h-5 block">
               <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">
-                Sign up
+                Join waitlist
               </span>
               <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">
-                Sign up
+                Join waitlist
               </span>
             </span>
           )}
@@ -138,11 +138,10 @@ export function Footer() {
           {/* Left - Contact */}
           <div>
             <p className="text-white/60 mb-8 max-w-md">
-              Whether you're building a brand, designing a product, or simply want to explore an idea, we'd love to hear from you.
+              We're building the next generation of AI-powered creative tools. Have questions, want early access, or just want to say hello?
             </p>
             <div className="space-y-2">
               <FooterLink href="mailto:hello@formastudio.ai" className="underline underline-offset-4">hello@formastudio.ai</FooterLink>
-              <FooterLink href="tel:+1234567890" className="underline underline-offset-4">(123) 456-7890</FooterLink>
             </div>
           </div>
 
@@ -232,7 +231,7 @@ export function Footer() {
           variants={fadeIn}
           className="flex items-center justify-between pt-8 border-t border-white/10 text-sm text-white/40"
         >
-          <span>© 2025 All rights reserved</span>
+          <span>© 2026 FormaStudio™. All rights reserved.</span>
         </motion.div>
       </div>
     </footer>

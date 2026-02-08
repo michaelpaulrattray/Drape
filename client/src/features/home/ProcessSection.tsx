@@ -25,13 +25,13 @@ export function ProcessSection() {
             variants={fadeInUp}
           >
             <h2 className="text-section-title leading-[1.1] mb-8 text-dark">
-              Our process is simple, purposeful, and adaptable.
+              From brief to final asset in four steps.
             </h2>
             <p className="text-body-md text-gray-secondary mb-8">
-              We believe great design is a result of clarity, collaboration, and craft.
+              No prompt engineering. No guesswork. Just a visual-first workflow that keeps you in creative control.
             </p>
             <Button href="/#contact" variant="secondary-invert" showPlus>
-              Let's talk
+              Join waitlist
             </Button>
           </motion.div>
 

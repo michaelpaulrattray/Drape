@@ -113,58 +113,57 @@ export const clientLogos: ClientLogo[] = [
 ];
 
 export const statsMarqueeItems: StatsMarqueeItem[] = [
-  { value: "97%", label: "Customer satisfaction rate" },
-  { value: "6", label: "Industry awards" },
-  { value: "15+", label: "Years of Experience" },
-  { value: "140+", label: "Projects completed" },
-  { value: "100+", label: "Customer satisfaction rate" },
+  { value: "4 Studios", label: "Casting · Wardrobe · Photo · Motion" },
+  { value: "Zero Prompts", label: "Visual-first creation" },
+  { value: "1 Identity", label: "Consistent across campaigns" },
+  { value: "Studio-grade", label: "Built for premium brands" },
 ];
 
 export const projects: Project[] = [
-  { name: "Lune", year: "2025", category: "App Visual Direction", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80" },
-  { name: "Aren", year: "2025", category: "Fashion Brand Launch", image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80" },
-  { name: "Oura", year: "2024", category: "Brand Refinement", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80" },
-  { name: "Forma", year: "2024", category: "Product UI", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80" },
-  { name: "Oko", year: "2023", category: "Portfolio Website", image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80" },
-  { name: "Velin", year: "2022", category: "Skincare Rebrand", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80" },
+  { name: "Lune", year: "2025", category: "Editorial Campaign", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80" },
+  { name: "Aren", year: "2025", category: "Casting + Wardrobe", image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80" },
+  { name: "Oura", year: "2025", category: "E-Commerce Lookbook", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80" },
+  { name: "Forma", year: "2025", category: "Brand Identity System", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80" },
+  { name: "Oko", year: "2025", category: "Campaign Production", image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80" },
+  { name: "Velin", year: "2025", category: "Model Casting", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80" },
 ];
 
 export const services: Service[] = [
   {
-    title: "Model Identity",
+    title: "Model Casting",
     number: 1,
-    description: "We generate unique, consistent AI model identities for your brand with photorealistic quality and complete creative control.",
+    description: "Cast a high-fidelity model identity from scratch. Visual controls, no prompts. Your model stays consistent across every tool in the suite.",
     items: ["Model Generation", "Identity Systems", "Character Guidelines", "Ethnicity & Aesthetic", "Pose Libraries", "Expression Ranges"],
     image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80",
   },
   {
     title: "Outfit Generation",
     number: 2,
-    description: "We create any outfit on your AI models. From streetwear to haute couture, no physical samples needed.",
+    description: "Dress your model in any look — streetwear to couture. High-fidelity fabric and fit, no physical samples required.",
     items: ["Virtual Try-On", "Garment Design", "Fabric Simulation", "Color Variants", "Style Matching", "Seasonal Collections"],
     image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80",
   },
   {
     title: "Campaign Production",
     number: 3,
-    description: "Full photoshoot generation with complete lighting and environment control for campaign-ready assets.",
+    description: "Generate full campaign sets with controlled lighting, environments, and consistent model identity. Studio-grade output, zero reshoots.",
     items: ["Scene Composition", "Lighting Design", "Background Generation", "Multi-angle Shots", "Post-processing", "Asset Delivery"],
     image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&q=80",
   },
   {
     title: "Brand Consistency",
     number: 4,
-    description: "Maintain perfect visual consistency across all channels with AI-powered brand asset generation.",
+    description: "One model identity across every channel. Repeatable, brand-safe outputs with exportable documentation and ownership proof.",
     items: ["Style Guidelines", "Asset Libraries", "Cross-platform Assets", "Brand Templates", "Quality Control", "Version Management"],
     image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80",
   },
 ];
 
 export const processSteps: ProcessStep[] = [
-  { title: "Discover", number: 1, description: "We begin by listening, gaining a deep understanding of your goals, audience, and creative vision through research and conversation." },
-  { title: "Define", number: 2, description: "We distill insights into a clear direction. Strategy, model specifications, and creative foundations are established to guide the work forward." },
-  { title: "Generate", number: 3, description: "Ideas take shape through AI generation. We explore, refine, and iterate with intention, always rooted in purpose and brand alignment." },
-  { title: "Deliver", number: 4, description: "We finalize and hand off with care. Every asset is prepared for implementation with clarity, consistency, and attention to detail." },
+  { title: "Cast", number: 1, description: "Build your model identity from scratch using visual controls. Choose ethnicity, features, expression, and style — no prompt engineering required." },
+  { title: "Refine", number: 2, description: "Iterate with precision. Adjust details, generate variations, and lock in the identity that represents your brand." },
+  { title: "Produce", number: 3, description: "Take your model into wardrobe, photo, and campaign tools. Every output maintains the identity you built." },
+  { title: "Own", number: 4, description: "Export with a casting sheet, unique identifiers, and ownership documentation. Your model is yours." },
 ];
 
 export const testimonials: Testimonial[] = [
@@ -174,17 +173,17 @@ export const testimonials: Testimonial[] = [
 ];
 
 export const faqs: FAQ[] = [
-  { question: "What kind of clients do you work with?", answer: "We work with fashion brands, e-commerce companies, and creative teams who value consistency, speed, and photorealistic quality. Whether you're launching something new or scaling an existing presence, we adapt our approach to your needs." },
-  { question: "What services do you offer?", answer: "Our core services include AI model casting, outfit generation, campaign production, and brand consistency systems. We often work across multiple touchpoints to ensure cohesion in everything we create." },
-  { question: "How do you price your projects?", answer: "We price based on scope, timeline, and deliverables—never by the hour. After a discovery call, we'll provide a custom proposal aligned with your goals and budget." },
-  { question: "What is your typical project timeline?", answer: "Timelines vary by project, but most model generation projects take 1-2 weeks, while full campaign projects may range from 2-4 weeks. We'll always agree on key milestones before starting." },
-  { question: "Can we collaborate remotely?", answer: "Absolutely. All of our work is done remotely, and we've partnered successfully with clients across time zones. Clear communication and structured check-ins keep everything on track." },
-  { question: "Do you accept one-off generation tasks or only full projects?", answer: "We typically take on full-scope projects to ensure cohesion and quality. However, if you have a smaller need that aligns with our approach, we're open to discussing it." },
-  { question: "How many variations or revisions are included?", answer: "Our process is collaborative and structured. Rather than presenting dozens of options, we focus on one strong direction—refined through feedback. The number of revisions depends on the scope, but clarity and alignment are our priority from the start." },
+  { question: "What is FormaStudio?", answer: "FormaStudio is a studio-grade AI creative suite that lets you cast, style, and shoot with consistent model identities — without prompt engineering. Prompts run in the background while you work visually." },
+  { question: "Who is FormaStudio built for?", answer: "Creative directors, agency owners, brand content teams, and e-commerce marketers who need high-fidelity, repeatable campaign imagery without the friction of traditional AI tools." },
+  { question: "How does pricing work?", answer: "FormaStudio uses a points-based system tied to generation output — think of it as production capacity. Plans scale with your team's usage. No hourly billing, no per-seat surprises." },
+  { question: "What can I create right now?", answer: "The Casting Studio is live — you can build a high-fidelity model identity from scratch using visual controls. Wardrobe Studio and Campaign Production tools are coming soon." },
+  { question: "Do I own what I create?", answer: "Yes. Every model you cast comes with a casting sheet, unique identifiers, and exportable ownership documentation designed for commercial use and client handoff." },
+  { question: "How is this different from other AI image tools?", answer: "Most tools require prompt engineering or node-based workflows. FormaStudio replaces both with guided visual controls and maintains a persistent model identity across every tool in the suite." },
+  { question: "When will the full suite be available?", answer: "We're rolling out tools progressively. Join the waitlist to get priority access as each studio launches." },
 ];
 
 export const blogPosts: BlogPost[] = [
-  { date: "May 30, 2025", title: "The Power of AI in Fashion Photography", excerpt: "A look at how AI-generated models can sharpen brand communication and increase campaign impact.", category: "Insights", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" },
-  { date: "May 23, 2025", title: "Designing for Scale: AI Beyond the Shoot", excerpt: "An exploration of how AI model generation enables unlimited variations without traditional constraints.", category: "Technology", image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80" },
-  { date: "May 16, 2025", title: "Building a Timeless Brand Identity", excerpt: "A guide to creating consistent model personas that transcend trends and seasonal campaigns.", category: "Strategy", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80" },
+  { date: "Feb 1, 2026", title: "Why Identity Persistence Changes Everything", excerpt: "Most AI tools generate one-off images. Here's why a reusable model identity is the missing primitive in creative production.", category: "Insights", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" },
+  { date: "Jan 25, 2026", title: "No Prompts. No Node Graphs. A Third Path.", excerpt: "The AI creative tool market has split into prompt boxes and node-based systems. FormaStudio offers a visual-first alternative.", category: "Technology", image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80" },
+  { date: "Jan 18, 2026", title: "From Casting to Campaigns: The FormaStudio Workflow", excerpt: "How a single model identity flows through casting, wardrobe, and photo production — with consistency locked in.", category: "Strategy", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80" },
 ];

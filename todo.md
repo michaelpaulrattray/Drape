@@ -3751,3 +3751,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix stat card alignment — centered layout, single-line labels, consistent min-height, tabular-nums, proper decimal formatting
 ## Bug: ProfileSettingsModal height jumps when switching tabs
 - [x] Fix modal to maintain consistent fixed height across all tabs — changed md:max-h-[85vh] to md:h-[85vh] so content scrolls within fixed container
+
+## Feature: Homepage & Login Copywriting Overhaul (Waitlist Launch)
+- [x] Update homeData.ts — stats marquee (4 Studios/Zero Prompts/1 Identity/Studio-grade), services, process (Cast/Refine/Produce/Own), FAQ, blog
+- [x] Rewrite HeroSection — tagline "Studio-grade AI creation. No prompts. Just create.", trust badge → "Trusted by top creatives working for"
+- [x] Rewrite AboutSection — "We build reusable model identities...", copyright 2026
+- [x] Rewrite WhyUsSection — replaced fake testimonial/4.9 rating with waitlist CTA card + brand differentiators
+- [x] Update ServicesSection — "Coming Soon" badges on services 2-4, CTA → "Join waitlist"
+- [x] Update ProcessSection — "From brief to final asset in four steps", CTA → "Join waitlist"
+- [x] Update Footer — newsletter → "Get launch updates and early access", removed phone, copyright 2026
+- [x] Rewrite Login.tsx — "Welcome" dual-purpose sign-in, replaced fake testimonial with AspirationPanel

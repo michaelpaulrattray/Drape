@@ -1,9 +1,33 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/design-system";
-import { fadeIn, fadeInUp, staggerContainer, testimonials } from "./homeData";
+import { fadeIn, fadeInUp, staggerContainer } from "./homeData";
 import { SectionLabel } from "./SectionLabel";
+import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 export function WhyUsSection() {
+  const [email, setEmail] = useState("");
+  const joinWaitlist = trpc.waitlist.join.useMutation({
+    onSuccess: () => {
+      toast.success("You're on the list. We'll be in touch.");
+      setEmail("");
+    },
+    onError: (err) => {
+      if (err.message.includes("already")) {
+        toast.info("You're already on the waitlist.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+    },
+  });
+
+  const handleWaitlistSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    joinWaitlist.mutate({ email: email.trim() });
+  };
+
   return (
     <section id="whyus" className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
@@ -16,7 +40,7 @@ export function WhyUsSection() {
           <SectionLabel label="Why us" number="03" />
         </motion.div>
 
-        {/* Two-tone Headline - smaller size, font-weight 500 */}
+        {/* Two-tone Headline */}
         <motion.h2 
           initial="hidden"
           whileInView="visible"
@@ -24,8 +48,8 @@ export function WhyUsSection() {
           variants={fadeInUp}
           className="text-[clamp(2rem,5vw,3.375rem)] font-medium leading-[1.15] mb-8 sm:mb-16 w-full lg:w-[1018px]"
         >
-          <span className="text-[#0A0A0A]">We cut through noise to create designs that are </span>
-          <span className="text-gray-secondary">thoughtful, timeless, and impactful.</span>
+          <span className="text-[#0A0A0A]">Power without friction. </span>
+          <span className="text-gray-secondary">Control without complexity.</span>
         </motion.h2>
 
         {/* 4-Column Bento Grid */}
@@ -36,9 +60,9 @@ export function WhyUsSection() {
           variants={staggerContainer}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1"
         >
-          {/* Card 1 - #EBEBEB outer with 2 inner cards */}
+          {/* Card 1 - Dark card + bullet list */}
           <div className="bg-[#EBEBEB] rounded-2xl p-2 flex flex-col gap-2">
-            {/* Top: Dark card with building image */}
+            {/* Top: Dark card */}
             <div className="relative rounded-xl overflow-hidden bg-[#0A0A0A] min-h-[240px] h-bento-card flex flex-col justify-between">
               <img
                 src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80"
@@ -48,19 +72,19 @@ export function WhyUsSection() {
                 className="absolute inset-0 w-full h-full object-cover opacity-50 grayscale"
               />
               <div className="relative z-10 p-5">
-                <h3 className="text-card-title font-semibold text-white leading-tight">Purposeful Design<br />for Modern Brands.</h3>
-                <p className="text-white/50 text-xs mt-2">© 2025</p>
+                <h3 className="text-card-title font-semibold text-white leading-tight">Built for Creative<br />Directors.</h3>
+                <p className="text-white/50 text-xs mt-2">Not prompt engineers.</p>
               </div>
               <div className="relative z-10 p-5 pt-0">
                 <Button href="/#contact" variant="secondary" size="sm" showPlus>
-                  Get started
+                  Join waitlist
                 </Button>
               </div>
             </div>
             {/* Bottom: Bullet list card */}
             <div className="bg-white rounded-xl p-4">
               <ul className="space-y-2">
-                {["Collaborative Approach", "Quick turnaround", "Clear Communication", "Consistent Quality", "Reliable Support"].map((item, i) => (
+                {["Visual-first controls", "Identity persistence", "Studio-grade fidelity", "Ownership built in", "Brand-safe defaults"].map((item, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-body-md text-[#0A0A0A]">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A]"></span>
                     {item}
@@ -70,62 +94,44 @@ export function WhyUsSection() {
             </div>
           </div>
 
-          {/* Card 2 - #EBEBEB single card with background content */}
+          {/* Card 2 - Waitlist CTA */}
           <div className="bg-[#EBEBEB] rounded-2xl p-5 flex flex-col justify-between min-h-[400px]">
-            {/* Top: Clients/avatars */}
+            {/* Top: Waitlist heading */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex -space-x-2">
-                  {["photo-1494790108377-be9c29b29330", "photo-1507003211169-0a1dd7228f2d", "photo-1438761681033-6461ffad8d80", "photo-1472099645785-5658abf4ff4e"].map((id, i) => (
-                    <img
-                      key={i}
-                      src={`https://images.unsplash.com/${id}?w=100&q=80`}
-                      alt="Client"
-                      className="w-9 h-9 rounded-full border-2 border-[#EBEBEB] object-cover"
-                    />
-                  ))}
-                </div>
-                <div className="flex items-center gap-1 text-sm">
-                  <span className="text-[#0A0A0A]">4.9/5</span>
-                  <svg className="w-3.5 h-3.5 text-[#0A0A0A] fill-current" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                  </svg>
-                </div>
-              </div>
-              <p className="text-sm"><span className="font-semibold text-[#0A0A0A]">100+</span> <span className="text-[#757575]">Happy clients worldwide</span></p>
+              <h3 className="text-xl font-semibold text-[#0A0A0A] mb-2">Join the waitlist</h3>
+              <p className="text-sm text-[#757575] leading-relaxed">
+                Be among the first creative directors to access FormaStudio. Early members get priority access and founding pricing.
+              </p>
             </div>
-            {/* Bottom: Testimonial */}
+            {/* Bottom: Email form */}
             <div>
-              <div className="flex items-center gap-0.5 mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-3 h-3 text-[#0A0A0A] fill-current" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                  </svg>
-                ))}
-              </div>
-              <blockquote className="text-body-md text-[#0A0A0A] mb-4">
-                "{testimonials[0].quote}"
-              </blockquote>
-              <div className="flex items-center gap-3">
-                <img
-                  src={testimonials[0].image}
-                  alt={testimonials[0].name}
-                  className="w-9 h-9 rounded-full object-cover"
+              <form onSubmit={handleWaitlistSubmit} className="space-y-3">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  className="w-full px-4 py-3 rounded-full bg-white border border-[#0A0A0A]/10 text-sm text-[#0A0A0A] placeholder:text-[#757575] focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/20 transition-all"
                 />
-                <div>
-                  <p className="text-sm font-medium text-[#0A0A0A]">{testimonials[0].name}</p>
-                  <p className="text-xs text-[#757575]">{testimonials[0].title}</p>
-                </div>
-              </div>
+                <button
+                  type="submit"
+                  disabled={joinWaitlist.isPending}
+                  className="w-full px-4 py-3 rounded-full bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-50"
+                >
+                  {joinWaitlist.isPending ? "Joining..." : "Request early access"}
+                </button>
+              </form>
+              <p className="text-xs text-[#757575] mt-3 text-center">No spam. Just launch updates.</p>
             </div>
           </div>
 
-          {/* Card 3 - #EBEBEB outer with 3 white module cards */}
+          {/* Card 3 - Feature cards */}
           <div className="bg-[#EBEBEB] rounded-2xl p-2 flex flex-col gap-2">
             {[
-              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, title: "Streamlined Process", desc: "Our focused, step-by-step approach saves time and keeps projects moving smoothly." },
-              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>, title: "Scalable Design", desc: "We create systems that grow with your brand and stay effective over time." },
-              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, title: "24/7 Dedicated Support", desc: "We're always here when you need us, ready to answer questions, provide updates." },
+              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>, title: "Zero Prompting", desc: "Prompts run in the background. You stay in the creative headspace while the system handles complexity." },
+              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>, title: "Identity Persistence", desc: "Your model stays consistent across casting, wardrobe, and campaigns. No drift, no re-rolling." },
+              { icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, title: "Ownership & Export", desc: "Casting sheet, unique identifiers, and documentation. Built for client handoff and brand governance." },
             ].map((feature, i) => (
               <div key={i} className="bg-white rounded-xl p-4 flex-1">
                 <div className="text-[#0A0A0A] mb-3">{feature.icon}</div>
@@ -135,11 +141,11 @@ export function WhyUsSection() {
             ))}
           </div>
 
-          {/* Column 4 - Tall dark card with silhouette */}
+          {/* Column 4 - Tall dark card */}
           <div className="relative rounded-2xl overflow-hidden bg-[#0A0A0A] min-h-[300px] sm:min-h-[500px] md:min-h-full flex flex-col justify-between">
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80"
-              alt="Silhouette"
+              alt="Model identity"
               loading="lazy"
               decoding="async"
               className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale"
@@ -148,8 +154,8 @@ export function WhyUsSection() {
               <span className="text-white/80 text-lg font-medium mr-20">Forma®</span>
             </div>
             <div className="relative z-10 p-6">
-              <h3 className="text-2xl font-semibold text-white leading-tight">Design with intent.</h3>
-              <p className="text-white/60 text-sm mt-1">No excess, no fluff.</p>
+              <h3 className="text-2xl font-semibold text-white leading-tight">From casting to campaigns.</h3>
+              <p className="text-white/60 text-sm mt-1">Consistency, locked in.</p>
             </div>
           </div>
         </motion.div>
