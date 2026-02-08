@@ -17,9 +17,9 @@ import * as THREE from "three";
 import { vertexShader, fragmentShader } from "./depthRevealShader";
 
 // ─── Proxy URLs (bypass CloudFront CORS caching) ──────────────────────────
-const HERO_BASE_URL = "/api/hero/base?v=2";
-const HERO_STYLED_URL = "/api/hero/styled?v=2";
-const HERO_DEPTH_URL = "/api/hero/depth?v=2";
+const HERO_BASE_URL = "/api/hero/base?v=3";
+const HERO_STYLED_URL = "/api/hero/styled?v=3";
+const HERO_DEPTH_URL = "/api/hero/depth?v=3";
 
 // ─── Constants ────────────────────────────────────────────────────────────
 /** Image aspect ratio (5504 / 3072) */
@@ -28,8 +28,8 @@ const IMAGE_ASPECT = 5504 / 3072;
 /** Reveal circle radius in UV space (0–1). */
 const REVEAL_RADIUS = 0.45;
 
-/** Parallax strength — very subtle to avoid face distortion */
-const PARALLAX_STRENGTH = 0.003;
+/** Parallax strength — noticeable depth with minimal artifacts (0.008-0.012 range per guide) */
+const PARALLAX_STRENGTH = 0.008;
 
 /** Threshold below which we stop requesting frames (settled state) */
 const SETTLE_THRESHOLD = 0.0001;

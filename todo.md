@@ -3674,3 +3674,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix color space — added #include <colorspace_fragment> to shader for correct sRGB output
 - [x] Make swimming motion feel like a fish gliding across — slow horizontal sweep + gentle vertical undulation
 - [x] Reduce parallax strength from 0.008 to 0.003 — eliminates face distortion at edges
+
+## Feature: Hero Image Swap v3
+- [x] Replace hero images with new set from Poweredby(2).zip (3.png base, 4.png styled)
+- [x] Use provided depth map (depthmap3.png) — 2048x1143, same aspect ratio, 8px Gaussian blur
+- [x] Upload all 3 files to S3 and update heroProxy keys to v3
+- [x] Apply Claude's parallax best practices: depth compressed 0.4-0.6, edge fade 12%, UV clamped 0.001-0.999, parallax strength 0.008
+- [x] IMAGE_ASPECT unchanged (5504/3072 = 1.79:1, same as before)

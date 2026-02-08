@@ -9,9 +9,9 @@ import { storageGet } from "./storage";
 const router = Router();
 
 const HERO_ASSETS: Record<string, string> = {
-  base: "hero/hero-base-v2.png",
-  styled: "hero/hero-styled-v2.png",
-  depth: "hero/hero-depth-v2-blurred.png",
+  base: "hero/base-v3.png",
+  styled: "hero/styled-v3.png",
+  depth: "hero/depth-v3.png",
 };
 
 // Cache fetched images in memory (they're static assets, ~2MB each)
