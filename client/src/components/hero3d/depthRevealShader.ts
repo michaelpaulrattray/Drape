@@ -57,9 +57,9 @@ export const fragmentShader = /* glsl */ `
     vec2 diff = (vUv - uMouse) * aspect;
     float dist = length(diff);
 
-    // Softer edges: smaller solid center, larger gradient falloff
-    float innerRadius = uRevealRadius * 0.25;
-    float outerRadius = uRevealRadius * 1.3;
+    // Soft edges with tighter falloff
+    float innerRadius = uRevealRadius * 0.35;
+    float outerRadius = uRevealRadius * 1.1;
 
     // Smoothstep + extra Hermite smoothing for buttery-soft edges
     float revealMask = 1.0 - smoothstep(innerRadius, outerRadius, dist);

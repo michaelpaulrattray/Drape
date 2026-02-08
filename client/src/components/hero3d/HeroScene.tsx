@@ -25,8 +25,8 @@ const HERO_DEPTH_URL = "/api/hero/depth?v=2";
 /** Image aspect ratio (5504 / 3072) */
 const IMAGE_ASPECT = 5504 / 3072;
 
-/** Reveal circle radius in UV space (0–1). Larger = more generous reveal */
-const REVEAL_RADIUS = 0.65;
+/** Reveal circle radius in UV space (0–1). */
+const REVEAL_RADIUS = 0.45;
 
 /** Parallax strength — subtle to avoid warping */
 const PARALLAX_STRENGTH = 0.008;

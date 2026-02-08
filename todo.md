@@ -3666,3 +3666,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add shimmer loading placeholder instead of static image fallback
 - [x] Add entry animation — reveal mask expands from 0→1 on load
 - [x] Update IMAGE_ASPECT ratio for new 5504x3072 images
+
+## Tweak: Hero Radial Mask Size
+- [x] Reduce reveal radius from 0.65 to 0.45, tighten shader inner (0.35) and outer (1.1) multipliers
