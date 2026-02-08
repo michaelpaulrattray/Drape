@@ -3567,7 +3567,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
 - [ ] Redesign ModeratorDashboard page (light theme)
 - [ ] Restyle all moderator sub-components (DashboardHeader, StatsCards, TabNavigation, etc.)
-- [ ] Update AdminOverview to use shared AdminHeader
+- [x] Update AdminOverview to use shared AdminHeader
 - [ ] Verify TypeScript compilation and all tests pass
 
 ## Feature: Admin & Moderator Pages Light Theme Redesign
@@ -3581,10 +3581,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Restyle AuditActionModals, BlockedIPsTab components
 - [ ] Redesign AdminChangeRequests page (light theme, improved layout)
 - [ ] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
-- [ ] Update AdminOverview to use shared AdminHeader
+- [x] Update AdminOverview to use shared AdminHeader
 - [ ] Redesign ModeratorDashboard page (light theme)
 - [ ] Restyle all moderator sub-components
 - [ ] Verify TypeScript compilation and all tests pass
 
 ## Bug Fix: UserDetailModal Consistent Size
 - [x] Fix UserDetailModal to maintain consistent size when switching between Profile, Credits, and Activity tabs
+
+## Bug Fix: AdminHeader Layout Inconsistency on Audit Logs
+- [x] Fix AdminHeader layout on Audit Logs page to match Overview and User Management pages

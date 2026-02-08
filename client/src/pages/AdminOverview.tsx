@@ -1,18 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Redirect, Link } from "wouter";
+import { Redirect } from "wouter";
 import { useState, useEffect, useCallback } from "react";
-import {
-  LayoutDashboard,
-  RefreshCw,
-  Clock,
-  Shield,
-  Users,
-  ClipboardList,
-  Eye,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   HealthMetrics,
@@ -23,15 +14,9 @@ import {
   BannerManagement,
   SystemStatusCard,
 } from "@/features/admin/overview";
+import { AdminHeader } from "@/features/admin/AdminHeader";
 
 const REFRESH_INTERVAL_MS = 30_000;
-
-const NAV_LINKS = [
-  { href: "/admin/users", icon: Users, label: "Users" },
-  { href: "/admin/audit-logs", icon: Shield, label: "Audit Logs" },
-  { href: "/admin/change-requests", icon: ClipboardList, label: "Change Requests" },
-  { href: "/moderator", icon: Eye, label: "Moderator" },
-] as const;
 
 export default function AdminOverview() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -84,68 +69,19 @@ export default function AdminOverview() {
 
   return (
     <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
-      {/* Header */}
-      <header className="border-b border-[#D5D5D5] bg-white/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A]">
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
-              <div className="h-5 w-px bg-[#D5D5D5]" />
-              <h1 className="text-lg font-semibold text-[#0A0A0A]">
-                Admin Overview
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Quick nav */}
-              <div className="hidden md:flex items-center gap-1 mr-3">
-                {NAV_LINKS.map(({ href, icon: Icon, label }) => (
-                  <Link key={href} href={href}>
-                    <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A] text-xs">
-                      <Icon className="w-3.5 h-3.5 mr-1" />
-                      {label}
-                    </Button>
-                  </Link>
-                ))}
-              </div>
-
-              <span className="text-[10px] text-[#bbb] hidden sm:inline tabular-nums">
-                {lastRefresh.toLocaleTimeString()}
-              </span>
-              <Button
-                variant={autoRefresh ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setAutoRefresh(!autoRefresh);
-                  toast.info(autoRefresh ? "Auto-refresh paused" : "Auto-refresh enabled (30s)");
-                }}
-                className={
-                  autoRefresh
-                    ? "bg-[#0A0A0A] hover:bg-[#222] text-white text-xs"
-                    : "border-[#D5D5D5] text-[#999] text-xs"
-                }
-              >
-                <Clock className="w-3.5 h-3.5 mr-1" />
-                {autoRefresh ? "Live" : "Paused"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={overviewQuery.isRefetching}
-                className="border-[#D5D5D5] text-[#999] text-xs"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${overviewQuery.isRefetching ? "animate-spin" : ""}`} />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader
+        title="Admin Overview"
+        refreshControls={{
+          autoRefresh,
+          onToggleAutoRefresh: () => {
+            setAutoRefresh(!autoRefresh);
+            toast.info(autoRefresh ? "Auto-refresh paused" : "Auto-refresh enabled (30s)");
+          },
+          onRefresh: handleRefresh,
+          isRefetching: overviewQuery.isRefetching,
+          lastRefresh,
+        }}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Loading skeleton */}
