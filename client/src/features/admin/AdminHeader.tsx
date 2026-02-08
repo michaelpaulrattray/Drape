@@ -37,6 +37,7 @@ export function AdminHeader({ title, refreshControls, actions }: AdminHeaderProp
   return (
     <header className="border-b border-[#D5D5D5] bg-white/80 backdrop-blur sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+        {/* Two-row layout: top = title + actions, bottom = nav */}
         <div className="flex items-center justify-between">
           {/* Left: Dashboard link + title */}
           <div className="flex items-center gap-4">
@@ -50,16 +51,8 @@ export function AdminHeader({ title, refreshControls, actions }: AdminHeaderProp
             <h1 className="text-lg font-semibold text-[#0A0A0A]">{title}</h1>
           </div>
 
-          {/* Right: nav links + controls */}
+          {/* Right: controls + actions (variable width, doesn't affect nav) */}
           <div className="flex items-center gap-2">
-            {/* Quick nav links */}
-            <nav className="hidden md:flex items-center gap-1 mr-3">
-              {NAV_LINKS.map(({ href, icon: Icon, label }) => (
-                <NavLink key={href} href={href} icon={Icon} label={label} />
-              ))}
-            </nav>
-
-            {/* Refresh controls */}
             {refreshControls && (
               <>
                 {refreshControls.lastRefresh && (
@@ -91,11 +84,16 @@ export function AdminHeader({ title, refreshControls, actions }: AdminHeaderProp
                 </Button>
               </>
             )}
-
-            {/* Extra action buttons */}
             {actions}
           </div>
         </div>
+
+        {/* Nav links row — always in the same position below the title */}
+        <nav className="hidden md:flex items-center gap-1 mt-2 pt-2 border-t border-[#E5E5E5]">
+          {NAV_LINKS.map(({ href, icon: Icon, label }) => (
+            <NavLink key={href} href={href} icon={Icon} label={label} />
+          ))}
+        </nav>
       </div>
     </header>
   );

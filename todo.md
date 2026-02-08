@@ -3591,3 +3591,6 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: AdminHeader Layout Inconsistency on Audit Logs
 - [x] Fix AdminHeader layout on Audit Logs page to match Overview and User Management pages
+
+## Bug Fix: AdminHeader Nav Shifting When Switching Pages
+- [x] Fix AdminHeader layout so nav links stay in a fixed position regardless of per-page action buttons
