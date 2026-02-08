@@ -5,7 +5,6 @@ import {
   Clock,
   Eye,
   FileText,
-  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +16,6 @@ interface ModeratorHeaderProps {
   onRefresh: () => void;
   isRefetching: boolean;
   onNewChangeRequest: () => void;
-  isAdmin?: boolean;
 }
 
 export function ModeratorHeader({
@@ -27,29 +25,19 @@ export function ModeratorHeader({
   onRefresh,
   isRefetching,
   onNewChangeRequest,
-  isAdmin,
 }: ModeratorHeaderProps) {
   return (
     <header className="border-b border-[#D5D5D5] bg-white/80 backdrop-blur sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
-          {/* Left: Back nav + title */}
+          {/* Left: Back to dashboard + title */}
           <div className="flex items-center gap-4">
-            {isAdmin ? (
-              <Link href="/admin/overview">
-                <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A]">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Admin Overview
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A]">
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
-            )}
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A]">
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
             <div className="h-5 w-px bg-[#D5D5D5]" />
             <div className="flex items-center gap-2">
               <Eye className="w-5 h-5 text-[#0A0A0A]" />

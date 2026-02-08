@@ -3616,3 +3616,8 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Feature: Freeze Account Confirmation Modal for Moderators
 - [x] Add confirmation modal before moderator freezes an account (verify this is the only direct action mods can take)
+
+## Dashboard Admin Menu Cleanup
+- [x] Remove all admin menu links except Moderator View from main dashboard (kept Admin View + Moderator View)
+- [x] Rename "Overview" to "Admin View" in dashboard sidebar
+- [x] Fix ModeratorHeader: always show "Dashboard" back link instead of "Admin Overview"
