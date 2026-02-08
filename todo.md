@@ -3740,3 +3740,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Auto-open topup modal when insufficient credits on multi-view (useCastingViewGeneration)
 - [x] Auto-open topup modal when insufficient credits on all views (useCastingViewGeneration)
 - [x] Fix "points" → "credits" in all insufficient credit error messages (4 instances fixed)
+## Bug: ProfileSettingsModal not responsive on mobile
+- [x] Fix ProfileSettingsModal layout for mobile screens
+  - [x] Full-screen sheet on mobile (no max-w/max-h constraints)
+  - [x] Horizontal scrollable pill tab bar replacing sidebar on mobile
+  - [x] Active tab uses obsidian pill (bg-[#0A0A0A] text-white)
+  - [x] Responsive padding/font sizes (px-4/text-lg on mobile, px-6/text-xl on md+)
+  - [x] Content area scrolls independently below tab bar
