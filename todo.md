@@ -3554,3 +3554,34 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Stop health monitor during graceful shutdown
 - [x] Fix audit_logs column name (createdAt not created_at)
 - [x] Write tests for health monitor logic (23 new tests, 928 total passing)
+
+## Feature: Admin & Moderator Pages Light Theme Redesign
+- [ ] Create shared AdminHeader component (light theme top nav with quick links, active state)
+- [ ] Redesign AdminUserManagement page (light theme, improved table/filters)
+- [ ] Restyle UserTable, UserFilters, UserStatsCards, UserBadges components
+- [ ] Restyle UserDetailModal, UserActionModals components
+- [ ] Redesign AdminAuditLogs page (light theme, improved layout)
+- [ ] Restyle AuditLogTable, AuditLogsFilters, AuditLogDetailModal components
+- [ ] Restyle AuditActionModals, BlockedIPsTab components
+- [ ] Redesign AdminChangeRequests page (light theme, improved layout)
+- [ ] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
+- [ ] Redesign ModeratorDashboard page (light theme)
+- [ ] Restyle all moderator sub-components (DashboardHeader, StatsCards, TabNavigation, etc.)
+- [ ] Update AdminOverview to use shared AdminHeader
+- [ ] Verify TypeScript compilation and all tests pass
+
+## Feature: Admin & Moderator Pages Light Theme Redesign
+- [ ] Screenshot current state of all admin/moderator pages
+- [ ] Create shared AdminHeader component (light theme top nav with quick links, active state)
+- [ ] Redesign AdminUserManagement page (light theme, improved table/filters)
+- [ ] Restyle UserTable, UserFilters, UserStatsCards, UserBadges components
+- [ ] Restyle UserDetailModal, UserActionModals components
+- [ ] Redesign AdminAuditLogs page (light theme, improved layout)
+- [ ] Restyle AuditLogTable, AuditLogsFilters, AuditLogDetailModal components
+- [ ] Restyle AuditActionModals, BlockedIPsTab components
+- [ ] Redesign AdminChangeRequests page (light theme, improved layout)
+- [ ] Restyle ChangeRequestList, ChangeRequestDetail, ReviewModal components
+- [ ] Update AdminOverview to use shared AdminHeader
+- [ ] Redesign ModeratorDashboard page (light theme)
+- [ ] Restyle all moderator sub-components
+- [ ] Verify TypeScript compilation and all tests pass
