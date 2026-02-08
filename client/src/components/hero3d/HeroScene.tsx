@@ -1,15 +1,15 @@
 /**
  * HeroScene — Interactive hero with depth parallax + radial crossfade reveal.
  *
- * Renders a Three.js plane inside a React Three Fiber canvas.
- * The plane uses a custom shader that:
- *   1. Applies subtle depth-based parallax to the base image on mouse move
- *   2. Crossfades to the styled image via a soft-edged circular mask
+ * Premium behaviors:
+ *   1. Idle "swimming" — layered sine waves create organic autonomous motion
+ *   2. Heavy cursor easing — lerp-based follow for premium weight
+ *   3. Soft radial reveal mask — gentle gradient crossfade
+ *   4. Entry animation — reveal mask expands on load
  *
  * Mouse/touch tracking uses the DOM container (not R3F raycasting) for reliability.
  * Mobile (<768px): renders a static <img> fallback (no WebGL).
- * Tablets (768–1024px): WebGL with touch parallax support.
- * frameloop="demand" — only re-renders when interaction occurs (saves GPU/battery).
+ * frameloop="demand" — only re-renders when invalidate() is called.
  */
 import { useRef, useMemo, useState, useEffect, useCallback } from "react";
 import { Canvas, useFrame, useThree, invalidate } from "@react-three/fiber";
@@ -21,26 +21,51 @@ const HERO_BASE_URL = "/api/hero/base";
 const HERO_STYLED_URL = "/api/hero/styled";
 const HERO_DEPTH_URL = "/api/hero/depth";
 
-const IMAGE_ASPECT = 2048 / 1143;
+// ─── Constants ────────────────────────────────────────────────────────────
+/** Image aspect ratio (5504 / 3072) */
+const IMAGE_ASPECT = 5504 / 3072;
 
-/** Reveal circle radius in UV space (0–1). */
-const REVEAL_RADIUS = 0.5;
-/** Parallax strength — very subtle to avoid warping. */
+/** Reveal circle radius in UV space (0–1). Larger = more generous reveal */
+const REVEAL_RADIUS = 0.65;
+
+/** Parallax strength — subtle to avoid warping */
 const PARALLAX_STRENGTH = 0.008;
-/** Threshold below which we stop requesting frames (settled state). */
-const SETTLE_THRESHOLD = 0.0005;
+
+/** Threshold below which we stop requesting frames (settled state) */
+const SETTLE_THRESHOLD = 0.0001;
+
+/** Idle threshold in seconds before swimming starts */
+const IDLE_THRESHOLD = 2.0;
+
+/** Lerp factor when following cursor (higher = snappier) */
+const LERP_ACTIVE = 0.07;
+
+/** Lerp factor when swimming autonomously (lower = smoother) */
+const LERP_IDLE = 0.025;
 
 // ─── Shared mouse state (set by DOM, read by R3F) ─────────────────────────
-const sharedMouse = { x: 0.5, y: 0.5, hovering: false, needsRender: false };
+const sharedMouse = {
+  /** Current interpolated position (sent to shader) */
+  x: 0.5,
+  y: 0.5,
+  /** Target position (mouse or autonomous) */
+  targetX: 0.5,
+  targetY: 0.5,
+  /** Interaction state */
+  hovering: false,
+  needsRender: false,
+  /** Idle/swimming state */
+  idle: false,
+  idleTimer: 0,
+  lastMoveTime: 0,
+};
 
 // ─── WebGL capability detection ───────────────────────────────────────────
 function checkWebGLSupport(): boolean {
   try {
     const canvas = document.createElement("canvas");
-    const gl =
-      canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
     if (!gl) return false;
-    // Verify it can actually create a shader program (not just a stub)
     const vs = gl.createShader(gl.VERTEX_SHADER);
     if (!vs) return false;
     gl.deleteShader(vs);
@@ -71,7 +96,6 @@ function useHeroTextures() {
             tex.colorSpace = isSRGB
               ? THREE.SRGBColorSpace
               : THREE.LinearSRGBColorSpace;
-            // Sharper rendering with mipmaps and anisotropic filtering
             tex.generateMipmaps = true;
             tex.minFilter = THREE.LinearMipmapLinearFilter;
             tex.magFilter = THREE.LinearFilter;
@@ -88,7 +112,7 @@ function useHeroTextures() {
     Promise.all([
       loadTex(HERO_BASE_URL, true),
       loadTex(HERO_STYLED_URL, true),
-      loadTex(HERO_DEPTH_URL, false), // Depth map = data texture, linear
+      loadTex(HERO_DEPTH_URL, false),
     ])
       .then(([base, styled, depth]) => setTextures({ base, styled, depth }))
       .catch((err) => setError(err.message));
@@ -108,9 +132,10 @@ function RevealPlane({
   depthTexture: THREE.Texture;
 }) {
   const { viewport } = useThree();
-
-  const smoothMouse = useRef(new THREE.Vector2(0.5, 0.5));
-  const revealProgress = useRef(0);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
+  const timeRef = useRef(0);
+  const revealedRef = useRef(false);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const uniforms = useMemo(
     () => ({
@@ -125,33 +150,89 @@ function RevealPlane({
     [baseTexture, styledTexture, depthTexture]
   );
 
-  // Animation loop — only runs when invalidate() is called (demand mode)
+  // Entry animation: reveal after a short delay
+  useEffect(() => {
+    revealTimerRef.current = setTimeout(() => {
+      revealedRef.current = true;
+      invalidate();
+    }, 300);
+    return () => {
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    };
+  }, []);
+
+  // Main animation loop
   useFrame((_state, delta) => {
-    const lerpFactor = 1 - Math.pow(0.001, delta);
+    if (!materialRef.current) return;
 
-    // Smooth mouse position
-    const prevX = smoothMouse.current.x;
-    const prevY = smoothMouse.current.y;
-    smoothMouse.current.x +=
-      (sharedMouse.x - smoothMouse.current.x) * lerpFactor * 3;
-    smoothMouse.current.y +=
-      (sharedMouse.y - smoothMouse.current.y) * lerpFactor * 3;
-    uniforms.uMouse.value.copy(smoothMouse.current);
+    timeRef.current += delta;
+    const now = performance.now();
 
-    // Smooth reveal progress (fade in/out)
-    const prevReveal = revealProgress.current;
-    const targetReveal = sharedMouse.hovering ? 1 : 0;
-    revealProgress.current +=
-      (targetReveal - revealProgress.current) * lerpFactor * 2;
-    uniforms.uRevealProgress.value = revealProgress.current;
+    // ─── Idle Detection ───────────────────────────────────────
+    if (sharedMouse.hovering) {
+      const timeSinceMove = (now - sharedMouse.lastMoveTime) / 1000;
+      if (timeSinceMove > IDLE_THRESHOLD) {
+        sharedMouse.idle = true;
+      }
+    } else {
+      sharedMouse.idleTimer += delta;
+      if (sharedMouse.idleTimer > IDLE_THRESHOLD) {
+        sharedMouse.idle = true;
+      }
+    }
 
-    // Keep requesting frames while values are still settling
-    const mouseDelta =
-      Math.abs(smoothMouse.current.x - prevX) +
-      Math.abs(smoothMouse.current.y - prevY);
-    const revealDelta = Math.abs(revealProgress.current - prevReveal);
+    // ─── Calculate Target Position ────────────────────────────
+    if (sharedMouse.idle) {
+      const t = timeRef.current;
 
-    if (mouseDelta > SETTLE_THRESHOLD || revealDelta > SETTLE_THRESHOLD) {
+      sharedMouse.targetX =
+        0.5 +
+        Math.sin(t * 0.4) * 0.25 +
+        Math.sin(t * 0.7) * 0.1 +
+        Math.sin(t * 1.1) * 0.05;
+
+      sharedMouse.targetY =
+        0.5 +
+        Math.cos(t * 0.3) * 0.2 +
+        Math.cos(t * 0.6) * 0.08 +
+        Math.cos(t * 0.9) * 0.04;
+
+      // Clamp to valid range with padding
+      sharedMouse.targetX = Math.max(
+        0.15,
+        Math.min(0.85, sharedMouse.targetX)
+      );
+      sharedMouse.targetY = Math.max(
+        0.15,
+        Math.min(0.85, sharedMouse.targetY)
+      );
+    }
+
+    // ─── Smooth Interpolation (ALWAYS runs) ───────────────────
+    const lerpFactor = sharedMouse.idle ? LERP_IDLE : LERP_ACTIVE;
+
+    const prevX = sharedMouse.x;
+    const prevY = sharedMouse.y;
+
+    sharedMouse.x += (sharedMouse.targetX - sharedMouse.x) * lerpFactor;
+    sharedMouse.y += (sharedMouse.targetY - sharedMouse.y) * lerpFactor;
+
+    // ─── Update Shader Uniforms ───────────────────────────────
+    uniforms.uMouse.value.set(sharedMouse.x, sharedMouse.y);
+
+    // Entry animation: smoothly animate reveal progress
+    const targetProgress = revealedRef.current ? 1.0 : 0.0;
+    const currentProgress = uniforms.uRevealProgress.value;
+    uniforms.uRevealProgress.value +=
+      (targetProgress - currentProgress) * 0.05;
+
+    // ─── Determine if we need to keep rendering ───────────────
+    const deltaX = Math.abs(sharedMouse.x - prevX);
+    const deltaY = Math.abs(sharedMouse.y - prevY);
+    const revealDelta = Math.abs(uniforms.uRevealProgress.value - targetProgress);
+    const isMoving = deltaX > SETTLE_THRESHOLD || deltaY > SETTLE_THRESHOLD;
+
+    if (isMoving || sharedMouse.idle || sharedMouse.hovering || revealDelta > 0.001) {
       invalidate();
     }
   });
@@ -173,6 +254,7 @@ function RevealPlane({
     <mesh>
       <planeGeometry args={[planeWidth, planeHeight, 1, 1]} />
       <shaderMaterial
+        ref={materialRef}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
         uniforms={uniforms}
@@ -199,7 +281,7 @@ function Scene() {
 }
 
 // ─── Device detection hook ────────────────────────────────────────────────
-type DeviceType = "mobile" | "tablet" | "desktop";
+type DeviceType = "mobile" | "desktop";
 
 function useDeviceType(): DeviceType {
   const [device, setDevice] = useState<DeviceType>("desktop");
@@ -207,8 +289,7 @@ function useDeviceType(): DeviceType {
   useEffect(() => {
     const check = () => {
       const w = window.innerWidth;
-      if (w < 768) setDevice("mobile");
-      else setDevice("desktop"); // tablets (768+) get WebGL too
+      setDevice(w < 768 ? "mobile" : "desktop");
     };
     check();
     window.addEventListener("resize", check);
@@ -230,44 +311,47 @@ export default function HeroScene() {
     setWebglSupported(checkWebGLSupport());
   }, []);
 
-  // Trigger R3F invalidate on interaction
-  const triggerRender = useCallback(() => {
-    sharedMouse.needsRender = true;
-    invalidate();
-  }, []);
-
-  // DOM-level mouse tracking — more reliable than R3F raycasting
+  // DOM-level mouse tracking — updates TARGET position (not current)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
-      sharedMouse.x = (e.clientX - rect.left) / rect.width;
-      sharedMouse.y = 1 - (e.clientY - rect.top) / rect.height;
+      sharedMouse.targetX = (e.clientX - rect.left) / rect.width;
+      sharedMouse.targetY = 1 - (e.clientY - rect.top) / rect.height;
       sharedMouse.hovering = true;
-      triggerRender();
+      sharedMouse.idle = false;
+      sharedMouse.idleTimer = 0;
+      sharedMouse.lastMoveTime = performance.now();
+      sharedMouse.needsRender = true;
+      invalidate();
     };
 
     const handleMouseLeave = () => {
       sharedMouse.hovering = false;
-      triggerRender();
+      // Don't reset target — let idle timer kick in and start swimming
+      invalidate();
     };
 
-    // Touch support for tablets — parallax follows finger
+    // Touch support for tablets
     const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
       if (!touch) return;
       const rect = el.getBoundingClientRect();
-      sharedMouse.x = (touch.clientX - rect.left) / rect.width;
-      sharedMouse.y = 1 - (touch.clientY - rect.top) / rect.height;
+      sharedMouse.targetX = (touch.clientX - rect.left) / rect.width;
+      sharedMouse.targetY = 1 - (touch.clientY - rect.top) / rect.height;
       sharedMouse.hovering = true;
-      triggerRender();
+      sharedMouse.idle = false;
+      sharedMouse.idleTimer = 0;
+      sharedMouse.lastMoveTime = performance.now();
+      sharedMouse.needsRender = true;
+      invalidate();
     };
 
     const handleTouchEnd = () => {
       sharedMouse.hovering = false;
-      triggerRender();
+      invalidate();
     };
 
     el.addEventListener("mousemove", handleMouseMove);
@@ -283,7 +367,7 @@ export default function HeroScene() {
       el.removeEventListener("touchend", handleTouchEnd);
       el.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, [triggerRender]);
+  }, []);
 
   // Mobile or broken WebGL → static image
   if (device === "mobile" || !webglSupported) {
@@ -303,13 +387,16 @@ export default function HeroScene() {
       className="relative w-full h-full cursor-none"
       style={{ touchAction: "pan-y" }}
     >
-      {/* Static fallback visible until Canvas is ready */}
+      {/* Shimmer loading placeholder visible until Canvas is ready */}
       {!loaded && (
-        <img
-          src={HERO_BASE_URL}
-          alt="AI Generated Model"
-          className="w-full h-full object-cover"
-          loading="eager"
+        <div
+          className="w-full h-full rounded-xl sm:rounded-2xl overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+            backgroundSize: "200% 100%",
+            animation: "shimmer 1.5s ease-in-out infinite",
+          }}
         />
       )}
       <Canvas
@@ -327,7 +414,6 @@ export default function HeroScene() {
         }}
         onCreated={() => {
           setLoaded(true);
-          // Render initial frame
           invalidate();
         }}
       >

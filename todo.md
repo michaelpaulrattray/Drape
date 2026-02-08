@@ -3655,3 +3655,14 @@ The entry and configuration files are properly set up with several enhancements 
 ## Feature: Powered by Section in Footer
 - [x] Add "Powered by" section to footer with Google Gemini and Nano Banana logos
 - [x] Add Manus to the Powered by footer section
+
+## Feature: Hero Section Premium Overhaul
+- [x] Upload new hero images (v2) to S3 — base with "Powered by Gemini" text, styled with sunglasses
+- [x] Generate depth map from new base image for parallax effect
+- [x] Update heroProxy.ts S3 keys to v2 images
+- [x] Implement idle "swimming" movement — layered sine waves for organic autonomous motion after 2s idle
+- [x] Implement heavy cursor easing — lerp 0.07 (active) / 0.025 (idle) for premium weight
+- [x] Update shader for softer reveal mask — innerRadius 0.25, outerRadius 1.3, extra Hermite smoothing
+- [x] Add shimmer loading placeholder instead of static image fallback
+- [x] Add entry animation — reveal mask expands from 0→1 on load
+- [x] Update IMAGE_ASPECT ratio for new 5504x3072 images

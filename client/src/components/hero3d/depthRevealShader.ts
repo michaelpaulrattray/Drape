@@ -5,7 +5,12 @@
  *   1. Applies subtle depth-based parallax to the BASE image only
  *      (compressed depth range to avoid harsh boundary artifacts)
  *   2. Crossfades to the STYLED image via a soft-edged circular mask
- *      that follows the cursor (styled image sampled at original UV)
+ *      that follows the cursor (styled image sampled at same parallax UV)
+ *
+ * Updated for premium feel:
+ *   - Softer inner radius (0.25 vs 0.6) = less hard center
+ *   - Larger outer radius (1.3 vs 1.0) = longer gradient falloff
+ *   - Extra Hermite smoothing pass for buttery-soft edges
  */
 
 export const vertexShader = /* glsl */ `
@@ -46,22 +51,25 @@ export const fragmentShader = /* glsl */ `
 
     vec2 baseUv = clamp(vUv + parallaxOffset, 0.0, 1.0);
 
-    // ── Radial reveal mask ──────────────────────────────────
+    // ── Radial reveal mask (soft edges) ─────────────────────
     // Aspect ratio correction (image is ~1.79:1)
     vec2 aspect = vec2(1.79, 1.0);
     vec2 diff = (vUv - uMouse) * aspect;
     float dist = length(diff);
 
-    // Soft-edged circular mask
-    float innerRadius = uRevealRadius * 0.6;
-    float outerRadius = uRevealRadius;
+    // Softer edges: smaller solid center, larger gradient falloff
+    float innerRadius = uRevealRadius * 0.25;
+    float outerRadius = uRevealRadius * 1.3;
+
+    // Smoothstep + extra Hermite smoothing for buttery-soft edges
     float revealMask = 1.0 - smoothstep(innerRadius, outerRadius, dist);
+    revealMask = revealMask * revealMask * (3.0 - 2.0 * revealMask);
     revealMask *= clamp(uRevealProgress, 0.0, 1.0);
 
     // ── Sample textures ─────────────────────────────────────
     // Base: parallax-shifted UV for depth feel
     vec4 baseColor = texture2D(uBaseTexture, baseUv);
-    // Styled: same parallax UV so crossfade boundary is seamless (no shadow)
+    // Styled: same parallax UV so crossfade boundary is seamless
     vec4 styledColor = texture2D(uStyledTexture, baseUv);
 
     // Blend between base and styled
