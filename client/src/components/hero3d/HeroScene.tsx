@@ -17,9 +17,9 @@ import * as THREE from "three";
 import { vertexShader, fragmentShader } from "./depthRevealShader";
 
 // ─── Proxy URLs (bypass CloudFront CORS caching) ──────────────────────────
-const HERO_BASE_URL = "/api/hero/base";
-const HERO_STYLED_URL = "/api/hero/styled";
-const HERO_DEPTH_URL = "/api/hero/depth";
+const HERO_BASE_URL = "/api/hero/base?v=2";
+const HERO_STYLED_URL = "/api/hero/styled?v=2";
+const HERO_DEPTH_URL = "/api/hero/depth?v=2";
 
 // ─── Constants ────────────────────────────────────────────────────────────
 /** Image aspect ratio (5504 / 3072) */
