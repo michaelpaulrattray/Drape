@@ -3539,3 +3539,18 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add frozenAt to UserTable UserRow interface
 - [x] Active filter now also excludes frozen users
 - [x] All 905 tests passing, 0 TypeScript errors
+
+## Feature: Automated System Health Slack Alerts
+- [x] Store system alerts webhook URL as SLACK_SYSTEM_ALERTS_WEBHOOK_URL env secret
+- [x] Add "system-alerts" channel to slackCore.ts (type, getWebhook, routeEvent)
+- [x] Create server/monitoring/healthMonitor.ts (290 lines) with periodic health checks
+- [x] Monitor generation success rate (24h) — alert when below 80% (critical if <50%)
+- [x] Monitor DB connectivity — alert on connection null, query failure, or >5s latency
+- [x] Monitor critical audit event spikes — alert when >10 critical events in 1 hour
+- [x] Monitor generation queue backup — alert when >20 pending+processing
+- [x] Send formatted Slack messages with severity, metrics, and timestamps to system-alerts channel
+- [x] Implement 15-minute cooldown per alert type to prevent spam
+- [x] Register health monitor in server startup (60s delay, then every 5 min)
+- [x] Stop health monitor during graceful shutdown
+- [x] Fix audit_logs column name (createdAt not created_at)
+- [x] Write tests for health monitor logic (23 new tests, 928 total passing)

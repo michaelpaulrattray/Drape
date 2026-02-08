@@ -86,6 +86,14 @@ function registerShutdownHandlers(): void {
     shuttingDown = true;
     console.log(`[Shutdown] Received ${signal}, draining connections...`);
 
+    // Stop health monitor
+    try {
+      const { stopHealthMonitor } = await import("../monitoring/healthMonitor");
+      stopHealthMonitor();
+    } catch {
+      // Health monitor cleanup is best-effort
+    }
+
     // Stop accepting new connections
     if (httpServer) {
       httpServer.close(() => {
@@ -223,6 +231,13 @@ async function startServer() {
     // Run once on startup (after 30s delay to let DB connect), then daily
     setTimeout(runReferralExpiration, 30_000);
     setInterval(runReferralExpiration, TWENTY_FOUR_HOURS);
+
+    // Start health monitor (checks every 5 min, first run after 60s)
+    import("../monitoring/healthMonitor").then(({ startHealthMonitor }) => {
+      startHealthMonitor();
+    }).catch(err => {
+      console.error("[Scheduler] Failed to start health monitor:", err);
+    });
   });
 
   // Register shutdown handlers after server is listening

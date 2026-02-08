@@ -6,7 +6,7 @@
 
 // ============ Channel Config ============
 
-export type SlackChannel = "security-alerts" | "admin-actions" | "audit-log" | "billing-alerts";
+export type SlackChannel = "security-alerts" | "admin-actions" | "audit-log" | "billing-alerts" | "system-alerts";
 
 const getWebhook = (channel: SlackChannel): string | undefined => {
   switch (channel) {
@@ -14,6 +14,7 @@ const getWebhook = (channel: SlackChannel): string | undefined => {
     case "admin-actions": return process.env.SLACK_ADMIN_ACTIONS_WEBHOOK_URL;
     case "audit-log": return process.env.SLACK_AUDIT_LOG_WEBHOOK_URL;
     case "billing-alerts": return process.env.SLACK_BILLING_ALERTS_WEBHOOK_URL;
+    case "system-alerts": return process.env.SLACK_SYSTEM_ALERTS_WEBHOOK_URL;
   }
 };
 
@@ -275,6 +276,9 @@ function routeEvent(eventType: string): SlackChannel[] {
   }
   if (eventType.startsWith("billing_")) {
     return ["billing-alerts"];
+  }
+  if (eventType.startsWith("system_health_")) {
+    return ["system-alerts"];
   }
   console.warn(`[SlackDispatcher] Unknown event type "${eventType}", routing to admin-actions`);
   return ["admin-actions"];
