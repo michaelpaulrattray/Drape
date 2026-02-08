@@ -3697,3 +3697,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Responsive content padding (p-4/p-10) and grid layouts (grid-cols-2/grid-cols-4)
 - [x] Responsive section headings and button sizes
 - [ ] Audit CastingStudio for mobile overflow issues (already has flex-col/flex-row responsive base)
+
+## Feature: Smooth Scroll-to-Section Navigation
+- [x] Add smooth scroll behavior when clicking homepage nav links (About, Work, Services, Blog)
+- [x] Ensure section IDs match nav link targets
+- [x] Add scroll offset to account for fixed header height (72px offset)
+- [x] Button component handles /#contact and #section anchor links
+- [x] FooterLink component handles anchor smooth scroll
+- [x] Mobile menu smooth scroll with 300ms delay for close animation
+- [x] Mega menu smooth scroll with 350ms delay for close animation

@@ -149,7 +149,6 @@ export function Header() {
                 { name: 'About', href: '#about' },
                 { name: 'Work', href: '#work' },
                 { name: 'Services', href: '#services' },
-                { name: 'Pricing', href: '#pricing' },
                 { name: 'Blog', href: '#blog' },
                 { name: 'Contact', href: '#contact' },
               ].map((item) => (
@@ -157,7 +156,18 @@ export function Header() {
                   key={item.name}
                   href={item.href}
                   className="py-3 text-2xl font-medium text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors border-b border-[#0A0A0A]/5"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsMobileMenuOpen(false);
+                    const target = document.querySelector(item.href);
+                    if (target) {
+                      const headerOffset = 72;
+                      const elementPosition = target.getBoundingClientRect().top + window.scrollY;
+                      setTimeout(() => {
+                        window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
+                      }, 300);
+                    }
+                  }}
                 >
                   {item.name}
                 </a>
@@ -214,7 +224,22 @@ export function Header() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.03 + 0.05, duration: 0.3 }}
                         className="group flex items-center justify-between py-2 border-b border-gray-300 transition-colors overflow-hidden"
-                        onClick={() => setIsMegaMenuOpen(false)}
+                        onClick={(e) => {
+                          if (item.href.startsWith('#')) {
+                            e.preventDefault();
+                            setIsMegaMenuOpen(false);
+                            const target = document.querySelector(item.href);
+                            if (target) {
+                              const headerOffset = 72;
+                              const elementPosition = target.getBoundingClientRect().top + window.scrollY;
+                              setTimeout(() => {
+                                window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
+                              }, 350);
+                            }
+                          } else {
+                            setIsMegaMenuOpen(false);
+                          }
+                        }}
                       >
                         {/* Nav item name with conveyor effect */}
                         <span className="overflow-hidden h-7 text-card-title font-inter">

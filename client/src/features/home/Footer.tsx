@@ -115,7 +115,7 @@ function NewsletterForm() {
 
 export function Footer() {
   return (
-    <footer className="py-12 sm:py-24 bg-[#0A0A0A] text-white">
+    <footer id="contact" className="py-12 sm:py-24 bg-[#0A0A0A] text-white">
       <div className="max-w-[1520px] mx-auto px-6 lg:px-12">
         {/* Large Wordmark */}
         <motion.h2 
@@ -163,7 +163,7 @@ export function Footer() {
             <FooterLink href="#about">About</FooterLink>
             <FooterLink href="#work">Projects</FooterLink>
             <FooterLink href="#blog">Blog</FooterLink>
-            <FooterLink href="/#contact">Contact</FooterLink>
+            <FooterLink href="#contact">Contact</FooterLink>
           </div>
           <div className="space-y-3">
             <FooterLink href="#">Terms & Conditions</FooterLink>

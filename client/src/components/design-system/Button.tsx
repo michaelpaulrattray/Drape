@@ -228,8 +228,21 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     );
 
     if (href) {
+      const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        const anchor = href.startsWith('/#') ? href.slice(1) : href;
+        if (anchor.startsWith('#')) {
+          e.preventDefault();
+          const target = document.querySelector(anchor);
+          if (target) {
+            const headerOffset = 72;
+            const elementPosition = target.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
+          }
+        }
+      };
+
       return (
-        <a href={href} className={baseStyles}>
+        <a href={href} onClick={handleAnchorClick} className={baseStyles}>
           {content}
         </a>
       );
@@ -306,8 +319,20 @@ export interface NavLinkProps {
  * Navigation link with conveyor animation and color change
  */
 export function NavLink({ children, href, className }: NavLinkProps) {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        const headerOffset = 72;
+        const elementPosition = target.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
-    <a href={href} className={cn("group overflow-hidden", className)}>
+    <a href={href} onClick={handleClick} className={cn("group overflow-hidden", className)}>
       <ConveyorTextColor 
         defaultColor="text-[#0A0A0A]/70 font-medium text-sm"
         hoverColor="text-[#0A0A0A] font-medium text-sm"
@@ -406,8 +431,20 @@ export interface FooterLinkProps {
  * Footer link with conveyor animation for dark backgrounds
  */
 export function FooterLink({ children, href, className }: FooterLinkProps) {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        const headerOffset = 72;
+        const elementPosition = target.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
-    <a href={href} className={cn("group overflow-hidden block", className)}>
+    <a href={href} onClick={handleClick} className={cn("group overflow-hidden block", className)}>
       <ConveyorTextColor 
         defaultColor="text-white/60 text-base"
         hoverColor="text-white text-base"

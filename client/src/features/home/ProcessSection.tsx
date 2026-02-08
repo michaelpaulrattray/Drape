@@ -5,7 +5,7 @@ import { SectionLabel } from "./SectionLabel";
 
 export function ProcessSection() {
   return (
-    <section className="py-12 sm:py-24 bg-white">
+    <section id="process" className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         <motion.div
           initial="hidden"
