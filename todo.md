@@ -3651,3 +3651,7 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fix: Section Title Headers Too Small on Mobile
 - [x] Increase clamp() minimums for section titles on mobile — raised to 2rem (32px) inline and 2rem token class for more impact
+
+## Feature: Powered by Section in Footer
+- [x] Add "Powered by" section to footer with Google Gemini and Nano Banana logos
+- [x] Add Manus to the Powered by footer section

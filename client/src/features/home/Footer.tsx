@@ -176,6 +176,54 @@ export function Footer() {
           </div>
         </motion.div>
 
+        {/* Powered By */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={fadeIn}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 py-8 border-t border-white/10"
+        >
+          <span className="text-xs uppercase tracking-widest text-white/30">Powered by</span>
+          <div className="flex items-center gap-6 sm:gap-10">
+            {/* Google Gemini */}
+            <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors">
+              <svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 0C14 7.732 7.732 14 0 14C7.732 14 14 20.268 14 28C14 20.268 20.268 14 28 14C20.268 14 14 7.732 14 0Z" fill="url(#gemini-gradient)"/>
+                <defs>
+                  <linearGradient id="gemini-gradient" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#4285F4"/>
+                    <stop offset="0.5" stopColor="#9B72CB"/>
+                    <stop offset="1" stopColor="#D96570"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span className="text-sm font-medium">Gemini</span>
+            </a>
+
+            <span className="w-px h-5 bg-white/15" />
+
+            {/* Nano Banana */}
+            <a href="https://deepmind.google/technologies/gemini/nano-banana/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors">
+              <span className="text-lg leading-none">🍌</span>
+              <span className="text-sm font-medium">Nano Banana</span>
+            </a>
+
+            <span className="w-px h-5 bg-white/15" />
+
+            {/* Manus */}
+            <a href="https://manus.im" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C11.5 4 10 5 8.5 5.5C7 6 6 7 5.5 8.5C5 10 4 11.5 2 12C4 12.5 5 14 5.5 15.5C6 17 7 18 8.5 18.5C10 19 11.5 20 12 22C12.5 20 14 19 15.5 18.5C17 18 18 17 18.5 15.5C19 14 20 12.5 22 12C20 11.5 19 10 18.5 8.5C18 7 17 6 15.5 5.5C14 5 12.5 4 12 2Z" fill="currentColor"/>
+                <circle cx="8" cy="3" r="1" fill="currentColor"/>
+                <circle cx="18" cy="5" r="0.8" fill="currentColor"/>
+                <circle cx="20" cy="9" r="0.6" fill="currentColor"/>
+              </svg>
+              <span className="text-sm font-medium">Manus</span>
+            </a>
+          </div>
+        </motion.div>
+
         {/* Copyright */}
         <motion.div 
           initial="hidden"
