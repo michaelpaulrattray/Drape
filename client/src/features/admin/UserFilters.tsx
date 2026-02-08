@@ -37,26 +37,26 @@ export function UserFilters({
   onSortOrderChange,
 }: UserFiltersProps) {
   return (
-    <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-      <div className="flex flex-col md:flex-row gap-4">
+    <div className="bg-white rounded-xl p-4 border border-[#E5E5E5]">
+      <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1 flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999]" />
             <Input
               placeholder="Search by name, email, or ID..."
               value={searchInput}
               onChange={(e) => onSearchInputChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSearch()}
-              className="pl-10 bg-white/5 border-white/10"
+              className="pl-10 bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A] placeholder:text-[#999]"
             />
           </div>
-          <Button onClick={onSearch} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={onSearch} className="bg-[#0A0A0A] hover:bg-[#222] text-white">
             Search
           </Button>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Select value={statusFilter} onValueChange={(v) => onStatusFilterChange(v as typeof statusFilter)}>
-            <SelectTrigger className="w-[130px] bg-white/5 border-white/10">
+            <SelectTrigger className="w-[130px] bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -68,7 +68,7 @@ export function UserFilters({
             </SelectContent>
           </Select>
           <Select value={roleFilter} onValueChange={(v) => onRoleFilterChange(v as typeof roleFilter)}>
-            <SelectTrigger className="w-[120px] bg-white/5 border-white/10">
+            <SelectTrigger className="w-[120px] bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
               <SelectValue placeholder="Role" />
             </SelectTrigger>
             <SelectContent>
@@ -79,7 +79,7 @@ export function UserFilters({
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(v) => onSortByChange(v as typeof sortBy)}>
-            <SelectTrigger className="w-[140px] bg-white/5 border-white/10">
+            <SelectTrigger className="w-[140px] bg-[#F8F8F8] border-[#E5E5E5] text-[#0A0A0A]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -92,7 +92,7 @@ export function UserFilters({
             variant="outline"
             size="icon"
             onClick={() => onSortOrderChange(sortOrder === "asc" ? "desc" : "asc")}
-            className="border-white/10 hover:bg-white/5"
+            className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]"
           >
             {sortOrder === "asc" ? "↑" : "↓"}
           </Button>

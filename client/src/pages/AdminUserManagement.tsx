@@ -1,8 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Redirect, Link } from "wouter";
+import { Redirect } from "wouter";
 import { useState } from "react";
-import { Users, RefreshCw, ChevronLeft, Snowflake } from "lucide-react";
+import { RefreshCw, Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { AdminHeader } from "@/features/admin/AdminHeader";
 import { UserStatsCards } from "@/features/admin/UserStatsCards";
 import { UserFilters } from "@/features/admin/UserFilters";
 import { UserTable } from "@/features/admin/UserTable";
@@ -140,7 +141,7 @@ export default function AdminUserManagement() {
 
   // Auth guards
   if (loading) {
-    return <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><RefreshCw className="w-8 h-8 text-gray-400 animate-spin" /></div>;
+    return <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center"><RefreshCw className="w-8 h-8 text-[#CCC] animate-spin" /></div>;
   }
   if (!isAuthenticated) return <Redirect to="/" />;
   if (user?.role !== "admin") { toast.error("Access denied. Admin privileges required."); return <Redirect to="/dashboard" />; }
@@ -148,30 +149,23 @@ export default function AdminUserManagement() {
   const totalPages = Math.ceil((usersQuery.data?.total || 0) / ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                  <ChevronLeft className="w-4 h-4 mr-1" />Dashboard
-                </Button>
-              </Link>
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-400" />
-                <h1 className="text-xl font-semibold">User Management</h1>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => { usersQuery.refetch(); statsQuery.refetch(); }} className="border-white/10 hover:bg-white/5">
-              <RefreshCw className={`w-4 h-4 mr-2 ${usersQuery.isFetching ? "animate-spin" : ""}`} />Refresh
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
+      <AdminHeader
+        title="User Management"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { usersQuery.refetch(); statsQuery.refetch(); }}
+            className="border-[#D5D5D5] text-[#999] text-xs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${usersQuery.isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        }
+      />
 
-      <main className="container py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <UserStatsCards stats={statsQuery.data} />
 
         <UserFilters
@@ -256,23 +250,23 @@ export default function AdminUserManagement() {
 
       {/* Freeze Modal */}
       <Dialog open={freezeModalOpen} onOpenChange={setFreezeModalOpen}>
-        <DialogContent className="bg-[#0f0f0f] border-white/10 text-white">
+        <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-cyan-400">
+            <DialogTitle className="flex items-center gap-2 text-cyan-700">
               <Snowflake className="w-5 h-5" />
               Freeze Account
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-400">Freezing restricts the user from generating content or spending credits. This is lighter than a full suspension.</p>
+          <p className="text-sm text-[#666]">Freezing restricts the user from generating content or spending credits. This is lighter than a full suspension.</p>
           <textarea
             value={freezeReason}
             onChange={(e) => setFreezeReason(e.target.value)}
             placeholder="Reason for freezing this account..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 resize-none h-24 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg p-3 text-sm text-[#0A0A0A] placeholder-[#999] resize-none h-24 focus:outline-none focus:ring-1 focus:ring-cyan-500"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setFreezeModalOpen(false)} className="text-gray-400">Cancel</Button>
-            <Button onClick={handleFreeze} disabled={!freezeReason.trim() || freezeMutation.isPending} className="bg-cyan-600 hover:bg-cyan-700">
+            <Button variant="outline" onClick={() => setFreezeModalOpen(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
+            <Button onClick={handleFreeze} disabled={!freezeReason.trim() || freezeMutation.isPending} className="bg-cyan-600 hover:bg-cyan-700 text-white">
               {freezeMutation.isPending ? "Freezing..." : "Freeze Account"}
             </Button>
           </div>
@@ -281,23 +275,23 @@ export default function AdminUserManagement() {
 
       {/* Unfreeze Modal */}
       <Dialog open={unfreezeModalOpen} onOpenChange={setUnfreezeModalOpen}>
-        <DialogContent className="bg-[#0f0f0f] border-white/10 text-white">
+        <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-400">
+            <DialogTitle className="flex items-center gap-2 text-emerald-700">
               <Snowflake className="w-5 h-5" />
               Unfreeze Account
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-400">This will restore the user's ability to generate content and spend credits.</p>
+          <p className="text-sm text-[#666]">This will restore the user's ability to generate content and spend credits.</p>
           <textarea
             value={unfreezeNotes}
             onChange={(e) => setUnfreezeNotes(e.target.value)}
             placeholder="Notes for unfreezing (e.g., issue resolved, false positive)..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 resize-none h-24 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg p-3 text-sm text-[#0A0A0A] placeholder-[#999] resize-none h-24 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setUnfreezeModalOpen(false)} className="text-gray-400">Cancel</Button>
-            <Button onClick={handleUnfreeze} disabled={!unfreezeNotes.trim() || unfreezeMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="outline" onClick={() => setUnfreezeModalOpen(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
+            <Button onClick={handleUnfreeze} disabled={!unfreezeNotes.trim() || unfreezeMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               {unfreezeMutation.isPending ? "Unfreezing..." : "Unfreeze Account"}
             </Button>
           </div>

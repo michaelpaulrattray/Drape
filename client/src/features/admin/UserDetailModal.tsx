@@ -105,30 +105,33 @@ export function UserDetailModal({
 }: UserDetailModalProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl bg-[#0f0f0f] border-white/10 text-white">
+      <DialogContent className="max-w-2xl bg-white border-[#E5E5E5] text-[#0A0A0A]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserCog className="w-5 h-5 text-purple-400" />
+          <DialogTitle className="flex items-center gap-2 text-[#0A0A0A]">
+            <UserCog className="w-5 h-5 text-[#666]" />
             User Details
           </DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
           <div className="py-8 text-center">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-gray-400" />
-            Loading user details...
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#CCC]" />
+            <span className="text-[#999]">Loading user details...</span>
           </div>
         ) : selectedUser ? (
           <div className="space-y-4">
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-white/10 pb-2">
+            <div className="flex gap-1 border-b border-[#E5E5E5] pb-2">
               {(["profile", "credits", "activity"] as const).map((tab) => (
                 <Button
                   key={tab}
                   variant={activeTab === tab ? "default" : "ghost"}
                   size="sm"
                   onClick={() => onTabChange(tab)}
-                  className={activeTab === tab ? "bg-purple-600" : "text-gray-400 hover:text-white"}
+                  className={activeTab === tab
+                    ? "bg-[#0A0A0A] hover:bg-[#222] text-white"
+                    : "text-[#999] hover:text-[#0A0A0A] hover:bg-[#F0F0F0]"
+                  }
                 >
                   {tab === "profile" && <User className="w-4 h-4 mr-1" />}
                   {tab === "credits" && <Coins className="w-4 h-4 mr-1" />}
@@ -138,7 +141,6 @@ export function UserDetailModal({
               ))}
             </div>
 
-            {/* Profile Tab */}
             {activeTab === "profile" && (
               <ProfileTabContent
                 selectedUser={selectedUser}
@@ -153,8 +155,6 @@ export function UserDetailModal({
                 unfreezePending={unfreezePending}
               />
             )}
-
-            {/* Credits Tab */}
             {activeTab === "credits" && (
               <CreditsTabContent
                 credits={selectedUser.credits}
@@ -162,14 +162,12 @@ export function UserDetailModal({
                 onDeductCredits={onDeductCredits}
               />
             )}
-
-            {/* Activity Tab */}
             {activeTab === "activity" && (
               <ActivityTabContent logs={activityLogs} isLoading={activityLoading} />
             )}
           </div>
         ) : (
-          <div className="py-8 text-center text-gray-400">User not found</div>
+          <div className="py-8 text-center text-[#999]">User not found</div>
         )}
       </DialogContent>
     </Dialog>
@@ -203,15 +201,15 @@ function ProfileTabContent({
     <div className="space-y-4">
       <div className="flex items-start gap-4">
         {selectedUser.user.avatarUrl ? (
-          <img src={selectedUser.user.avatarUrl} alt="" className="w-16 h-16 rounded-full object-cover" />
+          <img src={selectedUser.user.avatarUrl} alt="" className="w-16 h-16 rounded-full object-cover ring-2 ring-[#E5E5E5]" />
         ) : (
-          <div className="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center">
-            <User className="w-8 h-8 text-purple-400" />
+          <div className="w-16 h-16 rounded-full bg-[#F0F0F0] flex items-center justify-center">
+            <User className="w-8 h-8 text-[#999]" />
           </div>
         )}
         <div className="flex-1">
-          <h3 className="text-lg font-semibold">{selectedUser.user.name || "Unnamed"}</h3>
-          <p className="text-gray-400">{selectedUser.user.email || "No email"}</p>
+          <h3 className="text-lg font-semibold text-[#0A0A0A]">{selectedUser.user.name || "Unnamed"}</h3>
+          <p className="text-[#999]">{selectedUser.user.email || "No email"}</p>
           <div className="flex gap-2 mt-2">
             <StatusBadge status={getUserStatus(selectedUser.user)} />
             <RoleBadge role={selectedUser.user.role} />
@@ -219,54 +217,72 @@ function ProfileTabContent({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div><span className="text-gray-400">User ID:</span><span className="ml-2">{selectedUser.user.id}</span></div>
-        <div><span className="text-gray-400">Open ID:</span><span className="ml-2 font-mono text-xs">{selectedUser.user.openId.slice(0, 16)}...</span></div>
-        <div><span className="text-gray-400">Joined:</span><span className="ml-2">{formatDate(selectedUser.user.createdAt)}</span></div>
-        <div><span className="text-gray-400">Last Active:</span><span className="ml-2">{formatDate(selectedUser.user.lastSignedIn)}</span></div>
-        <div><span className="text-gray-400">Models:</span><span className="ml-2">{selectedUser.stats.totalModels}</span></div>
-        <div><span className="text-gray-400">Generations:</span><span className="ml-2">{selectedUser.stats.totalGenerations}</span></div>
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="bg-[#F8F8F8] rounded-lg p-3 border border-[#E5E5E5]">
+          <span className="text-[#999] text-xs">User ID</span>
+          <div className="font-medium text-[#0A0A0A]">{selectedUser.user.id}</div>
+        </div>
+        <div className="bg-[#F8F8F8] rounded-lg p-3 border border-[#E5E5E5]">
+          <span className="text-[#999] text-xs">Open ID</span>
+          <div className="font-mono text-xs text-[#0A0A0A]">{selectedUser.user.openId.slice(0, 16)}...</div>
+        </div>
+        <div className="bg-[#F8F8F8] rounded-lg p-3 border border-[#E5E5E5]">
+          <span className="text-[#999] text-xs">Joined</span>
+          <div className="font-medium text-[#0A0A0A]">{formatDate(selectedUser.user.createdAt)}</div>
+        </div>
+        <div className="bg-[#F8F8F8] rounded-lg p-3 border border-[#E5E5E5]">
+          <span className="text-[#999] text-xs">Last Active</span>
+          <div className="font-medium text-[#0A0A0A]">{formatDate(selectedUser.user.lastSignedIn)}</div>
+        </div>
+        <div className="bg-[#F8F8F8] rounded-lg p-3 border border-[#E5E5E5]">
+          <span className="text-[#999] text-xs">Models</span>
+          <div className="font-medium text-[#0A0A0A]">{selectedUser.stats.totalModels}</div>
+        </div>
+        <div className="bg-[#F8F8F8] rounded-lg p-3 border border-[#E5E5E5]">
+          <span className="text-[#999] text-xs">Generations</span>
+          <div className="font-medium text-[#0A0A0A]">{selectedUser.stats.totalGenerations}</div>
+        </div>
       </div>
 
       {selectedUser.user.suspendedAt && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-red-400 font-medium">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+          <div className="flex items-center gap-2 text-red-700 font-medium">
             <AlertTriangle className="w-4 h-4" />
             Account Suspended
           </div>
-          <p className="text-sm text-gray-400 mt-1">Reason: {selectedUser.user.suspendedReason || "No reason provided"}</p>
-          <p className="text-sm text-gray-400">Since: {formatDate(selectedUser.user.suspendedAt)}</p>
+          <p className="text-sm text-red-600/70 mt-1">Reason: {selectedUser.user.suspendedReason || "No reason provided"}</p>
+          <p className="text-sm text-red-600/70">Since: {formatDate(selectedUser.user.suspendedAt)}</p>
         </div>
       )}
 
       {selectedUser.user.frozenAt && (
-        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-cyan-400 font-medium">
+        <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-3">
+          <div className="flex items-center gap-2 text-cyan-700 font-medium">
             <Snowflake className="w-4 h-4" />
             Account Frozen
           </div>
-          <p className="text-sm text-gray-400 mt-1">Reason: {selectedUser.user.frozenReason || "No reason provided"}</p>
-          <p className="text-sm text-gray-400">Since: {formatDate(selectedUser.user.frozenAt)}</p>
+          <p className="text-sm text-cyan-600/70 mt-1">Reason: {selectedUser.user.frozenReason || "No reason provided"}</p>
+          <p className="text-sm text-cyan-600/70">Since: {formatDate(selectedUser.user.frozenAt)}</p>
           {selectedUser.user.frozenBy && (
-            <p className="text-sm text-gray-400">By: {selectedUser.user.frozenBy === "system" ? "System (auto-freeze)" : `Admin #${selectedUser.user.frozenBy}`}</p>
+            <p className="text-sm text-cyan-600/70">By: {selectedUser.user.frozenBy === "system" ? "System (auto-freeze)" : `Admin #${selectedUser.user.frozenBy}`}</p>
           )}
         </div>
       )}
 
       {selectedUser.user.lockedUntil && new Date(selectedUser.user.lockedUntil) > new Date() && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-amber-400 font-medium">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <div className="flex items-center gap-2 text-amber-700 font-medium">
             <Lock className="w-4 h-4" />
             Account Temporarily Locked
           </div>
-          <p className="text-sm text-gray-400 mt-1">Until: {formatDate(selectedUser.user.lockedUntil)}</p>
-          <p className="text-sm text-gray-400">Failed attempts: {selectedUser.user.failedLoginAttempts}</p>
+          <p className="text-sm text-amber-600/70 mt-1">Until: {formatDate(selectedUser.user.lockedUntil)}</p>
+          <p className="text-sm text-amber-600/70">Failed attempts: {selectedUser.user.failedLoginAttempts}</p>
         </div>
       )}
 
       <div className="flex flex-wrap gap-2 pt-2">
         {selectedUser.user.suspendedAt ? (
-          <Button onClick={onUnsuspend} disabled={unsuspendPending} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={onUnsuspend} disabled={unsuspendPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
             <Shield className="w-4 h-4 mr-2" />
             Unsuspend User
           </Button>
@@ -277,7 +293,7 @@ function ProfileTabContent({
           </Button>
         )}
         {selectedUser.user.frozenAt ? (
-          <Button onClick={onUnfreeze} disabled={unfreezePending} className="bg-cyan-600 hover:bg-cyan-700">
+          <Button onClick={onUnfreeze} disabled={unfreezePending} className="bg-cyan-600 hover:bg-cyan-700 text-white">
             <Snowflake className="w-4 h-4 mr-2" />
             {unfreezePending ? "Unfreezing..." : "Unfreeze Account"}
           </Button>
@@ -286,7 +302,7 @@ function ProfileTabContent({
             onClick={onFreeze}
             disabled={selectedUser.user.role === "admin" || freezePending}
             variant="outline"
-            className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+            className="border-cyan-200 text-cyan-700 hover:bg-cyan-50"
           >
             <Snowflake className="w-4 h-4 mr-2" />
             {freezePending ? "Freezing..." : "Freeze Account"}
@@ -294,12 +310,12 @@ function ProfileTabContent({
         )}
         {selectedUser.user.role !== "admin" && (
           selectedUser.user.role === "moderator" ? (
-            <Button onClick={onDemote} variant="outline" className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+            <Button onClick={onDemote} variant="outline" className="border-amber-200 text-amber-700 hover:bg-amber-50">
               <ShieldOff className="w-4 h-4 mr-2" />
               Demote to User
             </Button>
           ) : (
-            <Button onClick={onPromote} variant="outline" className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+            <Button onClick={onPromote} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
               <Shield className="w-4 h-4 mr-2" />
               Promote to Moderator
             </Button>
@@ -320,34 +336,34 @@ function CreditsTabContent({
   onDeductCredits: () => void;
 }) {
   if (!credits) {
-    return <div className="text-center py-8 text-gray-400">No credits record found for this user</div>;
+    return <div className="text-center py-8 text-[#999]">No credits record found for this user</div>;
   }
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <div className="text-3xl font-bold text-purple-400">{credits.balance}</div>
-          <div className="text-sm text-gray-400">Current Balance</div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-[#F8F8F8] rounded-xl p-4 border border-[#E5E5E5]">
+          <div className="text-3xl font-bold text-purple-600">{credits.balance}</div>
+          <div className="text-xs text-[#999] mt-1 font-medium uppercase tracking-wide">Current Balance</div>
         </div>
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <div className="text-xl font-semibold capitalize">{credits.planTier}</div>
-          <div className="text-sm text-gray-400">Plan Tier</div>
+        <div className="bg-[#F8F8F8] rounded-xl p-4 border border-[#E5E5E5]">
+          <div className="text-xl font-semibold capitalize text-[#0A0A0A]">{credits.planTier}</div>
+          <div className="text-xs text-[#999] mt-1 font-medium uppercase tracking-wide">Plan Tier</div>
         </div>
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <div className="text-xl font-semibold">{credits.creditsPurchased}</div>
-          <div className="text-sm text-gray-400">Credits Purchased</div>
+        <div className="bg-[#F8F8F8] rounded-xl p-4 border border-[#E5E5E5]">
+          <div className="text-xl font-semibold text-[#0A0A0A]">{credits.creditsPurchased}</div>
+          <div className="text-xs text-[#999] mt-1 font-medium uppercase tracking-wide">Credits Purchased</div>
         </div>
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-          <div className="text-xl font-semibold">{credits.creditsUsed}</div>
-          <div className="text-sm text-gray-400">Credits Used</div>
+        <div className="bg-[#F8F8F8] rounded-xl p-4 border border-[#E5E5E5]">
+          <div className="text-xl font-semibold text-[#0A0A0A]">{credits.creditsUsed}</div>
+          <div className="text-xs text-[#999] mt-1 font-medium uppercase tracking-wide">Credits Used</div>
         </div>
       </div>
       <div className="flex gap-2">
-        <Button onClick={onAddCredits} className="bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={onAddCredits} className="bg-emerald-600 hover:bg-emerald-700 text-white">
           <Plus className="w-4 h-4 mr-2" />
           Add Credits
         </Button>
-        <Button onClick={onDeductCredits} variant="outline" className="border-white/10 hover:bg-white/5">
+        <Button onClick={onDeductCredits} variant="outline" className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]">
           <Minus className="w-4 h-4 mr-2" />
           Deduct Credits
         </Button>
@@ -366,33 +382,33 @@ function ActivityTabContent({
   if (isLoading) {
     return (
       <div className="py-8 text-center">
-        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-gray-400" />
-        Loading activity...
+        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#CCC]" />
+        <span className="text-[#999]">Loading activity...</span>
       </div>
     );
   }
   if (!logs?.length) {
-    return <div className="text-center py-8 text-gray-400">No activity found for this user</div>;
+    return <div className="text-center py-8 text-[#999]">No activity found for this user</div>;
   }
   return (
     <div className="space-y-2 max-h-[400px] overflow-y-auto">
       {logs.map((log) => (
-        <div key={log.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
+        <div key={log.id} className="bg-[#F8F8F8] rounded-lg p-3 border border-[#E5E5E5]">
           <div className="flex items-center justify-between">
-            <span className="font-medium">{log.action}</span>
-            <span className={`text-xs px-2 py-0.5 rounded ${
-              log.severity === "critical" ? "bg-red-500/20 text-red-400" :
-              log.severity === "warning" ? "bg-amber-500/20 text-amber-400" :
-              "bg-gray-500/20 text-gray-400"
+            <span className="font-medium text-[#0A0A0A]">{log.action}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+              log.severity === "critical" ? "bg-red-50 text-red-700 border-red-200" :
+              log.severity === "warning" ? "bg-amber-50 text-amber-700 border-amber-200" :
+              "bg-gray-100 text-[#666] border-gray-200"
             }`}>
               {log.severity}
             </span>
           </div>
-          <div className="text-sm text-gray-400 mt-1">
+          <div className="text-sm text-[#999] mt-1">
             {formatDate(typeof log.createdAt === "string" ? log.createdAt : log.createdAt.toISOString())}
           </div>
           {log.resourceType && (
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-[#CCC] mt-1">
               {log.resourceType}: {log.resourceId}
             </div>
           )}

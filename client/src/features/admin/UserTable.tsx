@@ -37,51 +37,53 @@ export function UserTable({
   onSelectUser,
 }: UserTableProps) {
   return (
-    <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-white/5">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Joined</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Active</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+          <thead>
+            <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[#999] uppercase tracking-wider">User</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[#999] uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[#999] uppercase tracking-wider">Role</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[#999] uppercase tracking-wider">Joined</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[#999] uppercase tracking-wider">Last Active</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-[#999] uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                <td colSpan={6} className="px-4 py-8 text-center text-[#999]">
+                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#CCC]" />
                   Loading users...
                 </td>
               </tr>
             ) : users?.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                  No users found
+                <td colSpan={6} className="px-4 py-12 text-center">
+                  <User className="w-10 h-10 mx-auto mb-3 text-[#CCC]" />
+                  <div className="text-[#666] font-medium">No users found</div>
+                  <div className="text-sm text-[#999] mt-1">Try adjusting your search or filters</div>
                 </td>
               </tr>
             ) : (
               users?.map((u) => (
-                <tr key={u.id} className="hover:bg-white/5 transition-colors">
+                <tr key={u.id} className="border-b border-[#F0F0F0] last:border-0 hover:bg-[#FAFAFA] transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {u.avatarUrl ? (
-                        <img src={u.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        <img src={u.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-[#E5E5E5]" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                          <User className="w-4 h-4 text-purple-400" />
+                        <div className="w-8 h-8 rounded-full bg-[#F0F0F0] flex items-center justify-center">
+                          <User className="w-4 h-4 text-[#999]" />
                         </div>
                       )}
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-xs text-white/30">#{u.id}</span>
-                          <span className="font-medium">{u.name || "Unnamed"}</span>
+                          <span className="font-mono text-xs text-[#CCC]">#{u.id}</span>
+                          <span className="font-medium text-[#0A0A0A]">{u.name || "Unnamed"}</span>
                         </div>
-                        <div className="text-sm text-gray-400">{u.email || "No email"}</div>
+                        <div className="text-sm text-[#999]">{u.email || "No email"}</div>
                       </div>
                     </div>
                   </td>
@@ -91,10 +93,10 @@ export function UserTable({
                   <td className="px-4 py-3">
                     <RoleBadge role={u.role} />
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-400">
+                  <td className="px-4 py-3 text-sm text-[#666]">
                     {formatDate(u.createdAt)}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-400">
+                  <td className="px-4 py-3 text-sm text-[#666]">
                     {formatDate(u.lastSignedIn)}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -102,7 +104,7 @@ export function UserTable({
                       variant="outline"
                       size="sm"
                       onClick={() => onSelectUser(u.id)}
-                      className="border-white/10 hover:bg-white/5"
+                      className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]"
                     >
                       <UserCog className="w-4 h-4 mr-1" />
                       Manage
@@ -116,8 +118,8 @@ export function UserTable({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
-          <div className="text-sm text-gray-400">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E5E5] bg-[#FAFAFA]">
+          <div className="text-sm text-[#999]">
             Showing {page * itemsPerPage + 1} to {Math.min((page + 1) * itemsPerPage, total)} of {total}
           </div>
           <div className="flex gap-2">
@@ -126,7 +128,7 @@ export function UserTable({
               size="sm"
               onClick={() => onPageChange(page - 1)}
               disabled={page === 0}
-              className="border-white/10 hover:bg-white/5"
+              className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -135,7 +137,7 @@ export function UserTable({
               size="sm"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages - 1}
-              className="border-white/10 hover:bg-white/5"
+              className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
