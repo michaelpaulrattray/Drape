@@ -90,20 +90,22 @@ export function UsageTab() {
       {/* Stats Cards — horizontal row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: Activity, label: "Credits Used", value: stats?.totalCreditsUsed, color: "text-[#0A0A0A]" },
-          { icon: Sparkles, label: "Generations", value: stats?.totalGenerations, color: "text-[#0A0A0A]" },
-          { icon: TrendingUp, label: "Daily Avg", value: stats?.averagePerDay, color: "text-[#0A0A0A]" },
+          { icon: Activity, label: "Credits", value: stats?.totalCreditsUsed },
+          { icon: Sparkles, label: "Generations", value: stats?.totalGenerations },
+          { icon: TrendingUp, label: "Daily Avg", value: stats?.averagePerDay },
         ].map((card, idx) => (
-          <div key={idx} className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-            <div className="flex items-center gap-1.5 mb-3">
-              <card.icon className="w-3.5 h-3.5 text-[#757575]" />
-              <span className="text-[11px] font-medium text-[#757575] uppercase tracking-wider">{card.label}</span>
+          <div key={idx} className="p-4 rounded-xl bg-[#FAFAFA] border border-[#0A0A0A]/8 flex flex-col items-center justify-center text-center min-h-[100px]">
+            <div className="flex items-center gap-1.5 mb-2">
+              <card.icon className="w-3 h-3 text-[#999]" />
+              <span className="text-[10px] font-semibold text-[#999] uppercase tracking-widest whitespace-nowrap">{card.label}</span>
             </div>
             {isLoadingStats ? (
               <Loader2 className="w-5 h-5 animate-spin text-gray-300" />
             ) : (
-              <p className={`text-2xl font-semibold ${card.color} tracking-tight`}>
-                {(card.value ?? 0).toLocaleString()}
+              <p className="text-2xl font-bold text-[#0A0A0A] tracking-tight tabular-nums">
+                {typeof card.value === 'number' && !Number.isInteger(card.value)
+                  ? card.value.toFixed(1)
+                  : (card.value ?? 0).toLocaleString()}
               </p>
             )}
           </div>

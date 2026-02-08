@@ -110,7 +110,7 @@ export default function ProfileSettingsModal({
       />
       
       {/* Modal — full-screen on mobile, centered card on md+ */}
-      <div className="relative w-full h-full md:h-auto md:max-h-[85vh] md:max-w-2xl bg-white md:border md:border-[#0A0A0A]/10 md:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative w-full h-full md:h-[85vh] md:max-w-2xl bg-white md:border md:border-[#0A0A0A]/10 md:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 md:px-6 md:py-5 border-b border-[#0A0A0A]/10 shrink-0">
           <div>

@@ -3747,3 +3747,7 @@ The entry and configuration files are properly set up with several enhancements 
   - [x] Active tab uses obsidian pill (bg-[#0A0A0A] text-white)
   - [x] Responsive padding/font sizes (px-4/text-lg on mobile, px-6/text-xl on md+)
   - [x] Content area scrolls independently below tab bar
+## Bug: Usage Analytics stat cards formatting untidy
+- [x] Fix stat card alignment — centered layout, single-line labels, consistent min-height, tabular-nums, proper decimal formatting
+## Bug: ProfileSettingsModal height jumps when switching tabs
+- [x] Fix modal to maintain consistent fixed height across all tabs — changed md:max-h-[85vh] to md:h-[85vh] so content scrolls within fixed container
