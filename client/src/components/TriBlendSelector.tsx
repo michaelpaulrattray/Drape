@@ -53,6 +53,15 @@ const getXYFromWeights = (u: number, v: number, w: number) => {
     };
 };
 
+const PRESETS = [
+    { label: "Commercial", w: { editorial: 0, commercial: 1, runway: 0 } },
+    { label: "Editorial", w: { editorial: 1, commercial: 0, runway: 0 } },
+    { label: "Runway", w: { editorial: 0, commercial: 0, runway: 1 } },
+    { label: "Balanced", w: { editorial: 0.33, commercial: 0.33, runway: 0.33 } },
+    { label: "Comm + Edit", w: { editorial: 0.5, commercial: 0.5, runway: 0 } },
+    { label: "Edit + Run", w: { editorial: 0.5, commercial: 0, runway: 0.5 } },
+];
+
 const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -66,18 +75,15 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
     if (rect.width === 0 || rect.height === 0) return;
 
     // 2. Calculate cursor position relative to the container's top-left
-    // Use clientX/Y - rect.left/top for robust viewport positioning
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     // 3. Scale to internal SVG coordinate space (280x240)
-    // This handles any CSS scaling/responsiveness automatically
     const scaleX = WIDTH / rect.width;
     const scaleY = HEIGHT / rect.height;
     const p = { x: x * scaleX, y: y * scaleY };
 
     // 4. Geometric Projection (Stick to Triangle)
-    // First, check weights to see if we are inside
     let { u, v, w } = getWeightsFromXY(p.x, p.y);
     
     // If outside triangle (any weight negative), project to closest edge physically
@@ -96,7 +102,6 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
         if (dBC < minD) { bestP = pBC; minD = dBC; }
         if (dCA < minD) { bestP = pCA; minD = dCA; }
 
-        // Recalculate weights based on the projected point
         const newWeights = getWeightsFromXY(bestP.x, bestP.y);
         u = newWeights.u;
         v = newWeights.v;
@@ -127,7 +132,6 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
-    // Important: Capture on the container div
     (e.target as Element).setPointerCapture(e.pointerId);
     handleInteraction(e);
   };
@@ -156,22 +160,13 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
     return "Balanced";
   }, [value]);
 
-  const presets = [
-      { label: "Commercial", w: { editorial: 0, commercial: 1, runway: 0 } },
-      { label: "Editorial", w: { editorial: 1, commercial: 0, runway: 0 } },
-      { label: "Runway", w: { editorial: 0, commercial: 0, runway: 1 } },
-      { label: "Balanced", w: { editorial: 0.33, commercial: 0.33, runway: 0.33 } },
-      { label: "Comm + Edit", w: { editorial: 0.5, commercial: 0.5, runway: 0 } },
-      { label: "Edit + Run", w: { editorial: 0.5, commercial: 0, runway: 0.5 } },
-  ];
-
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden select-none">
+    <div className="w-full bg-white border border-[#0A0A0A]/10 rounded-2xl shadow-sm overflow-hidden select-none">
         {/* 1. Header */}
         <div className="px-5 pt-5 pb-2 flex justify-between items-start">
             <div>
-                <h3 className="text-xs font-medium text-subtle mb-0.5">Tone & Energy</h3>
-                <p className="text-[10px] text-subtle/70">Blend between Commercial, Editorial and Runway.</p>
+                <h3 className="text-xs font-medium text-[#757575] mb-0.5">Tone & Energy</h3>
+                <p className="text-[10px] text-[#757575]/70">Blend between Commercial, Editorial and Runway.</p>
             </div>
             <Tooltip content="Adjust the visual weight of the output. Editorial adds avant-garde distortion. Commercial adds warmth/smile. Runway adds intensity/stare." />
         </div>
@@ -186,12 +181,11 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
-                // Removed onPointerLeave to allow dragging outside bounds while captured
             >
                 {/* Labels */}
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-subtle uppercase tracking-wider pointer-events-none z-10">Editorial</span>
-                <span className="absolute bottom-2 -left-2 text-[9px] font-semibold text-subtle uppercase tracking-wider pointer-events-none z-10">Commercial</span>
-                <span className="absolute bottom-2 -right-2 text-[9px] font-semibold text-subtle uppercase tracking-wider pointer-events-none z-10">Runway</span>
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-[#757575] uppercase tracking-wider pointer-events-none z-10">Editorial</span>
+                <span className="absolute bottom-2 -left-2 text-[9px] font-semibold text-[#757575] uppercase tracking-wider pointer-events-none z-10">Commercial</span>
+                <span className="absolute bottom-2 -right-2 text-[9px] font-semibold text-[#757575] uppercase tracking-wider pointer-events-none z-10">Runway</span>
 
                 {/* VISUAL LAYER (SVG) - Background */}
                 <svg 
@@ -201,8 +195,8 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                 >
                     <defs>
                         <linearGradient id="tri-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#e5e7eb" stopOpacity="0.8" />
-                            <stop offset="100%" stopColor="#f3f4f6" stopOpacity="0.4" />
+                            <stop offset="0%" stopColor="#EBEBEB" stopOpacity="0.8" />
+                            <stop offset="100%" stopColor="#F5F5F5" stopOpacity="0.4" />
                         </linearGradient>
                     </defs>
 
@@ -210,13 +204,14 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                     <path 
                         d={`M${A.x},${A.y} L${B.x},${B.y} L${C.x},${C.y} Z`} 
                         fill="url(#tri-grad)" 
-                        stroke="#d1d5db" 
-                        strokeWidth="2"
+                        stroke="#0A0A0A" 
+                        strokeWidth="1.5"
                         strokeLinejoin="round"
+                        strokeOpacity="0.15"
                     />
 
                     {/* Internal Grid (Dashed) */}
-                    <g stroke="#d1d5db" strokeWidth="1" strokeDasharray="3 3" opacity="0.6">
+                    <g stroke="#0A0A0A" strokeWidth="0.5" strokeDasharray="3 3" opacity="0.1">
                         <line x1={A.x} y1={A.y} x2={(B.x + C.x) / 2} y2={B.y} />
                         <line x1={B.x} y1={B.y} x2={(A.x + C.x) / 2} y2={(A.y + C.y) / 2} />
                         <line x1={C.x} y1={C.y} x2={(A.x + B.x) / 2} y2={(A.y + B.y) / 2} />
@@ -224,7 +219,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
 
                     {/* Live Connectors */}
                     {isDragging && (
-                        <g stroke="#6E7F8D" strokeWidth="0.5" opacity="0.4">
+                        <g stroke="#0A0A0A" strokeWidth="0.5" opacity="0.25">
                             <line x1={pos.x} y1={pos.y} x2={A.x} y2={A.y} />
                             <line x1={pos.x} y1={pos.y} x2={B.x} y2={B.y} />
                             <line x1={pos.x} y1={pos.y} x2={C.x} y2={C.y} />
@@ -234,7 +229,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
 
                 {/* PUCK LAYER (DOM) - Centered Overlay */}
                 <div
-                    className={`absolute w-4 h-4 bg-slate-accent rounded-full pointer-events-none shadow-[0_0_10px_rgba(110,127,141,0.5)] transition-transform duration-75 ease-out ${isDragging ? 'scale-125' : 'scale-100'}`}
+                    className={`absolute w-4 h-4 bg-[#0A0A0A] rounded-full pointer-events-none shadow-[0_0_10px_rgba(10,10,10,0.3)] transition-transform duration-75 ease-out ${isDragging ? 'scale-125' : 'scale-100'}`}
                     style={{
                         left: `${(pos.x / WIDTH) * 100}%`,
                         top: `${(pos.y / HEIGHT) * 100}%`,
@@ -246,15 +241,15 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
         </div>
 
         {/* 3. Readout & Bars */}
-        <div className="bg-gray-50 border-t border-gray-200 p-5 space-y-4">
+        <div className="bg-[#FAFAFA] border-t border-[#0A0A0A]/10 p-5 space-y-4">
             
             <div className="text-center space-y-1">
-                <div className="text-xs text-obsidian">
-                    <span className="text-subtle uppercase tracking-wide">Selected: </span>
+                <div className="text-xs text-[#0A0A0A]">
+                    <span className="text-[#757575] uppercase tracking-wide">Selected: </span>
                     <span className="font-semibold">{dominant}</span>
-                    {Math.max(value.editorial, value.commercial, value.runway) > 0.6 && <span className="text-subtle text-[10px] ml-1">(Dominant)</span>}
+                    {Math.max(value.editorial, value.commercial, value.runway) > 0.6 && <span className="text-[#757575] text-[10px] ml-1">(Dominant)</span>}
                 </div>
-                <div className="text-[9px] text-subtle tracking-wider">
+                <div className="text-[9px] text-[#757575] tracking-wider">
                     C {Math.round(value.commercial * 100)}% • E {Math.round(value.editorial * 100)}% • R {Math.round(value.runway * 100)}%
                 </div>
             </div>
@@ -266,21 +261,21 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                     { label: "Runway", val: value.runway }
                 ].map((item) => (
                     <div key={item.label} className="flex items-center space-x-3 text-[10px] uppercase tracking-wide">
-                        <span className="w-16 text-subtle text-right font-medium">{item.label}</span>
-                        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <span className="w-16 text-[#757575] text-right font-medium">{item.label}</span>
+                        <div className="flex-1 h-1.5 bg-[#EBEBEB] rounded-full overflow-hidden">
                             <div 
-                                className="h-full bg-slate-accent transition-all duration-300 ease-out" 
+                                className="h-full bg-[#0A0A0A] transition-all duration-300 ease-out" 
                                 style={{ width: `${item.val * 100}%` }}
                             ></div>
                         </div>
-                        <span className="w-8 text-obsidian text-right font-medium">{Math.round(item.val * 100)}%</span>
+                        <span className="w-8 text-[#0A0A0A] text-right font-medium">{Math.round(item.val * 100)}%</span>
                     </div>
                 ))}
             </div>
             
             {/* 4. Preset Chips */}
-            <div className="pt-2 border-t border-gray-200/50 flex flex-wrap gap-2 justify-center">
-                {presets.map((p) => {
+            <div className="pt-2 border-t border-[#0A0A0A]/5 flex flex-wrap gap-2 justify-center">
+                {PRESETS.map((p) => {
                     const isActive = Math.abs(p.w.editorial - value.editorial) < 0.05 && 
                                      Math.abs(p.w.commercial - value.commercial) < 0.05 &&
                                      Math.abs(p.w.runway - value.runway) < 0.05;
@@ -292,8 +287,8 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                             className={`
                                 px-3 py-1.5 rounded-full text-[9px] uppercase tracking-wide border transition-all
                                 ${isActive 
-                                    ? 'bg-slate-accent text-white border-slate-accent shadow-sm font-semibold' 
-                                    : 'bg-transparent text-subtle border-gray-300 hover:border-slate-accent hover:text-obsidian font-medium'
+                                    ? 'bg-[#0A0A0A] text-white border-[#0A0A0A] shadow-sm font-semibold' 
+                                    : 'bg-transparent text-[#757575] border-[#0A0A0A]/10 hover:border-[#0A0A0A]/30 hover:text-[#0A0A0A] font-medium'
                                 }
                             `}
                         >

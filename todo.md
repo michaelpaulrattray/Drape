@@ -3713,3 +3713,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Restyle Step 4: Image viewer + floating controls
 - [x] Restyle Step 5: Input bar + bottom panels (RefinePanel, DirectorsNote)
 - [x] Restyle Step 6: Modals + empty state (ExportModal, StageLockModal, DNAHelix)
+## Bug: Casting Studio Restyle Missed Items
+- [x] Fix orange age slider — added slider-obsidian CSS class with #0A0A0A thumb, #EBEBEB track
+- [x] Restyle Tone & Energy modal (TriBlendSelector) — obsidian puck, bars, chips, borders
+- [x] Restyle Tooltip component — obsidian borders and text colors
