@@ -35,7 +35,9 @@ function LogoMarquee() {
 
 export function HeroSection() {
   return (
-    <section className="min-h-[80vh] sm:min-h-screen pt-12 sm:pt-20 pb-16 sm:pb-[120px] bg-white">
+    <section className="relative min-h-[80vh] sm:min-h-screen pt-12 sm:pt-20 pb-16 sm:pb-[120px] bg-white">
+      {/* Subtle animated flow lines across the entire hero section */}
+      <FlowLines />
       <div className="max-w-[1520px] mx-auto container-full-bleed">
         {/* Main Hero Content */}
         <div className="pb-6 sm:pb-[50px]">
@@ -93,8 +95,7 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.4, ease: easeOut }}
           className="relative w-full aspect-[4/3] sm:aspect-[16/9] rounded-xl sm:rounded-2xl overflow-hidden sm:h-[950px]"
         >
-          {/* Subtle animated flow lines behind the hero image */}
-          <FlowLines />
+
           <Suspense fallback={
             <img
               src="/api/hero/base"

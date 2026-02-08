@@ -3686,3 +3686,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Create FlowLines.tsx component with 3 animated SVG flowing curves
 - [x] Integrate behind hero canvas in HeroSection.tsx as absolute-positioned z-0 layer
 - [x] 6% opacity, pointer-events-none, CSS d:path() keyframe morphing (8s/10s/12s cycles)
+
+## Bug Fix: Flow Lines Not Visible
+- [x] Flow lines moved to section background (z-index 1), increased opacity to 12%, thicker strokes (1.2-2px), #b0b0b0 color
