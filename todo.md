@@ -3650,4 +3650,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Replace all custom CSS class responsive variants (sm:w-about-text, sm:text-body-md, etc.) with inline Tailwind classes
 
 ## Bug Fix: Section Title Headers Too Small on Mobile
-- [x] Increase clamp() minimums for section titles on mobile — raised from 1.25rem to 1.625rem (inline) and 1.5rem to 1.75rem (token class)
+- [x] Increase clamp() minimums for section titles on mobile — raised to 2rem (32px) inline and 2rem token class for more impact

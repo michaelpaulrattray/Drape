@@ -60,7 +60,7 @@ export function ServicesSection() {
                         </div>
                         
                         {/* Title - slides right on hover/expand to reveal image (desktop only) */}
-                        <span className={`bg-[#121212] rounded-xl px-2 sm:px-4 py-1 sm:py-2 text-[clamp(1.625rem,4vw,3.5rem)] font-semibold tracking-tight transition-all duration-700 ease-out ${
+                        <span className={`bg-[#121212] rounded-xl px-2 sm:px-4 py-1 sm:py-2 text-[clamp(2rem,4vw,3.5rem)] font-semibold tracking-tight transition-all duration-700 ease-out ${
                           showImage 
                             ? "text-white sm:translate-x-36 translate-x-0" 
                             : "text-white/80 translate-x-0 group-hover:text-white"
