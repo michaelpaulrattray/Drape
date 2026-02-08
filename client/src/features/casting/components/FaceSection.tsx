@@ -48,10 +48,10 @@ function VisualOptionGrid({
             key={opt}
             onClick={() => onSelect(opt)}
             className={`
-              flex flex-col items-center justify-center h-16 rounded border transition-all duration-200 group
+              flex flex-col items-center justify-center h-16 rounded-xl border transition-all duration-200 group
               ${isSelected
-                ? 'bg-slate-accent border-white text-obsidian'
-                : 'bg-transparent border-gray-200 text-subtle hover:border-slate-accent hover:bg-gray-50 hover:text-gray-700'
+                ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white'
+                : 'bg-[#EBEBEB] border-transparent text-[#757575] hover:border-[#0A0A0A]/20 hover:text-[#0A0A0A]'
               }
             `}
           >
@@ -84,21 +84,21 @@ function SelectControl({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center">
-        <label className="text-xs font-medium text-subtle">{label}</label>
+        <label className="text-xs font-medium text-[#757575]">{label}</label>
         {tooltip && <Tooltip content={tooltip} />}
       </div>
       <div className="relative group">
         <select
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm py-2.5 pl-3 pr-8 rounded-lg focus:border-slate-accent focus:outline-none appearance-none cursor-pointer hover:border-slate-accent transition-colors"
+          className="w-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] text-sm py-2.5 pl-3 pr-8 rounded-xl focus:border-[#0A0A0A]/30 focus:outline-none appearance-none cursor-pointer hover:border-[#0A0A0A]/20 transition-colors"
         >
-          <option value="" className="bg-gray-50 text-subtle">Auto / Random</option>
+          <option value="" className="text-[#757575]">Auto / Random</option>
           {options.map(opt => (
-            <option key={opt} value={opt} className="bg-gray-50 text-gray-700">{opt}</option>
+            <option key={opt} value={opt} className="text-[#0A0A0A]">{opt}</option>
           ))}
         </select>
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-subtle group-hover:text-gray-700 transition-colors">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#757575] group-hover:text-[#0A0A0A] transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
       </div>
@@ -119,7 +119,7 @@ export function FaceSection() {
     <div className="space-y-5 pt-1">
       {/* Face Shape */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-subtle block">Face Shape</label>
+        <label className="text-xs font-medium text-[#757575] block">Face Shape</label>
         <VisualOptionGrid
           options={FACE_SHAPES}
           selected={prefs.faceShape || "Oval"}
@@ -130,7 +130,7 @@ export function FaceSection() {
 
       {/* Eyebrow Style */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-subtle block">Eyebrow Style</label>
+        <label className="text-xs font-medium text-[#757575] block">Eyebrow Style</label>
         <VisualOptionGrid
           options={CHAR_OPTIONS.eyebrows}
           selected={prefs.eyebrowStyle || ""}
@@ -141,7 +141,7 @@ export function FaceSection() {
       {/* Advanced Face Toggle */}
       <button
         onClick={() => setShowAdvancedFace(!showAdvancedFace)}
-        className="w-full flex items-center justify-between py-2.5 text-xs font-medium text-subtle hover:text-obsidian border-t border-gray-200 transition-colors"
+        className="w-full flex items-center justify-between py-2.5 text-xs font-medium text-[#757575] hover:text-[#0A0A0A] border-t border-[#0A0A0A]/10 transition-colors"
       >
         <span>Advanced Features</span>
         <span className="text-lg leading-none">{showAdvancedFace ? '−' : '+'}</span>

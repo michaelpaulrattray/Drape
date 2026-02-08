@@ -44,19 +44,19 @@ export function PhysiqueSelector() {
               key={opt.value}
               onClick={() => updatePref('bodyType', opt.value)}
               className={`
-                relative flex flex-col items-center justify-center aspect-[4/3] rounded-lg border transition-all duration-300 group
+                relative flex flex-col items-center justify-center aspect-[4/3] rounded-xl border transition-all duration-300 group
                 ${isSelected
-                  ? 'border-white bg-slate-accent shadow-[0_0_15px_rgba(255,255,255,0.1)] z-10'
-                  : 'border-gray-200 bg-gray-50/40 text-subtle hover:bg-slate-accent hover:text-gray-700 hover:border-slate-accent'
+                  ? 'border-[#0A0A0A] bg-[#0A0A0A] text-white z-10'
+                  : 'border-transparent bg-[#EBEBEB] text-[#757575] hover:border-[#0A0A0A]/20 hover:text-[#0A0A0A]'
                 }
               `}
             >
-              <div className={`mb-2 transition-transform duration-300 ${isSelected ? 'text-obsidian scale-110' : 'text-current group-hover:scale-105'}`}>
+              <div className={`mb-2 transition-transform duration-300 ${isSelected ? 'text-white scale-110' : 'text-current group-hover:scale-105'}`}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill={isSelected ? "currentColor" : "none"} stroke="currentColor" strokeWidth={isSelected ? "0" : "1.5"}>
                   {BODY_ICONS[opt.value]}
                 </svg>
               </div>
-              <span className={`text-[10px] font-medium ${isSelected ? 'text-obsidian' : 'text-current'}`}>
+              <span className={`text-[10px] font-medium ${isSelected ? 'text-white' : 'text-current'}`}>
                 {opt.label}
               </span>
             </button>

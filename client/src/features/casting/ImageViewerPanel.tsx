@@ -83,11 +83,11 @@ export function ImageViewerPanel({
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   return (
-    <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative bg-canvas">
+    <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative bg-[#EBEBEB]">
       {/* Background Effects */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-slate-accent/10 rounded-full blur-[90px] mix-blend-screen opacity-30"></div>
-        <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-gray-200 via-gray-100 to-transparent opacity-90"></div>
+        <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-[#0A0A0A]/3 rounded-full blur-[90px]"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-[#D4D4D4] via-[#EBEBEB] to-transparent opacity-60"></div>
       </div>
 
       {/* ConnectorLine */}
@@ -98,7 +98,7 @@ export function ImageViewerPanel({
         <button 
           onClick={handleUndo} 
           disabled={!canUndo() || genState.isGenerating} 
-          className="p-2.5 bg-white/70 hover:bg-slate-accent disabled:opacity-30 disabled:hover:bg-white/70 text-obsidian rounded-full border border-gray-200 backdrop-blur-sm transition-all"
+          className="p-2.5 bg-white/80 hover:bg-[#0A0A0A] hover:text-white disabled:opacity-30 disabled:hover:bg-white/80 text-[#0A0A0A] rounded-full border border-[#0A0A0A]/10 backdrop-blur-sm transition-all"
           title="Undo"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
@@ -106,7 +106,7 @@ export function ImageViewerPanel({
         <button 
           onClick={handleRedo} 
           disabled={!canRedo() || genState.isGenerating} 
-          className="p-2.5 bg-white/70 hover:bg-slate-accent disabled:opacity-30 disabled:hover:bg-white/70 text-obsidian rounded-full border border-gray-200 backdrop-blur-sm transition-all"
+          className="p-2.5 bg-white/80 hover:bg-[#0A0A0A] hover:text-white disabled:opacity-30 disabled:hover:bg-white/80 text-[#0A0A0A] rounded-full border border-[#0A0A0A]/10 backdrop-blur-sm transition-all"
           title="Redo"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
@@ -114,12 +114,12 @@ export function ImageViewerPanel({
       </div>
 
       {/* Resolution Selector */}
-      <div className="absolute top-4 right-4 z-40 flex bg-white/70 border border-gray-200 rounded-full p-1 backdrop-blur-sm">
+      <div className="absolute top-4 right-4 z-40 flex bg-white/80 border border-[#0A0A0A]/10 rounded-full p-1 backdrop-blur-sm">
         {[ImageResolution.STD, ImageResolution.HIGH, ImageResolution.ULTRA].map(res => (
           <button
             key={res}
             onClick={() => setResolution(res)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${resolution === res ? 'bg-slate-accent text-white shadow-sm' : 'text-charcoal hover:text-obsidian hover:bg-gray-100'}`}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${resolution === res ? 'bg-[#0A0A0A] text-white shadow-sm' : 'text-[#757575] hover:text-[#0A0A0A] hover:bg-[#EBEBEB]'}`}
           >
             {res}
           </button>
@@ -152,14 +152,14 @@ export function ImageViewerPanel({
             <div className="flex gap-3 justify-center pt-2">
               <button 
                 onClick={handleRetry}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-full transition-colors flex items-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
                 Retry Generation
               </button>
               <button 
                 onClick={() => setGenState(prev => ({ ...prev, error: null }))}
-                className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                className="px-6 py-2.5 bg-[#EBEBEB] hover:bg-[#D4D4D4] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors"
               >
                 Dismiss
               </button>
@@ -190,13 +190,13 @@ export function ImageViewerPanel({
                 </svg>
                 <div className="absolute inset-4 border-t-2 border-white/30 rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-obsidian">
+                  <span className="text-lg font-semibold text-[#0A0A0A]">
                     {genState.progress ? `${Math.round(genState.progress)}%` : ''}
                   </span>
                 </div>
               </div>
               <div className="text-center space-y-3">
-                <h3 className="text-sm font-medium text-obsidian">{genState.currentStep || 'Processing...'}</h3>
+                <h3 className="text-sm font-medium text-[#0A0A0A]">{genState.currentStep || 'Processing...'}</h3>
                 {genState.startTime && (
                   <ElapsedTimeDisplay startTime={genState.startTime} estimatedDuration={genState.estimatedDuration} />
                 )}
@@ -215,17 +215,17 @@ export function ImageViewerPanel({
             {nextStage && !genState.isGenerating && (
               <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4 animate-in fade-in slide-in-from-right-8 duration-700">
                 <div className="text-right space-y-1 drop-shadow-md">
-                  <div className="flex items-center justify-end space-x-2 text-charcoal">
+                    <div className="flex items-center justify-end space-x-2 text-[#757575]">
                     <div className="flex space-x-1">
                       {[...Array(nextStage.total)].map((_, i) => (
-                        <div key={i} className={`h-1 w-3 rounded-full ${i + 1 < nextStage.step ? 'bg-white' : i + 1 === nextStage.step ? 'bg-white animate-pulse' : 'bg-slate-accent'}`}></div>
+                        <div key={i} className={`h-1 w-3 rounded-full ${i + 1 < nextStage.step ? 'bg-[#0A0A0A]' : i + 1 === nextStage.step ? 'bg-[#0A0A0A] animate-pulse' : 'bg-[#0A0A0A]/20'}`}></div>
                       ))}
                     </div>
                     <h4 className="text-xs font-medium">
                       {nextStage.step > nextStage.total ? 'Workflow Complete' : isAutoGenerating ? 'Auto-Generating' : 'Next Stage'}
                     </h4>
                   </div>
-                  <p className="text-sm font-semibold text-obsidian">{nextStage.label}</p>
+                  <p className="text-sm font-semibold text-[#0A0A0A]">{nextStage.label}</p>
                 </div>
                 {!isAutoGenerating ? (
                   <button
@@ -281,9 +281,9 @@ export function ImageViewerPanel({
               {/* Locked Source Badge */}
               {isViewLocked && !isMasking && (
                 <div className="absolute top-4 left-4 z-20 animate-in fade-in duration-300">
-                  <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-gray-200 flex items-center space-x-2 shadow-lg">
-                    <svg className="w-3 h-3 text-charcoal" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                    <span className="text-xs font-medium text-gray-700">
+                    <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-[#0A0A0A]/10 flex items-center space-x-2 shadow-lg">
+                    <svg className="w-3 h-3 text-[#0A0A0A]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    <span className="text-xs font-medium text-[#0A0A0A]">
                       {activeView === 'backFull' ? "Consistency Lock" : "Locked Source"}
                     </span>
                   </div>
@@ -311,15 +311,15 @@ export function ImageViewerPanel({
                     toast.error('Download failed');
                   }
                 }}
-                className="absolute bottom-2 right-2 z-30 p-1.5 bg-white/80 backdrop-blur-md border border-gray-200 rounded-lg text-charcoal hover:text-obsidian hover:border-white/30 transition-all"
+                className="absolute bottom-2 right-2 z-30 p-1.5 bg-white/80 backdrop-blur-md border border-[#0A0A0A]/10 rounded-full text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition-all"
                 title="Download Image" style={{marginBottom: '10px'}}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               </button>
 
               {/* View Label */}
-              <div className="absolute bottom-2 left-2 z-30 px-2 py-0.5 bg-white/80 backdrop-blur-md border border-gray-200 rounded" style={{marginBottom: '10px'}}>
-                <span className="text-xs font-medium text-obsidian">
+              <div className="absolute bottom-2 left-2 z-30 px-3 py-1 bg-white/80 backdrop-blur-md border border-[#0A0A0A]/10 rounded-full" style={{marginBottom: '10px'}}>
+                <span className="text-xs font-medium text-[#0A0A0A]">
                   {activeView === 'frontClose' ? 'FRONT CLOSE' : 
                    activeView === 'frontFull' ? 'FRONT FULL' :
                    activeView === 'sideClose' ? 'SIDE CLOSE' :
@@ -360,7 +360,7 @@ export function ImageViewerPanel({
             </svg>
             <div className="absolute inset-4 border-t-2 border-white/30 rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xl font-semibold text-obsidian">
+              <span className="text-xl font-semibold text-[#0A0A0A]">
                 {genState.progress ? `${Math.round(genState.progress)}%` : ''}
               </span>
             </div>
@@ -379,10 +379,10 @@ export function ImageViewerPanel({
         </div>
       ) : (
         /* Empty State - DNA Helix Progress Visualization */
-        <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden bg-gradient-to-b from-gray-50 to-white">
+        <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden bg-white">
           <div className="absolute inset-0">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gray-100/50 rounded-full blur-3xl" />
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gray-100/30 rounded-full blur-3xl" />
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#EBEBEB]/50 rounded-full blur-3xl" />
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#EBEBEB]/30 rounded-full blur-3xl" />
           </div>
           
           <div className="relative z-10 w-full max-w-4xl p-8 flex flex-col items-center justify-center min-h-[500px]">

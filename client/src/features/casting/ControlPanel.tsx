@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation } from "wouter";
-import { Loader2, ChevronLeft, Zap, X, Menu } from "lucide-react";
+import { Loader2, ChevronLeft, X, Menu } from "lucide-react";
 import { toast } from "sonner";
 import { HairSection } from "./components/HairSection";
 import { EyeSection } from "./components/EyeSection";
@@ -50,22 +50,22 @@ export function ControlPanel({
   return (
     <>
       {/* Mobile Header */}
-      <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+      <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-[#0A0A0A]/10">
         <button
           onClick={() => navigate("/dashboard")}
-          className="flex items-center gap-2 text-subtle hover:text-obsidian transition-colors"
+          className="flex items-center gap-2 text-[#757575] hover:text-[#0A0A0A] transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back</span>
         </button>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-obsidian" />
-            <span className="text-sm font-medium text-obsidian">{creditsBalance}</span>
+          <div className="flex items-center gap-1.5 bg-[#EBEBEB] rounded-full px-3 py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0A0A0A]"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span className="text-xs font-semibold text-[#0A0A0A]">{creditsBalance}</span>
           </div>
           <button
             onClick={() => setShowMobilePanel(!showMobilePanel)}
-            className="p-2 rounded-lg bg-slate-accent text-obsidian"
+            className="p-2 rounded-full bg-[#0A0A0A] text-white"
           >
             {showMobilePanel ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
@@ -76,20 +76,20 @@ export function ControlPanel({
       <aside className={`
         ${showMobilePanel ? 'fixed inset-0 z-50 pt-16 flex flex-col' : 'hidden'}
         lg:relative lg:flex lg:flex-col lg:w-[400px] lg:pt-0
-        bg-white border-r border-gray-200 h-screen flex-shrink-0
+        bg-white border-r border-[#0A0A0A]/5 h-screen flex-shrink-0
       `}>
         {/* Header */}
-        <div className="hidden lg:flex p-4 border-b border-gray-200 items-center justify-between">
+        <div className="hidden lg:flex p-4 border-b border-[#0A0A0A]/10 items-center justify-between">
           <button
             onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-2 text-subtle hover:text-obsidian transition-colors"
+            className="flex items-center gap-2 text-[#757575] hover:text-[#0A0A0A] transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             <span className="text-sm font-medium">Back</span>
           </button>
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-obsidian" />
-            <span className="text-xs font-medium text-obsidian">{creditsBalance}</span>
+          <div className="flex items-center gap-1.5 bg-[#EBEBEB] rounded-full px-3 py-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0A0A0A]"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span className="text-xs font-semibold text-[#0A0A0A]">{creditsBalance}</span>
           </div>
         </div>
 
@@ -121,7 +121,7 @@ export function ControlPanel({
         </div>
 
         {/* Generate Button */}
-        <div className="p-5 border-t border-gray-200 bg-white mt-auto">
+        <div className="p-5 border-t border-[#0A0A0A]/10 bg-white mt-auto">
           <button
             data-debug-generate
             onClick={(e) => {
@@ -133,7 +133,7 @@ export function ControlPanel({
               handleGenerate();
             }}
             disabled={!isFormValid || genState.isGenerating}
-            className="w-full py-4 bg-slate-accent hover:bg-[#5D6E7C] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-all flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover-scale active:scale-95"
+            className="w-full py-4 bg-[#0A0A0A] hover:bg-[#0A0A0A]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full transition-all flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl active:scale-[0.98]"
           >
             {genState.isGenerating ? (
               <>
@@ -148,15 +148,15 @@ export function ControlPanel({
             )}
           </button>
           {!isFormValid && (
-            <p className="text-xs text-subtle text-center mt-2">
+            <p className="text-xs text-[#757575] text-center mt-2">
               Complete required fields to enable casting
             </p>
           )}
           
           {/* Admin Tools - Only visible to admins */}
           {user?.role === 'admin' && (
-            <details className="mt-3 pt-3 border-t border-gray-100 group">
-              <summary className="text-xs text-subtle cursor-pointer hover:text-charcoal transition-colors flex items-center gap-1.5 select-none">
+            <details className="mt-3 pt-3 border-t border-[#0A0A0A]/5 group">
+              <summary className="text-xs text-[#757575] cursor-pointer hover:text-[#0A0A0A] transition-colors flex items-center gap-1.5 select-none">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-90"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 Admin Tools
               </summary>
@@ -165,7 +165,7 @@ export function ControlPanel({
                   <button
                     onClick={() => handleDebugFill(false)}
                     disabled={genState.isGenerating}
-                    className="flex-1 py-1.5 px-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 text-subtle hover:text-charcoal text-xs font-medium rounded-md border border-gray-200 transition-colors"
+                    className="flex-1 py-1.5 px-2 bg-[#EBEBEB] hover:bg-[#D4D4D4] disabled:opacity-50 text-[#757575] hover:text-[#0A0A0A] text-xs font-medium rounded-full transition-colors"
                     title="Ctrl+Shift+D"
                   >
                     Random Fill
@@ -183,7 +183,7 @@ export function ControlPanel({
                       }, 200);
                     }}
                     disabled={genState.isGenerating}
-                    className="flex-1 py-1.5 px-2 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 text-subtle hover:text-charcoal text-xs font-medium rounded-md border border-gray-200 transition-colors"
+                    className="flex-1 py-1.5 px-2 bg-[#EBEBEB] hover:bg-[#D4D4D4] disabled:opacity-50 text-[#757575] hover:text-[#0A0A0A] text-xs font-medium rounded-full transition-colors"
                     title="Ctrl+Shift+G"
                   >
                     Auto Generate

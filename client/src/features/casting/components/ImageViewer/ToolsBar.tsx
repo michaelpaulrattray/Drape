@@ -70,7 +70,7 @@ const ToolButton = ({
     className={`relative group w-10 h-10 flex items-center justify-center rounded-lg border transition-all duration-200 shadow-lg backdrop-blur-sm
       ${isActive 
         ? color === 'red' ? 'bg-red-500/10 border-red-500 text-red-400' : 'bg-purple-500/10 border-purple-500 text-purple-400'
-        : 'bg-white/80 border-slate-accent text-gray-700 hover:text-obsidian hover:border-slate-accent'
+        : 'bg-white/80 border-[#0A0A0A]/10 text-[#757575] hover:text-[#0A0A0A] hover:border-[#0A0A0A]/20'
       }
     `}
     title={label}
@@ -92,7 +92,7 @@ const ToolButton = ({
 
 const ToolModeBadge = ({ activeTool }: { activeTool: EditTool }) => (
   <div className="absolute top-4 right-4 z-50 pointer-events-none select-none animate-in fade-in slide-in-from-top-1 duration-300">
-    <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-gray-200 flex items-center space-x-2 shadow-lg">
+    <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-[#0A0A0A]/10 flex items-center space-x-2 shadow-lg">
       {activeTool === 'eraser' ? <MagicEraserIconSmall /> : <SurgicalEditIconSmall />}
       <span className={`text-xs font-medium ${activeTool === 'eraser' ? 'text-purple-500' : 'text-red-500'}`}>
         {activeTool === 'eraser' ? 'Magic Eraser' : 'Surgical Edit'}

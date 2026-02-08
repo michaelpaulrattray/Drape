@@ -686,12 +686,12 @@ export function DNAHelix({ progress, className = '', onSectionClick }: DNAHelixP
       {/* Progress indicator text */}
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center">
         <span className={`text-xs font-mono tracking-wider transition-all duration-300 ${
-          isComplete ? 'text-green-600 font-semibold' : 'text-gray-400'
+          isComplete ? 'text-[#0A0A0A] font-semibold' : 'text-[#757575]'
         } ${showCelebration ? 'scale-110' : ''}`}>
           {isComplete ? '✓ SEQUENCE COMPLETE' : `SEQUENCING... ${Math.round(progress)}%`}
         </span>
         {!isComplete && progress > 0 && (
-          <div className="text-[10px] text-gray-500 mt-0.5">
+          <div className="text-[10px] text-[#757575] mt-0.5">
             {sectionProgress}
           </div>
         )}

@@ -35,21 +35,21 @@ function SelectControl({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center">
-        <label className="text-xs font-medium text-subtle">{label}</label>
+        <label className="text-xs font-medium text-[#757575]">{label}</label>
         {tooltip && <Tooltip content={tooltip} />}
       </div>
       <div className="relative group">
         <select
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm py-2.5 pl-3 pr-8 rounded-lg focus:border-slate-accent focus:outline-none appearance-none cursor-pointer hover:border-slate-accent transition-colors"
+          className="w-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] text-sm py-2.5 pl-3 pr-8 rounded-xl focus:border-[#0A0A0A]/30 focus:outline-none appearance-none cursor-pointer hover:border-[#0A0A0A]/20 transition-colors"
         >
-          <option value="" className="bg-gray-50 text-subtle">Auto / Random</option>
+          <option value="" className="text-[#757575]">Auto / Random</option>
           {options.map(opt => (
-            <option key={opt} value={opt} className="bg-gray-50 text-gray-700">{opt}</option>
+            <option key={opt} value={opt} className="text-[#0A0A0A]">{opt}</option>
           ))}
         </select>
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-subtle group-hover:text-gray-700 transition-colors">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#757575] group-hover:text-[#0A0A0A] transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
       </div>
@@ -74,7 +74,7 @@ export function HairSection() {
     <div className="space-y-5 pt-1">
       {/* Hair Color */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-subtle block">Hair Color</label>
+        <label className="text-xs font-medium text-[#757575] block">Hair Color</label>
         <HairColorWheel
           currentColor={prefs.hairColor || ""}
           onColorSelect={(val: string) => updatePref('hairColor', val)}
@@ -83,7 +83,7 @@ export function HairSection() {
 
       {/* Style Family */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-subtle block">Style Family</label>
+        <label className="text-xs font-medium text-[#757575] block">Style Family</label>
         <div className="grid grid-cols-3 gap-2">
           {hairFamilyNames.map(style => {
             const isSelected = prefs.hairStyle === style;
@@ -92,10 +92,10 @@ export function HairSection() {
                 key={style}
                 onClick={() => updatePref('hairStyle', style)}
                 className={`
-                  px-3 py-2.5 rounded-lg border text-xs font-medium transition-all
+                  px-3 py-2.5 rounded-xl border text-xs font-medium transition-all
                   ${isSelected
-                    ? 'bg-slate-accent border-white text-obsidian'
-                    : 'bg-gray-50 border-gray-200 text-subtle hover:border-slate-accent hover:text-gray-700'
+                    ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white'
+                    : 'bg-[#EBEBEB] border-transparent text-[#757575] hover:border-[#0A0A0A]/20 hover:text-[#0A0A0A]'
                   }
                 `}
               >
@@ -125,7 +125,7 @@ export function HairSection() {
       {/* Advanced Hair Toggle */}
       <button
         onClick={() => setShowAdvancedHair(!showAdvancedHair)}
-        className="w-full flex items-center justify-between py-2.5 text-xs font-medium text-subtle hover:text-obsidian border-t border-gray-200 transition-colors"
+        className="w-full flex items-center justify-between py-2.5 text-xs font-medium text-[#757575] hover:text-[#0A0A0A] border-t border-[#0A0A0A]/10 transition-colors"
       >
         <span>Advanced Styling</span>
         <span className="text-lg leading-none">{showAdvancedHair ? '−' : '+'}</span>

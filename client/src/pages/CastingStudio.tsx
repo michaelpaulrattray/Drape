@@ -156,14 +156,14 @@ export default function CastingStudio() {
   // Loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <Loader2 className="w-8 h-8 animate-spin text-obsidian" />
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0A0A0A]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-canvas flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-white flex flex-col lg:flex-row">
       {/* Stage Lock Modal */}
       <StageLockModal
         isOpen={lockModal.isOpen}

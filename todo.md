@@ -3706,3 +3706,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] FooterLink component handles anchor smooth scroll
 - [x] Mobile menu smooth scroll with 300ms delay for close animation
 - [x] Mega menu smooth scroll with 350ms delay for close animation
+## Feature: Restyle Casting Studio to Match Homepage Design Language
+- [x] Restyle Step 1: Core layout + ControlPanel sidebar
+- [x] Restyle Step 2: Form primitives (castingHelpers, BrandSelector)
+- [x] Restyle Step 3: Remaining form sections (Skin, Eye, Hair, Face, Physique)
+- [x] Restyle Step 4: Image viewer + floating controls
+- [x] Restyle Step 5: Input bar + bottom panels (RefinePanel, DirectorsNote)
+- [x] Restyle Step 6: Modals + empty state (ExportModal, StageLockModal, DNAHelix)

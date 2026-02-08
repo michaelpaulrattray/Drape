@@ -42,21 +42,21 @@ function SelectControl({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center">
-        <label className="text-xs font-medium text-subtle">{label}</label>
+        <label className="text-xs font-medium text-[#757575]">{label}</label>
         {tooltip && <Tooltip content={tooltip} />}
       </div>
       <div className="relative group">
         <select
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm py-2.5 pl-3 pr-8 rounded-lg focus:border-slate-accent focus:outline-none appearance-none cursor-pointer hover:border-slate-accent transition-colors"
+          className="w-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] text-sm py-2.5 pl-3 pr-8 rounded-xl focus:border-[#0A0A0A]/30 focus:outline-none appearance-none cursor-pointer hover:border-[#0A0A0A]/20 transition-colors"
         >
-          <option value="" className="bg-gray-50 text-subtle">Auto / Random</option>
+          <option value="" className="text-[#757575]">Auto / Random</option>
           {options.map(opt => (
-            <option key={opt} value={opt} className="bg-gray-50 text-gray-700">{opt}</option>
+            <option key={opt} value={opt} className="text-[#0A0A0A]">{opt}</option>
           ))}
         </select>
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-subtle group-hover:text-gray-700 transition-colors">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#757575] group-hover:text-[#0A0A0A] transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
       </div>
@@ -75,7 +75,7 @@ export function SkinSection() {
     <div className="space-y-5 pt-1">
       {/* Skin Tone Visual Picker */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-subtle block">Skin Tone</label>
+        <label className="text-xs font-medium text-[#757575] block">Skin Tone</label>
         <div className="flex gap-2">
           {SKIN_TONES.map(tone => {
             const isSelected = prefs.skinTone === tone.value;
@@ -84,10 +84,10 @@ export function SkinSection() {
                 key={tone.label}
                 onClick={() => updatePref('skinTone', tone.value)}
                 className={`
-                  relative flex-1 aspect-square rounded-lg border-2 transition-all duration-300 group overflow-hidden
+                  relative flex-1 aspect-square rounded-xl border-2 transition-all duration-300 group overflow-hidden
                   ${isSelected
-                    ? 'border-obsidian ring-2 ring-obsidian/50 scale-105 z-10 shadow-lg'
-                    : 'border-transparent hover:border-slate-accent hover:scale-105'
+                    ? 'border-[#0A0A0A] ring-2 ring-[#0A0A0A]/30 scale-105 z-10 shadow-lg'
+                    : 'border-transparent hover:border-[#0A0A0A]/20 hover:scale-105'
                   }
                 `}
                 title={tone.label}

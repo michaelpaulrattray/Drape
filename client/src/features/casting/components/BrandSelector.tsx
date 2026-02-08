@@ -70,7 +70,7 @@ export function BrandSelector() {
       {/* Brand Selector */}
       <div className="space-y-1.5">
         <div className="flex items-center">
-          <label className="text-xs font-medium text-subtle">Casting For</label>
+          <label className="text-xs font-medium text-[#757575]">Casting For</label>
           <Tooltip content="Sets the brand archetype. Affects face structure, attitude, and styling." />
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -79,15 +79,15 @@ export function BrandSelector() {
               key={opt.value}
               onClick={() => updatePref('castingBrand', opt.value)}
               className={`
-                flex flex-col items-start p-2 rounded-sm border transition-all text-left
+                flex flex-col items-start p-2.5 rounded-xl border transition-all text-left
                 ${prefs.castingBrand === opt.value
-                  ? 'bg-slate-accent border-white text-obsidian'
-                  : 'bg-gray-50 border-gray-200 text-subtle hover:border-slate-accent hover:text-gray-700'
+                  ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white'
+                  : 'bg-[#EBEBEB] border-transparent text-[#757575] hover:border-[#0A0A0A]/20 hover:text-[#0A0A0A]'
                 }
               `}
             >
               <span className="text-xs font-semibold">{opt.value}</span>
-              <span className="text-[10px] text-subtle leading-none mt-1 opacity-80">{opt.desc}</span>
+              <span className={`text-[10px] leading-none mt-1 ${prefs.castingBrand === opt.value ? 'opacity-70' : 'opacity-60'}`}>{opt.desc}</span>
             </button>
           ))}
         </div>
@@ -103,8 +103,8 @@ export function BrandSelector() {
 
       {/* Gender */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-subtle">Gender</label>
-        <div className="flex bg-gray-50 p-0.5 rounded border border-gray-200">
+        <label className="text-xs font-medium text-[#757575]">Gender</label>
+        <div className="flex bg-[#EBEBEB] p-0.5 rounded-full">
           {[
             { label: 'Female', value: 'Female', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><path d="M12 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" /><path d="M12 14v7" /><path d="M9 18h6" /></svg> },
             { label: 'Male', value: 'Male', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><circle cx="10" cy="14" r="6" /><path d="M20 4v6" /><path d="M20 4h-6" /><path d="m20 4-6 6" /></svg> },
@@ -116,10 +116,10 @@ export function BrandSelector() {
                 key={opt.value}
                 onClick={() => updatePref('gender', opt.value)}
                 className={`
-                  flex-1 py-2.5 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2
+                  flex-1 py-2.5 text-xs font-medium rounded-full transition-all flex items-center justify-center gap-2
                   ${isActive
-                    ? 'bg-slate-accent text-obsidian shadow-sm'
-                    : 'text-subtle hover:text-gray-700 hover:bg-slate-accent'
+                    ? 'bg-[#0A0A0A] text-white shadow-sm'
+                    : 'text-[#757575] hover:text-[#0A0A0A]'
                   }
                 `}
               >
@@ -134,8 +134,8 @@ export function BrandSelector() {
       {/* Age Slider */}
       <div className="space-y-2">
         <div className="flex justify-between items-end">
-          <label className="text-xs font-medium text-subtle">Age</label>
-          <span className="text-xs font-semibold text-obsidian">{prefs.age || 23} Years</span>
+          <label className="text-xs font-medium text-[#757575]">Age</label>
+          <span className="text-xs font-semibold text-[#0A0A0A]">{prefs.age || 23} Years</span>
         </div>
         <input
           type="range"
@@ -144,15 +144,15 @@ export function BrandSelector() {
           step="1"
           value={prefs.age || "23"}
           onChange={(e) => updatePref('age', e.target.value)}
-          className="w-full slider-slate focus:outline-none"
+          className="w-full slider-obsidian focus:outline-none"
         />
       </div>
 
       {/* Ethnicity Grid */}
       <div className="space-y-3 pt-2">
         <div className="flex justify-between items-end">
-          <label className="text-xs font-medium text-subtle">Ethnicity</label>
-          <span className="text-xs text-subtle">
+          <label className="text-xs font-medium text-[#757575]">Ethnicity</label>
+          <span className="text-xs text-[#757575]">
             {prefs.ethnicity ? (prefs.ethnicity === 'Mixed' ? 'Mixed' : 'Max 2') : 'Auto'}
           </span>
         </div>
@@ -164,15 +164,15 @@ export function BrandSelector() {
                 key={eth}
                 onClick={() => handleEthnicityClick(eth)}
                 className={`
-                  relative flex items-center justify-between px-3 py-3 rounded-sm border transition-all duration-200 group
+                  relative flex items-center justify-between px-3 py-3 rounded-xl border transition-all duration-200 group
                   ${isSelected
-                    ? 'bg-slate-accent border-white text-obsidian shadow-[0_0_10px_rgba(255,255,255,0.05)]'
-                    : 'bg-gray-50 border-gray-200 text-subtle hover:border-slate-accent hover:text-gray-700'
+                    ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white'
+                    : 'bg-[#EBEBEB] border-transparent text-[#757575] hover:border-[#0A0A0A]/20 hover:text-[#0A0A0A]'
                   }
                 `}
               >
                 <span className="text-xs font-medium leading-none">{eth}</span>
-                <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)] scale-100' : 'bg-slate-accent scale-0'}`} />
+                <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-white scale-100' : 'bg-[#0A0A0A] scale-0'}`} />
               </button>
             );
           })}

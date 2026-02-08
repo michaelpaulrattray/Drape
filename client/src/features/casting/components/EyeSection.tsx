@@ -34,7 +34,7 @@ function VisualEyeGrid({
         className={`
           relative flex-shrink-0 w-16 h-16 rounded-full transition-all duration-200 group overflow-hidden
           ${isSelected
-            ? 'shadow-[inset_0_0_0_3px_rgba(0,0,0,0.7)] scale-105 z-10'
+            ? 'ring-2 ring-[#0A0A0A] ring-offset-2 scale-105 z-10'
             : 'hover:scale-105 opacity-80 hover:opacity-100'
           }
         `}
@@ -114,7 +114,7 @@ export function EyeSection() {
 
   return (
     <div className="space-y-2 pt-1">
-      <label className="text-xs font-medium text-subtle block">Eye Color</label>
+      <label className="text-xs font-medium text-[#757575] block">Eye Color</label>
       <VisualEyeGrid
         options={EYE_PRESETS}
         selected={eyeColor || ""}

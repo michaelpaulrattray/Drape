@@ -190,24 +190,23 @@ export function CollapsibleSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div id={id} className="border-b border-gray-200/50 last:border-0 group/section scroll-mt-4">
+    <div id={id} className="border-b border-[#0A0A0A]/10 last:border-0 group/section scroll-mt-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-4 group focus:outline-none select-none hover-scale"
+        className="w-full flex items-center justify-between py-4 group focus:outline-none select-none"
       >
-        <div className="flex items-center space-x-3">
-          <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isOpen ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'bg-slate-accent group-hover:bg-slate-accent'}`} />
-          <h3 className={`text-xs font-semibold tracking-tight transition-colors duration-300 ${isOpen ? 'text-obsidian' : 'text-subtle group-hover:text-charcoal'}`}>
-            {title}
-          </h3>
-          {required && <span className="text-red-500/70 text-xs group-hover:text-red-400 transition-colors">*</span>}
+        <div className="flex items-center space-x-2">
+          <span className={`text-sm font-medium tracking-wide transition-colors duration-300 ${isOpen ? 'text-[#0A0A0A]' : 'text-[#757575] group-hover:text-[#0A0A0A]'}`}>
+            / {title}
+          </span>
+          {required && <span className="text-red-500/70 text-xs">*</span>}
         </div>
-        <div className={`transform transition-transform duration-300 text-gray-400 group-hover:text-subtle ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
+        <div className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#0A0A0A]' : 'rotate-0 text-[#757575] group-hover:text-[#0A0A0A]'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
       </button>
       <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-[3000px] opacity-100 pb-4' : 'max-h-0 opacity-0'}`}>
-        <div className="space-y-4 pl-4 border-l border-gray-200/30 ml-0.5">
+        <div className="space-y-4 pl-4 border-l border-[#0A0A0A]/10 ml-1">
           {children}
         </div>
       </div>
@@ -231,21 +230,21 @@ export function SelectControl({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center">
-        <label className="text-xs font-medium text-subtle">{label}</label>
+        <label className="text-xs font-medium text-[#757575]">{label}</label>
         {tooltip && <Tooltip content={tooltip} />}
       </div>
       <div className="relative group">
         <select
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm py-2.5 pl-3 pr-8 rounded-lg focus:border-slate-accent focus:outline-none appearance-none cursor-pointer hover:border-slate-accent transition-colors"
+          className="w-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] text-sm py-2.5 pl-3 pr-8 rounded-xl focus:border-[#0A0A0A]/30 focus:outline-none appearance-none cursor-pointer hover:border-[#0A0A0A]/20 transition-colors"
         >
-          <option value="" className="bg-gray-50 text-subtle">Auto / Random</option>
+          <option value="" className="text-[#757575]">Auto / Random</option>
           {options.map(opt => (
-            <option key={opt} value={opt} className="bg-gray-50 text-gray-700">{opt}</option>
+            <option key={opt} value={opt} className="text-[#0A0A0A]">{opt}</option>
           ))}
         </select>
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-subtle group-hover:text-gray-700 transition-colors">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#757575] group-hover:text-[#0A0A0A] transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
       </div>
@@ -273,10 +272,10 @@ export function VisualOptionGrid({
             key={opt}
             onClick={() => onSelect(opt)}
             className={`
-              flex flex-col items-center justify-center h-16 rounded border transition-all duration-200 group
+              flex flex-col items-center justify-center h-16 rounded-xl border transition-all duration-200 group
               ${isSelected
-                ? 'bg-slate-accent border-white text-obsidian'
-                : 'bg-transparent border-gray-200 text-subtle hover:border-slate-accent hover:bg-gray-50 hover:text-gray-700'
+                ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white'
+                : 'bg-[#EBEBEB] border-transparent text-[#757575] hover:border-[#0A0A0A]/20 hover:text-[#0A0A0A]'
               }
             `}
           >

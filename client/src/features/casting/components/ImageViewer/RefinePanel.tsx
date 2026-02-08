@@ -31,7 +31,7 @@ const RegenerateButton = ({ onClick, disabled }: { onClick: () => void; disabled
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`flex-shrink-0 p-1.5 transition-colors ${disabled ? 'text-subtle cursor-not-allowed' : 'text-charcoal hover:text-obsidian'}`}
+    className={`flex-shrink-0 p-1.5 transition-colors ${disabled ? 'text-[#757575] cursor-not-allowed' : 'text-[#0A0A0A]/60 hover:text-[#0A0A0A]'}`}
     title="Regenerate with Current Settings"
   >
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -44,7 +44,7 @@ const EnhanceButton = ({ onClick, disabled, isEnhancing }: { onClick: () => void
   <button
     onClick={onClick}
     disabled={disabled}
-    className="flex-shrink-0 p-1.5 text-charcoal hover:text-obsidian disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+    className="flex-shrink-0 p-1.5 text-[#0A0A0A]/60 hover:text-[#0A0A0A] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
     title="Enhance Prompt (AI)"
   >
     {isEnhancing ? (
@@ -108,8 +108,8 @@ export function RefinePanel({
           disabled={!hasMask}
           className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             hasMask 
-              ? 'bg-purple-500 text-obsidian hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
-              : 'bg-slate-accent text-subtle cursor-not-allowed'
+              ? 'bg-purple-500 text-white hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
+              : 'bg-[#EBEBEB] text-[#757575] cursor-not-allowed'
           }`}
         >
           Erase
@@ -124,8 +124,8 @@ export function RefinePanel({
           disabled={!hasMask || !refineInput.trim() || isLocked}
           className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
             (hasMask && refineInput.trim()) 
-              ? 'bg-red-500 text-obsidian hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' 
-              : 'bg-slate-accent text-subtle cursor-not-allowed'
+              ? 'bg-red-500 text-white hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' 
+              : 'bg-[#EBEBEB] text-[#757575] cursor-not-allowed'
           }`}
         >
           Apply
@@ -139,8 +139,8 @@ export function RefinePanel({
         disabled={!refineInput.trim() || isLocked || !isIterationAllowed}
         className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${
           isLocked || !isIterationAllowed 
-            ? 'bg-slate-accent text-subtle cursor-not-allowed' 
-            : 'bg-white text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed'
+            ? 'bg-[#EBEBEB] text-[#757575] cursor-not-allowed' 
+            : 'bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 disabled:opacity-50 disabled:cursor-not-allowed'
         }`}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -166,7 +166,7 @@ export function RefinePanel({
     if (isLocked) {
       return (
         <div className="flex-1 flex items-center justify-between px-2 py-1">
-          <div className="flex items-center space-x-2 text-charcoal select-none">
+          <div className="flex items-center space-x-2 text-[#0A0A0A] select-none">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -180,7 +180,7 @@ export function RefinePanel({
           </div>
           <button 
             onClick={() => setUnlockMode(true)}
-            className="text-xs font-medium text-subtle hover:text-obsidian transition-colors border-b border-dashed border-gray-300 hover:border-white pb-0.5"
+            className="text-xs font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors border-b border-dashed border-[#0A0A0A]/20 hover:border-[#0A0A0A]/40 pb-0.5"
           >
             Unlock to Edit
           </button>
@@ -190,7 +190,7 @@ export function RefinePanel({
     
     if (!isIterationAllowed) {
       return (
-        <div className="flex-1 px-2 py-1 flex items-center space-x-2 text-subtle select-none">
+        <div className="flex-1 px-2 py-1 flex items-center space-x-2 text-[#757575] select-none">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
             <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -216,9 +216,9 @@ export function RefinePanel({
         }}
         placeholder={getPlaceholder()}
         rows={1}
-        className={`flex-1 bg-transparent border-none text-sm placeholder:text-subtle focus:outline-none focus:ring-0 px-2 py-1.5 resize-none custom-scrollbar min-h-[28px] max-h-[200px] ${
-          isViewLocked ? 'text-amber-100 placeholder:text-amber-500/50' : 
-          isEnhancing ? 'text-subtle animate-pulse' : 'text-obsidian'
+        className={`flex-1 bg-transparent border-none text-sm placeholder:text-[#757575] focus:outline-none focus:ring-0 px-2 py-1.5 resize-none custom-scrollbar min-h-[28px] max-h-[200px] ${
+          isViewLocked ? 'text-amber-600 placeholder:text-amber-500/50' : 
+          isEnhancing ? 'text-[#757575] animate-pulse' : 'text-[#0A0A0A]'
         }`}
       />
     );
@@ -229,12 +229,12 @@ export function RefinePanel({
       {/* Inline Helper Text for Masking */}
       {isMasking && (
         <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
-          <div className="flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur-md rounded border border-gray-200 shadow-lg">
+          <div className="flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur-md rounded-full border border-[#0A0A0A]/10 shadow-lg">
             <span className={`text-xs font-medium ${activeTool === 'eraser' ? 'text-purple-500' : 'text-red-500'}`}>
               {!hasMask ? "STEP 01" : "STEP 02"}
             </span>
-            <span className="w-px h-2 bg-white/20"></span>
-            <span className="text-xs font-medium text-gray-700">
+            <span className="w-px h-2 bg-[#0A0A0A]/10"></span>
+            <span className="text-xs font-medium text-[#0A0A0A]">
               {!hasMask 
                 ? "Paint Target Area" 
                 : (activeTool === 'eraser' ? "Click Erase Button" : "Describe Edit & Generate")
@@ -244,8 +244,8 @@ export function RefinePanel({
         </div>
       )}
 
-      <div className={`mx-1 bg-white/90 backdrop-blur-md border rounded-full shadow-xl flex items-center p-1 transition-all focus-within:ring-1 focus-within:ring-white/20 ${
-        isLocked && activeTool !== 'eraser' ? 'border-gray-300 opacity-90' : 'border-gray-200'
+      <div className={`mx-1 bg-white/90 backdrop-blur-md border rounded-full shadow-xl flex items-center p-1 transition-all focus-within:ring-1 focus-within:ring-[#0A0A0A]/10 ${
+        isLocked && activeTool !== 'eraser' ? 'border-[#0A0A0A]/15 opacity-90' : 'border-[#0A0A0A]/10'
       }`}>
         {/* Regenerate Button */}
         <RegenerateButton 
@@ -253,7 +253,7 @@ export function RefinePanel({
           disabled={isLocked || !isIterationAllowed} 
         />
 
-        <div className="w-px h-4 bg-white/10 mx-1"></div>
+        <div className="w-px h-4 bg-[#0A0A0A]/10 mx-1"></div>
 
         {/* Input Area */}
         {renderInputArea()}
