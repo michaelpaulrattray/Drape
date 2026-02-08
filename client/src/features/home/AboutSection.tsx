@@ -92,7 +92,7 @@ export function AboutSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.25rem,3.5vw,3rem)] font-medium leading-[1.15] tracking-tight mb-12"
+          className="text-[clamp(1.25rem,5vw,3.375rem)] font-medium leading-[1.15] tracking-tight mb-12"
         >
           <span className="text-[#0A0A0A]">We're a design studio focused on creating</span>
           <br />
@@ -111,7 +111,7 @@ export function AboutSection() {
           <StatsMarquee />
           
           {/* Description - Right aligned */}
-          <p className="shrink-0 text-sm sm:text-body-md text-gray-muted sm:text-right w-full sm:w-about-text">
+          <p className="shrink-0 text-sm sm:text-base text-gray-muted sm:text-right w-full sm:w-[380px]">
             Our studio is dedicated to crafting clean, purposeful solutions that cut through the noise.
           </p>
         </motion.div>
@@ -210,7 +210,7 @@ export function AboutSection() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 translate-y-8 mt-4 text-white text-sm sm:text-card-title font-semibold z-20"
+                className="absolute left-1/2 top-1/2 transform -translate-x-1/2 translate-y-8 mt-4 text-white text-sm sm:text-2xl font-semibold z-20"
                 
               >
                 Play Showreel

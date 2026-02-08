@@ -3642,3 +3642,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove text-section-title class overrides from AboutSection and WhyUsSection spans
 - [x] Reduce hero title clamp minimum from 3.5rem to 2.5rem
 - [x] Reduce footer wordmark clamp minimum from 2rem to 1.75rem
+
+## Bug Fix: Homepage Desktop Typography & Layout Regressions
+- [x] Fine-tune section title clamp() values — currently too small on desktop after mobile fix
+- [x] Fix About Us stats marquee not showing on desktop (only visible on mobile)
+- [x] Fix "Get started" button in WhyUs section to use shared animated Button component
+- [x] Replace all custom CSS class responsive variants (sm:w-about-text, sm:text-body-md, etc.) with inline Tailwind classes

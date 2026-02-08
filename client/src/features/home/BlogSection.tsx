@@ -26,7 +26,7 @@ export function BlogSection() {
         >
           <div>
             <h2 className="text-section-title text-[#0A0A0A] mb-4">Latest insights from our blog.</h2>
-            <p className="text-body-md text-gray-muted w-full sm:w-blog-text">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
+            <p className="text-body-md text-gray-muted w-full sm:w-[330px]">Thoughts, ideas, and perspectives on design, simplicity, and creative process.</p>
           </div>
           <Button href="#" variant="secondary-invert" showPlus className="hidden md:inline-flex mt-[100px] font-medium">
             View all articles

@@ -1,5 +1,5 @@
-import { Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/design-system";
 import { fadeIn, fadeInUp, staggerContainer, testimonials } from "./homeData";
 import { SectionLabel } from "./SectionLabel";
 
@@ -22,7 +22,7 @@ export function WhyUsSection() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="text-[clamp(1.25rem,3.5vw,3rem)] font-medium leading-[1.15] mb-8 sm:mb-16 w-full lg:w-services-headline"
+          className="text-[clamp(1.25rem,5vw,3.375rem)] font-medium leading-[1.15] mb-8 sm:mb-16 w-full lg:w-[1018px]"
         >
           <span className="text-[#0A0A0A]">We cut through noise to create designs that are </span>
           <span className="text-gray-secondary">thoughtful, timeless, and impactful.</span>
@@ -52,10 +52,9 @@ export function WhyUsSection() {
                 <p className="text-white/50 text-xs mt-2">© 2025</p>
               </div>
               <div className="relative z-10 p-5 pt-0">
-                <a href="/#contact" className="inline-flex items-center gap-2 px-4 py-2 bg-[#EBEBEB] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors">
+                <Button href="/#contact" variant="secondary" size="sm" showPlus>
                   Get started
-                  <Plus className="w-3.5 h-3.5" />
-                </a>
+                </Button>
               </div>
             </div>
             {/* Bottom: Bullet list card */}

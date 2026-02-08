@@ -55,7 +55,7 @@ export function HeroSection() {
             transition={{ duration: 0.6, delay: 0.3, ease: easeOut }}
             className="mt-8 max-w-md ml-auto text-right"
           >
-            <p className="text-sm sm:text-body-md text-gray-secondary">
+            <p className="text-sm sm:text-base text-gray-secondary">
               Forma is an AI studio crafting refined model identities and photorealistic campaign assets.
             </p>
           </motion.div>
@@ -90,7 +90,7 @@ export function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4, ease: easeOut }}
-          className="relative w-full aspect-[4/3] sm:aspect-[16/9] rounded-xl sm:rounded-2xl overflow-hidden sm:h-hero-image"
+          className="relative w-full aspect-[4/3] sm:aspect-[16/9] rounded-xl sm:rounded-2xl overflow-hidden sm:h-[950px]"
         >
           <Suspense fallback={
             <img
