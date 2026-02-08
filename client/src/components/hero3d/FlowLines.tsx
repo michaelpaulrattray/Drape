@@ -1,6 +1,6 @@
 /**
- * Subtle animated SVG flow lines across the hero section background.
- * 3 organic curves that slowly morph, creating depth and movement.
+ * Subtle animated SVG flow lines behind the hero image.
+ * 3 organic curves that slowly animate, barely visible at 5-8% opacity.
  * Uses CSS keyframe animations for smooth path morphing.
  */
 
@@ -10,8 +10,8 @@ const FLOW_LINES_STYLE: React.CSSProperties = {
   width: "100%",
   height: "100%",
   pointerEvents: "none",
-  zIndex: 1,
-  opacity: 0.12,
+  zIndex: 0,
+  opacity: 0.06,
 };
 
 export default function FlowLines() {
@@ -25,24 +25,24 @@ export default function FlowLines() {
       {/* Upper flowing curve */}
       <path
         d="M-100,200 Q200,80 450,220 T900,180 T1300,220"
-        stroke="#b0b0b0"
-        strokeWidth="2"
+        stroke="#9ca3af"
+        strokeWidth="1.2"
         fill="none"
         className="animate-flow-1"
       />
       {/* Middle flowing curve */}
       <path
         d="M-100,350 Q300,480 600,340 T1000,380 T1300,350"
-        stroke="#b0b0b0"
-        strokeWidth="1.5"
+        stroke="#9ca3af"
+        strokeWidth="1"
         fill="none"
         className="animate-flow-2"
       />
       {/* Lower flowing curve */}
       <path
         d="M-100,500 Q250,420 500,520 T850,460 T1300,500"
-        stroke="#b0b0b0"
-        strokeWidth="1.2"
+        stroke="#9ca3af"
+        strokeWidth="0.8"
         fill="none"
         className="animate-flow-3"
       />
