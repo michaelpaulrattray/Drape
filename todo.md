@@ -3725,3 +3725,11 @@ The entry and configuration files are properly set up with several enhancements 
   - [x] ReferenceNode.tsx — slate-accent, text-subtle, text-obsidian, gray borders → obsidian equivalents
   - [x] ProfileSettingsModal.tsx — gray-200 borders, gray-50 bg, gray-100 hover → obsidian equivalents
   - [x] Verified: zero remaining slate-accent/text-subtle/text-charcoal/text-obsidian/bg-canvas in casting + shared components
+## Feature: Compact Studio Header for Casting Studio
+- [x] Create StudioHeader component (~40px) with logo, back nav, studio name, credits, user avatar
+- [x] Integrate StudioHeader into CastingStudio page layout
+- [x] Remove redundant mobile header (back + credits + hamburger) from ControlPanel
+- [x] Remove redundant desktop header (back + credits pill) from ControlPanel
+- [x] Move mobile panel toggle into StudioHeader
+- [x] Credits pill in header opens topup modal
+- [x] User avatar in header opens ProfileSettingsModal

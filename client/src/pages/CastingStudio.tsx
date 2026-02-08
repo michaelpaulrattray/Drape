@@ -16,6 +16,7 @@ import { useCastingGeneration } from "@/features/casting/hooks/useCastingGenerat
 import { useCastingExport } from "@/features/casting/hooks/useCastingExport";
 import { useCastingViewGeneration } from "@/features/casting/hooks/useCastingViewGeneration";
 import { generateRandomPreferences } from "@/features/casting/castingHelpers";
+import { StudioHeader } from "@/features/casting/StudioHeader";
 
 export default function CastingStudio() {
   const [, navigate] = useLocation();
@@ -163,7 +164,13 @@ export default function CastingStudio() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col lg:flex-row">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
+      {/* Studio Header */}
+      <StudioHeader
+        creditsBalance={creditsData?.balance || 0}
+        planTier={creditsData?.planTier || "free"}
+      />
+
       {/* Stage Lock Modal */}
       <StageLockModal
         isOpen={lockModal.isOpen}
@@ -181,10 +188,11 @@ export default function CastingStudio() {
         previewImage={currentAssets.find(a => a.viewType === 'frontClose')?.storageUrl ?? undefined}
       />
 
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
       {/* Left Panel */}
       <ControlPanel
         user={user}
-        creditsBalance={creditsData?.balance || 0}
         isFormValid={isFormValid}
         genState={genState}
         currentAssets={currentAssets}
@@ -217,6 +225,8 @@ export default function CastingStudio() {
         canUndo={canUndo}
         canRedo={canRedo}
       />
+
+      </div>
 
       {/* Credit Top-up Modal */}
       <CreditTopupModal

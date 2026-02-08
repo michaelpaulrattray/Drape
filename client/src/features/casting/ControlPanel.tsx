@@ -1,6 +1,4 @@
-import React from "react";
-import { useLocation } from "wouter";
-import { Loader2, ChevronLeft, X, Menu } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { HairSection } from "./components/HairSection";
 import { EyeSection } from "./components/EyeSection";
@@ -9,14 +7,13 @@ import { FaceSection } from "./components/FaceSection";
 import { BrandSelector } from "./components/BrandSelector";
 import { PhysiqueSelector } from "./components/PhysiqueSelector";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
-import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
+
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { CollapsibleSection, generateRandomPreferences } from "./castingHelpers";
 import type { GenerationState, GeneratedAsset } from "@/features/casting/constants";
 
 interface ControlPanelProps {
   user: { role?: string } | null;
-  creditsBalance: number;
   isFormValid: boolean;
   genState: GenerationState;
   currentAssets: GeneratedAsset[];
@@ -25,15 +22,13 @@ interface ControlPanelProps {
 
 export function ControlPanel({
   user,
-  creditsBalance,
   isFormValid,
   genState,
   currentAssets,
   handleGenerate,
 }: ControlPanelProps) {
-  const [, navigate] = useLocation();
   const { prefs, setPrefs } = useCastingFormStore();
-  const { showMobilePanel, setShowMobilePanel } = useCastingUIStore();
+  const { showMobilePanel } = useCastingUIStore();
 
   const handleDebugFill = (autoGenerate: boolean = false) => {
     const randomPrefs = generateRandomPreferences();
@@ -49,49 +44,12 @@ export function ControlPanel({
 
   return (
     <>
-      {/* Mobile Header */}
-      <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-[#0A0A0A]/10">
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="flex items-center gap-2 text-[#757575] hover:text-[#0A0A0A] transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span className="text-sm font-medium">Back</span>
-        </button>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 bg-[#EBEBEB] rounded-full px-3 py-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0A0A0A]"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            <span className="text-xs font-semibold text-[#0A0A0A]">{creditsBalance}</span>
-          </div>
-          <button
-            onClick={() => setShowMobilePanel(!showMobilePanel)}
-            className="p-2 rounded-full bg-[#0A0A0A] text-white"
-          >
-            {showMobilePanel ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
       {/* Left Panel - Control Panel */}
       <aside className={`
         ${showMobilePanel ? 'fixed inset-0 z-50 pt-16 flex flex-col' : 'hidden'}
         lg:relative lg:flex lg:flex-col lg:w-[400px] lg:pt-0
-        bg-white border-r border-[#0A0A0A]/5 h-screen flex-shrink-0
+        bg-white border-r border-[#0A0A0A]/5 h-full flex-shrink-0
       `}>
-        {/* Header */}
-        <div className="hidden lg:flex p-4 border-b border-[#0A0A0A]/10 items-center justify-between">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-2 text-[#757575] hover:text-[#0A0A0A] transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-          <div className="flex items-center gap-1.5 bg-[#EBEBEB] rounded-full px-3 py-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0A0A0A]"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            <span className="text-xs font-semibold text-[#0A0A0A]">{creditsBalance}</span>
-          </div>
-        </div>
 
         {/* Scrollable Content */}
         <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-2 custom-scrollbar">
