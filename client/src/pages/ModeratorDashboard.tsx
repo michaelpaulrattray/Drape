@@ -11,7 +11,7 @@ import {
   FlaggedReferralsTab,
   LogDetailModal,
   ChangeRequestModal,
-  DashboardHeader,
+  ModeratorHeader,
   StatsCards,
   FlaggedDiscrepanciesCard,
   TabNavigation,
@@ -57,7 +57,7 @@ export default function ModeratorDashboard() {
   const [userPage, setUserPage] = useState(0);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
-  // User detail filter state (lifted from UserInvestigationTab so queries get real values)
+  // User detail filter state
   const [creditTypeFilter, setCreditTypeFilter] = useState("all");
   const [creditPage, setCreditPage] = useState(0);
   const [creditStartDate, setCreditStartDate] = useState("");
@@ -237,8 +237,8 @@ export default function ModeratorDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white" />
+      <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#0A0A0A]" />
       </div>
     );
   }
@@ -251,17 +251,17 @@ export default function ModeratorDashboard() {
   // ── Render ──
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <DashboardHeader
+    <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
+      <ModeratorHeader
         lastRefresh={lastRefresh}
         autoRefresh={autoRefresh}
-        setAutoRefresh={setAutoRefresh}
+        onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)}
         onRefresh={handleRefresh}
         isRefetching={logsQuery.isRefetching}
         onNewChangeRequest={() => openChangeRequest()}
       />
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <StatsCards statsQuery={statsQuery} alertsQuery={alertsQuery} />
 
         <FlaggedDiscrepanciesCard

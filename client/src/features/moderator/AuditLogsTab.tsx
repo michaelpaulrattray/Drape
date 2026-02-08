@@ -2,39 +2,27 @@
  * Audit Logs tab — abuse alerts, filters, paginated log table.
  */
 import {
-  Search,
   X,
   Eye,
-  Activity,
   FileText,
   ChevronLeft,
   ChevronRight,
   AlertCircle,
-  Info,
   Calendar,
   Download,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AuditLog,
   SEVERITY_COLORS,
-  SEVERITY_ICONS,
   CATEGORY_COLORS,
-  PAGE_SIZE,
   formatDate,
   formatAction,
   getActionCategory,
@@ -83,6 +71,7 @@ export function AuditLogsTab({
   onResetFilters,
 }: AuditLogsTabProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const hasFilters = severityFilter !== "all" || categoryFilter !== "all" || userIdSearch || startDate || endDate;
 
   const exportQuery = trpc.moderatorExports.exportAuditLogsCsv.useQuery(
     {
@@ -104,8 +93,7 @@ export function AuditLogsTab({
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        const timestamp = new Date().toISOString().slice(0, 10);
-        link.download = `audit-logs-${timestamp}.csv`;
+        link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -120,221 +108,186 @@ export function AuditLogsTab({
   };
 
   return (
-    <>
-      {/* Abuse Alerts Panel */}
+    <div className="space-y-4">
+      {/* Abuse Alerts Banner */}
       {(alertsQuery.data?.criticalCount || 0) > 0 && (
-        <Card className="bg-red-500/5 border-red-500/20">
-          <CardHeader>
-            <CardTitle className="text-red-400 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Active Abuse Alerts
-              <Badge className="bg-red-500/20 text-red-400 ml-2">{alertsQuery.data?.criticalCount}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {alertsQuery.data?.alerts.slice(0, 5).map((alert: any) => (
-                <div
-                  key={alert.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Badge className={SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}>
-                      {alert.severity}
-                    </Badge>
-                    <span className="text-white/80">{formatAction(alert.action)}</span>
-                    <span className="text-white/40 text-sm">{formatDate(alert.createdAt)}</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                    onClick={() => {
-                      const metadata = alert.metadata as Record<string, unknown> | null;
-                      onOpenChangeRequest({
-                        type: metadata?.ipAddress ? "block_ip" : "flag_account",
-                        targetUserId: alert.userId?.toString() || "",
-                        targetUserName: metadata?.userName as string || undefined,
-                        relatedAuditLogId: alert.id,
-                        ipAddress: metadata?.ipAddress as string || undefined,
-                      });
-                    }}
-                  >
-                    <FileText className="w-3 h-3 mr-1" />
-                    Request Action
-                  </Button>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle className="w-4 h-4 text-red-600" />
+            <h4 className="text-sm font-semibold text-red-800">Active Abuse Alerts</h4>
+            <Badge className="bg-red-100 text-red-700 text-[10px]">{alertsQuery.data?.criticalCount}</Badge>
+          </div>
+          <div className="space-y-1.5">
+            {alertsQuery.data?.alerts.slice(0, 5).map((alert: any) => (
+              <div
+                key={alert.id}
+                className="flex items-center justify-between p-3 rounded-lg bg-white hover:bg-red-50 border border-red-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Badge className={SEVERITY_COLORS[alert.severity as keyof typeof SEVERITY_COLORS]}>{alert.severity}</Badge>
+                  <span className="text-sm text-[#0A0A0A]">{formatAction(alert.action)}</span>
+                  <span className="text-xs text-[#999]">{formatDate(alert.createdAt)}</span>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                  onClick={() => {
+                    const metadata = alert.metadata as Record<string, unknown> | null;
+                    onOpenChangeRequest({
+                      type: metadata?.ipAddress ? "block_ip" : "flag_account",
+                      targetUserId: alert.userId?.toString() || "",
+                      targetUserName: metadata?.userName as string || undefined,
+                      relatedAuditLogId: alert.id,
+                      ipAddress: metadata?.ipAddress as string || undefined,
+                    });
+                  }}
+                >
+                  <FileText className="w-3 h-3 mr-1" /> Request Action
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-          <Input
-            placeholder="Search by User ID..."
-            value={userIdSearch}
-            onChange={(e) => { setUserIdSearch(e.target.value); setPage(() => 0); }}
-            className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 w-48"
-          />
-        </div>
-        <Select value={severityFilter} onValueChange={(v) => { setSeverityFilter(v); setPage(() => 0); }}>
-          <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
-            <SelectValue placeholder="Severity" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Severities</SelectItem>
-            <SelectItem value="info">Info</SelectItem>
-            <SelectItem value="warning">Warning</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(() => 0); }}>
-          <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="billing">Billing</SelectItem>
-            <SelectItem value="model">Model</SelectItem>
-            <SelectItem value="security">Security</SelectItem>
-            <SelectItem value="abuse">Abuse</SelectItem>
-          </SelectContent>
-        </Select>
-        {(severityFilter !== "all" || categoryFilter !== "all" || userIdSearch || startDate || endDate) && (
-          <Button variant="ghost" size="sm" onClick={onResetFilters} className="text-white/60 hover:text-white">
-            <X className="w-4 h-4 mr-1" />
-            Clear Filters
-          </Button>
-        )}
-        <div className="ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={isExporting || logsQuery.isLoading}
-            className="border-white/20 text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <Download className="w-4 h-4 mr-1.5" />
-            {isExporting ? "Exporting..." : "Export CSV"}
-          </Button>
+      <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="text-[10px] text-[#999] uppercase tracking-wider block mb-1">User ID</label>
+            <input
+              type="text"
+              value={userIdSearch}
+              onChange={(e) => { setUserIdSearch(e.target.value); setPage(() => 0); }}
+              placeholder="e.g., 42"
+              className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs text-[#0A0A0A] placeholder:text-[#CCC] w-24"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-[#999] uppercase tracking-wider block mb-1">Severity</label>
+            <select
+              value={severityFilter}
+              onChange={(e) => { setSeverityFilter(e.target.value); setPage(() => 0); }}
+              className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs text-[#0A0A0A]"
+            >
+              <option value="all">All</option>
+              <option value="info">Info</option>
+              <option value="warning">Warning</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-[#999] uppercase tracking-wider block mb-1">Category</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => { setCategoryFilter(e.target.value); setPage(() => 0); }}
+              className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-3 py-1.5 text-xs text-[#0A0A0A]"
+            >
+              <option value="all">All</option>
+              <option value="billing">Billing</option>
+              <option value="model">Model</option>
+              <option value="security">Security</option>
+              <option value="abuse">Abuse</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-[#999] uppercase tracking-wider block mb-1">Date Range</label>
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3 h-3 text-[#999]" />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); setPage(() => 0); }}
+                className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-2 py-1.5 text-xs text-[#0A0A0A] w-32"
+              />
+              <span className="text-xs text-[#999]">—</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => { setEndDate(e.target.value); setPage(() => 0); }}
+                className="bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-2 py-1.5 text-xs text-[#0A0A0A] w-32"
+              />
+            </div>
+          </div>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={onResetFilters} className="text-xs text-[#999] hover:text-[#0A0A0A]">
+              <RotateCcw className="w-3 h-3 mr-1" /> Reset
+            </Button>
+          )}
+          <div className="ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={isExporting || logsQuery.isLoading}
+              className="border-[#E5E5E5] text-[#666] hover:text-[#0A0A0A] hover:bg-[#F5F5F5]"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              {isExporting ? "Exporting..." : "Export CSV"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Date Range Filter */}
-      <div className="flex gap-2 items-center max-w-md">
-        <div className="relative flex-1">
-          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => { setStartDate(e.target.value); setPage(() => 0); }}
-            className="w-full h-9 pl-8 pr-2 rounded-md bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
-            placeholder="From"
-          />
-        </div>
-        <span className="text-white/30 text-sm">–</span>
-        <div className="relative flex-1">
-          <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" />
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => { setEndDate(e.target.value); setPage(() => 0); }}
-            className="w-full h-9 pl-8 pr-2 rounded-md bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 [color-scheme:dark]"
-            placeholder="To"
-          />
-        </div>
-        {(startDate || endDate) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setStartDate(""); setEndDate(""); setPage(() => 0); }}
-            className="h-9 w-9 p-0 text-white/40 hover:text-white"
-            title="Clear dates"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* Logs Table */}
-      <Card className="bg-white/5 border-white/10 overflow-hidden">
+      {/* Log Table */}
+      <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Time</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Severity</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Action</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">User</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">IP</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase">Actions</th>
+              <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">Time</th>
+                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">Severity</th>
+                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">Action</th>
+                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">User</th>
+                <th className="text-left px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">IP</th>
+                <th className="text-right px-4 py-3 text-[10px] font-medium text-[#999] uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
               {logsQuery.isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-white/5">
+                  <tr key={i} className="border-b border-[#F0F0F0]">
                     <td className="px-4 py-3" colSpan={6}>
-                      <Skeleton className="h-6 w-full bg-white/10" />
+                      <Skeleton className="h-5 w-full bg-[#E5E5E5]" />
                     </td>
                   </tr>
                 ))
               ) : logsQuery.data?.logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-white/40">
-                    <Activity className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    No audit logs found
+                  <td colSpan={6} className="px-4 py-12 text-center text-[#999] text-sm">
+                    <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-[#CCC]" />
+                    No audit logs found matching the current filters
                   </td>
                 </tr>
               ) : (
                 logsQuery.data?.logs.map((log: any) => {
-                  const SeverityIcon = SEVERITY_ICONS[log.severity as keyof typeof SEVERITY_ICONS] || Info;
                   const category = getActionCategory(log.action);
                   return (
                     <tr
                       key={log.id}
-                      className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors"
+                      className="border-b border-[#F0F0F0] hover:bg-[#FAFAFA] cursor-pointer transition-colors"
                       onClick={() => onSelectLog(log as AuditLog)}
                     >
-                      <td className="px-4 py-3 text-sm text-white/60 whitespace-nowrap">
-                        {formatDate(log.createdAt)}
-                      </td>
+                      <td className="px-4 py-3 text-xs text-[#999] whitespace-nowrap">{formatDate(log.createdAt)}</td>
                       <td className="px-4 py-3">
-                        <Badge className={SEVERITY_COLORS[log.severity as keyof typeof SEVERITY_COLORS]}>
-                          <SeverityIcon className="w-3 h-3 mr-1" />
-                          {log.severity}
-                        </Badge>
+                        <Badge className={SEVERITY_COLORS[log.severity as keyof typeof SEVERITY_COLORS]}>{log.severity}</Badge>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          {category && (
-                            <Badge className={`${CATEGORY_COLORS[category]} text-xs`}>
-                              {category}
-                            </Badge>
-                          )}
-                          <span className="text-sm text-white/80">{formatAction(log.action)}</span>
+                          <span className="text-sm text-[#0A0A0A]">{formatAction(log.action)}</span>
+                          {category && <Badge className={`text-[10px] ${CATEGORY_COLORS[category]}`}>{category}</Badge>}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-white/60">
-                        {log.userId ? `#${log.userId}` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-white/60 font-mono text-xs">
-                        {log.ipAddress || "—"}
-                      </td>
+                      <td className="px-4 py-3 text-xs text-[#666] font-mono">{log.userId ? `#${log.userId}` : "—"}</td>
+                      <td className="px-4 py-3 text-xs text-[#999] font-mono">{log.ipAddress || "—"}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-white/40 hover:text-white h-7 w-7 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectLog(log as AuditLog);
-                            }}
+                            className="h-7 w-7 p-0 text-[#999] hover:text-[#0A0A0A]"
+                            onClick={(e) => { e.stopPropagation(); onSelectLog(log as AuditLog); }}
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
@@ -342,7 +295,7 @@ export function AuditLogsTab({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-amber-400/60 hover:text-amber-400 h-7 w-7 p-0"
+                              className="h-7 w-7 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const metadata = log.metadata as Record<string, unknown> | null;
@@ -370,33 +323,33 @@ export function AuditLogsTab({
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
-            <span className="text-sm text-white/40">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E5E5]">
+            <span className="text-xs text-[#999]">
               Page {page + 1} of {totalPages} ({logsQuery.data?.total || 0} total)
             </span>
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="border-white/20 text-white"
+                className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3 h-3" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="border-white/20 text-white"
+                className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3 h-3" />
               </Button>
             </div>
           </div>
         )}
-      </Card>
-    </>
+      </div>
+    </div>
   );
 }

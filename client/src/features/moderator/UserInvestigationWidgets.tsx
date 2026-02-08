@@ -13,7 +13,6 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
 import { trpc } from "@/lib/trpc";
@@ -37,32 +36,32 @@ export function UserTable({
   userTotalPages: number;
 }) {
   return (
-    <Card className="bg-white/5 border-white/10 overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-white/10">
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">User</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Role</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Last Active</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-white/40 uppercase">Actions</th>
+            <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">User</th>
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Role</th>
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Last Active</th>
+              <th className="px-4 py-3 text-right text-[10px] font-medium text-[#999] uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody>
             {usersQuery.isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-white/5">
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-32 bg-white/10" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 bg-white/10" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 bg-white/10" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-24 bg-white/10" /></td>
-                  <td className="px-4 py-3"><Skeleton className="h-5 w-8 bg-white/10 ml-auto" /></td>
+                <tr key={i} className="border-b border-[#F0F0F0]">
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-32 bg-[#E5E5E5]" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 bg-[#E5E5E5]" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 bg-[#E5E5E5]" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-24 bg-[#E5E5E5]" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-8 bg-[#E5E5E5] ml-auto" /></td>
                 </tr>
               ))
             ) : usersQuery.data?.users?.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-white/40 text-sm">
+                <td colSpan={5} className="px-4 py-8 text-center text-[#999] text-sm">
                   No users found
                 </td>
               </tr>
@@ -70,8 +69,8 @@ export function UserTable({
               usersQuery.data?.users?.map((u: any) => (
                 <tr
                   key={u.id}
-                  className={`border-b border-white/5 cursor-pointer transition-colors ${
-                    selectedUserId === u.id ? "bg-blue-500/10" : "hover:bg-white/5"
+                  className={`border-b border-[#F0F0F0] cursor-pointer transition-colors ${
+                    selectedUserId === u.id ? "bg-blue-50" : "hover:bg-[#FAFAFA]"
                   }`}
                   onClick={() => onSelectUser(u.id)}
                 >
@@ -80,14 +79,14 @@ export function UserTable({
                       {u.avatarUrl ? (
                         <img src={u.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium text-white">
+                        <div className="w-7 h-7 rounded-full bg-[#F0F0F0] flex items-center justify-center text-xs font-medium text-[#666]">
                           {(u.name || "U").charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-white">{u.name || "Unnamed"}</p>
-                        <p className="text-xs text-white/40">
-                          <span className="font-mono text-white/30">#{u.id}</span>{" "}
+                        <p className="text-sm font-medium text-[#0A0A0A]">{u.name || "Unnamed"}</p>
+                        <p className="text-xs text-[#999]">
+                          <span className="font-mono text-[#CCC]">#{u.id}</span>{" "}
                           {u.email}
                         </p>
                       </div>
@@ -95,31 +94,31 @@ export function UserTable({
                   </td>
                   <td className="px-4 py-3">
                     <Badge className={
-                      u.role === "admin" ? "bg-red-500/10 text-red-400" :
-                      u.role === "moderator" ? "bg-amber-500/10 text-amber-400" :
-                      "bg-gray-500/10 text-gray-400"
+                      u.role === "admin" ? "bg-red-50 text-red-700" :
+                      u.role === "moderator" ? "bg-amber-50 text-amber-700" :
+                      "bg-gray-100 text-gray-600"
                     }>
                       {u.role}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
                     {u.suspendedAt ? (
-                      <Badge className="bg-red-500/10 text-red-400">Suspended</Badge>
+                      <Badge className="bg-red-50 text-red-700">Suspended</Badge>
                     ) : (
-                      <Badge className="bg-emerald-500/10 text-emerald-400">Active</Badge>
+                      <Badge className="bg-emerald-50 text-emerald-700">Active</Badge>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-white/60">
+                  <td className="px-4 py-3 text-xs text-[#999]">
                     {u.lastLoginAt ? formatDate(new Date(u.lastLoginAt)) : "Never"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-7 w-7 p-0"
                       onClick={(e) => { e.stopPropagation(); onSelectUser(u.id); }}
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-3.5 h-3.5" />
                     </Button>
                   </td>
                 </tr>
@@ -131,8 +130,8 @@ export function UserTable({
 
       {/* User Pagination */}
       {userTotalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
-          <span className="text-xs text-white/40">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E5E5]">
+          <span className="text-xs text-[#999]">
             Page {userPage + 1} of {userTotalPages}
           </span>
           <div className="flex gap-1">
@@ -141,7 +140,7 @@ export function UserTable({
               size="sm"
               onClick={() => setUserPage(p => Math.max(0, p - 1))}
               disabled={userPage === 0}
-              className="border-white/20 text-white h-7 w-7 p-0"
+              className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
             >
               <ChevronLeft className="w-3 h-3" />
             </Button>
@@ -150,14 +149,14 @@ export function UserTable({
               size="sm"
               onClick={() => setUserPage(p => p + 1)}
               disabled={userPage + 1 >= userTotalPages}
-              className="border-white/20 text-white h-7 w-7 p-0"
+              className="border-[#E5E5E5] text-[#666] h-7 w-7 p-0"
             >
               <ChevronRight className="w-3 h-3" />
             </Button>
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -208,8 +207,8 @@ function FreezeActionButton({
           variant="outline"
           className={`w-full ${
             isFrozen
-              ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-              : "border-red-500/30 text-red-400 hover:bg-red-500/10"
+              ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+              : "border-red-300 text-red-700 hover:bg-red-50"
           }`}
           onClick={() => setShowForm(true)}
         >
@@ -229,7 +228,7 @@ function FreezeActionButton({
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder={isFrozen ? "Review notes (required)..." : "Reason for freeze (required)..."}
-        className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white/80 placeholder:text-white/30 resize-none"
+        className="w-full bg-[#F8F8F8] border border-[#E5E5E5] rounded-lg px-2 py-1.5 text-xs text-[#0A0A0A] placeholder:text-[#CCC] resize-none"
         rows={2}
         maxLength={500}
       />
@@ -257,7 +256,7 @@ function FreezeActionButton({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 text-xs text-white/50 hover:text-white"
+          className="h-7 text-xs text-[#999] hover:text-[#0A0A0A]"
           onClick={() => { setShowForm(false); setReason(""); }}
         >
           Cancel
@@ -279,95 +278,92 @@ export function UserDetailCard({
   onOpenChangeRequest: (options?: OpenChangeRequestOptions) => void;
 }) {
   return (
-    <Card className="bg-white/5 border-white/10">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
-          <User className="w-4 h-4 text-blue-400" />
-          User #{selectedUserId}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {userDetailsQuery.isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-12 w-full bg-white/10" />
-            <Skeleton className="h-8 w-3/4 bg-white/10" />
-            <Skeleton className="h-8 w-1/2 bg-white/10" />
-          </div>
-        ) : userDetailsQuery.data ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              {userDetailsQuery.data.user.avatarUrl ? (
-                <img src={userDetailsQuery.data.user.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-lg font-medium text-white">
-                  {(userDetailsQuery.data.user.name || "U").charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div>
-                <p className="font-medium text-white">{userDetailsQuery.data.user.name || "Unnamed"}</p>
-                <p className="text-xs text-white/40">{userDetailsQuery.data.user.email}</p>
+    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <User className="w-4 h-4 text-blue-600" />
+        <h3 className="text-sm font-semibold text-[#0A0A0A]">User #{selectedUserId}</h3>
+      </div>
+
+      {userDetailsQuery.isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-12 w-full bg-[#E5E5E5]" />
+          <Skeleton className="h-8 w-3/4 bg-[#E5E5E5]" />
+          <Skeleton className="h-8 w-1/2 bg-[#E5E5E5]" />
+        </div>
+      ) : userDetailsQuery.data ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            {userDetailsQuery.data.user.avatarUrl ? (
+              <img src={userDetailsQuery.data.user.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-[#F0F0F0] flex items-center justify-center text-lg font-medium text-[#666]">
+                {(userDetailsQuery.data.user.name || "U").charAt(0).toUpperCase()}
               </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-white/40">Credits</span>
-                <span className="font-medium text-white">{userDetailsQuery.data.credits?.balance?.toLocaleString() ?? "—"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/40">Plan</span>
-                <Badge className={
-                  userDetailsQuery.data.credits?.planTier === "enterprise" ? "bg-amber-500/10 text-amber-400" :
-                  userDetailsQuery.data.credits?.planTier === "studio" ? "bg-purple-500/10 text-purple-400" :
-                  userDetailsQuery.data.credits?.planTier === "starter" ? "bg-emerald-500/10 text-emerald-400" :
-                  "bg-gray-500/10 text-gray-400"
-                }>
-                  {userDetailsQuery.data.credits?.planTier || "free"}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/40">Joined</span>
-                <span className="text-xs text-white/80">{formatDate(new Date(userDetailsQuery.data.user.createdAt))}</span>
-              </div>
-              {userDetailsQuery.data.user.suspendedAt && (
-                <div className="p-2 rounded bg-red-500/10 border border-red-500/20">
-                  <p className="text-red-400 text-xs font-medium">Suspended</p>
-                  <p className="text-white/60 text-xs mt-1">{userDetailsQuery.data.user.suspendedReason || "No reason"}</p>
-                </div>
-              )}
-              {userDetailsQuery.data.user.frozenAt && (
-                <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
-                  <p className="text-amber-400 text-xs font-medium flex items-center gap-1">
-                    <ShieldAlert className="w-3 h-3" /> Account Frozen
-                  </p>
-                  <p className="text-white/60 text-xs mt-1">{userDetailsQuery.data.user.frozenReason || "No reason"}</p>
-                </div>
-              )}
-              <FreezeActionButton
-                userId={selectedUserId}
-                isFrozen={!!userDetailsQuery.data.user.frozenAt}
-                isAdmin={userDetailsQuery.data.user.role === "admin"}
-              />
-              <div className="pt-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                  onClick={() => onOpenChangeRequest({
-                    type: "flag_account",
-                    targetUserId: selectedUserId.toString(),
-                    targetUserName: userDetailsQuery.data?.user.name || userDetailsQuery.data?.user.email || undefined,
-                  })}
-                >
-                  <FileText className="w-3 h-3 mr-2" />
-                  Submit Change Request
-                </Button>
-              </div>
+            )}
+            <div>
+              <p className="font-medium text-[#0A0A0A]">{userDetailsQuery.data.user.name || "Unnamed"}</p>
+              <p className="text-xs text-[#999]">{userDetailsQuery.data.user.email}</p>
             </div>
           </div>
-        ) : (
-          <p className="text-white/40 text-sm">User not found</p>
-        )}
-      </CardContent>
-    </Card>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-[#999]">Credits</span>
+              <span className="font-medium text-[#0A0A0A]">{userDetailsQuery.data.credits?.balance?.toLocaleString() ?? "—"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#999]">Plan</span>
+              <Badge className={
+                userDetailsQuery.data.credits?.planTier === "enterprise" ? "bg-amber-50 text-amber-700" :
+                userDetailsQuery.data.credits?.planTier === "studio" ? "bg-purple-50 text-purple-700" :
+                userDetailsQuery.data.credits?.planTier === "starter" ? "bg-emerald-50 text-emerald-700" :
+                "bg-gray-100 text-gray-600"
+              }>
+                {userDetailsQuery.data.credits?.planTier || "free"}
+              </Badge>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#999]">Joined</span>
+              <span className="text-xs text-[#666]">{formatDate(new Date(userDetailsQuery.data.user.createdAt))}</span>
+            </div>
+            {userDetailsQuery.data.user.suspendedAt && (
+              <div className="p-2 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-red-700 text-xs font-medium">Suspended</p>
+                <p className="text-[#666] text-xs mt-1">{userDetailsQuery.data.user.suspendedReason || "No reason"}</p>
+              </div>
+            )}
+            {userDetailsQuery.data.user.frozenAt && (
+              <div className="p-2 rounded-lg bg-amber-50 border border-amber-200">
+                <p className="text-amber-700 text-xs font-medium flex items-center gap-1">
+                  <ShieldAlert className="w-3 h-3" /> Account Frozen
+                </p>
+                <p className="text-[#666] text-xs mt-1">{userDetailsQuery.data.user.frozenReason || "No reason"}</p>
+              </div>
+            )}
+            <FreezeActionButton
+              userId={selectedUserId}
+              isFrozen={!!userDetailsQuery.data.user.frozenAt}
+              isAdmin={userDetailsQuery.data.user.role === "admin"}
+            />
+            <div className="pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                onClick={() => onOpenChangeRequest({
+                  type: "flag_account",
+                  targetUserId: selectedUserId.toString(),
+                  targetUserName: userDetailsQuery.data?.user.name || userDetailsQuery.data?.user.email || undefined,
+                })}
+              >
+                <FileText className="w-3 h-3 mr-2" />
+                Submit Change Request
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-[#999] text-sm">User not found</p>
+      )}
+    </div>
   );
 }

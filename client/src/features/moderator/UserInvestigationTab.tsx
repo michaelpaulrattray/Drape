@@ -10,9 +10,6 @@ import {
   Image,
   ArrowRightLeft,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   AuditLog,
   type OpenChangeRequestOptions,
@@ -123,20 +120,20 @@ export function UserInvestigationTab({
   };
 
   return (
-    <>
-      <div className="flex gap-3 items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-          <Input
-            placeholder="Search users by name, email, or ID..."
-            value={userSearchQuery}
-            onChange={(e) => { setUserSearchQuery(e.target.value); setUserPage(() => 0); }}
-            className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30"
-          />
-        </div>
+    <div className="space-y-4">
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999]" />
+        <input
+          type="text"
+          placeholder="Search users by name, email, or ID..."
+          value={userSearchQuery}
+          onChange={(e) => { setUserSearchQuery(e.target.value); setUserPage(() => 0); }}
+          className="w-full pl-10 pr-4 py-2 bg-white border border-[#E5E5E5] rounded-xl text-sm text-[#0A0A0A] placeholder:text-[#CCC]"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* User List */}
         <div className="lg:col-span-2">
           <UserTable
@@ -150,9 +147,9 @@ export function UserInvestigationTab({
         </div>
 
         {/* User Detail Sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {selectedUserId ? (
-            <div className="space-y-4">
+            <>
               <UserDetailCard
                 userDetailsQuery={userDetailsQuery}
                 selectedUserId={selectedUserId}
@@ -160,18 +157,20 @@ export function UserInvestigationTab({
               />
 
               {/* Sub-Tab Navigation */}
-              <div className="flex gap-1 border-b border-white/10 pb-1">
+              <div className="bg-white rounded-xl border border-[#E5E5E5] p-1 flex gap-0.5">
                 {DETAIL_TABS.map(({ key, label, icon: Icon }) => (
-                  <Button
+                  <button
                     key={key}
-                    variant={userDetailTab === key ? "default" : "ghost"}
-                    size="sm"
                     onClick={() => setUserDetailTab(key)}
-                    className={`text-xs ${userDetailTab === key ? "bg-blue-600 hover:bg-blue-700" : "text-white/60 hover:text-white"}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-1 justify-center ${
+                      userDetailTab === key
+                        ? "bg-[#0A0A0A] text-white"
+                        : "text-[#999] hover:text-[#0A0A0A] hover:bg-[#F5F5F5]"
+                    }`}
                   >
-                    <Icon className="w-3 h-3 mr-1" />
+                    <Icon className="w-3 h-3" />
                     {label}
-                  </Button>
+                  </button>
                 ))}
               </div>
 
@@ -219,17 +218,15 @@ export function UserInvestigationTab({
                   setEndDate={setReconEndDate}
                 />
               )}
-            </div>
+            </>
           ) : (
-            <Card className="bg-white/5 border-white/10">
-              <CardContent className="py-12 text-center">
-                <User className="w-8 h-8 mx-auto mb-3 text-white/20" />
-                <p className="text-white/40 text-sm">Select a user to view details</p>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-xl border border-[#E5E5E5] py-12 text-center">
+              <User className="w-8 h-8 mx-auto mb-3 text-[#CCC]" />
+              <p className="text-[#999] text-sm">Select a user to view details</p>
+            </div>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

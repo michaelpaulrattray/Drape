@@ -2,7 +2,6 @@
  * Blocked IPs tab — table of blocked IP addresses.
  */
 import { Globe } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "./moderatorConstants";
 
@@ -12,44 +11,44 @@ interface BlockedIPsTabProps {
 
 export function BlockedIPsTab({ blockedIpsQuery }: BlockedIPsTabProps) {
   return (
-    <Card className="bg-white/5 border-white/10 overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-white/10">
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">IP Address</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Reason</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Blocked By</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Expires</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-white/40 uppercase">Blocked At</th>
+            <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">IP Address</th>
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Reason</th>
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Blocked By</th>
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Expires</th>
+              <th className="px-4 py-3 text-left text-[10px] font-medium text-[#999] uppercase tracking-wider">Blocked At</th>
             </tr>
           </thead>
           <tbody>
             {blockedIpsQuery.isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
-                <tr key={i} className="border-b border-white/5">
+                <tr key={i} className="border-b border-[#F0F0F0]">
                   <td className="px-4 py-3" colSpan={5}>
-                    <Skeleton className="h-6 w-full bg-white/10" />
+                    <Skeleton className="h-6 w-full bg-[#E5E5E5]" />
                   </td>
                 </tr>
               ))
             ) : blockedIpsQuery.data?.ips.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-white/40">
+                <td colSpan={5} className="px-4 py-12 text-center text-[#999]">
                   <Globe className="w-8 h-8 mx-auto mb-2 opacity-40" />
                   No blocked IPs
                 </td>
               </tr>
             ) : (
               blockedIpsQuery.data?.ips.map((ip: any) => (
-                <tr key={ip.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-mono text-sm text-white">{ip.ipAddress}</td>
-                  <td className="px-4 py-3 text-sm text-white/60">{ip.reason}</td>
-                  <td className="px-4 py-3 text-sm text-white/60">Admin #{ip.blockedBy}</td>
-                  <td className="px-4 py-3 text-sm text-white/60">
+                <tr key={ip.id} className="border-b border-[#F0F0F0] hover:bg-[#FAFAFA] transition-colors">
+                  <td className="px-4 py-3 font-mono text-sm text-[#0A0A0A]">{ip.ipAddress}</td>
+                  <td className="px-4 py-3 text-sm text-[#666]">{ip.reason}</td>
+                  <td className="px-4 py-3 text-sm text-[#666]">Admin #{ip.blockedBy}</td>
+                  <td className="px-4 py-3 text-sm text-[#666]">
                     {ip.expiresAt ? formatDate(new Date(ip.expiresAt)) : "Permanent"}
                   </td>
-                  <td className="px-4 py-3 text-sm text-white/60">
+                  <td className="px-4 py-3 text-sm text-[#666]">
                     {formatDate(new Date(ip.createdAt))}
                   </td>
                 </tr>
@@ -58,6 +57,6 @@ export function BlockedIPsTab({ blockedIpsQuery }: BlockedIPsTabProps) {
           </tbody>
         </table>
       </div>
-    </Card>
+    </div>
   );
 }

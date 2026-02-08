@@ -6,6 +6,7 @@ export { FlaggedReferralsTab } from "./FlaggedReferralsTab";
 export { LogDetailModal } from "./LogDetailModal";
 export { ChangeRequestModal } from "./ChangeRequestModal";
 export { DashboardHeader } from "./DashboardHeader";
+export { ModeratorHeader } from "./ModeratorHeader";
 export { StatsCards } from "./StatsCards";
 export { FlaggedDiscrepanciesCard } from "./FlaggedDiscrepanciesCard";
 export { TabNavigation } from "./TabNavigation";
