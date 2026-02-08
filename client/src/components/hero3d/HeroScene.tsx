@@ -189,10 +189,10 @@ function RevealPlane({
       // Primary: slow horizontal sweep (like a fish gliding left-to-right)
       // Secondary: gentle vertical undulation (like a fish's body wave)
       // Tertiary: subtle figure-8 drift for organic feel
-      const sweepX = Math.sin(t * 0.15) * 0.35; // slow wide horizontal sweep
-      const undulateY = Math.sin(t * 0.35) * 0.08; // gentle vertical wave
-      const driftX = Math.sin(t * 0.25 + 1.5) * 0.08; // subtle drift overlay
-      const driftY = Math.cos(t * 0.2) * 0.05; // subtle vertical drift
+      const sweepX = Math.sin(t * 0.3) * 0.35; // horizontal sweep
+      const undulateY = Math.sin(t * 0.7) * 0.08; // vertical wave
+      const driftX = Math.sin(t * 0.5 + 1.5) * 0.08; // drift overlay
+      const driftY = Math.cos(t * 0.4) * 0.05; // vertical drift
 
       sharedMouse.targetX = 0.5 + sweepX + driftX;
       sharedMouse.targetY = 0.5 + undulateY + driftY;
