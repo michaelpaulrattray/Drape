@@ -33,6 +33,7 @@ export function useCastingViewGeneration({
     isAutoGenerating,
     setIsAutoGenerating,
     setAutoGenCancelled,
+    setIsTopupOpen,
   } = useCastingUIStore();
 
   // Mutations
@@ -56,7 +57,8 @@ export function useCastingViewGeneration({
         closeLockModal();
         
         if (!creditsData || creditsData.balance < CREDIT_COSTS.fullBody) {
-          toast.error(`Insufficient credits. Need ${CREDIT_COSTS.fullBody} points.`);
+          toast.error(`Insufficient credits. Need ${CREDIT_COSTS.fullBody} credits.`);
+          setIsTopupOpen(true);
           return;
         }
 
@@ -97,7 +99,8 @@ export function useCastingViewGeneration({
     
     const doGenerate = async (): Promise<boolean> => {
       if (!creditsData || creditsData.balance < CREDIT_COSTS.multiView) {
-        toast.error(`Insufficient credits. Need ${CREDIT_COSTS.multiView} points.`);
+        toast.error(`Insufficient credits. Need ${CREDIT_COSTS.multiView} credits.`);
+        setIsTopupOpen(true);
         setIsAutoGenerating(false);
         return false;
       }
@@ -174,6 +177,7 @@ export function useCastingViewGeneration({
           const totalCost = CREDIT_COSTS.multiView * 3;
           if (!creditsData || creditsData.balance < totalCost) {
             toast.error(`Insufficient credits. Need ${totalCost} credits for all views.`);
+            setIsTopupOpen(true);
             setIsAutoGenerating(false);
             resolve();
             return;

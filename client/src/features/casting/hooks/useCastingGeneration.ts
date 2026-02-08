@@ -120,7 +120,8 @@ export function useCastingGeneration({
 
     const totalCost = CREDIT_COSTS.masterPrompt + CREDIT_COSTS.castingImage;
     if (!creditsData || creditsData.balance < totalCost) {
-      toast.error(`Insufficient credits. Need ${totalCost} points.`);
+      toast.error(`Insufficient credits. Need ${totalCost} credits.`);
+      setIsTopupOpen(true);
       return;
     }
 
@@ -208,7 +209,8 @@ export function useCastingGeneration({
     if (!currentModelId) return;
 
     if (!creditsData || creditsData.balance < CREDIT_COSTS.iteration) {
-      toast.error(`Insufficient credits. Need ${CREDIT_COSTS.iteration} points.`);
+      toast.error(`Insufficient credits. Need ${CREDIT_COSTS.iteration} credits.`);
+      setIsTopupOpen(true);
       return;
     }
 

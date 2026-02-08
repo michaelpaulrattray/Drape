@@ -3733,3 +3733,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Move mobile panel toggle into StudioHeader
 - [x] Credits pill in header opens topup modal
 - [x] User avatar in header opens ProfileSettingsModal
+## Feature: Auto-open CreditTopupModal on Insufficient Credits
+- [x] Auto-open topup modal when insufficient credits on initial generation (useCastingGeneration)
+- [x] Auto-open topup modal when insufficient credits on iteration/refine (useCastingGeneration)
+- [x] Auto-open topup modal when insufficient credits on full body view (useCastingViewGeneration)
+- [x] Auto-open topup modal when insufficient credits on multi-view (useCastingViewGeneration)
+- [x] Auto-open topup modal when insufficient credits on all views (useCastingViewGeneration)
+- [x] Fix "points" → "credits" in all insufficient credit error messages (4 instances fixed)
