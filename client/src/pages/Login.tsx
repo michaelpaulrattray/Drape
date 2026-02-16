@@ -1,6 +1,6 @@
 import { getLoginUrl } from "@/const";
 import { Button as DSButton } from "@/components/design-system";
-import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX, Check, Loader2 } from "lucide-react";
+import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX, Check, Loader2, Sparkles, KeyRound } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
@@ -238,8 +238,21 @@ function AspirationPanel() {
 // ─── Main component ────────────────────────────────────────────────────────
 export default function Login() {
   const loginUrl = getLoginUrl();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [showSignIn, setShowSignIn] = useState(false);
+  const [showAccessCode, setShowAccessCode] = useState(false);
+  const [accessCode, setAccessCode] = useState("");
+  const [codeRedeemed, setCodeRedeemed] = useState(false);
+
+  const redeemMutation = trpc.access.redeem.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        setCodeRedeemed(true);
+        // User is now approved — redirect to dashboard after brief delay
+        setTimeout(() => navigate("/dashboard"), 1500);
+      }
+    },
+  });
 
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
   const errorType = searchParams.get("error");
@@ -367,6 +380,79 @@ export default function Login() {
                     Continue with Email
                   </DSButton>
                 )}
+
+                {/* Access Code Section */}
+                <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5">
+                  {!showAccessCode ? (
+                    <button
+                      onClick={() => setShowAccessCode(true)}
+                      className="w-full flex items-center justify-center gap-2 text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      Have an access code?
+                    </button>
+                  ) : codeRedeemed ? (
+                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#0A0A0A]/5 border border-[#0A0A0A]/10">
+                      <div className="w-8 h-8 rounded-full bg-[#0A0A0A] flex items-center justify-center flex-shrink-0">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[#0A0A0A]">Access granted!</p>
+                        <p className="text-xs text-[#757575]">Redirecting to your dashboard...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 justify-center text-xs text-[#757575] uppercase tracking-widest">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Enter your access code
+                      </div>
+                      <p className="text-xs text-[#757575] text-center">
+                        Sign in above first, then enter your code to unlock access.
+                      </p>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const trimmed = accessCode.trim();
+                          if (!trimmed) return;
+                          redeemMutation.mutate({ code: trimmed });
+                        }}
+                        className="flex gap-2"
+                      >
+                        <input
+                          type="text"
+                          value={accessCode}
+                          onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                          placeholder="FORMA-XXXXX"
+                          maxLength={64}
+                          disabled={redeemMutation.isPending}
+                          className="flex-1 h-11 px-4 rounded-full border border-[#0A0A0A]/10 bg-white text-center font-mono text-sm tracking-wider placeholder:text-[#BFBFBF] focus:outline-none focus:border-[#0A0A0A]/30 transition-colors"
+                        />
+                        <button
+                          type="submit"
+                          disabled={redeemMutation.isPending || !accessCode.trim()}
+                          className="h-11 px-5 rounded-full bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-40 flex items-center justify-center"
+                        >
+                          {redeemMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <ArrowRight className="w-4 h-4" />
+                          )}
+                        </button>
+                      </form>
+                      {redeemMutation.isError && (
+                        <p className="text-xs text-red-500 text-center">
+                          Something went wrong. Please try again.
+                        </p>
+                      )}
+                      {redeemMutation.data && !redeemMutation.data.success && (
+                        <p className="text-xs text-red-500 text-center">
+                          {redeemMutation.data.error || "Invalid access code."}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Legal */}
                 <p className="text-xs text-[#757575] mt-6 leading-relaxed font-medium">

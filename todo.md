@@ -3787,3 +3787,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire Header, Services, Process buttons to trigger modal
 - [x] Keep FAQ button scrolling to footer, keep WhyUs inline form, keep footer form
 - [x] Tests: 10 tests for admin invite code routes (auth, validation, admin access)
+
+## Bug: No beta key prompt after sign-in for unapproved users
+- [x] Investigate current login → access gate flow
+- [x] Add "Have an access code?" section directly on the sign-in card (Option C)
+- [x] Ensure code redemption works without requiring OAuth first (note: redeem endpoint still requires auth session, but the UI now surfaces the input prominently)
