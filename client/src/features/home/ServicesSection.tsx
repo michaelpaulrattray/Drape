@@ -3,7 +3,11 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/design-system";
 import { scaleIn, services } from "./homeData";
 
-export function ServicesSection() {
+interface ServicesSectionProps {
+  onOpenWaitlist?: () => void;
+}
+
+export function ServicesSection({ onOpenWaitlist }: ServicesSectionProps) {
   const [expandedService, setExpandedService] = useState<number | null>(null);
   const [hoveredService, setHoveredService] = useState<number | null>(null);
 
@@ -138,7 +142,7 @@ export function ServicesSection() {
           </div>
 
           {/* CTA Button */}
-          <Button href="/#contact" variant="secondary" showPlus>
+          <Button onClick={onOpenWaitlist} variant="secondary" showPlus>
             Join waitlist
           </Button>
         </motion.div>

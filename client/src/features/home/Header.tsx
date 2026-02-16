@@ -4,7 +4,11 @@ import { Menu, X, Plus } from "lucide-react";
 import { Button, NavLink, SocialLink } from "@/components/design-system";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function Header() {
+interface HeaderProps {
+  onOpenWaitlist?: () => void;
+}
+
+export function Header({ onOpenWaitlist }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
@@ -110,7 +114,7 @@ export function Header() {
 
         {/* CTA Button */}
         <div className="hidden md:flex items-center gap-3 lg:gap-4">
-          <Button href="/#contact" variant="primary" size="md">
+          <Button onClick={onOpenWaitlist} variant="primary" size="md">
             Join waitlist
           </Button>
           <button 
@@ -173,10 +177,12 @@ export function Header() {
                 </a>
               ))}
               <Button 
-                href="/#contact" 
                 variant="primary" 
                 className="mt-6 justify-center w-full"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenWaitlist?.();
+                }}
               >
                 Join waitlist
               </Button>

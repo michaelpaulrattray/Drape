@@ -13,6 +13,7 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import ModeratorDashboard from "./pages/ModeratorDashboard";
 import AdminChangeRequests from "./pages/AdminChangeRequests";
 import AdminOverview from "./pages/AdminOverview";
+import AdminInviteCodes from "./pages/AdminInviteCodes";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import WaitlistPending from "./pages/WaitlistPending";
 
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/admin/audit-logs" component={AdminAuditLogs} />
       <Route path="/admin/users" component={AdminUserManagement} />
       <Route path="/admin/change-requests" component={AdminChangeRequests} />
+      <Route path="/admin/invite-codes" component={AdminInviteCodes} />
       <Route path="/moderator" component={ModeratorDashboard} />
       <Route path="/outfit-studio" component={ComingSoon} />
       <Route path="/photo-studio" component={ComingSoon} />

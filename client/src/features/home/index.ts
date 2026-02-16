@@ -12,3 +12,4 @@ export { ProcessSection } from "./ProcessSection";
 export { FAQSection } from "./FAQSection";
 export { BlogSection } from "./BlogSection";
 export { Footer } from "./Footer";
+export { WaitlistModal } from "./WaitlistModal";

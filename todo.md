@@ -3773,3 +3773,17 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Frontend: Dashboard + CastingStudio approval gates (redirect unapproved non-admin users to /waitlist-pending)
 - [x] Admin auto-approved in DB; admins bypass all gates
 - [x] Tests: 6 tests for access.status (approved/unapproved/admin) + access.redeem (validation, rate limit, code trimming)
+
+## Feature: Admin Invite Code Management UI
+- [x] Create admin tRPC routes (createInviteCode, listInviteCodes, deactivateInviteCode)
+- [x] Create AdminInviteCodes.tsx page with table + generate form
+- [x] Add nav link to AdminHeader
+- [x] Register route in App.tsx
+
+## Feature: Floating Waitlist Modal with Two-Step Signup
+- [x] Create WaitlistModal.tsx — floating bottom-right card, two-step flow
+- [x] Step 1: Email + name capture (highest priority)
+- [x] Step 2: Optional pill-chip questionnaire (role + source) with Skip
+- [x] Wire Header, Services, Process buttons to trigger modal
+- [x] Keep FAQ button scrolling to footer, keep WhyUs inline form, keep footer form
+- [x] Tests: 10 tests for admin invite code routes (auth, validation, admin access)

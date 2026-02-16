@@ -3,7 +3,11 @@ import { Button } from "@/components/design-system";
 import { fadeIn, fadeInUp, processSteps } from "./homeData";
 import { SectionLabel } from "./SectionLabel";
 
-export function ProcessSection() {
+interface ProcessSectionProps {
+  onOpenWaitlist?: () => void;
+}
+
+export function ProcessSection({ onOpenWaitlist }: ProcessSectionProps) {
   return (
     <section id="process" className="py-12 sm:py-24 bg-white">
       <div className="max-w-[1520px] mx-auto container-full-bleed">
@@ -30,7 +34,7 @@ export function ProcessSection() {
             <p className="text-body-md text-gray-secondary mb-8">
               No prompt engineering. No guesswork. Just a visual-first workflow that keeps you in creative control.
             </p>
-            <Button href="/#contact" variant="secondary-invert" showPlus>
+            <Button onClick={onOpenWaitlist} variant="secondary-invert" showPlus>
               Join waitlist
             </Button>
           </motion.div>

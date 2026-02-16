@@ -2,6 +2,7 @@
  * Home page — thin shell that composes feature sub-components.
  * All section implementations live in @/features/home/.
  */
+import { useState, useCallback } from "react";
 import {
   Header,
   HeroSection,
@@ -13,9 +14,14 @@ import {
   FAQSection,
   BlogSection,
   Footer,
+  WaitlistModal,
 } from "@/features/home";
 
 export default function Home() {
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const openWaitlist = useCallback(() => setWaitlistOpen(true), []);
+  const closeWaitlist = useCallback(() => setWaitlistOpen(false), []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Skip to main content link for accessibility */}
@@ -25,18 +31,19 @@ export default function Home() {
       >
         Skip to main content
       </a>
-      <Header />
+      <Header onOpenWaitlist={openWaitlist} />
       <main id="main-content">
         <HeroSection />
         <AboutSection />
         <WorkSection />
         <WhyUsSection />
-        <ServicesSection />
-        <ProcessSection />
+        <ServicesSection onOpenWaitlist={openWaitlist} />
+        <ProcessSection onOpenWaitlist={openWaitlist} />
         <FAQSection />
         <BlogSection />
       </main>
       <Footer />
+      <WaitlistModal open={waitlistOpen} onClose={closeWaitlist} />
     </div>
   );
 }

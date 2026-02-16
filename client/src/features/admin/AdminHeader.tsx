@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Eye,
   BarChart3,
+  Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,7 @@ const NAV_LINKS = [
   { href: "/admin/users", icon: Users, label: "Users" },
   { href: "/admin/audit-logs", icon: Shield, label: "Audit Logs" },
   { href: "/admin/change-requests", icon: ClipboardList, label: "Change Requests" },
+  { href: "/admin/invite-codes", icon: Ticket, label: "Invite Codes" },
   { href: "/moderator", icon: Eye, label: "Moderator" },
 ] as const;
 
