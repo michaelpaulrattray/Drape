@@ -3,7 +3,7 @@
  *
  * Sub-modules:
  *   castingImaging   — headshot, full body, multi-view generation
- *   castingRefinement — iterate, upscale, proxy, enhance
+ *   castingRefinement — iterate, upscale, proxy, enhance, suggestions, analyzeReference, reconcile, compactPrompt, clearSession
  *   castingExport    — PDF generation, minting, history, costs
  *
  * Future apps (e.g., product photography) will add their own sub-modules here:

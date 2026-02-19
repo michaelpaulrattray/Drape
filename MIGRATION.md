@@ -6,40 +6,49 @@
 
 ## Phase Status
 
+### Server Migration (Complete)
+
 | Phase | Description | Status | Checkpoint |
 |-------|-------------|--------|------------|
 | 1a | Server prompts: constants + brand profiles | ✅ Done | 19582bce |
 | 1b | Server: studio settings, identity anchor, retry logic, response helpers | ✅ Done | 19582bce |
 | 1c | Server: prompt assembly (skin, iris, hair, ethnicity blend, vibe bands) | ✅ Done | 19582bce |
-| 2a | Server: schema reconciliation + identity drift checking | ✅ Done | (pending) |
-| 2b | Server: suggestion generation + reference analysis | ✅ Done | (pending) |
-| 2c | Server: prompt compaction | ✅ Done | (pending) |
-| 2d | tRPC routes: new procedures (reconcile, suggestions, compact, session, analyzeRef) | ✅ Done | (pending) |
-| 3b | Types: update ModelPreferences + add new types | ⬜ Not started | — |
-| 4a | Client: Zustand stores (form, generation, UI) | ⬜ Not started | — |
-| 4b | Client: hooks (useCastingGeneration, useCastingViewGeneration) | ⬜ Not started | — |
-| 5 | Client: ControlPanel components | ⬜ Not started | — |
-| 6 | Client: ImageViewer + RefineBar + ViewStrip | ⬜ Not started | — |
-| 7 | Client: MasterPrompt panel + quick suggestions | ⬜ Not started | — |
-| 8 | Integration testing + polish | ⬜ Not started | — |
+| 2a | Server: schema reconciliation + identity drift checking | ✅ Done | 1aac71fb |
+| 2b | Server: suggestion generation + reference analysis | ✅ Done | 1aac71fb |
+| 2c | Server: prompt compaction | ✅ Done | 1aac71fb |
+| 2d | tRPC routes: suggestions, analyzeReference, reconcile, compactPrompt, clearSession | ✅ Done | 1aac71fb |
+
+### Client Migration (Not Started)
+
+| Phase | Description | Status | Checkpoint |
+|-------|-------------|--------|------------|
+| 3 | Types: update ModelPreferences + add new shared types | ⬜ Not started | — |
+| 4 | Client: Zustand stores (form, generation, UI) | ⬜ Not started | — |
+| 5 | Client: hooks (useCastingGeneration, useCastingViewGeneration) | ⬜ Not started | — |
+| 6 | Client: ControlPanel components + ethnicity blend UI | ⬜ Not started | — |
+| 7 | Client: ImageViewer + RefineBar + ViewStrip | ⬜ Not started | — |
+| 8 | Client: MasterPrompt panel + quick suggestions | ⬜ Not started | — |
+| 9 | Integration testing + polish | ⬜ Not started | — |
 
 ---
 
 ## File Mapping (Old → New)
 
-### Server Files
+### Server Files (✅ All Complete)
 
-| Current File | New Design Reference | Changes |
+| Current File | New Design Reference | Status |
 |---|---|---|
-| `server/casting/geminiPrompts.ts` | `constants.ts` + `promptGenerator.ts` | Replace MASTER_PROMPT_SYSTEM_INSTRUCTION, add BRAND_PROFILES, update getSkinDescription, add irisDescriptions, add formatEthnicityBlend, add vibe band system |
-| `server/casting/geminiClient.ts` | `services/gemini/client.ts` | Add safeResponseText, extractImageFromResponse, diagnoseResponse, withTimeout, withSingleRetry503, getStudioSettings, buildIdentityAnchor, checkIdentityConsistency, hasBodyArt, GeminiPart |
-| `server/casting/geminiGeneration.ts` | `services/gemini/castingGenerator.ts` + `promptGenerator.ts` | Add chat session (activeSession), brand expression system, ethnicity phenotype lock, attribute transfer protocol, identity anchor, model fallback chain |
-| `server/casting/geminiViews.ts` | `services/gemini/bodyGenerator.ts` + `viewGenerator.ts` | Add identity anchor, physique directive, identity consistency check, model fallback chain |
-| `server/casting/geminiTypes.ts` | `types.ts` | Add ethnicityBlend, Amendment, GeneratedAsset, GenerationState |
-| `server/casting/geminiService.ts` | `services/gemini/index.ts` | Add new exports: reconcileSchemaWithImage, updateSchemaForIteration, generateCastingSuggestions, analyzeReferenceForTransfer, compactMasterPrompt, clearCastingSession, checkIdentityConsistency |
-| — (new) | `services/gemini/schemaUpdater.ts` | NEW: updateSchemaForIteration, reconcileSchemaWithImage |
-| — (new) | `services/gemini/suggestionGenerator.ts` | NEW: generateCastingSuggestions, analyzeReferenceForTransfer |
-| — (new) | `services/gemini/promptCompactor.ts` | NEW: compactMasterPrompt |
+| `server/casting/geminiPrompts.ts` | `constants.ts` + `promptGenerator.ts` | ✅ Phase 1a: MASTER_PROMPT, BRAND_PROFILES, getSkinDescription, irisDescriptions, formatEthnicityBlend |
+| `server/casting/geminiClient.ts` | `services/gemini/client.ts` | ✅ Phase 1b: safeResponseText, extractImageFromResponse, diagnoseResponse, withTimeout, withSingleRetry503, buildIdentityAnchor, extractBase64Data |
+| `server/casting/geminiGeneration.ts` | `services/gemini/castingGenerator.ts` + `promptGenerator.ts` | ✅ Phase 1b: chat session, brand expression, ethnicity phenotype lock, attribute transfer protocol, identity anchor, model fallback |
+| `server/casting/geminiViews.ts` | `services/gemini/bodyGenerator.ts` + `viewGenerator.ts` | ✅ Phase 1c: identity anchor, diagnoseResponse, extractImageFromResponse, withTimeout, withSingleRetry503 |
+| `server/casting/geminiTypes.ts` | `types.ts` | ✅ Phase 1b: Added ethnicityBlend to ModelPreferences |
+| `server/casting/geminiService.ts` | `services/gemini/index.ts` | ✅ Phase 2d: All new exports wired |
+| `server/casting/geminiSchemaUpdater.ts` (new) | `services/gemini/schemaUpdater.ts` | ✅ Phase 2a: updateSchemaForIteration, reconcileSchemaWithImage |
+| `server/casting/geminiSuggestions.ts` (new) | `services/gemini/suggestionGenerator.ts` | ✅ Phase 2b: generateCastingSuggestions, analyzeReferenceForTransfer |
+| `server/casting/geminiPromptCompactor.ts` (new) | `services/gemini/promptCompactor.ts` | ✅ Phase 2c: compactMasterPrompt |
+| `server/casting/aiService.ts` | (re-export layer) | ✅ Phase 2d: All new functions re-exported |
+| `server/routes/generation/castingRefinement.ts` | (tRPC routes) | ✅ Phase 2d: 5 new procedures added |
 
 ### Client Files (future phases)
 
@@ -66,15 +75,15 @@
 | `generation.upscale` | protected | Upscale image |
 | `generation.enhancePrompt` | protected | Enhance user iteration text |
 
-### New Procedures (Phase 3a)
+### New Procedures (✅ Done — Phase 2d)
 
 | Procedure | Auth | Description |
 |---|---|---|
-| `generation.reconcileSchema` | protected | Visual reconciliation after iteration |
-| `generation.suggestions` | protected | Generate quick idea chips |
-| `generation.analyzeReference` | protected | Analyze reference image for transfer |
-| `generation.compactPrompt` | protected | Compact bloated master prompt |
-| `generation.clearSession` | protected | Clear chat session state |
+| `generation.suggestions` | protected | Generate quick variation suggestions (6 chips) |
+| `generation.analyzeReference` | protected | Analyze reference image for transferable attributes |
+| `generation.reconcile` | protected | Visual reconciliation — correct schema to match image |
+| `generation.compactPrompt` | protected | Compact bloated master prompt into clean paragraph |
+| `generation.clearSession` | protected | Clear in-memory chat session state |
 
 ---
 
@@ -104,10 +113,10 @@ amendments: Amendment[];
 |---|---|---|---|
 | 1 | Chat session persistence uses replay-from-history | Strip images from older entries, keep last 3 image-bearing messages, prepend identity anchor — avoids storing full session state in DB | Pre-migration |
 | 2 | Schema reconciliation is awaited (not fire-and-forget) | Shows "Syncing identity details..." UI, returns corrected schema+description with image | Pre-migration |
-| 3 | Suggestion generation in geminiPrompts.ts | Prompt assembly concern, not reconciliation | Pre-migration |
+| 3 | Suggestion generation in geminiSuggestions.ts | Separate file for suggestions + reference analysis, not in prompts | Phase 2b |
 | 4 | File split: prompts / reconciliation / generation / views | Clean separation of concerns matching new design | Pre-migration |
-| 5 | Testing: Vitest server-side tests for Phase 2 before hooks | Validate server functions independently | Pre-migration |
-| 6 | compressImageForApi: server-side implementation needed | New design uses browser Canvas API — need Node.js equivalent using sharp | Phase 1b |
+| 5 | Testing: Vitest server-side tests for each phase | Validate server functions independently before client work | Phase 1a–2d |
+| 6 | compressImageForApi: server-side passthrough for now | New design uses browser Canvas API — server passes through without compression; can add sharp later | Phase 1b |
 | 7 | Safety settings: BLOCK_NONE preserved for Casting Studio | Fashion casting requires bare skin descriptions that trigger false positives | Pre-migration |
 | 8 | Model fallback chain: pro → flash → 2.5-flash | Graceful degradation across model availability | Pre-migration |
 | 9 | Identity consistency check: warn but don't block | Fails open (returns true) to avoid blocking generation on check failures | Pre-migration |
