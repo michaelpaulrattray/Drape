@@ -3824,3 +3824,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Phase 1c: Update prompt assembly functions (skin, iris, hair, suggestions)
 - [x] Run tests and checkpoint
 - [x] Add Design Rationale & Patch History section to MIGRATION.md
+- [x] Phase 2a: Schema reconciliation + identity drift (schemaUpdater)
+- [x] Phase 2b: Suggestion generation + reference analysis
+- [x] Phase 2c: Prompt compaction
+- [x] Phase 2d: tRPC route wiring for new procedures
+- [x] Phase 2 tests and checkpoint

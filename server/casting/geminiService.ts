@@ -53,5 +53,14 @@ export {
 // Generation functions
 export { generateMasterPrompt, enhanceUserPrompt, generateCastingImage, clearCastingSession } from "./geminiGeneration";
 
+// Schema reconciliation
+export { updateSchemaForIteration, reconcileSchemaWithImage } from "./geminiSchemaUpdater";
+
+// Suggestions & reference analysis
+export { generateCastingSuggestions, analyzeReferenceForTransfer } from "./geminiSuggestions";
+
+// Prompt compaction
+export { compactMasterPrompt } from "./geminiPromptCompactor";
+
 // View & upscale functions
 export { generateFullBody, generateRemainingViews, generateSingleView, upscaleExistingImage } from "./geminiViews";

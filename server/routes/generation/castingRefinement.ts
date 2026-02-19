@@ -5,6 +5,8 @@ import {
 } from "../../db";
 import {
   generateMasterPrompt, iterateModel, enhanceUserPrompt, upscaleImage,
+  generateCastingSuggestions, analyzeReferenceForTransfer,
+  reconcileSchemaWithImage, compactMasterPrompt, clearCastingSession,
   POINT_COSTS, ImageResolution,
 } from "../../casting/aiService";
 import { withAtomicCredits } from "../../casting/atomicCredits";
@@ -18,10 +20,9 @@ export const castingRefinementRouter = router({
       modelId: z.number(),
       feedback: z.string().min(1),
       assetId: z.number(),
-      maskBase64: z.string().optional(), // Base64 encoded mask image for surgical edit/eraser
+      maskBase64: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Validate model ownership first (cheap operation)
       const model = await getModelById(input.modelId);
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -30,7 +31,6 @@ export const castingRefinementRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
 
-      // Validate asset exists (cheap operation)
       const assets = await getModelAssets(input.modelId);
       const targetAsset = assets.find(a => a.id === input.assetId);
       if (!targetAsset) {
@@ -47,7 +47,6 @@ export const castingRefinementRouter = router({
       });
 
       try {
-        // ATOMIC CREDITS: Deduct before generation, refund on failure
         const result = await withAtomicCredits(
           {
             userId: ctx.user.id,
@@ -56,7 +55,6 @@ export const castingRefinementRouter = router({
             referenceId: `gen-${genResult.generationId}`,
           },
           async () => {
-            // Regenerate master prompt with iteration feedback
             const updatedPromptResult = await generateMasterPrompt(
               {
                 ...model.preferences as any,
@@ -98,7 +96,6 @@ export const castingRefinementRouter = router({
           pointsCost: POINT_COSTS.iterate,
         });
 
-        // Update model with new master prompt
         await updateModel(input.modelId, {
           masterPrompt: result.updatedMasterPrompt,
           technicalSchema: result.updatedSchema,
@@ -139,7 +136,6 @@ export const castingRefinementRouter = router({
       const referenceId = `upscale-${Date.now()}`;
 
       try {
-        // ATOMIC CREDITS: Deduct before upscale, refund on failure
         const result = await withAtomicCredits(
           {
             userId: ctx.user.id,
@@ -148,14 +144,12 @@ export const castingRefinementRouter = router({
             referenceId,
           },
           async () => {
-            // Map resolution string to ImageResolution enum
             const resolutionMap: Record<string, ImageResolution> = {
               '1K': ImageResolution.STANDARD,
               '2K': ImageResolution.HIGH,
               '4K': ImageResolution.ULTRA,
             };
             const targetRes = resolutionMap[input.resolution] || ImageResolution.STANDARD;
-
             return await upscaleImage(input.imageUrl, targetRes);
           }
         );
@@ -216,11 +210,166 @@ export const castingRefinementRouter = router({
         };
       } catch (error) {
         console.error("[Enhance] Error:", error);
-        // Return original prompt on error
         return {
           success: true,
           enhancedPrompt: input.prompt,
         };
+      }
+    }),
+
+  // ============================================================================
+  // Phase 2 Migration: New procedures
+  // ============================================================================
+
+  // Generate quick variation suggestions for the current model
+  // No credits charged — suggestions are a non-critical UX enhancement
+  suggestions: protectedProcedure
+    .input(z.object({
+      masterPrompt: z.string().min(1),
+      imageBase64: z.string().optional(),
+      activeView: z.string().optional(),
+      profileSummary: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const suggestions = await generateCastingSuggestions(
+          input.masterPrompt,
+          input.imageBase64,
+          input.activeView,
+          input.profileSummary
+        );
+        return { success: true, suggestions };
+      } catch (error) {
+        console.error("[Suggestions] Error:", error);
+        return {
+          success: true,
+          suggestions: [
+            "Slightly narrower jawline",
+            "Add subtle under-eye shadows",
+            "Warmer skin undertone",
+            "More prominent cheekbones",
+            "Thicker, bushier eyebrows",
+            "Add a beauty mark on cheek",
+          ],
+        };
+      }
+    }),
+
+  // Analyze a reference image for transferable attributes
+  // No credits charged — analysis is a UX feature
+  analyzeReference: protectedProcedure
+    .input(z.object({
+      referenceImageBase64: z.string().min(1),
+      currentModelImageBase64: z.string().optional(),
+      masterPrompt: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const attributes = await analyzeReferenceForTransfer(
+          input.referenceImageBase64,
+          input.currentModelImageBase64,
+          input.masterPrompt
+        );
+        return { success: true, attributes };
+      } catch (error) {
+        console.error("[AnalyzeReference] Error:", error);
+        return { success: true, attributes: [] };
+      }
+    }),
+
+  // Visual reconciliation — correct schema/description to match actual image
+  // No credits charged — this is data correction, not generation
+  reconcile: protectedProcedure
+    .input(z.object({
+      modelId: z.number(),
+      imageBase64: z.string().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const model = await getModelById(input.modelId);
+      if (!model) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      }
+      if (model.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+
+      const currentSchema = model.technicalSchema || {};
+      const currentPrompt = model.masterPrompt || "";
+
+      try {
+        const { schema, description } = await reconcileSchemaWithImage(
+          currentSchema,
+          input.imageBase64,
+          currentPrompt
+        );
+
+        await updateModel(input.modelId, {
+          masterPrompt: description,
+          technicalSchema: schema,
+        });
+
+        return {
+          success: true,
+          schema,
+          description,
+        };
+      } catch (error) {
+        console.error("[Reconcile] Error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to reconcile schema",
+        });
+      }
+    }),
+
+  // Compact a bloated master prompt into a clean single paragraph
+  // No credits charged — this is prompt maintenance
+  compactPrompt: protectedProcedure
+    .input(z.object({
+      modelId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const model = await getModelById(input.modelId);
+      if (!model) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      }
+      if (model.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+
+      const currentPrompt = model.masterPrompt || "";
+      const currentSchema = model.technicalSchema || {};
+
+      try {
+        const compacted = await compactMasterPrompt(currentPrompt, currentSchema);
+
+        await updateModel(input.modelId, {
+          masterPrompt: compacted,
+        });
+
+        return {
+          success: true,
+          masterPrompt: compacted,
+        };
+      } catch (error) {
+        console.error("[CompactPrompt] Error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to compact prompt",
+        });
+      }
+    }),
+
+  // Clear the in-memory chat session — resets Gemini conversation state
+  // No credits charged — session management
+  clearSession: protectedProcedure
+    .mutation(async () => {
+      try {
+        clearCastingSession();
+        return { success: true };
+      } catch (error) {
+        console.error("[ClearSession] Error:", error);
+        return { success: true };
       }
     }),
 });

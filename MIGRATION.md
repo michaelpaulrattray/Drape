@@ -11,12 +11,10 @@
 | 1a | Server prompts: constants + brand profiles | ✅ Done | 19582bce |
 | 1b | Server: studio settings, identity anchor, retry logic, response helpers | ✅ Done | 19582bce |
 | 1c | Server: prompt assembly (skin, iris, hair, ethnicity blend, vibe bands) | ✅ Done | 19582bce |
-| 2a | Server: schema reconciliation + identity drift checking | ⬜ Not started | — |
-| 2b | Server: suggestion generation + reference analysis | ⬜ Not started | — |
-| 2c | Server: prompt compaction | ⬜ Not started | — |
-| 2d | Server: chat session management (casting generator) | ⬜ Not started | — |
-| 2e | Server: full body + view generators upgrade | ⬜ Not started | — |
-| 3a | tRPC routes: new procedures (reconcile, suggestions, compact, session) | ⬜ Not started | — |
+| 2a | Server: schema reconciliation + identity drift checking | ✅ Done | (pending) |
+| 2b | Server: suggestion generation + reference analysis | ✅ Done | (pending) |
+| 2c | Server: prompt compaction | ✅ Done | (pending) |
+| 2d | tRPC routes: new procedures (reconcile, suggestions, compact, session, analyzeRef) | ✅ Done | (pending) |
 | 3b | Types: update ModelPreferences + add new types | ⬜ Not started | — |
 | 4a | Client: Zustand stores (form, generation, UI) | ⬜ Not started | — |
 | 4b | Client: hooks (useCastingGeneration, useCastingViewGeneration) | ⬜ Not started | — |
@@ -291,3 +289,63 @@ The example in the prompt is deliberate: "Porcelain/Pale skin on a West African 
 **Solution:** Every generation function tries Pro first, then falls back to Flash. The fallback is sequential (not parallel) to avoid wasting API quota. A 1-second delay between attempts prevents hammering the API. The engine used is tracked in the response so credit costs can be adjusted (Flash = 50% of Pro cost).
 
 **Do not:** Remove the fallback chain. Do not make it parallel. Do not remove the delay between attempts.
+
+---
+
+### DR-15: Schema Update Fails Safe
+
+**Files:** `geminiSchemaUpdater.ts` (updateSchemaForIteration)
+
+**Problem:** During iteration, the schema needs to be updated to reflect the change request (e.g., "make lips fuller" → update `lips_shape` field). If the schema update API call fails, the iteration itself should NOT fail — the image generation is the critical path, not the schema sync.
+
+**Solution:** `updateSchemaForIteration` tries `gemini-2.5-flash` then `gemini-3-flash-preview`. If both fail, it returns the current schema unchanged and logs a warning. The iteration continues with the old schema, which will be corrected by reconciliation after the image is generated.
+
+**Do not:** Make schema update failure throw an error. The schema is a secondary artifact — the image is what matters.
+
+---
+
+### DR-16: Visual Reconciliation — Image Is Ground Truth
+
+**Files:** `geminiSchemaUpdater.ts` (reconcileSchemaWithImage)
+
+**Problem:** After several iterations, the schema and master prompt drift from what the image actually shows. The schema might say "thin lips" but the image shows full lips because an iteration changed them. This drift causes subsequent iterations to fight against the visible reality.
+
+**Solution:** `reconcileSchemaWithImage` sends the actual generated image + current schema to a vision model, which corrects any discrepancies. The IMAGE is treated as ground truth — if the schema disagrees with the image, the schema gets corrected. The function also corrects the master prompt description, but ONLY physical feature descriptions — brand, mood, lighting, and casting direction language are preserved.
+
+**Do not:** Let reconciliation rewrite brand/mood/lighting language. It must only correct physical feature descriptions (hair, lips, brows, eyes, etc.). Do not skip reconciliation — accumulated drift causes identity collapse.
+
+---
+
+### DR-17: Suggestions Are Non-Critical — Silent Fallback
+
+**Files:** `geminiSuggestions.ts` (generateCastingSuggestions)
+
+**Problem:** Suggestion generation is a UX enhancement that helps users discover what to try next. If the API call fails, the user should still see useful suggestions — not an error state.
+
+**Solution:** On any failure (API error, timeout, malformed response), the function returns hardcoded fallback suggestions. No error is thrown, no error is logged to the user. The `safeParseJsonArray` helper handles truncated JSON by falling back to regex extraction of quoted strings.
+
+**Do not:** Make suggestion failure visible to the user. Do not remove the hardcoded fallback array.
+
+---
+
+### DR-18: Reference Analysis — BARE FACE Rule
+
+**Files:** `geminiSuggestions.ts` (analyzeReferenceForTransfer, generateCastingSuggestions)
+
+**Problem:** Both suggestion and reference analysis prompts were generating makeup-related suggestions (blush, lipstick, eyeshadow). This is a casting studio for natural physical features, not a beauty app.
+
+**Solution:** Both prompts include an explicit NEVER SUGGEST block that excludes all makeup categories. The prompt says: "This is a BARE FACE casting studio. All suggestions must be natural physical features only." This is enforced at the prompt level, not filtered post-generation.
+
+**Do not:** Remove the BARE FACE rule. Do not add makeup as a valid suggestion category.
+
+---
+
+### DR-19: Prompt Compaction Preserves Brand Language
+
+**Files:** `geminiPromptCompactor.ts` (compactMasterPrompt)
+
+**Problem:** After 3-5 iterations, the master prompt accumulates "APPLIED MODIFICATION:" headers and contradictory amendments. A naive compaction would simplify everything, including brand aesthetic language like "deadpan, quietly observing, unbothered" → "neutral expression." This kills the brand-specific casting direction.
+
+**Solution:** The compaction prompt explicitly instructs: "PRESERVE all brand aesthetic language, vibe descriptions, expression direction, and casting mood. These are NOT redundant — they guide the image model." A minimum 100-character guard rejects over-aggressive compaction. If compaction fails entirely, the bloated prompt is returned unchanged.
+
+**Do not:** Remove the brand preservation instruction. Do not lower the 100-character minimum. Do not make compaction automatic — it should be triggered explicitly after ~3-5 iterations.
