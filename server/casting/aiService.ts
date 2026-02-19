@@ -7,9 +7,10 @@
 import * as gemini from "./geminiService";
 import { storagePut } from "../storage";
 
-// Re-export types from geminiService
+// Re-export types and utilities from geminiService
 export type { ModelPreferences } from "./geminiService";
 export { ImageResolution, AspectRatio, GenerationMode } from "./geminiService";
+export { clearCastingSession } from "./geminiService";
 
 // ============ Types ============
 
@@ -167,6 +168,7 @@ export async function generateCastingImage(
     frame?: 'HEADSHOT' | 'FULL_BODY';
     castingVibe?: { editorial: number; commercial: number; runway: number };
     maskImage?: string;
+    ethnicityHint?: string;
   } = {}
 ): Promise<GenerationResult> {
   console.log('[aiService.generateCastingImage] Starting with options:', {
@@ -187,7 +189,8 @@ export async function generateCastingImage(
     options.castingBrand || 'Generic',
     options.frame || 'HEADSHOT',
     options.castingVibe,
-    options.maskImage
+    options.maskImage,
+    options.ethnicityHint
   );
 
   console.log('[aiService.generateCastingImage] Result received:', {
@@ -230,7 +233,7 @@ export async function generateFullBody(
 
   return {
     imageUrl: s3Url,
-    engineUsed: 'gemini-3-pro-image-preview',
+    engineUsed: 'gemini-3-pro-image-preview', // May be flash fallback but we don't track here
   };
 }
 

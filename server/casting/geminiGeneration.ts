@@ -1,43 +1,83 @@
 /**
  * Gemini Generation - Master prompt generation, prompt enhancement,
  * and casting image generation (headshot + iteration/inpainting).
+ *
+ * Migration Phase 1b: Updated from new Casting Studio design.
+ * - Chat session persistence (activeSession / clearCastingSession)
+ * - 3-path generation: chat iteration → chat NEW → stateless fallback
+ * - Brand expression system (replaces brand directives)
+ * - Ethnicity phenotype lock
+ * - Attribute transfer protocol (identity lock)
+ * - diagnoseResponse / extractImageFromResponse
+ * - withTimeout / withSingleRetry503
  */
 
 import type { ModelPreferences, GeminiPart } from "./geminiTypes";
 import { ImageResolution, AspectRatio, GenerationMode } from "./geminiTypes";
-import { getAiClient, SAFETY_SETTINGS, extractMimeType, formatGeminiError } from "./geminiClient";
+import {
+  getAiClient,
+  SAFETY_SETTINGS,
+  extractMimeType,
+  extractBase64Data,
+  formatGeminiError,
+  diagnoseResponse,
+  extractImageFromResponse,
+  safeResponseText,
+  withTimeout,
+  withSingleRetry503,
+  buildIdentityAnchor,
+} from "./geminiClient";
 import {
   MASTER_PROMPT_SYSTEM_INSTRUCTION,
   getSkinDescription,
-  getBrandDescriptors,
-  getBrandDirectives,
-  getNegativeConstraints,
+  getBrandExpression,
+  BRAND_PROFILES,
+  DEFAULT_BRAND_DESCRIPTOR,
+  irisDescriptions,
   getStudioSettings,
   hasBodyArt,
 } from "./geminiPrompts";
+
+// ============================================================================
+// CHAT SESSION STATE
+// ============================================================================
+
+/**
+ * Persists between calls so iterations reuse the same conversation.
+ * The model retains visual memory of what it generated, reducing identity drift.
+ */
+interface CastingSession {
+  chat: any;
+  model: string;
+}
+
+let activeSession: CastingSession | null = null;
+
+/** Clear the active chat session (e.g. when starting a new casting) */
+export const clearCastingSession = () => {
+  activeSession = null;
+  console.log('[CastingSession] Cleared');
+};
 
 // ============================================================================
 // GENERATE MASTER PROMPT
 // ============================================================================
 
 /**
- * Generate master prompt from model preferences
+ * Generate master prompt from model preferences.
+ * Uses the system instruction + structured user content to produce
+ * { natural_description, technical_schema } JSON.
  */
 export const generateMasterPrompt = async (
   prefs: ModelPreferences,
   mode: 'NEW' | 'ITERATE' | 'REFERENCE' = 'NEW'
 ): Promise<{ natural: string; schema: any }> => {
-  console.log('[geminiService] generateMasterPrompt called with:');
-  console.log('[geminiService] - castingBrand:', prefs.castingBrand);
-  console.log('[geminiService] - castingVibe:', JSON.stringify(prefs.castingVibe));
-  console.log('[geminiService] - hairStyle:', prefs.hairStyle);
-  console.log('[geminiService] - hairFringe:', prefs.hairFringe);
-  console.log('[geminiService] - hairLength:', prefs.hairLength);
-  console.log('[geminiService] - hairTexture:', prefs.hairTexture);
-  console.log('[geminiService] - skinTexture:', prefs.skinTexture);
-  console.log('[geminiService] - skinFinish:', prefs.skinFinish);
-  console.log('[geminiService] - faceShape:', prefs.faceShape);
-  console.log('[geminiService] - All prefs:', JSON.stringify(prefs, null, 2));
+  console.log('[geminiGeneration] generateMasterPrompt called:', {
+    brand: prefs.castingBrand,
+    gender: prefs.gender,
+    ethnicity: prefs.ethnicity,
+    mode,
+  });
 
   const ai = getAiClient();
   const skinInstruction = getSkinDescription(prefs.skinTexture, prefs.skinFinish);
@@ -45,7 +85,7 @@ export const generateMasterPrompt = async (
 
   if (prefs.referenceImage && mode === 'ITERATE') {
     const mimeType = extractMimeType(prefs.referenceImage);
-    const base64Data = prefs.referenceImage.replace(/^data:.*?;base64,/, "");
+    const base64Data = extractBase64Data(prefs.referenceImage);
     parts.push({ inlineData: { data: base64Data, mimeType } });
   }
 
@@ -71,26 +111,35 @@ export const generateMasterPrompt = async (
     });
   };
 
-  try {
+  const parseResponse = (response: any): { natural: string; schema: any } => {
+    let jsonText = safeResponseText(response) || response.text || "{}";
+    jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(jsonText);
+    return {
+      natural: parsed.natural_description || "",
+      schema: parsed.technical_schema || {},
+    };
+  };
+
+  const MODELS = ['gemini-3-pro-preview', 'gemini-3-flash-preview'];
+
+  for (let i = 0; i < MODELS.length; i++) {
     try {
-      const response = await generateText('gemini-3-pro-preview');
-      let jsonText = response.text || "{}";
-      jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(jsonText);
-      return { natural: parsed.natural_description || "", schema: parsed.technical_schema || {} };
+      const response = await withTimeout(
+        generateText(MODELS[i]),
+        30000,
+        `MasterPrompt (${MODELS[i]})`
+      );
+      return parseResponse(response);
     } catch (e: any) {
-      if (e.status === 403 || e.status === 404 || e.message?.includes('403') || e.message?.includes('not found')) {
-        const response = await generateText('gemini-3-flash-preview');
-        let jsonText = response.text || "{}";
-        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(jsonText);
-        return { natural: parsed.natural_description || "", schema: parsed.technical_schema || {} };
+      console.warn(`[MasterPrompt] ${MODELS[i]} failed:`, e?.message);
+      if (i === MODELS.length - 1) {
+        throw new Error(formatGeminiError(e));
       }
-      throw e;
     }
-  } catch (error) {
-    throw new Error(formatGeminiError(error));
   }
+
+  throw new Error('Master prompt generation failed across all models.');
 };
 
 // ============================================================================
@@ -99,8 +148,12 @@ export const generateMasterPrompt = async (
 
 function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string): string {
   const isMale = prefs.gender?.toLowerCase().includes('male');
-  const brandVibe = getBrandDescriptors(prefs.castingBrand || 'Gucci');
 
+  // Brand descriptor from unified BRAND_PROFILES
+  const brandProfile = BRAND_PROFILES[prefs.castingBrand || 'Gucci'];
+  const brandDescriptor = brandProfile?.descriptor || DEFAULT_BRAND_DESCRIPTOR;
+
+  // Vibe blend description
   let vibeBlendDescription = "";
   if (prefs.castingVibe) {
     const { editorial, commercial, runway } = prefs.castingVibe;
@@ -108,45 +161,40 @@ function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string)
     const cP = Math.round(commercial * 100);
     const rP = Math.round(runway * 100);
 
+    // Determine dominant vibe for intensity guidance
+    const dominant = editorial >= commercial && editorial >= runway ? 'editorial'
+      : commercial >= runway ? 'commercial' : 'runway';
+
     vibeBlendDescription = `
       AESTHETIC MIX:
       - ${eP}% EDITORIAL (Avant-garde, sharp, strange, severe, expensive, architectural).
       - ${cP}% COMMERCIAL (Approachable, warm, soft, relatable, healthy, smiling eyes).
       - ${rP}% RUNWAY (Fierce, imposing, powerful, confident, statuesque, classic supermodel).
       
-      INSTRUCTION: Blend these traits proportionally. 
-      ${editorial > 0.6 ? "Features should be striking and unconventional." : ""}
-      ${commercial > 0.6 ? "Expression should be slightly softer and more engaging." : ""}
-      ${runway > 0.6 ? "Pose and gaze must be intense and commanding." : ""}
+      INSTRUCTION: Blend these traits proportionally.
+      ${dominant === 'editorial' && editorial > 0.5 ? "Push features toward striking and unconventional." : ""}
+      ${dominant === 'commercial' && commercial > 0.5 ? "Keep features attractive and approachable." : ""}
+      ${dominant === 'runway' && runway > 0.5 ? "Make features dramatic and commanding." : ""}
     `;
   } else {
     vibeBlendDescription = "AESTHETIC MIX: 100% High Fashion Editorial. Severe and architectural.";
   }
 
-  const isSocialMedia = prefs.castingBrand === 'Social Media';
-  const isCommercialVibe = (prefs.castingVibe?.commercial || 0) > 0.7;
-
-  let qualityBaseline = "";
-  if (isSocialMedia) {
-    qualityBaseline = `The subject must possess a magnetic, authentic content creator aesthetic.
-       - VIBE: ${brandVibe}
-       - BLEND: ${vibeBlendDescription}
-       - PRIORITIZE RELATABLE, ENGAGING, NATURAL BEAUTY.
-       - Wardrobe: BARE SKIN ONLY. NO CLOTHING OR STRAPS VISIBLE.`;
-  } else if (isCommercialVibe || prefs.castingBrand === 'Zara') {
-    qualityBaseline = `The subject must possess a highly attractive, commercial aesthetic.
-       - VIBE: ${brandVibe}
-       - BLEND: ${vibeBlendDescription}
-       - PRIORITIZE POLISHED, SYMMETRICAL, APPROACHABLE BEAUTY.
-       - Wardrobe: BARE SKIN ONLY. NO CLOTHING OR STRAPS VISIBLE.`;
-  } else {
-    qualityBaseline = `The subject must possess striking, top-tier high fashion agency model features.
-       - VIBE: ${brandVibe}
-       - BLEND: ${vibeBlendDescription}
-       - PRIORITIZE DISTINCTIVE, ARCHITECTURAL, UNIQUE BEAUTY.
-       - Wardrobe: STRICTLY BARE SKIN ONLY. NO CLOTHING OR STRAPS VISIBLE.`;
+  // Eye color with iris description
+  let eyeColorInstruction = prefs.eyeColor || "Any";
+  if (prefs.eyeColor && irisDescriptions[prefs.eyeColor]) {
+    eyeColorInstruction = `${prefs.eyeColor} — ${irisDescriptions[prefs.eyeColor]}`;
   }
 
+  // Ethnicity blend formatting
+  let ethnicityInstruction = prefs.ethnicity || "Any";
+  if (prefs.ethnicityBlend && prefs.ethnicityBlend.length > 0) {
+    ethnicityInstruction = prefs.ethnicityBlend
+      .map(e => `${e.pct}% ${e.name}`)
+      .join(' / ');
+  }
+
+  // Feature list
   const featureList = [];
   if (prefs.jawline) featureList.push(`Jawline: ${prefs.jawline}`);
   if (prefs.cheekbones) featureList.push(`Cheekbones: ${prefs.cheekbones}`);
@@ -166,9 +214,10 @@ function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string)
   if (prefs.features) featureList.push(`Additional Traits: ${prefs.features}`);
 
   const featuresInstruction = featureList.length > 0
-    ? `MANDATORY FACIAL FEATURES: ${featureList.join(', ')}.`
-    : "Facial Features: Generate coherent features matching the Brand/Tone vibe.";
+    ? `MANDATORY FACIAL FEATURES (P1 — user set these explicitly): ${featureList.join(', ')}.`
+    : "Facial Features: Generate coherent, DISTINCTIVE features matching the Brand/Tone vibe. Be bold — at least 2-3 features should be pushed beyond average.";
 
+  // Hair details
   const hairDetails = [
     prefs.hairLength ? `Length: ${prefs.hairLength}` : "",
     prefs.hairTexture ? `Texture: ${prefs.hairTexture}` : "",
@@ -185,19 +234,22 @@ function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string)
   Create a CASTING SPECIFICATION (JSON) based on these requirements:
   - Gender: ${prefs.gender || "Female"}
   - Age: ${prefs.age || "23"}
-  - Ethnicity: ${prefs.ethnicity || "Any"}
+  - Ethnicity: ${ethnicityInstruction}
   - Body Type: ${prefs.bodyType || "Model Standard"}
-  - Face Shape: ${prefs.faceShape && prefs.faceShape !== 'Random' ? prefs.faceShape : "Any"}
+  - Face Shape: ${prefs.faceShape && prefs.faceShape !== 'Random' ? prefs.faceShape : "Any — pick something distinctive"}
   - Skin tone: ${prefs.skinTone || "Standard"}
-  - Eye_color: ${prefs.eyeColor || "Any"}
+  - Eye color: ${eyeColorInstruction}
   
   HAIR SPECIFICATION (STRICT):
   - Base Style: ${prefs.hairStyle || "Natural"}
   - Color: ${prefs.hairColor || "Natural"}
   - Detailed Styling: ${hairDetails}
   
-  CRITICAL QUALITY BASELINE: 
-  ${qualityBaseline}
+  BRAND DIRECTION (P2 — guides creative choices for unset features):
+  ${brandDescriptor}
+  
+  VIBE INTENSITY (P3 — controls how extreme features are):
+  ${vibeBlendDescription}
   
   STYLING DIRECTIVE:
   Interpret the Hair Specification strictly through the lens of a HIGH-END SALON CASTING.
@@ -207,6 +259,8 @@ function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string)
   ${featuresInstruction}
 
   CRITICAL SKIN DIRECTIVE: ${skinInstruction}
+  
+  Wardrobe: BARE SKIN ONLY. NO CLOTHING OR STRAPS VISIBLE.
   `;
 }
 
@@ -231,7 +285,7 @@ function buildIteratePromptContent(prefs: ModelPreferences): string {
     ? `VISUAL ANALYSIS REQUIRED: The user has attached an image as a guide. EXTRACT only the requested physical attribute.`
     : `If the user asks for a visual change, describe it based on their text.`}
 
-  4. BIOLOGICAL REALISM: Handle eye color changes as pigment shifts, not lens swaps.
+  4. BIOLOGICAL REALISM: Handle eye color changes as pigment shifts, not lens swaps. Describe the new color as NATURAL.
 
   5. GEOMETRIC LOCKING: If adding tattoos, scars, birthmarks, or moles, you MUST define their EXACT location relative to bone structure (e.g., "left temple, 2cm from hairline"). Do not use vague terms like "on face".
 
@@ -244,7 +298,7 @@ function buildIteratePromptContent(prefs: ModelPreferences): string {
 // ============================================================================
 
 /**
- * Enhance user prompt for iteration
+ * Enhance user prompt for iteration — clarifies intent without adding style
  */
 export const enhanceUserPrompt = async (originalPrompt: string): Promise<string> => {
   const ai = getAiClient();
@@ -261,31 +315,32 @@ export const enhanceUserPrompt = async (originalPrompt: string): Promise<string>
   REFINED OUTPUT:
   `;
 
-  const executeEnhance = async (model: string) => {
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: { parts: [{ text: prompt }] },
-      config: {
-        maxOutputTokens: 1024,
-        temperature: 0.2,
-        safetySettings: SAFETY_SETTINGS,
-      }
-    });
-    return response.text?.trim();
-  };
+  const MODELS = ['gemini-3-flash-preview', 'gemini-2.5-flash'];
 
-  try {
-    const result = await executeEnhance('gemini-3-flash-preview');
-    if (result) return result;
-    throw new Error("Empty response");
-  } catch (e) {
+  for (let i = 0; i < MODELS.length; i++) {
     try {
-      const result = await executeEnhance('gemini-flash-latest');
-      return result || originalPrompt;
-    } catch (e2) {
-      return originalPrompt;
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: MODELS[i],
+          contents: { parts: [{ text: prompt }] },
+          config: {
+            maxOutputTokens: 1024,
+            temperature: 0.2,
+            safetySettings: SAFETY_SETTINGS,
+          }
+        }),
+        15000,
+        `EnhancePrompt (${MODELS[i]})`
+      );
+      const result = safeResponseText(response).trim();
+      if (result) return result;
+      throw new Error("Empty response");
+    } catch (e: any) {
+      console.warn(`[EnhancePrompt] ${MODELS[i]} failed:`, e?.message);
+      if (i === MODELS.length - 1) return originalPrompt;
     }
   }
+  return originalPrompt;
 };
 
 // ============================================================================
@@ -293,7 +348,11 @@ export const enhanceUserPrompt = async (originalPrompt: string): Promise<string>
 // ============================================================================
 
 /**
- * Generate casting image (headshot or full body)
+ * Generate casting image (headshot or iteration).
+ * 3-path architecture:
+ *   PATH 1: Chat iteration (session exists) — reuses conversation for identity
+ *   PATH 2: Chat NEW (create session) — starts new conversation
+ *   PATH 3: Stateless fallback — single-shot generation
  */
 export const generateCastingImage = async (
   masterPrompt: string,
@@ -306,7 +365,8 @@ export const generateCastingImage = async (
   castingBrand: string = 'Generic',
   frame: 'HEADSHOT' | 'FULL_BODY' = 'HEADSHOT',
   castingVibe?: { editorial: number; commercial: number; runway: number },
-  maskImageBase64?: string
+  maskImageBase64?: string,
+  ethnicityHint?: string
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   const ai = getAiClient();
   let textPrompt = "";
@@ -314,9 +374,20 @@ export const generateCastingImage = async (
   const contextForConfig = masterPrompt + (iterationRequest || "");
   const dynamicStudioSettings = getStudioSettings(contextForConfig);
 
-  const brandDirective = getBrandDirectives(castingBrand);
-  const negativeConstraints = getNegativeConstraints(castingBrand, contextForConfig);
-  const prefix = `${brandDirective} STRAIGHT-ON HEADSHOT. BARE SHOULDERS. `;
+  // Brand-aware expression direction
+  const brandExpression = getBrandExpression(castingBrand);
+
+  // Technical constraints — universal
+  let technicalConstraints = `PHOTOREALISTIC ONLY. Real photograph from a real full-frame DSLR sensor with physical noise.
+NO open mouth, NO showing teeth, NO laughing, NO grinning, NO excessive smiling.
+NO: PERFECT SYMMETRY, CGI, CARTOON, ANIME, 3D RENDER, PLASTIC SKIN, DOLL LOOK`;
+  if (!hasBodyArt(contextForConfig)) {
+    technicalConstraints += ", TATTOOS, INK, BODY ART, PIERCINGS";
+  }
+  technicalConstraints += ".";
+
+  // Standardized casting setup — same for every brand
+  const prefix = `HIGH FASHION CASTING HEADSHOT. Face directly front-on, symmetrical in frame. Eyes looking straight into the camera lens. Light grey seamless background fills the entire frame — no black borders, no vignettes. BARE SHOULDERS. `;
 
   const parts: GeminiPart[] = [];
   let imageIndexCounter = 1;
@@ -324,20 +395,20 @@ export const generateCastingImage = async (
 
   if (referenceImageBase64) {
     const mimeType = extractMimeType(referenceImageBase64);
-    const base64Data = referenceImageBase64.replace(/^data:.*?;base64,/, "");
+    const base64Data = extractBase64Data(referenceImageBase64);
     parts.push({ inlineData: { data: base64Data, mimeType } });
     inputMapDescription += `- IMAGE ${imageIndexCounter++}: TARGET SOURCE (The base image to edit. Identity and Lighting source).\n`;
   }
 
   if (maskImageBase64 && mode === GenerationMode.ITERATE) {
-    const base64Data = maskImageBase64.replace(/^data:.*?;base64,/, "");
+    const base64Data = extractBase64Data(maskImageBase64);
     parts.push({ inlineData: { data: base64Data, mimeType: 'image/png' } });
     inputMapDescription += `- IMAGE ${imageIndexCounter++}: GUIDE OVERLAY (Red highlighted region marks target area).\n`;
   }
 
   if (additionalReferenceBase64 && mode === GenerationMode.ITERATE) {
     const mimeType = extractMimeType(additionalReferenceBase64);
-    const base64Data = additionalReferenceBase64.replace(/^data:.*?;base64,/, "");
+    const base64Data = extractBase64Data(additionalReferenceBase64);
     parts.push({ inlineData: { data: base64Data, mimeType } });
     inputMapDescription += `- IMAGE ${imageIndexCounter++}: ATTRIBUTE REFERENCE (Use the visual content/design from this image).\n`;
   }
@@ -348,11 +419,31 @@ export const generateCastingImage = async (
       inputMapDescription, maskImageBase64, additionalReferenceBase64, imageIndexCounter
     );
   } else {
+    // Ethnicity phenotype lock — placed FIRST so image model can't override
+    const ethLock = ethnicityHint
+      ? `ETHNICITY PHENOTYPE LOCK — NON-NEGOTIABLE:
+This subject is ${ethnicityHint}.
+
+FACE STRUCTURE must visibly reflect this heritage in: eye shape and fold,
+nose bridge width, nose shape, cheekbone placement, jawline, and lip fullness.
+These features are determined by BONE and GENETICS — they do NOT change
+regardless of hair color, skin tone, or styling choices.
+
+For MIXED heritage: BOTH backgrounds must be SIMULTANEOUSLY VISIBLE in the face.
+A viewer should be able to identify BOTH heritages on sight.
+
+Hair color and style are INDEPENDENT of ethnicity — the user may choose any color.
+DO NOT let hair or skin choices erase the facial structure of the stated heritage.\n`
+      : '';
+
     textPrompt = `
       ${prefix}
+      ${ethLock}
       STRICT VISUAL ENFORCEMENT:
-      1. WARDROBE: STRICTLY BARE SKIN ONLY. NO CLOTHING, NO STRAPS, NO UNDERWEAR VISIBLE IN FRAME.
-      2. EXPRESSION: ${negativeConstraints}
+      1. WARDROBE: STRICTLY BARE SKIN ONLY. NO CLOTHING, NO STRAPS, NO UNDERWEAR VISIBLE IN FRAME. BARE SHOULDERS.
+      2. ${brandExpression}
+      3. ${technicalConstraints}
+      4. OUTPUT MUST BE PORTRAIT 3:4 ASPECT RATIO. Taller than wide. Do NOT output landscape or square.
       ${dynamicStudioSettings}
       CASTING SPEC: ${masterPrompt}
     `;
@@ -360,15 +451,73 @@ export const generateCastingImage = async (
 
   parts.push({ text: textPrompt });
 
+  // ── Shared response handler ──
+  const extractImage = (response: any): string => {
+    const diagnosis = diagnoseResponse(response);
+    if (diagnosis) throw new Error(diagnosis);
+    const imageUrl = extractImageFromResponse(response);
+    if (!imageUrl) {
+      const text = safeResponseText(response);
+      if (text) throw new Error(`Refusal: ${text.slice(0, 80)}...`);
+      throw new Error("No image data in response.");
+    }
+    return imageUrl;
+  };
+
+  // ── PATH 1: Chat-based iteration (session exists) ──
+  if (mode === GenerationMode.ITERATE && activeSession) {
+    try {
+      console.log('[CastingSession] Sending iteration through chat');
+      const response = await withTimeout(
+        activeSession.chat.sendMessage({ message: parts }),
+        60000,
+        'CastingChat'
+      );
+      const imageUrl = extractImage(response);
+      return { imageUrl, engineUsed: activeSession.model + ' (chat)' };
+    } catch (e: any) {
+      console.warn('[CastingSession] Chat iteration failed, falling back to stateless:', e?.message);
+      activeSession = null;
+      // Fall through to stateless
+    }
+  }
+
+  // ── PATH 2: Chat-based NEW generation (create session) ──
+  if (mode === GenerationMode.NEW) {
+    activeSession = null;
+    const PRIMARY_MODEL = 'gemini-3-pro-image-preview';
+    try {
+      const chat = ai.chats.create({
+        model: PRIMARY_MODEL,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          imageConfig: { aspectRatio },
+          safetySettings: SAFETY_SETTINGS,
+        }
+      });
+      const response = await withTimeout(
+        chat.sendMessage({ message: parts }),
+        60000,
+        `CastingChat NEW (${PRIMARY_MODEL})`
+      );
+      const imageUrl = extractImage(response);
+      activeSession = { chat, model: PRIMARY_MODEL };
+      console.log('[CastingSession] Session created — iterations will use chat');
+      return { imageUrl, engineUsed: PRIMARY_MODEL };
+    } catch (e: any) {
+      console.warn('[CastingSession] Chat creation failed, falling back to stateless:', e?.message);
+      activeSession = null;
+      // Fall through to stateless
+    }
+  }
+
+  // ── PATH 3: Stateless fallback ──
   const executeGen = async (modelName: string) => {
     const config: any = {
+      responseModalities: ['IMAGE'],
       imageConfig: { aspectRatio },
       safetySettings: SAFETY_SETTINGS,
     };
-
-    if (modelName.includes('pro') && resolution === ImageResolution.HIGH) {
-      config.imageConfig.imageSize = resolution;
-    }
 
     const response = await ai.models.generateContent({
       model: modelName,
@@ -376,29 +525,29 @@ export const generateCastingImage = async (
       config
     });
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-    throw new Error("No image data in response.");
+    return extractImage(response);
   };
 
-  const primaryModel = 'gemini-3-pro-image-preview';
-  try {
+  const IMAGE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+
+  for (let i = 0; i < IMAGE_MODELS.length; i++) {
+    const model = IMAGE_MODELS[i];
     try {
-      const url = await executeGen(primaryModel);
-      return { imageUrl: url, engineUsed: primaryModel };
+      const url = await withSingleRetry503(
+        () => withTimeout(executeGen(model), 60000, `CastingImage (${model})`),
+        `CastingImage (${model})`
+      );
+      return { imageUrl: url, engineUsed: model };
     } catch (e: any) {
-      if (primaryModel.includes('pro') && (e.status === 403 || e.status === 404 || e.message?.includes('403') || e.message?.includes('not found'))) {
-        const fallbackUrl = await executeGen('gemini-2.5-flash-image');
-        return { imageUrl: fallbackUrl, engineUsed: 'gemini-2.5-flash-image' };
+      console.warn(`[CastingImage] ${model} failed:`, e?.message);
+      if (i === IMAGE_MODELS.length - 1) {
+        throw new Error(formatGeminiError(e));
       }
-      throw e;
+      await new Promise(r => setTimeout(r, 1000));
     }
-  } catch (error) {
-    throw new Error(formatGeminiError(error));
   }
+
+  throw new Error('All image models failed');
 };
 
 // ============================================================================
@@ -423,8 +572,9 @@ function buildIterationImagePrompt(
     ? `
     CRITICAL GEOMETRY ENFORCEMENT:
     1. DO NOT ZOOM OUT. DO NOT REFRAME. The head size and position must remain IDENTICAL to the Source Image.
-    2. CROP RULE: If the user adds a feature on the body (e.g. "chest tattoo", "cleavage", "necklace") that is below the bottom edge of the current frame, RENDER ONLY THE TOP SLIVER that is visible. CUT THE REST OFF.
+    2. CROP RULE: If the user adds a feature on the body (e.g. "chest tattoo", "necklace", "cleavage") that is below the bottom edge of the current frame, RENDER ONLY THE TOP SLIVER that is visible. CUT THE REST OFF.
     3. NEVER change the aspect ratio or field of view to fit a requested item.
+    4. OUTPUT must be PORTRAIT 3:4. IGNORE the reference image dimensions — the reference is for attribute extraction only, not framing.
     `
     : "";
 
@@ -475,7 +625,40 @@ function buildIterationImagePrompt(
 
   let featureInstructions = "";
   if (additionalReferenceBase64 && !maskImageBase64) {
-    featureInstructions = `TRANSFER VISUAL ATTRIBUTE from Image ${imageIndexCounter - 1} to Subject.`;
+    featureInstructions = `
+    ATTRIBUTE TRANSFER — Image ${imageIndexCounter - 1} is a REFERENCE:
+
+    IDENTITY LOCK (NON-NEGOTIABLE):
+    Image 1 IS the model. Their face, bone structure, skin tone, skin texture,
+    freckles, moles, eye color, and every physical feature are SACRED. The output
+    MUST look like the SAME PERSON as Image 1. If the output face doesn't match
+    Image 1, the generation has FAILED.
+
+    The reference image is a MAGAZINE CLIPPING. You are extracting ONE attribute
+    from it — nothing else transfers. The reference contains a COMPLETELY DIFFERENT
+    PERSON whose identity must NOT bleed into the output.
+
+    If there is ANY conflict between the requested change and preserving identity,
+    IDENTITY WINS. Always.
+
+    REJECT from reference — these NEVER transfer:
+    - Face shape, bone structure, jawline, cheekbones, chin
+    - Eye shape, eye color, eye spacing, brow bone
+    - Nose shape, nose bridge, nostril shape
+    - Lip shape, lip color, lip fullness
+    - Skin tone, skin texture, freckles, moles, scars
+    - Lighting, mood, color grade, background, clothing
+    - Any attribute NOT explicitly named in the USER INSTRUCTION
+
+    TRANSFER RULES BY ATTRIBUTE TYPE:
+    HAIR STYLE: Transfer the cut, shape, texture, and movement ONLY.
+      KEEP the subject's existing hair COLOR from Image 1 unless the user
+      explicitly says "hair color" or "colour". "Hairstyle" means shape, not color.
+    HAIR COLOR: Transfer the color/tone only. Keep the existing style.
+    FACIAL FEATURE (lips, nose, brows, eyes, etc.): Transfer SHAPE and PROPORTION only.
+      KEEP the subject's existing pigment colors: eye iris color, eyebrow color,
+      lip pigment. Match the subject's skin tone, texture, and lighting from Image 1.
+    `;
   }
 
   return `
@@ -492,6 +675,8 @@ function buildIterationImagePrompt(
     ${featureInstructions}
     
     CRITICAL GLOBAL CONSTRAINTS: FREEZE lighting/identity/camera. MODIFY ONLY what is requested within the EXISTING BOUNDARIES.
-    FULL TARGET CONTEXT: ${masterPrompt}
+    
+    IDENTITY ANCHOR — The output MUST depict this exact person:
+    ${buildIdentityAnchor(masterPrompt, undefined)}
   `;
 }

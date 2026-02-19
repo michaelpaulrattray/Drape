@@ -17,22 +17,41 @@ export type { ModelPreferences, ModelViews, GeminiPart } from "./geminiTypes";
 export { ImageResolution, AspectRatio, GenerationMode } from "./geminiTypes";
 
 // Client & utilities
-export { getAiClient, SAFETY_SETTINGS, extractMimeType, formatGeminiError } from "./geminiClient";
+export {
+  getAiClient,
+  SAFETY_SETTINGS,
+  extractMimeType,
+  extractBase64Data,
+  formatGeminiError,
+  safeResponseText,
+  extractImageFromResponse,
+  diagnoseResponse,
+  withTimeout,
+  withSingleRetry503,
+  buildIdentityAnchor,
+  checkIdentityConsistency,
+} from "./geminiClient";
 
 // Prompts & helpers
 export {
+  BRAND_NAME,
   MASTER_PROMPT_SYSTEM_INSTRUCTION,
   UPSCALE_PROMPT,
+  BRAND_PROFILES,
+  DEFAULT_BRAND_DESCRIPTOR,
   getSkinDescription,
+  getBrandExpression,
+  irisDescriptions,
+  getStudioSettings,
+  hasBodyArt,
+  // Deprecated aliases (kept for backward compatibility)
   getBrandDescriptors,
   getBrandDirectives,
   getNegativeConstraints,
-  getStudioSettings,
-  hasBodyArt,
 } from "./geminiPrompts";
 
 // Generation functions
-export { generateMasterPrompt, enhanceUserPrompt, generateCastingImage } from "./geminiGeneration";
+export { generateMasterPrompt, enhanceUserPrompt, generateCastingImage, clearCastingSession } from "./geminiGeneration";
 
 // View & upscale functions
 export { generateFullBody, generateRemainingViews, generateSingleView, upscaleExistingImage } from "./geminiViews";

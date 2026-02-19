@@ -1,11 +1,28 @@
 /**
  * Gemini Views - Full body generation, multi-view generation,
  * single view generation, and image upscaling.
+ *
+ * Migration Phase 1c: Updated with shared response helpers.
+ * - Uses extractImageFromResponse / diagnoseResponse / safeResponseText
+ * - Uses withTimeout / withSingleRetry503 for resilience
+ * - Uses buildIdentityAnchor for identity consistency
  */
 
 import type { ModelViews, GeminiPart } from "./geminiTypes";
 import { ImageResolution, AspectRatio } from "./geminiTypes";
-import { getAiClient, SAFETY_SETTINGS, extractMimeType, formatGeminiError } from "./geminiClient";
+import {
+  getAiClient,
+  SAFETY_SETTINGS,
+  extractMimeType,
+  extractBase64Data,
+  formatGeminiError,
+  extractImageFromResponse,
+  diagnoseResponse,
+  safeResponseText,
+  withTimeout,
+  withSingleRetry503,
+  buildIdentityAnchor,
+} from "./geminiClient";
 import { UPSCALE_PROMPT, getStudioSettings } from "./geminiPrompts";
 
 // ============================================================================
@@ -18,13 +35,16 @@ import { UPSCALE_PROMPT, getStudioSettings } from "./geminiPrompts";
 export const generateFullBody = async (
   masterPrompt: string,
   headshotUrl: string,
-  gender: string
+  gender: string,
+  technicalSchema?: any,
+  bodyType?: string
 ): Promise<string> => {
   const ai = getAiClient();
   const mimeType = extractMimeType(headshotUrl);
-  const base64Data = headshotUrl.replace(/^data:.*?;base64,/, "");
+  const base64Data = extractBase64Data(headshotUrl);
 
   const dynamicStudioSettings = getStudioSettings(masterPrompt);
+  const identityAnchor = buildIdentityAnchor(masterPrompt, technicalSchema);
 
   const normalizedGender = gender.trim().toLowerCase();
   let wardrobeConstraint = "";
@@ -37,15 +57,23 @@ export const generateFullBody = async (
     wardrobeConstraint = "Attire: Minimalist form-fitting black activewear (sports bra and shorts).";
   }
 
+  const physiqueDirective = bodyType && bodyType !== 'Slim'
+    ? `PHYSIQUE: ${bodyType} build. The subject's body proportions MUST reflect this — it is a deliberate casting choice.`
+    : '';
+
   const promptText = `
-      STRICT CHARACTER CONSISTENCY REQUIRED.
-      Reference image provided (HEADSHOT). 
-      TASK: GENERATE FULL BODY STANDING SHOT.
-      Maintain exact facial features, skin tone, and body type from reference.
-      VIEW: FULL BODY FRONT FACING.
+      TASK: GENERATE FULL BODY STANDING SHOT from the provided headshot reference.
+
+      ${identityAnchor}
+      ${physiqueDirective}
+
+      THE ATTACHED IMAGE IS THE HEADSHOT OF THIS EXACT PERSON.
+      The full body shot MUST show the same person — identical face, skin tone, and any visible tattoos/marks.
+      If there is ANY doubt about the FACE, match the reference image over the text description.
+
+      VIEW: FULL BODY FRONT FACING. Head to toe visible.
       ${wardrobeConstraint}
       ${dynamicStudioSettings}
-      ORIGINAL SPEC: ${masterPrompt}
   `;
 
   const executeBodyGen = async (model: string) => {
@@ -58,32 +86,43 @@ export const generateFullBody = async (
         ]
       },
       config: {
+        responseModalities: ['IMAGE'],
         imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
         safetySettings: SAFETY_SETTINGS
       }
     });
 
-    const imgPart = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-    if (imgPart?.inlineData) {
-      return `data:image/png;base64,${imgPart.inlineData.data}`;
-    }
+    const diagnosis = diagnoseResponse(response);
+    if (diagnosis) throw new Error(diagnosis);
 
-    const textPart = response.candidates?.[0]?.content?.parts?.find((p: any) => p.text);
-    if (textPart?.text) {
-      throw new Error(`Refusal: ${textPart.text.slice(0, 50)}...`);
+    const imageUrl = extractImageFromResponse(response);
+    if (!imageUrl) {
+      const text = safeResponseText(response);
+      if (text) throw new Error(`Refusal: ${text.slice(0, 80)}...`);
+      throw new Error("No image returned.");
     }
-    throw new Error("No image returned.");
+    return imageUrl;
   };
 
-  try {
-    return await executeBodyGen('gemini-3-pro-image-preview');
-  } catch (e: any) {
+  const BODY_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+
+  for (let i = 0; i < BODY_MODELS.length; i++) {
+    const model = BODY_MODELS[i];
     try {
-      return await executeBodyGen('gemini-2.5-flash-image');
-    } catch (e2) {
-      throw new Error("Full body generation failed. Safety constraints may be too strict.");
+      return await withSingleRetry503(
+        () => withTimeout(executeBodyGen(model), 60000, `FullBody (${model})`),
+        `FullBody (${model})`
+      );
+    } catch (e: any) {
+      console.warn(`[FullBody] ${model} failed:`, e?.message);
+      if (i === BODY_MODELS.length - 1) {
+        throw new Error(formatGeminiError(e));
+      }
+      await new Promise(r => setTimeout(r, 1000));
     }
   }
+
+  throw new Error('Full body generation failed across all models.');
 };
 
 // ============================================================================
@@ -96,18 +135,25 @@ export const generateFullBody = async (
 export const generateRemainingViews = async (
   masterPrompt: string,
   sourceImageUrl: string,
-  gender: string
+  gender: string,
+  technicalSchema?: any
 ): Promise<Partial<ModelViews>> => {
   const ai = getAiClient();
   const mimeType = extractMimeType(sourceImageUrl);
-  const base64Data = sourceImageUrl.replace(/^data:.*?;base64,/, "");
+  const base64Data = extractBase64Data(sourceImageUrl);
 
   const dynamicStudioSettings = getStudioSettings(masterPrompt);
+  const identityAnchor = buildIdentityAnchor(masterPrompt, technicalSchema);
 
   const normalizedGender = gender.trim().toLowerCase();
-  const wardrobeConstraint = normalizedGender === 'male'
-    ? "Attire: Simple black boxer briefs. BARE CHEST."
-    : "Attire: Minimalist black activewear.";
+  let wardrobeConstraint: string;
+  if (normalizedGender === 'male') {
+    wardrobeConstraint = "Attire: Simple black boxer briefs. BARE CHEST.";
+  } else if (normalizedGender === 'non-binary') {
+    wardrobeConstraint = "Attire: Minimalist black tank top and fitted black shorts.";
+  } else {
+    wardrobeConstraint = "Attire: Minimalist black activewear.";
+  }
 
   const viewConfigs = [
     { key: 'sideClose', prompt: `SIDE PROFILE PORTRAIT. Head and shoulders only. Facing Right. ${wardrobeConstraint} Same subject.` },
@@ -124,31 +170,40 @@ export const generateRemainingViews = async (
         contents: {
           parts: [
             { inlineData: { data: base64Data, mimeType: mimeType } },
-            { text: `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${config.prompt}\n${dynamicStudioSettings}\nOriginal Spec: ${masterPrompt}` }
+            { text: `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${config.prompt}\n\n${identityAnchor}\n\nTHE ATTACHED IMAGE IS THIS EXACT PERSON. Match their face, skin, and any tattoos/marks precisely.\n\n${dynamicStudioSettings}` }
           ]
         },
         config: {
+          responseModalities: ['IMAGE'],
           imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
           safetySettings: SAFETY_SETTINGS
         }
       });
 
-      const imgPart = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-      if (imgPart?.inlineData) {
-        return { key: config.key, url: `data:image/png;base64,${imgPart.inlineData.data}` };
-      }
-      throw new Error("No image");
+      const diagnosis = diagnoseResponse(response);
+      if (diagnosis) throw new Error(diagnosis);
+
+      const imageUrl = extractImageFromResponse(response);
+      if (!imageUrl) throw new Error("No image");
+      return { key: config.key, url: imageUrl };
     };
 
-    try {
+    const VIEW_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+
+    for (let i = 0; i < VIEW_MODELS.length; i++) {
       try {
-        return await executeViewGen('gemini-3-pro-image-preview');
-      } catch (e) {
-        return await executeViewGen('gemini-2.5-flash-image');
+        return await withSingleRetry503(
+          () => withTimeout(executeViewGen(VIEW_MODELS[i]), 60000, `View:${config.key} (${VIEW_MODELS[i]})`),
+          `View:${config.key} (${VIEW_MODELS[i]})`
+        );
+      } catch (e: any) {
+        console.warn(`[View:${config.key}] ${VIEW_MODELS[i]} failed:`, e?.message);
+        if (i < VIEW_MODELS.length - 1) {
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
-    } catch (e) {
-      return null;
     }
+    return null;
   };
 
   const promises = viewConfigs.map(cfg => generateView(cfg));
@@ -174,13 +229,15 @@ export const generateSingleView = async (
   masterPrompt: string,
   sourceImageUrl: string,
   gender: string,
-  viewType: 'side' | 'walk' | 'back'
+  viewType: 'side' | 'walk' | 'back',
+  technicalSchema?: any
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   const ai = getAiClient();
   const mimeType = extractMimeType(sourceImageUrl);
-  const base64Data = sourceImageUrl.replace(/^data:.*?;base64,/, "");
+  const base64Data = extractBase64Data(sourceImageUrl);
 
   const dynamicStudioSettings = getStudioSettings(masterPrompt);
+  const identityAnchor = buildIdentityAnchor(masterPrompt, technicalSchema);
 
   const normalizedGender = gender.trim().toLowerCase();
   const wardrobeConstraint = normalizedGender === 'male'
@@ -194,7 +251,7 @@ export const generateSingleView = async (
   };
 
   const prompt = viewPrompts[viewType];
-  const fullPrompt = `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${prompt}\n${dynamicStudioSettings}\nOriginal Spec: ${masterPrompt}`;
+  const fullPrompt = `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${prompt}\n\n${identityAnchor}\n\nTHE ATTACHED IMAGE IS THIS EXACT PERSON. Match their face, skin, and any tattoos/marks precisely.\n\n${dynamicStudioSettings}`;
 
   const executeViewGen = async (model: string) => {
     const response = await ai.models.generateContent({
@@ -206,33 +263,40 @@ export const generateSingleView = async (
         ]
       },
       config: {
+        responseModalities: ['IMAGE'],
         imageConfig: { aspectRatio: AspectRatio.PORTRAIT },
         safetySettings: SAFETY_SETTINGS
       }
     });
 
-    const imgPart = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-    if (imgPart?.inlineData) {
-      return {
-        imageUrl: `data:image/png;base64,${imgPart.inlineData.data}`,
-        engineUsed: model
-      };
-    }
-    throw new Error("No image generated");
+    const diagnosis = diagnoseResponse(response);
+    if (diagnosis) throw new Error(diagnosis);
+
+    const imageUrl = extractImageFromResponse(response);
+    if (!imageUrl) throw new Error("No image generated");
+
+    return { imageUrl, engineUsed: model };
   };
 
-  try {
+  const VIEW_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+
+  for (let i = 0; i < VIEW_MODELS.length; i++) {
+    const model = VIEW_MODELS[i];
     try {
-      return await executeViewGen('gemini-3-pro-image-preview');
+      return await withSingleRetry503(
+        () => withTimeout(executeViewGen(model), 60000, `SingleView:${viewType} (${model})`),
+        `SingleView:${viewType} (${model})`
+      );
     } catch (e: any) {
-      if (e.status === 403 || e.status === 404 || e.message?.includes('403') || e.message?.includes('not found')) {
-        return await executeViewGen('gemini-2.5-flash-image');
+      console.warn(`[SingleView:${viewType}] ${model} failed:`, e?.message);
+      if (i === VIEW_MODELS.length - 1) {
+        throw new Error(formatGeminiError(e));
       }
-      throw e;
+      await new Promise(r => setTimeout(r, 1000));
     }
-  } catch (error) {
-    throw new Error(formatGeminiError(error));
   }
+
+  throw new Error(`Single view (${viewType}) generation failed across all models.`);
 };
 
 // ============================================================================
@@ -248,42 +312,40 @@ export const upscaleExistingImage = async (
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   const ai = getAiClient();
   const mimeType = extractMimeType(currentImageUrl);
-  const base64Data = currentImageUrl.replace(/^data:.*?;base64,/, "");
+  const base64Data = extractBase64Data(currentImageUrl);
 
   const parts: GeminiPart[] = [
-    {
-      inlineData: {
-        data: base64Data,
-        mimeType: mimeType,
-      },
-    },
+    { inlineData: { data: base64Data, mimeType } },
     { text: UPSCALE_PROMPT },
   ];
 
   const modelName = 'gemini-3-pro-image-preview';
 
   try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: { parts },
-      config: {
-        imageConfig: {
-          imageSize: targetResolution,
-          aspectRatio: AspectRatio.PORTRAIT,
-        },
-        safetySettings: SAFETY_SETTINGS,
-      }
-    });
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: modelName,
+        contents: { parts },
+        config: {
+          responseModalities: ['IMAGE'],
+          imageConfig: {
+            imageSize: targetResolution,
+            aspectRatio: AspectRatio.PORTRAIT,
+          },
+          safetySettings: SAFETY_SETTINGS,
+        }
+      }),
+      90000,
+      `Upscale (${modelName})`
+    );
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return {
-          imageUrl: `data:image/png;base64,${part.inlineData.data}`,
-          engineUsed: modelName
-        };
-      }
-    }
-    throw new Error("Upscale failed: No image returned.");
+    const diagnosis = diagnoseResponse(response);
+    if (diagnosis) throw new Error(diagnosis);
+
+    const imageUrl = extractImageFromResponse(response);
+    if (!imageUrl) throw new Error("Upscale failed: No image returned.");
+
+    return { imageUrl, engineUsed: modelName };
   } catch (error) {
     throw new Error(formatGeminiError(error));
   }

@@ -3810,3 +3810,16 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] All 952 tests passing
 - [x] Replace hero 3D JPG with transparent SVG/CSS embossed "drape" wordmark
 - [x] Revert hero wordmark back to flat text, provide image specs for custom hero asset
+
+## Casting Studio Redesign
+- [x] Audit new design files from zip
+- [x] Audit current Casting Studio codebase and backend connections
+- [x] Compare old vs new, map backend dependencies
+- [x] Propose migration strategy with Zustand state layer
+
+### Phase 1: Server Prompts & Constants
+- [x] Create MIGRATION.md manifest
+- [x] Phase 1a: Update constants + brand profiles in geminiPrompts.ts
+- [x] Phase 1b: Update studio settings, identity anchor, retry logic in geminiGeneration.ts
+- [x] Phase 1c: Update prompt assembly functions (skin, iris, hair, suggestions)
+- [x] Run tests and checkpoint

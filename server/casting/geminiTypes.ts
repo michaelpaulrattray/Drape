@@ -7,6 +7,7 @@ export interface ModelPreferences {
   gender?: string;
   age?: number | string;
   ethnicity?: string;
+  ethnicityBlend?: Array<{ name: string; pct: number }>;
   bodyType?: string;
   faceShape?: string;
   skinTone?: string;

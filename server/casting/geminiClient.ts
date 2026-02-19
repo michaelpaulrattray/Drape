@@ -1,5 +1,13 @@
 /**
- * Gemini Client - API client factory, safety settings, and shared utilities.
+ * Gemini Client - API client factory, safety settings, response helpers,
+ * retry logic, identity anchor, and shared utilities.
+ *
+ * Migration Phase 1b: Added from new Casting Studio design.
+ * - safeResponseText, extractImageFromResponse, diagnoseResponse
+ * - withTimeout, withSingleRetry503
+ * - buildIdentityAnchor, checkIdentityConsistency
+ * - extractBase64Data (server-side)
+ * - Updated formatGeminiError with more specific messages
  */
 
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
@@ -17,7 +25,21 @@ export const getAiClient = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-// Explicitly disable safety filters to allow "raw" agency casting traits
+// ============================================================================
+// SAFETY SETTINGS
+// ============================================================================
+
+/**
+ * BLOCK_NONE is intentional for Casting Studio. Rationale:
+ *
+ * Fashion casting requires generating bare skin (shoulders, arms, legs),
+ * clinical anatomical descriptions (jawline, cheekbones, sub-malar hollows),
+ * and industry terminology that triggers overly cautious safety filters.
+ *
+ * When integrating into the unified system, this setting should be
+ * preserved for Casting workflows and NOT unified with other apps'
+ * BLOCK_ONLY_HIGH setting.
+ */
 export const SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
   { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -26,22 +48,227 @@ export const SAFETY_SETTINGS = [
 ];
 
 // ============================================================================
-// SHARED UTILITIES
+// DATA URL UTILITIES
 // ============================================================================
 
+/** Extract MIME type from a data URL */
 export const extractMimeType = (dataUrl: string): string => {
   const match = dataUrl.match(/^data:(.*?);base64,/);
   return match ? match[1] : 'image/jpeg';
 };
 
+/** Extract raw base64 data from a data URL (strips the prefix) */
+export const extractBase64Data = (dataUrl: string): string => {
+  return dataUrl.replace(/^data:.*?;base64,/, "");
+};
+
+// ============================================================================
+// RESPONSE HELPERS
+// ============================================================================
+
+/** Safely extract text from a Gemini response without using .text accessor (which throws on empty) */
+export const safeResponseText = (response: any): string => {
+  try {
+    return response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } catch {
+    return '';
+  }
+};
+
+/** Extract the first image data URL from a Gemini response */
+export const extractImageFromResponse = (response: any): string | null => {
+  for (const part of response?.candidates?.[0]?.content?.parts || []) {
+    if (part.inlineData) {
+      return `data:image/png;base64,${part.inlineData.data}`;
+    }
+  }
+  return null;
+};
+
+/** Diagnose a Gemini response for common failure modes and return a user-friendly error */
+export const diagnoseResponse = (response: any): string | null => {
+  // Check prompt-level block (blocked before any generation)
+  const blockReason = response?.promptFeedback?.blockReason;
+  if (blockReason) {
+    return `Prompt blocked by safety filter: ${blockReason}. Try rephrasing the casting specification.`;
+  }
+
+  // Check for missing candidates
+  const candidates = response?.candidates;
+  if (!candidates || candidates.length === 0) {
+    return "No response generated. The request may have been filtered.";
+  }
+
+  // Check candidate finish reason
+  const finishReason = candidates[0]?.finishReason;
+  if (finishReason && ['SAFETY', 'BLOCKED', 'RECITATION', 'PROHIBITED_CONTENT'].includes(finishReason)) {
+    return `Generation stopped: ${finishReason}. The casting parameters may have triggered content filters.`;
+  }
+
+  return null; // No issues found
+};
+
+// ============================================================================
+// TIMEOUT & RETRY
+// ============================================================================
+
+/** Wrap a promise with a timeout. Rejects with descriptive error if exceeded. */
+export const withTimeout = <T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+  controller?: AbortController
+): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller?.abort();
+      reject(new Error(`${label} timed out after ${ms / 1000}s`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+};
+
+/**
+ * Wrap an async operation with a single retry on 500/503 (server errors only).
+ * Does NOT retry 429 (rate limit) — in a multi-user environment, retrying
+ * rate limits amplifies the problem. 429s surface to the user with cooldown guidance.
+ */
+export const withSingleRetry503 = async <T>(
+  fn: () => Promise<T>,
+  label: string
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (e: any) {
+    const msg = e?.message || e?.toString() || '';
+    const isServerError = msg.includes('500') || msg.includes('503');
+    if (isServerError) {
+      console.warn(`[${label}] Server error, retrying once in 3s...`);
+      await new Promise(r => setTimeout(r, 3000));
+      return await fn();
+    }
+    throw e;
+  }
+};
+
+// ============================================================================
+// ERROR FORMATTING
+// ============================================================================
+
 export const formatGeminiError = (e: any): string => {
   const msg = e.message || e.toString();
 
-  if (msg.includes('429')) return "Agency Quota Exceeded. The casting engine is momentarily overloaded. Please wait 10 seconds.";
-  if (msg.includes('403') || msg.includes('API key')) return "Authentication Failed. Please verify your API Key billing status.";
-  if (msg.includes('400')) return "Invalid Request. The casting parameters are contradictory or invalid.";
-  if (msg.includes('500') || msg.includes('503')) return "Engine Offline. The servers are experiencing downtime.";
-  if (msg.includes('SAFETY') || msg.includes('blocked')) return "Safety Protocols Triggered. The request was flagged by global filters.";
+  if (msg.includes('429')) return "RATE_LIMIT:Rate limit exceeded. The engine is shared — please wait before retrying.";
+  if (msg.includes('403') || msg.includes('API key')) return "Authentication failed. Please verify your API Key billing status.";
+  if (msg.includes('400')) return `Invalid request (400): ${msg.length > 120 ? msg.slice(0, 120) + '...' : msg}`;
+  if (msg.includes('500') || msg.includes('503')) return "Engine offline. The servers are experiencing downtime.";
+  if (msg.includes('SAFETY') || msg.includes('blocked')) return "Safety protocols triggered. The request was flagged by content filters.";
+  if (msg.includes('timed out')) return "Request timed out. Please try again.";
 
   return msg;
+};
+
+// ============================================================================
+// IDENTITY ANCHOR
+// ============================================================================
+
+/**
+ * Build a structured identity context string from master prompt + technical schema.
+ * Used by view generators and body generators to maintain identity consistency.
+ */
+export const buildIdentityAnchor = (masterPrompt: string, schema?: any): string => {
+  if (!schema) return `IDENTITY CONTEXT:\n${masterPrompt}`;
+
+  const subject = schema.subject || {};
+  const face = schema.facial_features || {};
+
+  const fields = [
+    subject.sex && `Sex: ${subject.sex}`,
+    subject.age && `Age: ${subject.age}`,
+    subject.ethnicity && `Ethnicity: ${subject.ethnicity}`,
+    subject.skin_tone && `Skin tone: ${subject.skin_tone}`,
+    subject.hair_color && `Hair: ${subject.hair_color}, ${subject.hair_style || ''}`,
+    subject.eye_color && `Eyes: ${subject.eye_color}`,
+    face.face_shape && `Face shape: ${face.face_shape}`,
+    face.jawline && `Jawline: ${face.jawline}`,
+    face.cheekbones && `Cheekbones: ${face.cheekbones}`,
+    face.nose_shape && `Nose: ${face.nose_shape}`,
+    face.lips_shape && `Lips: ${face.lips_shape}`,
+    face.eyebrows && `Eyebrows: ${face.eyebrows}`,
+  ].filter(Boolean).join('\n');
+
+  return `IDENTITY — THIS PERSON MUST MATCH THE REFERENCE IMAGE EXACTLY:
+${fields}
+
+Full casting spec: ${masterPrompt}`;
+};
+
+// ============================================================================
+// IDENTITY CONSISTENCY CHECK
+// ============================================================================
+
+/**
+ * Lightweight identity consistency check. Asks a fast text model
+ * whether two images appear to be the same person.
+ * Returns true if consistent, false if drift detected.
+ * Fails open (returns true) if the check itself errors.
+ */
+export const checkIdentityConsistency = async (
+  sourceImageBase64: string,
+  generatedImageBase64: string,
+  sourceMimeType: string = 'image/png',
+  generatedMimeType: string = 'image/png'
+): Promise<{ consistent: boolean; notes?: string }> => {
+  try {
+    const ai = getAiClient();
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: {
+          parts: [
+            { inlineData: { data: extractBase64Data(sourceImageBase64), mimeType: sourceMimeType } },
+            { inlineData: { data: extractBase64Data(generatedImageBase64), mimeType: generatedMimeType } },
+            { text: `Compare these two images. Are they the SAME PERSON? Check: face shape, skin tone, eye color, hair color/style, distinguishing marks (tattoos, scars, moles).
+
+Reply with ONLY a JSON object:
+{ "same_person": true/false, "confidence": "high"/"medium"/"low", "differences": "brief note or empty string" }` }
+          ]
+        },
+        config: {
+          responseMimeType: 'application/json',
+          maxOutputTokens: 256,
+          safetySettings: SAFETY_SETTINGS,
+        }
+      }),
+      10000,
+      'IdentityCheck'
+    );
+
+    const text = safeResponseText(response).replace(/```json/g, '').replace(/```/g, '').trim();
+
+    if (!text) {
+      console.warn('[IdentityCheck] Empty response text, assuming consistent');
+      return { consistent: true };
+    }
+
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch {
+      console.warn('[IdentityCheck] Failed to parse response:', text.slice(0, 100));
+      return { consistent: true };
+    }
+
+    return {
+      consistent: result.same_person === true,
+      notes: result.differences || undefined
+    };
+  } catch (e: any) {
+    console.warn('[IdentityCheck] Failed, assuming consistent:', e?.message);
+    return { consistent: true }; // Fail open
+  }
 };
