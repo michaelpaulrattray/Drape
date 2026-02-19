@@ -9,7 +9,7 @@ import {
   InsertModel,
   InsertModelAsset,
 } from "../../drizzle/schema";
-import { getDb } from "./connection";
+import { getDb, withTransaction } from "./connection";
 
 export async function createModel(
   data: InsertModel
@@ -146,8 +146,10 @@ export async function deleteModel(
   }
 
   try {
-    await db.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
-    await db.delete(models).where(eq(models.id, modelId));
+    await withTransaction(async (tx) => {
+      await tx.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
+      await tx.delete(models).where(eq(models.id, modelId));
+    });
     return { success: true };
   } catch (error) {
     console.error("[Database] Failed to delete model:", error);
@@ -230,14 +232,16 @@ export async function deleteModelWithAssetKeys(modelId: number): Promise<{
   }
 
   try {
-    // Get all asset keys before deletion
+    // Get all asset keys before deletion (read outside transaction is fine)
     const assets = await getModelAssetsForCleanup(modelId);
     const assetKeys = assets
       .map((a) => a.storageKey)
       .filter((k): k is string => k !== null);
 
-    await db.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
-    await db.delete(models).where(eq(models.id, modelId));
+    await withTransaction(async (tx) => {
+      await tx.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
+      await tx.delete(models).where(eq(models.id, modelId));
+    });
 
     return { success: true, assetKeys };
   } catch (error) {

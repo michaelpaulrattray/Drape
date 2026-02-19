@@ -1,5 +1,5 @@
 import { eq, and, sql } from "drizzle-orm";
-import { getDb } from "./connection";
+import { getDb, withTransaction } from "./connection";
 import { inviteCodes, users } from "../../drizzle/schema";
 
 /**
@@ -46,26 +46,29 @@ export async function redeemInviteCode(userId: number, code: string): Promise<{ 
     return { success: false, error: "Your account is already approved." };
   }
 
-  // Atomically increment usage count
-  await db
-    .update(inviteCodes)
-    .set({ currentUses: sql`${inviteCodes.currentUses} + 1` })
-    .where(
-      and(
-        eq(inviteCodes.id, inviteCode.id),
-        sql`${inviteCodes.currentUses} < ${inviteCodes.maxUses}`
-      )
-    );
+  // Transaction: increment usage + approve user atomically
+  await withTransaction(async (tx) => {
+    // Atomically increment usage count
+    await tx
+      .update(inviteCodes)
+      .set({ currentUses: sql`${inviteCodes.currentUses} + 1` })
+      .where(
+        and(
+          eq(inviteCodes.id, inviteCode.id),
+          sql`${inviteCodes.currentUses} < ${inviteCodes.maxUses}`
+        )
+      );
 
-  // Approve the user
-  await db
-    .update(users)
-    .set({
-      approved: true,
-      accessCode: trimmedCode,
-      approvedAt: new Date(),
-    })
-    .where(eq(users.id, userId));
+    // Approve the user
+    await tx
+      .update(users)
+      .set({
+        approved: true,
+        accessCode: trimmedCode,
+        approvedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+  });
 
   return { success: true };
 }

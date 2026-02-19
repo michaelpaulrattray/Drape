@@ -13,7 +13,7 @@
  */
 
 // Connection
-export { getDb } from "./connection";
+export { getDb, withTransaction } from "./connection";
 
 // ---- Extracted domain modules ----
 
@@ -150,6 +150,9 @@ export {
   isValidReferralCodeFormat,
   expireStalePendingReferrals,
 } from "./referrals";
+
+// GDPR Data Export
+export { exportUserData, type GdprExportData } from "./gdprExport";
 
 // Invite Codes (Pre-launch access gating)
 export {

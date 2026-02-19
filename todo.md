@@ -3969,3 +3969,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add queue position UI on frontend generation pages
 - [x] Write vitest tests for Phase A changes
 - [x] Run all tests and verify dev server
+
+## Path B: Production Hardening (9/10 → 10/10)
+- [x] Fix B1: Add database transactions to multi-step operations
+- [x] Fix B2: Add GDPR data export endpoint
+- [x] Fix B3: Add request correlation IDs middleware
+- [x] Write vitest tests for Path B changes
+- [x] Run all tests and verify dev server

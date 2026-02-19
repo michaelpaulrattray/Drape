@@ -24,7 +24,7 @@ import {
   models,
   generations,
 } from "../../drizzle/schema";
-import { getDb } from "./connection";
+import { getDb, withTransaction } from "./connection";
 
 // ============================================================================
 // USER MANAGEMENT HELPERS (Admin)
@@ -273,45 +273,47 @@ export async function adjustUserCredits(
   if (!db) return { success: false, error: "Database not available" };
 
   try {
-    const [userCredits] = await db
-      .select({ balance: credits.balance })
-      .from(credits)
-      .where(eq(credits.userId, userId))
-      .limit(1);
+    return await withTransaction(async (tx) => {
+      const [userCredits] = await tx
+        .select({ balance: credits.balance })
+        .from(credits)
+        .where(eq(credits.userId, userId))
+        .limit(1);
 
-    if (!userCredits) {
-      return { success: false, error: "User credits record not found" };
-    }
+      if (!userCredits) {
+        return { success: false, error: "User credits record not found" };
+      }
 
-    const newBalance = userCredits.balance + amount;
-    if (newBalance < 0) {
-      return { success: false, error: "Cannot reduce balance below zero" };
-    }
+      const newBalance = userCredits.balance + amount;
+      if (newBalance < 0) {
+        return { success: false, error: "Cannot reduce balance below zero" };
+      }
 
-    if (amount > 0) {
-      await db
-        .update(credits)
-        .set({
-          balance: newBalance,
-          creditsPurchased: sql`${credits.creditsPurchased} + ${amount}`,
-        })
-        .where(eq(credits.userId, userId));
-    } else {
-      await db
-        .update(credits)
-        .set({ balance: newBalance })
-        .where(eq(credits.userId, userId));
-    }
+      if (amount > 0) {
+        await tx
+          .update(credits)
+          .set({
+            balance: newBalance,
+            creditsPurchased: sql`${credits.creditsPurchased} + ${amount}`,
+          })
+          .where(eq(credits.userId, userId));
+      } else {
+        await tx
+          .update(credits)
+          .set({ balance: newBalance })
+          .where(eq(credits.userId, userId));
+      }
 
-    await db.insert(creditTransactions).values({
-      userId,
-      amount,
-      type: amount > 0 ? "admin_add" : "admin_deduct",
-      description: `Admin adjustment by admin ${adminId}: ${reason}`,
-      balanceAfter: newBalance,
+      await tx.insert(creditTransactions).values({
+        userId,
+        amount,
+        type: amount > 0 ? "admin_add" : "admin_deduct",
+        description: `Admin adjustment by admin ${adminId}: ${reason}`,
+        balanceAfter: newBalance,
+      });
+
+      return { success: true, newBalance };
     });
-
-    return { success: true, newBalance };
   } catch (error) {
     console.error("[Database] Failed to adjust credits:", error);
     return { success: false, error: "Failed to adjust credits" };

@@ -6,6 +6,7 @@
  */
 import { protectedProcedure, router } from "../_core/trpc";
 import { deleteUserAccount } from "../db/accountDeletion";
+import { exportUserData } from "../db/gdprExport";
 import { storageDelete } from "../storage";
 import { logAuditEvent } from "../auditLog";
 import { AUDIT_ACTIONS } from "../../drizzle/schema";
@@ -14,6 +15,38 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 export const accountRouter = router({
+  /**
+   * Export all personal data for the authenticated user (GDPR Article 20).
+   * Returns a structured JSON object with all user data.
+   * Rate limited to 1 request per 5 minutes.
+   */
+  exportData: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.user.id;
+
+    // Rate limit: 1 export per 5 minutes
+    checkRateLimit(`data-export:${userId}`, {
+      maxRequests: 1,
+      windowMs: 300_000,
+    });
+
+    await logAuditEvent({
+      action: AUDIT_ACTIONS.DATA_EXPORT_REQUESTED,
+      userId,
+      severity: "info",
+      metadata: { requestedAt: new Date().toISOString() },
+    });
+
+    const data = await exportUserData(userId);
+    if (!data) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "User data not found.",
+      });
+    }
+
+    return data;
+  }),
+
   /**
    * Delete the authenticated user's account and all associated data.
    * Requires the user to type "DELETE MY ACCOUNT" as confirmation.

@@ -29,7 +29,7 @@ import {
   changeRequestAttachments,
   referrals,
 } from "../../drizzle/schema";
-import { getDb } from "./connection";
+import { getDb, withTransaction } from "./connection";
 
 export interface DeletionResult {
   success: boolean;
@@ -151,96 +151,99 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
   };
 
   try {
-    // Step 0: Collect S3 keys before deleting records
+    // Step 0: Collect S3 keys before deleting records (outside transaction)
     const storageKeysToDelete = await collectStorageKeys(userId);
 
-    // Step 1: Delete change request attachments
-    const userCRs = await db
-      .select({ id: changeRequests.id })
-      .from(changeRequests)
-      .where(
-        or(
-          eq(changeRequests.submittedById, userId),
-          eq(changeRequests.targetUserId, userId),
-        ),
-      );
+    // All deletion steps run inside a single transaction for atomicity
+    await withTransaction(async (tx) => {
+      // Step 1: Delete change request attachments
+      const userCRs = await tx
+        .select({ id: changeRequests.id })
+        .from(changeRequests)
+        .where(
+          or(
+            eq(changeRequests.submittedById, userId),
+            eq(changeRequests.targetUserId, userId),
+          ),
+        );
 
-    if (userCRs.length > 0) {
-      const crIds = userCRs.map((cr: { id: number }) => cr.id);
-      const attResult = await db
-        .delete(changeRequestAttachments)
-        .where(inArray(changeRequestAttachments.changeRequestId!, crIds));
-      counts.changeRequestAttachments = (attResult as any)[0]?.affectedRows ?? 0;
-    }
+      if (userCRs.length > 0) {
+        const crIds = userCRs.map((cr: { id: number }) => cr.id);
+        const attResult = await tx
+          .delete(changeRequestAttachments)
+          .where(inArray(changeRequestAttachments.changeRequestId!, crIds));
+        counts.changeRequestAttachments = (attResult as any)[0]?.affectedRows ?? 0;
+      }
 
-    // Step 2: Delete change requests
-    const crResult = await db
-      .delete(changeRequests)
-      .where(
-        or(
-          eq(changeRequests.submittedById, userId),
-          eq(changeRequests.targetUserId, userId),
-        ),
-      );
-    counts.changeRequests = (crResult as any)[0]?.affectedRows ?? 0;
+      // Step 2: Delete change requests
+      const crResult = await tx
+        .delete(changeRequests)
+        .where(
+          or(
+            eq(changeRequests.submittedById, userId),
+            eq(changeRequests.targetUserId, userId),
+          ),
+        );
+      counts.changeRequests = (crResult as any)[0]?.affectedRows ?? 0;
 
-    // Step 3: Delete referrals
-    const refResult = await db
-      .delete(referrals)
-      .where(eq(referrals.referrerUserId, userId));
-    counts.referrals = (refResult as any)[0]?.affectedRows ?? 0;
+      // Step 3: Delete referrals
+      const refResult = await tx
+        .delete(referrals)
+        .where(eq(referrals.referrerUserId, userId));
+      counts.referrals = (refResult as any)[0]?.affectedRows ?? 0;
 
-    // Step 4: Delete model assets
-    const userModels = await db
-      .select({ id: models.id })
-      .from(models)
-      .where(eq(models.userId, userId));
+      // Step 4: Delete model assets
+      const userModels = await tx
+        .select({ id: models.id })
+        .from(models)
+        .where(eq(models.userId, userId));
 
-    if (userModels.length > 0) {
-      const modelIds = userModels.map((m: { id: number }) => m.id);
-      const assetResult = await db
-        .delete(modelAssets)
-        .where(inArray(modelAssets.modelId, modelIds));
-      counts.modelAssets = (assetResult as any)[0]?.affectedRows ?? 0;
-    }
+      if (userModels.length > 0) {
+        const modelIds = userModels.map((m: { id: number }) => m.id);
+        const assetResult = await tx
+          .delete(modelAssets)
+          .where(inArray(modelAssets.modelId, modelIds));
+        counts.modelAssets = (assetResult as any)[0]?.affectedRows ?? 0;
+      }
 
-    // Step 5: Delete models
-    const modelResult = await db
-      .delete(models)
-      .where(eq(models.userId, userId));
-    counts.models = (modelResult as any)[0]?.affectedRows ?? 0;
+      // Step 5: Delete models
+      const modelResult = await tx
+        .delete(models)
+        .where(eq(models.userId, userId));
+      counts.models = (modelResult as any)[0]?.affectedRows ?? 0;
 
-    // Step 6: Delete generations
-    const genResult = await db
-      .delete(generations)
-      .where(eq(generations.userId, userId));
-    counts.generations = (genResult as any)[0]?.affectedRows ?? 0;
+      // Step 6: Delete generations
+      const genResult = await tx
+        .delete(generations)
+        .where(eq(generations.userId, userId));
+      counts.generations = (genResult as any)[0]?.affectedRows ?? 0;
 
-    // Step 7: Delete credit transactions
-    const txResult = await db
-      .delete(creditTransactions)
-      .where(eq(creditTransactions.userId, userId));
-    counts.creditTransactions = (txResult as any)[0]?.affectedRows ?? 0;
+      // Step 7: Delete credit transactions
+      const txResult = await tx
+        .delete(creditTransactions)
+        .where(eq(creditTransactions.userId, userId));
+      counts.creditTransactions = (txResult as any)[0]?.affectedRows ?? 0;
 
-    // Step 8: Delete credits
-    const credResult = await db
-      .delete(credits)
-      .where(eq(credits.userId, userId));
-    counts.credits = (credResult as any)[0]?.affectedRows ?? 0;
+      // Step 8: Delete credits
+      const credResult = await tx
+        .delete(credits)
+        .where(eq(credits.userId, userId));
+      counts.credits = (credResult as any)[0]?.affectedRows ?? 0;
 
-    // Step 9: Anonymize audit logs (compliance — don't delete)
-    const auditResult = await db
-      .update(auditLogs)
-      .set({
-        userId: null,
-        metadata: sql`JSON_SET(COALESCE(metadata, '{}'), '$.deletedUser', true)`,
-      })
-      .where(eq(auditLogs.userId, userId));
-    counts.auditLogsAnonymized = (auditResult as any)[0]?.affectedRows ?? 0;
+      // Step 9: Anonymize audit logs (compliance — don't delete)
+      const auditResult = await tx
+        .update(auditLogs)
+        .set({
+          userId: null,
+          metadata: sql`JSON_SET(COALESCE(metadata, '{}'), '$.deletedUser', true)`,
+        })
+        .where(eq(auditLogs.userId, userId));
+      counts.auditLogsAnonymized = (auditResult as any)[0]?.affectedRows ?? 0;
 
-    // Step 10: Delete user
-    const userResult = await db.delete(users).where(eq(users.id, userId));
-    counts.user = (userResult as any)[0]?.affectedRows ?? 0;
+      // Step 10: Delete user
+      const userResult = await tx.delete(users).where(eq(users.id, userId));
+      counts.user = (userResult as any)[0]?.affectedRows ?? 0;
+    });
 
     return {
       success: counts.user > 0,

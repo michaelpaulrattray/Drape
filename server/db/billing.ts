@@ -9,7 +9,7 @@ import {
   users,
   PlanTier,
 } from "../../drizzle/schema";
-import { getDb } from "./connection";
+import { getDb, withTransaction } from "./connection";
 import { getUserCredits, addCredits } from "./credits";
 
 export async function updateUserSubscription(
@@ -85,24 +85,26 @@ export async function refreshMonthlyCredits(
 
     const newBalance = monthlyCredits + rolloverCredits;
 
-    await db
-      .update(credits)
-      .set({
-        balance: newBalance,
-        rolloverCredits: rolloverCredits,
-        lastRefreshAt: new Date(),
-      })
-      .where(eq(credits.userId, userId));
+    return await withTransaction(async (tx) => {
+      await tx
+        .update(credits)
+        .set({
+          balance: newBalance,
+          rolloverCredits: rolloverCredits,
+          lastRefreshAt: new Date(),
+        })
+        .where(eq(credits.userId, userId));
 
-    await db.insert(creditTransactions).values({
-      userId,
-      amount: monthlyCredits,
-      type: "subscription",
-      description: `Monthly credit refresh (${monthlyCredits} credits + ${rolloverCredits} rollover)`,
-      balanceAfter: newBalance,
+      await tx.insert(creditTransactions).values({
+        userId,
+        amount: monthlyCredits,
+        type: "subscription",
+        description: `Monthly credit refresh (${monthlyCredits} credits + ${rolloverCredits} rollover)`,
+        balanceAfter: newBalance,
+      });
+
+      return { success: true, newBalance };
     });
-
-    return { success: true, newBalance };
   } catch (error) {
     console.error("[Database] Failed to refresh monthly credits:", error);
     return { success: false, error: "Failed to refresh credits" };

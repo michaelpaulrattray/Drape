@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../stripe/webhooks";
 import { securityHeaders } from "../security/securityHeaders";
+import { correlationIdMiddleware } from "../security/correlationId";
 import heroProxyRouter from "../heroProxy";
 import { healthHandler } from "../health";
 
@@ -137,6 +138,9 @@ async function startServer() {
   // Security headers on all responses
   app.use(securityHeaders);
 
+  // Correlation ID: assign/propagate a unique request ID for tracing
+  app.use(correlationIdMiddleware);
+
   // Configure body parser with size limit for file uploads (15MB covers base64 images + JSON metadata)
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ limit: "15mb", extended: true }));
@@ -187,11 +191,12 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
-      onError({ error, path, type }) {
-        // Log all server-side tRPC errors for observability
+      onError({ error, path, type, ctx }) {
+        // Log all server-side tRPC errors with correlation ID for traceability
         const severity = error.code === "INTERNAL_SERVER_ERROR" ? "ERROR" : "WARN";
+        const cid = (ctx as any)?.correlationId ?? "unknown";
         console.error(
-          `[tRPC ${severity}] ${type} ${path ?? "unknown"}: ${error.message}`,
+          `[tRPC ${severity}] [${cid}] ${type} ${path ?? "unknown"}: ${error.message}`,
           error.code === "INTERNAL_SERVER_ERROR" ? error.cause ?? "" : ""
         );
       },

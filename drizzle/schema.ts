@@ -342,6 +342,9 @@ export const AUDIT_ACTIONS = {
   CREDIT_HISTORY_EXPORTED: "credit_history.exported",
   GENERATION_HISTORY_EXPORTED: "generation_history.exported",
   
+  // GDPR data export
+  DATA_EXPORT_REQUESTED: "account.data_export_requested",
+
   // Announcement / banner events
   BANNER_CREATED: "admin.banner_created",
   BANNER_UPDATED: "admin.banner_updated",
