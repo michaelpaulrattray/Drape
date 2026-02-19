@@ -3934,3 +3934,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix 6: Make addCredits() atomic
 - [x] Write vitest tests for Batch 1 fixes
 - [x] Run all tests and verify dev server
+
+## Resilient Dynamic Imports
+- [x] Create lazyWithRetry utility (client/src/lib/lazyWithRetry.ts)
+- [x] Update HeroSection.tsx to use lazyWithRetry
+- [x] Write vitest test for lazyWithRetry

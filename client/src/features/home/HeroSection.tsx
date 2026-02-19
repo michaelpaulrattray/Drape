@@ -1,9 +1,10 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { motion } from "framer-motion";
 import { easeOut, easeInOut, clientLogos } from "./homeData";
 import FlowLines from "@/components/hero3d/FlowLines";
 
-const HeroScene = lazy(() => import("@/components/hero3d/HeroScene"));
+const HeroScene = lazyWithRetry(() => import("@/components/hero3d/HeroScene"));
 
 function LogoMarquee() {
   return (
