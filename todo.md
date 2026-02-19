@@ -3858,3 +3858,17 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Identify dead code, redundant code, missing procedures
 - [x] Verify prompt engineering patches 10-17 preservation
 - [x] Compile structured audit report
+
+## Dead Code Cleanup Sprint
+- [x] Delete BrandSelector.tsx (144 lines, replaced by inline brand chips)
+- [x] Delete EyeSection.tsx (127 lines, replaced by inline WarmPrimitives.EyeGrid)
+- [x] Delete FaceSection.tsx (168 lines, replaced by inline face chips)
+- [x] Delete SkinSection.tsx (127 lines, replaced by inline skin controls)
+- [x] Delete PhysiqueSelector.tsx (70 lines, replaced by inline physique chips)
+- [x] Delete HairSection.tsx (149 lines, replaced by inline hair builder)
+- [x] Delete EthnicityBlender.tsx (185 lines, replaced by WarmPrimitives)
+- [x] Delete DirectorsNote.tsx (~80 lines, replaced by MasterPromptPanel)
+- [x] Delete ElapsedTimeDisplay.tsx (~45 lines, replaced by LoadingOverlay)
+- [x] Remove dead exports from castingHelpers.tsx (ConnectorLine, BODY_ICONS, FACE_ICONS, LOADING_TIPS, CollapsibleSection, SelectControl, VisualOptionGrid)
+- [x] Verify zero TypeScript errors after cleanup
+- [x] Verify all tests pass after cleanup (1035/1035)
