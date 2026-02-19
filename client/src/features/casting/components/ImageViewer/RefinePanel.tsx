@@ -2,6 +2,8 @@ import { RefObject } from 'react';
 import { Loader2 } from 'lucide-react';
 import Tooltip from '@/components/Tooltip';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
+import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
+import { SuggestionChips } from '../SuggestionChips';
 
 // ============ Types ============
 
@@ -23,6 +25,7 @@ interface RefinePanelProps {
   handleGenerate: () => void;
   handleEnhance: () => void;
   handleRefineSubmit: () => void;
+  onSuggestionClick?: (text: string) => void;
 }
 
 // ============ Sub-components ============
@@ -70,6 +73,7 @@ export function RefinePanel({
   handleGenerate,
   handleEnhance,
   handleRefineSubmit,
+  onSuggestionClick,
 }: RefinePanelProps) {
   // Get UI state from Zustand store
   const {
@@ -84,6 +88,16 @@ export function RefinePanel({
 
   const isLocked = isViewLocked && !unlockMode;
   const hasMask = maskPathsCount > 0;
+  const { isGenerating } = useCastingGenerationStore.getState().genState;
+
+  // Handle suggestion chip click: populate input and auto-submit
+  const handleChipClick = (text: string) => {
+    if (onSuggestionClick) {
+      onSuggestionClick(text);
+    } else {
+      setRefineInput(text);
+    }
+  };
 
   // Get placeholder text based on state
   const getPlaceholder = () => {
@@ -226,6 +240,13 @@ export function RefinePanel({
 
   return (
     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full max-w-xl z-30 px-2" onClick={e => e.stopPropagation()} style={{marginBottom: '60px', marginLeft: '10px'}}>
+      {/* Suggestion Chips — above the input bar */}
+      {!isMasking && !isLocked && isIterationAllowed && (
+        <div className="mb-2 px-1">
+          <SuggestionChips onChipClick={handleChipClick} disabled={isGenerating} />
+        </div>
+      )}
+
       {/* Inline Helper Text for Masking */}
       {isMasking && (
         <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">

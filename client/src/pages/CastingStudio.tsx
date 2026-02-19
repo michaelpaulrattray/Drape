@@ -72,6 +72,7 @@ export default function CastingStudio() {
     handleRedo,
     canUndo,
     canRedo,
+    handleCompactPrompt,
   } = useCastingGeneration({
     isAuthenticated,
     activeTool,
@@ -204,6 +205,7 @@ export default function CastingStudio() {
         genState={genState}
         currentAssets={currentAssets}
         handleGenerate={handleGenerate}
+        onCompactPrompt={handleCompactPrompt}
       />
 
       {/* Right Panel */}

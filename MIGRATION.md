@@ -25,10 +25,10 @@
 | 3a | Types: ModelPreferences + Amendment + GenerationState.identityWarning | ✅ Done | 248c3513 |
 | 3b | Zustand stores: suggestions, amendments, identityWarning in generation store | ✅ Done | 248c3513 |
 | 3c | Hooks: useCastingGeneration wired to 5 new tRPC procedures | ✅ Done | 248c3513 |
-| 4 | Client: ControlPanel components + ethnicity blend UI | ⬜ Not started | — |
-| 5 | Client: ImageViewer + RefineBar + ViewStrip | ⬜ Not started | — |
-| 6 | Client: MasterPrompt panel + quick suggestions | ⬜ Not started | — |
-| 7 | Integration testing + polish | ⬜ Not started | — |
+| 4a | Client: EthnicityBlender component in ControlPanel | ✅ Done | (pending) |
+| 4b | Client: SuggestionChips in RefinePanel | ✅ Done | (pending) |
+| 4c | Client: MasterPromptPanel + Compact button in ControlPanel | ✅ Done | (pending) |
+| 5 | Integration testing + polish | ⬜ Not started | — |
 
 ---
 
@@ -58,8 +58,13 @@
 | `client/src/features/casting/stores/useCastingGenerationStore.ts` | `CastingContext.tsx` (generation portion) | ✅ Phase 3b: Added suggestions, amendments, identityWarning, selector hooks |
 | `client/src/features/casting/hooks/useCastingGeneration.ts` | `CastingContext.tsx` (generation logic) | ✅ Phase 3c: Wired suggestions, compactPrompt, clearSession, analyzeReference, amendments logging |
 | `client/src/features/casting/constants.ts` | `types.ts` | ✅ Phase 3a: Added Amendment type, ethnicityBlend on ModelPreferences, identityWarning on GenerationState |
-| `client/src/features/casting/ControlPanel.tsx` | `components/ControlPanel.tsx` | Already mostly aligned — add ethnicity blend UI |
-| `client/src/features/casting/components/ImageViewer/` | `components/ImageViewer/` | Add RefineBar, MaskCanvas, ViewStrip, EmptyState |
+| `client/src/features/casting/ControlPanel.tsx` | `components/ControlPanel.tsx` | ✅ Phase 4c: Added MasterPromptPanel, onCompactPrompt prop |
+| `client/src/features/casting/components/BrandSelector.tsx` | `components/ControlPanel.tsx` (EthnicityBlender) | ✅ Phase 4a: Replaced old ethnicity grid with EthnicityBlender, dual-write to ethnicityBlend + legacy string |
+| `client/src/features/casting/components/EthnicityBlender.tsx` (new) | `components/ControlPanel.tsx` (EthnicityBlender) | ✅ Phase 4a: Draggable blend bar, 3-column grid, 10-90% clamping |
+| `client/src/features/casting/components/SuggestionChips.tsx` (new) | (new design concept) | ✅ Phase 4b: Shimmer loading, staggered fade-in, auto-submit on click |
+| `client/src/features/casting/components/MasterPromptPanel.tsx` (new) | (new design concept) | ✅ Phase 4c: Collapsible prompt view, amendment count, compact button, identity warning |
+| `client/src/features/casting/components/ImageViewer/RefinePanel.tsx` | `components/ImageViewer/` | ✅ Phase 4b: Integrated SuggestionChips above input bar |
+| `client/src/pages/CastingStudio.tsx` | (orchestrator) | ✅ Phase 4c: Wired handleCompactPrompt to ControlPanel |
 
 ---
 

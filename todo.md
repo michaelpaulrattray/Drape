@@ -3833,3 +3833,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Phase 3b: Update Zustand stores (form, generation)
 - [x] Phase 3c: Update client hooks to call new tRPC procedures
 - [x] Phase 3 tests and checkpoint
+- [x] Phase 4a: Ethnicity Blend UI in ControlPanel
+- [x] Phase 4b: Suggestion Chips UI
+- [x] Phase 4c: MasterPrompt panel + Compact button
+- [x] Phase 4 tests and checkpoint

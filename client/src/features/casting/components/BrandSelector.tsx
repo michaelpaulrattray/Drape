@@ -1,7 +1,7 @@
 import Tooltip from "@/components/Tooltip";
 import TriBlendSelector from "@/components/TriBlendSelector";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
-import { type CastingVibe } from "@/features/casting/constants";
+import { EthnicityBlender } from "./EthnicityBlender";
 
 // ============ Types ============
 
@@ -23,46 +23,21 @@ const BRAND_OPTIONS: BrandOption[] = [
   { value: "Social Media", desc: "Creator / Authentic" },
 ];
 
-const ETHNICITIES = [
-  "Slavic", "Nordic", "East Asian", "South Asian",
-  "Afro-Caribbean", "West African", "Latino",
-  "Middle Eastern", "Mixed", "Polynesian"
-];
-
 // ============ Main Component ============
 
 export function BrandSelector() {
-  // Get state directly from Zustand store
   const prefs = useCastingFormStore((state) => state.prefs);
   const updatePref = useCastingFormStore((state) => state.updatePref);
+  const setPrefs = useCastingFormStore((state) => state.setPrefs);
 
-  // Ethnicity selection helpers
-  const handleEthnicityClick = (eth: string) => {
-    const currentStr = prefs.ethnicity || "";
-    let current = currentStr.split(", ").filter(e => e && e.trim() !== "");
+  const ethnicityBlend = prefs.ethnicityBlend || [];
 
-    if (eth === "Mixed") {
-      if (current.length === 1 && current[0] === "Mixed") updatePref("ethnicity", "");
-      else updatePref("ethnicity", "Mixed");
-      return;
-    }
-
-    if (current.length === 1 && current[0] === "Mixed") current = [];
-    current = current.filter(e => e !== "Mixed");
-
-    if (current.includes(eth)) current = current.filter(e => e !== eth);
-    else {
-      if (current.length >= 2) current.shift();
-      current.push(eth);
-    }
-    updatePref("ethnicity", current.join(", "));
-  };
-
-  const isEthSelected = (eth: string) => {
-    const currentStr = prefs.ethnicity || "";
-    const current = currentStr.split(", ").filter(e => e && e.trim() !== "");
-    if (eth === "Mixed") return (current.length === 1 && current[0] === "Mixed") || current.length > 1;
-    return current.includes(eth);
+  // Dual-write: update both ethnicityBlend array and legacy ethnicity string
+  const setEthnicityBlend = (blend: { name: string; pct: number }[]) => {
+    const legacyStr = blend.length === 0
+      ? ''
+      : blend.map(e => e.pct < 100 ? `${e.pct}% ${e.name}` : e.name).join(', ');
+    setPrefs({ ...prefs, ethnicityBlend: blend, ethnicity: legacyStr });
   };
 
   return (
@@ -148,35 +123,19 @@ export function BrandSelector() {
         />
       </div>
 
-      {/* Ethnicity Grid */}
-      <div className="space-y-3 pt-2">
+      {/* Ethnicity Blender */}
+      <div className="space-y-2 pt-2">
         <div className="flex justify-between items-end">
           <label className="text-xs font-medium text-[#757575]">Ethnicity</label>
           <span className="text-xs text-[#757575]">
-            {prefs.ethnicity ? (prefs.ethnicity === 'Mixed' ? 'Mixed' : 'Max 2') : 'Auto'}
+            {ethnicityBlend.length === 2
+              ? `${ethnicityBlend[0].pct}/${ethnicityBlend[1].pct}`
+              : ethnicityBlend.length === 1
+                ? ethnicityBlend[0].name
+                : 'Auto'}
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {ETHNICITIES.map(eth => {
-            const isSelected = isEthSelected(eth);
-            return (
-              <button
-                key={eth}
-                onClick={() => handleEthnicityClick(eth)}
-                className={`
-                  relative flex items-center justify-between px-3 py-3 rounded-xl border transition-all duration-200 group
-                  ${isSelected
-                    ? 'bg-[#0A0A0A] border-[#0A0A0A] text-white'
-                    : 'bg-[#EBEBEB] border-transparent text-[#757575] hover:border-[#0A0A0A]/20 hover:text-[#0A0A0A]'
-                  }
-                `}
-              >
-                <span className="text-xs font-medium leading-none">{eth}</span>
-                <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-white scale-100' : 'bg-[#0A0A0A] scale-0'}`} />
-              </button>
-            );
-          })}
-        </div>
+        <EthnicityBlender selected={ethnicityBlend} onChange={setEthnicityBlend} />
       </div>
     </div>
   );

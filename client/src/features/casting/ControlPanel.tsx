@@ -9,6 +9,7 @@ import { PhysiqueSelector } from "./components/PhysiqueSelector";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
+import { MasterPromptPanel } from "./components/MasterPromptPanel";
 import { CollapsibleSection, generateRandomPreferences } from "./castingHelpers";
 import type { GenerationState, GeneratedAsset } from "@/features/casting/constants";
 
@@ -18,6 +19,8 @@ interface ControlPanelProps {
   genState: GenerationState;
   currentAssets: GeneratedAsset[];
   handleGenerate: () => void;
+  onCompactPrompt?: () => void;
+  isCompacting?: boolean;
 }
 
 export function ControlPanel({
@@ -26,6 +29,8 @@ export function ControlPanel({
   genState,
   currentAssets,
   handleGenerate,
+  onCompactPrompt,
+  isCompacting,
 }: ControlPanelProps) {
   const { prefs, setPrefs } = useCastingFormStore();
   const { showMobilePanel } = useCastingUIStore();
@@ -76,6 +81,11 @@ export function ControlPanel({
           <CollapsibleSection title="Hair" required id="section-hair">
             <HairSection />
           </CollapsibleSection>
+
+          {/* Master Prompt Panel — collapsed by default */}
+          {onCompactPrompt && (
+            <MasterPromptPanel onCompact={onCompactPrompt} isCompacting={isCompacting} />
+          )}
         </div>
 
         {/* Generate Button */}
