@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, index } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -116,7 +116,10 @@ export const creditTransactions = mysqlTable("point_transactions", {
   // Track which engine was used (for Flash fallback pricing)
   engineUsed: varchar("engineUsed", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ([
+  index("idx_credit_txn_user_ref").on(table.userId, table.referenceId),
+  index("idx_credit_txn_user_created").on(table.userId, table.createdAt),
+]));
 
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type InsertCreditTransaction = typeof creditTransactions.$inferInsert;
@@ -163,7 +166,9 @@ export const models = mysqlTable("models", {
   mintedAt: timestamp("mintedAt"), // When the model was exported/minted
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ([
+  index("idx_models_user").on(table.userId, table.status),
+]));
 
 export type Model = typeof models.$inferSelect;
 export type InsertModel = typeof models.$inferInsert;
@@ -186,7 +191,9 @@ export const modelAssets = mysqlTable("model_assets", {
   storageKey: varchar("storageKey", { length: 256 }), // S3 key for management
   pointsCost: int("pointsCost").notNull(), // Points spent on this asset
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ([
+  index("idx_model_assets_model").on(table.modelId),
+]));
 
 export type ModelAsset = typeof modelAssets.$inferSelect;
 export type InsertModelAsset = typeof modelAssets.$inferInsert;
@@ -213,7 +220,10 @@ export const generations = mysqlTable("generations", {
   metadata: json("metadata"), // Additional generation params
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
-});
+}, (table) => ([
+  index("idx_generations_user").on(table.userId, table.createdAt),
+  index("idx_generations_status").on(table.status, table.createdAt),
+]));
 
 export type Generation = typeof generations.$inferSelect;
 export type InsertGeneration = typeof generations.$inferInsert;
@@ -234,7 +244,10 @@ export const auditLogs = mysqlTable("audit_logs", {
   userAgent: text("userAgent"),
   severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ([
+  index("idx_audit_severity_created").on(table.severity, table.createdAt),
+  index("idx_audit_user").on(table.userId, table.createdAt),
+]));
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;

@@ -238,25 +238,34 @@ export async function addCredits(
       }
     }
 
-    const userCredits = await getUserCredits(userId);
-    if (!userCredits) {
+    // ATOMIC ADDITION: Use SQL balance + amount to prevent race conditions
+    // (same pattern as deductCredits — never read-then-write)
+    const isPurchase =
+      type === "purchase" || type === "topup" || type === "subscription";
+
+    const updateResult = await db.execute(
+      isPurchase
+        ? sql`UPDATE ${credits}
+              SET balance = balance + ${amount},
+                  credits_purchased = COALESCE(credits_purchased, 0) + ${amount}
+              WHERE user_id = ${userId}`
+        : sql`UPDATE ${credits}
+              SET balance = balance + ${amount}
+              WHERE user_id = ${userId}`
+    );
+
+    const affectedRows =
+      (updateResult as any)[0]?.affectedRows ??
+      (updateResult as any).affectedRows ??
+      0;
+
+    if (affectedRows === 0) {
       return { success: false, error: "User credits not found" };
     }
 
-    const newBalance = userCredits.balance + amount;
-    const isPurchase =
-      type === "purchase" || type === "topup" || type === "subscription";
-    const newCreditsPurchased = isPurchase
-      ? (userCredits.creditsPurchased || 0) + amount
-      : userCredits.creditsPurchased;
-
-    await db
-      .update(credits)
-      .set({
-        balance: newBalance,
-        creditsPurchased: newCreditsPurchased,
-      })
-      .where(eq(credits.userId, userId));
+    // Read the new balance AFTER the atomic update for the transaction log
+    const userCredits = await getUserCredits(userId);
+    const newBalance = userCredits?.balance ?? 0;
 
     await db.insert(creditTransactions).values({
       userId,

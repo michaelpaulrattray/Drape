@@ -145,9 +145,14 @@ describe("Security Headers Middleware", () => {
 
     securityHeaders(req, res, next);
 
-    // In dev mode: 4 headers (X-Frame-Options skipped for preview iframe)
-    // In production: 5 headers
-    const expectedCount = process.env.NODE_ENV === "development" ? 4 : 5;
+    // Headers: HSTS, CSP, X-Frame-Options, X-Content-Type-Options,
+    //          Referrer-Policy, X-XSS-Protection, X-DNS-Prefetch-Control,
+    //          X-Permitted-Cross-Domain-Policies, Permissions-Policy
+    // In dev mode (NODE_ENV=development): X-Frame-Options is skipped → 8 headers
+    // In test/production: all 9 headers set
+    // Vitest runs with NODE_ENV=test, so X-Frame-Options IS set
+    const isDev = process.env.NODE_ENV === "development";
+    const expectedCount = isDev ? 8 : 9;
     expect(res.setHeader).toHaveBeenCalledTimes(expectedCount);
   });
 });

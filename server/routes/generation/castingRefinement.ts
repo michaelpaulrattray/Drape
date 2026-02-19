@@ -12,6 +12,8 @@ import {
 import { withAtomicCredits } from "../../casting/atomicCredits";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { validateProxyUrl } from "../../security/urlValidator";
+import { checkRateLimit, checkUserRateLimit, RATE_LIMITS, USER_RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 
 export const castingRefinementRouter = router({
   // Iterate/refine a model image
@@ -23,6 +25,15 @@ export const castingRefinementRouter = router({
       maskBase64: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Rate limit by user to prevent API abuse
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
+
       const model = await getModelById(input.modelId);
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -133,6 +144,15 @@ export const castingRefinementRouter = router({
       resolution: z.enum(['1K', '2K', '4K']),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Rate limit by user to prevent API abuse
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
+
       const upscaleCost = POINT_COSTS.iterate;
       const referenceId = `upscale-${Date.now()}`;
 
@@ -169,11 +189,21 @@ export const castingRefinementRouter = router({
     }),
 
   // Proxy endpoint to fetch S3 images and return as base64 (bypasses CORS)
+  // SECURITY: Restricted to trusted S3/CDN domains to prevent SSRF
   proxyImage: protectedProcedure
     .input(z.object({
       imageUrl: z.string().url(),
     }))
     .mutation(async ({ input }) => {
+      // Validate URL against allowlist before fetching
+      const validation = validateProxyUrl(input.imageUrl);
+      if (!validation.valid) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `URL not allowed: ${validation.reason}`,
+        });
+      }
+
       try {
         const response = await fetch(input.imageUrl);
         if (!response.ok) {
@@ -202,7 +232,15 @@ export const castingRefinementRouter = router({
     .input(z.object({
       prompt: z.string().min(1).max(2000),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Rate limit free Gemini calls to protect API quota
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
       try {
         const enhanced = await enhanceUserPrompt(input.prompt);
         return {
@@ -231,7 +269,15 @@ export const castingRefinementRouter = router({
       activeView: z.string().optional(),
       profileSummary: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Rate limit free Gemini calls to protect API quota
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
       try {
         const suggestions = await generateCastingSuggestions(
           input.masterPrompt,
@@ -264,7 +310,15 @@ export const castingRefinementRouter = router({
       currentModelImageBase64: z.string().optional(),
       masterPrompt: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Rate limit free Gemini calls to protect API quota
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
       try {
         const attributes = await analyzeReferenceForTransfer(
           input.referenceImageBase64,
@@ -286,6 +340,14 @@ export const castingRefinementRouter = router({
       imageBase64: z.string().min(1),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Rate limit free Gemini calls to protect API quota
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
       const model = await getModelById(input.modelId);
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -330,6 +392,14 @@ export const castingRefinementRouter = router({
       modelId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Rate limit free Gemini calls to protect API quota
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
       const model = await getModelById(input.modelId);
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });

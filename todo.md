@@ -3901,3 +3901,36 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Verify getBrandDescriptors, getBrandDirectives, getNegativeConstraints have zero callers
 - [x] Delete the 3 deprecated functions + re-exports + test assertions (4 files)
 - [x] Verify zero TypeScript errors and all tests pass (1031/1031, 4 tests removed)
+
+## Production Readiness Audit: Multi-User Scale (14 Dimensions)
+- [x] 1. Gemini API Rate Limits & Quotas analysis
+- [x] 2. Server Memory Management analysis
+- [x] 3. Cost Controls & Billing Protection analysis
+- [x] 4. Image Storage & Retention analysis
+- [x] 5. Database Write Pressure analysis
+- [x] 6. Concurrent Generation Queuing analysis
+- [x] 7. Error Recovery & Resilience analysis
+- [x] 8. Autoscaling & Infrastructure analysis
+- [x] 9. WebSocket / Real-time Considerations analysis
+- [x] 10. Security at Scale analysis
+- [x] 11. Monitoring & Observability analysis
+- [x] 12. Graceful Degradation analysis
+- [x] 13. Data Privacy & Multi-tenancy analysis
+- [x] 14. Load Testing Plan analysis
+- [x] Compile PRODUCTION_READINESS_AUDIT.md report
+
+## Audit Report Corrections (Mike's feedback)
+- [x] Verify generateAllViews current state post-Patch 15 (walking/back views removed)
+- [x] Verify proxyImage is behind protectedProcedure and update SSRF severity to P0
+- [x] Verify Gemini safety refusal handling in credit refund path (new gap)
+- [x] Update PRODUCTION_READINESS_AUDIT.md with corrections
+
+## Batch 1: P0 Security & Database Fixes
+- [x] Fix 1: Add 8 database indexes to drizzle schema
+- [x] Fix 2: Add helmet security headers middleware
+- [x] Fix 3: Restrict proxyImage to S3 domain + block private IPs
+- [x] Fix 4: Rate limit fullBody, multiView, iterate, upscale
+- [x] Fix 5: Rate limit free Gemini endpoints (suggestions, enhance, etc.)
+- [x] Fix 6: Make addCredits() atomic
+- [x] Write vitest tests for Batch 1 fixes
+- [x] Run all tests and verify dev server

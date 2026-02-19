@@ -145,6 +145,15 @@ export const castingImagingRouter = router({
   fullBody: protectedProcedure
     .input(z.object({ modelId: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      // Rate limit by user to prevent API abuse
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
+
       // Validate model ownership first (cheap operation)
       const model = await getModelById(input.modelId);
       if (!model) {
@@ -237,6 +246,15 @@ export const castingImagingRouter = router({
       viewType: z.enum(["side", "back", "walk"]),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Rate limit by user to prevent API abuse
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: rateLimitError(rateCheck.resetIn),
+        });
+      }
+
       // Validate model ownership first (cheap operation)
       const model = await getModelById(input.modelId);
       if (!model) {

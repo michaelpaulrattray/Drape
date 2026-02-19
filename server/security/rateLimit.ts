@@ -98,6 +98,13 @@ export function getClientIp(req: { headers: Record<string, string | string[] | u
 
 // Pre-configured rate limit configs
 export const RATE_LIMITS = {
+  // Free Gemini endpoints (suggestions, enhance, reconcile, etc.)
+  // No credit cost, but still consume API quota
+  geminiAssist: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 30,           // 30 requests per minute per user
+    keyPrefix: 'gemini_assist',
+  },
   // Public signup endpoints - generous but prevents spam bots
   newsletter: {
     windowMs: 60 * 60 * 1000, // 1 hour

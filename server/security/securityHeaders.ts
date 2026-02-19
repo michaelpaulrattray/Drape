@@ -48,6 +48,23 @@ const CSP_DIRECTIVES = [
   isDev ? "frame-ancestors *" : "frame-ancestors 'none'",
 ].join("; ");
 
+/**
+ * Permissions-Policy: restrict access to sensitive browser APIs.
+ * Disables camera, microphone, geolocation, payment, USB, etc.
+ * Only allow features explicitly needed by the application.
+ */
+const PERMISSIONS_POLICY = [
+  "camera=()",
+  "microphone=()",
+  "geolocation=()",
+  "usb=()",
+  "magnetometer=()",
+  "gyroscope=()",
+  "accelerometer=()",
+  // Allow payment for Stripe checkout
+  "payment=(self)",
+].join(", ");
+
 export function securityHeaders(req: Request, res: Response, next: NextFunction): void {
   // HSTS: Force HTTPS for 1 year, including subdomains
   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
@@ -66,6 +83,18 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
 
   // Limit referrer information sent to external origins
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  // Legacy XSS protection header (still useful for older browsers)
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+
+  // Prevent DNS prefetching to avoid leaking visited domains
+  res.setHeader("X-DNS-Prefetch-Control", "off");
+
+  // Prevent Adobe Flash/Acrobat cross-domain policy loading
+  res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+
+  // Restrict access to sensitive browser APIs
+  res.setHeader("Permissions-Policy", PERMISSIONS_POLICY);
 
   next();
 }
