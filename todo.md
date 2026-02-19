@@ -3877,3 +3877,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Rename components/MasterPromptPanel.tsx to CompactPromptButton.tsx
 - [x] Update all imports referencing the old name
 - [x] Verify zero TypeScript errors and all tests pass (1035/1035)
+
+## Comprehensive State Flow & Security Audit
+- [x] 1. State flow verification (new cast, iterate, expand body, side profile, export, undo/redo, ref upload, suggestion click)
+- [x] 2. Credit and rate limit coverage for all generation paths
+- [x] 3. Error handling parity (cooldown UI, safety refusals, retry buttons)
+- [x] 4. Cascade invalidation integrity (frontClose→frontFull→sideClose deletions)
+- [x] 5. Export fidelity (ZIP builder view keys, PDF builder labels)
+- [x] 6. Prompt injection safety (user text containment)
+- [x] 7. Session lifecycle (undo/redo/new cast state mutations)
+- [x] 8. Concurrent user isolation — WARNING W-1: module-level session variable
+- [x] 9. Prompt engineering preservation (Patches 10-17) — all intact
+- [x] 10. Compile structured audit report (COMPREHENSIVE_AUDIT_REPORT.md)
