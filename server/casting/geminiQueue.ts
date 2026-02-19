@@ -10,8 +10,16 @@
  *
  * Overflow: Requests beyond concurrency cap queue FIFO.
  *           If queue depth exceeds MAX_QUEUE_DEPTH, reject immediately.
+ *
+ * Circuit Breaker: All requests check the circuit breaker before entering
+ *                  the queue. If Gemini is down, requests fail fast.
  */
 import pLimit from "p-limit";
+import {
+  checkCircuit,
+  recordSuccess,
+  recordFailure,
+} from "./geminiCircuitBreaker";
 
 // ── Configuration ──────────────────────────────────────────────────────────
 const IMAGE_CONCURRENCY = 3;
@@ -35,6 +43,9 @@ export async function withImageQueue<T>(
   fn: () => Promise<T>,
   label: string = "image",
 ): Promise<T> {
+  // Circuit breaker: fail fast if Gemini is down
+  checkCircuit();
+
   if (imageQueueDepth >= MAX_QUEUE_DEPTH) {
     console.warn(
       `[GeminiQueue] Image queue full (${imageQueueDepth}/${MAX_QUEUE_DEPTH}), rejecting: ${label}`,
@@ -50,12 +61,17 @@ export async function withImageQueue<T>(
   );
 
   try {
-    return await imageLimiter(() => {
+    const result = await imageLimiter(() => {
       console.log(
         `[GeminiQueue] Image started: ${label} (active: ${imageLimiter.activeCount}/${IMAGE_CONCURRENCY})`,
       );
       return fn();
     });
+    recordSuccess();
+    return result;
+  } catch (error) {
+    recordFailure(error);
+    throw error;
   } finally {
     imageQueueDepth--;
     console.log(
@@ -75,6 +91,9 @@ export async function withTextQueue<T>(
   fn: () => Promise<T>,
   label: string = "text",
 ): Promise<T> {
+  // Circuit breaker: fail fast if Gemini is down
+  checkCircuit();
+
   if (textQueueDepth >= MAX_QUEUE_DEPTH) {
     console.warn(
       `[GeminiQueue] Text queue full (${textQueueDepth}/${MAX_QUEUE_DEPTH}), rejecting: ${label}`,
@@ -90,12 +109,17 @@ export async function withTextQueue<T>(
   );
 
   try {
-    return await textLimiter(() => {
+    const result = await textLimiter(() => {
       console.log(
         `[GeminiQueue] Text started: ${label} (active: ${textLimiter.activeCount}/${TEXT_CONCURRENCY})`,
       );
       return fn();
     });
+    recordSuccess();
+    return result;
+  } catch (error) {
+    recordFailure(error);
+    throw error;
   } finally {
     textQueueDepth--;
     console.log(

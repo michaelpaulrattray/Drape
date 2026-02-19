@@ -333,6 +333,9 @@ export const AUDIT_ACTIONS = {
   
   // Account lifecycle events
   ACCOUNT_DELETED: "account.deleted",
+  ACCOUNT_DELETION_REQUESTED: "account.deletion_requested",
+  ACCOUNT_DELETION_FAILED: "account.deletion_failed",
+  ACCOUNT_DELETION_COMPLETED: "account.deletion_completed",
   
   // Export events
   AUDIT_LOG_EXPORTED: "audit_log.exported",

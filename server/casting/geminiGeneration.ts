@@ -28,6 +28,7 @@ import {
   buildIdentityAnchor,
 } from "./geminiClient";
 import { withImageQueue, withTextQueue } from "./geminiQueue";
+import { validateNotPlaceholder } from "./placeholderDetection";
 import {
   MASTER_PROMPT_SYSTEM_INSTRUCTION,
   getSkinDescription,
@@ -509,6 +510,8 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
       if (text) throw new Error(`Refusal: ${text.slice(0, 80)}...`);
       throw new Error("No image data in response.");
     }
+    // Detect blank/gray placeholder images from silent safety refusals
+    validateNotPlaceholder(imageUrl);
     return imageUrl;
   };
 

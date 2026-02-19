@@ -3947,3 +3947,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix 10: DB connection pool configuration (20 connections)
 - [x] Write vitest tests for Batch 2 fixes
 - [x] Run all tests and verify dev server
+
+## Batch 3: Circuit Breaker, Placeholder Detection, Dead Code, GDPR
+- [x] Fix 11: Circuit breaker for Gemini API
+- [x] Fix 12: Post-generation placeholder image detection
+- [x] Fix 13: Remove stale generateAllViews dead code
+- [x] Fix 14: Account deletion endpoint (GDPR)
+- [x] Write vitest tests for Batch 3 fixes
+- [x] Run all tests and verify dev server

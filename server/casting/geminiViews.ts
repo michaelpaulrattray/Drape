@@ -24,6 +24,7 @@ import {
   buildIdentityAnchor,
 } from "./geminiClient";
 import { withImageQueue } from "./geminiQueue";
+import { validateNotPlaceholder } from "./placeholderDetection";
 import { UPSCALE_PROMPT, getStudioSettings } from "./geminiPrompts";
 
 // ============================================================================
@@ -103,6 +104,7 @@ export const generateFullBody = async (
       if (text) throw new Error(`Refusal: ${text.slice(0, 80)}...`);
       throw new Error("No image returned.");
     }
+    validateNotPlaceholder(imageUrl);
     return imageUrl;
   };
 
@@ -189,6 +191,7 @@ export const generateRemainingViews = async (
 
       const imageUrl = extractImageFromResponse(response);
       if (!imageUrl) throw new Error("No image");
+      validateNotPlaceholder(imageUrl);
       return { key: config.key, url: imageUrl };
     };
 
@@ -280,6 +283,7 @@ export const generateSingleView = async (
 
     const imageUrl = extractImageFromResponse(response);
     if (!imageUrl) throw new Error("No image generated");
+    validateNotPlaceholder(imageUrl);
 
     return { imageUrl, engineUsed: model };
   };
@@ -352,6 +356,7 @@ export const upscaleExistingImage = async (
 
     const imageUrl = extractImageFromResponse(response);
     if (!imageUrl) throw new Error("Upscale failed: No image returned.");
+    validateNotPlaceholder(imageUrl);
 
     return { imageUrl, engineUsed: modelName };
   } catch (error) {

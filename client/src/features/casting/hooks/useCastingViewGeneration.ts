@@ -39,7 +39,6 @@ export function useCastingViewGeneration({
   // Mutations
   const generateFullBodyMutation = trpc.generation.fullBody.useMutation();
   const generateMultiViewMutation = trpc.generation.multiView.useMutation();
-  const generateAllViewsMutation = trpc.generation.generateAllViews.useMutation();
 
   // View capability checks
   const canGenerateFullBody = currentAssets.some((a) => a.viewType === "frontClose");
@@ -147,8 +146,8 @@ export function useCastingViewGeneration({
       return new Promise((resolve) => {
         setLockModal({
           isOpen: true,
-          title: 'Lock Body & Generate All Views?',
-          message: "This will generate all remaining views (side, walking, back) automatically. You won't be able to edit the body pose without resetting the entire sheet.",
+          title: 'Lock Body & Generate Side View?',
+          message: "This will generate the side profile view. You won't be able to edit the body pose without resetting the entire sheet.",
           onConfirm: async () => {
             closeLockModal();
             const success = await doGenerate();
@@ -159,64 +158,34 @@ export function useCastingViewGeneration({
     }
   }, [currentModelId, creditsData, currentAssets]);
 
-  // Auto-generate all remaining views
+  // Auto-generate all remaining views sequentially (side only post-Patch 15)
   const handleAutoGenerateAllViews = useCallback(async () => {
     if (!currentModelId || isAutoGenerating) return;
     
     return new Promise<void>((resolve) => {
       setLockModal({
         isOpen: true,
-        title: 'Lock Body & Generate All Views?',
-        message: "This will generate all remaining views (side, walking, back) in parallel. You won't be able to edit the body pose without resetting the entire sheet.",
+        title: 'Lock Body & Generate Side View?',
+        message: "This will generate the side profile view. You won't be able to edit the body pose without resetting the entire sheet.",
         onConfirm: async () => {
           closeLockModal();
           
           setIsAutoGenerating(true);
           setAutoGenCancelled(false);
           
-          const totalCost = CREDIT_COSTS.multiView * 3;
-          if (!creditsData || creditsData.balance < totalCost) {
-            toast.error(`Insufficient credits. Need ${totalCost} credits for all views.`);
+          if (!creditsData || creditsData.balance < CREDIT_COSTS.multiView) {
+            toast.error(`Insufficient credits. Need ${CREDIT_COSTS.multiView} credits.`);
             setIsTopupOpen(true);
             setIsAutoGenerating(false);
             resolve();
             return;
           }
           
-          setGenState({ 
-            isGenerating: true, 
-            currentStep: 'Generating all views (side, walk, back)...', 
-            error: null, 
-            progress: 0, 
-            startTime: Date.now(), 
-            estimatedDuration: 30000
-          });
+          // Generate side view only (walking and back views removed in Patch 15)
+          const success = await handleGenerateMultiView('side', true);
           
-          try {
-            const result = await generateAllViewsMutation.mutateAsync({
-              modelId: currentModelId,
-            });
-            
-            if (result.success && result.views) {
-              const newAssets: GeneratedAsset[] = [
-                ...currentAssets.filter(a => !['sideClose', 'sideFull', 'backFull'].includes(a.viewType)),
-                { id: result.views.sideClose.assetId ?? Date.now(), viewType: 'sideClose' as const, storageUrl: result.views.sideClose.imageUrl },
-                { id: result.views.sideFull.assetId ?? Date.now() + 1, viewType: 'sideFull' as const, storageUrl: result.views.sideFull.imageUrl },
-                { id: result.views.backFull.assetId ?? Date.now() + 2, viewType: 'backFull' as const, storageUrl: result.views.backFull.imageUrl },
-              ];
-              
-              setCurrentAssets(newAssets);
-              pushHistory(newAssets);
-              setActiveView('sideClose');
-              toast.success('All views generated! Ready to export.');
-              refetchCreditsWithWarning();
-            }
-            
-            setGenState({ isGenerating: false, currentStep: '', error: null });
-          } catch (error) {
-            const message = error instanceof Error ? error.message : 'Generation failed';
-            setGenState({ isGenerating: false, currentStep: '', error: message });
-            toast.error(message);
+          if (!success) {
+            toast.error('Side view generation failed.');
           }
           
           setIsAutoGenerating(false);
@@ -224,7 +193,7 @@ export function useCastingViewGeneration({
         }
       });
     });
-  }, [currentModelId, isAutoGenerating, creditsData, currentAssets]);
+  }, [currentModelId, isAutoGenerating, creditsData, currentAssets, handleGenerateMultiView]);
 
   // Next stage calculation
   const nextStage = useMemo(() => {
@@ -235,64 +204,25 @@ export function useCastingViewGeneration({
         label: 'Generate Full Body', 
         action: handleGenerateFullBody,
         step: 2,
-        total: 5,
+        total: 3,
       };
     }
     
     if (!currentAssets.some(a => a.viewType === 'sideClose')) {
       return { 
-        label: 'Generate All Views', 
+        label: 'Generate Side View', 
         action: handleAutoGenerateAllViews,
         step: 3,
-        total: 5,
+        total: 3,
         isAutoGen: true,
-      };
-    }
-    
-    if (isAutoGenerating) {
-      if (!currentAssets.some(a => a.viewType === 'sideFull')) {
-        return { 
-          label: 'Generating Walking View...', 
-          action: () => {},
-          step: 4,
-          total: 5,
-          isProgress: true,
-        };
-      }
-      if (!currentAssets.some(a => a.viewType === 'backFull')) {
-        return { 
-          label: 'Generating Back View...', 
-          action: () => {},
-          step: 5,
-          total: 5,
-          isProgress: true,
-        };
-      }
-    }
-    
-    if (!currentAssets.some(a => a.viewType === 'sideFull')) {
-      return { 
-        label: 'Generate Walking View', 
-        action: () => handleGenerateMultiView('walk'),
-        step: 4,
-        total: 5,
-      };
-    }
-    
-    if (!currentAssets.some(a => a.viewType === 'backFull')) {
-      return { 
-        label: 'Generate Back View', 
-        action: () => handleGenerateMultiView('back'),
-        step: 5,
-        total: 5,
       };
     }
 
     return {
       label: 'Export Character Pack',
       action: () => setShowExportModal(true),
-      step: 6, 
-      total: 5,
+      step: 4, 
+      total: 3,
     };
   }, [currentAssets, genState.isGenerating, isAutoGenerating, handleGenerateFullBody, handleAutoGenerateAllViews, handleGenerateMultiView]);
 
