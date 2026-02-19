@@ -13,6 +13,16 @@
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { ENV } from "../_core/env";
 
+// Lazy import to avoid circular dependency (geminiQueue imports from geminiClient)
+let _withTextQueue: typeof import("./geminiQueue").withTextQueue | null = null;
+const getTextQueue = async () => {
+  if (!_withTextQueue) {
+    const mod = await import("./geminiQueue");
+    _withTextQueue = mod.withTextQueue;
+  }
+  return _withTextQueue;
+};
+
 // ============================================================================
 // CLIENT FACTORY
 // ============================================================================
@@ -223,6 +233,8 @@ export const checkIdentityConsistency = async (
   sourceMimeType: string = 'image/png',
   generatedMimeType: string = 'image/png'
 ): Promise<{ consistent: boolean; notes?: string }> => {
+  const textQueue = await getTextQueue();
+  return textQueue(async () => {
   try {
     const ai = getAiClient();
     const response = await withTimeout(
@@ -271,4 +283,5 @@ Reply with ONLY a JSON object:
     console.warn('[IdentityCheck] Failed, assuming consistent:', e?.message);
     return { consistent: true }; // Fail open
   }
+  }, 'checkIdentityConsistency');
 };

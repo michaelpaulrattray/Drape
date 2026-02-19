@@ -27,6 +27,7 @@ import {
   withSingleRetry503,
   buildIdentityAnchor,
 } from "./geminiClient";
+import { withImageQueue, withTextQueue } from "./geminiQueue";
 import {
   MASTER_PROMPT_SYSTEM_INSTRUCTION,
   getSkinDescription,
@@ -54,6 +55,8 @@ interface CastingSession {
 }
 
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const MAX_SESSIONS = 200;
+const EVICTION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const sessionMap = new Map<string, CastingSession>();
 
 /** Evict sessions older than TTL to prevent memory leaks */
@@ -66,7 +69,30 @@ function evictStaleSessions(): void {
       console.log(`[CastingSession] Evicted stale session for user ${uid}`);
     }
   }
+
+  // Hard cap: if still over limit, evict oldest by lastUsed
+  if (sessionMap.size > MAX_SESSIONS) {
+    const sorted = Array.from(sessionMap.entries())
+      .sort((a, b) => a[1].lastUsed - b[1].lastUsed);
+    const toEvict = sorted.slice(0, sessionMap.size - MAX_SESSIONS);
+    for (const [uid] of toEvict) {
+      sessionMap.delete(uid);
+      console.log(`[CastingSession] Evicted oldest session for user ${uid} (cap: ${MAX_SESSIONS})`);
+    }
+  }
 }
+
+// Periodic eviction timer — runs every 5 minutes
+const evictionTimer = setInterval(evictStaleSessions, EVICTION_INTERVAL_MS);
+evictionTimer.unref(); // Don't prevent process exit
+
+/** Clear the eviction timer (for graceful shutdown) */
+export const stopSessionEviction = () => {
+  clearInterval(evictionTimer);
+};
+
+/** Get current session count (for monitoring) */
+export const getSessionCount = () => sessionMap.size;
 
 /** Clear the chat session for a specific user (e.g. when starting a new casting) */
 export const clearCastingSession = (userId: string) => {
@@ -88,6 +114,7 @@ export const generateMasterPrompt = async (
   prefs: ModelPreferences,
   mode: 'NEW' | 'ITERATE' | 'REFERENCE' = 'NEW'
 ): Promise<{ natural: string; schema: any }> => {
+  return withTextQueue(async () => {
   console.log('[geminiGeneration] generateMasterPrompt called:', {
     brand: prefs.castingBrand,
     gender: prefs.gender,
@@ -156,6 +183,7 @@ export const generateMasterPrompt = async (
   }
 
   throw new Error('Master prompt generation failed across all models.');
+  }, 'generateMasterPrompt');
 };
 
 // ============================================================================
@@ -317,8 +345,9 @@ function buildIteratePromptContent(prefs: ModelPreferences): string {
  * Enhance user prompt for iteration — clarifies intent without adding style
  */
 export const enhanceUserPrompt = async (originalPrompt: string): Promise<string> => {
-  const ai = getAiClient();
   if (!originalPrompt.trim()) return "";
+  return withTextQueue(async () => {
+  const ai = getAiClient();
 
   const prompt = `
   You are an expert AI Prompt Engineer.
@@ -357,6 +386,7 @@ export const enhanceUserPrompt = async (originalPrompt: string): Promise<string>
     }
   }
   return originalPrompt;
+  }, 'enhanceUserPrompt');
 };
 
 // ============================================================================
@@ -385,6 +415,7 @@ export const generateCastingImage = async (
   ethnicityHint?: string,
   userId: string = 'anonymous'
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
+  return withImageQueue(async () => {
   const ai = getAiClient();
   let textPrompt = "";
 
@@ -567,6 +598,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
   }
 
   throw new Error('All image models failed');
+  }, `generateCastingImage(${mode})`);
 };
 
 // ============================================================================

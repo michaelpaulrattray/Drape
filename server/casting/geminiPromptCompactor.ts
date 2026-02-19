@@ -21,6 +21,7 @@ import {
   safeResponseText,
   withTimeout,
 } from "./geminiClient";
+import { withTextQueue } from "./geminiQueue";
 
 /**
  * Compact a bloated master prompt (original + N amendments) into a single
@@ -34,6 +35,7 @@ export const compactMasterPrompt = async (
   bloatedPrompt: string,
   currentSchema: any
 ): Promise<string> => {
+  return withTextQueue(async () => {
   const ai = getAiClient();
 
   const promptText = `You are a casting specification editor. You have a master casting description that has accumulated multiple amendments over time. Some amendments CONTRADICT the original description.
@@ -88,4 +90,5 @@ Rewritten clean description:`;
     }
   }
   return bloatedPrompt;
+  }, 'compactMasterPrompt');
 };

@@ -23,6 +23,7 @@ import {
   withSingleRetry503,
   buildIdentityAnchor,
 } from "./geminiClient";
+import { withImageQueue } from "./geminiQueue";
 import { UPSCALE_PROMPT, getStudioSettings } from "./geminiPrompts";
 
 // ============================================================================
@@ -39,6 +40,7 @@ export const generateFullBody = async (
   technicalSchema?: any,
   bodyType?: string
 ): Promise<string> => {
+  return withImageQueue(async () => {
   const ai = getAiClient();
   const mimeType = extractMimeType(headshotUrl);
   const base64Data = extractBase64Data(headshotUrl);
@@ -123,6 +125,7 @@ export const generateFullBody = async (
   }
 
   throw new Error('Full body generation failed across all models.');
+  }, 'generateFullBody');
 };
 
 // ============================================================================
@@ -138,6 +141,7 @@ export const generateRemainingViews = async (
   gender: string,
   technicalSchema?: any
 ): Promise<Partial<ModelViews>> => {
+  return withImageQueue(async () => {
   const ai = getAiClient();
   const mimeType = extractMimeType(sourceImageUrl);
   const base64Data = extractBase64Data(sourceImageUrl);
@@ -216,6 +220,7 @@ export const generateRemainingViews = async (
   });
 
   return results;
+  }, 'generateRemainingViews');
 };
 
 // ============================================================================
@@ -232,6 +237,7 @@ export const generateSingleView = async (
   viewType: 'side' | 'walk' | 'back',
   technicalSchema?: any
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
+  return withImageQueue(async () => {
   const ai = getAiClient();
   const mimeType = extractMimeType(sourceImageUrl);
   const base64Data = extractBase64Data(sourceImageUrl);
@@ -297,6 +303,7 @@ export const generateSingleView = async (
   }
 
   throw new Error(`Single view (${viewType}) generation failed across all models.`);
+  }, `generateSingleView(${viewType})`);
 };
 
 // ============================================================================
@@ -310,6 +317,7 @@ export const upscaleExistingImage = async (
   currentImageUrl: string,
   targetResolution: ImageResolution
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
+  return withImageQueue(async () => {
   const ai = getAiClient();
   const mimeType = extractMimeType(currentImageUrl);
   const base64Data = extractBase64Data(currentImageUrl);
@@ -349,4 +357,5 @@ export const upscaleExistingImage = async (
   } catch (error) {
     throw new Error(formatGeminiError(error));
   }
+  }, 'upscaleExistingImage');
 };

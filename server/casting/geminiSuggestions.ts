@@ -22,6 +22,7 @@ import {
   extractMimeType,
   extractBase64Data,
 } from "./geminiClient";
+import { withTextQueue } from "./geminiQueue";
 
 // ============================================================================
 // JSON PARSING HELPERS
@@ -72,6 +73,7 @@ export const generateCastingSuggestions = async (
   activeView?: string,
   profileSummary?: string
 ): Promise<string[]> => {
+  return withTextQueue(async () => {
   const ai = getAiClient();
 
   const viewContext =
@@ -163,6 +165,7 @@ Return ONLY a JSON array of exactly 6 strings.`;
     "Thicker, bushier eyebrows",
     "Add a beauty mark on cheek",
   ];
+  }, 'generateCastingSuggestions');
 };
 
 // ============================================================================
@@ -184,6 +187,7 @@ export const analyzeReferenceForTransfer = async (
   currentModelImageBase64?: string,
   masterPrompt?: string
 ): Promise<string[]> => {
+  return withTextQueue(async () => {
   const ai = getAiClient();
 
   const parts: any[] = [];
@@ -287,4 +291,5 @@ Return ONLY a JSON array of strings.`,
     console.warn("[RefAnalysis] Failed:", e?.message);
   }
   return [];
+  }, 'analyzeReferenceForTransfer');
 };

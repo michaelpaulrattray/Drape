@@ -3939,3 +3939,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Create lazyWithRetry utility (client/src/lib/lazyWithRetry.ts)
 - [x] Update HeroSection.tsx to use lazyWithRetry
 - [x] Write vitest test for lazyWithRetry
+
+## Batch 2: Gemini Queue & Hardening
+- [x] Fix 7: Gemini request queue with p-limit concurrency control
+- [x] Fix 8: Session eviction timer + 200-session cap
+- [x] Fix 9: JSON body limit (10MB) + base64 Zod .max()
+- [x] Fix 10: DB connection pool configuration (20 connections)
+- [x] Write vitest tests for Batch 2 fixes
+- [x] Run all tests and verify dev server

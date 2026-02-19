@@ -22,7 +22,7 @@ export const castingRefinementRouter = router({
       modelId: z.number(),
       feedback: z.string().min(1),
       assetId: z.number(),
-      maskBase64: z.string().optional(),
+      maskBase64: z.string().max(10_000_000).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Rate limit by user to prevent API abuse
@@ -265,7 +265,7 @@ export const castingRefinementRouter = router({
   suggestions: protectedProcedure
     .input(z.object({
       masterPrompt: z.string().min(1),
-      imageBase64: z.string().optional(),
+      imageBase64: z.string().max(10_000_000).optional(),
       activeView: z.string().optional(),
       profileSummary: z.string().optional(),
     }))
@@ -306,8 +306,8 @@ export const castingRefinementRouter = router({
   // No credits charged — analysis is a UX feature
   analyzeReference: protectedProcedure
     .input(z.object({
-      referenceImageBase64: z.string().min(1),
-      currentModelImageBase64: z.string().optional(),
+      referenceImageBase64: z.string().min(1).max(10_000_000),
+      currentModelImageBase64: z.string().max(10_000_000).optional(),
       masterPrompt: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -337,7 +337,7 @@ export const castingRefinementRouter = router({
   reconcile: protectedProcedure
     .input(z.object({
       modelId: z.number(),
-      imageBase64: z.string().min(1),
+      imageBase64: z.string().min(1).max(10_000_000),
     }))
     .mutation(async ({ ctx, input }) => {
       // Rate limit free Gemini calls to protect API quota

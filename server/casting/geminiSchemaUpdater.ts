@@ -20,6 +20,7 @@ import {
   extractMimeType,
   extractBase64Data,
 } from "./geminiClient";
+import { withTextQueue } from "./geminiQueue";
 
 // ============================================================================
 // JSON PARSING HELPERS
@@ -68,6 +69,7 @@ export const updateSchemaForIteration = async (
   currentSchema: any,
   iterationRequest: string
 ): Promise<any> => {
+  return withTextQueue(async () => {
   const ai = getAiClient();
 
   const promptText = `You are updating a casting specification schema based on a specific change request.
@@ -118,6 +120,7 @@ OUTPUT: The updated schema JSON object.`;
     }
   }
   return currentSchema;
+  }, 'updateSchemaForIteration');
 };
 
 // ============================================================================
@@ -139,6 +142,7 @@ export const reconcileSchemaWithImage = async (
   imageBase64: string,
   masterPrompt: string
 ): Promise<{ schema: any; description: string }> => {
+  return withTextQueue(async () => {
   const ai = getAiClient();
 
   // Build image part — bail early if malformed
@@ -229,4 +233,5 @@ OUTPUT: JSON with exactly two keys:
   }
 
   return { schema: currentSchema, description: masterPrompt };
+  }, 'reconcileSchemaWithImage');
 };

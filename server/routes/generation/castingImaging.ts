@@ -18,7 +18,7 @@ export const castingImagingRouter = router({
   castingImage: protectedProcedure
     .input(z.object({
       modelId: z.number(),
-      referenceImage: z.string().optional(),
+      referenceImage: z.string().max(10_000_000).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Rate limit by user to prevent API abuse
