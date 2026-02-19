@@ -3801,3 +3801,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove /waitlist-pending page and route
 - [x] Remove waitlist-pending references from Dashboard, CastingStudio, App.tsx
 - [x] Write tests for access.validate endpoint (8 tests, 952 total passing)
+
+## Fix: Login flow — no junk accounts, returning users skip code
+- [x] OAuth callback: block account creation if no valid beta code (don't create user record)
+- [x] OAuth callback: allow existing approved users to sign in without code
+- [x] Login.tsx: three views — waitlist (default), "I have an access code" (new users), "I already have an account" (returning)
+- [x] Server bounces unapproved users without code back to /login?error=no_code (no account created)
+- [x] All 952 tests passing

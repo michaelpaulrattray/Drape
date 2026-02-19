@@ -121,38 +121,75 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      // Upsert user and reset failed login attempts on successful login
-      await db.upsertUser({
-        openId: userInfo.openId,
-        name: userInfo.name || null,
-        email: userInfo.email ?? null,
-        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-        lastSignedIn: new Date(),
-      });
+      // Parse cookies for beta code check
+      const { parse: parseCookie } = await import("cookie");
+      const cookies = parseCookie(req.headers.cookie || "");
+      const betaCode = cookies.forma_beta_code;
 
-      // Reset failed login attempts on successful login
-      await db.resetFailedLogins(userInfo.openId);
+      // Check if user already exists BEFORE creating account
+      const existingUser = await db.getUserByOpenId(userInfo.openId);
 
-      // Get user for approval check and audit log
-      const user = await db.getUserByOpenId(userInfo.openId);
+      if (!existingUser) {
+        // ── NEW USER: must have a valid beta code to create account ──
+        if (!betaCode) {
+          // No code, no account — bounce back
+          await logAuditEvent({
+            action: AUDIT_ACTIONS.LOGIN_FAILED,
+            resourceType: "auth",
+            resourceId: userInfo.openId,
+            metadata: {
+              email: userInfo.email,
+              reason: "New user without beta code — account creation blocked",
+            },
+            severity: "warning",
+            ipAddress: clientIp,
+            userAgent,
+          });
+          res.redirect(302, "/login?error=no_code");
+          return;
+        }
 
-      // Pre-launch access gate: auto-redeem beta code from cookie
-      if (user && !user.approved && user.role !== 'admin') {
-        // Parse cookies manually (no cookie-parser middleware)
-        const { parse: parseCookie } = await import("cookie");
-        const cookies = parseCookie(req.headers.cookie || "");
-        const betaCode = cookies.forma_beta_code;
-        if (betaCode) {
-          // Auto-redeem the beta code for this user
+        // Validate the beta code before creating the account
+        const { validateInviteCode } = await import("../db/validateInviteCode");
+        const validation = await validateInviteCode(betaCode);
+        if (!validation.valid) {
+          res.clearCookie("forma_beta_code", { path: "/" });
+          await logAuditEvent({
+            action: AUDIT_ACTIONS.LOGIN_FAILED,
+            resourceType: "auth",
+            resourceId: `invite-code:${betaCode.toUpperCase()}`,
+            metadata: {
+              email: userInfo.email,
+              error: validation.error,
+              reason: "Invalid beta code — account creation blocked",
+            },
+            severity: "warning",
+            ipAddress: clientIp,
+            userAgent,
+          });
+          res.redirect(302, "/login?error=invalid_code");
+          return;
+        }
+
+        // Code is valid — create the account
+        await db.upsertUser({
+          openId: userInfo.openId,
+          name: userInfo.name || null,
+          email: userInfo.email ?? null,
+          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+          lastSignedIn: new Date(),
+        });
+
+        // Get the newly created user and redeem the code
+        const newUser = await db.getUserByOpenId(userInfo.openId);
+        if (newUser) {
           const { redeemInviteCode } = await import("../db/inviteCodes");
-          const redeemResult = await redeemInviteCode(user.id, betaCode);
-          // Clear the beta code cookie regardless of outcome
+          const redeemResult = await redeemInviteCode(newUser.id, betaCode);
           res.clearCookie("forma_beta_code", { path: "/" });
 
           if (redeemResult.success) {
-            // Code redeemed — user is now approved, proceed to dashboard
             await logAuditEvent({
-              userId: user.id,
+              userId: newUser.id,
               action: AUDIT_ACTIONS.LOGIN_SUCCESS,
               resourceType: "auth",
               resourceId: userInfo.openId,
@@ -161,23 +198,20 @@ export function registerOAuthRoutes(app: Express) {
                 loginMethod: userInfo.loginMethod ?? userInfo.platform,
                 approved: true,
                 betaCode: betaCode.toUpperCase(),
+                newAccount: true,
               },
               severity: "info",
               ipAddress: clientIp,
               userAgent,
             });
-            // Fall through to normal session creation + dashboard redirect below
           } else {
-            // Code invalid at redemption time — redirect back to login with error
+            // Edge case: code became invalid between validate and redeem
             await logAuditEvent({
-              userId: user.id,
+              userId: newUser.id,
               action: AUDIT_ACTIONS.LOGIN_FAILED,
               resourceType: "auth",
               resourceId: `invite-code:${betaCode.toUpperCase()}`,
-              metadata: {
-                error: redeemResult.error,
-                betaCode: betaCode.toUpperCase(),
-              },
+              metadata: { error: redeemResult.error },
               severity: "warning",
               ipAddress: clientIp,
               userAgent,
@@ -185,12 +219,61 @@ export function registerOAuthRoutes(app: Express) {
             res.redirect(302, "/login?error=invalid_code");
             return;
           }
-        } else {
-          // No beta code — reject login entirely
-          res.redirect(302, "/login?error=no_code");
-          return;
+        }
+      } else {
+        // ── EXISTING USER: update login info ──
+        await db.upsertUser({
+          openId: userInfo.openId,
+          name: userInfo.name || null,
+          email: userInfo.email ?? null,
+          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+          lastSignedIn: new Date(),
+        });
+
+        // Clear any stale beta code cookie
+        if (betaCode) {
+          res.clearCookie("forma_beta_code", { path: "/" });
+        }
+
+        // If existing user is not approved and not admin, reject
+        if (!existingUser.approved && existingUser.role !== 'admin') {
+          // Try to redeem beta code if present
+          if (betaCode) {
+            const { redeemInviteCode } = await import("../db/inviteCodes");
+            const redeemResult = await redeemInviteCode(existingUser.id, betaCode);
+            if (redeemResult.success) {
+              await logAuditEvent({
+                userId: existingUser.id,
+                action: AUDIT_ACTIONS.LOGIN_SUCCESS,
+                resourceType: "auth",
+                resourceId: userInfo.openId,
+                metadata: {
+                  email: userInfo.email,
+                  approved: true,
+                  betaCode: betaCode.toUpperCase(),
+                },
+                severity: "info",
+                ipAddress: clientIp,
+                userAgent,
+              });
+              // Fall through to session creation
+            } else {
+              res.redirect(302, "/login?error=invalid_code");
+              return;
+            }
+          } else {
+            // Existing unapproved user, no code — bounce
+            res.redirect(302, "/login?error=no_code");
+            return;
+          }
         }
       }
+
+      // Reset failed login attempts on successful login
+      await db.resetFailedLogins(userInfo.openId);
+
+      // Get fresh user for session
+      const user = await db.getUserByOpenId(userInfo.openId);
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
