@@ -16,10 +16,6 @@ import {
   hasBodyArt,
   irisDescriptions,
   MASTER_PROMPT_SYSTEM_INSTRUCTION,
-  // Deprecated aliases should still work
-  getBrandDescriptors,
-  getBrandDirectives,
-  getNegativeConstraints,
 } from "./geminiPrompts";
 import { clearCastingSession } from "./geminiGeneration";
 
@@ -343,30 +339,6 @@ describe("hasBodyArt", () => {
   it("does not false-positive on 'think' containing 'ink'", () => {
     // 'ink' should only match as a standalone word
     expect(hasBodyArt("I think this is fine")).toBe(false);
-  });
-});
-
-// ============================================================================
-// geminiPrompts.ts — Deprecated Aliases
-// ============================================================================
-
-describe("Deprecated aliases (backward compatibility)", () => {
-  it("getBrandDescriptors returns a string", () => {
-    const result = getBrandDescriptors("Gucci");
-    expect(typeof result).toBe("string");
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it("getBrandDirectives returns a string", () => {
-    const result = getBrandDirectives("Prada");
-    expect(typeof result).toBe("string");
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it("getNegativeConstraints returns a string", () => {
-    const result = getNegativeConstraints("Gucci", "clean skin");
-    expect(typeof result).toBe("string");
-    expect(result.length).toBeGreaterThan(0);
   });
 });
 

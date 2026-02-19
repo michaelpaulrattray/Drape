@@ -3896,3 +3896,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update clearCastingSession to accept userId and clear only that user's session
 - [x] Thread userId through all callers (castingImaging, castingRefinement routers)
 - [x] Verify zero TypeScript errors and all tests pass (1035/1035)
+
+## C-1 Cleanup: Remove Deprecated Aliases from geminiPrompts.ts
+- [x] Verify getBrandDescriptors, getBrandDirectives, getNegativeConstraints have zero callers
+- [x] Delete the 3 deprecated functions + re-exports + test assertions (4 files)
+- [x] Verify zero TypeScript errors and all tests pass (1031/1031, 4 tests removed)

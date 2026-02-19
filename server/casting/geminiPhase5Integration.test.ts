@@ -53,12 +53,6 @@ describe("geminiService barrel exports", () => {
     expect(barrel.compactMasterPrompt).toBeDefined();
   });
 
-  it("exports deprecated aliases for backward compatibility", async () => {
-    const barrel = await import("./geminiService");
-    expect(barrel.getBrandDescriptors).toBeDefined();
-    expect(barrel.getBrandDirectives).toBeDefined();
-    expect(barrel.getNegativeConstraints).toBeDefined();
-  });
 });
 
 // ============================================================================

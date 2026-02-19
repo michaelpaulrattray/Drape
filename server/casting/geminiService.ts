@@ -44,10 +44,6 @@ export {
   irisDescriptions,
   getStudioSettings,
   hasBodyArt,
-  // Deprecated aliases (kept for backward compatibility)
-  getBrandDescriptors,
-  getBrandDirectives,
-  getNegativeConstraints,
 } from "./geminiPrompts";
 
 // Generation functions
