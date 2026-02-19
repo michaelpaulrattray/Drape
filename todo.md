@@ -3829,3 +3829,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Phase 2c: Prompt compaction
 - [x] Phase 2d: tRPC route wiring for new procedures
 - [x] Phase 2 tests and checkpoint
+- [x] Phase 3a: Update shared types (ModelPreferences, Amendment, etc.)
+- [x] Phase 3b: Update Zustand stores (form, generation)
+- [x] Phase 3c: Update client hooks to call new tRPC procedures
+- [x] Phase 3 tests and checkpoint

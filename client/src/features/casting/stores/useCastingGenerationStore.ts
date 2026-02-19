@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type GeneratedAsset, type GenerationState } from '../constants';
+import { type GeneratedAsset, type GenerationState, type Amendment } from '../constants';
 
 // Default generation state
 const DEFAULT_GEN_STATE: GenerationState = {
@@ -37,6 +37,21 @@ interface CastingGenerationState {
   
   // History helpers
   pushHistory: (assets: GeneratedAsset[]) => void;
+  
+  // Suggestions
+  suggestions: string[];
+  setSuggestions: (suggestions: string[]) => void;
+  isLoadingSuggestions: boolean;
+  setIsLoadingSuggestions: (loading: boolean) => void;
+  
+  // Amendments (iteration history log)
+  amendments: Amendment[];
+  addAmendment: (amendment: Amendment) => void;
+  clearAmendments: () => void;
+  
+  // Identity warning
+  identityWarning: string | null;
+  setIdentityWarning: (warning: string | null) => void;
   
   // Computed selectors (as functions)
   canUndo: () => boolean;
@@ -97,6 +112,25 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
         }, false, 'pushHistory');
       },
       
+      // Suggestions
+      suggestions: [],
+      setSuggestions: (suggestions) => set({ suggestions }, false, 'setSuggestions'),
+      isLoadingSuggestions: false,
+      setIsLoadingSuggestions: (loading) => set({ isLoadingSuggestions: loading }, false, 'setIsLoadingSuggestions'),
+      
+      // Amendments
+      amendments: [],
+      addAmendment: (amendment) => set(
+        (state) => ({ amendments: [...state.amendments, amendment] }),
+        false,
+        'addAmendment'
+      ),
+      clearAmendments: () => set({ amendments: [] }, false, 'clearAmendments'),
+      
+      // Identity warning
+      identityWarning: null,
+      setIdentityWarning: (warning) => set({ identityWarning: warning }, false, 'setIdentityWarning'),
+      
       // Computed selectors
       canUndo: () => get().historyIndex > 0,
       canRedo: () => get().historyIndex < get().history.length - 1,
@@ -114,6 +148,10 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
         currentTechnicalSchema: null,
         history: [],
         historyIndex: -1,
+        suggestions: [],
+        isLoadingSuggestions: false,
+        amendments: [],
+        identityWarning: null,
       }, false, 'resetGeneration'),
     }),
     { name: 'CastingGenerationStore' }
@@ -145,3 +183,15 @@ export const useCanRedo = () => useCastingGenerationStore((state) => state.canRe
 export const useGetCurrentImageUrl = () => useCastingGenerationStore((state) => state.getCurrentImageUrl);
 
 export const useResetGeneration = () => useCastingGenerationStore((state) => state.resetGeneration);
+
+export const useSuggestions = () => useCastingGenerationStore((state) => state.suggestions);
+export const useSetSuggestions = () => useCastingGenerationStore((state) => state.setSuggestions);
+export const useIsLoadingSuggestions = () => useCastingGenerationStore((state) => state.isLoadingSuggestions);
+export const useSetIsLoadingSuggestions = () => useCastingGenerationStore((state) => state.setIsLoadingSuggestions);
+
+export const useAmendments = () => useCastingGenerationStore((state) => state.amendments);
+export const useAddAmendment = () => useCastingGenerationStore((state) => state.addAmendment);
+export const useClearAmendments = () => useCastingGenerationStore((state) => state.clearAmendments);
+
+export const useIdentityWarning = () => useCastingGenerationStore((state) => state.identityWarning);
+export const useSetIdentityWarning = () => useCastingGenerationStore((state) => state.setIdentityWarning);

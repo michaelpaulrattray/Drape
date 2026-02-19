@@ -163,12 +163,20 @@ export interface ModelPreferences {
   features: string;
   referenceImage?: string;
   userPrompt: string;
+  ethnicityBlend?: { name: string; pct: number }[];
 }
 
 export interface GeneratedAsset {
   id: number;
   viewType: string;
   storageUrl: string;
+}
+
+export interface Amendment {
+  text: string;
+  view: string;
+  version: number;
+  timestamp: number;
 }
 
 export interface GenerationState {
@@ -178,6 +186,7 @@ export interface GenerationState {
   progress?: number;
   startTime?: number;
   estimatedDuration?: number;
+  identityWarning?: string | null;
 }
 
 export type EditTool = 'none' | 'surgical' | 'eraser';

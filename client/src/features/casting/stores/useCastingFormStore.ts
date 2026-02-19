@@ -36,6 +36,7 @@ const DEFAULT_PREFERENCES: ModelPreferences = {
   eyebrowStyle: 'Random',
   features: '',
   userPrompt: '',
+  ethnicityBlend: [],
 };
 
 // Form state interface

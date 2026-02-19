@@ -18,13 +18,13 @@
 | 2c | Server: prompt compaction | ✅ Done | 1aac71fb |
 | 2d | tRPC routes: suggestions, analyzeReference, reconcile, compactPrompt, clearSession | ✅ Done | 1aac71fb |
 
-### Client Migration (Not Started)
+### Client Migration (In Progress)
 
 | Phase | Description | Status | Checkpoint |
 |-------|-------------|--------|------------|
-| 3 | Types: update ModelPreferences + add new shared types | ⬜ Not started | — |
-| 4 | Client: Zustand stores (form, generation, UI) | ⬜ Not started | — |
-| 5 | Client: hooks (useCastingGeneration, useCastingViewGeneration) | ⬜ Not started | — |
+| 3a | Types: ModelPreferences + Amendment + GenerationState.identityWarning | ✅ Done | (pending) |
+| 3b | Zustand stores: suggestions, amendments, identityWarning in generation store | ✅ Done | (pending) |
+| 3c | Hooks: useCastingGeneration wired to 5 new tRPC procedures | ✅ Done | (pending) |
 | 6 | Client: ControlPanel components + ethnicity blend UI | ⬜ Not started | — |
 | 7 | Client: ImageViewer + RefineBar + ViewStrip | ⬜ Not started | — |
 | 8 | Client: MasterPrompt panel + quick suggestions | ⬜ Not started | — |
@@ -54,9 +54,10 @@
 
 | Current File | New Design Reference | Changes |
 |---|---|---|
-| `client/src/features/casting/stores/useCastingFormStore.ts` | `CastingContext.tsx` (state portion) | Add ethnicityBlend, amendments, generatedAssets |
-| `client/src/features/casting/stores/useCastingGenerationStore.ts` | `CastingContext.tsx` (generation portion) | Add identityWarning, currentStep, suggestions |
-| `client/src/features/casting/hooks/useCastingGeneration.ts` | `CastingContext.tsx` (generation logic) | Add chat session awareness, reconciliation calls, suggestion fetching |
+| `client/src/features/casting/stores/useCastingFormStore.ts` | `CastingContext.tsx` (state portion) | ✅ Phase 3b: Added ethnicityBlend default |
+| `client/src/features/casting/stores/useCastingGenerationStore.ts` | `CastingContext.tsx` (generation portion) | ✅ Phase 3b: Added suggestions, amendments, identityWarning, selector hooks |
+| `client/src/features/casting/hooks/useCastingGeneration.ts` | `CastingContext.tsx` (generation logic) | ✅ Phase 3c: Wired suggestions, compactPrompt, clearSession, analyzeReference, amendments logging |
+| `client/src/features/casting/constants.ts` | `types.ts` | ✅ Phase 3a: Added Amendment type, ethnicityBlend on ModelPreferences, identityWarning on GenerationState |
 | `client/src/features/casting/ControlPanel.tsx` | `components/ControlPanel.tsx` | Already mostly aligned — add ethnicity blend UI |
 | `client/src/features/casting/components/ImageViewer/` | `components/ImageViewer/` | Add RefineBar, MaskCanvas, ViewStrip, EmptyState |
 

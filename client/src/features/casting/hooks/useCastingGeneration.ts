@@ -9,6 +9,7 @@ import {
   CREDIT_COSTS,
   type GeneratedAsset,
   type EditTool,
+  type Amendment,
 } from "@/features/casting/constants";
 
 interface UseCastingGenerationParams {
@@ -34,7 +35,9 @@ export function useCastingGeneration({
     setCurrentModelId,
     currentAssets,
     setCurrentAssets,
+    currentMasterPrompt,
     setCurrentMasterPrompt,
+    currentTechnicalSchema,
     setCurrentTechnicalSchema,
     history,
     setHistory,
@@ -44,6 +47,12 @@ export function useCastingGeneration({
     canUndo,
     canRedo,
     getCurrentImageUrl,
+    setSuggestions,
+    setIsLoadingSuggestions,
+    amendments,
+    addAmendment,
+    clearAmendments,
+    setIdentityWarning,
   } = useCastingGenerationStore();
   const {
     activeView,
@@ -74,6 +83,13 @@ export function useCastingGeneration({
   const generateCastingMutation = trpc.generation.castingImage.useMutation();
   const iterateMutation = trpc.generation.iterate.useMutation();
   const enhanceMutation = trpc.generation.enhance.useMutation();
+  
+  // New Phase 2 mutations
+  const suggestionsMutation = trpc.generation.suggestions.useMutation();
+  const reconcileMutation = trpc.generation.reconcile.useMutation();
+  const compactPromptMutation = trpc.generation.compactPrompt.useMutation();
+  const clearSessionMutation = trpc.generation.clearSession.useMutation();
+  const analyzeReferenceMutation = trpc.generation.analyzeReference.useMutation();
 
   // Form validation
   const isFormValid = useMemo(() => {
@@ -90,6 +106,73 @@ export function useCastingGeneration({
 
   // Current image URL
   const currentImageUrl = getCurrentImageUrl(activeView);
+
+  // Build profile summary for suggestion context
+  const profileSummary = useMemo(() => {
+    const parts = [prefs.ethnicity, prefs.gender, prefs.age, prefs.castingBrand].filter(Boolean);
+    return parts.join(', ');
+  }, [prefs.ethnicity, prefs.gender, prefs.age, prefs.castingBrand]);
+
+  // Fire-and-forget suggestion fetch (non-blocking, errors swallowed)
+  const fetchSuggestions = useCallback(async (masterPrompt: string, imageUrl?: string) => {
+    setIsLoadingSuggestions(true);
+    setSuggestions([]);
+    try {
+      const result = await suggestionsMutation.mutateAsync({
+        masterPrompt,
+        imageBase64: imageUrl,
+        activeView,
+        profileSummary,
+      });
+      if (result.suggestions?.length) {
+        setSuggestions(result.suggestions);
+      }
+    } catch (err) {
+      console.warn('[Suggestions] Failed to fetch:', err);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, [activeView, profileSummary]);
+
+  // Compact prompt (manual or auto after 3+ amendments)
+  const handleCompactPrompt = useCallback(async () => {
+    if (!currentModelId || !currentMasterPrompt) return;
+    try {
+      const result = await compactPromptMutation.mutateAsync({
+        modelId: currentModelId,
+      });
+      if (result.masterPrompt) {
+        setCurrentMasterPrompt(result.masterPrompt);
+        toast.success('Prompt compacted');
+      }
+    } catch (err) {
+      console.warn('[Compaction] Failed:', err);
+    }
+  }, [currentModelId, currentMasterPrompt, currentTechnicalSchema]);
+
+  // Clear Gemini chat session
+  const handleClearSession = useCallback(async () => {
+    try {
+      await clearSessionMutation.mutateAsync();
+    } catch (err) {
+      console.warn('[Session] Failed to clear:', err);
+    }
+  }, []);
+
+  // Analyze reference image for attribute transfer
+  const handleAnalyzeReference = useCallback(async (referenceBase64: string, currentImageBase64?: string) => {
+    try {
+      const result = await analyzeReferenceMutation.mutateAsync({
+        referenceImageBase64: referenceBase64,
+        currentModelImageBase64: currentImageBase64,
+        masterPrompt: currentMasterPrompt || undefined,
+      });
+      return result.attributes || [];
+    } catch (err) {
+      console.warn('[Reference] Failed to analyze:', err);
+      return [];
+    }
+  }, [currentMasterPrompt]);
 
   // View locking logic
   const isViewLocked = useMemo(() => {
@@ -162,6 +245,7 @@ export function useCastingGeneration({
         features: prefs.features,
         referenceImage: prefs.referenceImage,
         userPrompt: prefs.userPrompt,
+        ethnicityBlend: prefs.ethnicityBlend,
       };
       
       console.log('[CastingStudio] Sending preferences to backend:', JSON.stringify(backendPrefs, null, 2));
@@ -192,8 +276,14 @@ export function useCastingGeneration({
         setHistory([[newAsset]]);
         setHistoryIndex(0);
         setActiveView("frontClose");
+        clearAmendments();
+        setIdentityWarning(null);
         toast.success("Model generated successfully!");
         refetchCreditsWithWarning();
+        
+        // Fire-and-forget: clear old session + fetch suggestions
+        handleClearSession();
+        fetchSuggestions(modelResult.masterPrompt || '', imageResult.imageUrl);
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -247,12 +337,31 @@ export function useCastingGeneration({
         setCurrentAssets(newAssets);
         pushHistory(newAssets);
         
+        const updatedPrompt = result.masterPrompt || currentMasterPrompt;
         if (result.masterPrompt) {
           setCurrentMasterPrompt(result.masterPrompt);
         }
         
+        // Log amendment
+        const amendment: Amendment = {
+          text: prompt,
+          view: activeView,
+          version: amendments.length + 1,
+          timestamp: Date.now(),
+        };
+        addAmendment(amendment);
+        
         toast.success("Iteration complete!");
         refetchCreditsWithWarning();
+        
+        // Fire-and-forget: fetch suggestions
+        fetchSuggestions(updatedPrompt, result.imageUrl);
+        
+        // Auto-compact after 3+ amendments
+        if (amendments.length + 1 >= 3 && (amendments.length + 1) % 3 === 0) {
+          console.log('[Compaction] Auto-triggering after', amendments.length + 1, 'amendments');
+          handleCompactPrompt();
+        }
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });
@@ -361,5 +470,10 @@ export function useCastingGeneration({
     handleRedo,
     canUndo,
     canRedo,
+    // Phase 2 additions
+    fetchSuggestions,
+    handleCompactPrompt,
+    handleClearSession,
+    handleAnalyzeReference,
   };
 }
