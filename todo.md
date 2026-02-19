@@ -3850,3 +3850,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Step 5: Rewrite RefineBar, ExportModal, StageLockModal
 - [x] Step 6: Rewrite ImageViewerPanel (warm canvas, floating ref, compare, loading overlay)
 - [x] Step 7: Rewrite MasterPrompt panel + CastingStudio 3-panel layout wiring
+
+## Backend Compatibility Audit (Phase 6 Post-Migration)
+- [x] Audit all client-side casting files for tRPC calls, store usage, imports
+- [x] Audit all server-side casting files (routers, db, gemini, prompts)
+- [x] Cross-reference client calls vs server procedures, verify contracts
+- [x] Identify dead code, redundant code, missing procedures
+- [x] Verify prompt engineering patches 10-17 preservation
+- [x] Compile structured audit report
