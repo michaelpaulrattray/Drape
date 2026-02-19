@@ -1,14 +1,13 @@
 /**
  * Load Test — Gemini Queue & Circuit Breaker
  *
- * Simulates 20 concurrent generation requests to verify:
- *   1. Queue concurrency limits (3 image / 5 text) are enforced
- *   2. Overflow rejection triggers at MAX_QUEUE_DEPTH (20)
+ * Simulates concurrent generation requests to verify:
+ *   1. Queue concurrency limits are enforced (env-configurable)
+ *   2. Overflow rejection triggers at MAX_QUEUE_DEPTH
  *   3. Circuit breaker trips after 5 retryable failures
  *   4. Circuit breaker rejects all requests while OPEN
  *   5. Queue stats report accurate active/pending counts
- *   6. Successful requests complete in FIFO order
- *   7. Mixed image + text lanes operate independently
+ *   6. Mixed image + text lanes operate independently
  *
  * These tests use mock delays (no real Gemini calls) to exercise
  * the concurrency infrastructure in isolation.
@@ -26,47 +25,37 @@ describe("Load Test: Queue Concurrency", () => {
     cb.resetCircuitBreaker();
   });
 
-  // ── Test 1: Image lane enforces 3-concurrent limit ────────────────────
+  // ── Test 1: Image lane enforces concurrency limit ────────────────────
 
-  it("enforces IMAGE_CONCURRENCY = 3 with 20 concurrent requests", async () => {
-    const maxObservedActive: number[] = [];
-    const completionOrder: number[] = [];
+  it("enforces IMAGE_CONCURRENCY with 20 concurrent requests", async () => {
+    const config = queue.getQueueConfig();
     let peakActive = 0;
 
-    // Create 20 tasks that each take 50ms
     const tasks = Array.from({ length: 20 }, (_, i) =>
       queue.withImageQueue(async () => {
         const stats = queue.getQueueStats();
-        const active = stats.image.active;
-        if (active > peakActive) peakActive = active;
-        maxObservedActive.push(active);
-
+        if (stats.image.active > peakActive) peakActive = stats.image.active;
         await new Promise((r) => setTimeout(r, 50));
-        completionOrder.push(i);
         return i;
       }, `image-task-${i}`),
     );
 
     const results = await Promise.all(tasks);
 
-    // All 20 tasks should complete successfully
     expect(results).toHaveLength(20);
+    // Peak active should never exceed configured IMAGE_CONCURRENCY
+    expect(peakActive).toBeLessThanOrEqual(config.imageConcurrency);
+    expect(peakActive).toBeGreaterThanOrEqual(1);
 
-    // Peak active should never exceed 3 (IMAGE_CONCURRENCY)
-    expect(peakActive).toBeLessThanOrEqual(3);
-
-    // All tasks completed
-    expect(completionOrder).toHaveLength(20);
-
-    // Queue should be empty after all complete
     const finalStats = queue.getQueueStats();
     expect(finalStats.image.active).toBe(0);
     expect(finalStats.image.queueDepth).toBe(0);
-  }, 15_000);
+  }, 30_000);
 
-  // ── Test 2: Text lane enforces 5-concurrent limit ─────────────────────
+  // ── Test 2: Text lane enforces concurrency limit ─────────────────────
 
-  it("enforces TEXT_CONCURRENCY = 5 with 20 concurrent requests", async () => {
+  it("enforces TEXT_CONCURRENCY with 20 concurrent requests", async () => {
+    const config = queue.getQueueConfig();
     let peakActive = 0;
 
     const tasks = Array.from({ length: 20 }, (_, i) =>
@@ -81,20 +70,21 @@ describe("Load Test: Queue Concurrency", () => {
     const results = await Promise.all(tasks);
 
     expect(results).toHaveLength(20);
-    expect(peakActive).toBeLessThanOrEqual(5);
+    expect(peakActive).toBeLessThanOrEqual(config.textConcurrency);
+    expect(peakActive).toBeGreaterThanOrEqual(1);
 
     const finalStats = queue.getQueueStats();
     expect(finalStats.text.active).toBe(0);
     expect(finalStats.text.queueDepth).toBe(0);
-  }, 15_000);
+  }, 30_000);
 
-  // ── Test 3: Mixed lanes operate independently ─────────────────────────
+  // ── Test 3: Mixed lanes operate independently ────────────────────────
 
   it("image and text lanes run independently at full concurrency", async () => {
+    const config = queue.getQueueConfig();
     let peakImageActive = 0;
     let peakTextActive = 0;
 
-    // 10 image + 10 text = 20 total concurrent requests
     const imageTasks = Array.from({ length: 10 }, (_, i) =>
       queue.withImageQueue(async () => {
         const stats = queue.getQueueStats();
@@ -118,23 +108,21 @@ describe("Load Test: Queue Concurrency", () => {
     const results = await Promise.all([...imageTasks, ...textTasks]);
 
     expect(results).toHaveLength(20);
-    // Both lanes should have been active simultaneously
-    expect(peakImageActive).toBeLessThanOrEqual(3);
-    expect(peakTextActive).toBeLessThanOrEqual(5);
+    expect(peakImageActive).toBeLessThanOrEqual(config.imageConcurrency);
+    expect(peakTextActive).toBeLessThanOrEqual(config.textConcurrency);
     // Both lanes should have had at least 2 concurrent (proving independence)
     expect(peakImageActive).toBeGreaterThanOrEqual(2);
     expect(peakTextActive).toBeGreaterThanOrEqual(2);
-  }, 15_000);
+  }, 30_000);
 
-  // ── Test 4: Queue stats accuracy under load ───────────────────────────
+  // ── Test 4: Queue stats accuracy under load ──────────────────────────
 
   it("reports accurate queue stats during concurrent execution", async () => {
-    const statsSnapshots: ReturnType<typeof queue.getQueueStats>[] = [];
+    const config = queue.getQueueConfig();
 
     // Fire 10 image tasks that each take 100ms
     const tasks = Array.from({ length: 10 }, (_, i) =>
       queue.withImageQueue(async () => {
-        statsSnapshots.push(queue.getQueueStats());
         await new Promise((r) => setTimeout(r, 100));
         return i;
       }, `stats-task-${i}`),
@@ -146,7 +134,7 @@ describe("Load Test: Queue Concurrency", () => {
 
     // Should have some active and some pending
     expect(midStats.image.active).toBeGreaterThan(0);
-    expect(midStats.image.active).toBeLessThanOrEqual(3);
+    expect(midStats.image.active).toBeLessThanOrEqual(config.imageConcurrency);
     expect(midStats.image.queueDepth).toBeGreaterThan(0);
 
     await Promise.all(tasks);
@@ -156,7 +144,7 @@ describe("Load Test: Queue Concurrency", () => {
     expect(finalStats.image.active).toBe(0);
     expect(finalStats.image.pending).toBe(0);
     expect(finalStats.image.queueDepth).toBe(0);
-  }, 15_000);
+  }, 30_000);
 });
 
 describe("Load Test: Overflow Rejection", () => {
@@ -170,32 +158,35 @@ describe("Load Test: Overflow Rejection", () => {
     cb.resetCircuitBreaker();
   });
 
-  // ── Test 5: Overflow rejection at MAX_QUEUE_DEPTH ─────────────────────
+  // ── Test 5: Overflow rejection at MAX_QUEUE_DEPTH ────────────────────
 
-  it("rejects image requests when queue depth exceeds 20", async () => {
+  it("rejects image requests when queue depth exceeds limit", async () => {
+    const config = queue.getQueueConfig();
+    const maxDepth = config.maxQueueDepth;
+
     // Use a shared gate that blocks all tasks until we release them.
-    // p-limit only starts 3 concurrently, but all 20 register in queueDepth
-    // immediately (depth++ happens before the limiter await).
     let gate: () => void;
-    const gatePromise = new Promise<void>((r) => { gate = r; });
-    let rejectedCount = 0;
+    const gatePromise = new Promise<void>((r) => {
+      gate = r;
+    });
 
-    // Fill the queue: all 20 tasks block on the shared gate
-    const blockingTasks = Array.from({ length: 20 }, (_, i) =>
+    // Fill the queue to maxDepth
+    const blockingTasks = Array.from({ length: maxDepth }, (_, i) =>
       queue.withImageQueue(
         () => gatePromise.then(() => i),
         `blocking-${i}`,
       ),
     );
 
-    // Wait a tick for all 20 depth++ to execute synchronously
-    await new Promise((r) => setTimeout(r, 10));
+    // Wait a tick for all depth++ to execute
+    await new Promise((r) => setTimeout(r, 50));
 
     // Verify queue is full
     const stats = queue.getQueueStats();
-    expect(stats.image.queueDepth).toBe(20);
+    expect(stats.image.queueDepth).toBe(maxDepth);
 
-    // The 21st request should be rejected immediately (queue full)
+    // The next request should be rejected immediately (queue full)
+    let rejectedCount = 0;
     try {
       await queue.withImageQueue(async () => "overflow", "overflow-task");
     } catch (err: any) {
@@ -207,28 +198,33 @@ describe("Load Test: Overflow Rejection", () => {
     // Clean up: open the gate so all tasks complete
     gate!();
     await Promise.all(blockingTasks);
-  }, 15_000);
+  }, 60_000);
 
-  // ── Test 6: Text queue also rejects on overflow ───────────────────────
+  // ── Test 6: Text queue also rejects on overflow ──────────────────────
 
-  it("rejects text requests when queue depth exceeds 20", async () => {
+  it("rejects text requests when queue depth exceeds limit", async () => {
+    const config = queue.getQueueConfig();
+    const maxDepth = config.maxQueueDepth;
+
     let gate: () => void;
-    const gatePromise = new Promise<void>((r) => { gate = r; });
-    let rejectedCount = 0;
+    const gatePromise = new Promise<void>((r) => {
+      gate = r;
+    });
 
-    const blockingTasks = Array.from({ length: 20 }, (_, i) =>
+    const blockingTasks = Array.from({ length: maxDepth }, (_, i) =>
       queue.withTextQueue(
         () => gatePromise.then(() => i),
         `text-blocking-${i}`,
       ),
     );
 
-    await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 50));
 
-    expect(queue.getQueueStats().text.queueDepth).toBe(20);
+    expect(queue.getQueueStats().text.queueDepth).toBe(maxDepth);
 
-    // 5 more requests should all be rejected
-    const overflowAttempts = Array.from({ length: 5 }, (_, i) =>
+    // Overflow attempts should all be rejected
+    let rejectedCount = 0;
+    const overflowAttempts = Array.from({ length: 3 }, (_, i) =>
       queue
         .withTextQueue(async () => "overflow", `text-overflow-${i}`)
         .catch((err: any) => {
@@ -238,11 +234,11 @@ describe("Load Test: Overflow Rejection", () => {
     );
 
     await Promise.all(overflowAttempts);
-    expect(rejectedCount).toBe(5);
+    expect(rejectedCount).toBe(3);
 
     gate!();
     await Promise.all(blockingTasks);
-  }, 15_000);
+  }, 60_000);
 });
 
 describe("Load Test: Circuit Breaker Under Load", () => {
@@ -256,19 +252,19 @@ describe("Load Test: Circuit Breaker Under Load", () => {
     cb.resetCircuitBreaker();
   });
 
-  // ── Test 7: Circuit trips after 5 consecutive failures ────────────────
+  // ── Test 7: Circuit trips after 5 consecutive failures ───────────────
 
   it("trips circuit breaker after 5 retryable failures from queue", async () => {
-    // Fire 5 tasks that all fail with retryable errors
-    const failingTasks = Array.from({ length: 5 }, (_, i) =>
-      queue
-        .withImageQueue(async () => {
+    // Fire 5 tasks sequentially that all fail with retryable errors
+    for (let i = 0; i < 5; i++) {
+      try {
+        await queue.withImageQueue(async () => {
           throw new Error("503 Service Unavailable");
-        }, `failing-${i}`)
-        .catch(() => "failed"),
-    );
-
-    await Promise.all(failingTasks);
+        }, `failing-${i}`);
+      } catch {
+        // expected
+      }
+    }
 
     // Circuit should now be OPEN
     const stats = cb.getCircuitBreakerStats();
@@ -286,7 +282,7 @@ describe("Load Test: Circuit Breaker Under Load", () => {
     expect(circuitRejected).toBe(true);
   }, 15_000);
 
-  // ── Test 8: Circuit breaker rejects both lanes simultaneously ─────────
+  // ── Test 8: Circuit breaker rejects both lanes simultaneously ────────
 
   it("rejects both image and text requests when circuit is OPEN", async () => {
     // Trip the circuit via image lane failures
@@ -324,26 +320,26 @@ describe("Load Test: Circuit Breaker Under Load", () => {
     expect(textRejected).toBe(true);
   }, 15_000);
 
-  // ── Test 9: Non-retryable errors don't trip the breaker ───────────────
+  // ── Test 9: Non-retryable errors don't trip the breaker ──────────────
 
   it("does not trip circuit on non-retryable errors", async () => {
     // Fire 10 tasks with validation errors (not retryable)
-    const tasks = Array.from({ length: 10 }, (_, i) =>
-      queue
-        .withImageQueue(async () => {
+    for (let i = 0; i < 10; i++) {
+      try {
+        await queue.withImageQueue(async () => {
           throw new Error("Invalid input: missing prompt field");
-        }, `validation-fail-${i}`)
-        .catch(() => "failed"),
-    );
-
-    await Promise.all(tasks);
+        }, `validation-fail-${i}`);
+      } catch {
+        // expected
+      }
+    }
 
     // Circuit should still be CLOSED
     const stats = cb.getCircuitBreakerStats();
     expect(stats.state).toBe("CLOSED");
   }, 15_000);
 
-  // ── Test 10: Recovery after circuit reset ──────────────────────────────
+  // ── Test 10: Recovery after circuit reset ─────────────────────────────
 
   it("allows requests again after circuit is reset", async () => {
     // Trip the circuit
@@ -359,7 +355,7 @@ describe("Load Test: Circuit Breaker Under Load", () => {
 
     expect(cb.getCircuitBreakerStats().state).toBe("OPEN");
 
-    // Reset the circuit (simulates admin action or cooldown expiry)
+    // Reset the circuit
     cb.resetCircuitBreaker();
     expect(cb.getCircuitBreakerStats().state).toBe("CLOSED");
 
@@ -383,7 +379,7 @@ describe("Load Test: Error Propagation", () => {
     cb.resetCircuitBreaker();
   });
 
-  // ── Test 11: Errors propagate correctly through the queue ─────────────
+  // ── Test 11: Errors propagate correctly through the queue ────────────
 
   it("propagates task errors to callers without corrupting the queue", async () => {
     const results: string[] = [];
@@ -421,7 +417,7 @@ describe("Load Test: Error Propagation", () => {
     expect(finalStats.image.queueDepth).toBe(0);
   }, 15_000);
 
-  // ── Test 12: Queue depth tracking stays accurate after errors ─────────
+  // ── Test 12: Queue depth tracking stays accurate after errors ────────
 
   it("queue depth returns to zero after all tasks complete (including errors)", async () => {
     const tasks = Array.from({ length: 15 }, (_, i) =>

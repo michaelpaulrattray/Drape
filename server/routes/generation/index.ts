@@ -13,9 +13,11 @@ import { router } from "../../_core/trpc";
 import { castingImagingRouter } from "./castingImaging";
 import { castingRefinementRouter } from "./castingRefinement";
 import { castingExportRouter } from "./castingExport";
+import { queueStatusRouter } from "./queueStatus";
 
 export const generationRouter = router({
   ...castingImagingRouter._def.procedures,
   ...castingRefinementRouter._def.procedures,
   ...castingExportRouter._def.procedures,
+  ...queueStatusRouter._def.procedures,
 });

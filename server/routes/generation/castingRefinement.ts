@@ -10,6 +10,7 @@ import {
   POINT_COSTS, ImageResolution,
 } from "../../casting/aiService";
 import { withAtomicCredits } from "../../casting/atomicCredits";
+import { enforceDailyQuota } from "../../db/dailyQuota";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { validateProxyUrl } from "../../security/urlValidator";
@@ -34,6 +35,10 @@ export const castingRefinementRouter = router({
         });
       }
 
+      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
+      await enforceDailyQuota(ctx.user.id);
+
+      // Validate model ownership first (cheap operation)
       const model = await getModelById(input.modelId);
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -42,6 +47,7 @@ export const castingRefinementRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
 
+      // Get the asset being iterated
       const assets = await getModelAssets(input.modelId);
       const targetAsset = assets.find(a => a.id === input.assetId);
       if (!targetAsset) {
@@ -152,6 +158,9 @@ export const castingRefinementRouter = router({
           message: rateLimitError(rateCheck.resetIn),
         });
       }
+
+      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
+      await enforceDailyQuota(ctx.user.id);
 
       const upscaleCost = POINT_COSTS.iterate;
       const referenceId = `upscale-${Date.now()}`;

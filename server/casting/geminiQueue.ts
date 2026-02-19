@@ -5,14 +5,18 @@
  * concurrent users exhaust the quota and everyone gets 429s.
  *
  * Two lanes:
- *   - IMAGE_LANE (3 concurrent): Heavy image generation calls (~30-60s each)
- *   - TEXT_LANE  (5 concurrent): Lightweight text-only calls (~5-15s each)
+ *   - IMAGE_LANE: Heavy image generation calls (~30-60s each)
+ *   - TEXT_LANE:  Lightweight text-only calls (~5-15s each)
  *
  * Overflow: Requests beyond concurrency cap queue FIFO.
  *           If queue depth exceeds MAX_QUEUE_DEPTH, reject immediately.
  *
  * Circuit Breaker: All requests check the circuit breaker before entering
  *                  the queue. If Gemini is down, requests fail fast.
+ *
+ * Configuration: All limits are configurable via environment variables
+ *                so they can be tuned without code changes when Gemini
+ *                quotas are upgraded.
  */
 import pLimit from "p-limit";
 import {
@@ -21,10 +25,23 @@ import {
   recordFailure,
 } from "./geminiCircuitBreaker";
 
-// ── Configuration ──────────────────────────────────────────────────────────
-const IMAGE_CONCURRENCY = 3;
-const TEXT_CONCURRENCY = 5;
-const MAX_QUEUE_DEPTH = 20;
+// ── Configuration (env-configurable) ──────────────────────────────────────
+const IMAGE_CONCURRENCY = parseInt(
+  process.env.GEMINI_IMAGE_CONCURRENCY ?? "5",
+  10,
+);
+const TEXT_CONCURRENCY = parseInt(
+  process.env.GEMINI_TEXT_CONCURRENCY ?? "5",
+  10,
+);
+const MAX_QUEUE_DEPTH = parseInt(
+  process.env.GEMINI_MAX_QUEUE_DEPTH ?? "50",
+  10,
+);
+
+console.log(
+  `[GeminiQueue] Initialized — image: ${IMAGE_CONCURRENCY} concurrent, text: ${TEXT_CONCURRENCY} concurrent, max depth: ${MAX_QUEUE_DEPTH}`,
+);
 
 // ── Limiters ───────────────────────────────────────────────────────────────
 const imageLimiter = pLimit(IMAGE_CONCURRENCY);
@@ -34,14 +51,21 @@ const textLimiter = pLimit(TEXT_CONCURRENCY);
 let imageQueueDepth = 0;
 let textQueueDepth = 0;
 
+// ── Queue position tracking ────────────────────────────────────────────────
+let imageQueueCounter = 0;
+let textQueueCounter = 0;
+
 /**
  * Run a Gemini image generation call through the concurrency limiter.
  * Use for: generateCastingImage, generateFullBody, generateSingleView,
  *          upscaleExistingImage, generateRemainingViews
+ *
+ * Returns the result and provides queue position via onPosition callback.
  */
 export async function withImageQueue<T>(
   fn: () => Promise<T>,
   label: string = "image",
+  onPosition?: (position: number, total: number) => void,
 ): Promise<T> {
   // Circuit breaker: fail fast if Gemini is down
   checkCircuit();
@@ -56,8 +80,16 @@ export async function withImageQueue<T>(
   }
 
   imageQueueDepth++;
+  const myPosition = ++imageQueueCounter;
+
+  // Notify caller of their queue position
+  if (onPosition) {
+    const positionInQueue = imageQueueDepth;
+    onPosition(positionInQueue, imageQueueDepth);
+  }
+
   console.log(
-    `[GeminiQueue] Image enqueued: ${label} (depth: ${imageQueueDepth}, active: ${imageLimiter.activeCount}/${IMAGE_CONCURRENCY})`,
+    `[GeminiQueue] Image enqueued: ${label} (depth: ${imageQueueDepth}, active: ${imageLimiter.activeCount}/${IMAGE_CONCURRENCY}, ticket: ${myPosition})`,
   );
 
   try {
@@ -128,7 +160,7 @@ export async function withTextQueue<T>(
   }
 }
 
-// ── Stats (for health monitor / debugging) ─────────────────────────────────
+// ── Stats (for health monitor / debugging / frontend) ─────────────────────
 export function getQueueStats() {
   return {
     image: {
@@ -136,12 +168,23 @@ export function getQueueStats() {
       pending: imageLimiter.pendingCount,
       queueDepth: imageQueueDepth,
       concurrency: IMAGE_CONCURRENCY,
+      maxDepth: MAX_QUEUE_DEPTH,
     },
     text: {
       active: textLimiter.activeCount,
       pending: textLimiter.pendingCount,
       queueDepth: textQueueDepth,
       concurrency: TEXT_CONCURRENCY,
+      maxDepth: MAX_QUEUE_DEPTH,
     },
+  };
+}
+
+// ── Config (for tests and diagnostics) ────────────────────────────────────
+export function getQueueConfig() {
+  return {
+    imageConcurrency: IMAGE_CONCURRENCY,
+    textConcurrency: TEXT_CONCURRENCY,
+    maxQueueDepth: MAX_QUEUE_DEPTH,
   };
 }

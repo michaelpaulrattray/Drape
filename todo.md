@@ -3959,3 +3959,13 @@ The entry and configuration files are properly set up with several enhancements 
 ## Load Test Script
 - [x] Create load test script simulating 20 concurrent generation requests
 - [x] Verify queue concurrency limits, overflow rejection, and circuit breaker behavior
+
+## Phase A: Optimize for Current Gemini Quotas
+- [x] Make IMAGE_CONCURRENCY configurable via env var (default 5)
+- [x] Make TEXT_CONCURRENCY configurable via env var (default 5)
+- [x] Make MAX_QUEUE_DEPTH configurable via env var (default 50)
+- [x] Add daily generation quota tracking per user
+- [x] Add queue position feedback endpoint (tRPC)
+- [x] Add queue position UI on frontend generation pages
+- [x] Write vitest tests for Phase A changes
+- [x] Run all tests and verify dev server

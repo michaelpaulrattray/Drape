@@ -62,10 +62,12 @@ describe("Gemini Queue", () => {
 
     const results = await Promise.all(tasks);
     expect(results).toEqual([0, 1, 2, 3, 4, 5]);
-    expect(maxConcurrent).toBeLessThanOrEqual(3);
+    const { getQueueConfig } = await import("./casting/geminiQueue");
+    const config = getQueueConfig();
+    expect(maxConcurrent).toBeLessThanOrEqual(config.imageConcurrency);
   });
 
-  it("withTextQueue limits concurrency to 5", async () => {
+  it("withTextQueue limits concurrency to configured limit", async () => {
     const { withTextQueue } = await import("./casting/geminiQueue");
     let activeConcurrent = 0;
     let maxConcurrent = 0;
@@ -82,7 +84,9 @@ describe("Gemini Queue", () => {
 
     const results = await Promise.all(tasks);
     expect(results).toHaveLength(10);
-    expect(maxConcurrent).toBeLessThanOrEqual(5);
+    const { getQueueConfig } = await import("./casting/geminiQueue");
+    const config = getQueueConfig();
+    expect(maxConcurrent).toBeLessThanOrEqual(config.textConcurrency);
   });
 
   it("getQueueStats returns current queue state", async () => {
@@ -94,8 +98,10 @@ describe("Gemini Queue", () => {
     expect(stats.image).toHaveProperty("pending");
     expect(stats.image).toHaveProperty("queueDepth");
     expect(stats.image).toHaveProperty("concurrency");
-    expect(stats.image.concurrency).toBe(3);
-    expect(stats.text.concurrency).toBe(5);
+    const { getQueueConfig } = await import("./casting/geminiQueue");
+    const config = getQueueConfig();
+    expect(stats.image.concurrency).toBe(config.imageConcurrency);
+    expect(stats.text.concurrency).toBe(config.textConcurrency);
   });
 });
 

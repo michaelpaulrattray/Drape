@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { QueueStatusBar } from '../QueueStatusBar';
 
 // ============ Contextual Tips ============
 
@@ -196,6 +197,9 @@ export function LoadingOverlay({ statusMessage }: LoadingOverlayProps) {
         >
           {getTips(statusMessage)[tipIndex]}
         </p>
+
+        {/* Queue position + daily quota */}
+        <QueueStatusBar isGenerating={true} />
       </div>
 
       <style>{`

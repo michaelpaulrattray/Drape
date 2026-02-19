@@ -9,6 +9,7 @@ import {
   POINT_COSTS,
 } from "../../casting/aiService";
 import { withAtomicCredits } from "../../casting/atomicCredits";
+import { enforceDailyQuota } from "../../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -29,6 +30,9 @@ export const castingImagingRouter = router({
           message: rateLimitError(rateCheck.resetIn),
         });
       }
+
+      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
+      await enforceDailyQuota(ctx.user.id);
 
       // ATOMIC credit deduction BEFORE generation to prevent race conditions
       // Credits are deducted first, then refunded if generation fails
@@ -154,6 +158,9 @@ export const castingImagingRouter = router({
         });
       }
 
+      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
+      await enforceDailyQuota(ctx.user.id);
+
       // Validate model ownership first (cheap operation)
       const model = await getModelById(input.modelId);
       if (!model) {
@@ -254,6 +261,9 @@ export const castingImagingRouter = router({
           message: rateLimitError(rateCheck.resetIn),
         });
       }
+
+      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
+      await enforceDailyQuota(ctx.user.id);
 
       // Validate model ownership first (cheap operation)
       const model = await getModelById(input.modelId);
