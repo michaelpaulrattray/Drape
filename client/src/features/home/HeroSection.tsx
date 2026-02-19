@@ -47,9 +47,9 @@ export function HeroSection() {
             className="-mb-[30px] sm:-mb-[78px] mt-4 sm:mt-[35px]"
           >
             <img 
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/CPDvqyNnvNcINXkM.jpg" 
+              src="/drape-hero-embossed.svg" 
               alt="drape" 
-              className="w-[clamp(10rem,60vw,48rem)] h-auto mx-auto mix-blend-multiply"
+              className="w-[clamp(14rem,70vw,56rem)] h-auto mx-auto"
             />
           </motion.div>
           

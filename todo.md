@@ -3808,3 +3808,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Login.tsx: three views — waitlist (default), "I have an access code" (new users), "I already have an account" (returning)
 - [x] Server bounces unapproved users without code back to /login?error=no_code (no account created)
 - [x] All 952 tests passing
+- [x] Replace hero 3D JPG with transparent SVG/CSS embossed "drape" wordmark
