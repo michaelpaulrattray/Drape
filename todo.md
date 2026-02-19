@@ -3792,3 +3792,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Investigate current login → access gate flow
 - [x] Add "Have an access code?" section directly on the sign-in card (Option C)
 - [x] Ensure code redemption works without requiring OAuth first (note: redeem endpoint still requires auth session, but the UI now surfaces the input prominently)
+
+## Feature: Beta key required BEFORE OAuth — no account without valid code
+- [x] Create public endpoint to validate beta key (no auth required)
+- [x] Redesign Login.tsx: step 1 = enter beta key, step 2 = OAuth (only after valid key)
+- [x] Store validated code in cookie, pass to OAuth callback
+- [x] Update OAuth callback to auto-redeem beta code from cookie
+- [x] Remove /waitlist-pending page and route
+- [x] Remove waitlist-pending references from Dashboard, CastingStudio, App.tsx
+- [x] Write tests for access.validate endpoint (8 tests, 952 total passing)

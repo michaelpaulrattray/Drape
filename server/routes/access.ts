@@ -2,16 +2,44 @@
  * Access Code Router — invite code validation for pre-launch gating.
  *
  * Endpoints:
+ *   - access.validate: Public — checks if an invite code is valid (no auth required, no consumption)
  *   - access.redeem: Protected — validates an invite code and approves the user
  *   - access.status: Protected — checks if the current user is approved
  */
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { redeemInviteCode } from "../db/inviteCodes";
+import { validateInviteCode } from "../db/validateInviteCode";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
-import { checkRateLimit } from "../security/rateLimit";
+import { checkRateLimit, getClientIp } from "../security/rateLimit";
 
 export const accessRouter = router({
+  /**
+   * Validate an invite code WITHOUT consuming it.
+   * Public — no auth required. Used on login page before OAuth.
+   * Rate limited: 10 attempts per 5 minutes per IP.
+   */
+  validate: publicProcedure
+    .input(
+      z.object({
+        code: z.string().min(1, "Access code is required").max(64),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const clientIp = getClientIp(ctx.req);
+      const rl = checkRateLimit(`access-validate:${clientIp}`, {
+        maxRequests: 10,
+        windowMs: 5 * 60 * 1000,
+        keyPrefix: "access_validate",
+      });
+      if (!rl.allowed) {
+        return { valid: false, error: "Too many attempts. Please try again later." };
+      }
+
+      const result = await validateInviteCode(input.code);
+      return result;
+    }),
+
   /**
    * Redeem an invite/access code to unlock the dashboard.
    * Rate limited: 5 attempts per 15 minutes per user.

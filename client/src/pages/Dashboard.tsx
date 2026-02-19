@@ -138,9 +138,9 @@ export default function Dashboard() {
     return <Redirect to="/login" />;
   }
 
-  // Pre-launch gate: redirect unapproved users to waitlist (admins bypass)
+  // Pre-launch gate: redirect unapproved users to login (admins bypass)
   if (user && !user.approved && user.role !== "admin") {
-    return <Redirect to="/waitlist-pending" />;
+    return <Redirect to="/login?error=no_code" />;
   }
 
   const homeNavItems = [

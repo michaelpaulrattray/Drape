@@ -136,33 +136,60 @@ export function registerOAuthRoutes(app: Express) {
       // Get user for approval check and audit log
       const user = await db.getUserByOpenId(userInfo.openId);
 
-      // Pre-launch access gate: redirect unapproved users
+      // Pre-launch access gate: auto-redeem beta code from cookie
       if (user && !user.approved && user.role !== 'admin') {
-        // Still create session so they can submit access codes
-        const sessionToken = await sdk.createSessionToken(userInfo.openId, {
-          name: userInfo.name || "",
-          expiresInMs: SESSION_MAX_AGE_MS,
-        });
-        const cookieOptions = getSessionCookieOptions(req);
-        res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+        // Parse cookies manually (no cookie-parser middleware)
+        const { parse: parseCookie } = await import("cookie");
+        const cookies = parseCookie(req.headers.cookie || "");
+        const betaCode = cookies.forma_beta_code;
+        if (betaCode) {
+          // Auto-redeem the beta code for this user
+          const { redeemInviteCode } = await import("../db/inviteCodes");
+          const redeemResult = await redeemInviteCode(user.id, betaCode);
+          // Clear the beta code cookie regardless of outcome
+          res.clearCookie("forma_beta_code", { path: "/" });
 
-        await logAuditEvent({
-          userId: user.id,
-          action: AUDIT_ACTIONS.LOGIN_SUCCESS,
-          resourceType: "auth",
-          resourceId: userInfo.openId,
-          metadata: {
-            email: userInfo.email,
-            loginMethod: userInfo.loginMethod ?? userInfo.platform,
-            approved: false,
-          },
-          severity: "info",
-          ipAddress: clientIp,
-          userAgent,
-        });
-
-        res.redirect(302, "/waitlist-pending");
-        return;
+          if (redeemResult.success) {
+            // Code redeemed — user is now approved, proceed to dashboard
+            await logAuditEvent({
+              userId: user.id,
+              action: AUDIT_ACTIONS.LOGIN_SUCCESS,
+              resourceType: "auth",
+              resourceId: userInfo.openId,
+              metadata: {
+                email: userInfo.email,
+                loginMethod: userInfo.loginMethod ?? userInfo.platform,
+                approved: true,
+                betaCode: betaCode.toUpperCase(),
+              },
+              severity: "info",
+              ipAddress: clientIp,
+              userAgent,
+            });
+            // Fall through to normal session creation + dashboard redirect below
+          } else {
+            // Code invalid at redemption time — redirect back to login with error
+            await logAuditEvent({
+              userId: user.id,
+              action: AUDIT_ACTIONS.LOGIN_FAILED,
+              resourceType: "auth",
+              resourceId: `invite-code:${betaCode.toUpperCase()}`,
+              metadata: {
+                error: redeemResult.error,
+                betaCode: betaCode.toUpperCase(),
+              },
+              severity: "warning",
+              ipAddress: clientIp,
+              userAgent,
+            });
+            res.redirect(302, "/login?error=invalid_code");
+            return;
+          }
+        } else {
+          // No beta code — reject login entirely
+          res.redirect(302, "/login?error=no_code");
+          return;
+        }
       }
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {

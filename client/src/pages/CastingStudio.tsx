@@ -103,10 +103,10 @@ export default function CastingStudio() {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
-  // Pre-launch gate: redirect unapproved users to waitlist (admins bypass)
+  // Pre-launch gate: redirect unapproved users to login (admins bypass)
   useEffect(() => {
     if (!authLoading && isAuthenticated && user && !user.approved && user.role !== "admin") {
-      navigate("/waitlist-pending");
+      navigate("/login?error=no_code");
     }
   }, [authLoading, isAuthenticated, user, navigate]);
 

@@ -1,9 +1,9 @@
 import { getLoginUrl } from "@/const";
 import { Button as DSButton } from "@/components/design-system";
-import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX, Check, Loader2, Sparkles, KeyRound } from "lucide-react";
+import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX, Check, Loader2, KeyRound } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // ─── Error configurations ──────────────────────────────────────────────────
 const ERROR_MESSAGES = {
@@ -31,13 +31,21 @@ const ERROR_MESSAGES = {
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200",
   },
-  not_approved: {
-    icon: Clock,
-    title: "Waitlist Pending",
-    message: "Your account is on the waitlist. We'll notify you when your spot is ready. If you have an access code, enter it below.",
-    iconColor: "text-blue-500",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
+  invalid_code: {
+    icon: AlertCircle,
+    title: "Invalid Access Code",
+    message: "The access code could not be redeemed. It may have expired or reached its usage limit. Please try a different code.",
+    iconColor: "text-red-500",
+    bgColor: "bg-red-50",
+    borderColor: "border-red-200",
+  },
+  no_code: {
+    icon: KeyRound,
+    title: "Access Code Required",
+    message: "A valid access code is required to sign in. Please enter your beta key below before signing in.",
+    iconColor: "text-amber-500",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-200",
   },
   error: {
     icon: AlertCircle,
@@ -62,15 +70,8 @@ const BRAND_LOGOS = [
 // ─── Sub-components ────────────────────────────────────────────────────────
 
 function ErrorBanner({ errorType, lockMinutes }: { errorType: string; lockMinutes: string | null }) {
-  const errorConfig = errorType === "suspended"
-    ? ERROR_MESSAGES.suspended
-    : errorType === "locked"
-      ? ERROR_MESSAGES.locked
-      : errorType === "disposable_email"
-        ? ERROR_MESSAGES.disposable_email
-        : errorType === "not_approved"
-          ? ERROR_MESSAGES.not_approved
-          : ERROR_MESSAGES.error;
+  const key = errorType as keyof typeof ERROR_MESSAGES;
+  const errorConfig = ERROR_MESSAGES[key] ?? ERROR_MESSAGES.error;
 
   return (
     <div className={`mb-6 p-4 rounded-2xl border ${errorConfig.bgColor} ${errorConfig.borderColor}`}>
@@ -199,7 +200,6 @@ function WaitlistForm() {
 function AspirationPanel() {
   return (
     <div className="hidden lg:flex flex-col items-center justify-center px-12 xl:px-16">
-      {/* Aspirational copy */}
       <div className="text-center max-w-md">
         <div className="w-16 h-16 rounded-2xl bg-[#0A0A0A] flex items-center justify-center mx-auto mb-8">
           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,11 +213,7 @@ function AspirationPanel() {
           Cast models, lock identity, and produce campaign-ready assets — all without writing a single prompt.
         </p>
       </div>
-
-      {/* Divider */}
       <div className="w-16 h-px bg-[#D4D4D4] my-8" />
-
-      {/* Trust line + logos */}
       <p className="text-xs text-[#757575] uppercase tracking-widest mb-6">
         Trusted by top creatives working for
       </p>
@@ -235,21 +231,29 @@ function AspirationPanel() {
   );
 }
 
+// ─── Helper: set beta code cookie (httpOnly=false so server can read via header) ──
+function setBetaCodeCookie(code: string) {
+  document.cookie = `forma_beta_code=${encodeURIComponent(code)};path=/;max-age=600;SameSite=Lax`;
+}
+
+function clearBetaCodeCookie() {
+  document.cookie = "forma_beta_code=;path=/;max-age=0;SameSite=Lax";
+}
+
 // ─── Main component ────────────────────────────────────────────────────────
 export default function Login() {
   const loginUrl = getLoginUrl();
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
   const [showSignIn, setShowSignIn] = useState(false);
-  const [showAccessCode, setShowAccessCode] = useState(false);
   const [accessCode, setAccessCode] = useState("");
-  const [codeRedeemed, setCodeRedeemed] = useState(false);
+  const [codeValidated, setCodeValidated] = useState(false);
 
-  const redeemMutation = trpc.access.redeem.useMutation({
+  const validateMutation = trpc.access.validate.useMutation({
     onSuccess: (data) => {
-      if (data.success) {
-        setCodeRedeemed(true);
-        // User is now approved — redirect to dashboard after brief delay
-        setTimeout(() => navigate("/dashboard"), 1500);
+      if (data.valid) {
+        setCodeValidated(true);
+        // Store the validated code in a cookie so the OAuth callback can read it
+        setBetaCodeCookie(accessCode.trim().toUpperCase());
       }
     },
   });
@@ -259,8 +263,28 @@ export default function Login() {
   const lockMinutes = searchParams.get("minutes");
   const isSuspended = errorType === "suspended";
 
-  // Auto-show sign-in panel if there's an auth error (user was redirected back)
-  const hasAuthError = errorType === "suspended" || errorType === "locked" || errorType === "disposable_email" || errorType === "not_approved" || errorType === "error";
+  // If user comes back with no_code or invalid_code error, show the sign-in view
+  const hasAuthError = !!errorType;
+  const needsCodeFirst = errorType === "no_code" || errorType === "invalid_code";
+
+  // Auto-show sign-in panel if there's an auth error
+  useEffect(() => {
+    if (hasAuthError) {
+      setShowSignIn(true);
+      // If they came back because code was missing/invalid, reset validation
+      if (needsCodeFirst) {
+        setCodeValidated(false);
+        clearBetaCodeCookie();
+      }
+    }
+  }, [hasAuthError, needsCodeFirst]);
+
+  const handleValidateCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = accessCode.trim();
+    if (!trimmed) return;
+    validateMutation.mutate({ code: trimmed });
+  };
 
   return (
     <div className="min-h-screen bg-[#EBEBEB] text-[#0A0A0A]">
@@ -289,8 +313,8 @@ export default function Login() {
             {/* Error Banner */}
             {errorType && <ErrorBanner errorType={errorType} lockMinutes={lockMinutes} />}
 
-            {/* Primary Card: Waitlist */}
-            {!hasAuthError && !showSignIn && (
+            {/* Primary Card: Waitlist (default view) */}
+            {!showSignIn && (
               <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-6">
                   <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
@@ -301,10 +325,8 @@ export default function Login() {
                   </p>
                 </div>
 
-                {/* Inline Waitlist Form */}
                 <WaitlistForm />
 
-                {/* What you'll get */}
                 <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5">
                   <p className="text-xs text-[#757575] uppercase tracking-widest mb-4 font-medium">
                     Early access includes
@@ -323,7 +345,6 @@ export default function Login() {
                   </div>
                 </div>
 
-                {/* Sign-in toggle */}
                 <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5 text-center">
                   <button
                     onClick={() => setShowSignIn(true)}
@@ -335,147 +356,155 @@ export default function Login() {
               </div>
             )}
 
-            {/* Secondary Card: Sign In (shown on toggle or auth error) */}
-            {(hasAuthError || showSignIn) && (
+            {/* Secondary Card: Sign In — Two-step: beta key → OAuth */}
+            {showSignIn && (
               <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
-                <div className="mb-8">
-                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
-                    Sign in
-                  </h1>
-                  <p className="text-[#757575] text-sm mt-2 font-medium">
-                    Welcome back to your studio.
-                  </p>
-                </div>
-
-                {/* OAuth Buttons */}
-                <div className="space-y-3">
-                  <OAuthButton href={loginUrl} disabled={isSuspended}>
-                    <GoogleIcon disabled={isSuspended} /> Continue with Google
-                  </OAuthButton>
-                  <OAuthButton href={loginUrl} disabled={isSuspended}>
-                    <AppleIcon disabled={isSuspended} /> Continue with Apple
-                  </OAuthButton>
-                </div>
-
-                {/* Divider */}
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-[#0A0A0A]/10" />
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="bg-white px-3 text-[#757575]">or</span>
-                  </div>
-                </div>
-
-                {/* Email Login */}
-                {isSuspended ? (
-                  <button
-                    className="w-full h-12 inline-flex items-center justify-center rounded-full bg-[#D4D4D4] text-[#757575] cursor-not-allowed text-sm font-medium"
-                    disabled
-                  >
-                    Continue with Email
-                  </button>
-                ) : (
-                  <DSButton href={loginUrl} variant="primary" size="lg" fullWidth>
-                    Continue with Email
-                  </DSButton>
-                )}
-
-                {/* Access Code Section */}
-                <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5">
-                  {!showAccessCode ? (
-                    <button
-                      onClick={() => setShowAccessCode(true)}
-                      className="w-full flex items-center justify-center gap-2 text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
-                    >
-                      <KeyRound className="w-4 h-4" />
-                      Have an access code?
-                    </button>
-                  ) : codeRedeemed ? (
-                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#0A0A0A]/5 border border-[#0A0A0A]/10">
-                      <div className="w-8 h-8 rounded-full bg-[#0A0A0A] flex items-center justify-center flex-shrink-0">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#0A0A0A]">Access granted!</p>
-                        <p className="text-xs text-[#757575]">Redirecting to your dashboard...</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 justify-center text-xs text-[#757575] uppercase tracking-widest">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Enter your access code
-                      </div>
-                      <p className="text-xs text-[#757575] text-center">
-                        Sign in above first, then enter your code to unlock access.
+                {!codeValidated ? (
+                  <>
+                    {/* ─── Step 1: Enter beta key ─── */}
+                    <div className="mb-8">
+                      <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                        Enter access code
+                      </h1>
+                      <p className="text-[#757575] text-sm mt-2 font-medium">
+                        A valid beta key is required to create an account or sign in.
                       </p>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const trimmed = accessCode.trim();
-                          if (!trimmed) return;
-                          redeemMutation.mutate({ code: trimmed });
-                        }}
-                        className="flex gap-2"
-                      >
+                    </div>
+
+                    <form onSubmit={handleValidateCode} className="space-y-4">
+                      <div className="relative">
+                        <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#757575]" />
                         <input
                           type="text"
                           value={accessCode}
                           onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                           placeholder="FORMA-XXXXX"
                           maxLength={64}
-                          disabled={redeemMutation.isPending}
-                          className="flex-1 h-11 px-4 rounded-full border border-[#0A0A0A]/10 bg-white text-center font-mono text-sm tracking-wider placeholder:text-[#BFBFBF] focus:outline-none focus:border-[#0A0A0A]/30 transition-colors"
+                          disabled={validateMutation.isPending}
+                          autoFocus
+                          className="w-full h-12 pl-11 pr-4 rounded-full border border-[#0A0A0A]/10 bg-white font-mono text-sm tracking-wider placeholder:text-[#BFBFBF] focus:outline-none focus:border-[#0A0A0A]/30 transition-colors"
                         />
-                        <button
-                          type="submit"
-                          disabled={redeemMutation.isPending || !accessCode.trim()}
-                          className="h-11 px-5 rounded-full bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-40 flex items-center justify-center"
-                        >
-                          {redeemMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={validateMutation.isPending || !accessCode.trim()}
+                        className="w-full h-12 rounded-full bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                      >
+                        {validateMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            Verify code
                             <ArrowRight className="w-4 h-4" />
-                          )}
-                        </button>
-                      </form>
-                      {redeemMutation.isError && (
-                        <p className="text-xs text-red-500 text-center">
-                          Something went wrong. Please try again.
-                        </p>
-                      )}
-                      {redeemMutation.data && !redeemMutation.data.success && (
-                        <p className="text-xs text-red-500 text-center">
-                          {redeemMutation.data.error || "Invalid access code."}
-                        </p>
-                      )}
+                          </>
+                        )}
+                      </button>
+                    </form>
+
+                    {/* Validation errors */}
+                    {validateMutation.isError && (
+                      <p className="text-xs text-red-500 text-center mt-3">
+                        Something went wrong. Please try again.
+                      </p>
+                    )}
+                    {validateMutation.data && !validateMutation.data.valid && (
+                      <p className="text-xs text-red-500 text-center mt-3">
+                        {validateMutation.data.error || "Invalid access code."}
+                      </p>
+                    )}
+
+                    <p className="text-xs text-[#757575] mt-6 text-center leading-relaxed">
+                      Don't have a code? Check your email or{" "}
+                      <button
+                        onClick={() => setShowSignIn(false)}
+                        className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300"
+                      >
+                        join the waitlist
+                      </button>
+                      .
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {/* ─── Step 2: OAuth sign-in (code validated) ─── */}
+                    <div className="mb-4">
+                      {/* Code validated badge */}
+                      <div className="flex items-center gap-2 mb-6 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <span className="text-sm font-medium text-emerald-800">
+                          Code verified: <span className="font-mono">{accessCode.trim().toUpperCase()}</span>
+                        </span>
+                      </div>
+
+                      <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                        Sign in
+                      </h1>
+                      <p className="text-[#757575] text-sm mt-2 font-medium">
+                        Choose how you'd like to continue.
+                      </p>
                     </div>
-                  )}
-                </div>
 
-                {/* Legal */}
-                <p className="text-xs text-[#757575] mt-6 leading-relaxed font-medium">
-                  By continuing, you agree to our{" "}
-                  <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
-                    Terms & Conditions
-                  </a>
-                  {" "}and{" "}
-                  <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
-                    Privacy Policy
-                  </a>.
-                </p>
+                    {/* OAuth Buttons */}
+                    <div className="space-y-3">
+                      <OAuthButton href={loginUrl} disabled={isSuspended}>
+                        <GoogleIcon disabled={isSuspended} /> Continue with Google
+                      </OAuthButton>
+                      <OAuthButton href={loginUrl} disabled={isSuspended}>
+                        <AppleIcon disabled={isSuspended} /> Continue with Apple
+                      </OAuthButton>
+                    </div>
 
-                {/* Back to waitlist toggle */}
-                {!hasAuthError && (
-                  <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5 text-center">
-                    <button
-                      onClick={() => setShowSignIn(false)}
-                      className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
-                    >
-                      Don't have access? <span className="underline underline-offset-2">Join the waitlist</span>
-                    </button>
-                  </div>
+                    <div className="relative my-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-[#0A0A0A]/10" />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="bg-white px-3 text-[#757575]">or</span>
+                      </div>
+                    </div>
+
+                    {isSuspended ? (
+                      <button
+                        className="w-full h-12 inline-flex items-center justify-center rounded-full bg-[#D4D4D4] text-[#757575] cursor-not-allowed text-sm font-medium"
+                        disabled
+                      >
+                        Continue with Email
+                      </button>
+                    ) : (
+                      <DSButton href={loginUrl} variant="primary" size="lg" fullWidth>
+                        Continue with Email
+                      </DSButton>
+                    )}
+
+                    {/* Legal */}
+                    <p className="text-xs text-[#757575] mt-6 leading-relaxed font-medium">
+                      By continuing, you agree to our{" "}
+                      <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
+                        Terms & Conditions
+                      </a>
+                      {" "}and{" "}
+                      <a href="#" className="underline underline-offset-2 text-[#0A0A0A] hover:text-[#0A0A0A]/70 transition-colors duration-300">
+                        Privacy Policy
+                      </a>.
+                    </p>
+
+                    {/* Use a different code */}
+                    <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5 text-center">
+                      <button
+                        onClick={() => {
+                          setCodeValidated(false);
+                          setAccessCode("");
+                          clearBetaCodeCookie();
+                        }}
+                        className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
+                      >
+                        Use a different code
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             )}
