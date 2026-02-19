@@ -25,10 +25,10 @@
 | 3a | Types: ModelPreferences + Amendment + GenerationState.identityWarning | ✅ Done | 248c3513 |
 | 3b | Zustand stores: suggestions, amendments, identityWarning in generation store | ✅ Done | 248c3513 |
 | 3c | Hooks: useCastingGeneration wired to 5 new tRPC procedures | ✅ Done | 248c3513 |
-| 4a | Client: EthnicityBlender component in ControlPanel | ✅ Done | (pending) |
-| 4b | Client: SuggestionChips in RefinePanel | ✅ Done | (pending) |
-| 4c | Client: MasterPromptPanel + Compact button in ControlPanel | ✅ Done | (pending) |
-| 5 | Integration testing + polish | ⬜ Not started | — |
+| 4a | Client: EthnicityBlender component in ControlPanel | ✅ Done | 49c752fa |
+| 4b | Client: SuggestionChips in RefinePanel | ✅ Done | 49c752fa |
+| 4c | Client: MasterPromptPanel + Compact button in ControlPanel | ✅ Done | 49c752fa |
+| 5  | Integration testing + polish   | ✅ Done   | `49c752fa`  |
 
 ---
 
@@ -370,3 +370,51 @@ The example in the prompt is deliberate: "Porcelain/Pale skin on a West African 
 **Solution:** The compaction prompt explicitly instructs: "PRESERVE all brand aesthetic language, vibe descriptions, expression direction, and casting mood. These are NOT redundant — they guide the image model." A minimum 100-character guard rejects over-aggressive compaction. If compaction fails entirely, the bloated prompt is returned unchanged.
 
 **Do not:** Remove the brand preservation instruction. Do not lower the 100-character minimum. Do not make compaction automatic — it should be triggered explicitly after ~3-5 iterations.
+
+---
+
+### DR-20: Ethnicity Blend — Dual-Write to Array + Legacy String
+
+**Files:** `EthnicityBlender.tsx`, `BrandSelector.tsx`
+
+**Problem:** The new design uses `ethnicityBlend: [{ name, pct }]` for percentage-based blending, but the existing master prompt generation in `geminiGeneration.ts` reads `prefs.ethnicity` (a plain string). Switching to the array format alone would break prompt generation until the server code is updated to read the new field.
+
+**Solution:** `BrandSelector` dual-writes both fields on every change: (1) `ethnicityBlend` array for the new pipeline, (2) `ethnicity` string formatted as "60% East Asian, 40% Nordic" for backward compatibility. The server's `formatEthnicityBlend()` already handles this string format. Once the server is fully migrated to read `ethnicityBlend` directly, the legacy string write can be removed.
+
+**Do not:** Remove the legacy `ethnicity` string write until the server's `generateMasterPrompt` is confirmed to read `ethnicityBlend` exclusively. Both must coexist during migration.
+
+---
+
+### DR-21: Blend Bar Clamping — 10% to 90%
+
+**Files:** `EthnicityBlender.tsx`
+
+**Problem:** Allowing 0% or 100% in a two-ethnicity blend is semantically identical to selecting a single ethnicity. A user dragging to 99%/1% produces a prompt like "99% Korean, 1% Nordic" which the image model can't meaningfully render — the 1% contribution is below the model's resolution threshold.
+
+**Solution:** The blend bar clamps to 10%-90% range. If a user wants a single ethnicity, they deselect the second one (clicking it again removes it). The 10% minimum ensures both ethnicities contribute visibly to the generated features.
+
+**Do not:** Lower the minimum below 10%. Do not allow 0% or 100% — use single-ethnicity selection for those cases.
+
+---
+
+### DR-22: Suggestion Chips — Auto-Submit on Click
+
+**Files:** `SuggestionChips.tsx`, `RefinePanel.tsx`
+
+**Problem:** If chips only populate the text input without submitting, users have to click a chip AND then press Enter/Submit. This adds friction to what should be a one-click action. The suggestions are already AI-generated and validated — there's no need for the user to review them in the input first.
+
+**Solution:** Clicking a chip calls `onChipClick(text)` which sets the input value AND immediately triggers `handleRefineSubmit()`. The chip disappears (suggestions clear on new iteration), and the generation starts immediately.
+
+**Do not:** Change to populate-only behavior. The whole point of chips is zero-friction iteration. If users want to modify a suggestion, they can type in the input manually.
+
+---
+
+### DR-23: MasterPrompt Panel — Collapsed by Default, Read-Only
+
+**Files:** `MasterPromptPanel.tsx`, `ControlPanel.tsx`
+
+**Problem:** The master prompt is a technical artifact — most users don't need to see it. Showing it expanded by default clutters the ControlPanel and confuses non-technical users. Making it editable would bypass the schema reconciliation system, creating drift between the prompt text and the tracked schema.
+
+**Solution:** Collapsed by default with a character count badge on the header (quick health indicator). Expanded view is read-only with monospace font. The only action is "Compact" (which calls the AI compaction pipeline). Amendment count shows iteration depth. Identity warning banner appears only when the consistency check detects drift.
+
+**Do not:** Make the prompt text editable. Do not show it expanded by default. If users need to change the prompt, they iterate via the RefinePanel — that's the controlled pipeline.

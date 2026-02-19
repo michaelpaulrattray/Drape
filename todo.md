@@ -3837,3 +3837,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Phase 4b: Suggestion Chips UI
 - [x] Phase 4c: MasterPrompt panel + Compact button
 - [x] Phase 4 tests and checkpoint
+- [x] Phase 5: Integration tests
+- [x] Phase 5: Polish checks (imports, dead code, line counts, console warnings)
+- [x] Phase 5: Checkpoint
+- [ ] (Deferred) Split geminiGeneration.ts (682 lines) — extract prompt builders + iteration image prompt to get under 500
