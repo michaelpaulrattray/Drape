@@ -76,6 +76,7 @@ export const castingImagingRouter = router({
             castingBrand,
             frame: 'HEADSHOT',
             referenceImage: input.referenceImage,
+            userId: String(ctx.user.id),
           }
         );
 

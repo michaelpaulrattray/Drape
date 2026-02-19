@@ -74,6 +74,7 @@ export const castingRefinementRouter = router({
                 castingBrand: (model.technicalSchema as any)?.context?.casting_for,
                 frame: targetAsset.viewType === 'frontClose' ? 'HEADSHOT' : 'FULL_BODY',
                 maskBase64: input.maskBase64,
+                userId: String(ctx.user.id),
               }
             );
 
@@ -363,9 +364,9 @@ export const castingRefinementRouter = router({
   // Clear the in-memory chat session — resets Gemini conversation state
   // No credits charged — session management
   clearSession: protectedProcedure
-    .mutation(async () => {
+    .mutation(async ({ ctx }) => {
       try {
-        clearCastingSession();
+        clearCastingSession(String(ctx.user.id));
         return { success: true };
       } catch (error) {
         console.error("[ClearSession] Error:", error);

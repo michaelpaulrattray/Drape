@@ -3889,3 +3889,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] 8. Concurrent user isolation — WARNING W-1: module-level session variable
 - [x] 9. Prompt engineering preservation (Patches 10-17) — all intact
 - [x] 10. Compile structured audit report (COMPREHENSIVE_AUDIT_REPORT.md)
+
+## W-1 Fix: Concurrent Session Isolation
+- [x] Replace module-level `activeSession` with `Map<string, CastingSession>` keyed by userId
+- [x] Update all activeSession read/write sites to use the map with userId
+- [x] Update clearCastingSession to accept userId and clear only that user's session
+- [x] Thread userId through all callers (castingImaging, castingRefinement routers)
+- [x] Verify zero TypeScript errors and all tests pass (1035/1035)

@@ -45,18 +45,34 @@ import {
 /**
  * Persists between calls so iterations reuse the same conversation.
  * The model retains visual memory of what it generated, reducing identity drift.
+ * Keyed by userId for concurrent user isolation.
  */
 interface CastingSession {
   chat: any;
   model: string;
+  lastUsed: number;
 }
 
-let activeSession: CastingSession | null = null;
+const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const sessionMap = new Map<string, CastingSession>();
 
-/** Clear the active chat session (e.g. when starting a new casting) */
-export const clearCastingSession = () => {
-  activeSession = null;
-  console.log('[CastingSession] Cleared');
+/** Evict sessions older than TTL to prevent memory leaks */
+function evictStaleSessions(): void {
+  const now = Date.now();
+  const entries = Array.from(sessionMap.entries());
+  for (const [uid, session] of entries) {
+    if (now - session.lastUsed > SESSION_TTL_MS) {
+      sessionMap.delete(uid);
+      console.log(`[CastingSession] Evicted stale session for user ${uid}`);
+    }
+  }
+}
+
+/** Clear the chat session for a specific user (e.g. when starting a new casting) */
+export const clearCastingSession = (userId: string) => {
+  sessionMap.delete(userId);
+  console.log(`[CastingSession] Cleared for user ${userId}`);
+  evictStaleSessions();
 };
 
 // ============================================================================
@@ -366,7 +382,8 @@ export const generateCastingImage = async (
   frame: 'HEADSHOT' | 'FULL_BODY' = 'HEADSHOT',
   castingVibe?: { editorial: number; commercial: number; runway: number },
   maskImageBase64?: string,
-  ethnicityHint?: string
+  ethnicityHint?: string,
+  userId: string = 'anonymous'
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   const ai = getAiClient();
   let textPrompt = "";
@@ -465,26 +482,28 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
   };
 
   // ── PATH 1: Chat-based iteration (session exists) ──
-  if (mode === GenerationMode.ITERATE && activeSession) {
+  const userSession = sessionMap.get(userId);
+  if (mode === GenerationMode.ITERATE && userSession) {
     try {
-      console.log('[CastingSession] Sending iteration through chat');
+      console.log(`[CastingSession] Sending iteration through chat for user ${userId}`);
       const response = await withTimeout(
-        activeSession.chat.sendMessage({ message: parts }),
+        userSession.chat.sendMessage({ message: parts }),
         60000,
         'CastingChat'
       );
       const imageUrl = extractImage(response);
-      return { imageUrl, engineUsed: activeSession.model + ' (chat)' };
+      userSession.lastUsed = Date.now();
+      return { imageUrl, engineUsed: userSession.model + ' (chat)' };
     } catch (e: any) {
-      console.warn('[CastingSession] Chat iteration failed, falling back to stateless:', e?.message);
-      activeSession = null;
+      console.warn(`[CastingSession] Chat iteration failed for user ${userId}, falling back to stateless:`, e?.message);
+      sessionMap.delete(userId);
       // Fall through to stateless
     }
   }
 
   // ── PATH 2: Chat-based NEW generation (create session) ──
   if (mode === GenerationMode.NEW) {
-    activeSession = null;
+    sessionMap.delete(userId);
     const PRIMARY_MODEL = 'gemini-3-pro-image-preview';
     try {
       const chat = ai.chats.create({
@@ -501,12 +520,12 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
         `CastingChat NEW (${PRIMARY_MODEL})`
       );
       const imageUrl = extractImage(response);
-      activeSession = { chat, model: PRIMARY_MODEL };
-      console.log('[CastingSession] Session created — iterations will use chat');
+      sessionMap.set(userId, { chat, model: PRIMARY_MODEL, lastUsed: Date.now() });
+      console.log(`[CastingSession] Session created for user ${userId} — iterations will use chat`);
       return { imageUrl, engineUsed: PRIMARY_MODEL };
     } catch (e: any) {
-      console.warn('[CastingSession] Chat creation failed, falling back to stateless:', e?.message);
-      activeSession = null;
+      console.warn(`[CastingSession] Chat creation failed for user ${userId}, falling back to stateless:`, e?.message);
+      sessionMap.delete(userId);
       // Fall through to stateless
     }
   }

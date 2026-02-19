@@ -172,6 +172,7 @@ export async function generateCastingImage(
     castingVibe?: { editorial: number; commercial: number; runway: number };
     maskImage?: string;
     ethnicityHint?: string;
+    userId?: string;
   } = {}
 ): Promise<GenerationResult> {
   console.log('[aiService.generateCastingImage] Starting with options:', {
@@ -193,7 +194,8 @@ export async function generateCastingImage(
     options.frame || 'HEADSHOT',
     options.castingVibe,
     options.maskImage,
-    options.ethnicityHint
+    options.ethnicityHint,
+    options.userId || 'anonymous'
   );
 
   console.log('[aiService.generateCastingImage] Result received:', {
@@ -284,6 +286,7 @@ export async function iterateModel(
     additionalReference?: string;
     frame?: 'HEADSHOT' | 'FULL_BODY';
     castingBrand?: string;
+    userId?: string;
   } = {}
 ): Promise<GenerationResult> {
   // If currentImageUrl is an S3 URL, we need to fetch it and convert to base64
@@ -315,7 +318,9 @@ export async function iterateModel(
     options.castingBrand || 'Generic',
     options.frame || 'HEADSHOT',
     undefined,
-    effectiveMask // Use the composited mask overlay
+    effectiveMask, // Use the composited mask overlay
+    undefined, // ethnicityHint
+    options.userId || 'anonymous'
   );
 
   // Upload base64 to S3 for persistent storage
