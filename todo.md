@@ -3823,3 +3823,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Phase 1b: Update studio settings, identity anchor, retry logic in geminiGeneration.ts
 - [x] Phase 1c: Update prompt assembly functions (skin, iris, hair, suggestions)
 - [x] Run tests and checkpoint
+- [x] Add Design Rationale & Patch History section to MIGRATION.md
