@@ -3809,3 +3809,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Server bounces unapproved users without code back to /login?error=no_code (no account created)
 - [x] All 952 tests passing
 - [x] Replace hero 3D JPG with transparent SVG/CSS embossed "drape" wordmark
+- [x] Revert hero wordmark back to flat text, provide image specs for custom hero asset

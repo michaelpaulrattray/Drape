@@ -40,18 +40,14 @@ export function HeroSection() {
         {/* Main Hero Content */}
         <div className="pb-6 sm:pb-[50px]">
           {/* Large Wordmark */}
-          <motion.div 
+          <motion.h1 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="-mb-[30px] sm:-mb-[78px] mt-4 sm:mt-[35px]"
+            className="text-[clamp(2.5rem,15vw,12rem)] font-bold tracking-tighter leading-[0.85] text-[#0A0A0A] -mb-[30px] sm:-mb-[78px] mt-4 sm:mt-[35px]"
           >
-            <img 
-              src="/drape-hero-embossed.svg" 
-              alt="drape" 
-              className="w-[clamp(14rem,70vw,56rem)] h-auto mx-auto"
-            />
-          </motion.div>
+            drape
+          </motion.h1>
           
           {/* Tagline */}
           <motion.div 
