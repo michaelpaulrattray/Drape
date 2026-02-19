@@ -9,6 +9,7 @@ import { useCastingGenerationStore } from "@/features/casting/stores/useCastingG
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { ControlPanel } from "@/features/casting/ControlPanel";
 import { ImageViewerPanel } from "@/features/casting/ImageViewerPanel";
+import { MasterPromptPanel } from "@/features/casting/MasterPromptPanel";
 import { StageLockModal } from "@/features/casting/StageLockModal";
 import { ExportModal } from "@/features/casting/ExportModal";
 import { useCastingCanvas } from "@/features/casting/hooks/useCastingCanvas";
@@ -115,7 +116,6 @@ export default function CastingStudio() {
   const textAreaRef = useCastingUIStore((s) => s.refineInput);
   useEffect(() => {
     // RefinePanel handles its own textarea — this is a no-op placeholder
-    // kept for backward compatibility with the textarea auto-resize pattern
   }, [textAreaRef]);
 
   // Keyboard shortcuts for debug utility (admin only)
@@ -165,14 +165,14 @@ export default function CastingStudio() {
   // Loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="w-8 h-8 animate-spin text-[#0A0A0A]" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#eae7e1' }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1a1a1a' }} />
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-white flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: '#eae7e1' }}>
       {/* Studio Header */}
       <StudioHeader
         creditsBalance={creditsData?.balance || 0}
@@ -198,43 +198,45 @@ export default function CastingStudio() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-      {/* Left Panel */}
-      <ControlPanel
-        user={user}
-        isFormValid={isFormValid}
-        genState={genState}
-        currentAssets={currentAssets}
-        handleGenerate={handleGenerate}
-        onCompactPrompt={handleCompactPrompt}
-      />
+        {/* Left Panel — Control */}
+        <ControlPanel
+          user={user}
+          isFormValid={isFormValid}
+          genState={genState}
+          currentAssets={currentAssets}
+          handleGenerate={handleGenerate}
+          onCompactPrompt={handleCompactPrompt}
+        />
 
-      {/* Right Panel */}
-      <ImageViewerPanel
-        currentImageUrl={currentImageUrl ?? undefined}
-        currentAssets={currentAssets}
-        genState={genState}
-        isViewLocked={isViewLocked}
-        hasDownstreamDependencies={hasDownstreamDependencies}
-        isIterationAllowed={isIterationAllowed}
-        isMasking={isMasking}
-        maskPathsCount={maskPaths.length}
-        formProgress={formProgress}
-        nextStage={nextStage}
-        canvasRef={canvasRef}
-        imageRef={imageRef}
-        handlePointerDown={handlePointerDown}
-        handlePointerMove={handlePointerMove}
-        handlePointerUp={handlePointerUp}
-        handleUndo={handleUndo}
-        handleRedo={handleRedo}
-        handleRetry={handleRetry}
-        handleGenerate={handleGenerate}
-        handleEnhance={handleEnhance}
-        handleRefineSubmit={handleRefineSubmit}
-        canUndo={canUndo}
-        canRedo={canRedo}
-      />
+        {/* Center — Image Viewer */}
+        <ImageViewerPanel
+          currentImageUrl={currentImageUrl ?? undefined}
+          currentAssets={currentAssets}
+          genState={genState}
+          isViewLocked={isViewLocked}
+          hasDownstreamDependencies={hasDownstreamDependencies}
+          isIterationAllowed={isIterationAllowed}
+          isMasking={isMasking}
+          maskPathsCount={maskPaths.length}
+          formProgress={formProgress}
+          nextStage={nextStage}
+          canvasRef={canvasRef}
+          imageRef={imageRef}
+          handlePointerDown={handlePointerDown}
+          handlePointerMove={handlePointerMove}
+          handlePointerUp={handlePointerUp}
+          handleUndo={handleUndo}
+          handleRedo={handleRedo}
+          handleRetry={handleRetry}
+          handleGenerate={handleGenerate}
+          handleEnhance={handleEnhance}
+          handleRefineSubmit={handleRefineSubmit}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
 
+        {/* Right Panel — Master Prompt */}
+        <MasterPromptPanel />
       </div>
 
       {/* Credit Top-up Modal */}

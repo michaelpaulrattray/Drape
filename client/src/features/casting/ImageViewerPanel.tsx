@@ -1,15 +1,14 @@
-import React, { useRef } from "react";
+import { useRef, useState, useEffect, useCallback, RefObject } from "react";
 import { toast } from "sonner";
-import { DNAHelix } from "@/components/DNAHelix";
-import { ViewTabs, RefinePanel, ToolsBar } from "./components/ImageViewer";
-import { DirectorsNote } from "./components/DirectorsNote";
+import { ViewTabs, RefinePanel, ToolsBar, LoadingOverlay, WarmEmptyState } from "./components/ImageViewer";
+import { MaskCanvas } from "./components/ImageViewer/MaskCanvas";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
-import { ImageResolution, type GenerationState, type GeneratedAsset, type EditTool } from "@/features/casting/constants";
-import { ConnectorLine } from "./castingHelpers";
+import { type GeneratedAsset, type GenerationState, type EditTool } from "@/features/casting/constants";
 import { ReferenceNode } from "./ReferenceNode";
-import { ElapsedTimeDisplay } from "./ElapsedTimeDisplay";
+
+// ============ Types ============
 
 interface ImageViewerPanelProps {
   currentImageUrl: string | undefined;
@@ -29,8 +28,8 @@ interface ImageViewerPanelProps {
     isAutoGen?: boolean;
     isProgress?: boolean;
   } | null;
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  imageRef: React.RefObject<HTMLImageElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  imageRef: RefObject<HTMLImageElement | null>;
   handlePointerDown: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   handlePointerMove: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   handlePointerUp: () => void;
@@ -43,6 +42,190 @@ interface ImageViewerPanelProps {
   canUndo: () => boolean;
   canRedo: () => boolean;
 }
+
+// ============ StatusPill ============
+
+function StatusPill({
+  activeView,
+  genState,
+  historyIndex,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+}: {
+  activeView: string;
+  genState: GenerationState;
+  historyIndex: number;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+}) {
+  const viewLabels: Record<string, string> = {
+    frontClose: 'HEAD',
+    frontFull: 'FULL',
+    sideClose: 'SIDE',
+    sideFull: 'WALK',
+    backFull: 'BACK',
+  };
+
+  const statusColor = genState.isGenerating ? '#e8a838' : '#4ade80';
+
+  return (
+    <div
+      className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1"
+      style={{
+        padding: '4px 6px',
+        borderRadius: 12,
+        background: 'rgba(255,255,255,0.85)',
+        boxShadow: '0 2px 14px rgba(0,0,0,0.05)',
+        backdropFilter: 'blur(12px)',
+      }}
+    >
+      {/* Undo */}
+      <button
+        onClick={onUndo}
+        disabled={!canUndo || genState.isGenerating}
+        className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-25"
+        style={{ color: '#888' }}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M3 7v6h6" /><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13" />
+        </svg>
+      </button>
+
+      {/* Status */}
+      <div className="flex items-center gap-1.5 px-2">
+        <div style={{ width: 5, height: 5, borderRadius: '50%', background: statusColor }} />
+        <span style={{ fontSize: 9, fontWeight: 600, color: '#888', letterSpacing: '0.06em' }}>
+          {viewLabels[activeView] || activeView.toUpperCase()}
+        </span>
+        {historyIndex >= 0 && (
+          <span style={{ fontSize: 8, color: '#bbb', fontFamily: 'ui-monospace, monospace' }}>
+            v{historyIndex + 1}
+          </span>
+        )}
+      </div>
+
+      {/* Redo */}
+      <button
+        onClick={onRedo}
+        disabled={!canRedo || genState.isGenerating}
+        className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-25"
+        style={{ color: '#888' }}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 7v6h-6" /><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+// ============ NextStageCTA ============
+
+function NextStageCTA({
+  nextStage,
+  isAutoGenerating,
+  onCancel,
+}: {
+  nextStage: NonNullable<ImageViewerPanelProps['nextStage']>;
+  isAutoGenerating: boolean;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="absolute top-1/2 right-6 -translate-y-1/2 z-40 flex flex-col items-end gap-3">
+      {/* Progress dots */}
+      <div className="flex items-center gap-1.5">
+        {[...Array(nextStage.total)].map((_, i) => (
+          <div
+            key={i}
+            style={{
+              width: i + 1 < nextStage.step ? 12 : 6,
+              height: 3,
+              borderRadius: 2,
+              background: i + 1 < nextStage.step ? '#1a1a1a' : i + 1 === nextStage.step ? '#1a1a1a' : 'rgba(0,0,0,0.1)',
+              transition: 'all 0.3s ease',
+            }}
+          />
+        ))}
+        <span style={{ fontSize: 9, fontWeight: 500, color: '#999', marginLeft: 4 }}>
+          {nextStage.step > nextStage.total ? 'Complete' : isAutoGenerating ? 'Auto' : 'Next'}
+        </span>
+      </div>
+
+      {/* Action button */}
+      {!isAutoGenerating ? (
+        <button
+          onClick={nextStage.action}
+          className="w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110"
+          style={{
+            background: '#1a1a1a',
+            color: '#fff',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          }}
+        >
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      ) : (
+        <button
+          onClick={onCancel}
+          className="px-3 py-1.5 rounded-lg transition-all"
+          style={{ background: 'rgba(220,53,69,0.1)', color: '#dc3545', fontSize: 10, fontWeight: 600 }}
+        >
+          Cancel
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ============ DownloadButton ============
+
+function DownloadButton({ imageUrl, activeView }: { imageUrl: string; activeView: string }) {
+  const handleDownload = async () => {
+    try {
+      const resp = await fetch(imageUrl);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `FORMASTUDIO_${activeView}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Image downloaded');
+    } catch {
+      toast.error('Download failed');
+    }
+  };
+
+  return (
+    <button
+      onClick={handleDownload}
+      className="absolute bottom-2 right-2 z-30 w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+      style={{
+        background: 'rgba(255,255,255,0.85)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+        backdropFilter: 'blur(8px)',
+        color: '#888',
+      }}
+      title="Download"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    </button>
+  );
+}
+
+// ============ Main Component ============
 
 export function ImageViewerPanel({
   currentImageUrl,
@@ -70,199 +253,139 @@ export function ImageViewerPanel({
   canRedo,
 }: ImageViewerPanelProps) {
   const { prefs, updatePref } = useCastingFormStore();
-  const { setGenState } = useCastingGenerationStore();
+  const { setGenState, historyIndex } = useCastingGenerationStore();
   const {
     activeView,
     activeTool,
-    resolution,
-    setResolution,
     isAutoGenerating,
     setAutoGenCancelled,
   } = useCastingUIStore();
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const [imageAreaHovered, setImageAreaHovered] = useState(false);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+      if (currentAssets.length === 0) return;
+
+      if (e.key === 'z' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.key === 'Z' && !e.ctrlKey && !e.metaKey) || (e.key === 'z' && e.shiftKey && !e.ctrlKey && !e.metaKey)) {
+        e.preventDefault();
+        handleRedo();
+      }
+      if (e.key === '/') {
+        e.preventDefault();
+        textAreaRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [currentAssets.length, handleUndo, handleRedo]);
+
+  // Determine if form is ready to generate
+  const isFormReady = formProgress >= 50;
 
   return (
-    <main className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative bg-[#EBEBEB]">
-      {/* Background Effects */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-[#0A0A0A]/3 rounded-full blur-[90px]"></div>
-        <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-t from-[#D4D4D4] via-[#EBEBEB] to-transparent opacity-60"></div>
-      </div>
+    <main
+      className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative"
+      style={{ background: '#eae7e1' }}
+    >
+      {/* View strip */}
+      <ViewTabs nextStage={nextStage} />
 
-      {/* ConnectorLine */}
-      <ConnectorLine isActive={!!currentAssets.length && !!prefs.referenceImage} />
-
-      {/* Top Controls */}
-      <div className="absolute top-4 left-4 z-40 flex items-center space-x-2">
-        <button 
-          onClick={handleUndo} 
-          disabled={!canUndo() || genState.isGenerating} 
-          className="p-2.5 bg-white/80 hover:bg-[#0A0A0A] hover:text-white disabled:opacity-30 disabled:hover:bg-white/80 text-[#0A0A0A] rounded-full border border-[#0A0A0A]/10 backdrop-blur-sm transition-all"
-          title="Undo"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-        </button>
-        <button 
-          onClick={handleRedo} 
-          disabled={!canRedo() || genState.isGenerating} 
-          className="p-2.5 bg-white/80 hover:bg-[#0A0A0A] hover:text-white disabled:opacity-30 disabled:hover:bg-white/80 text-[#0A0A0A] rounded-full border border-[#0A0A0A]/10 backdrop-blur-sm transition-all"
-          title="Redo"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
-        </button>
-      </div>
-
-      {/* Resolution Selector */}
-      <div className="absolute top-4 right-4 z-40 flex bg-white/80 border border-[#0A0A0A]/10 rounded-full p-1 backdrop-blur-sm">
-        {[ImageResolution.STD, ImageResolution.HIGH, ImageResolution.ULTRA].map(res => (
-          <button
-            key={res}
-            onClick={() => setResolution(res)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${resolution === res ? 'bg-[#0A0A0A] text-white shadow-sm' : 'text-[#757575] hover:text-[#0A0A0A] hover:bg-[#EBEBEB]'}`}
-          >
-            {res}
-          </button>
-        ))}
-      </div>
-
-      {/* Reference Node */}
-      {currentAssets.length > 0 && (
-        <div className="absolute top-20 right-8 z-40 hidden lg:block">
-          <ReferenceNode
-            image={prefs.referenceImage}
-            onSet={(img) => updatePref('referenceImage', img)}
-            disabled={genState.isGenerating}
-          />
-        </div>
-      )}
-
-      {/* Error Display with Retry */}
+      {/* Error overlay */}
       {genState.error && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-8 bg-white/90 backdrop-blur-sm">
-          <div className="max-w-md w-full border border-red-200 bg-white rounded-xl p-8 text-center space-y-4 shadow-2xl">
-            <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <div>
-              <h3 className="text-red-700 font-semibold text-lg mb-2">Generation Failed</h3>
-              <p className="text-red-600/80 text-sm leading-relaxed mb-2">{genState.error}</p>
-              <p className="text-gray-500 text-xs">This might be due to high demand or a temporary issue. Please try again.</p>
-            </div>
-            <div className="flex gap-3 justify-center pt-2">
-              <button 
-                onClick={handleRetry}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-full transition-colors flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-                Retry Generation
-              </button>
-              <button 
-                onClick={() => setGenState(prev => ({ ...prev, error: null }))}
-                className="px-6 py-2.5 bg-[#EBEBEB] hover:bg-[#D4D4D4] text-[#0A0A0A] text-sm font-medium rounded-full transition-colors"
-              >
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center p-8"
+          style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
+        >
+          <div style={{ background: '#fff', borderRadius: 16, padding: 24, maxWidth: 340, width: '100%', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#c33', marginBottom: 6 }}>Generation Failed</div>
+            <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5, marginBottom: 8 }}>{genState.error}</div>
+            <div style={{ fontSize: 10, color: '#bbb', marginBottom: 16 }}>This might be temporary. Please try again.</div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setGenState((p) => ({ ...p, error: null }))} style={{ fontSize: 11, fontWeight: 500, color: '#999' }}>
                 Dismiss
+              </button>
+              <button onClick={handleRetry} className="px-4 py-2 rounded-xl" style={{ background: '#1a1a1a', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                Retry
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Left Vertical Thumbnails Strip */}
-      <ViewTabs nextStage={nextStage} />
-
-      {/* Main Content */}
+      {/* Main content */}
       {currentAssets.length > 0 ? (
         <div className="w-full h-full flex flex-col relative z-10">
-          {/* Loading Overlay */}
-          {genState.isGenerating && (
-            <div className="absolute inset-0 z-40 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-200">
-              <div className="relative w-28 h-28">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgb(38,38,38)" strokeWidth="2" />
-                  <circle 
-                    cx="50" cy="50" r="45" fill="none" 
-                    stroke="white" strokeWidth="2" 
-                    strokeLinecap="round"
-                    strokeDasharray={`${(genState.progress || 0) * 2.83} 283`}
-                    className="transition-all duration-500 ease-out"
-                  />
-                </svg>
-                <div className="absolute inset-4 border-t-2 border-white/30 rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-[#0A0A0A]">
-                    {genState.progress ? `${Math.round(genState.progress)}%` : ''}
-                  </span>
-                </div>
-              </div>
-              <div className="text-center space-y-3">
-                <h3 className="text-sm font-medium text-[#0A0A0A]">{genState.currentStep || 'Processing...'}</h3>
-                {genState.startTime && (
-                  <ElapsedTimeDisplay startTime={genState.startTime} estimatedDuration={genState.estimatedDuration} />
-                )}
-                <div className="flex justify-center space-x-1">
-                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
-                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '150ms'}}></div>
-                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '300ms'}}></div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Loading overlay */}
+          {genState.isGenerating && <LoadingOverlay statusMessage={genState.currentStep || 'Processing...'} />}
 
-          {/* Image Display Area */}
-          <div className="flex-1 relative min-h-0 flex items-center justify-center p-2 lg:p-4 group">
-            {/* Next Stage Button */}
+          {/* Status pill */}
+          <StatusPill
+            activeView={activeView}
+            genState={genState}
+            historyIndex={historyIndex}
+            canUndo={canUndo()}
+            canRedo={canRedo()}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+          />
+
+          {/* Image area */}
+          <div
+            className="flex-1 relative min-h-0 flex items-center justify-center p-2 lg:p-4"
+            onMouseEnter={() => setImageAreaHovered(true)}
+            onMouseLeave={() => setImageAreaHovered(false)}
+          >
+            {/* Next stage CTA */}
             {nextStage && !genState.isGenerating && (
-              <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4 animate-in fade-in slide-in-from-right-8 duration-700">
-                <div className="text-right space-y-1 drop-shadow-md">
-                    <div className="flex items-center justify-end space-x-2 text-[#757575]">
-                    <div className="flex space-x-1">
-                      {[...Array(nextStage.total)].map((_, i) => (
-                        <div key={i} className={`h-1 w-3 rounded-full ${i + 1 < nextStage.step ? 'bg-[#0A0A0A]' : i + 1 === nextStage.step ? 'bg-[#0A0A0A] animate-pulse' : 'bg-[#0A0A0A]/20'}`}></div>
-                      ))}
-                    </div>
-                    <h4 className="text-xs font-medium">
-                      {nextStage.step > nextStage.total ? 'Workflow Complete' : isAutoGenerating ? 'Auto-Generating' : 'Next Stage'}
-                    </h4>
-                  </div>
-                  <p className="text-sm font-semibold text-[#0A0A0A]">{nextStage.label}</p>
-                </div>
-                {!isAutoGenerating ? (
-                  <button
-                    onClick={nextStage.action}
-                    className="group relative w-16 h-16 bg-white rounded-full flex items-center justify-center hover:scale-110 transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.2)]"
-                  >
-                    <div className="absolute inset-0 rounded-full border border-white opacity-50 group-hover:animate-ping"></div>
-                    <svg className="w-6 h-6 text-black relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setAutoGenCancelled(true)}
-                    className="group relative px-4 py-2 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center justify-center hover:bg-red-500/30 transition-all duration-300"
-                  >
-                    <span className="text-xs font-medium text-red-400">Cancel</span>
-                  </button>
-                )}
+              <NextStageCTA
+                nextStage={nextStage}
+                isAutoGenerating={isAutoGenerating}
+                onCancel={() => setAutoGenCancelled(true)}
+              />
+            )}
+
+            {/* Reference node */}
+            {currentAssets.length > 0 && (
+              <div className="absolute top-16 right-6 z-40 hidden lg:block">
+                <ReferenceNode
+                  image={prefs.referenceImage}
+                  onSet={(img) => updatePref('referenceImage', img)}
+                  disabled={genState.isGenerating}
+                />
               </div>
             )}
 
-            {/* Main Image */}
+            {/* Main image */}
             <div className="relative h-full max-w-full flex items-center justify-center select-none pb-16">
               {currentImageUrl && (
                 <>
-                  <img 
+                  <img
                     ref={imageRef}
-                    src={currentImageUrl} 
-                    alt="Active View" 
-                    className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain shadow-2xl border border-[#0A0A0A]/10 bg-[#F5F5F5] blur-loading" 
-                    style={{marginTop: '70px'}}
+                    src={currentImageUrl}
+                    alt="Active View"
+                    className="max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] max-w-full object-contain blur-loading"
+                    style={{
+                      marginTop: 70,
+                      borderRadius: 4,
+                      boxShadow: '0 8px 40px rgba(0,0,0,0.1)',
+                    }}
                     onLoad={(e) => e.currentTarget.classList.add('loaded')}
                   />
-                  
-                  {/* Masking Canvas */}
-                  <canvas 
-                    ref={canvasRef}
-                    className={`absolute top-0 left-0 touch-none ${isMasking ? 'pointer-events-auto z-20' : 'pointer-events-none z-10'} ${activeTool === 'eraser' ? 'cursor-eraser' : activeTool === 'surgical' ? 'cursor-brush' : 'cursor-crosshair'}`}
+
+                  {/* Mask canvas */}
+                  <MaskCanvas
+                    canvasRef={canvasRef}
+                    isMasking={isMasking}
+                    activeTool={activeTool}
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
@@ -270,66 +393,40 @@ export function ImageViewerPanel({
                 </>
               )}
 
-              {/* Tools Bar and Tool Mode Badge */}
+              {/* Tools bar */}
               <ToolsBar
                 isIterationAllowed={isIterationAllowed}
                 isViewLocked={isViewLocked}
                 hasDownstreamDependencies={hasDownstreamDependencies}
                 isMasking={isMasking}
+                imageAreaHovered={imageAreaHovered}
               />
 
-              {/* Locked Source Badge */}
-              {isViewLocked && !isMasking && (
-                <div className="absolute top-4 left-4 z-20 animate-in fade-in duration-300">
-                    <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-[#0A0A0A]/10 flex items-center space-x-2 shadow-lg">
-                    <svg className="w-3 h-3 text-[#0A0A0A]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                    <span className="text-xs font-medium text-[#0A0A0A]">
-                      {activeView === 'backFull' ? "Consistency Lock" : "Locked Source"}
-                    </span>
-                  </div>
-                </div>
-              )}
+              {/* Download */}
+              {currentImageUrl && <DownloadButton imageUrl={currentImageUrl} activeView={activeView} />}
 
-              {/* Download Button */}
-              <button
-                onClick={async () => {
-                  if (!currentImageUrl) return;
-                  try {
-                    const response = await fetch(currentImageUrl);
-                    const blob = await response.blob();
-                    const blobUrl = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = blobUrl;
-                    link.download = `FORMASTUDIO_${activeView}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(blobUrl);
-                    toast.success('Image downloaded!');
-                  } catch (error) {
-                    console.error('Download failed:', error);
-                    toast.error('Download failed');
-                  }
+              {/* View label */}
+              <div
+                className="absolute bottom-2 left-2 z-30"
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.85)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                  backdropFilter: 'blur(8px)',
                 }}
-                className="absolute bottom-2 right-2 z-30 p-1.5 bg-white/80 backdrop-blur-md border border-[#0A0A0A]/10 rounded-full text-[#757575] hover:text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white transition-all"
-                title="Download Image" style={{marginBottom: '10px'}}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </button>
-
-              {/* View Label */}
-              <div className="absolute bottom-2 left-2 z-30 px-3 py-1 bg-white/80 backdrop-blur-md border border-[#0A0A0A]/10 rounded-full" style={{marginBottom: '10px'}}>
-                <span className="text-xs font-medium text-[#0A0A0A]">
-                  {activeView === 'frontClose' ? 'FRONT CLOSE' : 
-                   activeView === 'frontFull' ? 'FRONT FULL' :
-                   activeView === 'sideClose' ? 'SIDE CLOSE' :
-                   activeView === 'sideFull' ? 'SIDE FULL' :
-                   activeView === 'backFull' ? 'BACK FULL' : activeView.toUpperCase()}
+                <span style={{ fontSize: 9, fontWeight: 600, color: '#888', letterSpacing: '0.06em' }}>
+                  {activeView === 'frontClose' ? 'HEAD' :
+                   activeView === 'frontFull' ? 'FULL BODY' :
+                   activeView === 'sideClose' ? 'SIDE' :
+                   activeView === 'sideFull' ? 'WALK' :
+                   activeView === 'backFull' ? 'BACK' : activeView.toUpperCase()}
                 </span>
               </div>
             </div>
 
-            {/* Overlaying Chat Input */}
+            {/* Refine panel */}
             <RefinePanel
               maskPathsCount={maskPathsCount}
               isMasking={isMasking}
@@ -339,76 +436,16 @@ export function ImageViewerPanel({
               handleGenerate={handleGenerate}
               handleEnhance={handleEnhance}
               handleRefineSubmit={handleRefineSubmit}
+              referenceImage={prefs.referenceImage}
             />
           </div>
-
-          {/* Bottom Panel - Director's Note */}
-          <DirectorsNote />
         </div>
       ) : genState.isGenerating ? (
-        <div className="flex-1 flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-200">
-          <div className="relative w-32 h-32">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="rgb(38,38,38)" strokeWidth="2" />
-              <circle 
-                cx="50" cy="50" r="45" fill="none" 
-                stroke="white" strokeWidth="2" 
-                strokeLinecap="round"
-                strokeDasharray={`${(genState.progress || 0) * 2.83} 283`}
-                className="transition-all duration-500 ease-out"
-              />
-            </svg>
-            <div className="absolute inset-4 border-t-2 border-white/30 rounded-full animate-spin" style={{animationDuration: '1.5s'}}></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xl font-semibold text-[#0A0A0A]">
-                {genState.progress ? `${Math.round(genState.progress)}%` : ''}
-              </span>
-            </div>
-          </div>
-          <div className="text-center space-y-3">
-            <h3 className="text-sm font-medium text-[#0A0A0A]">{genState.currentStep || 'Processing...'}</h3>
-            {genState.startTime && (
-              <ElapsedTimeDisplay startTime={genState.startTime} estimatedDuration={genState.estimatedDuration} />
-            )}
-            <div className="flex justify-center space-x-1">
-              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '0ms'}}></div>
-              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '150ms'}}></div>
-              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{animationDelay: '300ms'}}></div>
-            </div>
-          </div>
+        <div className="flex-1 relative">
+          <LoadingOverlay statusMessage={genState.currentStep || 'Processing...'} />
         </div>
       ) : (
-        /* Empty State - DNA Helix Progress Visualization */
-        <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden bg-white">
-          <div className="absolute inset-0">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#EBEBEB]/50 rounded-full blur-3xl" />
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#EBEBEB]/30 rounded-full blur-3xl" />
-          </div>
-          
-          <div className="relative z-10 w-full max-w-4xl p-8 flex flex-col items-center justify-center min-h-[500px]">
-            <div className="w-full">
-              <DNAHelix 
-                progress={formProgress} 
-                className="mx-auto" 
-                onSectionClick={(sectionIndex) => {
-                  const sectionIds = [
-                    'section-casting-basics',
-                    'section-casting-basics',
-                    'section-physique',
-                    'section-skin',
-                    'section-eyes',
-                    'section-hair'
-                  ];
-                  const targetId = sectionIds[sectionIndex];
-                  const element = document.getElementById(targetId);
-                  if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </div>
+        <WarmEmptyState canGenerate={isFormReady} onGenerate={handleGenerate} />
       )}
     </main>
   );

@@ -3841,3 +3841,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Phase 5: Polish checks (imports, dead code, line counts, console warnings)
 - [x] Phase 5: Checkpoint
 - [ ] (Deferred) Split geminiGeneration.ts (682 lines) — extract prompt builders + iteration image prompt to get under 500
+
+## Phase 6: Casting Studio Visual Overhaul (v3 Reference Design)
+- [x] Step 1: Create TriBlendSelector + HairColorWheel components
+- [x] Step 2: Update castingHelpers (ChipRow, CollapsibleSection warm restyle)
+- [x] Step 3: Rewrite ControlPanel with warm sidebar, ChipRow, hair builder, resolution toggle
+- [x] Step 4: Create MaskCanvas, ViewStrip, EmptyState sub-components
+- [x] Step 5: Rewrite RefineBar, ExportModal, StageLockModal
+- [x] Step 6: Rewrite ImageViewerPanel (warm canvas, floating ref, compare, loading overlay)
+- [x] Step 7: Rewrite MasterPrompt panel + CastingStudio 3-panel layout wiring

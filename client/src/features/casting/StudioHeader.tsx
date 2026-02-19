@@ -23,7 +23,6 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [bannerImage, setBannerImage] = useState<string | null>(null);
 
-  // Profile data for settings modal
   const { data: profileData, refetch: refetchProfile } = trpc.profile.get.useQuery(
     undefined,
     { enabled: !!user }
@@ -38,22 +37,27 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
 
   return (
     <>
-      <header className="h-11 flex-shrink-0 bg-white border-b border-[#0A0A0A]/10 flex items-center justify-between px-4 z-30">
+      <header
+        className="h-11 flex-shrink-0 flex items-center justify-between px-4 z-30"
+        style={{
+          background: '#fff',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+        }}
+      >
         {/* Left: Logo + Back */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-1.5 text-[#757575] hover:text-[#0A0A0A] transition-colors group"
+            className="flex items-center gap-1.5 transition-colors group"
+            style={{ color: '#999' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#1a1a1a'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#999'; }}
           >
             <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            <img
-              src={LOGO_URL}
-              alt="Drape"
-              className="w-6 h-6"
-            />
+            <img src={LOGO_URL} alt="Drape" className="w-6 h-6" />
           </button>
-          <div className="hidden sm:block h-4 w-px bg-[#0A0A0A]/10" />
-          <span className="hidden sm:block text-xs font-medium text-[#757575] tracking-wide">
+          <div className="hidden sm:block h-4 w-px" style={{ background: 'rgba(0,0,0,0.08)' }} />
+          <span className="hidden sm:block" style={{ fontSize: 11, fontWeight: 500, color: '#999', letterSpacing: '0.04em' }}>
             Casting Studio
           </span>
         </div>
@@ -63,24 +67,30 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
           {/* Credits Pill */}
           <button
             onClick={() => useCastingUIStore.getState().setIsTopupOpen(true)}
-            className="flex items-center gap-1.5 bg-[#F5F5F5] hover:bg-[#EBEBEB] rounded-full px-3 py-1 transition-colors"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1 transition-colors"
+            style={{ background: '#f5f3ef' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#eae7e1'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#f5f3ef'; }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#0A0A0A]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#1a1a1a' }}>
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            <span className="text-xs font-semibold text-[#0A0A0A]">{creditsBalance}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a' }}>{creditsBalance}</span>
           </button>
 
           {/* User Avatar */}
           <button
             onClick={() => setShowSettings(true)}
-            className="w-7 h-7 rounded-full overflow-hidden border border-[#0A0A0A]/10 hover:border-[#0A0A0A]/30 transition-colors flex-shrink-0"
+            className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 transition-all"
+            style={{ border: '1.5px solid rgba(0,0,0,0.08)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.2)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; }}
           >
             {profileImage ? (
               <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-[#0A0A0A] flex items-center justify-center">
-                <span className="text-[10px] font-semibold text-white">{userInitial}</span>
+              <div className="w-full h-full flex items-center justify-center" style={{ background: '#1a1a1a' }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#fff' }}>{userInitial}</span>
               </div>
             )}
           </button>
@@ -88,7 +98,8 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
           {/* Mobile Panel Toggle */}
           <button
             onClick={() => setShowMobilePanel(!showMobilePanel)}
-            className="lg:hidden p-1.5 rounded-full bg-[#0A0A0A] text-white"
+            className="lg:hidden p-1.5 rounded-full"
+            style={{ background: '#1a1a1a', color: '#fff' }}
           >
             {showMobilePanel ? <X className="w-3.5 h-3.5" /> : <Menu className="w-3.5 h-3.5" />}
           </button>

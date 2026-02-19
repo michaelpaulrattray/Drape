@@ -1,6 +1,4 @@
-import { RefObject } from 'react';
-import { Loader2 } from 'lucide-react';
-import Tooltip from '@/components/Tooltip';
+import { RefObject, useRef, useState, useEffect } from 'react';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { SuggestionChips } from '../SuggestionChips';
@@ -10,57 +8,17 @@ import { SuggestionChips } from '../SuggestionChips';
 type EditTool = 'none' | 'surgical' | 'eraser';
 
 interface RefinePanelProps {
-  // Tool state (still passed as props due to local drawing state)
   maskPathsCount: number;
   isMasking: boolean;
-  
-  // View state (computed values still passed as props)
   isViewLocked: boolean;
   isIterationAllowed: boolean;
-  
-  // Refs (must be passed as props)
   textAreaRef: RefObject<HTMLTextAreaElement | null>;
-  
-  // Actions (handlers still in parent due to tRPC mutations)
   handleGenerate: () => void;
   handleEnhance: () => void;
   handleRefineSubmit: () => void;
   onSuggestionClick?: (text: string) => void;
+  referenceImage?: string;
 }
-
-// ============ Sub-components ============
-
-const RegenerateButton = ({ onClick, disabled }: { onClick: () => void; disabled: boolean }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`flex-shrink-0 p-1.5 transition-colors ${disabled ? 'text-[#757575] cursor-not-allowed' : 'text-[#0A0A0A]/60 hover:text-[#0A0A0A]'}`}
-    title="Regenerate with Current Settings"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
-    </svg>
-  </button>
-);
-
-const EnhanceButton = ({ onClick, disabled, isEnhancing }: { onClick: () => void; disabled: boolean; isEnhancing: boolean }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className="flex-shrink-0 p-1.5 text-[#0A0A0A]/60 hover:text-[#0A0A0A] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-    title="Enhance Prompt (AI)"
-  >
-    {isEnhancing ? (
-      <Loader2 className="w-4 h-4 animate-spin" />
-    ) : (
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/>
-        <path d="M17.8 11.8 19 13"/><path d="M15 9h0"/><path d="M17.8 6.2 19 5"/>
-        <path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/>
-      </svg>
-    )}
-  </button>
-);
 
 // ============ Main Component ============
 
@@ -74,8 +32,8 @@ export function RefinePanel({
   handleEnhance,
   handleRefineSubmit,
   onSuggestionClick,
+  referenceImage,
 }: RefinePanelProps) {
-  // Get UI state from Zustand store
   const {
     activeView,
     activeTool,
@@ -86,210 +44,265 @@ export function RefinePanel({
     setUnlockMode,
   } = useCastingUIStore();
 
+  const [glowActive, setGlowActive] = useState(false);
+  const glowFiredRef = useRef(false);
+
   const isLocked = isViewLocked && !unlockMode;
   const hasMask = maskPathsCount > 0;
-  const { isGenerating } = useCastingGenerationStore.getState().genState;
 
-  // Handle suggestion chip click: populate input and auto-submit
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textAreaRef.current) {
+      textAreaRef.current.style.height = '34px';
+      const sh = textAreaRef.current.scrollHeight;
+      textAreaRef.current.style.height = Math.min(Math.max(sh, 34), 80) + 'px';
+    }
+  }, [refineInput]);
+
+  // Enhance glow trigger
+  useEffect(() => {
+    const wordCount = refineInput.trim().split(/\s+/).filter(Boolean).length;
+    if (wordCount >= 3 && !glowFiredRef.current && !isEnhancing) {
+      glowFiredRef.current = true;
+      setGlowActive(true);
+    }
+    if (wordCount < 3) {
+      glowFiredRef.current = false;
+      setGlowActive(false);
+    }
+  }, [refineInput, isEnhancing]);
+
   const handleChipClick = (text: string) => {
-    if (onSuggestionClick) {
-      onSuggestionClick(text);
-    } else {
-      setRefineInput(text);
+    if (onSuggestionClick) onSuggestionClick(text);
+    else setRefineInput(text);
+  };
+
+  const handleSubmit = () => {
+    if (refineInput.trim() || activeTool === 'eraser') {
+      handleRefineSubmit();
     }
   };
 
-  // Get placeholder text based on state
-  const getPlaceholder = () => {
-    if (isEnhancing) return "Optimizing instruction with AI...";
-    if (isViewLocked) {
-      return activeView === 'backFull' 
-        ? "WARNING: MAKING CHANGES TO THIS IMAGE COULD RUIN CHARACTER CONSISTENCY..." 
-        : "Editing will reset downstream assets...";
-    }
-    if (activeTool === 'surgical') {
-      return `Describe change for masked area (e.g. 'Add scar')...`;
-    }
-    return `Iterate on ${activeView.replace(/([A-Z])/g, ' $1').toLowerCase()}...`;
-  };
+  const iterationDisabledReason =
+    activeView === 'sideClose'
+      ? 'Side profile cannot be edited directly. Edit the headshot or full body instead.'
+      : null;
 
-  // Render submit button based on tool
-  const renderSubmitButton = () => {
-    if (activeTool === 'eraser') {
-      return (
-        <button 
-          onClick={handleRefineSubmit}
-          disabled={!hasMask}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
-            hasMask 
-              ? 'bg-purple-500 text-white hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
-              : 'bg-[#EBEBEB] text-[#757575] cursor-not-allowed'
-          }`}
-        >
-          Erase
-        </button>
-      );
-    }
-    
-    if (activeTool === 'surgical') {
-      return (
-        <button 
-          onClick={handleRefineSubmit}
-          disabled={!hasMask || !refineInput.trim() || isLocked}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${
-            (hasMask && refineInput.trim()) 
-              ? 'bg-red-500 text-white hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]' 
-              : 'bg-[#EBEBEB] text-[#757575] cursor-not-allowed'
-          }`}
-        >
-          Apply
-        </button>
-      );
-    }
-    
+  // ── Eraser mode ──
+  if (activeTool === 'eraser') {
     return (
-      <button 
-        onClick={handleRefineSubmit}
-        disabled={!refineInput.trim() || isLocked || !isIterationAllowed}
-        className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${
-          isLocked || !isIterationAllowed 
-            ? 'bg-[#EBEBEB] text-[#757575] cursor-not-allowed' 
-            : 'bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90 disabled:opacity-50 disabled:cursor-not-allowed'
-        }`}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-      </button>
-    );
-  };
-
-  // Render input area based on state
-  const renderInputArea = () => {
-    if (activeTool === 'eraser') {
-      return (
-        <div className="flex-1 px-2 py-1.5 min-h-[28px] flex items-center">
-          <span className="text-xs font-medium text-purple-400/50">
-            {!hasMask ? "Paint Area to Erase" : "Ready to Erase"}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30" style={{ width: 420, maxWidth: 'calc(100% - 40px)' }}>
+        <div
+          className="flex items-center justify-center gap-2 p-2 rounded-2xl"
+          style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
+        >
+          <span style={{ fontSize: 11, color: '#7c6bef', fontWeight: 500 }}>
+            {hasMask ? 'Ready to Erase' : 'Paint Area to Erase'}
           </span>
+          {hasMask && (
+            <button
+              onClick={handleSubmit}
+              className="px-4 py-1.5 rounded-lg transition-all"
+              style={{ background: '#7c6bef', color: '#fff', fontSize: 10, fontWeight: 600 }}
+            >
+              Erase
+            </button>
+          )}
         </div>
-      );
-    }
-    
-    if (isLocked) {
-      return (
-        <div className="flex-1 flex items-center justify-between px-2 py-1">
-          <div className="flex items-center space-x-2 text-[#0A0A0A] select-none">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
-            <span className="text-xs font-medium">Locked</span>
-            <Tooltip content={
-              activeView === 'backFull' 
-                ? "Editing this finalized view may break visual consistency with the rest of the character pack."
-                : "This view is the source for downstream assets (Full Body, Angles). Editing it will reset them."
-            } />
+      </div>
+    );
+  }
+
+  // ── Iteration disabled ──
+  if (!isIterationAllowed && iterationDisabledReason) {
+    return (
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30" style={{ width: 420, maxWidth: 'calc(100% - 40px)' }}>
+        <div
+          className="flex items-center justify-center gap-2 p-3 rounded-2xl"
+          style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+          <span style={{ fontSize: 11, color: '#999' }}>{iterationDisabledReason}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ── View locked ──
+  if (isLocked) {
+    return (
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30" style={{ width: 420, maxWidth: 'calc(100% - 40px)' }}>
+        <div
+          className="flex items-center justify-between p-3 rounded-2xl"
+          style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
+        >
+          <div className="flex items-center gap-2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+            <span style={{ fontSize: 11, color: '#999' }}>View Locked</span>
           </div>
-          <button 
+          <button
             onClick={() => setUnlockMode(true)}
-            className="text-xs font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors border-b border-dashed border-[#0A0A0A]/20 hover:border-[#0A0A0A]/40 pb-0.5"
+            style={{ fontSize: 10, fontWeight: 600, color: '#1a1a1a', textDecoration: 'underline' }}
           >
-            Unlock to Edit
+            Unlock
           </button>
         </div>
-      );
-    }
-    
-    if (!isIterationAllowed) {
-      return (
-        <div className="flex-1 px-2 py-1 flex items-center space-x-2 text-[#757575] select-none">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
-          </svg>
-          <span className="text-xs font-medium">Locked Angle</span>
-          <Tooltip content="To maintain consistency, only the Headshot, Front Full Body, and Back View can be iterated with text. Use Magic Eraser for corrections." />
-        </div>
-      );
-    }
-    
-    return (
-      <textarea 
-        ref={textAreaRef}
-        value={refineInput}
-        onChange={(e) => setRefineInput(e.target.value)}
-        disabled={isEnhancing} 
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey && !isEnhancing) {
-            e.preventDefault();
-            handleRefineSubmit();
-          }
-        }}
-        placeholder={getPlaceholder()}
-        rows={1}
-        className={`flex-1 bg-transparent border-none text-sm placeholder:text-[#757575] focus:outline-none focus:ring-0 px-2 py-1.5 resize-none custom-scrollbar min-h-[28px] max-h-[200px] ${
-          isViewLocked ? 'text-amber-600 placeholder:text-amber-500/50' : 
-          isEnhancing ? 'text-[#757575] animate-pulse' : 'text-[#0A0A0A]'
-        }`}
-      />
+      </div>
     );
+  }
+
+  // ── Normal refine bar ──
+  const getPlaceholder = () => {
+    if (activeTool === 'surgical') return 'Describe change for masked area...';
+    if (referenceImage) return "e.g. 'use hairstyle from reference image'";
+    return 'Describe a change... (press / to focus)';
   };
 
+  const glowKeyframes = `
+    @keyframes enhanceFloat {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-2px); }
+    }
+  `;
+
   return (
-    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-full max-w-xl z-30 px-2" onClick={e => e.stopPropagation()} style={{marginBottom: '60px', marginLeft: '10px'}}>
-      {/* Suggestion Chips — above the input bar */}
-      {!isMasking && !isLocked && isIterationAllowed && (
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+      {/* Suggestion Chips */}
+      {!isMasking && isIterationAllowed && (
         <div className="mb-2 px-1">
-          <SuggestionChips onChipClick={handleChipClick} disabled={isGenerating} />
+          <SuggestionChips onChipClick={handleChipClick} disabled={false} />
         </div>
       )}
 
-      {/* Inline Helper Text for Masking */}
+      {/* Masking helper */}
       {isMasking && (
         <div className="mb-2 flex justify-center animate-in fade-in slide-in-from-bottom-1 duration-300">
-          <div className="flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur-md rounded-full border border-[#0A0A0A]/10 shadow-lg">
-            <span className={`text-xs font-medium ${activeTool === 'eraser' ? 'text-purple-500' : 'text-red-500'}`}>
-              {!hasMask ? "STEP 01" : "STEP 02"}
-            </span>
-            <span className="w-px h-2 bg-[#0A0A0A]/10"></span>
-            <span className="text-xs font-medium text-[#0A0A0A]">
-              {!hasMask 
-                ? "Paint Target Area" 
-                : (activeTool === 'eraser' ? "Click Erase Button" : "Describe Edit & Generate")
-              }
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+          >
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#c33' }}>{hasMask ? 'STEP 02' : 'STEP 01'}</span>
+            <span style={{ width: 1, height: 8, background: 'rgba(0,0,0,0.1)', display: 'inline-block' }} />
+            <span style={{ fontSize: 9, fontWeight: 500, color: '#777' }}>
+              {!hasMask ? 'Paint Target Area' : 'Describe Edit & Apply'}
             </span>
           </div>
         </div>
       )}
 
-      <div className={`mx-1 bg-white/90 backdrop-blur-md border rounded-full shadow-xl flex items-center p-1 transition-all focus-within:ring-1 focus-within:ring-[#0A0A0A]/10 ${
-        isLocked && activeTool !== 'eraser' ? 'border-[#0A0A0A]/15 opacity-90' : 'border-[#0A0A0A]/10'
-      }`}>
-        {/* Regenerate Button */}
-        <RegenerateButton 
-          onClick={handleGenerate} 
-          disabled={isLocked || !isIterationAllowed} 
-        />
+      {/* Input bar */}
+      <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
+        <div
+          className="flex items-end gap-2 p-1.5 rounded-2xl"
+          style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
+        >
+          {/* Enhance */}
+          {isIterationAllowed && (
+            <>
+              {glowActive && <style>{glowKeyframes}</style>}
+              <button
+                onClick={handleEnhance}
+                disabled={!refineInput.trim() || isEnhancing}
+                className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+                style={{
+                  color: glowActive ? '#a89cf5' : '#bbb',
+                  animation: glowActive ? 'enhanceFloat 1.4s ease-in-out infinite' : 'none',
+                  transition: 'color 0.4s ease',
+                }}
+                title="Enhance with AI"
+              >
+                {isEnhancing ? (
+                  <div className="w-3 h-3 border-2 border-t-transparent border-gray-400 rounded-full animate-spin" />
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
+                )}
+              </button>
+            </>
+          )}
 
-        <div className="w-px h-4 bg-[#0A0A0A]/10 mx-1"></div>
+          <div style={{ width: 1, height: 20, background: 'rgba(0,0,0,0.06)', marginBottom: 6 }} />
 
-        {/* Input Area */}
-        {renderInputArea()}
-        
-        {/* Enhance button */}
-        {((!isViewLocked || unlockMode) && isIterationAllowed && activeTool !== 'eraser') && (
-          <EnhanceButton 
-            onClick={handleEnhance}
-            disabled={!refineInput.trim() || isEnhancing}
-            isEnhancing={isEnhancing}
+          {/* Reference thumbnail */}
+          {referenceImage && (
+            <div className="flex-shrink-0 mb-0.5" title="Reference image attached">
+              <div className="w-7 h-7 rounded-lg overflow-hidden" style={{ border: '1.5px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <img src={referenceImage} alt="Ref" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
+
+          {/* Textarea */}
+          <textarea
+            ref={textAreaRef}
+            data-refine-input
+            value={refineInput}
+            onChange={(e) => setRefineInput(e.target.value)}
+            placeholder={getPlaceholder()}
+            rows={1}
+            disabled={!isIterationAllowed}
+            className="flex-1 outline-none resize-none bg-transparent placeholder-[#b8b3a8]"
+            style={{ border: 'none', fontSize: 12, color: '#1a1a1a', lineHeight: 1.5, padding: '8px 8px', minHeight: 34, maxHeight: 80 }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
           />
-        )}
 
-        {/* Submit button */}
-        {renderSubmitButton()}
+          {/* Submit */}
+          <button
+            onClick={handleSubmit}
+            disabled={!refineInput.trim()}
+            className="flex-shrink-0 px-4 py-2 rounded-lg transition-all mb-0.5"
+            style={{
+              background: refineInput.trim() ? '#1a1a1a' : '#e8e5df',
+              color: refineInput.trim() ? '#fff' : '#aaa',
+              fontSize: 10,
+              fontWeight: 600,
+            }}
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+
+      {/* Shortcuts bar */}
+      <div
+        className="mt-2 flex items-center justify-center gap-3 pointer-events-none"
+        style={{
+          padding: '5px 14px',
+          borderRadius: 10,
+          background: 'rgba(255,255,255,0.7)',
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+          width: 'fit-content',
+          margin: '8px auto 0',
+        }}
+      >
+        {[
+          { key: 'Z', label: 'Undo' },
+          { key: '⇧Z', label: 'Redo' },
+          { key: '/', label: 'Refine' },
+          ...(referenceImage ? [{ key: 'F', label: 'Ref' }] : []),
+        ].map((s) => (
+          <div key={s.key} className="flex items-center gap-1.5">
+            <span
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                color: '#bbb',
+                padding: '1px 4px',
+                borderRadius: 3,
+                background: 'rgba(0,0,0,0.04)',
+                fontFamily: 'monospace',
+              }}
+            >
+              {s.key}
+            </span>
+            <span style={{ fontSize: 9, color: '#bbb' }}>{s.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 
@@ -22,177 +23,183 @@ interface ViewTabsProps {
   nextStage: NextStage | null;
 }
 
-// ============ Lock Icon Component ============
+// ============ ViewThumbnail ============
 
-const LockIcon = () => (
-  <div className="absolute top-1.5 right-1.5 bg-white/80 backdrop-blur-md rounded-full p-1 border border-[#0A0A0A]/10 z-20">
-    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#0A0A0A]/80">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-    </svg>
-  </div>
-);
-
-// ============ Thumbnail Button Component ============
-
-interface ThumbnailButtonProps {
-  asset: GeneratedAsset | undefined;
-  viewType: ViewType;
+function ViewThumbnail({
+  src,
+  label,
+  isActive,
+  onClick,
+  isHovered,
+}: {
+  src: string;
   label: string;
   isActive: boolean;
   onClick: () => void;
-  showLock?: boolean;
-}
-
-const ThumbnailButton = ({ asset, viewType, label, isActive, onClick, showLock }: ThumbnailButtonProps) => {
-  if (!asset) return null;
-  
+  isHovered: boolean;
+}) {
   return (
-    <button 
-      onClick={onClick}
-      className={`relative group w-full aspect-[3/4] rounded-xl transition-all duration-300 overflow-hidden ${
-        isActive 
-        ? 'ring-2 ring-[#0A0A0A] shadow-lg z-10 scale-[1.03]' 
-        : 'ring-1 ring-[#0A0A0A]/10 opacity-70 hover:opacity-100 hover:ring-[#0A0A0A]/30 hover:scale-[1.02] hover:shadow-lg'
-      }`}
+    <button
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="relative overflow-hidden transition-all duration-200"
+      style={{
+        width: 56,
+        height: 70,
+        borderRadius: 10,
+        border: isActive ? '2px solid #1a1a1a' : '2px solid rgba(255,255,255,0.6)',
+        boxShadow: isActive
+          ? '0 4px 16px rgba(0,0,0,0.15)'
+          : '0 2px 10px rgba(0,0,0,0.08)',
+        background: '#fff',
+        transform: isActive ? 'scale(1.05)' : 'scale(1)',
+        opacity: isHovered || isActive ? 1 : 0.75,
+      }}
+      onMouseEnter={(e) => {
+        if (!isActive) {
+          e.currentTarget.style.transform = 'scale(1.08)';
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive) {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
+        }
+      }}
     >
-      <img src={asset.storageUrl} alt={label} className="w-full h-full object-cover" />
-      {showLock && <LockIcon />}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-900/80 via-gray-900/50 to-transparent py-1.5 px-1">
-        <span className="text-[10px] font-medium text-white block text-center">{label}</span>
+      <img src={src} alt={label} className="w-full h-full object-cover" />
+      <div
+        className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-center"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)' }}
+      >
+        <span style={{ fontSize: 7, fontWeight: 600, color: '#fff', textTransform: 'uppercase' }}>
+          {label}
+        </span>
       </div>
     </button>
   );
-};
-
-// ============ Add Button Component ============
-
-interface AddButtonProps {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
 }
 
-const AddButton = ({ label, onClick, disabled }: AddButtonProps) => (
-  <button 
-    onClick={onClick}
-    disabled={disabled}
-    className="w-full aspect-[3/4] bg-white/60 backdrop-blur-sm rounded-xl border border-dashed border-[#0A0A0A]/20 hover:border-[#0A0A0A]/40 hover:bg-white/80 transition-all flex flex-col items-center justify-center space-y-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-    <div className="w-8 h-8 rounded-full border-2 border-[#0A0A0A]/20 flex items-center justify-center text-[#757575] group-hover:text-[#0A0A0A] group-hover:border-[#0A0A0A]/40 transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
+// ============ AddViewButton ============
+
+function AddViewButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center gap-1.5"
+      style={{
+        width: 56,
+        height: 70,
+        borderRadius: 10,
+        border: '2px dashed rgba(0,0,0,0.1)',
+        background: 'rgba(255,255,255,0.5)',
+        backdropFilter: 'blur(8px)',
+        fontSize: 8,
+        fontWeight: 600,
+        color: '#999',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'scale(1)' : 'scale(0.9)',
+        transition: 'all 0.2s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.85)';
+        e.currentTarget.style.transform = 'scale(1.05)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.5)';
+        e.currentTarget.style.transform = visible ? 'scale(1)' : 'scale(0.9)';
+      }}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M12 5v14M5 12h14" />
       </svg>
-    </div>
-    <span className="text-[10px] font-medium text-[#757575] group-hover:text-[#0A0A0A] text-center px-1">{label}</span>
-  </button>
-);
-
-// ============ Locked Placeholder Component ============
-
-interface LockedPlaceholderProps {
-  label: string;
+    </button>
+  );
 }
-
-const LockedPlaceholder = ({ label }: LockedPlaceholderProps) => (
-  <div className="w-full aspect-[3/4] bg-white/40 backdrop-blur-[1px] rounded-xl border border-[#0A0A0A]/10 flex flex-col items-center justify-center space-y-1">
-    <svg className="w-5 h-5 text-[#0A0A0A]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-    </svg>
-    <span className="text-[10px] font-medium text-[#0A0A0A]/30">{label}</span>
-  </div>
-);
 
 // ============ Main Component ============
 
 export function ViewTabs({ nextStage }: ViewTabsProps) {
-  // Get state from Zustand stores
-  const currentAssets = useCastingGenerationStore((state) => state.currentAssets);
+  const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
   const { activeView, setActiveView } = useCastingUIStore();
+  const [hovered, setHovered] = useState(false);
 
-  const getAsset = (viewType: ViewType) => currentAssets.find(a => a.viewType === viewType);
-  const hasAsset = (viewType: ViewType) => currentAssets.some(a => a.viewType === viewType);
+  const getAsset = (vt: ViewType) => currentAssets.find((a) => a.viewType === vt);
+  const hasAsset = (vt: ViewType) => currentAssets.some((a) => a.viewType === vt);
 
   if (currentAssets.length === 0) return null;
 
   return (
-    <div className="absolute left-4 top-16 bottom-10 z-30 flex flex-col gap-3 w-20 overflow-y-auto no-scrollbar py-2 pointer-events-none">
+    <div
+      className="absolute left-4 top-16 z-30 flex flex-col gap-2 transition-opacity duration-200"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ opacity: hovered ? 1 : 0.75 }}
+    >
       <div className="contents pointer-events-auto">
-        {/* HEAD Thumbnail */}
-        <ThumbnailButton
-          asset={getAsset('frontClose')}
-          viewType="frontClose"
-          label="Head"
-          isActive={activeView === 'frontClose'}
-          onClick={() => setActiveView('frontClose')}
-          showLock={hasAsset('frontFull')}
-        />
-
-        {/* ADD BODY / Full Body Thumbnail */}
-        {hasAsset('frontFull') ? (
-          <ThumbnailButton
-            asset={getAsset('frontFull')}
-            viewType="frontFull"
-            label="Full"
-            isActive={activeView === 'frontFull'}
-            onClick={() => setActiveView('frontFull')}
-            showLock={hasAsset('sideClose')}
-          />
-        ) : (
-          <AddButton 
-            label="Body" 
-            onClick={() => nextStage?.step === 2 && nextStage.action()}
-            disabled={!nextStage || nextStage.step !== 2}
+        {/* HEAD */}
+        {getAsset('frontClose') && (
+          <ViewThumbnail
+            src={getAsset('frontClose')!.storageUrl}
+            label="Head"
+            isActive={activeView === 'frontClose'}
+            onClick={() => setActiveView('frontClose')}
+            isHovered={hovered}
           />
         )}
 
-        {/* Side/Walk/Back Views or Locked Placeholders */}
+        {/* FULL BODY */}
         {hasAsset('frontFull') ? (
+          <ViewThumbnail
+            src={getAsset('frontFull')!.storageUrl}
+            label="Full"
+            isActive={activeView === 'frontFull'}
+            onClick={() => setActiveView('frontFull')}
+            isHovered={hovered}
+          />
+        ) : (
+          <AddViewButton
+            visible={hovered}
+            onClick={() => nextStage?.step === 2 && nextStage.action()}
+          />
+        )}
+
+        {/* SIDE */}
+        {hasAsset('frontFull') && (
           hasAsset('sideClose') ? (
             <>
-              <ThumbnailButton
-                asset={getAsset('sideClose')}
-                viewType="sideClose"
+              <ViewThumbnail
+                src={getAsset('sideClose')!.storageUrl}
                 label="Side"
                 isActive={activeView === 'sideClose'}
                 onClick={() => setActiveView('sideClose')}
+                isHovered={hovered}
               />
               {hasAsset('sideFull') && (
-                <ThumbnailButton
-                  asset={getAsset('sideFull')}
-                  viewType="sideFull"
+                <ViewThumbnail
+                  src={getAsset('sideFull')!.storageUrl}
                   label="Walk"
                   isActive={activeView === 'sideFull'}
                   onClick={() => setActiveView('sideFull')}
+                  isHovered={hovered}
                 />
               )}
               {hasAsset('backFull') && (
-                <ThumbnailButton
-                  asset={getAsset('backFull')}
-                  viewType="backFull"
+                <ViewThumbnail
+                  src={getAsset('backFull')!.storageUrl}
                   label="Back"
                   isActive={activeView === 'backFull'}
                   onClick={() => setActiveView('backFull')}
-                  showLock={true}
+                  isHovered={hovered}
                 />
               )}
             </>
           ) : (
-            <AddButton 
-              label="Angles" 
+            <AddViewButton
+              visible={hovered}
               onClick={() => nextStage?.step === 3 && nextStage.action()}
-              disabled={!nextStage || nextStage.step !== 3}
             />
           )
-        ) : (
-          <>
-            {/* Locked placeholders with labels */}
-            <LockedPlaceholder label="Side" />
-            <LockedPlaceholder label="Walk" />
-            <LockedPlaceholder label="Back" />
-          </>
         )}
       </div>
     </div>
