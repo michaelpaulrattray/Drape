@@ -22,13 +22,13 @@
 
 | Phase | Description | Status | Checkpoint |
 |-------|-------------|--------|------------|
-| 3a | Types: ModelPreferences + Amendment + GenerationState.identityWarning | ✅ Done | (pending) |
-| 3b | Zustand stores: suggestions, amendments, identityWarning in generation store | ✅ Done | (pending) |
-| 3c | Hooks: useCastingGeneration wired to 5 new tRPC procedures | ✅ Done | (pending) |
-| 6 | Client: ControlPanel components + ethnicity blend UI | ⬜ Not started | — |
-| 7 | Client: ImageViewer + RefineBar + ViewStrip | ⬜ Not started | — |
-| 8 | Client: MasterPrompt panel + quick suggestions | ⬜ Not started | — |
-| 9 | Integration testing + polish | ⬜ Not started | — |
+| 3a | Types: ModelPreferences + Amendment + GenerationState.identityWarning | ✅ Done | 248c3513 |
+| 3b | Zustand stores: suggestions, amendments, identityWarning in generation store | ✅ Done | 248c3513 |
+| 3c | Hooks: useCastingGeneration wired to 5 new tRPC procedures | ✅ Done | 248c3513 |
+| 4 | Client: ControlPanel components + ethnicity blend UI | ⬜ Not started | — |
+| 5 | Client: ImageViewer + RefineBar + ViewStrip | ⬜ Not started | — |
+| 6 | Client: MasterPrompt panel + quick suggestions | ⬜ Not started | — |
+| 7 | Integration testing + polish | ⬜ Not started | — |
 
 ---
 
@@ -50,7 +50,7 @@
 | `server/casting/aiService.ts` | (re-export layer) | ✅ Phase 2d: All new functions re-exported |
 | `server/routes/generation/castingRefinement.ts` | (tRPC routes) | ✅ Phase 2d: 5 new procedures added |
 
-### Client Files (future phases)
+### Client Files
 
 | Current File | New Design Reference | Changes |
 |---|---|---|
@@ -67,14 +67,19 @@
 
 ### Existing Procedures (preserve)
 
-| Procedure | Auth | Description |
-|---|---|---|
-| `generation.castingImage` | protected | Generate headshot/iteration |
-| `generation.fullBody` | protected | Generate full body from headshot |
-| `generation.multiView` | protected | Generate side/back views |
-| `generation.singleView` | protected | Generate single view |
-| `generation.upscale` | protected | Upscale image |
-| `generation.enhancePrompt` | protected | Enhance user iteration text |
+| Procedure | Auth | Router File | Description |
+|---|---|---|---|
+| `generation.castingImage` | protected | castingImaging | Generate headshot from master prompt |
+| `generation.fullBody` | protected | castingImaging | Generate full body from headshot |
+| `generation.multiView` | protected | castingImaging | Generate side/back views |
+| `generation.generateAllViews` | protected | castingImaging | Generate all remaining views |
+| `generation.iterate` | protected | castingRefinement | Iterate/refine existing image |
+| `generation.upscale` | protected | castingRefinement | Upscale image |
+| `generation.proxyImage` | protected | castingRefinement | Proxy image URL for CORS |
+| `generation.enhance` | protected | castingRefinement | Enhance user iteration text |
+| `generation.history` | protected | castingExport | Get generation history |
+| `generation.generatePdf` | protected | castingExport | Generate PDF export |
+| `generation.mint` | protected | castingExport | Mint/finalize model |
 
 ### New Procedures (✅ Done — Phase 2d)
 
@@ -100,10 +105,11 @@ ethnicityBlend: { name: string; pct: number }[];
 ### useCastingGenerationStore additions
 
 ```typescript
-identityWarning: string | null;
-currentStep: string;
-suggestions: string[];
-amendments: Amendment[];
+suggestions: string[];                    // Quick variation chips from AI
+isLoadingSuggestions: boolean;            // Loading state for suggestion fetch
+amendments: Amendment[];                  // Iteration history log
+identityWarning: string | null;           // Warning from identity consistency check
+// Note: currentStep already existed inside genState (GenerationState) — not new
 ```
 
 ---
