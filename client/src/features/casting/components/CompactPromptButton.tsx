@@ -4,14 +4,14 @@ import { useCurrentMasterPrompt, useAmendments, useIdentityWarning } from '@/fea
 
 // ============ Types ============
 
-interface MasterPromptPanelProps {
+interface CompactPromptButtonProps {
   onCompact: () => void;
   isCompacting?: boolean;
 }
 
 // ============ Component ============
 
-export function MasterPromptPanel({ onCompact, isCompacting }: MasterPromptPanelProps) {
+export function CompactPromptButton({ onCompact, isCompacting }: CompactPromptButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const masterPrompt = useCurrentMasterPrompt();
   const amendments = useAmendments();
@@ -99,4 +99,4 @@ export function MasterPromptPanel({ onCompact, isCompacting }: MasterPromptPanel
   );
 }
 
-export default MasterPromptPanel;
+export default CompactPromptButton;

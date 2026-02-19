@@ -3872,3 +3872,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove dead exports from castingHelpers.tsx (ConnectorLine, BODY_ICONS, FACE_ICONS, LOADING_TIPS, CollapsibleSection, SelectControl, VisualOptionGrid)
 - [x] Verify zero TypeScript errors after cleanup
 - [x] Verify all tests pass after cleanup (1035/1035)
+
+## Naming Collision Fix
+- [x] Rename components/MasterPromptPanel.tsx to CompactPromptButton.tsx
+- [x] Update all imports referencing the old name
+- [x] Verify zero TypeScript errors and all tests pass (1035/1035)

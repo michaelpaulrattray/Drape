@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
 import HairColorWheel from "./components/HairColorWheel";
-import { MasterPromptPanel } from "./components/MasterPromptPanel";
+import { CompactPromptButton } from "./components/CompactPromptButton";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { generateRandomPreferences } from "./castingHelpers";
@@ -333,7 +333,7 @@ export function ControlPanel({
         {/* Master Prompt Panel */}
         {onCompactPrompt && (
           <div className="px-4 py-2">
-            <MasterPromptPanel onCompact={onCompactPrompt} isCompacting={isCompacting} />
+            <CompactPromptButton onCompact={onCompactPrompt} isCompacting={isCompacting} />
           </div>
         )}
       </div>
