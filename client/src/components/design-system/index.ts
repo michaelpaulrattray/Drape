@@ -1,8 +1,8 @@
 /**
- * FormaStudio™ Design System Components
+ * Drape™ Design System Components
  * 
  * This file exports all reusable UI components that follow the
- * FormaStudio design system. Import from this file for convenience.
+ * Drape design system. Import from this file for convenience.
  * 
  * @example
  * import { Section, Card, Button, SectionHeading } from "@/components/design-system";

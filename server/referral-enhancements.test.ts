@@ -78,7 +78,7 @@ describe("Klaviyo Referral Invite Email", () => {
     const result = await sendReferralInviteEmail({
       inviteeEmail: "friend@example.com",
       referrerName: "John Doe",
-      referralLink: "https://formastudio.ai?ref=FORMA-ABC123",
+      referralLink: "https://drape.ai?ref=DRAPE-ABC123",
       rewardCredits: 12500,
     });
 
@@ -86,7 +86,7 @@ describe("Klaviyo Referral Invite Email", () => {
     expect(mockSendReferralInviteEmail).toHaveBeenCalledWith({
       inviteeEmail: "friend@example.com",
       referrerName: "John Doe",
-      referralLink: "https://formastudio.ai?ref=FORMA-ABC123",
+      referralLink: "https://drape.ai?ref=DRAPE-ABC123",
       rewardCredits: 12500,
     });
   });
@@ -100,7 +100,7 @@ describe("Klaviyo Referral Invite Email", () => {
     const result = await sendReferralInviteEmail({
       inviteeEmail: "friend@example.com",
       referrerName: "John Doe",
-      referralLink: "https://formastudio.ai?ref=FORMA-ABC123",
+      referralLink: "https://drape.ai?ref=DRAPE-ABC123",
       rewardCredits: 12500,
     });
 

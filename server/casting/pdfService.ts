@@ -1,5 +1,5 @@
 /**
- * FormaStudio Premium Identity Document - PDF Generation Service
+ * Drape Premium Identity Document - PDF Generation Service
  * Generates a 7-page professional identity document for exported models
  */
 
@@ -61,7 +61,7 @@ const COLORS = {
   lightGray: [150, 150, 150] as [number, number, number],
   veryLightGray: [200, 200, 200] as [number, number, number],
   bgGray: [245, 245, 245] as [number, number, number],
-  accent: [255, 107, 53] as [number, number, number], // FormaStudio orange
+  accent: [255, 107, 53] as [number, number, number], // Drape orange
   white: [255, 255, 255] as [number, number, number],
 };
 
@@ -163,7 +163,7 @@ function createCoverPage(doc: jsPDF, data: PdfModelData) {
   doc.setFont('courier', 'normal');
   doc.setFontSize(6);
   doc.setTextColor(60, 60, 60);
-  doc.text('FORMASTUDIO(TM)  -  ORGANIC CASTING ENGINE v3.1  -  DIGITALLY CERTIFIED', 105, 290, { align: 'center' });
+  doc.text('DRAPE(TM)  -  ORGANIC CASTING ENGINE v3.1  -  DIGITALLY CERTIFIED', 105, 290, { align: 'center' });
 }
 
 // Page 2: Composite Card
@@ -562,7 +562,7 @@ function createCertificatePage(doc: jsPDF, data: PdfModelData, pageNum: number, 
   
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7);
-  doc.text('FORMASTUDIO', 155, 272, { align: 'center' });
+  doc.text('DRAPE', 155, 272, { align: 'center' });
   
   // Footer note
   doc.setFont('courier', 'normal');
@@ -713,7 +713,7 @@ function createLegalPage(doc: jsPDF, data: PdfModelData, pageNum: number, totalP
     ['PERMITTED USES', 'The Owner may use this digital identity for: advertising and marketing campaigns, editorial content and publications, social media and digital platforms, merchandise and product visualization, film, television, and video production, virtual and augmented reality applications, and any derivative works.'],
     ['RESTRICTIONS', 'This digital identity may not be used to: create defamatory, illegal, or harmful content, impersonate real individuals without consent, generate content that violates applicable laws, or claim the identity represents a real human being in contexts where such representation would be misleading.'],
     ['AUTHENTICITY DECLARATION', 'This identity is a procedurally generated digital composite created using artificial intelligence. It does not represent any real person, living or deceased. The unique characteristics of this identity are the result of algorithmic generation and do not infringe upon any individual\'s likeness rights.'],
-    ['PROVENANCE', 'This identity was generated and minted through FormaStudio(TM) Organic Casting Engine. The generation parameters, timestamps, and cryptographic signatures are permanently recorded and can be verified against the FormaStudio(TM) registry.'],
+    ['PROVENANCE', 'This identity was generated and minted through Drape(TM) Organic Casting Engine. The generation parameters, timestamps, and cryptographic signatures are permanently recorded and can be verified against the Drape(TM) registry.'],
   ];
   
   let y = 40;
@@ -748,14 +748,14 @@ function createLegalPage(doc: jsPDF, data: PdfModelData, pageNum: number, totalP
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(...COLORS.lightGray);
-  doc.text('Digital Signature (FormaStudio(TM))', margin + 37.5, 252, { align: 'center' });
+  doc.text('Digital Signature (Drape(TM))', margin + 37.5, 252, { align: 'center' });
   doc.text('Date of Issue', 157.5, 252, { align: 'center' });
   
   // Fill values
   doc.setFont('courier', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(...COLORS.black);
-  doc.text('FORMASTUDIO(TM) CERTIFIED', margin + 37.5, 242, { align: 'center' });
+  doc.text('DRAPE(TM) CERTIFIED', margin + 37.5, 242, { align: 'center' });
   doc.text(new Date().toISOString().split('T')[0], 157.5, 242, { align: 'center' });
   
   // Footer
@@ -767,7 +767,7 @@ function addPageFooter(doc: jsPDF, pageNum: number, totalPages: number, agencyId
   doc.setFont('courier', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(...COLORS.mediumGray);
-  doc.text(`Page ${pageNum} of ${totalPages}  -  ${agencyId}  -  FORMASTUDIO(TM) IDENTITY DOCUMENT`, 105, 287, { align: 'center' });
+  doc.text(`Page ${pageNum} of ${totalPages}  -  ${agencyId}  -  DRAPE(TM) IDENTITY DOCUMENT`, 105, 287, { align: 'center' });
 }
 
 /**

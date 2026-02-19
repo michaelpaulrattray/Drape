@@ -6,7 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 
-const LOGO_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png";
+const LOGO_URL = "/drape-logo-white.svg";
 const DEFAULT_AVATAR = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lkbGgJQVyIVaJXfM.png";
 const DEFAULT_BANNER = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lkbGgJQVyIVaJXfM.png";
 
@@ -48,7 +48,7 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
             <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
             <img
               src={LOGO_URL}
-              alt="Forma®"
+              alt="Drape"
               className="w-6 h-6"
             />
           </button>

@@ -89,7 +89,7 @@ function ErrorBanner({ errorType, lockMinutes }: { errorType: string; lockMinute
           </p>
           {errorType === "suspended" && (
             <a
-              href="mailto:support@formastudio.ai"
+              href="mailto:support@drape.ai"
               className="inline-flex items-center gap-1 text-sm font-medium text-[#0A0A0A] hover:text-[#0A0A0A]/70 mt-2 transition-colors duration-300"
             >
               Contact Support <ArrowRight className="w-3 h-3" />
@@ -236,11 +236,11 @@ function AspirationPanel() {
 
 // ─── Helper: set beta code cookie ──────────────────────────────────────────
 function setBetaCodeCookie(code: string) {
-  document.cookie = `forma_beta_code=${encodeURIComponent(code)};path=/;max-age=600;SameSite=Lax`;
+  document.cookie = `drape_beta_code=${encodeURIComponent(code)};path=/;max-age=600;SameSite=Lax`;
 }
 
 function clearBetaCodeCookie() {
-  document.cookie = "forma_beta_code=;path=/;max-age=0;SameSite=Lax";
+  document.cookie = "drape_beta_code=;path=/;max-age=0;SameSite=Lax";
 }
 
 // ─── OAuth buttons block (shared between new-user-oauth and returning-user) ──
@@ -348,9 +348,9 @@ export default function Login() {
         <div className="flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2">
             <img
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png"
-              alt="Forma®"
-              className="w-[31px] h-[31px]"
+              src="/drape-logo.svg"
+              alt="Drape"
+              className="h-6 w-auto"
             />
           </Link>
           <Link href="/" className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300">
@@ -439,7 +439,7 @@ export default function Login() {
                       type="text"
                       value={accessCode}
                       onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-                      placeholder="FORMA-XXXXX"
+                      placeholder="DRAPE-XXXXX"
                       maxLength={64}
                       disabled={validateMutation.isPending}
                       autoFocus

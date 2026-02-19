@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* FormaStudio™ Design System */
+/* Drape™ Design System */
 @import "./styles/tokens.css";
 @import "./styles/animations.css";
 
@@ -164,7 +164,7 @@ html {
 }
 
 /* ============ SOFT BLUE-GRAY PALETTE ============ */
-/* Inspired by neumorphic design - distinctive FormaStudio look */
+/* Inspired by neumorphic design - distinctive Drape look */
 
 /* Primary accent - Slate blue-gray */
 .bg-slate-accent {

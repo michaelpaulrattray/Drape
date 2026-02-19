@@ -35,7 +35,7 @@ export const referralRouter = router({
       });
     }
 
-    const baseUrl = ctx.req.headers.origin || "https://formastudio.ai";
+    const baseUrl = ctx.req.headers.origin || "https://drape.ai";
     const referralLink = `${baseUrl}?ref=${code}`;
 
     return {
@@ -112,13 +112,13 @@ export const referralRouter = router({
       }
 
       // Send email via Klaviyo (non-blocking — invite is recorded regardless)
-      const baseUrl = ctx.req.headers.origin || "https://formastudio.ai";
+      const baseUrl = ctx.req.headers.origin || "https://drape.ai";
       const code = await getOrCreateReferralCode(ctx.user.id, ip);
       const referralLink = code ? `${baseUrl}?ref=${code}` : baseUrl;
 
       sendReferralInviteEmail({
         inviteeEmail: input.email,
-        referrerName: ctx.user.name || "A FormaStudio user",
+        referrerName: ctx.user.name || "A Drape user",
         referralLink,
         rewardCredits: REFERRAL_REWARD_CREDITS,
       }).catch((err) => {

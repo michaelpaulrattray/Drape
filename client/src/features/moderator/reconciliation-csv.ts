@@ -52,7 +52,7 @@ export function buildReconciliationCsv(
   const lines: string[] = [];
 
   // ── Report Header ──
-  lines.push(row("FormaStudio — Credit Reconciliation Report"));
+  lines.push(row("Drape — Credit Reconciliation Report"));
   lines.push(row("Generated", new Date().toISOString()));
   lines.push(row("User ID", userId));
   lines.push(row("Date Range", startDate || "All time", endDate || "Present"));

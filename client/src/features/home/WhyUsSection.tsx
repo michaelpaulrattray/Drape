@@ -100,7 +100,7 @@ export function WhyUsSection() {
             <div>
               <h3 className="text-xl font-semibold text-[#0A0A0A] mb-2">Join the waitlist</h3>
               <p className="text-sm text-[#757575] leading-relaxed">
-                Be among the first creative directors to access FormaStudio. Early members get priority access and founding pricing.
+                Be among the first creative directors to access Drape. Early members get priority access and founding pricing.
               </p>
             </div>
             {/* Bottom: Email form */}
@@ -151,7 +151,7 @@ export function WhyUsSection() {
               className="absolute inset-0 w-full h-full object-cover opacity-60 grayscale"
             />
             <div className="relative z-10 p-6 text-right">
-              <span className="text-white/80 text-lg font-medium mr-20">Forma®</span>
+              <span className="text-white/80 text-lg font-medium mr-20">Drape</span>
             </div>
             <div className="relative z-10 p-6">
               <h3 className="text-2xl font-semibold text-white leading-tight">From casting to campaigns.</h3>

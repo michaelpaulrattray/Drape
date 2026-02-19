@@ -86,7 +86,7 @@ export function AboutSection() {
           <SectionLabel label="About us" number="01" />
         </motion.div>
 
-        {/* Two-tone Headline - Forma Style with font-medium, smaller size */}
+        {/* Two-tone Headline - Drape Style with font-medium, smaller size */}
         <motion.h2 
           initial="hidden"
           whileInView="visible"
@@ -112,7 +112,7 @@ export function AboutSection() {
           
           {/* Description - Right aligned */}
           <p className="shrink-0 text-sm sm:text-base text-gray-muted sm:text-right w-full sm:w-[380px]">
-            FormaStudio replaces prompt engineering with a visual-first creative process. You cast a model, refine their look, and produce campaign-ready assets — all with identity persistence locked in.
+            Drape replaces prompt engineering with a visual-first creative process. You cast a model, refine their look, and produce campaign-ready assets — all with identity persistence locked in.
           </p>
         </motion.div>
 
@@ -218,9 +218,9 @@ export function AboutSection() {
             )}
           </AnimatePresence>
 
-          {/* Forma branding at bottom */}
+          {/* Drape branding at bottom */}
           <div className="absolute bottom-4 left-0 right-0 text-center z-20">
-            <span className="text-white text-base font-medium">© 2026 Forma®</span>
+            <span className="text-white text-base font-medium">© 2026 Drape</span>
           </div>
         </motion.div>
       </div>

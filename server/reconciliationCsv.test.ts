@@ -53,7 +53,7 @@ function buildReconciliationCsv(
 ): string {
   const lines: string[] = [];
 
-  lines.push(row("FormaStudio — Credit Reconciliation Report"));
+  lines.push(row("Drape — Credit Reconciliation Report"));
   lines.push(row("Generated", new Date().toISOString()));
   lines.push(row("User ID", userId));
   lines.push(row("Date Range", startDate || "All time", endDate || "Present"));
@@ -163,7 +163,7 @@ describe("Reconciliation CSV Export", () => {
     const csv = buildReconciliationCsv(makeSampleData(), 42);
     const lines = csv.trim().split("\n");
 
-    expect(lines[0]).toContain("FormaStudio");
+    expect(lines[0]).toContain("Drape");
     expect(lines[2]).toBe("User ID,42");
     expect(lines[3]).toContain("All time");
     expect(lines[3]).toContain("Present");

@@ -125,7 +125,7 @@ export function Footer() {
           variants={fadeInUp}
           className="text-[clamp(1.75rem,10vw,8rem)] font-bold tracking-tighter mb-8 sm:mb-16 text-surface"
         >
-          Forma® Studio
+          Drape
         </motion.h2>
 
         <motion.div 
@@ -141,7 +141,7 @@ export function Footer() {
               We're building the next generation of AI-powered creative tools. Have questions, want early access, or just want to say hello?
             </p>
             <div className="space-y-2">
-              <FooterLink href="mailto:hello@formastudio.ai" className="underline underline-offset-4">hello@formastudio.ai</FooterLink>
+              <FooterLink href="mailto:hello@drape.ai" className="underline underline-offset-4">hello@drape.ai</FooterLink>
             </div>
           </div>
 
@@ -231,7 +231,7 @@ export function Footer() {
           variants={fadeIn}
           className="flex items-center justify-between pt-8 border-t border-white/10 text-sm text-white/40"
         >
-          <span>© 2026 FormaStudio™. All rights reserved.</span>
+          <span>© 2026 Drape™. All rights reserved.</span>
         </motion.div>
       </div>
     </footer>

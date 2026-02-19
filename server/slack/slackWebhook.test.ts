@@ -42,7 +42,7 @@ describe("Slack Webhook Configuration", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        text: "🧪 FormaStudio Slack Integration Test - Configuration Verified",
+        text: "🧪 Drape Slack Integration Test - Configuration Verified",
       }),
     });
 

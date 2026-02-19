@@ -1,5 +1,5 @@
 /**
- * FormaStudio™ Motion Presets
+ * Drape™ Motion Presets
  * 
  * This file contains all Framer Motion variants, easing curves, and animation
  * presets extracted from Home.tsx. Use these presets to ensure consistent

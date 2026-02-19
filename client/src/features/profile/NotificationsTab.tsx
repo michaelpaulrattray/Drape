@@ -12,7 +12,7 @@ export function NotificationsTab() {
           {[
             { label: "Generation complete", description: "Get notified when your AI generations are ready", enabled: true },
             { label: "Weekly digest", description: "Summary of your activity and new features", enabled: false },
-            { label: "Marketing updates", description: "News about FormaStudio and special offers", enabled: false },
+            { label: "Marketing updates", description: "News about Drape and special offers", enabled: false },
           ].map((item, idx) => (
             <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200">
               <div>

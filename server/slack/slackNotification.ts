@@ -154,7 +154,7 @@ export function verifySlackSignature(
  */
 export async function sendTestSlackAlert(): Promise<boolean> {
   return sendSlackAlert({
-    title: "Test Alert - FormaStudio Security",
+    title: "Test Alert - Drape Security",
     description: "This is a test alert to verify your Slack integration is working correctly.",
     severity: "info",
     fields: [

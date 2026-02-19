@@ -214,13 +214,13 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-[#0A0A0A] flex items-center justify-center">
               <img 
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
-                alt="Forma Studio" 
-                className="w-5 h-5 invert opacity-90"
+                src="/drape-logo-white.svg" 
+                alt="Drape" 
+                className="h-5 w-auto opacity-90"
               />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-[#0A0A0A] tracking-tight">FormaStudio</h1>
+              <h1 className="text-lg font-semibold text-[#0A0A0A] tracking-tight">Drape</h1>
               <p className="text-xs text-[#757575]">Creative Suite</p>
             </div>
           </div>
@@ -402,12 +402,12 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#0A0A0A] flex items-center justify-center">
               <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png"
-                alt="Forma Studio"
-                className="w-4 h-4 invert opacity-90"
+                src="/drape-logo-white.svg"
+                alt="Drape"
+                className="h-4 w-auto opacity-90"
               />
             </div>
-            <span className="text-sm font-semibold text-[#0A0A0A] tracking-tight">FormaStudio</span>
+            <span className="text-sm font-semibold text-[#0A0A0A] tracking-tight">Drape</span>
           </div>
           <button
             onClick={() => setIsSettingsOpen(true)}

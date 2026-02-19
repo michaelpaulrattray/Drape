@@ -467,7 +467,7 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
           <p className="text-sm text-[#757575]">
             Having a problem?{" "}
             <a
-              href="mailto:support@formastudio.app"
+              href="mailto:support@drape.app"
               className="underline hover:text-[#0A0A0A] transition-colors"
             >
               Go to Help center

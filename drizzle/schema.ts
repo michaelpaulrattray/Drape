@@ -2,7 +2,7 @@ import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json } f
 
 /**
  * Core user table backing auth flow.
- * Extended with role-based access control for FormaStudio.
+ * Extended with role-based access control for Drape.
  */
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -29,7 +29,7 @@ export const users = mysqlTable("users", {
   frozenReason: text("frozenReason"), // Reason for freeze (e.g., "Credit discrepancy of 206 credits detected")
   frozenBy: varchar("frozenBy", { length: 64 }), // "system" for auto-freeze, or moderator user ID
   // Referral system
-  referralCode: varchar("referralCode", { length: 16 }).unique(), // Auto-generated unique code (e.g., FORMA-A3K9X2)
+  referralCode: varchar("referralCode", { length: 16 }).unique(), // Auto-generated unique code (e.g., DRAPE-A3K9X2)
   referredByUserId: int("referredByUserId"), // User ID who referred this user
   // Pre-launch access gating
   approved: boolean("approved").default(false).notNull(), // Whether user has been approved for access (false = waitlisted)
@@ -538,7 +538,7 @@ export type InsertAnnouncement = typeof announcements.$inferInsert;
 
 export const inviteCodes = mysqlTable("invite_codes", {
   id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 64 }).notNull().unique(), // e.g., FORMA-EARLYBIRD-A3K9
+  code: varchar("code", { length: 64 }).notNull().unique(), // e.g., DRAPE-EARLYBIRD-A3K9
   createdBy: int("createdBy").notNull(), // Admin who created the code
   maxUses: int("maxUses").default(1).notNull(), // How many times this code can be used
   currentUses: int("currentUses").default(0).notNull(), // How many times it's been used

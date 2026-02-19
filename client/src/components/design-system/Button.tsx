@@ -1,7 +1,7 @@
 /**
  * Button Component
  * 
- * Primary button component with the signature FormaStudio conveyor belt
+ * Primary button component with the signature Drape conveyor belt
  * hover animation. Supports multiple variants, sizes, and icon options.
  * 
  * @example

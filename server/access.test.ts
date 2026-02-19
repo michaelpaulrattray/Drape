@@ -165,7 +165,7 @@ describe("access.redeem", () => {
     // This will call the real redeemInviteCode which hits DB,
     // but the test validates the route is wired correctly
     try {
-      await caller.access.redeem({ code: "FORMA-TEST1" });
+      await caller.access.redeem({ code: "DRAPE-TEST1" });
     } catch {
       // May fail due to DB not being available in test env — that's OK
       // The important thing is it doesn't throw a validation error

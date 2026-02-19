@@ -2,7 +2,7 @@
  * Grid Component
  * 
  * Flexible grid layout component with preset configurations for common
- * layouts used throughout FormaStudio.
+ * layouts used throughout Drape.
  * 
  * @example
  * <Grid cols={3} gap="md">

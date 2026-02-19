@@ -36,7 +36,7 @@ function generateRandomCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const seg = () =>
     Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `FORMA-${seg()}-${seg()}`;
+  return `DRAPE-${seg()}-${seg()}`;
 }
 
 function formatDate(d: string | Date | null): string {
@@ -145,7 +145,7 @@ export default function AdminInviteCodes() {
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="FORMA-XXXX-XXXX"
+                placeholder="DRAPE-XXXX-XXXX"
                 className="flex-1 h-10 px-3 rounded-full border border-[#D5D5D5] bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]/20"
                 required
                 maxLength={32}

@@ -164,9 +164,9 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
         <div className="px-6 pt-6 pb-2">
           <div className="mb-3">
             <img
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png"
-              alt="FormaStudio"
-              className="w-10 h-10 mb-4"
+              src="/drape-logo.svg"
+              alt="Drape"
+              className="h-8 w-auto mb-4"
             />
             <h2 className="text-xl font-semibold text-[#0A0A0A] tracking-tight">
               Add more credits

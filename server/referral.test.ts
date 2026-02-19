@@ -50,16 +50,16 @@ describe("Referral System", () => {
 
   describe("Referral Code Generation", () => {
     it("should return existing referral code if user already has one", async () => {
-      mockGetOrCreateReferralCode.mockResolvedValue("FORMA-ABC123");
+      mockGetOrCreateReferralCode.mockResolvedValue("DRAPE-ABC123");
       const code = await getOrCreateReferralCode(1);
-      expect(code).toBe("FORMA-ABC123");
+      expect(code).toBe("DRAPE-ABC123");
       expect(mockGetOrCreateReferralCode).toHaveBeenCalledWith(1);
     });
 
     it("should generate a new referral code with IP tracking", async () => {
-      mockGetOrCreateReferralCode.mockResolvedValue("FORMA-XYZ789");
+      mockGetOrCreateReferralCode.mockResolvedValue("DRAPE-XYZ789");
       const code = await getOrCreateReferralCode(1, "192.168.1.1");
-      expect(code).toBe("FORMA-XYZ789");
+      expect(code).toBe("DRAPE-XYZ789");
       expect(mockGetOrCreateReferralCode).toHaveBeenCalledWith(1, "192.168.1.1");
     });
 
@@ -71,9 +71,9 @@ describe("Referral System", () => {
   });
 
   describe("Referral Code Format Validation", () => {
-    it("should validate correct FORMA-XXXXXX format", () => {
+    it("should validate correct DRAPE-XXXXXX format", () => {
       mockIsValidReferralCodeFormat.mockReturnValue(true);
-      expect(isValidReferralCodeFormat("FORMA-A3K9X2")).toBe(true);
+      expect(isValidReferralCodeFormat("DRAPE-A3K9X2")).toBe(true);
     });
 
     it("should reject invalid format", () => {
@@ -83,7 +83,7 @@ describe("Referral System", () => {
 
     it("should reject codes with confusing characters (I/O/0/1)", () => {
       mockIsValidReferralCodeFormat.mockReturnValue(false);
-      expect(isValidReferralCodeFormat("FORMA-IOO101")).toBe(false);
+      expect(isValidReferralCodeFormat("DRAPE-IOO101")).toBe(false);
     });
   });
 
@@ -94,14 +94,14 @@ describe("Referral System", () => {
         name: "John Doe",
         email: "john@example.com",
       });
-      const user = await getUserByReferralCode("FORMA-ABC123");
+      const user = await getUserByReferralCode("DRAPE-ABC123");
       expect(user).not.toBeNull();
       expect(user!.id).toBe(1);
     });
 
     it("should return null for invalid code", async () => {
       mockGetUserByReferralCode.mockResolvedValue(null);
-      const user = await getUserByReferralCode("FORMA-INVALID");
+      const user = await getUserByReferralCode("DRAPE-INVALID");
       expect(user).toBeNull();
     });
   });
@@ -109,9 +109,9 @@ describe("Referral System", () => {
   describe("Referral Claiming (URL param flow)", () => {
     it("should successfully claim a valid referral code with IP", async () => {
       mockClaimReferral.mockResolvedValue({ success: true });
-      const result = await claimReferral(2, "FORMA-ABC123", "10.0.0.1");
+      const result = await claimReferral(2, "DRAPE-ABC123", "10.0.0.1");
       expect(result.success).toBe(true);
-      expect(mockClaimReferral).toHaveBeenCalledWith(2, "FORMA-ABC123", "10.0.0.1");
+      expect(mockClaimReferral).toHaveBeenCalledWith(2, "DRAPE-ABC123", "10.0.0.1");
     });
 
     it("should reject self-referral", async () => {
@@ -119,7 +119,7 @@ describe("Referral System", () => {
         success: false,
         error: "Cannot use your own referral code",
       });
-      const result = await claimReferral(1, "FORMA-OWN123");
+      const result = await claimReferral(1, "DRAPE-OWN123");
       expect(result.success).toBe(false);
       expect(result.error).toContain("own referral code");
     });
@@ -129,7 +129,7 @@ describe("Referral System", () => {
         success: false,
         error: "You have already used a referral code",
       });
-      const result = await claimReferral(2, "FORMA-DUP123");
+      const result = await claimReferral(2, "DRAPE-DUP123");
       expect(result.success).toBe(false);
       expect(result.error).toContain("already used");
     });
@@ -148,7 +148,7 @@ describe("Referral System", () => {
   describe("Referral Redemption (modal flow)", () => {
     it("should redeem a valid code", async () => {
       mockRedeemReferralCode.mockResolvedValue({ success: true });
-      const result = await redeemReferralCode(2, "FORMA-ABC123", "10.0.0.1");
+      const result = await redeemReferralCode(2, "DRAPE-ABC123", "10.0.0.1");
       expect(result.success).toBe(true);
     });
 
@@ -157,7 +157,7 @@ describe("Referral System", () => {
         success: false,
         error: "Invalid referral code",
       });
-      const result = await redeemReferralCode(2, "FORMA-NOPE99");
+      const result = await redeemReferralCode(2, "DRAPE-NOPE99");
       expect(result.success).toBe(false);
     });
   });
@@ -244,14 +244,14 @@ describe("Referral System", () => {
         completedReferrals: 3,
         totalCreditsEarned: 37500,
         lifetimeCap: 250000,
-        referralCode: "FORMA-ABC123",
+        referralCode: "DRAPE-ABC123",
       });
       const stats = await getReferralStats(1);
       expect(stats.totalReferrals).toBe(5);
       expect(stats.completedReferrals).toBe(3);
       expect(stats.totalCreditsEarned).toBe(37500);
       expect(stats.lifetimeCap).toBe(250000);
-      expect(stats.referralCode).toBe("FORMA-ABC123");
+      expect(stats.referralCode).toBe("DRAPE-ABC123");
     });
 
     it("should return zero stats for user with no referrals", async () => {
@@ -360,7 +360,7 @@ describe("Referral System", () => {
     });
 
     it("should allow custom domains", () => {
-      expect(isDisposableEmail("mike@formastudio.ai")).toBe(false);
+      expect(isDisposableEmail("mike@drape.ai")).toBe(false);
     });
 
     it("should be case-insensitive", () => {
@@ -372,7 +372,7 @@ describe("Referral System", () => {
     it("should flag referrals from same IP but still allow claim", async () => {
       // Same IP within 24hrs = soft flag, NOT auto-block
       mockClaimReferral.mockResolvedValue({ success: true });
-      const result = await claimReferral(2, "FORMA-ABC123", "192.168.1.1");
+      const result = await claimReferral(2, "DRAPE-ABC123", "192.168.1.1");
       expect(result.success).toBe(true);
     });
 

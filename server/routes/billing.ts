@@ -98,7 +98,7 @@ export const billingRouter = router({
       const subscription = await getSubscriptionByUserId(ctx.user.id);
       const customerId = await getOrCreateStripeCustomer(
         ctx.user.id,
-        user.email || `user-${ctx.user.id}@formastudio.app`,
+        user.email || `user-${ctx.user.id}@drape.app`,
         user.displayName || user.name || undefined,
         subscription?.stripeCustomerId
       );
@@ -110,7 +110,7 @@ export const billingRouter = router({
 
       // Create checkout session
       const baseUrl = process.env.NODE_ENV === "production" 
-        ? "https://formastudio.app" 
+        ? "https://drape.app" 
         : "http://localhost:3000";
       
       const checkoutUrl = await createSubscriptionCheckoutSession(
@@ -151,7 +151,7 @@ export const billingRouter = router({
     }
 
     const baseUrl = process.env.NODE_ENV === "production" 
-      ? "https://formastudio.app" 
+      ? "https://drape.app" 
       : "http://localhost:3000";
 
     const portalUrl = await createCustomerPortalSession(

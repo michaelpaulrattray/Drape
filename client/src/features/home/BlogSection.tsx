@@ -33,7 +33,7 @@ export function BlogSection() {
           </Button>
         </motion.div>
 
-        {/* Blog Grid - Forma style: Featured (50%) + Two cards side by side (25% each) */}
+        {/* Blog Grid - Drape style: Featured (50%) + Two cards side by side (25% each) */}
         <motion.div 
           initial="hidden"
           whileInView="visible"

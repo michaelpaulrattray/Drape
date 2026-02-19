@@ -1,7 +1,7 @@
 /**
  * Card Component
  * 
- * Flexible card component with multiple variants matching the FormaStudio
+ * Flexible card component with multiple variants matching the Drape
  * design system. Supports outer (gray surface) and inner (white) styles,
  * as well as project card with image hover effects.
  * 

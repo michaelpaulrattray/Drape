@@ -334,8 +334,8 @@ export async function sendAccountFrozenEmail(params: {
       month: "long",
       day: "numeric",
     }),
-    support_url: params.supportUrl || "https://formastudio.ai/support",
-    app_name: "FormaStudio",
+    support_url: params.supportUrl || "https://drape.ai/support",
+    app_name: "Drape",
   });
 }
 

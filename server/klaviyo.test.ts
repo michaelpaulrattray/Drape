@@ -161,8 +161,8 @@ describe("Klaviyo Integration", () => {
       expect(eventBody.data.attributes.properties.user_name).toBe("Test User");
       expect(eventBody.data.attributes.properties.freeze_reason).toContain("credit discrepancy");
       expect(eventBody.data.attributes.properties.frozen_by).toBe("system");
-      expect(eventBody.data.attributes.properties.app_name).toBe("FormaStudio");
-      expect(eventBody.data.attributes.properties.support_url).toBe("https://formastudio.ai/support");
+      expect(eventBody.data.attributes.properties.app_name).toBe("Drape");
+      expect(eventBody.data.attributes.properties.support_url).toBe("https://drape.ai/support");
     });
 
     it("should use custom support URL when provided", async () => {
@@ -182,11 +182,11 @@ describe("Klaviyo Integration", () => {
         userName: "Test User",
         freezeReason: "Manual freeze",
         frozenBy: "Moderator Jane",
-        supportUrl: "https://formastudio.ai/help",
+        supportUrl: "https://drape.ai/help",
       });
 
       const eventBody = JSON.parse(mockFetch.mock.calls[1][1].body);
-      expect(eventBody.data.attributes.properties.support_url).toBe("https://formastudio.ai/help");
+      expect(eventBody.data.attributes.properties.support_url).toBe("https://drape.ai/help");
       expect(eventBody.data.attributes.properties.frozen_by).toBe("Moderator Jane");
     });
 

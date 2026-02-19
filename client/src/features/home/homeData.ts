@@ -167,23 +167,23 @@ export const processSteps: ProcessStep[] = [
 ];
 
 export const testimonials: Testimonial[] = [
-  { quote: "FormaStudio understood our brand better than we did. Their ability to generate the perfect model identities is what sets them apart.", name: "Sofia Ford", title: "Creative Director", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80" },
-  { quote: "Working with FormaStudio felt effortless. They have a rare ability to take complex briefs and distill them into something beautifully simple.", name: "Emma V.", title: "Founder", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80" },
-  { quote: "FormaStudio doesn't just generate images—they listen, interpret, and then create with precision.", name: "Julian M.", title: "Creative Director", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80" },
+  { quote: "Drape understood our brand better than we did. Their ability to generate the perfect model identities is what sets them apart.", name: "Sofia Ford", title: "Creative Director", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80" },
+  { quote: "Working with Drape felt effortless. They have a rare ability to take complex briefs and distill them into something beautifully simple.", name: "Emma V.", title: "Founder", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80" },
+  { quote: "Drape doesn't just generate images—they listen, interpret, and then create with precision.", name: "Julian M.", title: "Creative Director", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80" },
 ];
 
 export const faqs: FAQ[] = [
-  { question: "What is FormaStudio?", answer: "FormaStudio is a studio-grade AI creative suite that lets you cast, style, and shoot with consistent model identities — without prompt engineering. Prompts run in the background while you work visually." },
-  { question: "Who is FormaStudio built for?", answer: "Creative directors, agency owners, brand content teams, and e-commerce marketers who need high-fidelity, repeatable campaign imagery without the friction of traditional AI tools." },
-  { question: "How does pricing work?", answer: "FormaStudio uses a points-based system tied to generation output — think of it as production capacity. Plans scale with your team's usage. No hourly billing, no per-seat surprises." },
+  { question: "What is Drape?", answer: "Drape is a studio-grade AI creative suite that lets you cast, style, and shoot with consistent model identities — without prompt engineering. Prompts run in the background while you work visually." },
+  { question: "Who is Drape built for?", answer: "Creative directors, agency owners, brand content teams, and e-commerce marketers who need high-fidelity, repeatable campaign imagery without the friction of traditional AI tools." },
+  { question: "How does pricing work?", answer: "Drape uses a points-based system tied to generation output — think of it as production capacity. Plans scale with your team's usage. No hourly billing, no per-seat surprises." },
   { question: "What can I create right now?", answer: "The Casting Studio is live — you can build a high-fidelity model identity from scratch using visual controls. Wardrobe Studio and Campaign Production tools are coming soon." },
   { question: "Do I own what I create?", answer: "Yes. Every model you cast comes with a casting sheet, unique identifiers, and exportable ownership documentation designed for commercial use and client handoff." },
-  { question: "How is this different from other AI image tools?", answer: "Most tools require prompt engineering or node-based workflows. FormaStudio replaces both with guided visual controls and maintains a persistent model identity across every tool in the suite." },
+  { question: "How is this different from other AI image tools?", answer: "Most tools require prompt engineering or node-based workflows. Drape replaces both with guided visual controls and maintains a persistent model identity across every tool in the suite." },
   { question: "When will the full suite be available?", answer: "We're rolling out tools progressively. Join the waitlist to get priority access as each studio launches." },
 ];
 
 export const blogPosts: BlogPost[] = [
   { date: "Feb 1, 2026", title: "Why Identity Persistence Changes Everything", excerpt: "Most AI tools generate one-off images. Here's why a reusable model identity is the missing primitive in creative production.", category: "Insights", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" },
-  { date: "Jan 25, 2026", title: "No Prompts. No Node Graphs. A Third Path.", excerpt: "The AI creative tool market has split into prompt boxes and node-based systems. FormaStudio offers a visual-first alternative.", category: "Technology", image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80" },
-  { date: "Jan 18, 2026", title: "From Casting to Campaigns: The FormaStudio Workflow", excerpt: "How a single model identity flows through casting, wardrobe, and photo production — with consistency locked in.", category: "Strategy", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80" },
+  { date: "Jan 25, 2026", title: "No Prompts. No Node Graphs. A Third Path.", excerpt: "The AI creative tool market has split into prompt boxes and node-based systems. Drape offers a visual-first alternative.", category: "Technology", image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80" },
+  { date: "Jan 18, 2026", title: "From Casting to Campaigns: The Drape Workflow", excerpt: "How a single model identity flows through casting, wardrobe, and photo production — with consistency locked in.", category: "Strategy", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80" },
 ];

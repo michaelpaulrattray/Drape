@@ -73,7 +73,7 @@ export function RedeemCodeModal({ open, onClose }: RedeemCodeModalProps) {
         {/* Input */}
         <div className="px-6 pb-4">
           <Input
-            placeholder="FORMA-XXXXXX"
+            placeholder="DRAPE-XXXXXX"
             value={code}
             onChange={(e) => {
               setCode(e.target.value.toUpperCase());

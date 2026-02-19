@@ -94,9 +94,9 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2">
             <img 
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png" 
-              alt="Forma®" 
-              className="w-[31px] h-[31px]"
+              src="/drape-logo.svg" 
+              alt="Drape" 
+              className="h-6 w-auto"
             />
           </Link>
           <span className="text-sm hidden sm:inline text-gray-secondary">{formattedTime}</span>
@@ -194,7 +194,7 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
                   <a href="#" className="text-sm text-[#757575] hover:text-[#0A0A0A] transition-colors">Instagram</a>
                   <a href="#" className="text-sm text-[#757575] hover:text-[#0A0A0A] transition-colors">LinkedIn</a>
                 </div>
-                <p className="text-xs text-[#757575] mt-4">hello@formastudio.ai</p>
+                <p className="text-xs text-[#757575] mt-4">hello@drape.ai</p>
               </div>
             </nav>
           </motion.div>
@@ -276,12 +276,12 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
                   <div className="relative w-full rounded-lg overflow-hidden h-mega-menu-image">
                     <img 
                       src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" 
-                      alt="FormaStudio™" 
+                      alt="Drape™" 
                       className="w-full h-full object-cover grayscale"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     <div className="absolute top-4 right-4">
-                      <span className="text-white font-medium text-sm">FormaStudio™</span>
+                      <span className="text-white font-medium text-sm">Drape™</span>
                     </div>
                     <div className="absolute bottom-4 left-4">
                       <span className="text-white/70 text-xs">© 2025 All rights reserved</span>
@@ -298,10 +298,10 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
                 className="pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
               >
                 <div className="flex flex-col gap-0.5">
-                  <a href="mailto:hello@formastudio.ai" className="group overflow-hidden">
+                  <a href="mailto:hello@drape.ai" className="group overflow-hidden">
                     <span className="overflow-hidden h-5 block">
-                      <span className="block text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">hello@formastudio.ai</span>
-                      <span className="block text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">hello@formastudio.ai</span>
+                      <span className="block text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">hello@drape.ai</span>
+                      <span className="block text-[#0A0A0A] font-medium transition-transform duration-500 ease-out group-hover:-translate-y-full">hello@drape.ai</span>
                     </span>
                   </a>
                   <a href="tel:+11234567890" className="group overflow-hidden">

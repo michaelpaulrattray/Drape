@@ -60,7 +60,7 @@ export function BillingTab({
 
   const getPlanLabel = (tier: string) => {
     const tierData = plans?.tiers?.[tier as keyof typeof plans.tiers];
-    if (tierData && tier !== "free") return `FormaStudio ${tierData.name}`;
+    if (tierData && tier !== "free") return `Drape ${tierData.name}`;
     return "Free Plan";
   };
 

@@ -125,9 +125,9 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
               <div className="flex items-center gap-2">
                 <img
-                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sPTVfhEIGSZsJGLZ.png"
-                  alt="Forma®"
-                  className="w-5 h-5"
+                  src="/drape-logo.svg"
+                  alt="Drape"
+                  className="h-5 w-auto"
                 />
                 <span className="text-xs font-medium text-[#999]">
                   {step === 1

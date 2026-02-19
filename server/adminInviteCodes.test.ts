@@ -9,7 +9,7 @@ function createAdminContext(overrides: Partial<AuthenticatedUser> = {}): TrpcCon
   const user: AuthenticatedUser = {
     id: 1,
     openId: "admin-open-id",
-    email: "admin@formastudio.ai",
+    email: "admin@drape.ai",
     name: "Admin User",
     displayName: null,
     avatarUrl: null,
@@ -120,7 +120,7 @@ describe("admin.createInviteCode", () => {
     // but should not throw a validation or auth error
     try {
       await caller.admin.createInviteCode({
-        code: "FORMA-TEST-VALID",  // hyphens are allowed by regex
+        code: "DRAPE-TEST-VALID",  // hyphens are allowed by regex
         maxUses: 5,
         expiresInDays: 30,
         note: "Test code",

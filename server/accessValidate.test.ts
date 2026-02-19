@@ -33,10 +33,10 @@ describe("access.validate (public endpoint)", () => {
     (validateInviteCode as any).mockResolvedValue({ valid: true });
 
     const caller = appRouter.createCaller(makePublicCtx());
-    const result = await caller.access.validate({ code: "FORMA-TESTCODE" });
+    const result = await caller.access.validate({ code: "DRAPE-TESTCODE" });
 
     expect(result.valid).toBe(true);
-    expect(validateInviteCode).toHaveBeenCalledWith("FORMA-TESTCODE");
+    expect(validateInviteCode).toHaveBeenCalledWith("DRAPE-TESTCODE");
   });
 
   it("returns valid: false with error for invalid code", async () => {
@@ -100,7 +100,7 @@ describe("access.validate (public endpoint)", () => {
     (checkRateLimit as any).mockReturnValue({ allowed: false, remaining: 0 });
 
     const caller = appRouter.createCaller(makePublicCtx());
-    const result = await caller.access.validate({ code: "FORMA-RATELIMIT" });
+    const result = await caller.access.validate({ code: "DRAPE-RATELIMIT" });
 
     expect(result.valid).toBe(false);
     expect(result.error).toContain("Too many attempts");
@@ -111,7 +111,7 @@ describe("access.validate (public endpoint)", () => {
     (validateInviteCode as any).mockResolvedValue({ valid: true });
 
     const caller = appRouter.createCaller(makePublicCtx());
-    const result = await caller.access.validate({ code: "FORMA-PUBLIC" });
+    const result = await caller.access.validate({ code: "DRAPE-PUBLIC" });
 
     expect(result.valid).toBe(true);
   });

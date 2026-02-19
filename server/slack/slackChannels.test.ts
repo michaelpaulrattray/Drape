@@ -58,7 +58,7 @@ describe("Slack Channel Webhook Configuration", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        text: "🔧 Channel verification: #admin-actions webhook connected to FormaStudio",
+        text: "🔧 Channel verification: #admin-actions webhook connected to Drape",
       }),
     });
 
@@ -74,7 +74,7 @@ describe("Slack Channel Webhook Configuration", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        text: "📋 Channel verification: #audit-log webhook connected to FormaStudio",
+        text: "📋 Channel verification: #audit-log webhook connected to Drape",
       }),
     });
 

@@ -309,7 +309,7 @@ ${pattern.description}
 2. Consider temporarily suspending the account if abuse is confirmed
 3. Investigate the source of the activity (IP addresses, user agents)
 
-This is an automated security notification from FormaStudio.
+This is an automated security notification from Drape.
         `.trim(),
       });
       console.log(`[AbuseDetection] Owner notified about ${pattern.name} for user ${userId}`);

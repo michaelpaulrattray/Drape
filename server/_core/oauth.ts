@@ -124,7 +124,7 @@ export function registerOAuthRoutes(app: Express) {
       // Parse cookies for beta code check
       const { parse: parseCookie } = await import("cookie");
       const cookies = parseCookie(req.headers.cookie || "");
-      const betaCode = cookies.forma_beta_code;
+      const betaCode = cookies.drape_beta_code;
 
       // Check if user already exists BEFORE creating account
       const existingUser = await db.getUserByOpenId(userInfo.openId);
@@ -153,7 +153,7 @@ export function registerOAuthRoutes(app: Express) {
         const { validateInviteCode } = await import("../db/validateInviteCode");
         const validation = await validateInviteCode(betaCode);
         if (!validation.valid) {
-          res.clearCookie("forma_beta_code", { path: "/" });
+          res.clearCookie("drape_beta_code", { path: "/" });
           await logAuditEvent({
             action: AUDIT_ACTIONS.LOGIN_FAILED,
             resourceType: "auth",
@@ -185,7 +185,7 @@ export function registerOAuthRoutes(app: Express) {
         if (newUser) {
           const { redeemInviteCode } = await import("../db/inviteCodes");
           const redeemResult = await redeemInviteCode(newUser.id, betaCode);
-          res.clearCookie("forma_beta_code", { path: "/" });
+          res.clearCookie("drape_beta_code", { path: "/" });
 
           if (redeemResult.success) {
             await logAuditEvent({
@@ -232,7 +232,7 @@ export function registerOAuthRoutes(app: Express) {
 
         // Clear any stale beta code cookie
         if (betaCode) {
-          res.clearCookie("forma_beta_code", { path: "/" });
+          res.clearCookie("drape_beta_code", { path: "/" });
         }
 
         // If existing user is not approved and not admin, reject

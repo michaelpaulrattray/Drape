@@ -12,7 +12,7 @@ import { logAuditEvent } from "../auditLog";
 import crypto from "crypto";
 
 /**
- * Generate a unique referral code like "FORMA-A3K9X2"
+ * Generate a unique referral code like "DRAPE-A3K9X2"
  */
 function createReferralCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No I/O/0/1 to avoid confusion
@@ -20,14 +20,14 @@ function createReferralCode(): string {
   for (let i = 0; i < 6; i++) {
     code += chars[crypto.randomInt(chars.length)];
   }
-  return `FORMA-${code}`;
+  return `DRAPE-${code}`;
 }
 
 /**
- * Validate referral code format: FORMA-XXXXXX (6 alphanumeric chars)
+ * Validate referral code format: DRAPE-XXXXXX (6 alphanumeric chars)
  */
 export function isValidReferralCodeFormat(code: string): boolean {
-  return /^FORMA-[A-Z2-9]{6}$/.test(code.toUpperCase());
+  return /^DRAPE-[A-Z2-9]{6}$/.test(code.toUpperCase());
 }
 
 /**

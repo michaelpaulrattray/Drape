@@ -123,7 +123,7 @@ export function ReferralModal({ open, onClose }: ReferralModalProps) {
                   <Gift className="w-6 h-6 text-primary" />
                 </div>
                 <h2 className="text-xl font-semibold tracking-tight">
-                  Share Forma with a friend
+                  Share Drape with a friend
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   You get{" "}
