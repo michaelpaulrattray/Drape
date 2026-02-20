@@ -7,8 +7,6 @@ import {
   markExecuted,
   markFailed,
   _clearPendingActions,
-  getPendingActionCount,
-  getAdminPendingActions,
   type ApprovalAction,
 } from "./slackApproval";
 
@@ -129,29 +127,7 @@ describe("Slack Approval Flow", () => {
       expect(status!.expiresAt).toBeLessThanOrEqual(after + 5 * 60 * 1000);
     });
 
-    it("should increment pending action count", async () => {
-      expect(getPendingActionCount()).toBe(0);
 
-      await requestApproval({
-        action: "suspendUser",
-        requestedBy: { id: 1, name: "Admin" },
-        targetId: "1",
-        description: "test",
-        params: {},
-      });
-
-      expect(getPendingActionCount()).toBe(1);
-
-      await requestApproval({
-        action: "blockIP",
-        requestedBy: { id: 1, name: "Admin" },
-        targetId: "1.2.3.4",
-        description: "test",
-        params: {},
-      });
-
-      expect(getPendingActionCount()).toBe(2);
-    });
   });
 
   describe("getApprovalStatus", () => {
@@ -359,68 +335,6 @@ describe("Slack Approval Flow", () => {
       const status = getApprovalStatus(result.actionId);
       expect(status!.status).toBe("failed");
       expect(status!.resultMessage).toBe("Database error");
-    });
-  });
-
-  describe("getAdminPendingActions", () => {
-    it("should return pending actions for a specific admin", async () => {
-      await requestApproval({
-        action: "suspendUser",
-        requestedBy: { id: 1, name: "Admin One" },
-        targetId: "1",
-        description: "test 1",
-        params: {},
-      });
-
-      await requestApproval({
-        action: "blockIP",
-        requestedBy: { id: 2, name: "Admin Two" },
-        targetId: "1.2.3.4",
-        description: "test 2",
-        params: {},
-      });
-
-      await requestApproval({
-        action: "adjustCredits",
-        requestedBy: { id: 1, name: "Admin One" },
-        targetId: "100",
-        description: "test 3",
-        params: {},
-      });
-
-      const admin1Actions = getAdminPendingActions(1);
-      expect(admin1Actions).toHaveLength(2);
-
-      const admin2Actions = getAdminPendingActions(2);
-      expect(admin2Actions).toHaveLength(1);
-
-      const admin3Actions = getAdminPendingActions(3);
-      expect(admin3Actions).toHaveLength(0);
-    });
-
-    it("should only return pending actions, not resolved ones", async () => {
-      const result1 = await requestApproval({
-        action: "suspendUser",
-        requestedBy: { id: 1, name: "Admin" },
-        targetId: "1",
-        description: "test 1",
-        params: {},
-      });
-
-      await requestApproval({
-        action: "blockIP",
-        requestedBy: { id: 1, name: "Admin" },
-        targetId: "1.2.3.4",
-        description: "test 2",
-        params: {},
-      });
-
-      // Approve the first one
-      approveAction(result1.actionId, "SlackUser");
-
-      const pendingActions = getAdminPendingActions(1);
-      expect(pendingActions).toHaveLength(1);
-      expect(pendingActions[0].action).toBe("blockIP");
     });
   });
 

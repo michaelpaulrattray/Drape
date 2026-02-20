@@ -119,26 +119,3 @@ export function checkCircuit(): void {
   // HALF_OPEN: allow the probe through
 }
 
-/**
- * Get current circuit breaker state for health monitoring.
- */
-export function getCircuitBreakerStats() {
-  return {
-    state,
-    recentFailures: failureTimestamps.length,
-    threshold: FAILURE_THRESHOLD,
-    cooldownMs: COOLDOWN_MS,
-    totalTrips,
-    lastOpenedAt: lastOpenedAt || null,
-  };
-}
-
-/**
- * Reset the circuit breaker to CLOSED state. For testing/admin use only.
- */
-export function resetCircuitBreaker(): void {
-  state = "CLOSED";
-  failureTimestamps = [];
-  lastOpenedAt = 0;
-  totalTrips = 0;
-}

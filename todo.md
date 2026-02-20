@@ -3999,3 +3999,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix access.test.ts test string: forma-test → drape-test
 - [x] Fix DB: update existing FORMA- referral codes to DRAPE-
 - [x] Fix pdfService.ts casting sheet header: forma studio → drape
+
+## Dead Code Audit
+- [x] Audit server-side for stale/dead functions, unused exports, orphaned modules
+- [x] Audit client-side for dead components, hooks, unused imports
+- [x] Remove ~35 confirmed dead symbols across 15+ files
+- [x] Clean up tests referencing removed code (deleted load-test-queue.test.ts, fixed 5 other test files)
+- [x] Run all tests and verify dev server (1,118 passing, 0 failures)

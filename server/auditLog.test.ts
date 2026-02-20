@@ -236,32 +236,6 @@ describe("Audit Logging", () => {
       expect(AUDIT_ACTIONS.ABUSE_PATTERN_BILLING).toBe("abuse.billing_anomaly");
     });
   });
-
-  describe("Query Helpers", () => {
-    it("getUserAuditLogs should return empty array when db unavailable", async () => {
-      (getDb as any).mockResolvedValue(null);
-      const { getUserAuditLogs } = await import("./auditLog");
-      
-      const result = await getUserAuditLogs(123);
-      expect(result).toEqual([]);
-    });
-
-    it("getAuditLogsByAction should return empty array when db unavailable", async () => {
-      (getDb as any).mockResolvedValue(null);
-      const { getAuditLogsByAction, AUDIT_ACTIONS } = await import("./auditLog");
-      
-      const result = await getAuditLogsByAction(AUDIT_ACTIONS.MODEL_DELETED);
-      expect(result).toEqual([]);
-    });
-
-    it("getCriticalAuditLogs should return empty array when db unavailable", async () => {
-      (getDb as any).mockResolvedValue(null);
-      const { getCriticalAuditLogs } = await import("./auditLog");
-      
-      const result = await getCriticalAuditLogs();
-      expect(result).toEqual([]);
-    });
-  });
 });
 
 describe("Abuse Detection", () => {

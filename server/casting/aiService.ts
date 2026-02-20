@@ -50,7 +50,7 @@ export interface MasterPrompt {
   };
 }
 
-export interface GenerationResult {
+interface GenerationResult {
   imageUrl: string;
   engineUsed?: string;
 }
@@ -76,16 +76,6 @@ export const CREDIT_COSTS = {
 // Legacy alias for backward compatibility during migration
 export const POINT_COSTS = CREDIT_COSTS;
 
-/**
- * Calculate actual credit cost based on engine used
- * Flash fallback gets 50% discount
- */
-export function calculateCreditCost(baseCost: number, engineUsed?: string): number {
-  if (engineUsed && engineUsed.includes('flash')) {
-    return Math.ceil(baseCost * CREDIT_COSTS.flashMultiplier);
-  }
-  return baseCost;
-}
 
 // ============ Helper Functions ============
 

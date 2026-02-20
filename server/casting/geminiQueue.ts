@@ -182,11 +182,3 @@ export function getQueueStats() {
   };
 }
 
-// ── Config (for tests and diagnostics) ────────────────────────────────────
-export function getQueueConfig() {
-  return {
-    imageConcurrency: IMAGE_CONCURRENCY,
-    textConcurrency: TEXT_CONCURRENCY,
-    maxQueueDepth: MAX_QUEUE_DEPTH,
-  };
-}

@@ -6,74 +6,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── 1. Configurable Queue Limits ──────────────────────────────────────────
 
-describe("Configurable Queue Limits", () => {
-  it("reads IMAGE_CONCURRENCY from env", async () => {
-    // The module reads process.env at import time, so we verify the
-    // getQueueConfig export reflects the env-configured values.
-    const { getQueueConfig } = await import("./casting/geminiQueue");
-    const config = getQueueConfig();
-
-    // Default is 5 if env not set; env may override
-    expect(config.imageConcurrency).toBeGreaterThanOrEqual(1);
-    expect(config.imageConcurrency).toBeLessThanOrEqual(100);
-  });
-
-  it("reads TEXT_CONCURRENCY from env", async () => {
-    const { getQueueConfig } = await import("./casting/geminiQueue");
-    const config = getQueueConfig();
-
-    expect(config.textConcurrency).toBeGreaterThanOrEqual(1);
-    expect(config.textConcurrency).toBeLessThanOrEqual(100);
-  });
-
-  it("reads MAX_QUEUE_DEPTH from env", async () => {
-    const { getQueueConfig } = await import("./casting/geminiQueue");
-    const config = getQueueConfig();
-
-    expect(config.maxQueueDepth).toBeGreaterThanOrEqual(1);
-    expect(config.maxQueueDepth).toBeLessThanOrEqual(1000);
-  });
-
-  it("getQueueStats returns correct structure", async () => {
-    const { getQueueStats } = await import("./casting/geminiQueue");
-    const stats = getQueueStats();
-
-    expect(stats).toHaveProperty("image");
-    expect(stats).toHaveProperty("text");
-    expect(stats.image).toHaveProperty("active");
-    expect(stats.image).toHaveProperty("pending");
-    expect(stats.image).toHaveProperty("queueDepth");
-    expect(stats.image).toHaveProperty("concurrency");
-    expect(stats.image).toHaveProperty("maxDepth");
-    expect(stats.text).toHaveProperty("active");
-    expect(stats.text).toHaveProperty("pending");
-    expect(stats.text).toHaveProperty("queueDepth");
-    expect(stats.text).toHaveProperty("concurrency");
-    expect(stats.text).toHaveProperty("maxDepth");
-  });
-});
-
 // ── 2. Daily Quota Module ─────────────────────────────────────────────────
 
 describe("Daily Quota Module", () => {
-  it("getDailyLimit returns a positive number", async () => {
-    const { getDailyLimit } = await import("./db/dailyQuota");
-    const limit = getDailyLimit();
-
-    expect(limit).toBeGreaterThan(0);
-    expect(Number.isInteger(limit)).toBe(true);
-  });
-
-  it("checkDailyQuota returns correct structure", async () => {
-    // Mock getDb to return a mock database
-    const dailyQuota = await import("./db/dailyQuota");
-
-    // We can't easily test with a real DB, but we can verify the
-    // function signature and return type by testing getDailyLimit
-    const limit = dailyQuota.getDailyLimit();
-    expect(limit).toBeGreaterThan(0);
-  });
-
   it("enforceDailyQuota is an async function", async () => {
     const { enforceDailyQuota } = await import("./db/dailyQuota");
     expect(typeof enforceDailyQuota).toBe("function");

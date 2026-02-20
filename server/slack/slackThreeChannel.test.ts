@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   sendSlackAlert,
-  sendToChannel,
   sendAdminActionNotification,
   sendAuditLogEntry,
   sendEmergencyActionsToAdminChannel,
@@ -32,48 +31,6 @@ describe("Three-Channel Slack Routing", () => {
 
   afterEach(() => {
     process.env = { ...originalEnv };
-  });
-
-  describe("sendToChannel", () => {
-    it("should send to security-alerts channel using SLACK_WEBHOOK_URL", async () => {
-      const result = await sendToChannel("security-alerts", { text: "test" });
-      expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://hooks.slack.com/security-alerts",
-        expect.any(Object)
-      );
-    });
-
-    it("should send to admin-actions channel using SLACK_ADMIN_ACTIONS_WEBHOOK_URL", async () => {
-      const result = await sendToChannel("admin-actions", { text: "test" });
-      expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://hooks.slack.com/admin-actions",
-        expect.any(Object)
-      );
-    });
-
-    it("should send to audit-log channel using SLACK_AUDIT_LOG_WEBHOOK_URL", async () => {
-      const result = await sendToChannel("audit-log", { text: "test" });
-      expect(result).toBe(true);
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://hooks.slack.com/audit-log",
-        expect.any(Object)
-      );
-    });
-
-    it("should return false when webhook is not configured", async () => {
-      delete process.env.SLACK_AUDIT_LOG_WEBHOOK_URL;
-      const result = await sendToChannel("audit-log", { text: "test" });
-      expect(result).toBe(false);
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-
-    it("should return false when fetch fails", async () => {
-      mockFetch.mockResolvedValueOnce({ ok: false, text: () => Promise.resolve("error") });
-      const result = await sendToChannel("security-alerts", { text: "test" });
-      expect(result).toBe(false);
-    });
   });
 
   describe("Security Alert Routing", () => {

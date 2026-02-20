@@ -63,17 +63,6 @@ export interface SlackAlertOptions {
 
 // ============ Core Send Functions (delegate to dispatcher) ============
 
-/**
- * Send a message to a specific Slack channel.
- * Low-level function — prefer the higher-level helpers when possible.
- * Routes through the dispatcher for dedup.
- */
-export async function sendToChannel(
-  channel: SlackChannel,
-  payload: Record<string, unknown>
-): Promise<boolean> {
-  return sendRawToChannel(channel, payload, { skipDedup: false });
-}
 
 // ============ Security Alerts Channel (#security-alerts) ============
 
@@ -149,20 +138,6 @@ export function verifySlackSignature(
 
 // ============ Test Helper ============
 
-/**
- * Send a test alert to verify Slack integration
- */
-export async function sendTestSlackAlert(): Promise<boolean> {
-  return sendSlackAlert({
-    title: "Test Alert - Drape Security",
-    description: "This is a test alert to verify your Slack integration is working correctly.",
-    severity: "info",
-    fields: [
-      { title: "Status", value: "✅ Connected", short: true },
-      { title: "Environment", value: process.env.NODE_ENV || "development", short: true },
-    ],
-  });
-}
 
 // ============ Pre-built Alert Templates ============
 

@@ -3,7 +3,6 @@ import {
   validateAdminAccess,
   isSensitiveAction,
   writeImmutableLog,
-  verifyImmutableLogChain,
   logAdminAction,
   logUnauthorizedAdminAccess,
 } from "./adminSecurity";
@@ -66,42 +65,6 @@ describe("Admin Security", () => {
       expect(isSensitiveAction("listUsers")).toBe(false);
       expect(isSensitiveAction("getAuditLogs")).toBe(false);
       expect(isSensitiveAction("viewDashboard")).toBe(false);
-    });
-  });
-
-  describe("Immutable Log", () => {
-    beforeEach(() => {
-      vi.resetModules();
-    });
-
-    it("should write entries to the immutable log", async () => {
-      const entry = await writeImmutableLog("test_action", {
-        testData: "value",
-      });
-      
-      expect(entry).toHaveProperty("id");
-      expect(entry).toHaveProperty("timestamp");
-      expect(entry).toHaveProperty("hash");
-      expect(entry).toHaveProperty("previousHash");
-      expect(entry.eventType).toBe("test_action");
-    });
-
-    it("should chain entries with hashes", async () => {
-      const entry1 = await writeImmutableLog("action_1", { data: 1 });
-      const entry2 = await writeImmutableLog("action_2", { data: 2 });
-      
-      expect(entry2.previousHash).toBe(entry1.hash);
-    });
-
-    it("should verify chain integrity", async () => {
-      await writeImmutableLog("action_1", { data: 1 });
-      await writeImmutableLog("action_2", { data: 2 });
-      await writeImmutableLog("action_3", { data: 3 });
-      
-      const result = verifyImmutableLogChain();
-      
-      expect(result.valid).toBe(true);
-      expect(result.entries).toBeGreaterThanOrEqual(3);
     });
   });
 

@@ -263,40 +263,6 @@ export function recordGlobalFailedLogin(): {
   return { underAttack: false, severity: 'none', failedCount: count };
 }
 
-/**
- * Check if system is currently under attack
- */
-export function isSystemUnderAttack(): { 
-  underAttack: boolean; 
-  severity: 'none' | 'warning' | 'critical';
-  failedCount: number;
-  windowRemaining: number;
-} {
-  const now = Date.now();
-  
-  // Check if window is still active
-  if (now - globalAttackWindow.windowStart >= GLOBAL_ATTACK_CONFIG.windowMs) {
-    return { 
-      underAttack: false, 
-      severity: 'none', 
-      failedCount: 0,
-      windowRemaining: 0,
-    };
-  }
-  
-  const count = globalAttackWindow.failedLogins;
-  const windowRemaining = GLOBAL_ATTACK_CONFIG.windowMs - (now - globalAttackWindow.windowStart);
-  
-  if (count >= GLOBAL_ATTACK_CONFIG.criticalThreshold) {
-    return { underAttack: true, severity: 'critical', failedCount: count, windowRemaining };
-  }
-  
-  if (count >= GLOBAL_ATTACK_CONFIG.threshold) {
-    return { underAttack: true, severity: 'warning', failedCount: count, windowRemaining };
-  }
-  
-  return { underAttack: false, severity: 'none', failedCount: count, windowRemaining };
-}
 
 /**
  * Mark that an alert has been sent for the current attack window
@@ -313,35 +279,7 @@ export function shouldSendGlobalAttackAlert(): boolean {
          globalAttackWindow.failedLogins >= GLOBAL_ATTACK_CONFIG.threshold;
 }
 
-// ============ IP Blocking Check ============
-// Checks if an IP is blocked before processing any request
 
-import { isIpBlocked } from "../db";
-import { createModuleLogger } from "../logging/logger";
-const log = createModuleLogger("security/rateLimit");
-
-/**
- * Check if an IP is blocked and should be denied access
- * This should be called early in request processing
- */
-export async function checkIpBlocked(
-  ipAddress: string
-): Promise<{ blocked: boolean; reason?: string }> {
-  if (!ipAddress || ipAddress === 'unknown') {
-    return { blocked: false };
-  }
-
-  try {
-    const result = await isIpBlocked(ipAddress);
-    return {
-      blocked: result.blocked,
-      reason: result.reason,
-    };
-  } catch (error) {
-    log.error({ err: error }, "[RateLimit] Error checking IP block:");
-    return { blocked: false }; // Fail open to avoid blocking legitimate users
-  }
-}
 
 // Per-user rate limits for authenticated endpoints
 export const USER_RATE_LIMITS = {

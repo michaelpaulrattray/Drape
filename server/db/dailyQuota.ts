@@ -90,7 +90,3 @@ export async function enforceDailyQuota(userId: number): Promise<void> {
   }
 }
 
-/** Get the configured daily limit (for stats/UI) */
-export function getDailyLimit(): number {
-  return DAILY_LIMIT;
-}

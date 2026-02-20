@@ -104,9 +104,3 @@ export function isDisposableEmail(email: string): boolean {
   return DISPOSABLE_DOMAINS.has(domain);
 }
 
-/**
- * Get the domain from an email address.
- */
-export function getEmailDomain(email: string): string {
-  return email.toLowerCase().split("@")[1] || "";
-}

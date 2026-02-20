@@ -290,45 +290,5 @@ export async function writeImmutableLog(
   return fullEntry;
 }
 
-/**
- * Verify integrity of immutable log chain
- */
-export function verifyImmutableLogChain(): { 
-  valid: boolean; 
-  entries: number;
-  brokenAt?: number;
-} {
-  const crypto = require("crypto");
-  
-  if (immutableLogChain.length === 0) {
-    return { valid: true, entries: 0 };
-  }
-  
-  let expectedPreviousHash = "GENESIS";
-  
-  for (let i = 0; i < immutableLogChain.length; i++) {
-    const entry = immutableLogChain[i];
-    
-    // Verify previous hash matches
-    if (entry.previousHash !== expectedPreviousHash) {
-      return { valid: false, entries: immutableLogChain.length, brokenAt: i };
-    }
-    
-    // Verify entry hash
-    const { hash, ...entryWithoutHash } = entry;
-    const computedHash = crypto
-      .createHash("sha256")
-      .update(JSON.stringify(entryWithoutHash))
-      .digest("hex");
-    
-    if (computedHash !== hash) {
-      return { valid: false, entries: immutableLogChain.length, brokenAt: i };
-    }
-    
-    expectedPreviousHash = hash;
-  }
-  
-  return { valid: true, entries: immutableLogChain.length };
-}
 
 // sendAuditLogEntry routes through the centralized dispatcher for dedup

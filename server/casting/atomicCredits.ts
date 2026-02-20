@@ -124,30 +124,6 @@ export async function withAtomicCredits<T>(
   }
 }
 
-/**
- * Convenience wrapper that includes rate limiting check.
- * Use this for generation endpoints that need both rate limiting and atomic credits.
- */
-export async function withAtomicCreditsAndRateLimit<T>(
-  options: AtomicCreditOptions & { rateLimitKey: string },
-  checkRateLimitFn: (key: string) => { allowed: boolean; resetIn: number },
-  rateLimitErrorFn: (resetIn: number) => string,
-  operation: () => Promise<T>
-): Promise<T> {
-  const { rateLimitKey, ...creditOptions } = options;
-  
-  // Step 1: Check rate limit first (cheap operation)
-  const rateCheck = checkRateLimitFn(rateLimitKey);
-  if (!rateCheck.allowed) {
-    throw new TRPCError({
-      code: "TOO_MANY_REQUESTS",
-      message: rateLimitErrorFn(rateCheck.resetIn),
-    });
-  }
-  
-  // Step 2: Execute with atomic credits
-  return withAtomicCredits(creditOptions, operation);
-}
 
 /**
  * Documentation for future developers:

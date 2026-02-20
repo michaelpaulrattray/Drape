@@ -130,28 +130,3 @@ export const useCastingUIStore = create<CastingUIState>()(
   )
 );
 
-// Selector hooks for optimized re-renders
-export const useActiveView = () => useCastingUIStore((state) => state.activeView);
-export const useSetActiveView = () => useCastingUIStore((state) => state.setActiveView);
-
-export const useActiveTool = () => useCastingUIStore((state) => state.activeTool);
-export const useSetActiveTool = () => useCastingUIStore((state) => state.setActiveTool);
-
-export const useResolution = () => useCastingUIStore((state) => state.resolution);
-export const useSetResolution = () => useCastingUIStore((state) => state.setResolution);
-
-export const useShowMobilePanel = () => useCastingUIStore((state) => state.showMobilePanel);
-export const useToggleMobilePanel = () => useCastingUIStore((state) => state.toggleMobilePanel);
-
-export const useRefineInput = () => useCastingUIStore((state) => state.refineInput);
-export const useSetRefineInput = () => useCastingUIStore((state) => state.setRefineInput);
-
-export const useIsTopupOpen = () => useCastingUIStore((state) => state.isTopupOpen);
-export const useSetIsTopupOpen = () => useCastingUIStore((state) => state.setIsTopupOpen);
-
-export const useLockModal = () => useCastingUIStore((state) => state.lockModal);
-export const useSetLockModal = () => useCastingUIStore((state) => state.setLockModal);
-export const useCloseLockModal = () => useCastingUIStore((state) => state.closeLockModal);
-
-export const useIsAutoGenerating = () => useCastingUIStore((state) => state.isAutoGenerating);
-export const useAutoGenCancelled = () => useCastingUIStore((state) => state.autoGenCancelled);

@@ -323,55 +323,6 @@ This is an automated security notification from Drape.
 
 // ============ Query Helpers ============
 
-/**
- * Get recent audit logs for a user
- */
-export async function getUserAuditLogs(
-  userId: number,
-  limit: number = 50
-): Promise<AuditLog[]> {
-  const db = await getDb();
-  if (!db) return [];
-  return await db
-    .select()
-    .from(auditLogs)
-    .where(eq(auditLogs.userId, userId))
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(limit);
-}
-
-/**
- * Get audit logs by action type
- */
-export async function getAuditLogsByAction(
-  action: AuditAction,
-  limit: number = 100
-): Promise<AuditLog[]> {
-  const db = await getDb();
-  if (!db) return [];
-  return await db
-    .select()
-    .from(auditLogs)
-    .where(eq(auditLogs.action, action))
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(limit);
-}
-
-/**
- * Get critical security events
- */
-export async function getCriticalAuditLogs(
-  limit: number = 100
-): Promise<AuditLog[]> {
-  const db = await getDb();
-  if (!db) return [];
-  return await db
-    .select()
-    .from(auditLogs)
-    .where(eq(auditLogs.severity, "critical"))
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(limit);
-}
 
 // Re-export AUDIT_ACTIONS for convenience
 export { AUDIT_ACTIONS };

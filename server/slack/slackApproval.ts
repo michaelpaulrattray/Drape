@@ -448,17 +448,3 @@ export function _clearPendingActions(): void {
   pendingActions.clear();
 }
 
-/**
- * Get count of pending actions (for testing/monitoring)
- */
-export function getPendingActionCount(): number {
-  return pendingActions.size;
-}
-
-/**
- * Get all pending actions for a specific admin (for monitoring)
- */
-export function getAdminPendingActions(adminId: number): PendingAction[] {
-  return Array.from(pendingActions.values())
-    .filter(a => a.requestedBy.id === adminId && a.status === "pending");
-}

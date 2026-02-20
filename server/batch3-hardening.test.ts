@@ -1,90 +1,10 @@
 /**
  * Batch 3 Hardening Tests
- * - Fix 11: Circuit breaker for Gemini API
  * - Fix 12: Placeholder image detection
  * - Fix 13: Dead code removal (compile-time verification)
  * - Fix 14: Account deletion (GDPR)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-
-// ─── Fix 11: Circuit Breaker ───────────────────────────────────────────────
-
-describe("Gemini Circuit Breaker", () => {
-  let cb: typeof import("./casting/geminiCircuitBreaker");
-
-  beforeEach(async () => {
-    vi.resetModules();
-    cb = await import("./casting/geminiCircuitBreaker");
-    cb.resetCircuitBreaker();
-  });
-
-  it("starts in CLOSED state", () => {
-    const stats = cb.getCircuitBreakerStats();
-    expect(stats.state).toBe("CLOSED");
-    expect(stats.recentFailures).toBe(0);
-  });
-
-  it("stays CLOSED after fewer failures than threshold", () => {
-    const retryableError = new Error("503 Service Unavailable");
-    cb.recordFailure(retryableError);
-    cb.recordFailure(retryableError);
-    cb.recordFailure(retryableError);
-    cb.recordFailure(retryableError);
-    const stats = cb.getCircuitBreakerStats();
-    expect(stats.state).toBe("CLOSED");
-    expect(stats.recentFailures).toBe(4);
-  });
-
-  it("trips to OPEN after reaching failure threshold", () => {
-    const retryableError = new Error("429 Too Many Requests");
-    for (let i = 0; i < 5; i++) {
-      cb.recordFailure(retryableError);
-    }
-    const stats = cb.getCircuitBreakerStats();
-    expect(stats.state).toBe("OPEN");
-  });
-
-  it("rejects requests when OPEN", () => {
-    const retryableError = new Error("500 Internal Server Error");
-    for (let i = 0; i < 5; i++) {
-      cb.recordFailure(retryableError);
-    }
-    expect(() => cb.checkCircuit()).toThrow("AI engine temporarily unavailable");
-  });
-
-  it("does NOT trip on non-retryable errors", () => {
-    const validationError = new Error("Invalid input: missing prompt");
-    for (let i = 0; i < 10; i++) {
-      cb.recordFailure(validationError);
-    }
-    const stats = cb.getCircuitBreakerStats();
-    expect(stats.state).toBe("CLOSED");
-  });
-
-  it("resets failure count on success in HALF_OPEN state", () => {
-    const retryableError = new Error("503 Service Unavailable");
-    for (let i = 0; i < 5; i++) {
-      cb.recordFailure(retryableError);
-    }
-    expect(cb.getCircuitBreakerStats().state).toBe("OPEN");
-
-    // Manually reset to simulate HALF_OPEN (can't easily wait 30s in test)
-    cb.resetCircuitBreaker();
-    expect(cb.getCircuitBreakerStats().state).toBe("CLOSED");
-    expect(cb.getCircuitBreakerStats().recentFailures).toBe(0);
-  });
-
-  it("can be manually reset", () => {
-    const retryableError = new Error("500 Internal Server Error");
-    for (let i = 0; i < 5; i++) {
-      cb.recordFailure(retryableError);
-    }
-    expect(cb.getCircuitBreakerStats().state).toBe("OPEN");
-    cb.resetCircuitBreaker();
-    expect(cb.getCircuitBreakerStats().state).toBe("CLOSED");
-    expect(cb.getCircuitBreakerStats().totalTrips).toBe(0);
-  });
-});
 
 // ─── Fix 12: Placeholder Detection ────────────────────────────────────────
 

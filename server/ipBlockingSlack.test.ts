@@ -35,7 +35,7 @@ import {
 } from "./db";
 
 import { sendSlackAlert, SlackAlerts, verifySlackSignature } from "./slack/slackNotification";
-import { checkIpBlocked } from "./security/rateLimit";
+import { } from "./security/rateLimit";
 
 describe("IP Blocking System", () => {
   beforeEach(() => {
@@ -133,24 +133,6 @@ describe("IP Blocking System", () => {
 
       expect(result).toHaveLength(2);
       expect(result[0].ipAddress).toBe("192.168.1.100");
-    });
-  });
-
-  describe("checkIpBlocked", () => {
-    it("should allow non-blocked IPs", async () => {
-      vi.mocked(isIpBlocked).mockResolvedValue({ blocked: false });
-
-      const result = await checkIpBlocked("192.168.1.200");
-
-      expect(result.blocked).toBe(false);
-    });
-
-    it("should block blocked IPs", async () => {
-      vi.mocked(isIpBlocked).mockResolvedValue({ blocked: true, reason: "Abuse" });
-
-      const result = await checkIpBlocked("192.168.1.100");
-
-      expect(result.blocked).toBe(true);
     });
   });
 });

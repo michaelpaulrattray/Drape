@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { CREDIT_COSTS, calculateCreditCost } from "./aiService";
+import { CREDIT_COSTS } from "./aiService";
 
 /**
  * Tests for AI Service module
@@ -33,15 +33,7 @@ describe("AI Service - Credit Costs", () => {
     expect(CREDIT_COSTS.flashMultiplier).toBe(0.5);
   });
 
-  it("should calculate credit cost with flash fallback discount", () => {
-    // Pro model - full cost
-    const proCost = calculateCreditCost(CREDIT_COSTS.castingImage, "gemini-3-pro-image-preview");
-    expect(proCost).toBe(350);
 
-    // Flash model - 50% discount
-    const flashCost = calculateCreditCost(CREDIT_COSTS.castingImage, "gemini-2.5-flash-image");
-    expect(flashCost).toBe(175); // 350 * 0.5 = 175
-  });
 });
 
 describe("AI Service - Type Definitions", () => {
