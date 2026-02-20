@@ -3982,3 +3982,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Webhook idempotency — add idempotency keys to Stripe webhook handlers
 - [x] Write vitest tests for all 3 changes
 - [x] Run all tests and verify dev server
+
+## Bug Fixes: Usage Tab in Settings Modal
+- [x] Fix Credits display showing 717 (period usage) instead of actual account balance
+- [x] Fix Daily Usage bar chart not rendering (empty chart area)

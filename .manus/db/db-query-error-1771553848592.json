@@ -1,0 +1,8 @@
+{
+  "query": "SELECT u.id, u.displayName, c.balance, c.monthlyCredits, c.bonusCredits FROM users u LEFT JOIN credits c ON c.userId = u.id WHERE u.id = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute SELECT u.id, u.displayName, c.balance, c.monthlyCredits, c.bonusCredits FROM users u LEFT JOIN credits c ON c.userId = u.id WHERE u.id = 1;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table 'ezpuxpuvfnwaabrrmbohnm.credits' doesn't exist"
+  ]
+}

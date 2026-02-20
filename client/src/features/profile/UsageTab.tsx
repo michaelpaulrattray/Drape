@@ -5,6 +5,7 @@ import {
   Loader2,
   TrendingUp,
   Activity,
+  Wallet,
 } from "lucide-react";
 
 export function UsageTab() {
@@ -12,7 +13,10 @@ export function UsageTab() {
   const [historyPage, setHistoryPage] = useState(0);
   const pageSize = 10;
 
-  // Fetch usage stats
+  // Fetch actual credit balance
+  const { data: balanceData, isLoading: isLoadingBalance } = trpc.credits.getBalance.useQuery();
+
+  // Fetch usage stats for the selected period
   const { data: stats, isLoading: isLoadingStats } = trpc.usage.getStats.useQuery({ days: period });
 
   // Fetch daily usage for chart
@@ -47,26 +51,38 @@ export function UsageTab() {
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "generation": return "text-gray-700";
-      case "purchase": return "text-green-600";
-      case "bonus": return "text-blue-600";
-      case "refund": return "text-amber-600";
-      case "signup": return "text-purple-600";
-      case "topup": return "text-green-600";
-      case "subscription": return "text-cyan-600";
-      default: return "text-gray-500";
-    }
-  };
-
-  // Calculate max for chart scaling
+  // Calculate max for chart scaling (only from days with actual usage)
   const maxCredits = dailyUsage ? Math.max(...dailyUsage.map(d => d.creditsUsed), 1) : 1;
 
   const totalPages = historyData ? Math.ceil(historyData.total / pageSize) : 0;
 
   return (
     <div className="space-y-6">
+      {/* Credit Balance Banner */}
+      <div className="p-5 rounded-xl bg-[#0A0A0A] text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Wallet className="w-4 h-4 text-white/60" />
+              <span className="text-xs font-medium text-white/60 uppercase tracking-widest">Credit Balance</span>
+            </div>
+            {isLoadingBalance ? (
+              <Loader2 className="w-6 h-6 animate-spin text-white/40 mt-2" />
+            ) : (
+              <p className="text-3xl font-bold tracking-tight tabular-nums">
+                {(balanceData?.balance ?? 0).toLocaleString()}
+              </p>
+            )}
+          </div>
+          {!isLoadingBalance && balanceData && (
+            <div className="text-right">
+              <span className="text-[10px] font-medium text-white/40 uppercase tracking-widest">Plan</span>
+              <p className="text-sm font-semibold text-white/80 capitalize">{balanceData.planTier}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Header with Period Selector */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-[#0A0A0A] tracking-tight">Usage Analytics</h3>
@@ -90,7 +106,7 @@ export function UsageTab() {
       {/* Stats Cards — horizontal row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: Activity, label: "Credits", value: stats?.totalCreditsUsed },
+          { icon: Activity, label: "Credits Used", value: stats?.totalCreditsUsed },
           { icon: Sparkles, label: "Generations", value: stats?.totalGenerations },
           { icon: TrendingUp, label: "Daily Avg", value: stats?.averagePerDay },
         ].map((card, idx) => (
@@ -126,12 +142,20 @@ export function UsageTab() {
               <div className="flex items-end gap-[2px] h-36">
                 {dailyUsage.map((day, idx) => {
                   const height = maxCredits > 0 ? (day.creditsUsed / maxCredits) * 100 : 0;
+                  const hasUsage = day.creditsUsed > 0;
                   return (
-                    <div key={idx} className="flex-1 flex flex-col items-center group relative">
-                      <div
-                        className="w-full bg-[#0A0A0A]/20 rounded-sm transition-all duration-200 hover:bg-[#0A0A0A]/50"
-                        style={{ height: `${Math.max(height, 2)}%` }}
-                      />
+                    <div key={idx} className="flex-1 flex flex-col items-center group relative justify-end h-full">
+                      {hasUsage ? (
+                        <div
+                          className="w-full bg-[#0A0A0A] rounded-sm transition-all duration-200 hover:bg-[#333]"
+                          style={{ height: `${Math.max(height, 4)}%` }}
+                        />
+                      ) : (
+                        <div
+                          className="w-full bg-[#0A0A0A]/5 rounded-sm"
+                          style={{ height: "2px" }}
+                        />
+                      )}
                       {/* Tooltip */}
                       <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
                         <div className="bg-[#0A0A0A] text-white rounded-lg px-3 py-2 text-xs whitespace-nowrap shadow-xl">
