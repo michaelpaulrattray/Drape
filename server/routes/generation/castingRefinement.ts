@@ -15,6 +15,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
+import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("routes/generation");
 
@@ -85,14 +86,20 @@ export const castingRefinementRouter = router({
             const updatedMasterPrompt = updatedPromptResult.naturalDescription;
             const updatedSchema = updatedPromptResult.technicalSchema;
 
+            // Build ethnicityHint and CASTING OVERRIDES for image model
+            const prefs = (model.preferences || {}) as any;
+            const ethnicityHint = buildEthnicityHint(prefs);
+            const reinforcedPrompt = buildReinforcedPrompt(updatedMasterPrompt, prefs);
+
             const iterResult = await iterateModel(
-              updatedMasterPrompt,
+              reinforcedPrompt,
               targetAsset.storageUrl,
               input.feedback,
               {
                 castingBrand: (model.technicalSchema as any)?.context?.casting_for,
                 frame: targetAsset.viewType === 'frontClose' ? 'HEADSHOT' : 'FULL_BODY',
                 maskBase64: input.maskBase64,
+                ethnicityHint,
                 userId: String(ctx.user.id),
               }
             );

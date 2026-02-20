@@ -583,15 +583,19 @@ NO: PERFECT SYMMETRY, CGI, CARTOON, ANIME, 3D RENDER, PLASTIC SKIN, DOLL LOOK`;
       ? `ETHNICITY PHENOTYPE LOCK — NON-NEGOTIABLE:
 This subject is ${ethnicityHint}.
 
-FACE STRUCTURE must visibly reflect this heritage in: eye shape and fold,
+FACE STRUCTURE must visibly reflect this heritage in: eye shape and fold, 
 nose bridge width, nose shape, cheekbone placement, jawline, and lip fullness.
-These features are determined by BONE and GENETICS — they do NOT change
+These features are determined by BONE and GENETICS — they do NOT change 
 regardless of hair color, skin tone, or styling choices.
 
-For MIXED heritage: BOTH backgrounds must be SIMULTANEOUSLY VISIBLE in the face.
-A viewer should be able to identify BOTH heritages on sight.
+For MIXED heritage: BOTH backgrounds must be SIMULTANEOUSLY VISIBLE in the face. 
+A viewer should be able to identify BOTH heritages on sight. If one heritage is 
+East Asian, Southeast Asian, or South Asian: the eyes MUST show ethnic markers 
+(lid structure, inner fold, eye axis). If one heritage is African: nose bridge 
+width and lip fullness MUST reflect it.
 
-Hair color and style are INDEPENDENT of ethnicity — the user may choose any color.
+Hair color and style are INDEPENDENT of ethnicity — the user may choose any color. 
+A platinum blonde East Asian person still has East Asian bone structure and eyes.
 DO NOT let hair or skin choices erase the facial structure of the stated heritage.\n`
       : '';
 

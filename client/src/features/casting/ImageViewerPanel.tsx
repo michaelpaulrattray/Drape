@@ -155,7 +155,7 @@ export function ImageViewerPanel({
   } = useCastingUIStore();
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const [imageAreaHovered, setImageAreaHovered] = useState(true);
+  const [imageAreaHovered, setImageAreaHovered] = useState(false);
 
   // Floating Reference State
   const [refVisible, setRefVisible] = useState(true);
@@ -710,7 +710,7 @@ export function ImageViewerPanel({
         </div>
       ) : genState.isGenerating ? (
         <div className="flex-1 relative">
-          <LoadingOverlay statusMessage={genState.currentStep || 'Processing...'} />
+          <LoadingOverlay statusMessage={genState.currentStep || 'Processing...'} isFirstGeneration={true} />
         </div>
       ) : (
         <WarmEmptyState canGenerate={isFormReady} onGenerate={handleGenerate} />

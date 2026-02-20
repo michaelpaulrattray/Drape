@@ -13,6 +13,7 @@ import { enforceDailyQuota } from "../../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("routes/generation");
 
@@ -74,14 +75,18 @@ export const castingImagingRouter = router({
       try {
         // Generate image
         const castingBrand = (model.technicalSchema as any)?.context?.casting_for || 'Generic';
-        log.info({ castingBrand, modelId: input.modelId }, '[castingImage] Generating with brand');
+        const prefs = (model.preferences || {}) as any;
+        const ethnicityHint = buildEthnicityHint(prefs);
+        const reinforcedPrompt = buildReinforcedPrompt(model.masterPrompt, prefs);
+        log.info({ castingBrand, modelId: input.modelId, ethnicityHint, hasOverrides: reinforcedPrompt !== model.masterPrompt }, '[castingImage] Generating with brand');
 
         const result = await generateCastingImage(
-          model.masterPrompt,
+          reinforcedPrompt,
           {
             castingBrand,
             frame: 'HEADSHOT',
             referenceImage: input.referenceImage,
+            ethnicityHint,
             userId: String(ctx.user.id),
           }
         );

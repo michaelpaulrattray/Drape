@@ -275,6 +275,7 @@ export async function iterateModel(
     additionalReference?: string;
     frame?: 'HEADSHOT' | 'FULL_BODY';
     castingBrand?: string;
+    ethnicityHint?: string;
     userId?: string;
   } = {}
 ): Promise<GenerationResult> {
@@ -296,7 +297,7 @@ export async function iterateModel(
     options.frame || 'HEADSHOT',
     undefined,
     effectiveMask, // Use the composited mask overlay
-    undefined, // ethnicityHint
+    options.ethnicityHint, // Pass through ethnicityHint for phenotype lock
     options.userId || 'anonymous'
   );
 

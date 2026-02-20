@@ -23,7 +23,7 @@ export const BRAND_OPTIONS = [
 export const ETHNICITIES = [
   "Slavic", "Nordic", "East Asian", "South Asian",
   "Afro-Caribbean", "West African", "Latino",
-  "Middle Eastern", "Mixed", "Polynesian"
+  "Middle Eastern", "Polynesian"
 ];
 
 // ============ Skin ============

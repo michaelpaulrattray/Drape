@@ -20,6 +20,10 @@ export const modelsRouter = router({
         gender: z.string().optional(),
         age: z.union([z.number(), z.string()]).optional(),
         ethnicity: z.string().optional(),
+        ethnicityBlend: z.array(z.object({
+          name: z.string(),
+          pct: z.number(),
+        })).optional(),
         bodyType: z.string().optional(),
         
         // Face structure

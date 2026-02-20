@@ -4130,3 +4130,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] BUG-5: Fixed erase tool — client now composites base image + mask strokes (matches SOT), removed redundant server-side compositing
 - [x] BUG-6: Restyled next stage CTA to match SOT (white-on-dark, glow shadow, ping animation, slide-in)
 - [x] BUG-7: Fixed hold-to-compare — changed history[length-1] to history[historyIndex-1]
+
+
+## Deep Quality Audit (Feb 20 - Batch 2)
+- [x] QUAL-1: Hair descriptors match SOT exactly — issue was missing ethnicityHint to image model causing prompt to be ignored. Fixed via CASTING OVERRIDES + ethLock reinforcement
+- [x] QUAL-2: Fixed chatbox sizing — imageAreaHovered was initialized to true (always visible). Changed to false (hidden until hover)
+- [x] QUAL-3: Audited reference image workflow — flow matches SOT. Reference images passed correctly on NEW generation. Iterate uses currentImageUrl as reference.
+- [x] QUAL-4: Audited full pipeline — fixed missing ethnicityHint + CASTING OVERRIDES in both castingImaging and castingRefinement routes
+- [x] QUAL-5: Fixed ethnicityBlend silently stripped by Zod schema in models.create. Added to schema. Created shared promptReinforcement.ts with dominance bands matching SOT
+- [x] QUAL-6: Fixed race drift — caused by missing ethnicityHint to image model. Added ethLock heritage-specific markers (East Asian eye markers, African nose/lip markers, platinum blonde example)
+- [x] QUAL-7: Simplified QueueStatusBar (queue position only when queued). LoadingOverlay now uses warm palette for first gen (no charcoal), dark overlay for iterations
+- [x] QUAL-8: Removed 'Mixed' from ETHNICITIES array — matches SOT. Blend UI handles mixed heritage via 2-ethnicity selector
