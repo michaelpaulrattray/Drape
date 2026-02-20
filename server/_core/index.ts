@@ -10,8 +10,12 @@ import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../stripe/webhooks";
 import { securityHeaders } from "../security/securityHeaders";
 import { correlationIdMiddleware } from "../security/correlationId";
+import { requestContextMiddleware } from "../logging/requestContextMiddleware";
 import heroProxyRouter from "../heroProxy";
 import { healthHandler } from "../health";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("server");
+
 
 // ============================================================================
 // GLOBAL ERROR HANDLERS
@@ -38,14 +42,14 @@ async function alertCriticalError(label: string, error: unknown): Promise<void> 
 }
 
 process.on("uncaughtException", async (error: Error) => {
-  console.error("[FATAL] Uncaught exception:", error);
+  log.fatal({ err: error }, "Uncaught exception");
   await alertCriticalError("Uncaught Exception", error);
   // Give Slack alert a moment to send, then exit
   setTimeout(() => process.exit(1), 2000);
 });
 
 process.on("unhandledRejection", async (reason: unknown) => {
-  console.error("[FATAL] Unhandled promise rejection:", reason);
+  log.fatal({ err: reason }, "Unhandled promise rejection");
   await alertCriticalError("Unhandled Rejection", reason);
   // Don't exit for rejections — log and continue
 });
@@ -85,7 +89,7 @@ function registerShutdownHandlers(): void {
   const shutdown = async (signal: string) => {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log(`[Shutdown] Received ${signal}, draining connections...`);
+    log.info(`Shutdown: received ${signal}, draining connections...`);
 
     // Stop health monitor
     try {
@@ -98,13 +102,13 @@ function registerShutdownHandlers(): void {
     // Stop accepting new connections
     if (httpServer) {
       httpServer.close(() => {
-        console.log("[Shutdown] HTTP server closed");
+        log.info("Shutdown: HTTP server closed");
       });
     }
 
     // Allow in-flight requests up to 10 seconds to finish
     const forceExitTimer = setTimeout(() => {
-      console.warn("[Shutdown] Force exit after timeout");
+      log.warn("Shutdown: force exit after timeout");
       process.exit(0);
     }, 10_000);
     forceExitTimer.unref(); // Don't keep the process alive just for this timer
@@ -115,7 +119,7 @@ function registerShutdownHandlers(): void {
       const db = await getDb();
       if (db && typeof (db as any).$client?.end === "function") {
         await (db as any).$client.end();
-        console.log("[Shutdown] Database connection closed");
+        log.info("Shutdown: database connection closed");
       }
     } catch {
       // DB cleanup is best-effort
@@ -141,6 +145,9 @@ async function startServer() {
   // Correlation ID: assign/propagate a unique request ID for tracing
   app.use(correlationIdMiddleware);
 
+  // Request context: bind correlationId to AsyncLocalStorage for structured logging
+  app.use(requestContextMiddleware);
+
   // Configure body parser with size limit for file uploads (15MB covers base64 images + JSON metadata)
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ limit: "15mb", extended: true }));
@@ -162,7 +169,12 @@ async function startServer() {
       const result = await handleStripeWebhook(req.body, signature);
       
       if (result.success) {
-        res.status(200).json({ received: true, message: result.message });
+        // Test events need {verified: true} for Stripe webhook verification
+        if (result.message === 'Test event verified') {
+          res.json({ verified: true });
+        } else {
+          res.status(200).json({ received: true, message: result.message });
+        }
       } else {
         res.status(400).json({ error: result.message });
       }
@@ -195,9 +207,9 @@ async function startServer() {
         // Log all server-side tRPC errors with correlation ID for traceability
         const severity = error.code === "INTERNAL_SERVER_ERROR" ? "ERROR" : "WARN";
         const cid = (ctx as any)?.correlationId ?? "unknown";
-        console.error(
-          `[tRPC ${severity}] [${cid}] ${type} ${path ?? "unknown"}: ${error.message}`,
-          error.code === "INTERNAL_SERVER_ERROR" ? error.cause ?? "" : ""
+        log.error(
+          { correlationId: cid, trpcType: type, path: path ?? "unknown", code: error.code, ...(error.code === "INTERNAL_SERVER_ERROR" ? { cause: error.cause } : {}) },
+          `tRPC ${severity}: ${error.message}`
         );
       },
     })
@@ -214,11 +226,11 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    log.info(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    log.info(`Server running on http://localhost:${port}/`);
 
     // Daily job: expire stale pending referrals (>30 days old)
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -227,10 +239,10 @@ async function startServer() {
         const { expireStalePendingReferrals } = await import("../db");
         const count = await expireStalePendingReferrals();
         if (count > 0) {
-          console.log(`[Scheduler] Expired ${count} stale pending referrals`);
+          log.info(`Scheduler: expired ${count} stale pending referrals`);
         }
       } catch (err) {
-        console.error("[Scheduler] Referral expiration job failed:", err);
+        log.error({ err }, "Scheduler: referral expiration job failed");
       }
     };
     // Run once on startup (after 30s delay to let DB connect), then daily
@@ -241,7 +253,7 @@ async function startServer() {
     import("../monitoring/healthMonitor").then(({ startHealthMonitor }) => {
       startHealthMonitor();
     }).catch(err => {
-      console.error("[Scheduler] Failed to start health monitor:", err);
+      log.error({ err }, "Scheduler: failed to start health monitor");
     });
   });
 
@@ -249,4 +261,4 @@ async function startServer() {
   registerShutdownHandlers();
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => log.fatal({ err }, "Failed to start server"));

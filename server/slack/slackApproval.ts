@@ -18,6 +18,8 @@
  */
 
 import { sendRawToChannel, dispatchAuditLog } from "./slackDispatcher";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("slack/slackApproval");
 
 // ============ Types ============
 
@@ -86,7 +88,7 @@ function ensureCleanupRunning(): void {
       for (const [id, action] of Array.from(pendingActions.entries())) {
         if (action.status === "pending" && action.expiresAt < now) {
           action.status = "expired";
-          console.log(`[SlackApproval] Action ${id} expired: ${action.action} on ${action.targetId}`);
+          log.info(`[SlackApproval] Action ${id} expired: ${action.action} on ${action.targetId}`);
         }
         // Remove resolved actions older than 30 minutes
         if (action.status !== "pending" && now - action.createdAt > 30 * 60 * 1000) {
@@ -163,7 +165,7 @@ export async function requestApproval(options: {
   // Send Slack approval request
   const sent = await sendApprovalToSlack(pendingAction);
   
-  console.log(`[SlackApproval] Created pending action ${actionId}: ${options.action} on ${options.targetId} by ${options.requestedBy.name}`);
+  log.info(`[SlackApproval] Created pending action ${actionId}: ${options.action} on ${options.targetId} by ${options.requestedBy.name}`);
   
   return { actionId, sent };
 }
@@ -213,7 +215,7 @@ export function approveAction(actionId: string, approvedBy: string): {
   action.resolvedBy = approvedBy;
   action.resolvedAt = Date.now();
   
-  console.log(`[SlackApproval] Action ${actionId} approved by ${approvedBy}`);
+  log.info(`[SlackApproval] Action ${actionId} approved by ${approvedBy}`);
   
   return { success: true, action };
 }
@@ -240,7 +242,7 @@ export function denyAction(actionId: string, deniedBy: string): {
   action.resolvedBy = deniedBy;
   action.resolvedAt = Date.now();
   
-  console.log(`[SlackApproval] Action ${actionId} denied by ${deniedBy}`);
+  log.info(`[SlackApproval] Action ${actionId} denied by ${deniedBy}`);
   
   return { success: true, action };
 }
@@ -276,7 +278,7 @@ async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
   const webhookUrl = process.env.SLACK_ADMIN_ACTIONS_WEBHOOK_URL;
   
   if (!webhookUrl) {
-    console.log("[SlackApproval] Admin-actions webhook not configured, auto-approving action");
+    log.info("[SlackApproval] Admin-actions webhook not configured, auto-approving action");
     // If Slack is not configured, auto-approve to avoid blocking
     action.status = "approved";
     action.resolvedBy = "system (Slack not configured)";
@@ -413,7 +415,7 @@ async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
     }, { skipDedup: true });
     
     if (!sent) {
-      console.error("[SlackApproval] Failed to send approval request to #admin-actions");
+      log.error("[SlackApproval] Failed to send approval request to #admin-actions");
       return false;
     }
     
@@ -429,10 +431,10 @@ async function sendApprovalToSlack(action: PendingAction): Promise<boolean> {
       ],
     });
     
-    console.log("[SlackApproval] Approval request sent to #admin-actions for action:", action.id);
+    log.info({ data: action.id }, "[SlackApproval] Approval request sent to #admin-actions for action:");
     return true;
   } catch (error) {
-    console.error("[SlackApproval] Error sending approval request:", error);
+    log.error({ err: error }, "[SlackApproval] Error sending approval request:");
     return false;
   }
 }

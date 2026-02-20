@@ -23,6 +23,8 @@ import {
   extractBase64Data,
 } from "./geminiClient";
 import { withTextQueue } from "./geminiQueue";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/geminiSuggestions");
 
 // ============================================================================
 // JSON PARSING HELPERS
@@ -131,7 +133,7 @@ Return ONLY a JSON array of exactly 6 strings.`;
       if (!cleanBase64) throw new Error("Empty data");
       parts.push({ inlineData: { mimeType, data: cleanBase64 } });
     } catch (e) {
-      console.warn("[Suggestions] Failed to parse image, text-only fallback");
+      log.warn("[Suggestions] Failed to parse image, text-only fallback");
     }
   }
 
@@ -288,7 +290,7 @@ Return ONLY a JSON array of strings.`,
       return parsed.slice(0, 6);
     }
   } catch (e: any) {
-    console.warn("[RefAnalysis] Failed:", e?.message);
+    log.warn({ err: e?.message }, "[RefAnalysis] Failed:");
   }
   return [];
   }, 'analyzeReferenceForTransfer');

@@ -18,13 +18,15 @@ import {
   InsertPointTransaction,
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/credits");
 
 const INITIAL_CREDITS = 5000; // Free tier starting credits (50x display multiplier)
 
 export async function initializeUserCredits(userId: number): Promise<void> {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot initialize credits: database not available");
+    log.warn("[Database] Cannot initialize credits: database not available");
     return;
   }
 
@@ -50,7 +52,7 @@ export async function initializeUserCredits(userId: number): Promise<void> {
       });
     });
   } catch (error) {
-    console.error("[Database] Failed to initialize user credits:", error);
+    log.error({ err: error }, "[Database] Failed to initialize user credits:");
     throw error;
   }
 }
@@ -61,7 +63,7 @@ export const initializeUserPoints = initializeUserCredits;
 export async function getUserCredits(userId: number) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get credits: database not available");
+    log.warn("[Database] Cannot get credits: database not available");
     return null;
   }
 
@@ -82,7 +84,7 @@ export async function getCreditTransactions(
 ) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get transactions: database not available");
+    log.warn("[Database] Cannot get transactions: database not available");
     return [];
   }
 
@@ -107,7 +109,7 @@ export async function getCreditTransactionByRef(
 ) {
   const db = await getDb();
   if (!db) {
-    console.warn(
+    log.warn(
       "[Database] Cannot get transaction by ref: database not available"
     );
     return null;
@@ -196,7 +198,7 @@ export async function deductCredits(
       return { success: true, newBalance };
     });
   } catch (error) {
-    console.error("[Database] Failed to deduct credits:", error);
+    log.error({ err: error }, "[Database] Failed to deduct credits:");
     return { success: false, error: "Failed to deduct credits" };
   }
 }
@@ -244,7 +246,7 @@ export async function addCredits(
           .limit(1);
 
         if (existing.length > 0) {
-          console.warn(
+          log.warn(
             `[Database] Duplicate transaction detected: referenceId=${referenceId}, userId=${userId}. Skipping.`
           );
           const userCreditsResult = await tx
@@ -305,7 +307,7 @@ export async function addCredits(
       return { success: true, newBalance };
     });
   } catch (error) {
-    console.error("[Database] Failed to add credits:", error);
+    log.error({ err: error }, "[Database] Failed to add credits:");
     return { success: false, error: "Failed to add credits" };
   }
 }

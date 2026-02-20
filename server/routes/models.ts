@@ -7,6 +7,8 @@ import { generateMasterPrompt, ModelPreferences } from "../casting/aiService";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("routes/models");
 
 export const modelsRouter = router({
   // Create a new AI model from preferences
@@ -70,13 +72,13 @@ export const modelsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // Debug: Log received preferences
-      console.log('[models.create] Received preferences:', JSON.stringify(input.preferences, null, 2));
+      log.info({ preferences: input.preferences }, '[models.create] Received preferences');
       
       // Generate master prompt (no point cost for this step)
       const masterPrompt = await generateMasterPrompt(input.preferences as ModelPreferences);
       
       // Debug: Log generated master prompt
-      console.log('[models.create] Generated master prompt:', masterPrompt.naturalDescription?.substring(0, 500) + '...');
+      log.info({ data: masterPrompt.naturalDescription?.substring(0, 500) + '...' }, '[models.create] Generated master prompt:');
 
       // Save model to database as draft (no agencyId until export/minting)
       // agencyId will be assigned when user exports the model (minting)

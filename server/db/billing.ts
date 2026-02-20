@@ -11,6 +11,8 @@ import {
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
 import { getUserCredits, addCredits } from "./credits";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/billing");
 
 export async function updateUserSubscription(
   userId: number,
@@ -39,7 +41,7 @@ export async function updateUserSubscription(
     await db.update(credits).set(data).where(eq(credits.userId, userId));
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to update subscription:", error);
+    log.error({ err: error }, "[Database] Failed to update subscription:");
     return { success: false, error: "Failed to update subscription" };
   }
 }
@@ -106,7 +108,7 @@ export async function refreshMonthlyCredits(
       return { success: true, newBalance };
     });
   } catch (error) {
-    console.error("[Database] Failed to refresh monthly credits:", error);
+    log.error({ err: error }, "[Database] Failed to refresh monthly credits:");
     return { success: false, error: "Failed to refresh credits" };
   }
 }
@@ -208,7 +210,7 @@ export async function getCreditHistory(
 
     return { transactions, total };
   } catch (error) {
-    console.error("[Database] Failed to get credit history:", error);
+    log.error({ err: error }, "[Database] Failed to get credit history:");
     return { transactions: [], total: 0 };
   }
 }
@@ -280,7 +282,7 @@ export async function getUsageStats(
       byType,
     };
   } catch (error) {
-    console.error("[Database] Failed to get usage stats:", error);
+    log.error({ err: error }, "[Database] Failed to get usage stats:");
     return {
       totalCreditsUsed: 0,
       totalGenerations: 0,
@@ -356,7 +358,7 @@ export async function getDailyUsage(
       generationCount: data.generationCount,
     }));
   } catch (error) {
-    console.error("[Database] Failed to get daily usage:", error);
+    log.error({ err: error }, "[Database] Failed to get daily usage:");
     return [];
   }
 }

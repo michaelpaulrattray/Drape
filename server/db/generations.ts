@@ -5,6 +5,8 @@
 import { eq, desc } from "drizzle-orm";
 import { generations, InsertGeneration } from "../../drizzle/schema";
 import { getDb } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/generations");
 
 export async function createGeneration(
   data: InsertGeneration
@@ -39,7 +41,7 @@ export async function createGeneration(
 
     return { success: true, generationId: inserted[0]?.id };
   } catch (error) {
-    console.error("[Database] Failed to create generation:", error);
+    log.error({ err: error }, "[Database] Failed to create generation:");
     return { success: false, error: "Failed to create generation" };
   }
 }
@@ -65,7 +67,7 @@ export async function updateGeneration(
       .where(eq(generations.id, generationId));
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to update generation:", error);
+    log.error({ err: error }, "[Database] Failed to update generation:");
     return { success: false, error: "Failed to update generation" };
   }
 }

@@ -39,6 +39,8 @@ import {
   getStudioSettings,
   hasBodyArt,
 } from "./geminiPrompts";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/geminiGeneration");
 
 // ============================================================================
 // CHAT SESSION STATE
@@ -67,7 +69,7 @@ function evictStaleSessions(): void {
   for (const [uid, session] of entries) {
     if (now - session.lastUsed > SESSION_TTL_MS) {
       sessionMap.delete(uid);
-      console.log(`[CastingSession] Evicted stale session for user ${uid}`);
+      log.info(`[CastingSession] Evicted stale session for user ${uid}`);
     }
   }
 
@@ -78,7 +80,7 @@ function evictStaleSessions(): void {
     const toEvict = sorted.slice(0, sessionMap.size - MAX_SESSIONS);
     for (const [uid] of toEvict) {
       sessionMap.delete(uid);
-      console.log(`[CastingSession] Evicted oldest session for user ${uid} (cap: ${MAX_SESSIONS})`);
+      log.info(`[CastingSession] Evicted oldest session for user ${uid} (cap: ${MAX_SESSIONS})`);
     }
   }
 }
@@ -98,7 +100,7 @@ export const getSessionCount = () => sessionMap.size;
 /** Clear the chat session for a specific user (e.g. when starting a new casting) */
 export const clearCastingSession = (userId: string) => {
   sessionMap.delete(userId);
-  console.log(`[CastingSession] Cleared for user ${userId}`);
+  log.info(`[CastingSession] Cleared for user ${userId}`);
   evictStaleSessions();
 };
 
@@ -116,12 +118,12 @@ export const generateMasterPrompt = async (
   mode: 'NEW' | 'ITERATE' | 'REFERENCE' = 'NEW'
 ): Promise<{ natural: string; schema: any }> => {
   return withTextQueue(async () => {
-  console.log('[geminiGeneration] generateMasterPrompt called:', {
+  log.info({
     brand: prefs.castingBrand,
     gender: prefs.gender,
     ethnicity: prefs.ethnicity,
     mode,
-  });
+  }, '[geminiGeneration] generateMasterPrompt called');
 
   const ai = getAiClient();
   const skinInstruction = getSkinDescription(prefs.skinTexture, prefs.skinFinish);
@@ -176,7 +178,7 @@ export const generateMasterPrompt = async (
       );
       return parseResponse(response);
     } catch (e: any) {
-      console.warn(`[MasterPrompt] ${MODELS[i]} failed:`, e?.message);
+      log.warn({ err: e?.message }, `[MasterPrompt] ${MODELS[i]} failed:`);
       if (i === MODELS.length - 1) {
         throw new Error(formatGeminiError(e));
       }
@@ -382,7 +384,7 @@ export const enhanceUserPrompt = async (originalPrompt: string): Promise<string>
       if (result) return result;
       throw new Error("Empty response");
     } catch (e: any) {
-      console.warn(`[EnhancePrompt] ${MODELS[i]} failed:`, e?.message);
+      log.warn({ err: e?.message }, `[EnhancePrompt] ${MODELS[i]} failed:`);
       if (i === MODELS.length - 1) return originalPrompt;
     }
   }
@@ -519,7 +521,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
   const userSession = sessionMap.get(userId);
   if (mode === GenerationMode.ITERATE && userSession) {
     try {
-      console.log(`[CastingSession] Sending iteration through chat for user ${userId}`);
+      log.info(`[CastingSession] Sending iteration through chat for user ${userId}`);
       const response = await withTimeout(
         userSession.chat.sendMessage({ message: parts }),
         60000,
@@ -529,7 +531,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
       userSession.lastUsed = Date.now();
       return { imageUrl, engineUsed: userSession.model + ' (chat)' };
     } catch (e: any) {
-      console.warn(`[CastingSession] Chat iteration failed for user ${userId}, falling back to stateless:`, e?.message);
+      log.warn({ err: e?.message }, `[CastingSession] Chat iteration failed for user ${userId}, falling back to stateless:`);
       sessionMap.delete(userId);
       // Fall through to stateless
     }
@@ -555,10 +557,10 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
       );
       const imageUrl = extractImage(response);
       sessionMap.set(userId, { chat, model: PRIMARY_MODEL, lastUsed: Date.now() });
-      console.log(`[CastingSession] Session created for user ${userId} — iterations will use chat`);
+      log.info(`[CastingSession] Session created for user ${userId} — iterations will use chat`);
       return { imageUrl, engineUsed: PRIMARY_MODEL };
     } catch (e: any) {
-      console.warn(`[CastingSession] Chat creation failed for user ${userId}, falling back to stateless:`, e?.message);
+      log.warn({ err: e?.message }, `[CastingSession] Chat creation failed for user ${userId}, falling back to stateless:`);
       sessionMap.delete(userId);
       // Fall through to stateless
     }
@@ -592,7 +594,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
       );
       return { imageUrl: url, engineUsed: model };
     } catch (e: any) {
-      console.warn(`[CastingImage] ${model} failed:`, e?.message);
+      log.warn({ err: e?.message }, `[CastingImage] ${model} failed:`);
       if (i === IMAGE_MODELS.length - 1) {
         throw new Error(formatGeminiError(e));
       }

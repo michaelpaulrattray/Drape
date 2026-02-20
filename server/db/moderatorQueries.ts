@@ -17,6 +17,8 @@ import {
   models,
 } from "../../drizzle/schema";
 import { getDb } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/moderatorQueries");
 
 // ============================================================================
 // MODERATOR READ-ONLY QUERY FUNCTIONS
@@ -151,10 +153,7 @@ export async function getDetailedCreditHistory(
       },
     };
   } catch (error) {
-    console.error(
-      "[Database] Failed to get detailed credit history:",
-      error
-    );
+    log.error({ err: error }, "[Database] Failed to get detailed credit history");
     return {
       transactions: [],
       total: 0,
@@ -324,10 +323,7 @@ export async function getDetailedGenerationHistory(
       },
     };
   } catch (error) {
-    console.error(
-      "[Database] Failed to get detailed generation history:",
-      error
-    );
+    log.error({ err: error }, "[Database] Failed to get detailed generation history");
     return {
       generations: [],
       total: 0,

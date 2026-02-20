@@ -30,6 +30,8 @@ import {
   referrals,
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/accountDeletion");
 
 export interface DeletionResult {
   success: boolean;
@@ -251,7 +253,7 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
       deletedCounts: counts,
     };
   } catch (error) {
-    console.error("[AccountDeletion] Failed:", error);
+    log.error({ err: error }, "[AccountDeletion] Failed:");
     return {
       success: false,
       storageKeysToDelete: [],

@@ -21,6 +21,8 @@ import { getDb } from "./db";
 import { auditLogs, AUDIT_ACTIONS, type AuditAction, type AuditLog } from "../drizzle/schema";
 import { notifyOwner } from "./_core/notification";
 import { eq, and, gte, desc } from "drizzle-orm";
+import { createModuleLogger } from "./logging/logger";
+const log = createModuleLogger("auditLog");
 
 export interface AuditEventOptions {
   /** User ID performing the action (null for system events) */
@@ -94,7 +96,7 @@ export async function logAuditEvent(options: AuditEventOptions): Promise<void> {
   try {
     const db = await getDb();
     if (!db) {
-      console.warn("[AuditLog] Database not available");
+      log.warn("[AuditLog] Database not available");
       return;
     }
     
@@ -119,7 +121,7 @@ export async function logAuditEvent(options: AuditEventOptions): Promise<void> {
     }
   } catch (error) {
     // Log errors but don't fail the main operation
-    console.error("[AuditLog] Failed to log event:", error);
+    log.error({ err: error }, "[AuditLog] Failed to log event:");
   }
 }
 
@@ -210,7 +212,7 @@ async function checkAbusePatterns(userId: number, currentAction: AuditAction): P
         await handleAbuseDetection(userId, pattern, matchingCount);
       }
     } catch (error) {
-      console.error(`[AbuseDetection] Error checking pattern ${pattern.name}:`, error);
+      log.error({ err: error }, `[AbuseDetection] Error checking pattern ${pattern.name}:`);
     }
   }
 }
@@ -223,7 +225,7 @@ async function handleAbuseDetection(
   pattern: AbusePattern,
   eventCount: number
 ): Promise<void> {
-  console.warn(`[AbuseDetection] Pattern "${pattern.name}" triggered for user ${userId}`);
+  log.warn(`[AbuseDetection] Pattern "${pattern.name}" triggered for user ${userId}`);
 
   // Log the abuse detection event
   const db = await getDb();
@@ -281,7 +283,7 @@ async function handleAbuseDetection(
       });
     }
   } catch (error) {
-    console.error("[AbuseDetection] Failed to send Slack alert:", error);
+    log.error({ err: error }, "[AbuseDetection] Failed to send Slack alert:");
   }
 
   // Also notify owner via in-app notification for critical patterns
@@ -312,9 +314,9 @@ ${pattern.description}
 This is an automated security notification from Drape.
         `.trim(),
       });
-      console.log(`[AbuseDetection] Owner notified about ${pattern.name} for user ${userId}`);
+      log.info(`[AbuseDetection] Owner notified about ${pattern.name} for user ${userId}`);
     } catch (error) {
-      console.error("[AbuseDetection] Failed to notify owner:", error);
+      log.error({ err: error }, "[AbuseDetection] Failed to notify owner:");
     }
   }
 }

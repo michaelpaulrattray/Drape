@@ -24,6 +24,8 @@ import {
   recordSuccess,
   recordFailure,
 } from "./geminiCircuitBreaker";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/geminiQueue");
 
 // ── Configuration (env-configurable) ──────────────────────────────────────
 const IMAGE_CONCURRENCY = parseInt(
@@ -39,7 +41,7 @@ const MAX_QUEUE_DEPTH = parseInt(
   10,
 );
 
-console.log(
+log.info(
   `[GeminiQueue] Initialized — image: ${IMAGE_CONCURRENCY} concurrent, text: ${TEXT_CONCURRENCY} concurrent, max depth: ${MAX_QUEUE_DEPTH}`,
 );
 
@@ -71,7 +73,7 @@ export async function withImageQueue<T>(
   checkCircuit();
 
   if (imageQueueDepth >= MAX_QUEUE_DEPTH) {
-    console.warn(
+    log.warn(
       `[GeminiQueue] Image queue full (${imageQueueDepth}/${MAX_QUEUE_DEPTH}), rejecting: ${label}`,
     );
     throw new Error(
@@ -88,13 +90,13 @@ export async function withImageQueue<T>(
     onPosition(positionInQueue, imageQueueDepth);
   }
 
-  console.log(
+  log.info(
     `[GeminiQueue] Image enqueued: ${label} (depth: ${imageQueueDepth}, active: ${imageLimiter.activeCount}/${IMAGE_CONCURRENCY}, ticket: ${myPosition})`,
   );
 
   try {
     const result = await imageLimiter(() => {
-      console.log(
+      log.info(
         `[GeminiQueue] Image started: ${label} (active: ${imageLimiter.activeCount}/${IMAGE_CONCURRENCY})`,
       );
       return fn();
@@ -106,7 +108,7 @@ export async function withImageQueue<T>(
     throw error;
   } finally {
     imageQueueDepth--;
-    console.log(
+    log.info(
       `[GeminiQueue] Image completed: ${label} (depth: ${imageQueueDepth})`,
     );
   }
@@ -127,7 +129,7 @@ export async function withTextQueue<T>(
   checkCircuit();
 
   if (textQueueDepth >= MAX_QUEUE_DEPTH) {
-    console.warn(
+    log.warn(
       `[GeminiQueue] Text queue full (${textQueueDepth}/${MAX_QUEUE_DEPTH}), rejecting: ${label}`,
     );
     throw new Error(
@@ -136,13 +138,13 @@ export async function withTextQueue<T>(
   }
 
   textQueueDepth++;
-  console.log(
+  log.info(
     `[GeminiQueue] Text enqueued: ${label} (depth: ${textQueueDepth}, active: ${textLimiter.activeCount}/${TEXT_CONCURRENCY})`,
   );
 
   try {
     const result = await textLimiter(() => {
-      console.log(
+      log.info(
         `[GeminiQueue] Text started: ${label} (active: ${textLimiter.activeCount}/${TEXT_CONCURRENCY})`,
       );
       return fn();
@@ -154,7 +156,7 @@ export async function withTextQueue<T>(
     throw error;
   } finally {
     textQueueDepth--;
-    console.log(
+    log.info(
       `[GeminiQueue] Text completed: ${label} (depth: ${textQueueDepth})`,
     );
   }

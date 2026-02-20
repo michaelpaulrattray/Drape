@@ -26,7 +26,11 @@ import {
 } from "../db";
 import { SlackAlerts } from "../slack/slackNotification";
 import { SubscriptionPlan } from "./stripeProducts";
-import { PlanTier } from "../../drizzle/schema";
+import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
+import { createModuleLogger } from "../logging/logger";
+import { getDb } from "../db/connection";
+import { eq } from "drizzle-orm";
+const log = createModuleLogger("stripe/webhooks");
 
 export interface WebhookResult {
   success: boolean;
@@ -46,43 +50,101 @@ export async function handleStripeWebhook(
   try {
     event = constructWebhookEvent(payload, signature);
   } catch (error) {
-    console.error("[Webhook] Failed to verify signature:", error);
+    log.error({ err: error }, "[Webhook] Failed to verify signature:");
     return { success: false, message: "Invalid signature", error: String(error) };
   }
 
-  console.log(`[Webhook] Processing event: ${event.type}`);
+  log.info({ eventId: event.id, eventType: event.type }, `[Webhook] Processing event: ${event.type}`);
+
+  // Handle test events (Stripe webhook verification)
+  if (event.id.startsWith('evt_test_')) {
+    log.info('[Webhook] Test event detected, returning verification response');
+    return { success: true, message: 'Test event verified' };
+  }
+
+  // Idempotency check: skip if already processed
+  try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
+    const [existing] = await db
+      .select({ id: stripeWebhookEvents.id })
+      .from(stripeWebhookEvents)
+      .where(eq(stripeWebhookEvents.eventId, event.id))
+      .limit(1);
+
+    if (existing) {
+      log.info({ eventId: event.id }, '[Webhook] Duplicate event, skipping');
+      return { success: true, message: `Event ${event.id} already processed` };
+    }
+  } catch (idempotencyErr) {
+    // If idempotency check fails, proceed anyway (fail open)
+    log.warn({ err: idempotencyErr }, '[Webhook] Idempotency check failed, proceeding');
+  }
 
   try {
+    let result: WebhookResult;
+
     switch (event.type) {
       case "checkout.session.completed":
-        return await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+        result = await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
 
       case "customer.subscription.created":
       case "customer.subscription.updated":
-        return await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        result = await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        break;
 
       case "customer.subscription.deleted":
-        return await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        result = await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
 
       case "invoice.payment_succeeded":
-        return await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        result = await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        break;
 
       case "invoice.payment_failed":
-        return await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        result = await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
 
       case "charge.dispute.created":
-        return await handleDisputeCreated(event.data.object as Stripe.Dispute);
+        result = await handleDisputeCreated(event.data.object as Stripe.Dispute);
+        break;
 
       case "charge.dispute.closed":
-        return await handleDisputeClosed(event.data.object as Stripe.Dispute);
+        result = await handleDisputeClosed(event.data.object as Stripe.Dispute);
+        break;
 
       default:
-        console.log(`[Webhook] Unhandled event type: ${event.type}`);
+        log.info(`[Webhook] Unhandled event type: ${event.type}`);
         return { success: true, message: `Unhandled event type: ${event.type}` };
     }
+
+    // Record successfully processed event for idempotency
+    if (result.success) {
+      await recordProcessedEvent(event.id, event.type);
+    }
+
+    return result;
   } catch (error) {
-    console.error(`[Webhook] Error processing ${event.type}:`, error);
+    log.error({ err: error }, `[Webhook] Error processing ${event.type}:`);
     return { success: false, message: `Error processing ${event.type}`, error: String(error) };
+  }
+}
+
+/**
+ * Record a processed webhook event for idempotency.
+ * Called after successful processing of each handler.
+ */
+async function recordProcessedEvent(eventId: string, eventType: string): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
+    await db.insert(stripeWebhookEvents).values({
+      eventId,
+      eventType,
+    }).onDuplicateKeyUpdate({ set: { eventId } }); // No-op on duplicate
+  } catch (err) {
+    log.warn({ err, eventId }, '[Webhook] Failed to record processed event');
   }
 }
 
@@ -101,10 +163,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   try {
     const credited = await creditReferrerOnPaidAction(userId);
     if (credited) {
-      console.log(`[Webhook] Referrer credited for user ${userId}'s first paid subscription`);
+      log.info(`[Webhook] Referrer credited for user ${userId}'s first paid subscription`);
     }
   } catch (err) {
-    console.error(`[Webhook] Failed to credit referrer for user ${userId}:`, err);
+    log.error({ err: err }, `[Webhook] Failed to credit referrer for user ${userId}:`);
     // Non-blocking — don't fail the webhook for referral credit issues
   }
 
@@ -121,7 +183,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   // Get user by Stripe customer ID
   const userWithCredits = await getUserByStripeCustomerId(customerId);
   if (!userWithCredits) {
-    console.error(`[Webhook] No user found for customer ${customerId}`);
+    log.error(`[Webhook] No user found for customer ${customerId}`);
     return { success: false, message: `No user found for customer ${customerId}` };
   }
 
@@ -142,7 +204,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
     planExpiresAt: new Date(periodEnd * 1000),
   });
 
-  console.log(`[Webhook] Updated subscription for user ${userId}: ${planTier} (${subscription.status})`);
+  log.info(`[Webhook] Updated subscription for user ${userId}: ${planTier} (${subscription.status})`);
   return { success: true, message: `Updated subscription for user ${userId}` };
 }
 
@@ -155,7 +217,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   // Get user by Stripe customer ID
   const userWithCredits = await getUserByStripeCustomerId(customerId);
   if (!userWithCredits) {
-    console.error(`[Webhook] No user found for customer ${customerId}`);
+    log.error(`[Webhook] No user found for customer ${customerId}`);
     return { success: false, message: `No user found for customer ${customerId}` };
   }
 
@@ -173,7 +235,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     currentPeriodEnd: null,
   });
 
-  console.log(`[Webhook] Subscription deleted for user ${userId} (was ${previousPlan}), downgraded to free tier`);
+  log.info(`[Webhook] Subscription deleted for user ${userId} (was ${previousPlan}), downgraded to free tier`);
   return { success: true, message: `Subscription deleted for user ${userId}` };
 }
 
@@ -192,7 +254,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   // Get user by Stripe customer ID
   const userWithCredits = await getUserByStripeCustomerId(customerId);
   if (!userWithCredits) {
-    console.error(`[Webhook] No user found for customer ${customerId}`);
+    log.error(`[Webhook] No user found for customer ${customerId}`);
     return { success: false, message: `No user found for customer ${customerId}` };
   }
 
@@ -222,7 +284,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
     return { success: false, message: "Failed to refresh credits", error: result.error };
   }
 
-  console.log(`[Webhook] Refreshed credits for user ${userId}: ${monthlyCredits} + ${rolloverCredits} rollover = ${result.newBalance}`);
+  log.info(`[Webhook] Refreshed credits for user ${userId}: ${monthlyCredits} + ${rolloverCredits} rollover = ${result.newBalance}`);
   return { success: true, message: `Refreshed credits for user ${userId}` };
 }
 
@@ -241,7 +303,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
   // Get user by Stripe customer ID
   const userWithCredits = await getUserByStripeCustomerId(customerId);
   if (!userWithCredits) {
-    console.error(`[Webhook] No user found for customer ${customerId}`);
+    log.error(`[Webhook] No user found for customer ${customerId}`);
     return { success: false, message: `No user found for customer ${customerId}` };
   }
 
@@ -253,12 +315,12 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
 
   if (isFinalFailure) {
     // Final retry exhausted — auto-cancel the subscription and downgrade to free
-    console.log(`[Webhook] Final payment failure for user ${userId}, auto-cancelling subscription`);
+    log.info(`[Webhook] Final payment failure for user ${userId}, auto-cancelling subscription`);
 
     try {
       await cancelSubscription(subscriptionId);
     } catch (cancelErr) {
-      console.error(`[Webhook] Failed to cancel subscription ${subscriptionId}:`, cancelErr);
+      log.error({ err: cancelErr }, `[Webhook] Failed to cancel subscription ${subscriptionId}:`);
     }
 
     await updateUserSubscription(userId, {
@@ -285,14 +347,14 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
       `FINAL FAILURE — subscription auto-cancelled. Reason: ${failureMessage}`
     );
 
-    console.log(`[Webhook] User ${userId} subscription auto-cancelled after final payment failure`);
+    log.info(`[Webhook] User ${userId} subscription auto-cancelled after final payment failure`);
   } else {
     // Intermediate retry failure — mark as past_due, no alert
     await updateUserSubscription(userId, {
       subscriptionStatus: "past_due",
     });
 
-    console.log(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
+    log.info(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
   }
   return { success: true, message: `Payment failed for user ${userId}` };
 }
@@ -343,9 +405,9 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
     //    Using userId 0 as "system" since this is an automated action
     const suspendResult = await suspendUser(userId, `Chargeback filed: ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()} — reason: ${reason}`, 0);
     if (suspendResult.success) {
-      console.log(`[Webhook] User ${userId} auto-suspended due to dispute ${dispute.id}`);
+      log.info(`[Webhook] User ${userId} auto-suspended due to dispute ${dispute.id}`);
     } else {
-      console.error(`[Webhook] Failed to suspend user ${userId}: ${suspendResult.error}`);
+      log.error(`[Webhook] Failed to suspend user ${userId}: ${suspendResult.error}`);
     }
 
     // 2. Revoke credits — as a safe approach, revoke the user's entire current balance (they can be restored on win).
@@ -360,16 +422,16 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
         disputeRef
       );
       if (revokeResult.success) {
-        console.log(`[Webhook] Revoked ${currentBalance} credits from user ${userId} (dispute ${dispute.id}). New balance: ${revokeResult.newBalance}`);
+        log.info(`[Webhook] Revoked ${currentBalance} credits from user ${userId} (dispute ${dispute.id}). New balance: ${revokeResult.newBalance}`);
       } else {
-        console.error(`[Webhook] Failed to revoke credits from user ${userId}: ${revokeResult.error}`);
+        log.error(`[Webhook] Failed to revoke credits from user ${userId}: ${revokeResult.error}`);
       }
     } else {
-      console.log(`[Webhook] User ${userId} has 0 credits — no credits to revoke for dispute ${dispute.id}`);
+      log.info(`[Webhook] User ${userId} has 0 credits — no credits to revoke for dispute ${dispute.id}`);
     }
   }
 
-  console.log(`[Webhook] Dispute created: ${dispute.id}, amount: ${amount} ${currency}, reason: ${reason}, userId: ${userId || "unknown"}`);
+  log.info(`[Webhook] Dispute created: ${dispute.id}, amount: ${amount} ${currency}, reason: ${reason}, userId: ${userId || "unknown"}`);
   return {
     success: true,
     message: `Dispute ${dispute.id} filed — user ${userId ? `#${userId} suspended, ${userCreditsBalance ?? 0} credits revoked` : "not identified"} — Slack alert sent`,
@@ -424,10 +486,10 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     const unsuspendResult = await unsuspendUser(userId);
     if (unsuspendResult.success) {
       actions.push("account restored");
-      console.log(`[Webhook] User ${userId} unsuspended after winning dispute ${dispute.id}`);
+      log.info(`[Webhook] User ${userId} unsuspended after winning dispute ${dispute.id}`);
     } else {
       actions.push(`unsuspend failed: ${unsuspendResult.error}`);
-      console.error(`[Webhook] Failed to unsuspend user ${userId}: ${unsuspendResult.error}`);
+      log.error(`[Webhook] Failed to unsuspend user ${userId}: ${unsuspendResult.error}`);
     }
 
     // 2. Restore the revoked credits
@@ -446,17 +508,17 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
       );
       if (restoreResult.success && !restoreResult.duplicate) {
         actions.push(`${creditsToRestore} credits restored`);
-        console.log(`[Webhook] Restored ${creditsToRestore} credits to user ${userId} after winning dispute ${dispute.id}`);
+        log.info(`[Webhook] Restored ${creditsToRestore} credits to user ${userId} after winning dispute ${dispute.id}`);
       } else if (restoreResult.duplicate) {
         actions.push("credits already restored (duplicate)");
-        console.log(`[Webhook] Credits already restored for dispute ${dispute.id} (duplicate)`);
+        log.info(`[Webhook] Credits already restored for dispute ${dispute.id} (duplicate)`);
       } else {
         actions.push(`credit restore failed: ${restoreResult.error}`);
-        console.error(`[Webhook] Failed to restore credits for user ${userId}: ${restoreResult.error}`);
+        log.error(`[Webhook] Failed to restore credits for user ${userId}: ${restoreResult.error}`);
       }
     } else {
       actions.push("no revoked credits found to restore");
-      console.log(`[Webhook] No revoked credits found for dispute ${dispute.id} — nothing to restore`);
+      log.info(`[Webhook] No revoked credits found for dispute ${dispute.id} — nothing to restore`);
     }
   } else if (userId && status === "lost") {
     // DISPUTE LOST: Keep suspended, cancel subscription
@@ -467,10 +529,10 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
       const cancelResult = await cancelSubscription(stripeSubscriptionId);
       if (cancelResult) {
         actions.push("subscription cancelled");
-        console.log(`[Webhook] Cancelled subscription ${stripeSubscriptionId} for user ${userId} after losing dispute ${dispute.id}`);
+        log.info(`[Webhook] Cancelled subscription ${stripeSubscriptionId} for user ${userId} after losing dispute ${dispute.id}`);
       } else {
         actions.push("subscription cancel failed");
-        console.error(`[Webhook] Failed to cancel subscription ${stripeSubscriptionId} for user ${userId}`);
+        log.error(`[Webhook] Failed to cancel subscription ${stripeSubscriptionId} for user ${userId}`);
       }
     } else {
       actions.push("no active subscription");
@@ -480,7 +542,7 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     actions.push(`status: ${status} — no automatic action taken`);
   }
 
-  console.log(`[Webhook] Dispute closed: ${dispute.id}, status: ${status}, userId: ${userId || "unknown"}, actions: ${actions.join(", ")}`);
+  log.info(`[Webhook] Dispute closed: ${dispute.id}, status: ${status}, userId: ${userId || "unknown"}, actions: ${actions.join(", ")}`);
   return {
     success: true,
     message: `Dispute ${dispute.id} closed (${status}) — ${userId ? actions.join(", ") : "user not identified"} — Slack alert sent`,

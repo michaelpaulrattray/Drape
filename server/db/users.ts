@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 import { InsertUser, users, points } from "../../drizzle/schema";
 import { ENV } from "../_core/env";
 import { getDb } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/users");
 
 // Forward reference — initializeUserPoints lives in credits.ts
 // We use a dynamic import to avoid circular dependency
@@ -21,7 +23,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
+    log.warn("[Database] Cannot upsert user: database not available");
     return;
   }
 
@@ -88,7 +90,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       }
     }
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
+    log.error({ err: error }, "[Database] Failed to upsert user:");
     throw error;
   }
 }
@@ -96,7 +98,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    log.warn("[Database] Cannot get user: database not available");
     return undefined;
   }
 
@@ -158,7 +160,7 @@ export async function updateUserProfile(
     await db.update(users).set(updateData).where(eq(users.id, userId));
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to update user profile:", error);
+    log.error({ err: error }, "[Database] Failed to update user profile:");
     return { success: false, error: "Failed to update profile" };
   }
 }
@@ -206,7 +208,7 @@ export async function updateUserStorageUsed(
     await db.update(users).set({ storageUsed: newUsed }).where(eq(users.id, userId));
     return { success: true, newUsed };
   } catch (error) {
-    console.error("[Database] Failed to update storage used:", error);
+    log.error({ err: error }, "[Database] Failed to update storage used:");
     return { success: false, error: "Failed to update storage" };
   }
 }

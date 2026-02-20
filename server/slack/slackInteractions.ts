@@ -25,6 +25,8 @@ import {
 import { consumeEmergencyToken, blockIp, getUserById } from "../db";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { approveAction, denyAction } from "./slackApproval";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("slack/slackInteractions");
 
 interface SlackInteractionPayload {
   type: string;
@@ -49,7 +51,7 @@ export async function handleSlackInteraction(req: Request, res: Response): Promi
     const payloadString = req.body?.payload;
 
     if (!payloadString) {
-      console.error("[SlackInteraction] Missing payload");
+      log.error("[SlackInteraction] Missing payload");
       res.status(400).json({ error: "Missing payload" });
       return;
     }
@@ -58,7 +60,7 @@ export async function handleSlackInteraction(req: Request, res: Response): Promi
     const signingSecret = process.env.SLACK_SIGNING_SECRET;
 
     if (!signingSecret) {
-      console.error("[SlackInteraction] SLACK_SIGNING_SECRET not configured - rejecting request");
+      log.error("[SlackInteraction] SLACK_SIGNING_SECRET not configured - rejecting request");
       res.status(500).json({ error: "Slack integration not properly configured" });
       return;
     }
@@ -67,7 +69,7 @@ export async function handleSlackInteraction(req: Request, res: Response): Promi
     const timestamp = req.headers["x-slack-request-timestamp"] as string;
 
     if (!signature || !timestamp) {
-      console.error("[SlackInteraction] Missing signature or timestamp headers");
+      log.error("[SlackInteraction] Missing signature or timestamp headers");
       res.status(401).json({ error: "Missing authentication headers" });
       return;
     }
@@ -76,7 +78,7 @@ export async function handleSlackInteraction(req: Request, res: Response): Promi
     const rawBody = `payload=${encodeURIComponent(payloadString)}`;
 
     if (!verifySlackSignature(signature, timestamp, rawBody)) {
-      console.error("[SlackInteraction] Invalid signature");
+      log.error("[SlackInteraction] Invalid signature");
       res.status(401).json({ error: "Invalid signature" });
       return;
     }
@@ -128,7 +130,7 @@ export async function handleSlackInteraction(req: Request, res: Response): Promi
         });
     }
   } catch (error) {
-    console.error("[SlackInteraction] Error:", error);
+    log.error({ err: error }, "[SlackInteraction] Error:");
     res.status(500).json({ error: "Internal server error" });
   }
 }
@@ -487,6 +489,6 @@ async function sendSlackResponse(
       }),
     });
   } catch (error) {
-    console.error("[SlackInteraction] Failed to send response:", error);
+    log.error({ err: error }, "[SlackInteraction] Failed to send response:");
   }
 }

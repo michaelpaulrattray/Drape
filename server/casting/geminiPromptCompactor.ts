@@ -22,6 +22,8 @@ import {
   withTimeout,
 } from "./geminiClient";
 import { withTextQueue } from "./geminiQueue";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/geminiPromptCompactor");
 
 /**
  * Compact a bloated master prompt (original + N amendments) into a single
@@ -81,10 +83,10 @@ Rewritten clean description:`;
       if (!text || text.length < 100) throw new Error("Compacted prompt too short");
       return text;
     } catch (e: any) {
-      console.warn(`[PromptCompact] ${MODELS[i]} failed:`, e?.message);
+      log.warn({ err: e?.message }, `[PromptCompact] ${MODELS[i]} failed:`);
       if (i === MODELS.length - 1) {
         // If compaction fails, return the bloated prompt unchanged — don't crash
-        console.warn("[PromptCompact] All models failed, keeping bloated prompt");
+        log.warn("[PromptCompact] All models failed, keeping bloated prompt");
         return bloatedPrompt;
       }
     }

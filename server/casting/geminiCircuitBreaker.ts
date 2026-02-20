@@ -1,3 +1,6 @@
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/geminiCircuitBreaker");
+
 /**
  * Gemini Circuit Breaker — Prevents cascading failures when Gemini API is down.
  *
@@ -53,7 +56,7 @@ function isRetryableError(error: any): boolean {
  */
 export function recordSuccess(): void {
   if (state === "HALF_OPEN") {
-    console.log("[CircuitBreaker] Probe succeeded — closing circuit");
+    log.info("[CircuitBreaker] Probe succeeded — closing circuit");
     state = "CLOSED";
     failureTimestamps = [];
   }
@@ -69,7 +72,7 @@ export function recordFailure(error: any): void {
   const now = Date.now();
 
   if (state === "HALF_OPEN") {
-    console.warn("[CircuitBreaker] Probe failed — reopening circuit");
+    log.warn("[CircuitBreaker] Probe failed — reopening circuit");
     state = "OPEN";
     lastOpenedAt = now;
     totalTrips++;
@@ -81,7 +84,7 @@ export function recordFailure(error: any): void {
   pruneOldFailures();
 
   if (failureTimestamps.length >= FAILURE_THRESHOLD) {
-    console.warn(
+    log.warn(
       `[CircuitBreaker] ${failureTimestamps.length} failures in ${WINDOW_MS / 1000}s — OPENING circuit`,
     );
     state = "OPEN";
@@ -102,7 +105,7 @@ export function checkCircuit(): void {
   if (state === "OPEN") {
     const elapsed = Date.now() - lastOpenedAt;
     if (elapsed >= COOLDOWN_MS) {
-      console.log("[CircuitBreaker] Cooldown elapsed — entering HALF_OPEN for probe");
+      log.info("[CircuitBreaker] Cooldown elapsed — entering HALF_OPEN for probe");
       state = "HALF_OPEN";
       return; // Allow the probe request
     }

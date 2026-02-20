@@ -2,6 +2,7 @@ import type { CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
 import { getCorrelationId } from "../security/correlationId";
+import { setRequestUserId } from "../logging/requestContextMiddleware";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -21,6 +22,11 @@ export async function createContext(
   } catch (error) {
     // Authentication is optional for public procedures.
     user = null;
+  }
+
+  // Inject userId into AsyncLocalStorage so pino logs include it automatically
+  if (user?.id) {
+    setRequestUserId(user.id);
   }
 
   return {

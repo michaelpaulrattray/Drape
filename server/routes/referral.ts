@@ -15,6 +15,8 @@ import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { sendReferralInviteEmail } from "../klaviyo";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("routes/referral");
 
 /** Rate limit configs */
 const INVITE_RATE = { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000, keyPrefix: "ref-invite" };
@@ -122,7 +124,7 @@ export const referralRouter = router({
         referralLink,
         rewardCredits: REFERRAL_REWARD_CREDITS,
       }).catch((err) => {
-        console.error("[Referral] Klaviyo email delivery failed:", err);
+        log.error({ err: err }, "[Referral] Klaviyo email delivery failed:");
       });
 
       return { sent: true };

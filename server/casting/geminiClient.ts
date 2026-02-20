@@ -12,6 +12,8 @@
 
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { ENV } from "../_core/env";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/geminiClient");
 
 // Lazy import to avoid circular dependency (geminiQueue imports from geminiClient)
 let _withTextQueue: typeof import("./geminiQueue").withTextQueue | null = null;
@@ -157,7 +159,7 @@ export const withSingleRetry503 = async <T>(
     const msg = e?.message || e?.toString() || '';
     const isServerError = msg.includes('500') || msg.includes('503');
     if (isServerError) {
-      console.warn(`[${label}] Server error, retrying once in 3s...`);
+      log.warn(`[${label}] Server error, retrying once in 3s...`);
       await new Promise(r => setTimeout(r, 3000));
       return await fn();
     }
@@ -263,7 +265,7 @@ Reply with ONLY a JSON object:
     const text = safeResponseText(response).replace(/```json/g, '').replace(/```/g, '').trim();
 
     if (!text) {
-      console.warn('[IdentityCheck] Empty response text, assuming consistent');
+      log.warn('[IdentityCheck] Empty response text, assuming consistent');
       return { consistent: true };
     }
 
@@ -271,7 +273,7 @@ Reply with ONLY a JSON object:
     try {
       result = JSON.parse(text);
     } catch {
-      console.warn('[IdentityCheck] Failed to parse response:', text.slice(0, 100));
+      log.warn({ err: text.slice(0, 100) }, '[IdentityCheck] Failed to parse response');
       return { consistent: true };
     }
 
@@ -280,7 +282,7 @@ Reply with ONLY a JSON object:
       notes: result.differences || undefined
     };
   } catch (e: any) {
-    console.warn('[IdentityCheck] Failed, assuming consistent:', e?.message);
+    log.warn({ err: e?.message }, '[IdentityCheck] Failed, assuming consistent:');
     return { consistent: true }; // Fail open
   }
   }, 'checkIdentityConsistency');

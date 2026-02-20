@@ -3976,3 +3976,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix B3: Add request correlation IDs middleware
 - [x] Write vitest tests for Path B changes
 - [x] Run all tests and verify dev server
+## Path B Completion: Final 3 Hardening Items
+- [x] Wire GDPR export to UI — "Download My Data" button in profile settings modal
+- [x] Structured logging — replace console.error with pino (correlationId, userId, timestamp)
+- [x] Webhook idempotency — add idempotency keys to Stripe webhook handlers
+- [x] Write vitest tests for all 3 changes
+- [x] Run all tests and verify dev server

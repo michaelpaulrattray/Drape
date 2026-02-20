@@ -9,6 +9,8 @@ import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("routes/moderatorReconciliation");
 
 /** Auto-freeze threshold: users with discrepancy >= this are frozen automatically. */
 const AUTO_FREEZE_THRESHOLD = 2000;
@@ -105,7 +107,7 @@ export const moderatorReconciliationRouter = router({
                     userName: flagged.userName || `User ${flagged.userId}`,
                     freezeReason: reason,
                     frozenBy: "system",
-                  }).catch((err) => console.error("[Klaviyo] Auto-freeze email failed:", err));
+                  }).catch((err) => log.error("[Klaviyo] Auto-freeze email failed:", err));
                 }
               }
             }
@@ -302,7 +304,7 @@ export const moderatorReconciliationRouter = router({
           userName: user.name || `User ${input.userId}`,
           freezeReason: reason,
           frozenBy: ctx.user.name || `Moderator ${ctx.user.id}`,
-        }).catch((err) => console.error("[Klaviyo] Manual freeze email failed:", err));
+        }).catch((err) => log.error("[Klaviyo] Manual freeze email failed:", err));
       }
 
       return { success: true };

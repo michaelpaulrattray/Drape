@@ -1,3 +1,6 @@
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("slack/slackCore");
+
 /**
  * Slack Core - Channel config, dedup cache, low-level send,
  * block builders, main dispatch function, event routing,
@@ -65,7 +68,7 @@ export function isDuplicate(channel: SlackChannel, title: string, eventType: str
   const existing = dedupCache.get(cacheKey);
   
   if (existing && (Date.now() - existing.sentAt) < DEDUP_WINDOW_MS) {
-    console.log(`[SlackDispatcher] Dedup: skipping duplicate "${eventType}" to ${channel} (sent ${Math.round((Date.now() - existing.sentAt) / 1000)}s ago)`);
+    log.info(`[SlackDispatcher] Dedup: skipping duplicate "${eventType}" to ${channel} (sent ${Math.round((Date.now() - existing.sentAt) / 1000)}s ago)`);
     return true;
   }
   
@@ -88,7 +91,7 @@ export async function sendToWebhook(
   const webhookUrl = getWebhook(channel);
   
   if (!webhookUrl) {
-    console.log(`[SlackDispatcher] ${channel} webhook not configured, skipping`);
+    log.info(`[SlackDispatcher] ${channel} webhook not configured, skipping`);
     return false;
   }
   
@@ -101,14 +104,14 @@ export async function sendToWebhook(
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[SlackDispatcher] Failed to send to ${channel}:`, response.status, errorText);
+      log.error({ err: response.status, errorText }, `[SlackDispatcher] Failed to send to ${channel}:`);
       return false;
     }
     
-    console.log(`[SlackDispatcher] Message sent to ${channel}`);
+    log.info(`[SlackDispatcher] Message sent to ${channel}`);
     return true;
   } catch (error) {
-    console.error(`[SlackDispatcher] Error sending to ${channel}:`, error);
+    log.error({ err: error }, `[SlackDispatcher] Error sending to ${channel}:`);
     return false;
   }
 }
@@ -280,7 +283,7 @@ function routeEvent(eventType: string): SlackChannel[] {
   if (eventType.startsWith("system_health_")) {
     return ["system-alerts"];
   }
-  console.warn(`[SlackDispatcher] Unknown event type "${eventType}", routing to admin-actions`);
+  log.warn(`[SlackDispatcher] Unknown event type "${eventType}", routing to admin-actions`);
   return ["admin-actions"];
 }
 
@@ -294,7 +297,7 @@ export function verifySlackSignature(
   const signingSecret = process.env.SLACK_SIGNING_SECRET;
   
   if (!signingSecret) {
-    console.warn("[SlackDispatcher] Signing secret not configured");
+    log.warn("[SlackDispatcher] Signing secret not configured");
     return false;
   }
   
@@ -302,7 +305,7 @@ export function verifySlackSignature(
   const currentTimestamp = Math.floor(Date.now() / 1000);
   
   if (Math.abs(currentTimestamp - requestTimestamp) > 300) {
-    console.warn("[SlackDispatcher] Request timestamp too old");
+    log.warn("[SlackDispatcher] Request timestamp too old");
     return false;
   }
   

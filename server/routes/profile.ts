@@ -3,6 +3,8 @@ import { getUserById, updateUserProfile, getUserStorageInfo, updateUserStorageUs
 import { storagePut, storageDelete } from "../storage";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("routes/profile");
 
 export const profileRouter = router({
   // Get current user's full profile
@@ -96,7 +98,7 @@ export const profileRouter = router({
           // Subtract old file size (estimate ~100KB for avatars)
           await updateUserStorageUsed(ctx.user.id, -100 * 1024);
         } catch (e) {
-          console.warn("Failed to delete old avatar:", e);
+          log.warn({ err: e }, "Failed to delete old avatar:");
         }
       }
 
@@ -150,7 +152,7 @@ export const profileRouter = router({
           // Subtract old file size (estimate ~500KB for banners)
           await updateUserStorageUsed(ctx.user.id, -500 * 1024);
         } catch (e) {
-          console.warn("Failed to delete old banner:", e);
+          log.warn({ err: e }, "Failed to delete old banner:");
         }
       }
 

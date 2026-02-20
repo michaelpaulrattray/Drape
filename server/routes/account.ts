@@ -13,6 +13,8 @@ import { AUDIT_ACTIONS } from "../../drizzle/schema";
 import { checkRateLimit, RATE_LIMITS } from "../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("routes/account");
 
 export const accountRouter = router({
   /**
@@ -111,7 +113,7 @@ export const accountRouter = router({
           await storageDelete(key);
         } catch (error) {
           s3Errors.push(key);
-          console.warn(`[AccountDeletion] Failed to delete S3 key: ${key}`, error);
+          log.warn({ err: error }, `[AccountDeletion] Failed to delete S3 key: ${key}`);
         }
       }
 

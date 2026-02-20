@@ -4,6 +4,8 @@
  */
 
 import { drizzle } from "drizzle-orm/mysql2";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/connection");
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -23,7 +25,7 @@ export async function getDb() {
         },
       });
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      log.warn({ err: error }, "[Database] Failed to connect:");
       _db = null;
     }
   }

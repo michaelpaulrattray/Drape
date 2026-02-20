@@ -5,6 +5,8 @@
 import { Router, type Request, type Response } from "express";
 import { gzipSync } from "node:zlib";
 import { storageGet } from "./storage";
+import { createModuleLogger } from "./logging/logger";
+const log = createModuleLogger("heroProxy");
 
 const router = Router();
 
@@ -73,7 +75,7 @@ router.get("/api/hero/:asset", async (req: Request, res: Response) => {
       res.send(buffer);
     }
   } catch (err: any) {
-    console.error(`[Hero Proxy] Error fetching ${assetKey}:`, err.message);
+    log.error({ err: err.message }, `[Hero Proxy] Error fetching ${assetKey}:`);
     res.status(500).json({ error: "Internal error" });
   }
 });

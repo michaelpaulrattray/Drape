@@ -10,6 +10,8 @@ import {
   InsertModelAsset,
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/models");
 
 export async function createModel(
   data: InsertModel
@@ -34,7 +36,7 @@ export async function createModel(
 
     return { success: true, modelId: inserted[0]?.id };
   } catch (error) {
-    console.error("[Database] Failed to create model:", error);
+    log.error({ err: error }, "[Database] Failed to create model:");
     return { success: false, error: "Failed to create model" };
   }
 }
@@ -90,7 +92,7 @@ export async function updateModel(
     await db.update(models).set(data).where(eq(models.id, modelId));
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to update model:", error);
+    log.error({ err: error }, "[Database] Failed to update model:");
     return { success: false, error: "Failed to update model" };
   }
 }
@@ -132,7 +134,7 @@ export async function mintModel(
 
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to mint model:", error);
+    log.error({ err: error }, "[Database] Failed to mint model:");
     return { success: false, error: "Failed to mint model" };
   }
 }
@@ -152,7 +154,7 @@ export async function deleteModel(
     });
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to delete model:", error);
+    log.error({ err: error }, "[Database] Failed to delete model:");
     return { success: false, error: "Failed to delete model" };
   }
 }
@@ -177,7 +179,7 @@ export async function createModelAsset(
       .limit(1);
     return { success: true, assetId: inserted[0]?.id };
   } catch (error) {
-    console.error("[Database] Failed to create model asset:", error);
+    log.error({ err: error }, "[Database] Failed to create model asset:");
     return { success: false, error: "Failed to create model asset" };
   }
 }
@@ -245,7 +247,7 @@ export async function deleteModelWithAssetKeys(modelId: number): Promise<{
 
     return { success: true, assetKeys };
   } catch (error) {
-    console.error("[Database] Failed to delete model with assets:", error);
+    log.error({ err: error }, "[Database] Failed to delete model with assets:");
     return { success: false, assetKeys: [], error: "Failed to delete model" };
   }
 }

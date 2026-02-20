@@ -25,6 +25,8 @@ import {
   generations,
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/admin");
 
 // ============================================================================
 // USER MANAGEMENT HELPERS (Admin)
@@ -144,7 +146,7 @@ export async function listAllUsers(options: {
 
     return { users: userList, total };
   } catch (error) {
-    console.error("[Database] Failed to list users:", error);
+    log.error({ err: error }, "[Database] Failed to list users:");
     return { users: [], total: 0 };
   }
 }
@@ -255,7 +257,7 @@ export async function getUserFullDetails(userId: number): Promise<{
       },
     };
   } catch (error) {
-    console.error("[Database] Failed to get user details:", error);
+    log.error({ err: error }, "[Database] Failed to get user details:");
     return null;
   }
 }
@@ -315,7 +317,7 @@ export async function adjustUserCredits(
       return { success: true, newBalance };
     });
   } catch (error) {
-    console.error("[Database] Failed to adjust credits:", error);
+    log.error({ err: error }, "[Database] Failed to adjust credits:");
     return { success: false, error: "Failed to adjust credits" };
   }
 }
@@ -384,7 +386,7 @@ export async function getUserStatistics(): Promise<{
       adminCount: adminResult?.count || 0,
     };
   } catch (error) {
-    console.error("[Database] Failed to get user statistics:", error);
+    log.error({ err: error }, "[Database] Failed to get user statistics:");
     return {
       totalUsers: 0,
       activeUsers: 0,

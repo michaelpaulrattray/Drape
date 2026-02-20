@@ -13,6 +13,8 @@ import { enforceDailyQuota } from "../../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { createModuleLogger } from "../../logging/logger";
+const log = createModuleLogger("routes/generation");
 
 export const castingImagingRouter = router({
   // Generate casting image (headshot)
@@ -72,7 +74,7 @@ export const castingImagingRouter = router({
       try {
         // Generate image
         const castingBrand = (model.technicalSchema as any)?.context?.casting_for || 'Generic';
-        console.log('[castingImage] Generating with brand:', castingBrand, 'for model:', input.modelId);
+        log.info({ castingBrand, modelId: input.modelId }, '[castingImage] Generating with brand');
 
         const result = await generateCastingImage(
           model.masterPrompt,
@@ -84,10 +86,10 @@ export const castingImagingRouter = router({
           }
         );
 
-        console.log('[castingImage] Generation result:', { hasImageUrl: !!result.imageUrl, engineUsed: result.engineUsed });
+        log.info({ hasImageUrl: !!result.imageUrl, engineUsed: result.engineUsed }, '[castingImage] Generation result');
 
         if (!result.imageUrl) {
-          console.error('[castingImage] No image URL returned from generation');
+          log.error('[castingImage] No image URL returned from generation');
           await updateGeneration(genResult.generationId!, {
             status: "failed",
             errorMessage: "No image generated",

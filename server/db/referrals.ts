@@ -10,6 +10,8 @@ import { addCredits } from "./credits";
 import { getDb } from "./connection";
 import { logAuditEvent } from "../auditLog";
 import crypto from "crypto";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/referrals");
 
 /**
  * Generate a unique referral code like "DRAPE-A3K9X2"
@@ -595,7 +597,7 @@ export async function expireStalePendingReferrals(): Promise<number> {
   const expiredCount = result[0]?.affectedRows ?? 0;
 
   if (expiredCount > 0) {
-    console.log(`[Referral] Expired ${expiredCount} stale pending referrals (>30 days old)`);
+    log.info(`[Referral] Expired ${expiredCount} stale pending referrals (>30 days old)`);
     await logAuditEvent({
       action: AUDIT_ACTIONS.REFERRAL_REDEEMED, // reuse closest action
       resourceType: "referral",

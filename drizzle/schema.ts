@@ -569,3 +569,18 @@ export const inviteCodes = mysqlTable("invite_codes", {
 
 export type InviteCode = typeof inviteCodes.$inferSelect;
 export type InsertInviteCode = typeof inviteCodes.$inferInsert;
+
+// ============================================================================
+// STRIPE WEBHOOK EVENTS (Idempotency tracking)
+// ============================================================================
+export const stripeWebhookEvents = mysqlTable("stripe_webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("eventId", { length: 128 }).notNull().unique(), // Stripe event ID (evt_xxx)
+  eventType: varchar("eventType", { length: 128 }).notNull(), // e.g., checkout.session.completed
+  processedAt: timestamp("processedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_webhook_event_id").on(table.eventId),
+  index("idx_webhook_processed_at").on(table.processedAt),
+]);
+export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
+export type InsertStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;

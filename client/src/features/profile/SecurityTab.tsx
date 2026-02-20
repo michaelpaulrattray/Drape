@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
 
 interface SecurityTabProps {
   user: {
@@ -15,8 +15,40 @@ export function SecurityTab({ user, profileEmail }: SecurityTabProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const deleteAccountMutation = trpc.auth.deleteAccount.useMutation();
+  const exportDataQuery = trpc.account.exportData.useQuery(undefined, { enabled: false });
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportDataQuery.refetch();
+      if (result.data) {
+        const json = JSON.stringify(result.data, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const date = new Date().toISOString().split("T")[0];
+        a.download = `forma-studio-data-export-${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("Data export downloaded successfully");
+      }
+    } catch (err: any) {
+      const msg = err?.message || "Failed to export data";
+      if (msg.includes("Rate limit")) {
+        toast.error("Please wait 5 minutes between data exports");
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") return;
@@ -80,6 +112,33 @@ export function SecurityTab({ user, profileEmail }: SecurityTabProps) {
               </button>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Data Export (GDPR Article 20) */}
+      <div>
+        <label className="block text-sm font-medium text-[#4D4D4D] mb-3">
+          Your Data
+        </label>
+        <div className="p-5 rounded-xl bg-gray-50 border border-gray-200">
+          <p className="text-sm text-[#4D4D4D] mb-3">
+            Download a copy of all your data including your profile, models, generations, credit history, and account activity.
+          </p>
+          <button
+            onClick={handleExportData}
+            disabled={isExporting}
+            className="px-4 py-2.5 rounded-xl bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {isExporting ? "Preparing export..." : "Download My Data"}
+          </button>
+          <p className="text-xs text-[#757575] mt-2">
+            Limited to one export every 5 minutes. File is downloaded as JSON.
+          </p>
         </div>
       </div>
 

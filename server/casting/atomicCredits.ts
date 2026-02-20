@@ -27,6 +27,8 @@ import { TRPCError } from "@trpc/server";
 import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/atomicCredits");
 
 export interface AtomicCreditOptions {
   /** User ID to deduct credits from */
@@ -107,7 +109,7 @@ export async function withAtomicCredits<T>(
     
   } catch (error) {
     // Step 4: Operation failed - refund the credits
-    console.log(`[AtomicCredits] Operation failed, refunding ${amount} credits to user ${userId}`);
+    log.info(`[AtomicCredits] Operation failed, refunding ${amount} credits to user ${userId}`);
     
     await addCredits(
       userId,

@@ -10,6 +10,8 @@ import {
   InsertChangeRequest,
 } from "../../drizzle/schema";
 import { getDb } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/changeRequests");
 
 /**
  * Create a new change request submitted by a moderator.
@@ -27,7 +29,7 @@ export async function createChangeRequest(
     });
     return { success: true, requestId: result.insertId };
   } catch (error) {
-    console.error("[Database] Failed to create change request:", error);
+    log.error({ err: error }, "[Database] Failed to create change request:");
     return { success: false, error: String(error) };
   }
 }
@@ -49,7 +51,7 @@ export async function getChangeRequestById(
       .limit(1);
     return row || null;
   } catch (error) {
-    console.error("[Database] Failed to get change request:", error);
+    log.error({ err: error }, "[Database] Failed to get change request:");
     return null;
   }
 }
@@ -199,7 +201,7 @@ export async function listChangeRequests(
       },
     };
   } catch (error) {
-    console.error("[Database] Failed to list change requests:", error);
+    log.error({ err: error }, "[Database] Failed to list change requests:");
     return {
       requests: [],
       total: 0,
@@ -270,10 +272,7 @@ export async function updateChangeRequestStatus(
 
     return { success: true };
   } catch (error) {
-    console.error(
-      "[Database] Failed to update change request status:",
-      error
-    );
+    log.error({ err: error }, "[Database] Failed to update change request status");
     return { success: false, error: String(error) };
   }
 }

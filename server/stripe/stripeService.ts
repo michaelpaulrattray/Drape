@@ -8,6 +8,8 @@ import Stripe from "stripe";
 import { ENV } from "../_core/env";
 import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan } from "./stripeProducts";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("stripe/stripeService");
 
 // Initialize Stripe client
 const stripe = new Stripe(ENV.stripeSecretKey);
@@ -31,7 +33,7 @@ export async function getOrCreateStripeCustomer(
         return existingCustomerId;
       }
     } catch (error) {
-      console.log(`[Stripe] Customer ${existingCustomerId} not found, creating new one`);
+      log.info(`[Stripe] Customer ${existingCustomerId} not found, creating new one`);
     }
   }
 
@@ -44,7 +46,7 @@ export async function getOrCreateStripeCustomer(
     },
   });
 
-  console.log(`[Stripe] Created customer ${customer.id} for user ${userId}`);
+  log.info(`[Stripe] Created customer ${customer.id} for user ${userId}`);
   return customer.id;
 }
 
@@ -110,7 +112,7 @@ export async function createSubscriptionCheckoutSession(
     },
   });
 
-  console.log(`[Stripe] Created ${interval} subscription checkout session ${session.id} for plan ${plan}`);
+  log.info(`[Stripe] Created ${interval} subscription checkout session ${session.id} for plan ${plan}`);
   return session.url!;
 }
 
@@ -126,7 +128,7 @@ export async function createCustomerPortalSession(
     return_url: returnUrl,
   });
 
-  console.log(`[Stripe] Created customer portal session for customer ${customerId}`);
+  log.info(`[Stripe] Created customer portal session for customer ${customerId}`);
   return session.url;
 }
 
@@ -158,7 +160,7 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
     };
   } catch (error) {
-    console.error(`[Stripe] Failed to get subscription ${subscriptionId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to get subscription ${subscriptionId}:`);
     return null;
   }
 }
@@ -171,10 +173,10 @@ export async function cancelSubscription(subscriptionId: string): Promise<boolea
     await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
     });
-    console.log(`[Stripe] Subscription ${subscriptionId} set to cancel at period end`);
+    log.info(`[Stripe] Subscription ${subscriptionId} set to cancel at period end`);
     return true;
   } catch (error) {
-    console.error(`[Stripe] Failed to cancel subscription ${subscriptionId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to cancel subscription ${subscriptionId}:`);
     return false;
   }
 }
@@ -187,10 +189,10 @@ export async function reactivateSubscription(subscriptionId: string): Promise<bo
     await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false,
     });
-    console.log(`[Stripe] Subscription ${subscriptionId} reactivated`);
+    log.info(`[Stripe] Subscription ${subscriptionId} reactivated`);
     return true;
   } catch (error) {
-    console.error(`[Stripe] Failed to reactivate subscription ${subscriptionId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to reactivate subscription ${subscriptionId}:`);
     return false;
   }
 }
@@ -281,7 +283,7 @@ export async function calculateProration(
     // Get current plan from metadata
     const currentPlan = subscription.metadata.plan as SubscriptionPlan | undefined;
     if (!currentPlan) {
-      console.error("[Stripe] No current plan found in subscription metadata");
+      log.error("[Stripe] No current plan found in subscription metadata");
       return null;
     }
 
@@ -318,7 +320,7 @@ export async function calculateProration(
       totalDays,
     };
   } catch (error) {
-    console.error(`[Stripe] Failed to calculate proration for ${subscriptionId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to calculate proration for ${subscriptionId}:`);
     return null;
   }
 }
@@ -377,13 +379,13 @@ export async function updateSubscriptionPlan(
     // Calculate the prorated amount for logging
     const proration = await calculateProration(subscriptionId, newPlan);
     
-    console.log(`[Stripe] Updated subscription ${subscriptionId} to ${newPlan} with proration`);
+    log.info(`[Stripe] Updated subscription ${subscriptionId} to ${newPlan} with proration`);
     return {
       success: true,
       proratedAmount: proration?.proratedAmount || 0,
     };
   } catch (error) {
-    console.error(`[Stripe] Failed to update subscription ${subscriptionId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to update subscription ${subscriptionId}:`);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to update subscription",
@@ -458,7 +460,7 @@ export async function getCustomerInvoices(
       hasMore,
     };
   } catch (error) {
-    console.error(`[Stripe] Failed to fetch invoices for customer ${customerId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to fetch invoices for customer ${customerId}:`);
     return {
       invoices: [],
       hasMore: false,
@@ -513,7 +515,7 @@ export async function getAllCustomerInvoices(
       nextCursor: invoices.data.length > 0 ? invoices.data[invoices.data.length - 1].id : null,
     };
   } catch (error) {
-    console.error(`[Stripe] Failed to fetch all invoices for customer ${customerId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to fetch all invoices for customer ${customerId}:`);
     return {
       invoices: [],
       hasMore: false,
@@ -535,7 +537,7 @@ export async function getPaymentIntentFromSession(sessionId: string): Promise<st
     if (!paymentIntent) return null;
     return typeof paymentIntent === "string" ? paymentIntent : paymentIntent.id;
   } catch (error) {
-    console.error(`[Stripe] Failed to retrieve session ${sessionId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to retrieve session ${sessionId}:`);
     return null;
   }
 }
@@ -575,7 +577,7 @@ export async function issueStripeRefund(
 
     const refund = await stripe.refunds.create(refundParams);
 
-    console.log(`[Stripe] Refund ${refund.id} issued for session ${sessionId}: ${refund.status} ($${(refund.amount / 100).toFixed(2)})`);
+    log.info(`[Stripe] Refund ${refund.id} issued for session ${sessionId}: ${refund.status} ($${(refund.amount / 100).toFixed(2)})`);
 
     return {
       success: true,
@@ -583,7 +585,7 @@ export async function issueStripeRefund(
       status: refund.status ?? undefined,
     };
   } catch (error: any) {
-    console.error(`[Stripe] Failed to issue refund for session ${sessionId}:`, error);
+    log.error({ err: error }, `[Stripe] Failed to issue refund for session ${sessionId}:`);
     return {
       success: false,
       error: error.message || "Failed to issue Stripe refund",

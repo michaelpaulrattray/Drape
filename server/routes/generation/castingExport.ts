@@ -6,6 +6,8 @@ import { POINT_COSTS } from "../../casting/aiService";
 import { generatePremiumIdentityPdf, PdfModelData } from "../../casting/pdfService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { createModuleLogger } from "../../logging/logger";
+const log = createModuleLogger("routes/generation");
 
 export const castingExportRouter = router({
   // Get generation history
@@ -147,7 +149,7 @@ export const castingExportRouter = router({
         });
       }
 
-      console.log(`[Mint] Model ${input.modelId} minted with agencyId: ${agencyId}`);
+      log.info(`[Mint] Model ${input.modelId} minted with agencyId: ${agencyId}`);
 
       return {
         success: true,

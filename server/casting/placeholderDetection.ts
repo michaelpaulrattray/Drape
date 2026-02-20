@@ -1,3 +1,6 @@
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/placeholderDetection");
+
 /**
  * Placeholder Detection — Detects blank/gray/solid-color images returned by
  * Gemini when its internal safety filters silently refuse to generate a person
@@ -28,7 +31,7 @@ export function isPlaceholderImage(base64Data: string): boolean {
 
     // Too small to be a real image (< 5KB is suspicious)
     if (buffer.length < 5_000) {
-      console.warn(
+      log.warn(
         `[PlaceholderDetection] Image suspiciously small: ${buffer.length} bytes`,
       );
       return true;
@@ -48,7 +51,7 @@ export function isPlaceholderImage(base64Data: string): boolean {
     // Check 1: Color variance — are all sampled bytes very similar?
     const variance = calculateVariance(samples);
     if (variance < MIN_VARIANCE_THRESHOLD) {
-      console.warn(
+      log.warn(
         `[PlaceholderDetection] Low variance detected: ${variance.toFixed(1)} (threshold: ${MIN_VARIANCE_THRESHOLD})`,
       );
       return true;
@@ -57,7 +60,7 @@ export function isPlaceholderImage(base64Data: string): boolean {
     // Check 2: Unique color count — solid fills have very few unique values
     const uniqueColors = new Set(samples.map((s) => `${s[0]}-${s[1]}-${s[2]}`));
     if (uniqueColors.size < MIN_UNIQUE_COLORS) {
-      console.warn(
+      log.warn(
         `[PlaceholderDetection] Too few unique colors: ${uniqueColors.size} (threshold: ${MIN_UNIQUE_COLORS})`,
       );
       return true;
@@ -66,7 +69,7 @@ export function isPlaceholderImage(base64Data: string): boolean {
     return false;
   } catch (error) {
     // If analysis fails, don't block the generation
-    console.warn("[PlaceholderDetection] Analysis failed, allowing image:", error);
+    log.warn({ err: error }, "[PlaceholderDetection] Analysis failed, allowing image:");
     return false;
   }
 }

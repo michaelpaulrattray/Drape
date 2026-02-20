@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 import { users } from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { getUserByOpenId } from "./users";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/security");
 
 /**
  * Suspend a user account.
@@ -30,7 +32,7 @@ export async function suspendUser(
 
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to suspend user:", error);
+    log.error({ err: error }, "[Database] Failed to suspend user:");
     return { success: false, error: "Failed to suspend user" };
   }
 }
@@ -56,7 +58,7 @@ export async function unsuspendUser(
 
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to unsuspend user:", error);
+    log.error({ err: error }, "[Database] Failed to unsuspend user:");
     return { success: false, error: "Failed to unsuspend user" };
   }
 }
@@ -85,7 +87,7 @@ export async function freezeUser(
 
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to freeze user:", error);
+    log.error({ err: error }, "[Database] Failed to freeze user:");
     return { success: false, error: "Failed to freeze user" };
   }
 }
@@ -111,7 +113,7 @@ export async function unfreezeUser(
 
     return { success: true };
   } catch (error) {
-    console.error("[Database] Failed to unfreeze user:", error);
+    log.error({ err: error }, "[Database] Failed to unfreeze user:");
     return { success: false, error: "Failed to unfreeze user" };
   }
 }
@@ -160,7 +162,7 @@ export async function updateUserRole(
 
     return { success: true, previousRole };
   } catch (error) {
-    console.error("[Database] Failed to update user role:", error);
+    log.error({ err: error }, "[Database] Failed to update user role:");
     return { success: false, error: "Failed to update user role" };
   }
 }
@@ -204,7 +206,7 @@ export async function recordFailedLogin(
       attempts: newAttempts,
     };
   } catch (error) {
-    console.error("[Database] Failed to record failed login:", error);
+    log.error({ err: error }, "[Database] Failed to record failed login:");
     return { locked: false, attempts: 0 };
   }
 }
@@ -225,7 +227,7 @@ export async function resetFailedLogins(openId: string): Promise<void> {
       })
       .where(eq(users.openId, openId));
   } catch (error) {
-    console.error("[Database] Failed to reset failed logins:", error);
+    log.error({ err: error }, "[Database] Failed to reset failed logins:");
   }
 }
 
@@ -259,7 +261,7 @@ export async function isAccountLocked(
 
     return { locked: false };
   } catch (error) {
-    console.error("[Database] Failed to check account lock:", error);
+    log.error({ err: error }, "[Database] Failed to check account lock:");
     return { locked: false };
   }
 }

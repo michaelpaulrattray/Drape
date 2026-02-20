@@ -5,6 +5,8 @@ import { logAdminAction, writeImmutableLog } from "../../security/adminSecurity"
 import { getClientIp } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { createModuleLogger } from "../../logging/logger";
+const log = createModuleLogger("routes/admin");
 
 export const usersRouter = router({
   // Suspend a user account
@@ -223,7 +225,7 @@ export const usersRouter = router({
           userName: targetUser.name || `User ${input.userId}`,
           freezeReason: reason,
           frozenBy: ctx.user.name || `Admin ${ctx.user.id}`,
-        }).catch((err) => console.error("[Klaviyo] Admin freeze email failed:", err));
+        }).catch((err) => log.error("[Klaviyo] Admin freeze email failed:", err));
       }
 
       return { success: true };

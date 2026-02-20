@@ -1,3 +1,6 @@
+import { createModuleLogger } from "./logging/logger";
+const log = createModuleLogger("klaviyo");
+
 /**
  * Klaviyo Integration
  * 
@@ -73,7 +76,7 @@ export async function createOrUpdateProfile(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("[Klaviyo] API error:", response.status, errorData);
+      log.error({ err: response.status, errorData }, "[Klaviyo] API error:");
       return {
         success: false,
         error: `Klaviyo API error: ${response.status}`,
@@ -87,7 +90,7 @@ export async function createOrUpdateProfile(
       isNew: response.status === 201,
     };
   } catch (error) {
-    console.error("[Klaviyo] Request failed:", error);
+    log.error({ err: error }, "[Klaviyo] Request failed:");
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -143,7 +146,7 @@ export async function subscribeToList(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("[Klaviyo] Subscribe error:", response.status, errorData);
+      log.error({ err: response.status, errorData }, "[Klaviyo] Subscribe error:");
       return {
         success: false,
         error: `Klaviyo API error: ${response.status}`,
@@ -154,7 +157,7 @@ export async function subscribeToList(
       success: true,
     };
   } catch (error) {
-    console.error("[Klaviyo] Subscribe request failed:", error);
+    log.error({ err: error }, "[Klaviyo] Subscribe request failed:");
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -205,7 +208,7 @@ export async function newsletterSignup(
       };
     } else if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("[Klaviyo] Newsletter signup error:", response.status, errorData);
+      log.error({ err: response.status, errorData }, "[Klaviyo] Newsletter signup error:");
       return {
         success: false,
         error: `Klaviyo API error: ${response.status}`,
@@ -218,7 +221,7 @@ export async function newsletterSignup(
       profileId: data.data?.id,
     };
   } catch (error) {
-    console.error("[Klaviyo] Newsletter signup failed:", error);
+    log.error({ err: error }, "[Klaviyo] Newsletter signup failed:");
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -263,13 +266,13 @@ export async function trackEvent(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error(`[Klaviyo] trackEvent(${metricName}) error:`, response.status, errorData);
+      log.error({ err: response.status, errorData }, `[Klaviyo] trackEvent(${metricName}) error:`);
       return { success: false, error: `Klaviyo API error: ${response.status}` };
     }
 
     return { success: true };
   } catch (error) {
-    console.error(`[Klaviyo] trackEvent(${metricName}) failed:`, error);
+    log.error({ err: error }, `[Klaviyo] trackEvent(${metricName}) failed:`);
     return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }

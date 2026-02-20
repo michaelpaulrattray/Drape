@@ -15,6 +15,8 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, checkUserRateLimit, RATE_LIMITS, USER_RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
+import { createModuleLogger } from "../../logging/logger";
+const log = createModuleLogger("routes/generation");
 
 export const castingRefinementRouter = router({
   // Iterate/refine a model image
@@ -189,7 +191,7 @@ export const castingRefinementRouter = router({
           imageUrl: result.imageUrl,
         };
       } catch (error) {
-        console.error("[Upscale] Error:", error);
+        log.error({ err: error }, "[Upscale] Error:");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to upscale image",
@@ -226,7 +228,7 @@ export const castingRefinementRouter = router({
           base64: `data:${contentType};base64,${base64}`,
         };
       } catch (error) {
-        console.error('[ProxyImage] Error:', error);
+        log.error({ err: error }, '[ProxyImage] Error:');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to fetch image',
@@ -257,7 +259,7 @@ export const castingRefinementRouter = router({
           enhancedPrompt: enhanced,
         };
       } catch (error) {
-        console.error("[Enhance] Error:", error);
+        log.error({ err: error }, "[Enhance] Error:");
         return {
           success: true,
           enhancedPrompt: input.prompt,
@@ -296,7 +298,7 @@ export const castingRefinementRouter = router({
         );
         return { success: true, suggestions };
       } catch (error) {
-        console.error("[Suggestions] Error:", error);
+        log.error({ err: error }, "[Suggestions] Error:");
         return {
           success: true,
           suggestions: [
@@ -336,7 +338,7 @@ export const castingRefinementRouter = router({
         );
         return { success: true, attributes };
       } catch (error) {
-        console.error("[AnalyzeReference] Error:", error);
+        log.error({ err: error }, "[AnalyzeReference] Error:");
         return { success: true, attributes: [] };
       }
     }),
@@ -386,7 +388,7 @@ export const castingRefinementRouter = router({
           description,
         };
       } catch (error) {
-        console.error("[Reconcile] Error:", error);
+        log.error({ err: error }, "[Reconcile] Error:");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to reconcile schema",
@@ -432,7 +434,7 @@ export const castingRefinementRouter = router({
           masterPrompt: compacted,
         };
       } catch (error) {
-        console.error("[CompactPrompt] Error:", error);
+        log.error({ err: error }, "[CompactPrompt] Error:");
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to compact prompt",
@@ -448,7 +450,7 @@ export const castingRefinementRouter = router({
         clearCastingSession(String(ctx.user.id));
         return { success: true };
       } catch (error) {
-        console.error("[ClearSession] Error:", error);
+        log.error({ err: error }, "[ClearSession] Error:");
         return { success: true };
       }
     }),

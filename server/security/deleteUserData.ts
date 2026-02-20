@@ -28,6 +28,8 @@ import {
 import { storageDelete } from "../storage";
 import { stripe } from "../stripe/stripeService";
 import { logAuditEvent } from "../auditLog";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("security/deleteUserData");
 
 export interface DeleteUserResult {
   success: boolean;
@@ -100,11 +102,11 @@ async function deleteS3Files(keys: string[]): Promise<{ deleted: number; failed:
         deleted++;
       } else {
         failed++;
-        console.warn(`[DeleteUser] Failed to delete S3 key: ${key}`);
+        log.warn(`[DeleteUser] Failed to delete S3 key: ${key}`);
       }
     } catch (err) {
       failed++;
-      console.error(`[DeleteUser] Error deleting S3 key ${key}:`, err);
+      log.error({ err: err }, `[DeleteUser] Error deleting S3 key ${key}:`);
     }
   }
 
@@ -122,15 +124,15 @@ async function cancelStripeSubscriptionImmediate(
 
   try {
     await stripe.subscriptions.cancel(subscriptionId);
-    console.log(`[DeleteUser] Stripe subscription ${subscriptionId} cancelled immediately`);
+    log.info(`[DeleteUser] Stripe subscription ${subscriptionId} cancelled immediately`);
     return true;
   } catch (err: any) {
     // If subscription is already cancelled/inactive, treat as success
     if (err?.code === "resource_missing" || err?.statusCode === 404) {
-      console.log(`[DeleteUser] Stripe subscription ${subscriptionId} already cancelled`);
+      log.info(`[DeleteUser] Stripe subscription ${subscriptionId} already cancelled`);
       return true;
     }
-    console.error(`[DeleteUser] Failed to cancel Stripe subscription ${subscriptionId}:`, err);
+    log.error({ err: err }, `[DeleteUser] Failed to cancel Stripe subscription ${subscriptionId}:`);
     return false;
   }
 }
@@ -258,7 +260,7 @@ export async function deleteUserData(
 
     return { success: true, summary };
   } catch (error) {
-    console.error("[DeleteUser] Account deletion failed:", error);
+    log.error({ err: error }, "[DeleteUser] Account deletion failed:");
 
     // Still log the failed attempt
     await logAuditEvent({

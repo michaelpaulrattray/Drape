@@ -29,6 +29,24 @@ vi.mock("../slack/slackNotification", () => ({
   },
 }));
 
+// Mock database connection for idempotency checks
+vi.mock("../db/connection", () => ({
+  getDb: vi.fn().mockResolvedValue({
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([]), // No existing events (not a duplicate)
+        }),
+      }),
+    }),
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onDuplicateKeyUpdate: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
+  }),
+}));
+
 import { handleStripeWebhook } from "./webhooks";
 import { constructWebhookEvent } from "./stripeService";
 import { cancelSubscription } from "./stripeService";
@@ -45,7 +63,7 @@ import type Stripe from "stripe";
 
 function makeEvent(type: string, data: any): Stripe.Event {
   return {
-    id: `evt_test_${Date.now()}`,
+    id: `evt_mock_${Date.now()}`,
     type,
     data: { object: data },
     object: "event",

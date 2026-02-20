@@ -2,6 +2,8 @@
 // Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
 
 import { ENV } from './_core/env';
+import { createModuleLogger } from "./logging/logger";
+const log = createModuleLogger("storage");
 
 type StorageConfig = { baseUrl: string; apiKey: string };
 
@@ -116,7 +118,7 @@ export async function storageDelete(relKey: string): Promise<{ success: boolean 
 
   if (!response.ok) {
     const message = await response.text().catch(() => response.statusText);
-    console.warn(`Storage delete failed (${response.status}): ${message}`);
+    log.warn(`Storage delete failed (${response.status}): ${message}`);
     return { success: false };
   }
   

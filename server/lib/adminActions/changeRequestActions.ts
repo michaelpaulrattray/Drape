@@ -8,6 +8,8 @@ import { getClientIp } from "../../security/rateLimit";
 import { writeImmutableLog } from "../../security/adminSecurity";
 import { type PendingAction } from "../../slack/slackApproval";
 import { type AdminActionContext } from "./index";
+import { createModuleLogger } from "../../logging/logger";
+const log = createModuleLogger("lib/adminActions");
 
 export async function executeChangeRequestAction(
   pendingAction: PendingAction,
@@ -285,7 +287,7 @@ export async function executeChangeRequestAction(
         const { adjustUserCredits } = await import("../../db");
         const deductResult = await adjustUserCredits(userId, -creditsToDeduct, `Stripe refund via CR #${changeRequestId}`, ctx.user.id);
         if (!deductResult.success) {
-          console.error(`[Refund] Credit deduction failed after Stripe refund ${refundResult.refundId}: ${deductResult.error}`);
+          log.error(`[Refund] Credit deduction failed after Stripe refund ${refundResult.refundId}: ${deductResult.error}`);
         }
       }
 

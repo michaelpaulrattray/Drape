@@ -26,6 +26,8 @@ import {
 import { withImageQueue } from "./geminiQueue";
 import { validateNotPlaceholder } from "./placeholderDetection";
 import { UPSCALE_PROMPT, getStudioSettings } from "./geminiPrompts";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/geminiViews");
 
 // ============================================================================
 // GENERATE FULL BODY
@@ -118,7 +120,7 @@ export const generateFullBody = async (
         `FullBody (${model})`
       );
     } catch (e: any) {
-      console.warn(`[FullBody] ${model} failed:`, e?.message);
+      log.warn({ err: e?.message }, `[FullBody] ${model} failed:`);
       if (i === BODY_MODELS.length - 1) {
         throw new Error(formatGeminiError(e));
       }
@@ -204,7 +206,7 @@ export const generateRemainingViews = async (
           `View:${config.key} (${VIEW_MODELS[i]})`
         );
       } catch (e: any) {
-        console.warn(`[View:${config.key}] ${VIEW_MODELS[i]} failed:`, e?.message);
+        log.warn({ err: e?.message }, `[View:${config.key}] ${VIEW_MODELS[i]} failed:`);
         if (i < VIEW_MODELS.length - 1) {
           await new Promise(r => setTimeout(r, 500));
         }
@@ -298,7 +300,7 @@ export const generateSingleView = async (
         `SingleView:${viewType} (${model})`
       );
     } catch (e: any) {
-      console.warn(`[SingleView:${viewType}] ${model} failed:`, e?.message);
+      log.warn({ err: e?.message }, `[SingleView:${viewType}] ${model} failed:`);
       if (i === VIEW_MODELS.length - 1) {
         throw new Error(formatGeminiError(e));
       }

@@ -5,6 +5,8 @@
 import { eq, count } from "drizzle-orm";
 import { waitlist, InsertWaitlist } from "../../drizzle/schema";
 import { getDb } from "./connection";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/waitlist");
 
 export async function addToWaitlist(
   data: InsertWaitlist
@@ -30,7 +32,7 @@ export async function addToWaitlist(
 
     return { success: true, position };
   } catch (error) {
-    console.error("[Database] Failed to add to waitlist:", error);
+    log.error({ err: error }, "[Database] Failed to add to waitlist:");
     return { success: false, error: "Failed to join waitlist" };
   }
 }
@@ -50,7 +52,7 @@ export async function getWaitlistPosition(email: string): Promise<number> {
     const position = entry[0].id;
     return position;
   } catch (error) {
-    console.error("[Database] Failed to get waitlist position:", error);
+    log.error({ err: error }, "[Database] Failed to get waitlist position:");
     return 0;
   }
 }
@@ -63,7 +65,7 @@ export async function getWaitlistCount(): Promise<number> {
     const result = await db.select({ count: count() }).from(waitlist);
     return result[0]?.count ?? 0;
   } catch (error) {
-    console.error("[Database] Failed to get waitlist count:", error);
+    log.error({ err: error }, "[Database] Failed to get waitlist count:");
     return 0;
   }
 }
@@ -80,7 +82,7 @@ export async function checkEmailOnWaitlist(email: string): Promise<boolean> {
       .limit(1);
     return result.length > 0;
   } catch (error) {
-    console.error("[Database] Failed to check waitlist:", error);
+    log.error({ err: error }, "[Database] Failed to check waitlist:");
     return false;
   }
 }

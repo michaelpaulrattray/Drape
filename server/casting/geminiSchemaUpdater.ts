@@ -21,6 +21,8 @@ import {
   extractBase64Data,
 } from "./geminiClient";
 import { withTextQueue } from "./geminiQueue";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/geminiSchemaUpdater");
 
 // ============================================================================
 // JSON PARSING HELPERS
@@ -111,10 +113,10 @@ OUTPUT: The updated schema JSON object.`;
       if (!parsed) throw new Error("Failed to parse schema update JSON");
       return parsed;
     } catch (e: any) {
-      console.warn(`[SchemaUpdate] ${MODELS[i]} failed:`, e?.message);
+      log.warn({ err: e?.message }, `[SchemaUpdate] ${MODELS[i]} failed:`);
       if (i === MODELS.length - 1) {
         // If all models fail, return current schema unchanged — don't crash the iteration
-        console.warn("[SchemaUpdate] All models failed, keeping current schema");
+        log.warn("[SchemaUpdate] All models failed, keeping current schema");
         return currentSchema;
       }
     }
@@ -224,9 +226,9 @@ OUTPUT: JSON with exactly two keys:
         description: parsed.description || masterPrompt,
       };
     } catch (e: any) {
-      console.warn(`[Reconcile] ${MODELS[i]} failed:`, e?.message);
+      log.warn({ err: e?.message }, `[Reconcile] ${MODELS[i]} failed:`);
       if (i === MODELS.length - 1) {
-        console.warn("[Reconcile] All models failed, keeping current spec");
+        log.warn("[Reconcile] All models failed, keeping current spec");
         return { schema: currentSchema, description: masterPrompt };
       }
     }

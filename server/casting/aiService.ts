@@ -6,6 +6,8 @@
 
 import * as gemini from "./geminiService";
 import { storagePut } from "../storage";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("casting/aiService");
 
 // Re-export types and utilities from geminiService
 export type { ModelPreferences } from "./geminiService";
@@ -175,12 +177,12 @@ export async function generateCastingImage(
     userId?: string;
   } = {}
 ): Promise<GenerationResult> {
-  console.log('[aiService.generateCastingImage] Starting with options:', {
+  log.info({
     castingBrand: options.castingBrand,
     frame: options.frame,
     hasReferenceImage: !!options.referenceImage,
     mode: options.mode,
-  });
+  }, '[aiService.generateCastingImage] Starting with options');
   
   const result = await gemini.generateCastingImage(
     masterPrompt,
@@ -198,15 +200,15 @@ export async function generateCastingImage(
     options.userId || 'anonymous'
   );
 
-  console.log('[aiService.generateCastingImage] Result received:', {
+  log.info({
     hasImageUrl: !!result.imageUrl,
     engineUsed: result.engineUsed,
-  });
+  }, '[aiService.generateCastingImage] Result received');
 
   // Upload base64 to S3 for persistent storage
   const s3Url = await uploadBase64ToS3(result.imageUrl, "casting");
 
-  console.log('[aiService.generateCastingImage] Uploaded to S3:', s3Url.substring(0, 80) + '...');
+  log.info({ data: s3Url.substring(0, 80) + '...' }, '[aiService.generateCastingImage] Uploaded to S3:');
 
   return {
     imageUrl: s3Url,

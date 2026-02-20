@@ -317,6 +317,8 @@ export function shouldSendGlobalAttackAlert(): boolean {
 // Checks if an IP is blocked before processing any request
 
 import { isIpBlocked } from "../db";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("security/rateLimit");
 
 /**
  * Check if an IP is blocked and should be denied access
@@ -336,7 +338,7 @@ export async function checkIpBlocked(
       reason: result.reason,
     };
   } catch (error) {
-    console.error("[RateLimit] Error checking IP block:", error);
+    log.error({ err: error }, "[RateLimit] Error checking IP block:");
     return { blocked: false }; // Fail open to avoid blocking legitimate users
   }
 }

@@ -9,6 +9,8 @@ import {
 } from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { randomUUID } from "crypto";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("db/ipBlocking");
 
 /**
  * Check if an IP address is blocked.
@@ -40,7 +42,7 @@ export async function isIpBlocked(
       expiresAt: block.expiresAt,
     };
   } catch (error) {
-    console.error("[Database] Failed to check IP block:", error);
+    log.error({ err: error }, "[Database] Failed to check IP block:");
     return { blocked: false };
   }
 }
@@ -72,7 +74,7 @@ export async function blockIp(
 
     return { success: true, id: Number(result[0].insertId) };
   } catch (error) {
-    console.error("[Database] Failed to block IP:", error);
+    log.error({ err: error }, "[Database] Failed to block IP:");
     return { success: false };
   }
 }
@@ -88,7 +90,7 @@ export async function unblockIp(ipAddress: string): Promise<boolean> {
     await db.delete(blockedIps).where(eq(blockedIps.ipAddress, ipAddress));
     return true;
   } catch (error) {
-    console.error("[Database] Failed to unblock IP:", error);
+    log.error({ err: error }, "[Database] Failed to unblock IP:");
     return false;
   }
 }
@@ -119,7 +121,7 @@ export async function getBlockedIps(
       total: countResult[0]?.count || 0,
     };
   } catch (error) {
-    console.error("[Database] Failed to get blocked IPs:", error);
+    log.error({ err: error }, "[Database] Failed to get blocked IPs:");
     return { ips: [], total: 0 };
   }
 }
@@ -152,7 +154,7 @@ export async function createEmergencyToken(
 
     return { token, expiresAt };
   } catch (error) {
-    console.error("[Database] Failed to create emergency token:", error);
+    log.error({ err: error }, "[Database] Failed to create emergency token:");
     return null;
   }
 }
@@ -180,17 +182,17 @@ export async function consumeEmergencyToken(
       .limit(1);
 
     if (!tokenRecord) {
-      console.warn("[EmergencyToken] Token not found");
+      log.warn("[EmergencyToken] Token not found");
       return null;
     }
 
     if (tokenRecord.usedAt) {
-      console.warn("[EmergencyToken] Token already used");
+      log.warn("[EmergencyToken] Token already used");
       return null;
     }
 
     if (new Date(tokenRecord.expiresAt) < new Date()) {
-      console.warn("[EmergencyToken] Token expired");
+      log.warn("[EmergencyToken] Token expired");
       return null;
     }
 
@@ -208,7 +210,7 @@ export async function consumeEmergencyToken(
       metadata: tokenRecord.metadata as Record<string, unknown> | null,
     };
   } catch (error) {
-    console.error("[Database] Failed to consume emergency token:", error);
+    log.error({ err: error }, "[Database] Failed to consume emergency token:");
     return null;
   }
 }

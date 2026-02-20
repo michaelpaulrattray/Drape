@@ -10,6 +10,8 @@
  */
 
 import { dispatch } from "../slack/slackDispatcher";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("monitoring/healthMonitor");
 
 // ============ Configuration ============
 
@@ -81,10 +83,10 @@ export async function checkGenerationHealth(): Promise<void> {
         skipDedup: true,
       });
       recordAlert(alertType);
-      console.log(`[HealthMonitor] Alert sent: generation success rate ${health.successRate}%`);
+      log.info(`[HealthMonitor] Alert sent: generation success rate ${health.successRate}%`);
     }
   } catch (error) {
-    console.error("[HealthMonitor] Failed to check generation health:", error);
+    log.error({ err: error }, "[HealthMonitor] Failed to check generation health:");
   }
 }
 
@@ -109,7 +111,7 @@ export async function checkDbConnectivity(): Promise<void> {
         skipDedup: true,
       });
       recordAlert(alertType);
-      console.log("[HealthMonitor] Alert sent: DB connection unavailable");
+      log.info("[HealthMonitor] Alert sent: DB connection unavailable");
       return;
     }
 
@@ -137,7 +139,7 @@ export async function checkDbConnectivity(): Promise<void> {
         skipDedup: true,
       });
       recordAlert(latencyAlertType);
-      console.log(`[HealthMonitor] Alert sent: DB latency ${latencyMs}ms`);
+      log.info(`[HealthMonitor] Alert sent: DB latency ${latencyMs}ms`);
     }
   } catch (error) {
     // DB query itself failed — critical alert
@@ -150,7 +152,7 @@ export async function checkDbConnectivity(): Promise<void> {
       skipDedup: true,
     });
     recordAlert(alertType);
-    console.error("[HealthMonitor] Alert sent: DB query failed:", error);
+    log.error({ err: error }, "[HealthMonitor] Alert sent: DB query failed:");
   }
 }
 
@@ -189,10 +191,10 @@ export async function checkErrorSpike(): Promise<void> {
         skipDedup: true,
       });
       recordAlert(alertType);
-      console.log(`[HealthMonitor] Alert sent: ${criticalCount} critical events in 1h`);
+      log.info(`[HealthMonitor] Alert sent: ${criticalCount} critical events in 1h`);
     }
   } catch (error) {
-    console.error("[HealthMonitor] Failed to check error spike:", error);
+    log.error({ err: error }, "[HealthMonitor] Failed to check error spike:");
   }
 }
 
@@ -224,10 +226,10 @@ export async function checkGenerationQueue(): Promise<void> {
         skipDedup: true,
       });
       recordAlert(alertType);
-      console.log(`[HealthMonitor] Alert sent: queue backup ${queueSize} items`);
+      log.info(`[HealthMonitor] Alert sent: queue backup ${queueSize} items`);
     }
   } catch (error) {
-    console.error("[HealthMonitor] Failed to check generation queue:", error);
+    log.error({ err: error }, "[HealthMonitor] Failed to check generation queue:");
   }
 }
 
@@ -237,7 +239,7 @@ export async function checkGenerationQueue(): Promise<void> {
  * Run all health checks. Called periodically by the scheduler.
  */
 export async function runHealthChecks(): Promise<void> {
-  console.log("[HealthMonitor] Running health checks...");
+  log.info("[HealthMonitor] Running health checks...");
   try {
     await Promise.allSettled([
       checkGenerationHealth(),
@@ -245,9 +247,9 @@ export async function runHealthChecks(): Promise<void> {
       checkErrorSpike(),
       checkGenerationQueue(),
     ]);
-    console.log("[HealthMonitor] Health checks complete");
+    log.info("[HealthMonitor] Health checks complete");
   } catch (error) {
-    console.error("[HealthMonitor] Unexpected error in health checks:", error);
+    log.error({ err: error }, "[HealthMonitor] Unexpected error in health checks:");
   }
 }
 
@@ -261,11 +263,11 @@ let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
  */
 export function startHealthMonitor(): void {
   if (healthCheckInterval) {
-    console.warn("[HealthMonitor] Already running, skipping duplicate start");
+    log.warn("[HealthMonitor] Already running, skipping duplicate start");
     return;
   }
 
-  console.log(`[HealthMonitor] Starting (interval: ${CHECK_INTERVAL_MS / 1000}s, cooldown: ${ALERT_COOLDOWN_MS / 1000}s)`);
+  log.info(`[HealthMonitor] Starting (interval: ${CHECK_INTERVAL_MS / 1000}s, cooldown: ${ALERT_COOLDOWN_MS / 1000}s)`);
 
   // Run first check after 60s delay to let DB fully connect
   setTimeout(runHealthChecks, 60_000);
@@ -285,6 +287,6 @@ export function stopHealthMonitor(): void {
   if (healthCheckInterval) {
     clearInterval(healthCheckInterval);
     healthCheckInterval = null;
-    console.log("[HealthMonitor] Stopped");
+    log.info("[HealthMonitor] Stopped");
   }
 }
