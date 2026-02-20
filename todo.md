@@ -4018,3 +4018,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix face structure default: faceShape should default to "Auto" not "Oval"
 - [x] Fix quality default: resolution should default to 2K not 1K (both init and reset)
 - [x] Verify generate button works after CollapsibleSection fix (ethnicity is required field — correct behavior)
+- [x] Fix generate button still showing "Fill Required Fields" when all fields are filled — stale closure bug in ControlPanel.tsx + missing ethnicityBlend fallback in isFormValid

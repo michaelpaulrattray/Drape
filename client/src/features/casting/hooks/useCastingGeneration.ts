@@ -91,12 +91,12 @@ export function useCastingGeneration({
   const clearSessionMutation = trpc.generation.clearSession.useMutation();
   const analyzeReferenceMutation = trpc.generation.analyzeReference.useMutation();
 
-  // Form validation
+  // Form validation — matches original: ethnicity OR ethnicityBlend satisfies requirement
   const isFormValid = useMemo(() => {
     return (
       !!prefs.gender &&
       !!prefs.age &&
-      !!prefs.ethnicity &&
+      (!!prefs.ethnicity || (Array.isArray(prefs.ethnicityBlend) && prefs.ethnicityBlend.length > 0)) &&
       !!prefs.skinTone &&
       !!prefs.eyeColor &&
       !!prefs.hairColor &&

@@ -6,7 +6,7 @@ import { type ModelPreferences, type CastingVibe } from '../constants';
 const DEFAULT_PREFERENCES: ModelPreferences = {
   castingBrand: 'Gucci',
   castingVibe: { editorial: 0.33, commercial: 0.33, runway: 0.34 },
-  gender: '',
+  gender: 'Female',
   age: '23',
   ethnicity: '',
   bodyType: 'Slim',
@@ -45,6 +45,7 @@ interface CastingFormState {
   prefs: ModelPreferences;
   setPrefs: (prefs: ModelPreferences) => void;
   updatePref: <K extends keyof ModelPreferences>(key: K, value: ModelPreferences[K]) => void;
+  updatePrefs: (partial: Partial<ModelPreferences>) => void;
   
   // Model name
   modelName: string;
@@ -96,6 +97,11 @@ export const useCastingFormStore = create<CastingFormState>()(
         false,
         `updatePref:${key}`
       ),
+      updatePrefs: (partial) => set(
+        (state) => ({ prefs: { ...state.prefs, ...partial } }),
+        false,
+        'updatePrefs'
+      ),
       
       // Model name
       modelName: '',
@@ -121,6 +127,7 @@ export const useCastingFormStore = create<CastingFormState>()(
 export const usePrefs = () => useCastingFormStore((state) => state.prefs);
 export const useSetPrefs = () => useCastingFormStore((state) => state.setPrefs);
 export const useUpdatePref = () => useCastingFormStore((state) => state.updatePref);
+export const useUpdatePrefs = () => useCastingFormStore((state) => state.updatePrefs);
 
 export const useModelName = () => useCastingFormStore((state) => state.modelName);
 export const useSetModelName = () => useCastingFormStore((state) => state.setModelName);

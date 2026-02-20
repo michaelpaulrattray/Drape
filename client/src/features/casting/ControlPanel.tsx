@@ -58,7 +58,11 @@ interface ControlPanelProps {
 export function ControlPanel({
   user, isFormValid, genState, currentAssets, handleGenerate, onCompactPrompt, isCompacting,
 }: ControlPanelProps) {
-  const { prefs, setPrefs } = useCastingFormStore();
+  // Use store's functional updaters — no stale closure risk
+  const prefs = useCastingFormStore((s) => s.prefs);
+  const updatePref = useCastingFormStore((s) => s.updatePref);
+  const updatePrefs = useCastingFormStore((s) => s.updatePrefs);
+  const setPrefs = useCastingFormStore((s) => s.setPrefs);
   const { showMobilePanel, resolution, setResolution } = useCastingUIStore();
 
   const [showAdvancedFace, setShowAdvancedFace] = useState(false);
@@ -68,14 +72,10 @@ export function ControlPanel({
   });
   const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
 
-  const updatePref = (key: string, value: unknown) => {
-    setPrefs({ ...prefs, [key]: value });
-  };
-
   const ethnicityBlend = prefs.ethnicityBlend || [];
   const setEthnicityBlend = (blend: { name: string; pct: number }[]) => {
     const legacyStr = blend.map(e => e.name).join(', ');
-    setPrefs({ ...prefs, ethnicityBlend: blend, ethnicity: legacyStr });
+    updatePrefs({ ethnicityBlend: blend, ethnicity: legacyStr });
   };
 
   const currentHairFamilies = useMemo(() => {
@@ -97,7 +97,7 @@ export function ControlPanel({
 
   const handleDebugFill = () => {
     const randomPrefs = generateRandomPreferences();
-    setPrefs({ ...prefs, ...randomPrefs });
+    updatePrefs(randomPrefs);
     toast.success('Debug: Form populated with random preferences');
   };
 
@@ -155,7 +155,7 @@ export function ControlPanel({
               <OptionGrid cols={3} options={["Female", "Male", "Non-Binary"]} selected={prefs.gender || 'Female'}
                 onSelect={(val) => {
                   if (val !== (prefs.gender || 'Female')) {
-                    setPrefs({ ...prefs, gender: val, hairStyle: '', hairFade: '', facialHair: '' });
+                    updatePrefs({ gender: val, hairStyle: '', hairFade: '', facialHair: '' });
                   } else updatePref('gender', val);
                 }}
               />
@@ -256,8 +256,8 @@ export function ControlPanel({
                 <OptionGrid cols={2} options={currentHairFamilies} selected={prefs.hairStyle || ''}
                   onSelect={(val) => {
                     const cfg = HAIR_STYLE_CONFIG[val];
-                    setPrefs({
-                      ...prefs, hairStyle: val,
+                    updatePrefs({
+                      hairStyle: val,
                       hairLength: cfg?.defaultLength || '', hairTexture: cfg?.defaultTexture || '',
                       hairFringe: cfg?.defaultFringe || '', hairParting: '', hairVolume: '',
                       hairTuck: '', hairFlyaways: '', hairFade: '',
@@ -403,7 +403,7 @@ export function ControlPanel({
               <button
                 onClick={() => {
                   const randomPrefs = generateRandomPreferences();
-                  setPrefs({ ...prefs, ...randomPrefs });
+                  updatePrefs(randomPrefs);
                   toast.success('Auto-generating model...');
                   setTimeout(() => {
                     const btn = document.querySelector('[data-debug-generate]') as HTMLButtonElement;
