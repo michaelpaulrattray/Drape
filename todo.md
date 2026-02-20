@@ -4117,3 +4117,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] P3: Clean dead imports across 8 files (ControlPanel types are used in props, MaskCanvas EditTool is used, UIStore EditTool is used — only cleaned useCastingViewGeneration and castingRefinement)
 - [x] P4: Un-export internal types (EyePreset, SkinTone, BrandOption, HairStyleConfig, AtomicCreditOptions, AtomicCreditResult, ReqDot)
 - [x] P4: Extract fetchAsBase64 helper in aiService.ts (replaced 4 duplicate URL-to-base64 patterns)
+
+## Bug Fixes
+- [x] Fix infinite loop in HairColorWheel.tsx (Maximum update depth exceeded on /casting-studio)

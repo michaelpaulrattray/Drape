@@ -42,10 +42,21 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
   const [isDragging, setIsDragging] = useState(false);
   const wheelRef = useRef<HTMLDivElement>(null);
 
+  // Track whether the last change originated from this component's own selection
+  // to prevent the sync-from-prop effect from re-triggering after commitSelection
+  const isInternalChange = useRef(false);
+
   const colors = activeTab === 'Dyed' ? DYED_COLORS : NATURAL_COLORS;
   const segmentAngle = 360 / colors.length;
 
+  // Sync internal state FROM the parent prop (external changes only)
   useEffect(() => {
+    // Skip if the change came from our own commitSelection
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+
     const lower = currentColor.toLowerCase();
     const cleanName = currentColor.replace(/^(Warm|Cool \/ Ash)\s+/i, '').trim();
     let targetTab = activeTab;
@@ -78,7 +89,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
     if (targetTab !== activeTab) setActiveTab(targetTab);
     setTone(targetTone);
     if (foundIndex !== -1) setSelectedIndex(foundIndex);
-  }, [currentColor]);
+  }, [currentColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const commitSelection = useCallback(() => {
     const color = colors[selectedIndex];
@@ -92,6 +103,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
     }
 
     if (finalString !== currentColor) {
+      isInternalChange.current = true;
       onColorSelect(finalString);
     }
   }, [colors, selectedIndex, tone, onColorSelect, currentColor]);
@@ -144,7 +156,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, colors.length]);
+  }, [isDragging, colors.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentSelection = colors[selectedIndex] || colors[0];
 
