@@ -4120,3 +4120,4 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Bug Fixes
 - [x] Fix infinite loop in HairColorWheel.tsx (Maximum update depth exceeded on /casting-studio)
+- [x] Fix ethnicity chips not visually selected after Admin Tools Random Fill / Auto Generate

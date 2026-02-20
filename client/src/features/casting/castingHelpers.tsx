@@ -33,13 +33,23 @@ export const generateRandomPreferences = (): Partial<ModelPreferences> => {
   const editorial = Math.random();
   const commercial = Math.random() * (1 - editorial);
   const runway = 1 - editorial - commercial;
-  
+
+  // Generate ethnicity blend first, then derive legacy string from it
+  const eth1 = pick(ETHNICITIES);
+  const isBlend = Math.random() < 0.3;
+  const eth2 = isBlend ? pick(ETHNICITIES.filter(e => e !== eth1)) : null;
+  const ethnicityBlend = eth2
+    ? [{ name: eth1, pct: 60 }, { name: eth2, pct: 40 }]
+    : [{ name: eth1, pct: 100 }];
+  const ethnicity = ethnicityBlend.map(e => e.name).join(', ');
+
   return {
     castingBrand: pickValue(BRAND_OPTIONS),
     castingVibe: { editorial, commercial, runway },
     gender,
     age: String(Math.floor(Math.random() * 20) + 18),
-    ethnicity: pick(ETHNICITIES),
+    ethnicity,
+    ethnicityBlend,
     bodyType: pickLabel(BODY_TYPES),
     faceShape: pick(FACE_SHAPES.filter(f => f !== 'Random')),
     skinTone: pickLabel(SKIN_TONES),
