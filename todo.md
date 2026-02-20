@@ -4097,3 +4097,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Restructure prompt with section headers
 - [x] Add 3rd fallback model (gemini-2.5-flash) + withSingleRetry503 to generateMasterPrompt
 - [x] Add maxOutputTokens: 4096 to generateMasterPrompt config
+
+## enhanceUserPrompt Audit
+- [ ] Audit enhanceUserPrompt against SOT — verify 2-model fallback chain, prompt text, config
+
+## Gemini Temperature Audit
+- [x] Remove temperature: 0.2 from enhanceUserPrompt
+- [x] Audit all other Gemini calls for non-default temperature and remove (only 1 found — enhanceUserPrompt; voiceTranscription.ts is Whisper API type def, not Gemini)

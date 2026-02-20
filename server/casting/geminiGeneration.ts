@@ -482,7 +482,6 @@ export const enhanceUserPrompt = async (originalPrompt: string): Promise<string>
           contents: { parts: [{ text: prompt }] },
           config: {
             maxOutputTokens: 1024,
-            temperature: 0.2,
             safetySettings: SAFETY_SETTINGS,
           }
         }),
