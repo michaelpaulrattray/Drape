@@ -197,6 +197,6 @@ export enum ImageResolution {
   ULTRA = '4K',
 }
 
-export type EyePreset = typeof EYE_PRESETS[number];
-export type SkinTone = typeof SKIN_TONES[number];
-export type BrandOption = typeof BRAND_OPTIONS[number];
+type EyePreset = typeof EYE_PRESETS[number];
+type SkinTone = typeof SKIN_TONES[number];
+type BrandOption = typeof BRAND_OPTIONS[number];

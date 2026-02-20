@@ -14,7 +14,7 @@ import { enforceDailyQuota } from "../../db/dailyQuota";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { validateProxyUrl } from "../../security/urlValidator";
-import { checkRateLimit, checkUserRateLimit, RATE_LIMITS, USER_RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
+import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("routes/generation");
 

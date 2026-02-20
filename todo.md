@@ -4104,3 +4104,16 @@ The entry and configuration files are properly set up with several enhancements 
 ## Gemini Temperature Audit
 - [x] Remove temperature: 0.2 from enhanceUserPrompt
 - [x] Audit all other Gemini calls for non-default temperature and remove (only 1 found — enhanceUserPrompt; voiceTranscription.ts is Whisper API type def, not Gemini)
+
+## Dead Code Cleanup
+- [x] P1: Delete SuggestionChips.tsx (unused component)
+- [x] P1: Delete ReferenceNode.tsx (unused component)
+- [x] P1: Delete ToolsBar.tsx (unused component)
+- [x] P1: Remove generateExportId from castingHelpers.tsx
+- [x] P1: Un-export isPlaceholderImage in placeholderDetection.ts (reverted — tests import it directly)
+- [x] P1: Clean barrel files (index.ts, ImageViewer/index.tsx)
+- [x] P2: Remove 15 unused hooks from useCastingGenerationStore.ts (kept 5 that are imported)
+- [x] P2: Remove 7 unused hooks from useCastingFormStore.ts (all removed, none imported)
+- [x] P3: Clean dead imports across 8 files (ControlPanel types are used in props, MaskCanvas EditTool is used, UIStore EditTool is used — only cleaned useCastingViewGeneration and castingRefinement)
+- [x] P4: Un-export internal types (EyePreset, SkinTone, BrandOption, HairStyleConfig, AtomicCreditOptions, AtomicCreditResult, ReqDot)
+- [x] P4: Extract fetchAsBase64 helper in aiService.ts (replaced 4 duplicate URL-to-base64 patterns)

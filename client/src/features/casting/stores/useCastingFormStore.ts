@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type ModelPreferences, type CastingVibe } from '../constants';
+import { type ModelPreferences } from '../constants';
 
 // Default preferences for a new model
 const DEFAULT_PREFERENCES: ModelPreferences = {
@@ -122,17 +122,6 @@ export const useCastingFormStore = create<CastingFormState>()(
     { name: 'CastingFormStore' }
   )
 );
-
-// Selector hooks for optimized re-renders
-export const usePrefs = () => useCastingFormStore((state) => state.prefs);
-export const useSetPrefs = () => useCastingFormStore((state) => state.setPrefs);
-export const useUpdatePref = () => useCastingFormStore((state) => state.updatePref);
-export const useUpdatePrefs = () => useCastingFormStore((state) => state.updatePrefs);
-
-export const useModelName = () => useCastingFormStore((state) => state.modelName);
-export const useSetModelName = () => useCastingFormStore((state) => state.setModelName);
-
-export const useCurrentHairFamilies = () => useCastingFormStore((state) => state.currentHairFamilies);
 
 // Export default preferences for external use
 export { DEFAULT_PREFERENCES };

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { type GeneratedAsset, type GenerationState, type Amendment } from '../constants';
+import { type GenerationState, type GeneratedAsset, type Amendment } from '../constants';
 
 // Default generation state
 const DEFAULT_GEN_STATE: GenerationState = {
@@ -158,40 +158,9 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
   )
 );
 
-// Selector hooks for optimized re-renders
-export const useGenState = () => useCastingGenerationStore((state) => state.genState);
-export const useSetGenState = () => useCastingGenerationStore((state) => state.setGenState);
-
-export const useCurrentModelId = () => useCastingGenerationStore((state) => state.currentModelId);
-export const useSetCurrentModelId = () => useCastingGenerationStore((state) => state.setCurrentModelId);
-
-export const useCurrentAssets = () => useCastingGenerationStore((state) => state.currentAssets);
-export const useSetCurrentAssets = () => useCastingGenerationStore((state) => state.setCurrentAssets);
-
+// Selector hooks — only those actually imported by consumers
 export const useCurrentMasterPrompt = () => useCastingGenerationStore((state) => state.currentMasterPrompt);
-export const useSetCurrentMasterPrompt = () => useCastingGenerationStore((state) => state.setCurrentMasterPrompt);
-
-export const useCurrentTechnicalSchema = () => useCastingGenerationStore((state) => state.currentTechnicalSchema);
-export const useSetCurrentTechnicalSchema = () => useCastingGenerationStore((state) => state.setCurrentTechnicalSchema);
-
-export const useHistory = () => useCastingGenerationStore((state) => state.history);
-export const useHistoryIndex = () => useCastingGenerationStore((state) => state.historyIndex);
-export const usePushHistory = () => useCastingGenerationStore((state) => state.pushHistory);
-
-export const useCanUndo = () => useCastingGenerationStore((state) => state.canUndo);
-export const useCanRedo = () => useCastingGenerationStore((state) => state.canRedo);
-export const useGetCurrentImageUrl = () => useCastingGenerationStore((state) => state.getCurrentImageUrl);
-
-export const useResetGeneration = () => useCastingGenerationStore((state) => state.resetGeneration);
-
 export const useSuggestions = () => useCastingGenerationStore((state) => state.suggestions);
-export const useSetSuggestions = () => useCastingGenerationStore((state) => state.setSuggestions);
 export const useIsLoadingSuggestions = () => useCastingGenerationStore((state) => state.isLoadingSuggestions);
-export const useSetIsLoadingSuggestions = () => useCastingGenerationStore((state) => state.setIsLoadingSuggestions);
-
 export const useAmendments = () => useCastingGenerationStore((state) => state.amendments);
-export const useAddAmendment = () => useCastingGenerationStore((state) => state.addAmendment);
-export const useClearAmendments = () => useCastingGenerationStore((state) => state.clearAmendments);
-
 export const useIdentityWarning = () => useCastingGenerationStore((state) => state.identityWarning);
-export const useSetIdentityWarning = () => useCastingGenerationStore((state) => state.setIdentityWarning);

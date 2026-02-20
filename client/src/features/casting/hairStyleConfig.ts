@@ -4,7 +4,7 @@
  * and which genders it applies to.
  */
 
-export interface HairStyleConfig {
+interface HairStyleConfig {
   lengths?: string[];
   defaultLength?: string;
   textures?: string[];

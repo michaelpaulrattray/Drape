@@ -30,7 +30,7 @@ import { eq } from "drizzle-orm";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("casting/atomicCredits");
 
-export interface AtomicCreditOptions {
+interface AtomicCreditOptions {
   /** User ID to deduct credits from */
   userId: number;
   /** Amount of credits to deduct */
@@ -43,7 +43,7 @@ export interface AtomicCreditOptions {
   engineUsed?: string;
 }
 
-export interface AtomicCreditResult<T> {
+interface AtomicCreditResult<T> {
   success: boolean;
   data?: T;
   error?: string;

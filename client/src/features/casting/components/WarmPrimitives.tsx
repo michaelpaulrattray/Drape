@@ -22,7 +22,7 @@ const ETH_COLORS: Record<string, string> = {
 
 // ── Tiny Helpers ──────────────────────────────
 
-export const ReqDot = ({ filled }: { filled: boolean }) => (
+const ReqDot = ({ filled }: { filled: boolean }) => (
   !filled ? <span className="inline-block w-1 h-1 rounded-full bg-[#e07c5a] ml-1 align-middle" /> : null
 );
 

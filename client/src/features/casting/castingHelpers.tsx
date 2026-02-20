@@ -22,15 +22,6 @@ import {
 
 // ============ Utility Functions ============
 
-export const generateExportId = () => {
-  const chars = '0123456789ABCDEF';
-  let hash = '';
-  for (let i = 0; i < 6; i++) {
-    hash += chars[Math.floor(Math.random() * 16)];
-  }
-  return `MOD-${new Date().getFullYear().toString().slice(-2)}-${hash}`;
-};
-
 export const generateRandomPreferences = (): Partial<ModelPreferences> => {
   const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
   const pickValue = (arr: { value: string }[]): string => pick(arr).value;

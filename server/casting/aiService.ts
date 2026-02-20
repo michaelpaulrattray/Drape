@@ -80,6 +80,17 @@ export const POINT_COSTS = CREDIT_COSTS;
 // ============ Helper Functions ============
 
 /**
+ * Fetch a URL and return as base64 data URL (for S3/HTTP URLs → Gemini input)
+ */
+async function fetchAsBase64(url: string): Promise<string> {
+  if (!url.startsWith('http')) return url;
+  const response = await fetch(url);
+  const buffer = await response.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString('base64');
+  return `data:image/png;base64,${base64}`;
+}
+
+/**
  * Convert base64 data URL to S3 URL
  */
 async function uploadBase64ToS3(base64DataUrl: string, prefix: string): Promise<string> {
@@ -214,14 +225,7 @@ export async function generateFullBody(
   headshotUrl: string,
   gender: string
 ): Promise<GenerationResult> {
-  // If headshotUrl is an S3 URL, we need to fetch it and convert to base64
-  let headshotBase64 = headshotUrl;
-  if (headshotUrl.startsWith('http')) {
-    const response = await fetch(headshotUrl);
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    headshotBase64 = `data:image/png;base64,${base64}`;
-  }
+  const headshotBase64 = await fetchAsBase64(headshotUrl);
 
   const base64Result = await gemini.generateFullBody(masterPrompt, headshotBase64, gender);
 
@@ -244,14 +248,7 @@ export async function generateRemainingViews(
   gender: string,
   viewType: 'side' | 'back' | 'walk'
 ): Promise<GenerationResult> {
-  // If sourceImageUrl is an S3 URL, we need to fetch it and convert to base64
-  let sourceBase64 = sourceImageUrl;
-  if (sourceImageUrl.startsWith('http')) {
-    const response = await fetch(sourceImageUrl);
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    sourceBase64 = `data:image/png;base64,${base64}`;
-  }
+  const sourceBase64 = await fetchAsBase64(sourceImageUrl);
 
   // Use the new single view generation function
   const result = await gemini.generateSingleView(masterPrompt, sourceBase64, gender, viewType);
@@ -281,14 +278,7 @@ export async function iterateModel(
     userId?: string;
   } = {}
 ): Promise<GenerationResult> {
-  // If currentImageUrl is an S3 URL, we need to fetch it and convert to base64
-  let currentBase64 = currentImageUrl;
-  if (currentImageUrl.startsWith('http')) {
-    const response = await fetch(currentImageUrl);
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    currentBase64 = `data:image/png;base64,${base64}`;
-  }
+  const currentBase64 = await fetchAsBase64(currentImageUrl);
 
   // Composite the mask overlay with the base image if provided
   let effectiveMask: string | undefined;
@@ -331,14 +321,7 @@ export async function upscaleImage(
   currentImageUrl: string,
   targetResolution: gemini.ImageResolution
 ): Promise<GenerationResult> {
-  // If currentImageUrl is an S3 URL, we need to fetch it and convert to base64
-  let currentBase64 = currentImageUrl;
-  if (currentImageUrl.startsWith('http')) {
-    const response = await fetch(currentImageUrl);
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    currentBase64 = `data:image/png;base64,${base64}`;
-  }
+  const currentBase64 = await fetchAsBase64(currentImageUrl);
 
   const result = await gemini.upscaleExistingImage(currentBase64, targetResolution);
 
