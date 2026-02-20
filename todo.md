@@ -4006,3 +4006,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove ~35 confirmed dead symbols across 15+ files
 - [x] Clean up tests referencing removed code (deleted load-test-queue.test.ts, fixed 5 other test files)
 - [x] Run all tests and verify dev server (1,118 passing, 0 failures)
+
+## Bug Fixes: Casting Studio Issues
+- [ ] Face structure should default to "auto" (guided by casting direction)
+- [ ] Quality should default to 2K not 1K resolution
+- [ ] Generate button blocked even when all required fields are filled
+- [ ] Admin tools are broken
+
+## Critical Bug Fixes — Production Launch Blockers
+- [x] Fix CollapsibleSection infinite loop (useEffect depends on children ref, causes crash)
+- [x] Fix face structure default: faceShape should default to "Auto" not "Oval"
+- [x] Fix quality default: resolution should default to 2K not 1K (both init and reset)
+- [x] Verify generate button works after CollapsibleSection fix (ethnicity is required field — correct behavior)

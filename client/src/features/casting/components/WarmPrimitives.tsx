@@ -276,11 +276,23 @@ export const CollapsibleSection = ({ id, title, isOpen, onToggle, completionRati
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
 
+  // Sync height when open/close toggles
   useEffect(() => {
     if (contentRef.current) {
       setHeight(isOpen ? contentRef.current.scrollHeight : 0);
     }
-  }, [isOpen, children]);
+  }, [isOpen]);
+
+  // Watch for content size changes via ResizeObserver (replaces children dep)
+  useEffect(() => {
+    if (!isOpen || !contentRef.current) return;
+    const el = contentRef.current;
+    const ro = new ResizeObserver(() => {
+      setHeight(el.scrollHeight);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isOpen]);
 
   const dots = 3;
   const filled = Math.round(completionRatio * dots);

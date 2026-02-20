@@ -79,7 +79,7 @@ export const useCastingUIStore = create<CastingUIState>()(
       setActiveTool: (tool) => set({ activeTool: tool }, false, 'setActiveTool'),
       
       // Resolution state
-      resolution: ImageResolution.STD,
+      resolution: ImageResolution.HIGH,
       setResolution: (res) => set({ resolution: res }, false, 'setResolution'),
       
       // Panel visibility
@@ -114,7 +114,7 @@ export const useCastingUIStore = create<CastingUIState>()(
       resetUI: () => set({
         activeView: 'frontClose',
         activeTool: 'none',
-        resolution: ImageResolution.STD,
+        resolution: ImageResolution.HIGH,
         showMobilePanel: false,
         refineInput: '',
         isEnhancing: false,

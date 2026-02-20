@@ -10,7 +10,7 @@ const DEFAULT_PREFERENCES: ModelPreferences = {
   age: '23',
   ethnicity: '',
   bodyType: 'Slim',
-  faceShape: 'Oval',
+  faceShape: 'Auto',
   skinTone: '',
   skinTexture: 'Raw / Standard',
   skinFinish: 'Natural',
