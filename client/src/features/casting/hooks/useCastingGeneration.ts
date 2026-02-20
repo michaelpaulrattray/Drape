@@ -290,6 +290,7 @@ export function useCastingGeneration({
     } catch (error) {
       const message = error instanceof Error ? error.message : "Generation failed";
       setGenState({ isGenerating: false, currentStep: "", error: message });
+      useCastingGenerationStore.getState().setFailedAction({ type: 'NEW' });
       toast.error(message);
     }
   }, [isFormValid, creditsData, prefs, modelName]);
@@ -357,8 +358,8 @@ export function useCastingGeneration({
         // Fire-and-forget: fetch suggestions
         fetchSuggestions(updatedPrompt, result.imageUrl);
         
-        // Auto-compact after 3+ amendments
-        if (amendments.length + 1 >= 3 && (amendments.length + 1) % 3 === 0) {
+        // Auto-compact after 5+ amendments (matches SOT threshold)
+        if (amendments.length + 1 >= 5 && (amendments.length + 1) % 5 === 0) {
           console.log('[Compaction] Auto-triggering after', amendments.length + 1, 'amendments');
           handleCompactPrompt();
         }
@@ -368,6 +369,7 @@ export function useCastingGeneration({
     } catch (error) {
       const message = error instanceof Error ? error.message : "Iteration failed";
       setGenState({ isGenerating: false, currentStep: "", error: message });
+      useCastingGenerationStore.getState().setFailedAction({ type: 'ITERATE', args: { text: prompt, view: activeView, mask: maskBase64 } });
       toast.error(message);
     }
   }, [currentModelId, creditsData, currentAssets, activeView]);
@@ -431,11 +433,21 @@ export function useCastingGeneration({
     }
   }, [refineInput, isEnhancing]);
 
-  // Retry handler
+  // Retry handler — replays the exact failed action instead of always re-casting
   const handleRetry = useCallback(() => {
+    const failedAction = useCastingGenerationStore.getState().failedAction;
     setGenState({ isGenerating: false, currentStep: "", error: null });
-    handleGenerate();
-  }, [handleGenerate]);
+    useCastingGenerationStore.getState().setFailedAction(null);
+    
+    if (!failedAction || failedAction.type === 'NEW') {
+      handleGenerate();
+    } else if (failedAction.type === 'ITERATE' && failedAction.args) {
+      performIteration(failedAction.args.text, failedAction.args.mask);
+    } else {
+      // Fallback: re-generate
+      handleGenerate();
+    }
+  }, [handleGenerate, performIteration]);
 
   // Undo/Redo
   const handleUndo = useCallback(() => {

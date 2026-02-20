@@ -3,7 +3,6 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
 import HairColorWheel from "./components/HairColorWheel";
-import { CompactPromptButton } from "./components/CompactPromptButton";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { generateRandomPreferences } from "./castingHelpers";
@@ -49,14 +48,12 @@ interface ControlPanelProps {
   genState: GenerationState;
   currentAssets: GeneratedAsset[];
   handleGenerate: () => void;
-  onCompactPrompt?: () => void;
-  isCompacting?: boolean;
 }
 
 // ── Main Component ────────────────────────────
 
 export function ControlPanel({
-  user, isFormValid, genState, currentAssets, handleGenerate, onCompactPrompt, isCompacting,
+  user, isFormValid, genState, currentAssets, handleGenerate,
 }: ControlPanelProps) {
   // Use store's functional updaters — no stale closure risk
   const prefs = useCastingFormStore((s) => s.prefs);
@@ -330,12 +327,6 @@ export function ControlPanel({
           </div>
         </CollapsibleSection>
 
-        {/* Master Prompt Panel */}
-        {onCompactPrompt && (
-          <div className="px-4 py-2">
-            <CompactPromptButton onCompact={onCompactPrompt} isCompacting={isCompacting} />
-          </div>
-        )}
       </div>
 
       {/* ═══ FOOTER ═══ */}

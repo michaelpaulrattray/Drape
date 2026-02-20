@@ -4099,7 +4099,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add maxOutputTokens: 4096 to generateMasterPrompt config
 
 ## enhanceUserPrompt Audit
-- [ ] Audit enhanceUserPrompt against SOT — verify 2-model fallback chain, prompt text, config
+- [x] Audit enhanceUserPrompt against SOT — matches (2-model chain, prompt text, config all identical; temperature removed)
 
 ## Gemini Temperature Audit
 - [x] Remove temperature: 0.2 from enhanceUserPrompt
@@ -4121,3 +4121,12 @@ The entry and configuration files are properly set up with several enhancements 
 ## Bug Fixes
 - [x] Fix infinite loop in HairColorWheel.tsx (Maximum update depth exceeded on /casting-studio)
 - [x] Fix ethnicity chips not visually selected after Admin Tools Random Fill / Auto Generate
+
+## Casting Studio Bug Batch (Feb 20)
+- [x] BUG-1: Removed CompactPromptButton from ControlPanel, auto-compact threshold adjusted 3→5 to match SOT
+- [x] BUG-2: Added failedAction tracking to store, handleRetry now replays exact failed action
+- [x] BUG-3: Navy iris descriptor matches SOT character-for-character — Gemini model behavior, not code issue
+- [x] BUG-4: P1 enforcement language matches SOT exactly — Gemini model behavior, not code issue
+- [x] BUG-5: Fixed erase tool — client now composites base image + mask strokes (matches SOT), removed redundant server-side compositing
+- [x] BUG-6: Restyled next stage CTA to match SOT (white-on-dark, glow shadow, ping animation, slide-in)
+- [x] BUG-7: Fixed hold-to-compare — changed history[length-1] to history[historyIndex-1]

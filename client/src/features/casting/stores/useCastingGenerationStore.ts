@@ -53,6 +53,10 @@ interface CastingGenerationState {
   identityWarning: string | null;
   setIdentityWarning: (warning: string | null) => void;
   
+  // Failed action tracking for retry
+  failedAction: { type: 'NEW' | 'ITERATE' | 'BODY' | 'SIDE'; args?: { text: string; view: string; mask?: string } } | null;
+  setFailedAction: (action: { type: 'NEW' | 'ITERATE' | 'BODY' | 'SIDE'; args?: { text: string; view: string; mask?: string } } | null) => void;
+  
   // Computed selectors (as functions)
   canUndo: () => boolean;
   canRedo: () => boolean;
@@ -131,6 +135,10 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
       identityWarning: null,
       setIdentityWarning: (warning) => set({ identityWarning: warning }, false, 'setIdentityWarning'),
       
+      // Failed action tracking for retry
+      failedAction: null,
+      setFailedAction: (action) => set({ failedAction: action }, false, 'setFailedAction'),
+      
       // Computed selectors
       canUndo: () => get().historyIndex > 0,
       canRedo: () => get().historyIndex < get().history.length - 1,
@@ -152,6 +160,7 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
         isLoadingSuggestions: false,
         amendments: [],
         identityWarning: null,
+        failedAction: null,
       }, false, 'resetGeneration'),
     }),
     { name: 'CastingGenerationStore' }

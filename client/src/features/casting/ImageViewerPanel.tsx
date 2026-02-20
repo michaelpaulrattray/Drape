@@ -220,11 +220,11 @@ export function ImageViewerPanel({
 
   // Hold-to-compare
   const getPreviousImage = useCallback(() => {
-    if (history.length === 0 || currentAssets.length === 0) return null;
-    const prevAssets = history[history.length - 1];
+    if (historyIndex <= 0 || currentAssets.length === 0) return null;
+    const prevAssets = history[historyIndex - 1];
     const prevAsset = prevAssets?.find(a => a.viewType === activeView);
     return prevAsset?.storageUrl || null;
-  }, [history, currentAssets, activeView]);
+  }, [history, historyIndex, currentAssets, activeView]);
 
   const handleImageMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -434,36 +434,32 @@ export function ImageViewerPanel({
           <div className="flex-1 relative min-h-0 flex items-center justify-center bg-transparent">
             {/* Next stage CTA */}
             {nextStage && !genState.isGenerating && (
-              <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4">
-                <div className="text-right space-y-1">
+              <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4 animate-in fade-in slide-in-from-right-8 duration-700">
+                <div className="text-right space-y-1 drop-shadow-md">
                   <div className="flex items-center justify-end space-x-2">
                     <div className="flex space-x-1">
                       {[...Array(nextStage.total)].map((_, i) => (
-                        <div key={i} style={{
-                          height: 4, width: 12, borderRadius: 2,
-                          background: i + 1 < nextStage.step ? '#1a1a1a' : i + 1 === nextStage.step ? '#1a1a1a' : 'rgba(0,0,0,0.1)',
-                          animation: i + 1 === nextStage.step ? 'pulse 2s infinite' : 'none',
-                        }} />
+                        <div key={i} className={`h-1 w-3 rounded-full ${
+                          i + 1 < nextStage.step ? 'bg-white' : i + 1 === nextStage.step ? 'bg-white animate-pulse' : 'bg-neutral-700'
+                        }`} />
                       ))}
                     </div>
-                    <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '0.08em', color: '#999', fontFamily: 'ui-monospace, monospace', textTransform: 'uppercase' }}>
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-neutral-400">
                       {nextStage.step > nextStage.total ? 'Workflow Complete' : isAutoGenerating ? 'Auto' : 'Next Stage'}
                     </span>
                   </div>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a', letterSpacing: '0.04em', fontFamily: 'ui-monospace, monospace', textTransform: 'uppercase' }}>
+                  <p className="text-xs font-mono font-bold text-white uppercase tracking-wider">
                     {nextStage.label}
                   </p>
                 </div>
                 {!isAutoGenerating ? (
                   <button
                     onClick={nextStage.action}
-                    className="w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-110"
-                    style={{
-                      background: '#1a1a1a', color: '#fff',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                    }}
+                    className="group relative w-16 h-16 bg-white rounded-full flex items-center justify-center hover:scale-110 transition-all duration-300"
+                    style={{ boxShadow: '0 0 40px rgba(255,255,255,0.2)' }}
                   >
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="absolute inset-0 rounded-full border border-white opacity-50 group-hover:animate-ping" />
+                    <svg width="18" height="18" fill="none" stroke="#1a1a1a" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                   </button>

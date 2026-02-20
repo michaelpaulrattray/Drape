@@ -126,7 +126,8 @@ export function useCastingCanvas(
       const ctx = cvs.getContext('2d');
       if (!ctx) return undefined;
 
-      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      // Draw base image first, then overlay mask strokes (matches SOT)
+      ctx.drawImage(img, 0, 0);
 
       const brushSize = Math.max(10, img.naturalWidth * 0.04);
 

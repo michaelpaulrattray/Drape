@@ -280,14 +280,9 @@ export async function iterateModel(
 ): Promise<GenerationResult> {
   const currentBase64 = await fetchAsBase64(currentImageUrl);
 
-  // Composite the mask overlay with the base image if provided
-  let effectiveMask: string | undefined;
-  if (options.maskBase64 || options.maskImage) {
-    const maskData = options.maskBase64 || options.maskImage;
-    // The frontend now sends just the mask strokes on transparent background
-    // We need to composite it with the base image to create the guide overlay
-    effectiveMask = await compositeMaskWithImage(currentBase64, maskData!);
-  }
+  // The frontend now sends the mask already composited with the base image (matches SOT)
+  // No server-side compositing needed — pass through directly
+  const effectiveMask = options.maskBase64 || options.maskImage || undefined;
 
   const result = await gemini.generateCastingImage(
     masterPrompt,
