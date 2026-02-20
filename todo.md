@@ -4019,3 +4019,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix quality default: resolution should default to 2K not 1K (both init and reset)
 - [x] Verify generate button works after CollapsibleSection fix (ethnicity is required field — correct behavior)
 - [x] Fix generate button still showing "Fill Required Fields" when all fields are filled — stale closure bug in ControlPanel.tsx + missing ethnicityBlend fallback in isFormValid
+- [x] Fix 'Unknown column user_id' error in credits deduction query (server/db/credits.ts) blocking all casting generations
+- [x] Scan entire codebase for raw SQL using snake_case column names instead of Drizzle column refs

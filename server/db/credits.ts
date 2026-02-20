@@ -154,9 +154,9 @@ export async function deductCredits(
       // ATOMIC DEDUCTION: Use SQL conditional update to prevent race conditions
       const updateResult = await tx.execute(
         sql`UPDATE ${credits} 
-            SET balance = balance - ${amount},
-                credits_used = COALESCE(credits_used, 0) + ${amount}
-            WHERE user_id = ${userId} AND balance >= ${amount}`
+            SET ${credits.balance} = ${credits.balance} - ${amount},
+                ${credits.creditsUsed} = COALESCE(${credits.creditsUsed}, 0) + ${amount}
+            WHERE ${credits.userId} = ${userId} AND ${credits.balance} >= ${amount}`
       );
 
       const affectedRows =
@@ -270,12 +270,12 @@ export async function addCredits(
       const updateResult = await tx.execute(
         isPurchase
           ? sql`UPDATE ${credits}
-                SET balance = balance + ${amount},
-                    credits_purchased = COALESCE(credits_purchased, 0) + ${amount}
-                WHERE user_id = ${userId}`
+                SET ${credits.balance} = ${credits.balance} + ${amount},
+                    ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount}
+                WHERE ${credits.userId} = ${userId}`
           : sql`UPDATE ${credits}
-                SET balance = balance + ${amount}
-                WHERE user_id = ${userId}`
+                SET ${credits.balance} = ${credits.balance} + ${amount}
+                WHERE ${credits.userId} = ${userId}`
       );
 
       const affectedRows =
