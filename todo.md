@@ -4076,3 +4076,24 @@ The entry and configuration files are properly set up with several enhancements 
 
 ### Missing Components
 - [x] Add Tooltip.tsx component — already exists at client/src/components/Tooltip.tsx
+
+## Full SOT Cross-Check Audit (Round 2)
+- [ ] Extract and catalog SOT codebase structure
+- [ ] Audit Types & Constants — every type, interface, enum in SOT must exist in running app
+- [ ] Audit Prompt Logic — diff every prompt string character by character
+- [ ] Audit Service Functions — signatures, bodies, new functions
+- [ ] Audit Component Logic — props, state, handlers, effects
+- [ ] Audit Wiring — App/context passes all required props, imports correct
+- [ ] Compile findings and propose fixes
+
+## SOT Prompt Assembly Fixes (buildNewPromptContent)
+- [x] Add formatEthnicityBlend() with qualitative dominance bands
+- [x] Add describeWeight() vibe blend system (3 intensity tiers per axis)
+- [x] Add skin texture age reconciliation (effectiveSkinTexture)
+- [x] Separate features into explicitFeatures[] and unsetFeatures[] with isExplicit()
+- [x] Add P1 enforcement language for skin tone, eye color, hair color
+- [x] Add bodyTypeHeadshotHint() for visible headshot effects
+- [x] Add hair detail filtering for buzz/shaved styles
+- [x] Restructure prompt with section headers
+- [x] Add 3rd fallback model (gemini-2.5-flash) + withSingleRetry503 to generateMasterPrompt
+- [x] Add maxOutputTokens: 4096 to generateMasterPrompt config

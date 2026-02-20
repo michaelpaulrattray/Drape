@@ -126,7 +126,15 @@ export const generateMasterPrompt = async (
   }, '[geminiGeneration] generateMasterPrompt called');
 
   const ai = getAiClient();
-  const skinInstruction = getSkinDescription(prefs.skinTexture, prefs.skinFinish);
+
+  // Reconcile skin texture with age — "Mature" on a young subject gets softened
+  let effectiveSkinTexture = prefs.skinTexture;
+  const age = parseInt(String(prefs.age || "23"), 10);
+  if (effectiveSkinTexture === 'Mature' && age < 35) {
+    effectiveSkinTexture = 'Raw / Standard'; // Young skin can't have collagen loss and crow's feet
+  }
+  const skinInstruction = getSkinDescription(effectiveSkinTexture, prefs.skinFinish);
+
   const parts: GeminiPart[] = [];
 
   if (prefs.referenceImage && mode === 'ITERATE') {
@@ -152,6 +160,7 @@ export const generateMasterPrompt = async (
       config: {
         systemInstruction: MASTER_PROMPT_SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
+        maxOutputTokens: 4096,
         safetySettings: SAFETY_SETTINGS,
       }
     });
@@ -167,21 +176,23 @@ export const generateMasterPrompt = async (
     };
   };
 
-  const MODELS = ['gemini-3-pro-preview', 'gemini-3-flash-preview'];
+  const MODELS = ['gemini-3-pro-preview', 'gemini-3-flash-preview', 'gemini-2.5-flash'];
 
   for (let i = 0; i < MODELS.length; i++) {
+    const model = MODELS[i];
     try {
-      const response = await withTimeout(
-        generateText(MODELS[i]),
-        30000,
-        `MasterPrompt (${MODELS[i]})`
+      const response = await withSingleRetry503(
+        () => withTimeout(generateText(model), 30000, `MasterPrompt (${model})`),
+        `MasterPrompt (${model})`
       );
       return parseResponse(response);
     } catch (e: any) {
-      log.warn({ err: e?.message }, `[MasterPrompt] ${MODELS[i]} failed:`);
+      log.warn({ err: e?.message }, `[MasterPrompt] ${model} failed:`);
       if (i === MODELS.length - 1) {
         throw new Error(formatGeminiError(e));
       }
+      // Brief pause before trying next model
+      await new Promise(r => setTimeout(r, 1000));
     }
   }
 
@@ -193,122 +204,220 @@ export const generateMasterPrompt = async (
 // PROMPT CONTENT BUILDERS (private helpers)
 // ============================================================================
 
+/**
+ * Formats ethnicity blend into a descriptive string the text model can interpret.
+ * Uses dominance bands so the model treats 90/10 differently from 50/50.
+ */
+function formatEthnicityBlend(prefs: ModelPreferences): string {
+  if (prefs.ethnicityBlend && prefs.ethnicityBlend.length > 0) {
+    const sorted = [...prefs.ethnicityBlend].sort((a, b) => b.pct - a.pct);
+
+    if (sorted.length === 1) {
+      return sorted[0].name;
+    }
+
+    const [pri, sec] = sorted;
+
+    // Dominance bands — guides how the text model interprets the mix
+    if (pri.pct >= 85) {
+      return `${pri.name} with a trace of ${sec.name} heritage`;
+    }
+    if (pri.pct >= 70) {
+      return `Predominantly ${pri.name} with visible ${sec.name} influence`;
+    }
+    if (pri.pct >= 55) {
+      return `Mixed ${pri.name}-${sec.name} heritage, leaning ${pri.name}`;
+    }
+    return `Equal ${pri.name}-${sec.name} biracial heritage`;
+  }
+
+  // Fallback to legacy string
+  return prefs.ethnicity || "Any";
+}
+
+/**
+ * Body type affects visible headshot areas (neck, shoulders, face fullness).
+ */
+function bodyTypeHeadshotHint(bodyType?: string): string {
+  const bt = (bodyType || 'Slim').toLowerCase();
+  if (bt === 'curvy') return 'BODY TYPE NOTE: Curvy build — reflect in neck width, broader shoulders, and slightly fuller face.';
+  if (bt === 'athletic' || bt === 'muscular') return 'BODY TYPE NOTE: Athletic/Muscular build — reflect in thicker neck, defined traps and shoulders visible in frame.';
+  if (bt === 'petite') return 'BODY TYPE NOTE: Petite build — reflect in narrower shoulders, delicate neck, finer bone structure.';
+  if (bt === 'ultra thin') return 'BODY TYPE NOTE: Ultra thin build — reflect in narrow neck, visible collarbones and tendons, leaner face.';
+  return '';
+}
+
 function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string): string {
   const isMale = prefs.gender?.toLowerCase().includes('male');
 
   // Brand descriptor from unified BRAND_PROFILES
-  const brandProfile = BRAND_PROFILES[prefs.castingBrand || 'Gucci'];
-  const brandDescriptor = brandProfile?.descriptor || DEFAULT_BRAND_DESCRIPTOR;
+  const brandDescriptors: Record<string, string> = Object.fromEntries(
+    Object.entries(BRAND_PROFILES).map(([key, val]) => [key, val.descriptor])
+  );
+  const brandVibe = brandDescriptors[prefs.castingBrand || 'Gucci'] || DEFAULT_BRAND_DESCRIPTOR;
 
-  // Vibe blend description
+  // Vibe blend description — qualitative intensity bands, never raw numbers
   let vibeBlendDescription = "";
   if (prefs.castingVibe) {
     const { editorial, commercial, runway } = prefs.castingVibe;
-    const eP = Math.round(editorial * 100);
-    const cP = Math.round(commercial * 100);
-    const rP = Math.round(runway * 100);
 
-    // Determine dominant vibe for intensity guidance
-    const dominant = editorial >= commercial && editorial >= runway ? 'editorial'
-      : commercial >= runway ? 'commercial' : 'runway';
+    // Convert weights to qualitative intensity bands — never send raw numbers
+    const describeWeight = (w: number,
+      strong: string, moderate: string, hint: string
+    ): string | null => {
+      if (w >= 0.6) return strong;
+      if (w >= 0.3) return moderate;
+      if (w >= 0.1) return hint;
+      return null;
+    };
 
-    vibeBlendDescription = `
-      AESTHETIC MIX:
-      - ${eP}% EDITORIAL (Avant-garde, sharp, strange, severe, expensive, architectural).
-      - ${cP}% COMMERCIAL (Approachable, warm, soft, relatable, healthy, smiling eyes).
-      - ${rP}% RUNWAY (Fierce, imposing, powerful, confident, statuesque, classic supermodel).
-      
-      INSTRUCTION: Blend these traits proportionally.
-      ${dominant === 'editorial' && editorial > 0.5 ? "Push features toward striking and unconventional." : ""}
-      ${dominant === 'commercial' && commercial > 0.5 ? "Keep features attractive and approachable." : ""}
-      ${dominant === 'runway' && runway > 0.5 ? "Make features dramatic and commanding." : ""}
-    `;
+    const edDesc = describeWeight(editorial,
+      "DOMINANT EDITORIAL: Push the brand's OWN aesthetic to its most extreme and committed expression. Whatever makes this brand distinctive — turn it up. If the brand is brutal, go more brutal. If the brand is bookish, go more intensely bookish. If the brand is quirky, go more boldly quirky. Do NOT default to 'weird' or 'alien' — amplify what the BRAND already is.",
+      "MODERATE EDITORIAL INFLUENCE: Intensify the brand's natural aesthetic — make the distinctive features more committed and specific.",
+      "SUBTLE EDITORIAL TRACE: A slight intensification of whatever makes the brand's casting type distinctive."
+    );
+    const comDesc = describeWeight(commercial,
+      "DOMINANT COMMERCIAL: Soften the brand's aesthetic toward broader appeal. Keep the brand's DNA visible but make everything more symmetrical, approachable, and conventionally attractive. The face should feel castable for a wide audience.",
+      "MODERATE COMMERCIAL INFLUENCE: Soften the edges — more approachable than the brand's pure archetype while keeping its identity.",
+      "SUBTLE COMMERCIAL TRACE: A touch of approachability in the overall impression."
+    );
+    const rwDesc = describeWeight(runway,
+      "DOMINANT RUNWAY: Amplify the physical presence and bone structure within the brand's direction. Make the features more dramatic and commanding — but dramatic IN THE WAY THE BRAND DEFINES IT. A brutal brand gets more angular. A glamorous brand gets more statuesque. A youthful brand gets more striking presence in the gaze, not in the bones.",
+      "MODERATE RUNWAY INFLUENCE: Increase physical intensity and presence within the brand's own casting direction.",
+      "SUBTLE RUNWAY TRACE: A hint of heightened physical presence in the gaze and bearing."
+    );
+
+    const activeVibes = [edDesc, comDesc, rwDesc].filter(Boolean);
+    vibeBlendDescription = activeVibes.length > 0
+      ? `CASTING VIBE DIRECTION:\n${activeVibes.join('\n')}`
+      : "CASTING VIBE: Balanced high fashion editorial.";
   } else {
-    vibeBlendDescription = "AESTHETIC MIX: 100% High Fashion Editorial. Severe and architectural.";
+    vibeBlendDescription = "CASTING VIBE: Balanced editorial — let the brand direction above define the physical aesthetic.";
   }
 
-  // Eye color with iris description
-  let eyeColorInstruction = prefs.eyeColor || "Any";
-  if (prefs.eyeColor && irisDescriptions[prefs.eyeColor]) {
-    eyeColorInstruction = `${prefs.eyeColor} — ${irisDescriptions[prefs.eyeColor]}`;
-  }
+  const qualityBaseline = `
+    ── BRAND CASTING BRIEF ──
+    ${brandVibe}
 
-  // Ethnicity blend formatting
-  let ethnicityInstruction = prefs.ethnicity || "Any";
-  if (prefs.ethnicityBlend && prefs.ethnicityBlend.length > 0) {
-    ethnicityInstruction = prefs.ethnicityBlend
-      .map(e => `${e.pct}% ${e.name}`)
-      .join(' / ');
-  }
+    ── VIBE INTENSITY ──
+    ${vibeBlendDescription}
 
-  // Feature list
-  const featureList = [];
-  if (prefs.jawline) featureList.push(`Jawline: ${prefs.jawline}`);
-  if (prefs.cheekbones) featureList.push(`Cheekbones: ${prefs.cheekbones}`);
-  if (prefs.cheeks) featureList.push(`Cheek Shape: ${prefs.cheeks}`);
-  if (prefs.eyeShape) featureList.push(`Eye Shape: ${prefs.eyeShape}`);
-  if (prefs.noseShape) featureList.push(`Nose Shape: ${prefs.noseShape}`);
-  if (prefs.lipShape) featureList.push(`Lip Shape: ${prefs.lipShape}`);
+    Remember: pick SPECIFIC values for every facial feature. The image model is 
+    literal — it renders what you describe, it does not interpret mood or vibe.
+    
+    Wardrobe: BARE SKIN ONLY. NO CLOTHING OR STRAPS VISIBLE.`;
 
-  if (prefs.eyebrowStyle && prefs.eyebrowStyle !== 'Random') {
-    let style = prefs.eyebrowStyle;
-    if (style === 'Brushed Up') style = "Natural fluffy brushed up texture, individual hairs visible, not laminated";
-    if (style === 'Bleached') style = "Bleached blonde (invisible), high fashion editorial look";
-    featureList.push(`Eyebrows: ${style}`);
-  }
+  // Filter out sub-selectors that are physically impossible for the base style
+  const baseStyle = (prefs.hairStyle || "").toLowerCase();
+  const isBuzzShaved = baseStyle.includes('buzz') || baseStyle.includes('shaved');
 
-  if (isMale && prefs.facialHair) featureList.push(`Facial Hair: ${prefs.facialHair}`);
-  if (prefs.features) featureList.push(`Additional Traits: ${prefs.features}`);
-
-  const featuresInstruction = featureList.length > 0
-    ? `MANDATORY FACIAL FEATURES (P1 — user set these explicitly): ${featureList.join(', ')}.`
-    : "Facial Features: Generate coherent, DISTINCTIVE features matching the Brand/Tone vibe. Be bold — at least 2-3 features should be pushed beyond average.";
-
-  // Hair details
   const hairDetails = [
-    prefs.hairLength ? `Length: ${prefs.hairLength}` : "",
+    (!isBuzzShaved && prefs.hairLength) ? `Length: ${prefs.hairLength}` : "",
     prefs.hairTexture ? `Texture: ${prefs.hairTexture}` : "",
-    prefs.hairFringe ? `Fringe/Bangs: ${prefs.hairFringe}` : "",
-    prefs.hairParting ? `Parting: ${prefs.hairParting}` : "",
-    prefs.hairVolume ? `Volume/Shape: ${prefs.hairVolume}` : "",
-    prefs.hairFlyaways ? `Flyaways: ${prefs.hairFlyaways}` : "",
+    (!isBuzzShaved && prefs.hairFringe) ? `Fringe/Bangs: ${prefs.hairFringe}` : "",
+    (!isBuzzShaved && prefs.hairParting) ? `Parting: ${prefs.hairParting}` : "",
+    (!isBuzzShaved && prefs.hairVolume) ? `Volume/Shape: ${prefs.hairVolume}` : "",
+    (!isBuzzShaved && prefs.hairFlyaways) ? `Flyaways: ${prefs.hairFlyaways}` : "",
     prefs.hairHairline ? `Hairline: ${prefs.hairHairline}` : "",
-    prefs.hairTuck ? `Tuck: ${prefs.hairTuck}` : "",
+    (!isBuzzShaved && prefs.hairTuck) ? `Tuck: ${prefs.hairTuck}` : "",
     prefs.hairFade ? `Fade/Taper: ${prefs.hairFade}` : ""
   ].filter(Boolean).join(". ");
 
+  const ethnicityDescription = formatEthnicityBlend(prefs);
+
+  const btHint = bodyTypeHeadshotHint(prefs.bodyType);
+
+  // Determine which face features are explicitly set (non-empty, non-Auto, non-Any)
+  const isExplicit = (val?: string) => val && val !== '' && val !== 'Auto' && val !== 'Any';
+
+  const explicitFeatures: string[] = [];
+  const unsetFeatures: string[] = [];
+
+  if (isExplicit(prefs.faceShape)) explicitFeatures.push(`Face Shape: ${prefs.faceShape}`);
+  else unsetFeatures.push('Face Shape');
+
+  if (isExplicit(prefs.jawline)) explicitFeatures.push(`Jawline: ${prefs.jawline}`);
+  else unsetFeatures.push('Jawline');
+
+  if (isExplicit(prefs.cheekbones)) explicitFeatures.push(`Cheekbones: ${prefs.cheekbones}`);
+  else unsetFeatures.push('Cheekbones');
+
+  if (isExplicit(prefs.cheeks)) explicitFeatures.push(`Cheek Shape: ${prefs.cheeks}`);
+  else unsetFeatures.push('Cheek Shape');
+
+  if (isExplicit(prefs.eyeShape)) explicitFeatures.push(`Eye Shape: ${prefs.eyeShape}`);
+  else unsetFeatures.push('Eye Shape');
+
+  if (isExplicit(prefs.noseShape)) explicitFeatures.push(`Nose Shape: ${prefs.noseShape}`);
+  else unsetFeatures.push('Nose Shape');
+
+  if (isExplicit(prefs.lipShape)) explicitFeatures.push(`Lip Shape: ${prefs.lipShape}`);
+  else unsetFeatures.push('Lip Shape');
+
+  if (prefs.eyebrowStyle && prefs.eyebrowStyle !== 'Auto') {
+    let style = prefs.eyebrowStyle;
+    if (style === 'Brushed Up') style = "Natural fluffy brushed up texture, individual hairs visible, not laminated";
+    if (style === 'Bleached') style = "Bleached blonde (invisible), high fashion editorial look";
+    explicitFeatures.push(`Eyebrows: ${style}`);
+  } else {
+    unsetFeatures.push('Eyebrows');
+  }
+
+  if (isMale && prefs.facialHair) explicitFeatures.push(`Facial Hair: ${prefs.facialHair}`);
+  if (prefs.features) explicitFeatures.push(`Additional Traits: ${prefs.features}`);
+
+  // Eye color, hair color, and skin tone are P1 when explicitly chosen
+  if (isExplicit(prefs.skinTone)) explicitFeatures.push(`Skin Tone: ${prefs.skinTone} — this is a DELIBERATE casting choice. The model's skin must match this tone regardless of ethnicity. Do NOT default to the darkest or lightest shade for this heritage.`);
+  if (isExplicit(prefs.eyeColor)) {
+    const irisDetail = irisDescriptions[prefs.eyeColor!] || prefs.eyeColor;
+    explicitFeatures.push(`Eye Color: ${prefs.eyeColor} (${irisDetail}) — this is a DELIBERATE casting choice, NOT a default. Do NOT substitute a different eye color.`);
+  }
+  if (isExplicit(prefs.hairColor) && prefs.hairColor !== 'Natural') explicitFeatures.push(`Hair Color: ${prefs.hairColor} — this is a DELIBERATE casting choice. Do NOT substitute a different hair color.`);
+
+  const explicitBlock = explicitFeatures.length > 0
+    ? `USER EXPLICIT FEATURES (PRIORITY 1 — ABSOLUTE, DO NOT OVERRIDE):
+    ${explicitFeatures.join('\n    ')}`
+    : '';
+
+  const unsetBlock = unsetFeatures.length > 0
+    ? `UNSET FEATURES (derive from brand archetype + ethnicity heritage):
+    ${unsetFeatures.join(', ')}`
+    : '';
+
   return `
-  Create a CASTING SPECIFICATION (JSON) based on these requirements:
-  - Gender: ${prefs.gender || "Female"}
-  - Age: ${prefs.age || "23"}
-  - Ethnicity: ${ethnicityInstruction}
-  - Body Type: ${prefs.bodyType || "Model Standard"}
-  - Face Shape: ${prefs.faceShape && prefs.faceShape !== 'Random' ? prefs.faceShape : "Any — pick something distinctive"}
-  - Skin tone: ${prefs.skinTone || "Standard"}
-  - Eye color: ${eyeColorInstruction}
-  
-  HAIR SPECIFICATION (STRICT):
-  - Base Style: ${prefs.hairStyle || "Natural"}
-  - Color: ${prefs.hairColor || "Natural"}
-  - Detailed Styling: ${hairDetails}
-  
-  BRAND DIRECTION (P2 — guides creative choices for unset features):
-  ${brandDescriptor}
-  
-  VIBE INTENSITY (P3 — controls how extreme features are):
-  ${vibeBlendDescription}
-  
-  STYLING DIRECTIVE:
-  Interpret the Hair Specification strictly through the lens of a HIGH-END SALON CASTING.
-  - REALISM: Hair must look physically plausible.
-  - BRAND ALIGNMENT: Match hairstyle to the requested brand archetype.
+    Create a CASTING SPECIFICATION (JSON) based on these requirements:
 
-  ${featuresInstruction}
+    ── IDENTITY ──
+    - Gender: ${prefs.gender || "Female"}
+    - Age: ${prefs.age || "23"}
+    - Body Type: ${prefs.bodyType || "Model Standard"}
+    ${btHint}
 
-  CRITICAL SKIN DIRECTIVE: ${skinInstruction}
-  
-  Wardrobe: BARE SKIN ONLY. NO CLOTHING OR STRAPS VISIBLE.
-  `;
+    ── ETHNICITY HERITAGE ──
+    ${ethnicityDescription}
+    Use this heritage to inform bone structure and facial geometry for any UNSET features below.
+
+    ── HAIR ──
+    - Style: ${prefs.hairStyle || "Natural"}
+    - Color: ${prefs.hairColor || "Natural"}
+    - Details: ${hairDetails || "Auto — choose styling that suits the brand and face shape"}
+    
+    STYLING DIRECTIVE:
+    Sub-selectors (length, texture, bangs, etc.) are preferences — adapt freely to
+    create a cohesive, physically plausible look. If a detail is missing, choose what 
+    looks best for this person's face shape, ethnicity, and brand direction.
+
+    ── FACIAL FEATURES ──
+    ${explicitBlock}
+
+    ${unsetBlock}
+
+    ── BRAND & VIBE (shapes physical casting type and intensity) ──
+    ${qualityBaseline}
+
+    ── SKIN ──
+    ${skinInstruction}
+    `;
 }
 
 function buildIteratePromptContent(prefs: ModelPreferences): string {
