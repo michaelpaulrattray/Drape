@@ -3986,3 +3986,16 @@ The entry and configuration files are properly set up with several enhancements 
 ## Bug Fixes: Usage Tab in Settings Modal
 - [x] Fix Credits display showing 717 (period usage) instead of actual account balance
 - [x] Fix Daily Usage bar chart not rendering (empty chart area)
+
+## Branding Cleanup: Forma → Drape
+- [x] Fix Navigation.tsx logo text: FormaStudio → drape
+- [x] Fix ImageViewerPanel.tsx download filename: FORMASTUDIO → DRAPE
+- [x] Fix homeData.ts portfolio item name: Forma → Drape
+- [x] Fix SecurityTab.tsx GDPR export filename: forma-studio → drape
+- [x] Fix useReferralClaim.ts localStorage key: forma_referral_code → drape_referral_code
+- [x] Fix index.css CSS comment: FORMA STUDIO → DRAPE
+- [x] Fix Dashboard.tsx share button text: Share Forma → Share Drape
+- [x] Fix tokens.css class + comment: container-forma → container-drape / FORMA STUDIO → DRAPE
+- [x] Fix access.test.ts test string: forma-test → drape-test
+- [x] Fix DB: update existing FORMA- referral codes to DRAPE-
+- [x] Fix pdfService.ts casting sheet header: forma studio → drape

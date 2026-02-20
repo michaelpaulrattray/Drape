@@ -178,7 +178,7 @@ describe("access.redeem", () => {
 
     // Should not throw validation error for valid code with spaces
     try {
-      await caller.access.redeem({ code: "  forma-test  " });
+      await caller.access.redeem({ code: "  drape-test  " });
     } catch (e: unknown) {
       // DB errors are expected in test env, but Zod validation errors are not
       const error = e as { code?: string };

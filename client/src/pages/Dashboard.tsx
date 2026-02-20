@@ -564,7 +564,7 @@ export default function Dashboard() {
                   className="group px-5 py-2.5 rounded-full bg-[#0A0A0A] text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg hover:bg-[#0A0A0A]/90"
                 >
                   <Gift className="w-4 h-4" />
-                  Share Forma
+                  Share Drape
                 </button>
                 <button className="p-2.5 rounded-full bg-white border border-[#D4D4D4] text-[#757575] hover:text-[#0A0A0A] hover:border-[#0A0A0A]/30 transition-colors shadow-sm">
                   <Bell className="w-5 h-5" />
@@ -584,7 +584,7 @@ export default function Dashboard() {
             className="flex-1 py-2 rounded-full bg-[#0A0A0A] text-white text-xs font-medium flex items-center justify-center gap-1.5"
           >
             <Gift className="w-3.5 h-3.5" />
-            Share Forma
+            Share Drape
           </button>
           <button className="p-2 rounded-full bg-gray-100 text-[#757575]">
             <Bell className="w-4 h-4" />

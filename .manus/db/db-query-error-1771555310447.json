@@ -1,0 +1,8 @@
+{
+  "query": "UPDATE users SET referral_code = REPLACE(referral_code, 'FORMA-', 'DRAPE-') WHERE referral_code LIKE 'FORMA-%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute UPDATE users SET referral_code = REPLACE(referral_code, 'FORMA-', 'DRAPE-') WHERE referral_code LIKE 'FORMA-%';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'referral_code' in 'where clause'"
+  ]
+}

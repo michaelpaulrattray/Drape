@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 
-const REFERRAL_STORAGE_KEY = "forma_referral_code";
+const REFERRAL_STORAGE_KEY = "drape_referral_code";
 
 /**
  * Captures ?ref=CODE from the URL on landing and stores it in localStorage.

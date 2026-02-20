@@ -51,7 +51,7 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
             {/* Logo */}
             <Link href="/">
               <span className="text-xl md:text-2xl font-instrument tracking-tight cursor-pointer">
-                Forma<span className="opacity-60">Studio</span>
+                drape
               </span>
             </Link>
 

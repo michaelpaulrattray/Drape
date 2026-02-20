@@ -123,7 +123,7 @@ export const projects: Project[] = [
   { name: "Lune", year: "2025", category: "Editorial Campaign", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80" },
   { name: "Aren", year: "2025", category: "Casting + Wardrobe", image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80" },
   { name: "Oura", year: "2025", category: "E-Commerce Lookbook", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80" },
-  { name: "Forma", year: "2025", category: "Brand Identity System", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80" },
+  { name: "Drape", year: "2025", category: "Brand Identity System", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80" },
   { name: "Oko", year: "2025", category: "Campaign Production", image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80" },
   { name: "Velin", year: "2025", category: "Model Casting", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80" },
 ];

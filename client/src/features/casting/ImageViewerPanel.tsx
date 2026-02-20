@@ -193,7 +193,7 @@ function DownloadButton({ imageUrl, activeView }: { imageUrl: string; activeView
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `FORMASTUDIO_${activeView}.png`;
+      a.download = `DRAPE_${activeView}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

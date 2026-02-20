@@ -31,7 +31,7 @@ export function SecurityTab({ user, profileEmail }: SecurityTabProps) {
         const a = document.createElement("a");
         a.href = url;
         const date = new Date().toISOString().split("T")[0];
-        a.download = `forma-studio-data-export-${date}.json`;
+        a.download = `drape-data-export-${date}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

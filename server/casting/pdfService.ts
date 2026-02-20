@@ -107,9 +107,7 @@ function createCoverPage(doc: jsPDF, data: PdfModelData) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(255, 255, 255);
-  doc.text('forma', 15, 25);
-  doc.setFont('helvetica', 'normal');
-  doc.text('studio', 15 + doc.getTextWidth('forma') + 2, 25);
+  doc.text('drape', 15, 25);
   
   // Orange accent line
   doc.setDrawColor(...COLORS.accent);
