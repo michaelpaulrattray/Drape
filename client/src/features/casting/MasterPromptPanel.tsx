@@ -246,7 +246,10 @@ export function MasterPromptPanel() {
                         <img src={prefs.referenceImage} alt="Reference" className="w-full object-cover" style={{ maxHeight: 120 }} />
                       </div>
                       <div className="mt-2 px-2.5 py-2 rounded-lg" style={{ background: '#f9f8f5', fontSize: 9, color: '#b8b3a8', lineHeight: 1.5 }}>
-                        <span style={{ fontWeight: 600, color: '#999' }}>How to use:</span> describe what to transfer in the refine bar — e.g. "use hairstyle from reference"
+                        <span style={{ fontWeight: 600, color: '#999' }}>How to use:</span> describe what to transfer in the refine bar — e.g. "use hairstyle from reference" or "apply eye makeup from reference image"
+                        <div style={{ marginTop: 4, color: '#ccc' }}>
+                          Press <span style={{ fontFamily: 'monospace', fontWeight: 700, background: 'rgba(0,0,0,0.04)', padding: '0 3px', borderRadius: 2 }}>F</span> to toggle on canvas · Drag to reposition · Corner to resize
+                        </div>
                       </div>
                       <button
                         onClick={() => fileInputRef.current?.click()}
@@ -290,7 +293,7 @@ export function MasterPromptPanel() {
                         <div style={{ fontSize: 9, color: '#ccc', marginTop: 2 }}>Drop or click to browse</div>
                       </div>
                       <div className="mt-2 px-2.5 py-2 rounded-lg" style={{ background: '#f9f8f5', fontSize: 9, color: '#b8b3a8', lineHeight: 1.5 }}>
-                        Upload a photo of a hairstyle, tattoo, or look you want to transfer. Then describe what to use in the refine bar.
+                        Upload a photo of a hairstyle, tattoo, accessory, or look you want to transfer to your model. Then describe what to use in the refine bar — the AI will visually reference this image during iteration.
                       </div>
                     </>
                   )}
@@ -345,11 +348,11 @@ export function MasterPromptPanel() {
 
                 {specMode === 'natural' ? (
                   <div style={{ fontSize: 11, lineHeight: 1.6, color: '#777' }} className="whitespace-pre-wrap select-text">
-                    {currentMasterPrompt || 'Spec will appear after generation...'}
+                    {currentMasterPrompt}
                   </div>
                 ) : (
                   <pre style={{ fontSize: 10, lineHeight: 1.5, color: '#5cad5c' }} className="whitespace-pre-wrap select-text font-mono">
-                    {currentTechnicalSchema ? JSON.stringify(currentTechnicalSchema, null, 2) : '{}'}
+                    {JSON.stringify(currentTechnicalSchema, null, 2)}
                   </pre>
                 )}
               </div>

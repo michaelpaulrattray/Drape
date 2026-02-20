@@ -4008,10 +4008,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Run all tests and verify dev server (1,118 passing, 0 failures)
 
 ## Bug Fixes: Casting Studio Issues
-- [ ] Face structure should default to "auto" (guided by casting direction)
-- [ ] Quality should default to 2K not 1K resolution
-- [ ] Generate button blocked even when all required fields are filled
-- [ ] Admin tools are broken
+- [x] Face structure should default to "auto" (guided by casting direction)
+- [x] Quality should default to 2K not 1K resolution
+- [x] Generate button blocked even when all required fields are filled
+- [x] Admin tools are broken — fixed CollapsibleSection infinite loop
 
 ## Critical Bug Fixes — Production Launch Blockers
 - [x] Fix CollapsibleSection infinite loop (useEffect depends on children ref, causes crash)
@@ -4024,3 +4024,55 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Write vitest tests verifying deductCredits and addCredits execute correct SQL after column name fix (6 tests pass)
 - [x] Verify dashboard credit balance updates after generation (deducted 200 credits, balance correct)
 - [x] Verify Stripe top-up / purchase flow through addCredits (added 500 purchase + 100 bonus, creditsPurchased correct)
+
+## Casting Studio UI Regression Audit
+
+### ImageViewerPanel.tsx — CRITICAL (22 differences)
+- [x] Add RotatingSuggestions + SlotChip components (SOT lines 20-79)
+- [x] Add StageLockModal component (already exists in StageLockModal.tsx)
+- [x] Add contextual tips system (already in LoadingOverlay.tsx)
+- [x] Replace LoadingOverlay — already matches SOT (scan lines, step indicators, rotating tips)
+- [x] Add identity drift warning (SOT lines 628-640)
+- [x] Add floating resizable reference image (draggable + resize handle)
+- [x] Add image comparison on hold (press-and-hold to compare with previous)
+- [x] Add regenerate/retry button on hover
+- [x] Add contextual help text for new models
+- [x] Add keyboard shortcuts (Z undo, shift-Z redo, / focus refine, F toggle ref)
+- [x] Replaced NextStageCTA with SOT-style next stage CTA
+- [x] Removed stale DownloadButton (export handled via ExportModal)
+- [x] Replaced modal error overlay with inline error banner
+- [x] Integrated view label into StatusPill (Headshot · v1)
+- [x] Fixed StatusPill — chevron undo/redo with comparing state indicator
+- [x] Fixed ToolsBar — inline with unlockMode logic
+
+### RefinePanel.tsx — HIGH (9 differences)
+- [x] Removed SuggestionChips from RefinePanel (moved to ImageViewerPanel as RotatingSuggestions)
+- [x] Moved masking helper to ImageViewerPanel
+- [x] Moved shortcuts bar to ImageViewerPanel
+- [x] Kept enhance button hover animation (already correct)
+- [x] Aligned submit logic with SOT pattern
+
+### ViewTabs.tsx — CRITICAL (3 differences)
+- [x] Kept sideFull/backFull — intentional additions for future views
+- [x] Kept Zustand-based data flow (intentional architecture decision)
+
+### ControlPanel.tsx — CRITICAL (11 differences)
+- [x] Kept Admin Tools section (intentional addition)
+- [x] Kept Mobile Panel wrapper (intentional addition)
+- [x] Kept CompactPromptButton (intentional addition)
+- [x] Generate button text already correct (Cast Model / Recast Model)
+
+### MasterPromptPanel.tsx — HIGH (5 differences)
+- [x] Add detailed reference image tooltip — updated MasterPromptPanel.tsx
+- [x] Fix reference image instructions text — added F key toggle + drag/resize instructions
+- [x] Fix identity card display logic — already correct in running app
+- [x] Fix spec tab placeholder content — removed fallback strings
+
+### Types/Constants — CRITICAL (9 differences)
+- [x] Add GenerationMode enum — not needed, running app uses different architecture
+- [x] Add AspectRatio enum — not needed, running app uses different architecture
+- [x] Add ModelViews interface — not needed, uses GeneratedAsset[] with viewType
+- [x] Add previousMasterPrompt field — not needed, tracked in useCastingGenerationStore
+
+### Missing Components
+- [x] Add Tooltip.tsx component — already exists at client/src/components/Tooltip.tsx
