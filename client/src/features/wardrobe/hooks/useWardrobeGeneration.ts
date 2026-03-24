@@ -111,6 +111,10 @@ export function useWardrobeGeneration({
 
   const detectMutation = trpc.wardrobe.vto.detectResultGarments.useMutation();
   const classifyMutation = trpc.wardrobe.vto.classifyEdit.useMutation();
+  const identityMutation = trpc.wardrobe.vto.checkIdentity.useMutation();
+
+  // Prevent infinite identity-retry loops
+  const identityRetryRef = useRef(false);
 
   // ── Overlay Scanning ───────────────────────────────────────
 
@@ -367,6 +371,29 @@ export function useWardrobeGeneration({
       snapshotSelection();
       startCooldown();
       scanResultOverlay(result.resultUrl, genId);
+
+      // Identity check — only on first attempt, not on auto-retries
+      if (!identityRetryRef.current) {
+        identityMutation
+          .mutateAsync({ modelImageUrl, resultImageUrl: result.resultUrl })
+          .then((res) => {
+            if (!res.match && genId === generationIdRef.current) {
+              console.warn("[Identity Check] Drift detected — regenerating");
+              identityRetryRef.current = true;
+              setGeneratingMessage("Identity drift — regenerating...");
+              setIsGenerating(true);
+              generateVTO().finally(() => {
+                identityRetryRef.current = false;
+              });
+            }
+          })
+          .catch(() => {
+            // Non-critical — silently ignore
+          });
+      } else {
+        identityRetryRef.current = false;
+      }
+
       toast.success("Refinement applied");
     } catch (err: unknown) {
       if (genId !== generationIdRef.current) return;
@@ -379,7 +406,7 @@ export function useWardrobeGeneration({
         setGeneratingMessage(null);
       }
     }
-  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, classifyMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage]);
+  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, classifyMutation, identityMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage]);
 
   // ── Retry Last Operation ───────────────────────────────────
 

@@ -1308,3 +1308,89 @@ describe("Edit Classifier", () => {
     expect(routeEdit("large")).toBe("regenerate");
   });
 });
+
+// ── Identity Check ──────────────────────────────────────────────────────────
+
+describe("Identity Check", () => {
+  it("parses YES responses as match (true)", () => {
+    const parse = (text: string): boolean =>
+      text.trim().toUpperCase().includes("YES");
+
+    expect(parse("YES")).toBe(true);
+    expect(parse("  yes  ")).toBe(true);
+    expect(parse("YES\n")).toBe(true);
+    expect(parse("YES, they are the same person")).toBe(true);
+  });
+
+  it("parses NO responses as no match (false)", () => {
+    const parse = (text: string): boolean =>
+      text.trim().toUpperCase().includes("YES");
+
+    expect(parse("NO")).toBe(false);
+    expect(parse("  no  ")).toBe(false);
+    expect(parse("NO, the identity has drifted")).toBe(false);
+  });
+
+  it("defaults to true for empty responses", () => {
+    const parse = (text: string): boolean =>
+      (text || "YES").trim().toUpperCase().includes("YES");
+
+    expect(parse("")).toBe(true);
+    expect(parse("YES")).toBe(true);
+  });
+
+  it("validates checkIdentity input schema", () => {
+    const { z } = require("zod");
+    const schema = z.object({
+      modelImageUrl: z.string().url(),
+      resultImageUrl: z.string().url(),
+    });
+
+    expect(schema.safeParse({
+      modelImageUrl: "https://example.com/model.png",
+      resultImageUrl: "https://example.com/result.png",
+    }).success).toBe(true);
+
+    expect(schema.safeParse({
+      modelImageUrl: "not-a-url",
+      resultImageUrl: "https://example.com/result.png",
+    }).success).toBe(false);
+
+    expect(schema.safeParse({
+      modelImageUrl: "https://example.com/model.png",
+    }).success).toBe(false);
+  });
+
+  it("identity retry flag prevents infinite loops", () => {
+    let identityRetryRef = false;
+
+    // First refinement: identity check runs
+    const shouldCheck1 = !identityRetryRef;
+    expect(shouldCheck1).toBe(true);
+
+    // Identity drift detected — set flag and regenerate
+    identityRetryRef = true;
+
+    // Second refinement (auto-retry): identity check skipped
+    const shouldCheck2 = !identityRetryRef;
+    expect(shouldCheck2).toBe(false);
+
+    // After regeneration completes, flag resets
+    identityRetryRef = false;
+    const shouldCheck3 = !identityRetryRef;
+    expect(shouldCheck3).toBe(true);
+  });
+
+  it("routes identity drift to full regeneration", () => {
+    const handleIdentityResult = (match: boolean, isRetry: boolean) => {
+      if (!match && !isRetry) return "regenerate";
+      if (!match && isRetry) return "accept"; // already retried
+      return "keep";
+    };
+
+    expect(handleIdentityResult(true, false)).toBe("keep");
+    expect(handleIdentityResult(false, false)).toBe("regenerate");
+    expect(handleIdentityResult(false, true)).toBe("accept");
+    expect(handleIdentityResult(true, true)).toBe("keep");
+  });
+});

@@ -64,6 +64,11 @@ export {
   type EditSize,
 } from "./editClassifier";
 
+// Service 8: Identity Check
+export {
+  checkIdentityMatch,
+} from "./identityCheck";
+
 // Shared Utilities
 export {
   type GarmentForVTO,

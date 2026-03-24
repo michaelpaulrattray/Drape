@@ -3,7 +3,7 @@
  *
  * Procedures:
  *   garments.list / get / upload / delete
- *   vto.generate / incremental / refine / detectResultGarments / classifyEdit
+ *   vto.generate / incremental / refine / detectResultGarments / classifyEdit / checkIdentity
  *   decompose.analyze / import
  *   sessions.create / get / list / update / delete
  *   outfits.list / save / delete
@@ -35,6 +35,7 @@ import { decomposeOutfit } from "../wardrobe/outfitDecomposition";
 import { analyzeTattoos } from "../wardrobe/tattooAnalysis";
 import { checkImageQuality } from "../wardrobe/qualityCheck";
 import { classifyEditSize } from "../wardrobe/editClassifier";
+import { checkIdentityMatch } from "../wardrobe/identityCheck";
 import type { GarmentForVTO } from "../wardrobe/utils";
 
 const log = createModuleLogger("routes/wardrobe");
@@ -452,6 +453,18 @@ const vtoRouter = router({
       throwIfRateLimited(ctx.user.id);
       const editSize = await classifyEditSize(input.instruction);
       return { editSize };
+    }),
+
+  /** Verify identity consistency between model photo and VTO result. */
+  checkIdentity: protectedProcedure
+    .input(z.object({
+      modelImageUrl: z.string().url(),
+      resultImageUrl: z.string().url(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      throwIfRateLimited(ctx.user.id);
+      const match = await checkIdentityMatch(input.modelImageUrl, input.resultImageUrl);
+      return { match };
     }),
 });
 

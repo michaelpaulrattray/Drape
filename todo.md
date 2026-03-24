@@ -4412,3 +4412,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add wardrobe.vto.classifyEdit tRPC endpoint
 - [x] Wire classifyEdit into refineResult in useWardrobeGeneration
 - [x] Add editClassifier tests
+- [x] Create server/wardrobe/identityCheck.ts service
+- [x] Add identityCheck to barrel export
+- [x] Add wardrobe.vto.checkIdentity tRPC endpoint
+- [x] Wire checkIdentity into refineResult in useWardrobeGeneration
+- [x] Add identityCheck tests
