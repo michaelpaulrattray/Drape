@@ -21,17 +21,11 @@ import {
   type GarmentForVTO,
 } from "./utils";
 import { createModuleLogger } from "../logging/logger";
+import type { TattooMap } from "./tattooAnalysis";
+
+export type { TattooMap };
 
 const log = createModuleLogger("wardrobe/vtoGeneration");
-
-// ── Tattoo Map ─────────────────────────────────────────────────────────────
-
-export interface TattooMap {
-  hasTattoos: boolean;
-  tattooAreas: string[];
-  cleanAreas: string[];
-  promptFragment: string;
-}
 
 // ── Narrative Builder ──────────────────────────────────────────────────────
 

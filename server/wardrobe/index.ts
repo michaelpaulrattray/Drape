@@ -30,7 +30,6 @@ export {
   type VTOParams,
   type VTOResult,
   type IncrementalParams,
-  type TattooMap,
 } from "./vtoGeneration";
 
 // Service 3: Garment Refinement
@@ -46,6 +45,12 @@ export {
   type DecomposedGarment,
   type DecompositionResult,
 } from "./outfitDecomposition";
+
+// Service 5: Tattoo Analysis
+export {
+  analyzeTattoos,
+  type TattooMap,
+} from "./tattooAnalysis";
 
 // Shared Utilities
 export {

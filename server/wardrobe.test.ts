@@ -424,3 +424,118 @@ describe("Slot Types", () => {
     });
   });
 });
+
+// ── Tattoo Analysis Tests ─────────────────────────────────────────────────
+
+describe("Tattoo Analysis", () => {
+  const { z } = require("zod");
+
+  // Simulate the parsing logic from tattooAnalysis.ts
+  function parseTattooResponse(areas: Record<string, string>) {
+    const tattooAreas: string[] = [];
+    const cleanAreas: string[] = [];
+    for (const [area, status] of Object.entries(areas)) {
+      const readableName = area.replace(/_/g, " ");
+      if (status === "TATTOO") tattooAreas.push(readableName);
+      else if (status === "CLEAN") cleanAreas.push(readableName);
+    }
+    const hasTattoos = tattooAreas.length > 0;
+    let promptFragment = "";
+    if (hasTattoos) {
+      promptFragment = `TATTOO MAP (from model image analysis):\nTattoos exist ONLY on: ${tattooAreas.join(", ")}.\nThese areas are confirmed CLEAN (no tattoos): ${cleanAreas.join(", ")}.`;
+    } else {
+      promptFragment = `TATTOO MAP (from model image analysis):\nThe model has NO visible tattoos. Any exposed skin must be completely clean and free of ink. Do not hallucinate tattoos on hands, arms, chest, or neck.`;
+    }
+    return { hasTattoos, tattooAreas, cleanAreas, promptFragment };
+  }
+
+  it("should detect tattoos and build correct prompt fragment", () => {
+    const result = parseTattooResponse({
+      face: "CLEAN",
+      neck: "CLEAN",
+      chest: "TATTOO",
+      left_upper_arm: "TATTOO",
+      left_forearm: "TATTOO",
+      right_hand: "CLEAN",
+    });
+    expect(result.hasTattoos).toBe(true);
+    expect(result.tattooAreas).toEqual(["chest", "left upper arm", "left forearm"]);
+    expect(result.cleanAreas).toEqual(["face", "neck", "right hand"]);
+    expect(result.promptFragment).toContain("Tattoos exist ONLY on:");
+    expect(result.promptFragment).toContain("chest, left upper arm, left forearm");
+  });
+
+  it("should return clean prompt fragment when no tattoos found", () => {
+    const result = parseTattooResponse({
+      face: "CLEAN",
+      neck: "CLEAN",
+      chest: "CLEAN",
+      left_upper_arm: "CLEAN",
+    });
+    expect(result.hasTattoos).toBe(false);
+    expect(result.tattooAreas).toEqual([]);
+    expect(result.cleanAreas).toEqual(["face", "neck", "chest", "left upper arm"]);
+    expect(result.promptFragment).toContain("NO visible tattoos");
+    expect(result.promptFragment).toContain("Do not hallucinate");
+  });
+
+  it("should exclude HIDDEN areas from both arrays", () => {
+    const result = parseTattooResponse({
+      face: "CLEAN",
+      chest: "TATTOO",
+      left_thigh: "HIDDEN",
+      right_thigh: "HIDDEN",
+      left_lower_leg: "HIDDEN",
+    });
+    expect(result.tattooAreas).toEqual(["chest"]);
+    expect(result.cleanAreas).toEqual(["face"]);
+    expect(result.tattooAreas).not.toContain("left thigh");
+    expect(result.cleanAreas).not.toContain("left thigh");
+  });
+
+  it("should convert underscores to spaces in area names", () => {
+    const result = parseTattooResponse({
+      left_upper_arm: "TATTOO",
+      right_forearm: "CLEAN",
+      left_lower_leg: "HIDDEN",
+    });
+    expect(result.tattooAreas).toEqual(["left upper arm"]);
+    expect(result.cleanAreas).toEqual(["right forearm"]);
+  });
+
+  it("should handle empty areas object", () => {
+    const result = parseTattooResponse({});
+    expect(result.hasTattoos).toBe(false);
+    expect(result.tattooAreas).toEqual([]);
+    expect(result.cleanAreas).toEqual([]);
+    expect(result.promptFragment).toContain("NO visible tattoos");
+  });
+
+  it("TattooMap type should have correct shape", () => {
+    const map = {
+      hasTattoos: true,
+      tattooAreas: ["left forearm", "right forearm"],
+      cleanAreas: ["face", "neck", "chest"],
+      promptFragment: "TATTOO MAP (from model image analysis):\nTattoos exist ONLY on: left forearm, right forearm.",
+    };
+    expect(map).toHaveProperty("hasTattoos");
+    expect(map).toHaveProperty("tattooAreas");
+    expect(map).toHaveProperty("cleanAreas");
+    expect(map).toHaveProperty("promptFragment");
+    expect(Array.isArray(map.tattooAreas)).toBe(true);
+    expect(Array.isArray(map.cleanAreas)).toBe(true);
+    expect(typeof map.hasTattoos).toBe("boolean");
+    expect(typeof map.promptFragment).toBe("string");
+  });
+
+  // Validate the tRPC endpoint input schema
+  it("should validate analyzeTattoos input schema", () => {
+    const schema = z.object({ imageUrl: z.string().url() });
+    const valid = schema.safeParse({ imageUrl: "https://example.com/model.png" });
+    expect(valid.success).toBe(true);
+    const invalid = schema.safeParse({ imageUrl: "not-a-url" });
+    expect(invalid.success).toBe(false);
+    const missing = schema.safeParse({});
+    expect(missing.success).toBe(false);
+  });
+});

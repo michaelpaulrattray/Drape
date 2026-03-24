@@ -4373,3 +4373,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Update LayersPanel with style note editing, suggested action chips
 - [x] Fix outfitDecomposition.ts: crop each detected garment with sharp + S3 instead of returning full outfit URL
 - [x] Fix vto.refine route: pass outfit context, garment reference URLs, and tattoo prompt fragment to refineGarment()
+- [x] Create server/wardrobe/tattooAnalysis.ts service (analyzeTattoos + TattooMap type)
+- [x] Update barrel export (index.ts) and move TattooMap canonical source to tattooAnalysis
+- [x] Update vtoGeneration.ts to import TattooMap from tattooAnalysis
+- [x] Add wardrobe.model.analyzeTattoos tRPC endpoint
+- [x] Add tattoo analysis tests

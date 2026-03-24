@@ -7,6 +7,7 @@
  *   decompose.analyze / import
  *   sessions.create / get / list / update / delete
  *   outfits.list / save / delete
+ *   model.listMinted / upload / analyzeTattoos
  */
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
@@ -31,6 +32,7 @@ import { analyzeGarmentMetadata } from "../wardrobe/garmentAnalysis";
 import { generateVirtualTryOn, incrementalComposite } from "../wardrobe/vtoGeneration";
 import { refineGarment } from "../wardrobe/garmentRefinement";
 import { decomposeOutfit } from "../wardrobe/outfitDecomposition";
+import { analyzeTattoos } from "../wardrobe/tattooAnalysis";
 import type { GarmentForVTO } from "../wardrobe/utils";
 
 const log = createModuleLogger("routes/wardrobe");
@@ -661,6 +663,15 @@ const modelRouter = router({
 
       log.info(`Model photo uploaded for user ${ctx.user.id}: ${fileKey}`);
       return { url, fileKey };
+    }),
+
+  /** Analyze a model photo for tattoos — returns a TattooMap for VTO/refinement */
+  analyzeTattoos: protectedProcedure
+    .input(z.object({ imageUrl: z.string().url() }))
+    .mutation(async ({ ctx, input }) => {
+      throwIfRateLimited(ctx.user.id);
+      log.info(`Tattoo analysis requested for user ${ctx.user.id}`);
+      return analyzeTattoos(input.imageUrl);
     }),
 });
 
