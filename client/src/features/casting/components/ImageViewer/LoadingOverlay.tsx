@@ -37,13 +37,6 @@ const FALLBACK_TIPS = [
   'The eraser tool can remove artifacts from skin',
 ];
 
-const STEP_MAP: Record<string, number> = {
-  'Analyzing Request...': 1,
-  'Writing Casting Spec...': 2,
-  'Compacting spec...': 2,
-  'Updating spec...': 2,
-};
-
 // ============ Component ============
 
 interface LoadingOverlayProps {
@@ -53,7 +46,6 @@ interface LoadingOverlayProps {
 }
 
 export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: LoadingOverlayProps) {
-  const [elapsed, setElapsed] = useState(0);
   const [tipVisible, setTipVisible] = useState(true);
   const [tipIndex, setTipIndex] = useState(0);
 
@@ -64,12 +56,6 @@ export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: Loa
     if (/writing casting|casting headshot/i.test(msg)) return CONTEXTUAL_TIPS.newCast;
     return FALLBACK_TIPS;
   };
-
-  useEffect(() => {
-    setElapsed(0);
-    const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(timer);
-  }, [statusMessage]);
 
   useEffect(() => {
     setTipIndex(0);
@@ -89,26 +75,16 @@ export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: Loa
     return () => clearInterval(interval);
   }, [statusMessage]);
 
-  const msg = statusMessage || 'Initializing...';
-  const step = STEP_MAP[msg] || (msg.match(/casting|refin|generat|enhanc|process|compil|compress/i) ? 3 : 1);
-  const totalSteps = 3;
-
-  // Warm palette for first generation, dark overlay when image is behind
-  const textColor = isFirstGeneration ? '#8a8078' : '#fff';
-  const textColorMuted = isFirstGeneration ? 'rgba(138,128,120,0.5)' : 'rgba(255,255,255,0.25)';
-  const textColorSubtle = isFirstGeneration ? 'rgba(138,128,120,0.4)' : 'rgba(255,255,255,0.3)';
-  const dotActive = isFirstGeneration ? '#a09080' : '#fff';
-  const dotInactive = isFirstGeneration ? 'rgba(138,128,120,0.2)' : 'rgba(255,255,255,0.15)';
-  const lineActive = isFirstGeneration ? 'rgba(138,128,120,0.4)' : 'rgba(255,255,255,0.4)';
-  const lineInactive = isFirstGeneration ? 'rgba(138,128,120,0.1)' : 'rgba(255,255,255,0.08)';
-  const scanBg = isFirstGeneration ? 'rgba(138,128,120,0.12)' : 'rgba(255,255,255,0.08)';
-  const scanGlow = isFirstGeneration
+  // Palette — warm tones for first gen, light for iterations (dark backdrop)
+  const lineTrack = isFirstGeneration ? 'rgba(138,128,120,0.12)' : 'rgba(255,255,255,0.08)';
+  const lineGlow = isFirstGeneration
     ? 'linear-gradient(90deg, transparent, rgba(138,128,120,0.5), transparent)'
     : 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)';
+  const tipColor = isFirstGeneration ? 'rgba(138,128,120,0.45)' : 'rgba(255,255,255,0.3)';
 
   return (
     <div className="absolute inset-0 z-40 flex flex-col items-center justify-center">
-      {/* Backdrop — warm transparent for first gen, dark blur for iterations */}
+      {/* Backdrop — transparent for first gen, dark blur for iterations */}
       {!isFirstGeneration && (
         <div
           className="absolute inset-0"
@@ -119,97 +95,38 @@ export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: Loa
         />
       )}
 
-      <div className="relative z-10 flex flex-col items-center" style={{ maxWidth: 280 }}>
+      <div className="relative z-10 flex flex-col items-center">
         {/* Animated scan line */}
         <div
           style={{
-            width: 120,
+            width: 140,
             height: 1,
-            background: scanBg,
+            background: lineTrack,
             borderRadius: 1,
             overflow: 'hidden',
-            marginBottom: 32,
+            marginBottom: 16,
           }}
         >
           <div
             style={{
               width: '40%',
               height: '100%',
-              background: scanGlow,
+              background: lineGlow,
               animation: 'loadScan 2s ease-in-out infinite',
             }}
           />
         </div>
 
-        {/* Step indicators */}
-        <div className="flex items-center gap-2" style={{ marginBottom: 20 }}>
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: i + 1 <= step ? dotActive : dotInactive,
-                  boxShadow: i + 1 === step
-                    ? `0 0 8px ${isFirstGeneration ? 'rgba(138,128,120,0.3)' : 'rgba(255,255,255,0.4)'}`
-                    : 'none',
-                  transition: 'all 0.5s ease',
-                  animation: i + 1 === step ? 'loadDotPulse 1.5s ease-in-out infinite' : 'none',
-                }}
-              />
-              {i < totalSteps - 1 && (
-                <div
-                  style={{
-                    width: 24,
-                    height: 1,
-                    background: i + 1 < step ? lineActive : lineInactive,
-                    transition: 'background 0.5s ease',
-                  }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Status message */}
+        {/* Cycling contextual tip */}
         <p
           style={{
-            fontSize: 11,
-            fontWeight: 500,
-            color: textColor,
-            letterSpacing: '0.12em',
-            fontFamily: 'ui-monospace, monospace',
-            textTransform: 'uppercase',
-            marginBottom: 8,
-            textAlign: 'center',
-          }}
-        >
-          {msg}
-        </p>
-
-        {/* Elapsed time */}
-        <p
-          style={{
-            fontSize: 9,
-            color: textColorMuted,
-            fontFamily: 'ui-monospace, monospace',
-            letterSpacing: '0.08em',
-            marginBottom: 28,
-          }}
-        >
-          {elapsed}s
-        </p>
-
-        {/* Contextual tips */}
-        <p
-          style={{
-            fontSize: 9.5,
-            color: textColorSubtle,
+            fontSize: 10,
+            color: tipColor,
             lineHeight: 1.5,
             fontStyle: 'italic',
             textAlign: 'center',
-            minHeight: 32,
+            maxWidth: 260,
+            minHeight: 28,
             transition: 'opacity 0.3s ease',
             opacity: tipVisible ? 1 : 0,
           }}
@@ -225,10 +142,6 @@ export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: Loa
         @keyframes loadScan {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(350%); }
-        }
-        @keyframes loadDotPulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.4); }
         }
       `}</style>
     </div>
