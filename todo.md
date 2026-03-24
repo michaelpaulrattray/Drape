@@ -4198,3 +4198,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove quality selector from export modal, default all exports to 2K
 - [x] Investigate and fix export errors from logs
 - [x] Remove non-functional 1K/2K quality toggle from ControlPanel sidebar
+- [x] Bug report: DB schema + migration for bugReports table
+- [x] Bug report: Server-side DB helper + tRPC route + Slack notification
+- [x] Bug report: Floating button component with modal (bottom-right)
+- [x] Bug report: Wire into App.tsx layout

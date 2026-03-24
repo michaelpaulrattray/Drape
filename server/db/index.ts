@@ -154,6 +154,9 @@ export {
 // GDPR Data Export
 export { exportUserData, type GdprExportData } from "./gdprExport";
 
+// Bug Reports
+export { createBugReport } from "./bugReports";
+
 // Invite Codes (Pre-launch access gating)
 export {
   redeemInviteCode,

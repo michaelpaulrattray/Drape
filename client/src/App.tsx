@@ -15,6 +15,7 @@ import AdminChangeRequests from "./pages/AdminChangeRequests";
 import AdminOverview from "./pages/AdminOverview";
 import AdminInviteCodes from "./pages/AdminInviteCodes";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
+import BugReportButton from "./components/BugReportButton";
 
 function Router() {
   return (
@@ -66,6 +67,7 @@ function App() {
           <Toaster />
           <AnnouncementBanner />
           <Router />
+          <BugReportButton />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

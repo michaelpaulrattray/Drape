@@ -26,6 +26,7 @@ import { referralRouter } from "./routes/referral";
 import { publicAnnouncementsRouter } from "./routes/announcements";
 import { accessRouter } from "./routes/access";
 import { accountRouter } from "./routes/account";
+import { bugReportsRouter } from "./routes/bugReports";
 
 export const appRouter = router({
   system: systemRouter,
@@ -49,6 +50,7 @@ export const appRouter = router({
   announcements: publicAnnouncementsRouter,
   access: accessRouter,
   account: accountRouter,
+  bugReports: bugReportsRouter,
 });
 
 export type AppRouter = typeof appRouter;

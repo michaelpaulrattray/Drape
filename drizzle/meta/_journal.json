@@ -218,6 +218,13 @@
       "when": 1771553012987,
       "tag": "0030_old_silhouette",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1774329380407,
+      "tag": "0031_complex_wraith",
+      "breakpoints": true
     }
   ]
 }

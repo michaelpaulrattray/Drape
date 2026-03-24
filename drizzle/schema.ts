@@ -584,3 +584,24 @@ export const stripeWebhookEvents = mysqlTable("stripe_webhook_events", {
 ]);
 export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
 export type InsertStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
+
+// ============================================================================
+// BUG REPORTS (User-submitted feedback)
+// ============================================================================
+export const bugReports = mysqlTable("bug_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  description: text("description").notNull(),
+  category: mysqlEnum("category", ["casting", "export", "billing", "ui", "other"]).default("other").notNull(),
+  page: varchar("page", { length: 256 }), // URL/route where bug was reported
+  modelId: int("modelId"), // Model ID if applicable
+  userAgent: varchar("userAgent", { length: 512 }),
+  viewport: varchar("viewport", { length: 32 }), // e.g., "1920x1080"
+  status: mysqlEnum("status", ["new", "reviewing", "resolved", "dismissed"]).default("new").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_bug_reports_user").on(table.userId),
+  index("idx_bug_reports_status").on(table.status),
+]);
+export type BugReport = typeof bugReports.$inferSelect;
+export type InsertBugReport = typeof bugReports.$inferInsert;
