@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Camera, Shirt, Download, Home } from 'lucide-react';
 import { useStudioStore } from '../stores/useStudioStore';
+import { useSessionReset } from '../hooks/useSessionReset';
 import {
   type StudioTool,
   STUDIO_TOOLS,
@@ -17,10 +18,11 @@ const TOOL_ICONS: Record<StudioTool, React.ComponentType<{ className?: string }>
 };
 
 /** Human-readable labels for confirmation dialog */
-const TOOL_LABELS: Record<StudioTool, string> = {
+const TOOL_LABELS: Record<string, string> = {
   casting: 'Casting Studio',
   wardrobe: 'Wardrobe Studio',
   export: 'Export Pack',
+  home: 'Start',
 };
 
 interface ToolRailProps {
@@ -30,39 +32,56 @@ interface ToolRailProps {
 export function ToolRail({ canvas }: ToolRailProps) {
   const activeTool = useStudioStore((s) => s.activeTool);
   const setActiveTool = useStudioStore((s) => s.setActiveTool);
-  const clearUploadedModel = useStudioStore((s) => s.clearUploadedModel);
+  const { resetToLobby, resetAndSwitchTo } = useSessionReset();
 
-  // Confirmation dialog state
-  const [pendingTool, setPendingTool] = useState<StudioTool | null>(null);
+  // Confirmation dialog state — pendingAction can be a tool ID or 'home'
+  const [pendingAction, setPendingAction] = useState<StudioTool | 'home' | null>(null);
   const [confirmMessage, setConfirmMessage] = useState('');
+
+  /**
+   * Determine whether any active session exists that would be lost
+   * by navigating away (Home or tool switch).
+   */
+  const hasActiveSession = canvas.hasModel || canvas.uploadedModelUrl !== null || canvas.castModelId !== null;
 
   const handleToolClick = useCallback((toolId: StudioTool) => {
     const availability = getToolAvailability(toolId, canvas);
     if (!availability.enabled) return;
 
     if (availability.needsConfirm) {
-      // Show confirmation dialog instead of switching immediately
-      setPendingTool(toolId);
+      setPendingAction(toolId);
       setConfirmMessage(availability.confirmMessage || 'This action will reset your current progress.');
     } else {
       setActiveTool(toolId);
     }
   }, [canvas, setActiveTool]);
 
+  const handleHomeClick = useCallback(() => {
+    if (hasActiveSession) {
+      setPendingAction('home');
+      setConfirmMessage('Returning to start will clear your current model and any unsaved wardrobe progress. This cannot be undone.');
+    } else {
+      setActiveTool(null);
+    }
+  }, [hasActiveSession, setActiveTool]);
+
   const handleConfirm = useCallback(() => {
-    if (!pendingTool) return;
-    // clearUploadedModel resets canvas to defaults and sets activeTool to null (lobby).
-    // We immediately override activeTool with the pending tool so the user
-    // goes straight to the target tool instead of flashing through the lobby.
-    clearUploadedModel();
-    // Override the lobby redirect — go directly to the target tool
-    setTimeout(() => setActiveTool(pendingTool), 0);
-    setPendingTool(null);
+    if (!pendingAction) return;
+
+    if (pendingAction === 'home') {
+      // Full reset — clear everything, return to lobby
+      resetToLobby();
+    } else {
+      // Tool switch — clear model + wardrobe, go to target tool
+      resetAndSwitchTo(pendingAction);
+    }
+
+    setPendingAction(null);
     setConfirmMessage('');
-  }, [pendingTool, clearUploadedModel, setActiveTool]);
+  }, [pendingAction, resetToLobby, resetAndSwitchTo]);
 
   const handleCancel = useCallback(() => {
-    setPendingTool(null);
+    setPendingAction(null);
     setConfirmMessage('');
   }, []);
 
@@ -78,7 +97,7 @@ export function ToolRail({ canvas }: ToolRailProps) {
       >
         {/* Home / Lobby button */}
         <button
-          onClick={() => setActiveTool(null)}
+          onClick={handleHomeClick}
           title="Back to start"
           className="relative w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 group mb-1"
           style={{
@@ -172,11 +191,11 @@ export function ToolRail({ canvas }: ToolRailProps) {
         })}
       </div>
 
-      {/* Confirmation dialog */}
+      {/* Confirmation dialog — rendered via Portal at document.body */}
       <ToolSwitchConfirmDialog
-        isOpen={pendingTool !== null}
+        isOpen={pendingAction !== null}
         message={confirmMessage}
-        targetToolLabel={pendingTool ? TOOL_LABELS[pendingTool] : ''}
+        targetToolLabel={pendingAction ? TOOL_LABELS[pendingAction] : ''}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
       />

@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Camera, ImagePlus, Loader2, X, Sparkles, Upload, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import { useStudioStore } from '../stores/useStudioStore';
+import { useSessionReset } from '../hooks/useSessionReset';
 import { ModelGallery, type MintedModel } from './ModelGallery';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -34,8 +34,7 @@ interface StudioLobbyProps {
 }
 
 export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
-  const loadModelFromUpload = useStudioStore((s) => s.loadModelFromUpload);
-  const loadModelFromCast = useStudioStore((s) => s.loadModelFromCast);
+  const { loadUploadedModel, loadGalleryModel } = useSessionReset();
   const uploadMutation = trpc.wardrobe.model.upload.useMutation();
 
   // Entrance animation
@@ -73,14 +72,14 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
       // Preload the thumbnail into browser cache
       await preloadImage(model.thumbnailUrl);
       // Load into wardrobe with identity data
-      loadModelFromCast(model.id, model.thumbnailUrl, model.masterPrompt);
+      loadGalleryModel(model.id, model.thumbnailUrl, model.masterPrompt);
       toast.success(`${model.name || 'Model'} loaded — Wardrobe ready`);
     } catch {
       toast.error('Failed to load model');
     } finally {
       setLoadingModelId(null);
     }
-  }, [isUploading, loadingModelId, preloadImage, loadModelFromCast]);
+  }, [isUploading, loadingModelId, preloadImage, loadGalleryModel]);
 
   const processFile = useCallback(async (file: File) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -114,7 +113,7 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
       setUploadPhase('ready');
       await new Promise((r) => setTimeout(r, 300));
 
-      loadModelFromUpload(result.url);
+      loadUploadedModel(result.url);
       toast.success('Model loaded — Wardrobe ready');
     } catch (err: any) {
       toast.error(err?.message || 'Upload failed');
@@ -122,7 +121,7 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
     } finally {
       setUploadPhase(null);
     }
-  }, [uploadMutation, loadModelFromUpload, preloadImage]);
+  }, [uploadMutation, loadUploadedModel, preloadImage]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

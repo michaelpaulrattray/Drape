@@ -148,8 +148,13 @@ export default function DrapeStudio() {
     setIsTopupOpen,
   } = useCastingUIStore();
 
-  // Sync canvas state from casting assets
+  // Sync canvas state from casting assets → shared canvas.
+  // Skip when the canvas is owned by an uploaded photo or a gallery-loaded model
+  // (those sources manage their own canvas state via useSessionReset).
   useEffect(() => {
+    const isExternalModel = canvas.modelSource === 'uploaded' || canvas.castModelId !== null;
+    if (isExternalModel) return;
+
     const hasModel = currentAssets.some((a) => a.viewType === 'frontClose' && a.storageUrl);
     const hasFullBody = currentAssets.some((a) => a.viewType === 'fullBody' && a.storageUrl);
     const hasAllViews =
@@ -157,15 +162,12 @@ export default function DrapeStudio() {
       hasFullBody &&
       currentAssets.some((a) => a.viewType === 'sideProfile' && a.storageUrl);
 
-    // Only sync casting state if we're not in uploaded-model mode
-    if (canvas.modelSource !== 'uploaded') {
-      setCanvas({
-        hasModel,
-        hasFullBody,
-        hasAllViews,
-        modelSource: currentModelId ? 'cast' : canvas.modelSource,
-      });
-    }
+    setCanvas({
+      hasModel,
+      hasFullBody,
+      hasAllViews,
+      modelSource: currentModelId ? 'cast' : canvas.modelSource,
+    });
   }, [currentAssets, currentModelId]);
 
   // Canvas drawing hook

@@ -4339,3 +4339,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix: No confirmation dialog when switching from gallery-loaded model (cast with castModelId) to Casting
 - [x] Fix: Confirmation dialog renders inside ToolRail sidebar instead of as full-screen overlay (fixed with React Portal)
 - [x] Verify both fixes work correctly (1,269 tests passing)
+
+## Bug Fix: Airtight studio state management across transitions
+- [x] resetWardrobe() already exists in useWardrobeStore — resets all state to INITIAL_STATE
+- [x] Wire wardrobe reset via useSessionReset.resetAndSwitchTo() — clears wardrobe before switching
+- [x] Wire wardrobe reset via useSessionReset.resetToLobby() — clears wardrobe + studio on Home
+- [x] Wire wardrobe reset via useSessionReset.loadUploadedModel() — clears wardrobe before loading
+- [x] Wire wardrobe reset via useSessionReset.loadGalleryModel() — clears wardrobe before loading
+- [x] Casting→canvas bridge: skip sync when canvas owned by upload/gallery (isExternalModel check in DrapeStudio)
+- [x] Wardrobe tool availability reflects real-time canvas state via getToolAvailability
+- [x] Home button shows confirmation when any model loaded (hasActiveSession check in ToolRail)
+- [x] Write 18 edge-case tests covering all transition scenarios (session-reset.test.ts)
+- [x] Verify all tests pass (1,287 total)
