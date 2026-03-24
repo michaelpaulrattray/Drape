@@ -305,7 +305,9 @@ Return ONLY a JSON array of strings.`,
       "RefAnalysis"
     );
     const text = safeResponseText(response);
+    log.info({ rawText: text?.substring(0, 500) }, '[RefAnalysis] Raw response text');
     const parsed = safeParseJsonArray(text);
+    log.info({ parsedCount: parsed.length, parsed: parsed.slice(0, 3) }, '[RefAnalysis] Parsed result');
     if (parsed.length > 0) {
       return parsed.slice(0, 6);
     }

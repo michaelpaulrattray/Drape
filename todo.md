@@ -4176,3 +4176,14 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Edit Log Undo/Redo Bug (Mar 24)
 - [x] BUG-EDITLOG-1: Edit log in right profile panel stays static when user undoes/redoes or jumps to a previous version — Fixed: added parallel historyAmendments array that tracks amendments per history entry. setHistoryIndex now derives amendments from historyAmendments[newIndex]. pushHistory snapshots amendments. addAmendment updates both amendments and historyAmendments[current].
+
+## Low-Fidelity Reference Hairstyle Transfer (Mar 24)
+- [x] BUG-REFTRANSFER-5: Reference image hairstyle transfer is low fidelity — Fixed: rewrote ATTRIBUTE TRANSFER prompt with TRANSFER FIDELITY block leading, reordered prompt structure, added per-attribute ALLOWED/BLOCKED rules, partial transfer support, and expression transfer.
+
+## Enhanced Reference Transfer (Beyond SOT)
+- [x] ENH-REFTRANSFER-1: Rewrite ATTRIBUTE TRANSFER prompt — add TRANSFER FIDELITY block, reorder prompt (transfer first, identity second), add partial/multi-attribute support
+- [x] ENH-REFTRANSFER-2: Add BLOCKED list for makeup/accessories/pose — scoped to Casting Studio
+- [x] ENH-REFTRANSFER-3: Add ALLOWED TRANSFERS enumeration with per-attribute protection rules
+- [x] ENH-REFTRANSFER-4: Allow expression transfer (facial muscles only, no pose/head angle)
+- [x] ENH-REFTRANSFER-5: Add skin finish as transferable attribute
+- [x] ENH-REFTRANSFER-6: Add missing SOT lines for eye shape and eyebrow clarification

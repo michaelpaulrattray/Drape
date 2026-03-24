@@ -798,36 +798,62 @@ function buildIterationImagePrompt(
     featureInstructions = `
     ATTRIBUTE TRANSFER — Image ${imageIndexCounter - 1} is a REFERENCE:
 
+    TRANSFER FIDELITY (HIGHEST PRIORITY FOR THE REQUESTED ATTRIBUTE):
+    Study the reference image carefully. Whatever attribute(s) the user requests —
+    reproduce them with MAXIMUM PRECISION from the reference. Do not approximate,
+    simplify, or generalize. The reference image IS the specification.
+    If transferring hairstyle, match the EXACT cut, layering, length, parting,
+    bang style, and texture visible in the reference. If transferring eye shape,
+    match the exact lid structure and crease. Be precise — vague approximations
+    are a failure.
+
+    PARTIAL TRANSFER: If the user specifies a SUBSET of an attribute (e.g.,
+    "bangs only", "just the color", "brow arch but keep thickness"), transfer
+    ONLY that subset and preserve the rest from Image 1.
+
     IDENTITY LOCK (NON-NEGOTIABLE):
     Image 1 IS the model. Their face, bone structure, skin tone, skin texture,
     freckles, moles, eye color, and every physical feature are SACRED. The output
     MUST look like the SAME PERSON as Image 1. If the output face doesn't match
     Image 1, the generation has FAILED.
 
-    The reference image is a MAGAZINE CLIPPING. You are extracting ONE attribute
-    from it — nothing else transfers. The reference contains a COMPLETELY DIFFERENT
-    PERSON whose identity must NOT bleed into the output.
+    The reference contains a COMPLETELY DIFFERENT PERSON whose identity must NOT
+    bleed into the output. Transfer ONLY the attribute(s) explicitly named in
+    the USER INSTRUCTION — nothing else crosses over.
 
     If there is ANY conflict between the requested change and preserving identity,
     IDENTITY WINS. Always.
 
-    REJECT from reference — these NEVER transfer:
-    - Face shape, bone structure, jawline, cheekbones, chin
-    - Eye shape, eye color, eye spacing, brow bone
-    - Nose shape, nose bridge, nostril shape
-    - Lip shape, lip color, lip fullness
-    - Skin tone, skin texture, freckles, moles, scars
-    - Lighting, mood, color grade, background, clothing
-    - Any attribute NOT explicitly named in the USER INSTRUCTION
-
-    TRANSFER RULES BY ATTRIBUTE TYPE:
-    HAIR STYLE: Transfer the cut, shape, texture, and movement ONLY.
-      KEEP the subject's existing hair COLOR from Image 1 unless the user
+    ALLOWED TRANSFERS (only when explicitly requested by user):
+    - HAIR STYLE: Transfer cut, shape, texture, length, layers, bangs, parting,
+      movement with HIGH FIDELITY. KEEP hair COLOR from Image 1 unless user
       explicitly says "hair color" or "colour". "Hairstyle" means shape, not color.
-    HAIR COLOR: Transfer the color/tone only. Keep the existing style.
-    FACIAL FEATURE (lips, nose, brows, eyes, etc.): Transfer SHAPE and PROPORTION only.
-      KEEP the subject's existing pigment colors: eye iris color, eyebrow color,
-      lip pigment. Match the subject's skin tone, texture, and lighting from Image 1.
+    - HAIR COLOR: Transfer color/tone only. Keep existing style.
+    - EYE SHAPE: Transfer lid structure, crease depth, eye axis. KEEP iris color.
+      "Eye shape" means the shape of the eye, NOT the iris color.
+    - NOSE SHAPE: Transfer bridge width, tip shape, nostril shape. KEEP skin tone.
+    - BROW SHAPE: Transfer arch, thickness, grooming style. KEEP brow color
+      unless user explicitly says "brow color".
+      "Eyebrows" means brow shape and thickness, NOT brow color.
+    - BROW COLOR: Transfer pigment only. Keep shape.
+    - LIP SHAPE: Transfer fullness, cupid's bow, width. KEEP lip pigment color.
+    - SKIN FINISH: Transfer dewy/matte/raw finish. KEEP skin tone and texture.
+    - EXPRESSION: Transfer facial expression (mouth position, eye intensity,
+      brow tension, mood). KEEP all facial structure and physical features.
+      Expression is FACIAL MUSCLES ONLY — do NOT transfer head angle or pose.
+
+    BLOCKED — NEVER TRANSFER (handled by other studios):
+    - Makeup (eye shadow, liner, lip color, blush, contour, foundation)
+    - Jewelry, accessories, piercings, earrings
+    - Pose, body position, head angle, gaze direction
+    - Clothing, styling, props
+    - Lighting, mood, color grade, background
+
+    REJECT from reference — these NEVER transfer regardless of instruction:
+    - Face shape, bone structure, jawline, cheekbones, chin
+    - Skin tone, skin texture, freckles, moles, scars
+    - Eye iris color (unless "eye color" explicitly requested)
+    - Any attribute NOT explicitly named in the USER INSTRUCTION
     `;
   }
 
