@@ -116,6 +116,8 @@ export function useWardrobeGeneration({
   const detectMutation = trpc.wardrobe.vto.detectResultGarments.useMutation();
   const classifyMutation = trpc.wardrobe.vto.classifyEdit.useMutation();
   const identityMutation = trpc.wardrobe.vto.checkIdentity.useMutation();
+  const seedChatMutation = trpc.wardrobe.sessions.seedChat.useMutation();
+  const clearChatMutation = trpc.wardrobe.sessions.clearChat.useMutation();
 
   // Prevent infinite identity-retry loops
   const identityRetryRef = useRef(false);
@@ -214,6 +216,16 @@ export function useWardrobeGeneration({
       const snap: Record<string, string> = {};
       for (const id of garmentIds) snap[String(id)] = styleNotes[String(id)] || "";
       setLastGenStyleNotes(snap);
+      // Seed Gemini chat session for context continuity in refinements
+      if (modelImageUrl && activeSessionId) {
+        const garmentDescs = garmentIds.map((id) => styleNotes[String(id)] || "").filter(Boolean);
+        seedChatMutation.mutateAsync({
+          sessionId: String(activeSessionId),
+          modelImageUrl,
+          resultUrl: result.resultUrl,
+          outfitDescription: garmentDescs.join(", ") || undefined,
+        }).catch(() => {}); // non-blocking
+      }
       toast.success("Virtual try-on complete");
     } catch (err: unknown) {
       if (genId !== generationIdRef.current) return;
@@ -248,7 +260,7 @@ export function useWardrobeGeneration({
   }, [
     modelImageUrl, selectedGarmentIds, styleNotes, tattooMap,
     ensureSession, generateMutation, pushVTOResult, snapshotSelection,
-    startCooldown, setErrorMessage,
+    startCooldown, setErrorMessage, seedChatMutation, activeSessionId,
   ]);
 
   // ── Incremental Composite ──────────────────────────────────
@@ -311,6 +323,16 @@ export function useWardrobeGeneration({
       const incSnap: Record<string, string> = {};
       for (const id of currentIds) incSnap[String(id)] = styleNotes[String(id)] || "";
       setLastGenStyleNotes(incSnap);
+      // Re-seed chat session with updated result
+      if (modelImageUrl && activeSessionId) {
+        const descs = currentIds.map((id) => styleNotes[String(id)] || "").filter(Boolean);
+        seedChatMutation.mutateAsync({
+          sessionId: String(activeSessionId),
+          modelImageUrl,
+          resultUrl: result.resultUrl,
+          outfitDescription: descs.join(", ") || undefined,
+        }).catch(() => {});
+      }
       toast.success("Outfit updated");
     } catch {
       if (genId !== generationIdRef.current) return;
@@ -326,6 +348,7 @@ export function useWardrobeGeneration({
     currentVTOResult, modelImageUrl, selectedGarmentIds, styleNotes,
     tattooMap, ensureSession, incrementalMutation, pushVTOResult,
     snapshotSelection, startCooldown, generateVTO, setErrorMessage,
+    seedChatMutation, activeSessionId,
   ]);
 
   // ── Refinement ─────────────────────────────────────────────
@@ -352,6 +375,10 @@ export function useWardrobeGeneration({
 
     // Large edits trigger full regeneration instead of refinement
     if (editSize === "large") {
+      // Clear stale chat session before full regen
+      if (activeSessionId) {
+        clearChatMutation.mutateAsync({ sessionId: String(activeSessionId) }).catch(() => {});
+      }
       setIsGenerating(false);
       setGeneratingMessage(null);
       toast.info("Structural change detected — regenerating full look");
@@ -422,7 +449,7 @@ export function useWardrobeGeneration({
         setGeneratingMessage(null);
       }
     }
-  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, classifyMutation, identityMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage]);
+  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, classifyMutation, identityMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage, clearChatMutation, activeSessionId]);
 
   // ── Retry Last Operation ───────────────────────────────────
 
@@ -501,6 +528,16 @@ export function useWardrobeGeneration({
       const snap: Record<string, string> = {};
       for (const id of Array.from(state.selectedGarmentIds)) snap[String(id)] = state.styleNotes[String(id)] || "";
       setLastGenStyleNotes(snap);
+      // Re-seed chat session with updated result
+      if (modelImageUrl && activeSessionId) {
+        const descs = Array.from(state.selectedGarmentIds).map((id) => state.styleNotes[String(id)] || "").filter(Boolean);
+        seedChatMutation.mutateAsync({
+          sessionId: String(activeSessionId),
+          modelImageUrl,
+          resultUrl: res.resultUrl,
+          outfitDescription: descs.join(", ") || undefined,
+        }).catch(() => {});
+      }
       toast.success("Style changes applied");
     } catch {
       if (genId !== generationIdRef.current) return;
@@ -515,7 +552,7 @@ export function useWardrobeGeneration({
     currentVTOResult, modelImageUrl, isGenerating, tattooMap,
     ensureSession, incrementalMutation, pushVTOResult, snapshotSelection,
     startCooldown, setErrorMessage, setLastGenStyleNotes, setResultOverlayItems,
-    scanResultOverlay,
+    scanResultOverlay, seedChatMutation, activeSessionId,
   ]);
 
   // ── Smart Generate (decides full vs incremental) ───────────

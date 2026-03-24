@@ -69,6 +69,15 @@ export {
   checkIdentityMatch,
 } from "./identityCheck";
 
+// Service 9: VTO Session Manager
+export {
+  seedSession,
+  getSession,
+  clearSession,
+  clearAllUserSessions,
+  type VTOSessionEntry,
+} from "./vtoSession";
+
 // Shared Utilities
 export {
   type GarmentForVTO,

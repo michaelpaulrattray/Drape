@@ -4422,3 +4422,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add Apply Style Changes button in LayersPanel
 - [x] Wire style refresh props in DrapeStudio
 - [x] Add style refresh tests
+- [x] Create server/wardrobe/vtoSession.ts (in-memory session map with Gemini chat context)
+- [x] Add vtoSession to barrel export
+- [x] Update garmentRefinement.ts to check for existing session before creating fresh chat
+- [x] Add sessions.seedChat and sessions.clearChat tRPC endpoints
+- [x] Wire seedChat/clearChat mutations in useWardrobeGeneration
+- [x] Add VTO session tests (14 tests covering seed, get, clear, expiry, isolation)

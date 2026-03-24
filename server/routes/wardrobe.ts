@@ -5,7 +5,7 @@
  *   garments.list / get / upload / delete
  *   vto.generate / incremental / refine / detectResultGarments / classifyEdit / checkIdentity
  *   decompose.analyze / import
- *   sessions.create / get / list / update / delete
+ *   sessions.create / get / list / update / delete / seedChat / clearChat
  *   outfits.list / save / delete
  *   model.listMinted / upload / analyzeTattoos / checkQuality
  */
@@ -36,6 +36,7 @@ import { analyzeTattoos } from "../wardrobe/tattooAnalysis";
 import { checkImageQuality } from "../wardrobe/qualityCheck";
 import { classifyEditSize } from "../wardrobe/editClassifier";
 import { checkIdentityMatch } from "../wardrobe/identityCheck";
+import { seedSession, clearSession } from "../wardrobe/vtoSession";
 import type { GarmentForVTO } from "../wardrobe/utils";
 
 const log = createModuleLogger("routes/wardrobe");
@@ -620,6 +621,31 @@ const sessionRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
       await deleteSession(input.sessionId, ctx.user.id);
+      return { success: true };
+    }),
+
+  seedChat: protectedProcedure
+    .input(z.object({
+      sessionId: z.string(),
+      modelImageUrl: z.string().url(),
+      resultUrl: z.string().url(),
+      outfitDescription: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await seedSession(
+        ctx.user.id,
+        input.sessionId,
+        input.modelImageUrl,
+        input.resultUrl,
+        input.outfitDescription,
+      );
+      return { success: true };
+    }),
+
+  clearChat: protectedProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      clearSession(ctx.user.id, input.sessionId);
       return { success: true };
     }),
 });

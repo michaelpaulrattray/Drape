@@ -17,6 +17,7 @@ import {
   uploadBase64ToS3,
   sanitizeDescription,
 } from "./utils";
+import { getSession } from "./vtoSession";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("wardrobe/garmentRefinement");
@@ -92,14 +93,28 @@ Return the edited image.`;
       ...refParts,
     ];
 
-    const chat = ai.chats.create({
-      model: "gemini-2.5-flash-image",
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: { aspectRatio: "3:4" as any, imageSize: "1K" },
-        safetySettings: SAFETY_SETTINGS,
-      },
-    });
+    // Try to reuse existing session chat for context continuity
+    const existingSession = getSession(
+      Number(params.userId),
+      params.sessionId,
+    );
+
+    let chat: any;
+    if (existingSession) {
+      log.info(
+        `Reusing existing session chat for user ${params.userId}, session ${params.sessionId}`,
+      );
+      chat = existingSession.chat;
+    } else {
+      chat = ai.chats.create({
+        model: "gemini-2.5-flash-image",
+        config: {
+          responseModalities: ["TEXT", "IMAGE"],
+          imageConfig: { aspectRatio: "3:4" as any, imageSize: "1K" },
+          safetySettings: SAFETY_SETTINGS,
+        },
+      });
+    }
 
     const response = await chat.sendMessage({ message: contents });
     const diagnosis = diagnoseResponse(response);
