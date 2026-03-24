@@ -17,7 +17,6 @@ export const ExportModal = ({
   assetId?: string;
 }) => {
   const [characterName, setCharacterName] = useState("");
-  const [exportRes, setExportRes] = useState<ImageResolution>(ImageResolution.HIGH);
 
   if (!isOpen) return null;
 
@@ -73,7 +72,7 @@ export const ExportModal = ({
             Export Casting Pack
           </div>
           <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5, marginBottom: 16 }}>
-            Assign a name and choose output quality to finalize this casting session.
+            Assign a name to finalize this casting session.
           </div>
 
           {/* Name input */}
@@ -87,7 +86,7 @@ export const ExportModal = ({
               value={characterName}
               onChange={(e) => setCharacterName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && characterName) onExport(characterName, exportRes);
+                if (e.key === 'Enter' && characterName) onExport(characterName, ImageResolution.HIGH);
               }}
               placeholder="Enter name..."
               className="w-full outline-none"
@@ -103,28 +102,9 @@ export const ExportModal = ({
             />
           </div>
 
-          {/* Resolution */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 9, fontWeight: 600, color: '#bbb', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
-              OUTPUT QUALITY
-            </label>
-            <div className="flex gap-2">
-              {[ImageResolution.STD, ImageResolution.HIGH, ImageResolution.ULTRA].map((res) => (
-                <button
-                  key={res}
-                  onClick={() => setExportRes(res)}
-                  className="flex-1 py-2 rounded-lg transition-all text-center"
-                  style={{
-                    fontSize: 10,
-                    fontWeight: exportRes === res ? 600 : 400,
-                    background: exportRes === res ? '#1a1a1a' : '#f5f3ef',
-                    color: exportRes === res ? '#fff' : '#999',
-                  }}
-                >
-                  {res}
-                </button>
-              ))}
-            </div>
+          {/* Resolution footnote */}
+          <div style={{ fontSize: 9, color: '#bbb', marginBottom: 16 }}>
+            All exports are rendered at 2K resolution.
           </div>
 
           {/* Actions */}
@@ -136,7 +116,7 @@ export const ExportModal = ({
               Cancel
             </button>
             <button
-              onClick={() => onExport(characterName || 'Unknown Model', exportRes)}
+              onClick={() => onExport(characterName || 'Unknown Model', ImageResolution.HIGH)}
               className="px-5 py-2 rounded-xl transition-all"
               style={{ background: '#1a1a1a', color: '#fff', fontSize: 11, fontWeight: 600 }}
             >

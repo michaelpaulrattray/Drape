@@ -4195,3 +4195,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Improvement #3: Increase suggestion prompt context from 500 to 1500 chars
 - [x] Improvement #4: Even out RotatingSuggestions slot distribution for <6 items
 - [x] Improvement #5: Deduplicate suggestion fallback arrays into shared constant
+- [x] Remove quality selector from export modal, default all exports to 2K
+- [x] Investigate and fix export errors from logs

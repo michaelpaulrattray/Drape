@@ -50,7 +50,7 @@ export function useCastingExport({
 
       const safeName = characterName ? characterName.trim().toUpperCase() : `MODEL ID ${exportId}`;
       const cleanId = exportId.replace(/[^a-zA-Z0-9]/g, '_');
-      const zipFilename = `CASTING_PACK_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}_${exportRes}.zip`;
+      const zipFilename = `CASTING_PACK_${safeName.replace(/[^a-zA-Z0-9]/g, '_')}_2K.zip`;
       const pdfFilename = `LEGAL_IDENTITY_${cleanId}.pdf`;
 
       const zip = new JSZip();
@@ -68,14 +68,21 @@ export function useCastingExport({
         try {
           let imageUrl = asset.storageUrl;
           
+          // Always upscale to 2K for export unless source is already at target
+          // All generated images are stored at default resolution, so upscale is needed
           if (exportRes !== '1K') {
             setGenState(prev => ({ ...prev, currentStep: `Upscaling ${asset.viewType} to ${exportRes}...` }));
-            const upscaleResult = await upscaleMutation.mutateAsync({
-              imageUrl: asset.storageUrl,
-              resolution: exportRes,
-            });
-            if (upscaleResult.success && upscaleResult.imageUrl) {
-              imageUrl = upscaleResult.imageUrl;
+            try {
+              const upscaleResult = await upscaleMutation.mutateAsync({
+                imageUrl: asset.storageUrl,
+                resolution: exportRes,
+              });
+              if (upscaleResult.success && upscaleResult.imageUrl) {
+                imageUrl = upscaleResult.imageUrl;
+              }
+            } catch (upscaleErr) {
+              // If upscale fails, continue with original image rather than failing the entire export
+              console.warn(`Upscale failed for ${asset.viewType}, using original:`, upscaleErr);
             }
           } else {
             setGenState(prev => ({ ...prev, currentStep: `Adding ${asset.viewType}...` }));
