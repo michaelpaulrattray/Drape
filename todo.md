@@ -4173,3 +4173,6 @@ The entry and configuration files are properly set up with several enhancements 
 ## Reference Image Transfer — Color Bleed Bug (Mar 24)
 - [x] BUG-REFTRANSFER-3: Hairstyle transfer from reference image also copies hair COLOR — ROOT CAUSE: client called handleClearSession() after NEW generation, destroying chat session. Iterations fell to stateless mode with weaker identity anchoring. Fixed by removing the redundant client-side session clear.
 - [x] BUG-REFTRANSFER-4: Poor quality of hairstyle transfer — same root cause as BUG-REFTRANSFER-3. Chat-based iteration provides conversation context for better attribute isolation and transfer fidelity.
+
+## Edit Log Undo/Redo Bug (Mar 24)
+- [x] BUG-EDITLOG-1: Edit log in right profile panel stays static when user undoes/redoes or jumps to a previous version — Fixed: added parallel historyAmendments array that tracks amendments per history entry. setHistoryIndex now derives amendments from historyAmendments[newIndex]. pushHistory snapshots amendments. addAmendment updates both amendments and historyAmendments[current].

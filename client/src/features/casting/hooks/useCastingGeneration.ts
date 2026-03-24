@@ -274,6 +274,8 @@ export function useCastingGeneration({
         };
         setCurrentAssets([newAsset]);
         setHistory([[newAsset]]);
+        // Reset historyAmendments in sync with history — v1 has no amendments
+        useCastingGenerationStore.setState({ historyAmendments: [[]] });
         setHistoryIndex(0);
         setActiveView("frontClose");
         clearAmendments();

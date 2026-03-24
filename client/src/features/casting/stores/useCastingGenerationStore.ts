@@ -29,8 +29,9 @@ interface CastingGenerationState {
   currentTechnicalSchema: Record<string, unknown> | null;
   setCurrentTechnicalSchema: (schema: Record<string, unknown> | null) => void;
   
-  // History for undo/redo
+  // History for undo/redo — assets and amendments travel together
   history: GeneratedAsset[][];
+  historyAmendments: Amendment[][];
   historyIndex: number;
   setHistory: (history: GeneratedAsset[][]) => void;
   setHistoryIndex: (index: number | ((prev: number) => number)) => void;
@@ -44,7 +45,7 @@ interface CastingGenerationState {
   isLoadingSuggestions: boolean;
   setIsLoadingSuggestions: (loading: boolean) => void;
   
-  // Amendments (iteration history log)
+  // Amendments (derived from historyIndex — the active snapshot)
   amendments: Amendment[];
   addAmendment: (amendment: Amendment) => void;
   clearAmendments: () => void;
@@ -94,24 +95,31 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
       currentTechnicalSchema: null,
       setCurrentTechnicalSchema: (schema) => set({ currentTechnicalSchema: schema }, false, 'setCurrentTechnicalSchema'),
       
-      // History for undo/redo
+      // History for undo/redo — parallel arrays for assets and amendments
       history: [],
+      historyAmendments: [],
       historyIndex: -1,
       setHistory: (history) => set({ history }, false, 'setHistory'),
       setHistoryIndex: (indexOrFn) => set(
-        (state) => ({
-          historyIndex: typeof indexOrFn === 'function' ? indexOrFn(state.historyIndex) : indexOrFn
-        }),
+        (state) => {
+          const newIndex = typeof indexOrFn === 'function' ? indexOrFn(state.historyIndex) : indexOrFn;
+          // Derive amendments from the history position
+          const amendments = state.historyAmendments[newIndex] || [];
+          return { historyIndex: newIndex, amendments };
+        },
         false,
         'setHistoryIndex'
       ),
       
       // Push new history entry (used after each generation/iteration)
       pushHistory: (assets) => {
-        const { history, historyIndex } = get();
+        const { history, historyAmendments, historyIndex, amendments } = get();
+        // Truncate forward history (redo branch) for both assets and amendments
         const newHistory = [...history.slice(0, historyIndex + 1), assets];
+        const newHistoryAmendments = [...historyAmendments.slice(0, historyIndex + 1), [...amendments]];
         set({
           history: newHistory,
+          historyAmendments: newHistoryAmendments,
           historyIndex: newHistory.length - 1,
         }, false, 'pushHistory');
       },
@@ -122,10 +130,18 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
       isLoadingSuggestions: false,
       setIsLoadingSuggestions: (loading) => set({ isLoadingSuggestions: loading }, false, 'setIsLoadingSuggestions'),
       
-      // Amendments
+      // Amendments — the active snapshot, derived from historyIndex on undo/redo
       amendments: [],
       addAmendment: (amendment) => set(
-        (state) => ({ amendments: [...state.amendments, amendment] }),
+        (state) => {
+          const newAmendments = [...state.amendments, amendment];
+          // Also update the current history position's amendments snapshot
+          const newHistoryAmendments = [...state.historyAmendments];
+          if (state.historyIndex >= 0 && state.historyIndex < newHistoryAmendments.length) {
+            newHistoryAmendments[state.historyIndex] = newAmendments;
+          }
+          return { amendments: newAmendments, historyAmendments: newHistoryAmendments };
+        },
         false,
         'addAmendment'
       ),
@@ -155,6 +171,7 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
         currentMasterPrompt: '',
         currentTechnicalSchema: null,
         history: [],
+        historyAmendments: [],
         historyIndex: -1,
         suggestions: [],
         isLoadingSuggestions: false,
