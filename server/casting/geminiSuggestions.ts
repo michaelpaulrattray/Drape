@@ -26,6 +26,16 @@ import { withTextQueue } from "./geminiQueue";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("casting/geminiSuggestions");
 
+/** Shared fallback suggestions — used when Gemini fails or times out */
+export const FALLBACK_SUGGESTIONS = [
+  "Slightly narrower jawline",
+  "Add subtle under-eye shadows",
+  "Warmer skin undertone",
+  "More prominent cheekbones",
+  "Thicker, bushier eyebrows",
+  "Add a beauty mark on cheek",
+];
+
 /**
  * Convert a URL or base64 data URL to a proper base64 data URL.
  * If already base64, returns as-is. If URL, fetches and converts.
@@ -111,7 +121,7 @@ export const generateCastingSuggestions = async (
   const prompt = `You are a casting director reviewing a ${viewContext} of a model you just generated. Suggest 6 quick variations to try next.
 
 CURRENT CASTING SPEC (context):
-"${masterPrompt.substring(0, 500)}"
+"${masterPrompt.substring(0, 1500)}"
 ${profileContext}
 Generate exactly 6 suggestions. Each must be:
 - 3-8 words max
@@ -177,14 +187,7 @@ Return ONLY a JSON array of exactly 6 strings.`;
   }
 
   // Fallback
-  return [
-    "Slightly narrower jawline",
-    "Add subtle under-eye shadows",
-    "Warmer skin undertone",
-    "More prominent cheekbones",
-    "Thicker, bushier eyebrows",
-    "Add a beauty mark on cheek",
-  ];
+  return [...FALLBACK_SUGGESTIONS];
   }, 'generateCastingSuggestions');
 };
 

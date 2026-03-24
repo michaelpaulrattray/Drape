@@ -63,12 +63,18 @@ function SlotChip({ slotIdeas, intervalMs, onSelect }: { slotIdeas: string[]; in
 }
 
 function RotatingSuggestions({ ideas, onSelect }: { ideas: string[]; onSelect: (idea: string) => void }) {
-  const slots = useMemo(() => [0, 1, 2].map(slot => ideas.filter((_, i) => i % 3 === slot)), [ideas]);
+  // Distribute ideas evenly across 3 slots; skip empty slots for <3 items
+  const slots = useMemo(() => {
+    const buckets: string[][] = [[], [], []];
+    ideas.forEach((idea, i) => buckets[i % 3].push(idea));
+    return buckets;
+  }, [ideas]);
+  const intervals = [5000, 6500, 8000];
   return (
     <div className="flex items-center gap-1.5 justify-center" style={{ flexWrap: 'nowrap' }}>
-      <SlotChip slotIdeas={slots[0]} intervalMs={5000} onSelect={onSelect} />
-      <SlotChip slotIdeas={slots[1]} intervalMs={6500} onSelect={onSelect} />
-      <SlotChip slotIdeas={slots[2]} intervalMs={8000} onSelect={onSelect} />
+      {slots.map((slot, i) => slot.length > 0 && (
+        <SlotChip key={i} slotIdeas={slot} intervalMs={intervals[i]} onSelect={onSelect} />
+      ))}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import {
 } from "../../db";
 import {
   generateMasterPrompt, iterateModel, enhanceUserPrompt, upscaleImage,
-  generateCastingSuggestions, analyzeReferenceForTransfer,
+  generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGESTIONS,
   reconcileSchemaWithImage, compactMasterPrompt, clearCastingSession,
   updateSchemaForIteration,
   POINT_COSTS, ImageResolution,
@@ -320,14 +320,7 @@ export const castingRefinementRouter = router({
         log.error({ err: error }, "[Suggestions] Error:");
         return {
           success: true,
-          suggestions: [
-            "Slightly narrower jawline",
-            "Add subtle under-eye shadows",
-            "Warmer skin undertone",
-            "More prominent cheekbones",
-            "Thicker, bushier eyebrows",
-            "Add a beauty mark on cheek",
-          ],
+          suggestions: [...FALLBACK_SUGGESTIONS],
         };
       }
     }),

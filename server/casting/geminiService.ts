@@ -53,7 +53,7 @@ export { generateMasterPrompt, enhanceUserPrompt, generateCastingImage, clearCas
 export { updateSchemaForIteration, reconcileSchemaWithImage } from "./geminiSchemaUpdater";
 
 // Suggestions & reference analysis
-export { generateCastingSuggestions, analyzeReferenceForTransfer } from "./geminiSuggestions";
+export { generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGESTIONS } from "./geminiSuggestions";
 
 // Prompt compaction
 export { compactMasterPrompt } from "./geminiPromptCompactor";

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { trpc } from '@/lib/trpc';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 
@@ -27,6 +28,29 @@ export function MasterPromptPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setIsCopied(false); }, [specMode, currentMasterPrompt]);
+
+  // Trigger reference analysis immediately when a reference image is uploaded
+  const analyzeReferenceMutation = trpc.generation.analyzeReference.useMutation();
+  const setSuggestions = useCastingGenerationStore((s) => s.setSuggestions);
+  const setIsLoadingSuggestions = useCastingGenerationStore((s) => s.setIsLoadingSuggestions);
+  const prevRefImage = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const refImage = prefs.referenceImage;
+    if (refImage && refImage !== prevRefImage.current && currentAssets.length > 0) {
+      const currentImageUrl = currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl;
+      setIsLoadingSuggestions(true);
+      analyzeReferenceMutation.mutateAsync({
+        referenceImageBase64: refImage,
+        currentModelImageBase64: currentImageUrl || undefined,
+        masterPrompt: currentMasterPrompt || undefined,
+      }).then((result) => {
+        if (result.attributes?.length) setSuggestions(result.attributes);
+      }).catch(() => {
+        // Silent fail — reference analysis is non-critical
+      }).finally(() => setIsLoadingSuggestions(false));
+    }
+    prevRefImage.current = refImage;
+  }, [prefs.referenceImage, currentAssets.length]);
 
   // Don't render until there are assets
   if (currentAssets.length === 0) return null;

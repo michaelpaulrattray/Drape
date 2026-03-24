@@ -364,7 +364,7 @@ export function useCastingGeneration({
         // Read fresh from store to avoid stale closure
         const latestRefImage = useCastingFormStore.getState().prefs.referenceImage;
         if (latestRefImage) {
-          handleAnalyzeReference(latestRefImage)
+          handleAnalyzeReference(latestRefImage, result.imageUrl)
             .then((attrs) => {
               if (attrs.length > 0) setSuggestions(attrs.map((a: string) => a));
               else fetchSuggestions(updatedPrompt, result.imageUrl);

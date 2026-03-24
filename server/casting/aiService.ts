@@ -14,7 +14,7 @@ export type { ModelPreferences } from "./geminiService";
 export { ImageResolution, AspectRatio, GenerationMode } from "./geminiService";
 export { clearCastingSession } from "./geminiService";
 export { updateSchemaForIteration, reconcileSchemaWithImage } from "./geminiService";
-export { generateCastingSuggestions, analyzeReferenceForTransfer } from "./geminiService";
+export { generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGESTIONS } from "./geminiService";
 export { compactMasterPrompt } from "./geminiService";
 
 // ============ Types ============
