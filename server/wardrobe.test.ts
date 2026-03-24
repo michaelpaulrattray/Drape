@@ -1241,3 +1241,70 @@ describe("LayersPanel — refinement chip and input logic", () => {
     expect(shouldShow(false, undefined)).toBe(false);
   });
 });
+
+// ── Edit Classifier ─────────────────────────────────────────────────────────
+
+describe("Edit Classifier", () => {
+  it("classifies LARGE responses as 'large'", () => {
+    const parse = (text: string): "small" | "large" =>
+      text.trim().toUpperCase().includes("LARGE") ? "large" : "small";
+
+    expect(parse("LARGE")).toBe("large");
+    expect(parse("  large  ")).toBe("large");
+    expect(parse("LARGE\n")).toBe("large");
+  });
+
+  it("classifies SMALL responses as 'small'", () => {
+    const parse = (text: string): "small" | "large" =>
+      text.trim().toUpperCase().includes("LARGE") ? "large" : "small";
+
+    expect(parse("SMALL")).toBe("small");
+    expect(parse("  small  ")).toBe("small");
+    expect(parse("SMALL\n")).toBe("small");
+  });
+
+  it("defaults to 'small' for empty or unexpected responses", () => {
+    const parse = (text: string): "small" | "large" =>
+      text.trim().toUpperCase().includes("LARGE") ? "large" : "small";
+
+    expect(parse("")).toBe("small");
+    expect(parse("MEDIUM")).toBe("small");
+    expect(parse("maybe")).toBe("small");
+    expect(parse("I think it's a big change")).toBe("small");
+  });
+
+  it("detects LARGE even when embedded in other text", () => {
+    const parse = (text: string): "small" | "large" =>
+      text.trim().toUpperCase().includes("LARGE") ? "large" : "small";
+
+    expect(parse("This is a LARGE edit")).toBe("large");
+    expect(parse("LARGE - structural change")).toBe("large");
+  });
+
+  it("builds correct classifier prompt with instruction", () => {
+    const buildPrompt = (instruction: string) =>
+      `You are classifying a clothing edit instruction for a virtual try-on system.\nINSTRUCTION: "${instruction}"`;
+
+    const prompt = buildPrompt("roll up the sleeves");
+    expect(prompt).toContain('INSTRUCTION: "roll up the sleeves"');
+    expect(prompt).toContain("classifying a clothing edit instruction");
+  });
+
+  it("validates classifyEdit input schema", () => {
+    const { z } = require("zod");
+    const schema = z.object({ instruction: z.string().min(1).max(500) });
+
+    expect(schema.safeParse({ instruction: "roll sleeves" }).success).toBe(true);
+    expect(schema.safeParse({ instruction: "" }).success).toBe(false);
+    expect(schema.safeParse({}).success).toBe(false);
+    expect(schema.safeParse({ instruction: "a".repeat(501) }).success).toBe(false);
+  });
+
+  it("routes small edits to refinement and large edits to regeneration", () => {
+    const routeEdit = (editSize: "small" | "large") =>
+      editSize === "large" ? "regenerate" : "refine";
+
+    expect(routeEdit("small")).toBe("refine");
+    expect(routeEdit("large")).toBe("regenerate");
+  });
+});

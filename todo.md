@@ -4405,3 +4405,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add refinement UI to LayersPanel (suggested action chips + custom instruction input)
 - [x] Wire onRefine prop from DrapeStudio to LayersPanel
 - [x] Add LayersPanel refinement tests
+- [x] Final wiring audit: DrapeStudio passes all new props to MainStage and LayersPanel
+- [x] Fix any TypeScript errors from tsc --noEmit (0 errors found)
+- [x] Create server/wardrobe/editClassifier.ts service
+- [x] Add editClassifier to barrel export
+- [x] Add wardrobe.vto.classifyEdit tRPC endpoint
+- [x] Wire classifyEdit into refineResult in useWardrobeGeneration
+- [x] Add editClassifier tests

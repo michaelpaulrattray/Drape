@@ -58,6 +58,12 @@ export {
   type ImageQualityResult,
 } from "./qualityCheck";
 
+// Service 7: Edit Classifier
+export {
+  classifyEditSize,
+  type EditSize,
+} from "./editClassifier";
+
 // Shared Utilities
 export {
   type GarmentForVTO,

@@ -110,6 +110,7 @@ export function useWardrobeGeneration({
   });
 
   const detectMutation = trpc.wardrobe.vto.detectResultGarments.useMutation();
+  const classifyMutation = trpc.wardrobe.vto.classifyEdit.useMutation();
 
   // ── Overlay Scanning ───────────────────────────────────────
 
@@ -321,8 +322,27 @@ export function useWardrobeGeneration({
     }
 
     setIsGenerating(true);
-    setGeneratingMessage("Refining garment...");
+    setGeneratingMessage("Classifying edit...");
     setErrorMessage(null);
+
+    // Classify the edit to decide refinement vs full regeneration
+    let editSize: "small" | "large" = "small";
+    try {
+      const classified = await classifyMutation.mutateAsync({ instruction });
+      editSize = classified.editSize;
+    } catch {
+      // Default to small on failure
+    }
+
+    // Large edits trigger full regeneration instead of refinement
+    if (editSize === "large") {
+      setIsGenerating(false);
+      setGeneratingMessage(null);
+      toast.info("Structural change detected — regenerating full look");
+      return generateVTO();
+    }
+
+    setGeneratingMessage("Refining garment...");
     const genId = ++generationIdRef.current;
 
     try {
@@ -359,7 +379,7 @@ export function useWardrobeGeneration({
         setGeneratingMessage(null);
       }
     }
-  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage]);
+  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, classifyMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage]);
 
   // ── Retry Last Operation ───────────────────────────────────
 

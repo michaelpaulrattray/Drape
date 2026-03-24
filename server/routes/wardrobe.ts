@@ -3,7 +3,7 @@
  *
  * Procedures:
  *   garments.list / get / upload / delete
- *   vto.generate / incremental / refine / detectResultGarments
+ *   vto.generate / incremental / refine / detectResultGarments / classifyEdit
  *   decompose.analyze / import
  *   sessions.create / get / list / update / delete
  *   outfits.list / save / delete
@@ -34,6 +34,7 @@ import { refineGarment } from "../wardrobe/garmentRefinement";
 import { decomposeOutfit } from "../wardrobe/outfitDecomposition";
 import { analyzeTattoos } from "../wardrobe/tattooAnalysis";
 import { checkImageQuality } from "../wardrobe/qualityCheck";
+import { classifyEditSize } from "../wardrobe/editClassifier";
 import type { GarmentForVTO } from "../wardrobe/utils";
 
 const log = createModuleLogger("routes/wardrobe");
@@ -442,6 +443,15 @@ const vtoRouter = router({
       throwIfRateLimited(ctx.user.id);
       log.info(`Detecting garments in VTO result for user ${ctx.user.id}`);
       return detectGarmentsInImage(input.resultUrl);
+    }),
+
+  /** Classify a refinement instruction as small (localized) or large (structural). */
+  classifyEdit: protectedProcedure
+    .input(z.object({ instruction: z.string().min(1).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      throwIfRateLimited(ctx.user.id);
+      const editSize = await classifyEditSize(input.instruction);
+      return { editSize };
     }),
 });
 
