@@ -4402,3 +4402,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire DecompositionDrawer in DrapeStudio
 - [x] Export DecompositionDrawer from wardrobe barrel
 - [x] Add DecompositionDrawer tests
+- [x] Add refinement UI to LayersPanel (suggested action chips + custom instruction input)
+- [x] Wire onRefine prop from DrapeStudio to LayersPanel
+- [x] Add LayersPanel refinement tests

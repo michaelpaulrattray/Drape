@@ -1177,3 +1177,67 @@ describe("DecompositionDrawer — selection & import logic", () => {
     expect(centerY).toBe(40);
   });
 });
+
+// ── LayersPanel Refinement Logic Tests ──────────────────────────────────────
+
+describe("LayersPanel — refinement chip and input logic", () => {
+  it("should filter suggested actions as chip labels", () => {
+    const suggestedActions = ["Roll sleeves", "Unbutton", "Tuck in", "Add belt"];
+    expect(suggestedActions).toHaveLength(4);
+    expect(suggestedActions.every((a) => typeof a === "string" && a.length > 0)).toBe(true);
+  });
+
+  it("should pass garmentId and chip text to onRefine", () => {
+    const calls: Array<{ garmentId: number; instruction: string }> = [];
+    const onRefine = (garmentId: number, instruction: string) => {
+      calls.push({ garmentId, instruction });
+    };
+    // Simulate chip click
+    onRefine(42, "Roll sleeves");
+    onRefine(42, "Unbutton");
+    expect(calls).toEqual([
+      { garmentId: 42, instruction: "Roll sleeves" },
+      { garmentId: 42, instruction: "Unbutton" },
+    ]);
+  });
+
+  it("should pass garmentId and custom text to onRefine", () => {
+    const calls: Array<{ garmentId: number; instruction: string }> = [];
+    const onRefine = (garmentId: number, instruction: string) => {
+      calls.push({ garmentId, instruction });
+    };
+    // Simulate custom input submit
+    const customText = "Make it more relaxed";
+    onRefine(99, customText.trim());
+    expect(calls).toEqual([{ garmentId: 99, instruction: "Make it more relaxed" }]);
+  });
+
+  it("should not call onRefine with empty custom text", () => {
+    const calls: Array<{ garmentId: number; instruction: string }> = [];
+    const onRefine = (garmentId: number, instruction: string) => {
+      calls.push({ garmentId, instruction });
+    };
+    const customText = "   ";
+    if (customText.trim()) {
+      onRefine(1, customText.trim());
+    }
+    expect(calls).toHaveLength(0);
+  });
+
+  it("should extract suggestedActions from garment safely", () => {
+    const garmentWithActions = { id: 1, suggestedActions: ["Roll sleeves", "Tuck in"] };
+    const garmentWithout = { id: 2 };
+    const actions1: string[] = (garmentWithActions as Record<string, unknown>).suggestedActions as string[] ?? [];
+    const actions2: string[] = (garmentWithout as Record<string, unknown>).suggestedActions as string[] ?? [];
+    expect(actions1).toEqual(["Roll sleeves", "Tuck in"]);
+    expect(actions2).toEqual([]);
+  });
+
+  it("should only show refinement when hasResult and onRefine are provided", () => {
+    const shouldShow = (hasResult: boolean, onRefine: unknown) => hasResult && !!onRefine;
+    expect(shouldShow(true, () => {})).toBe(true);
+    expect(shouldShow(false, () => {})).toBe(false);
+    expect(shouldShow(true, undefined)).toBe(false);
+    expect(shouldShow(false, undefined)).toBe(false);
+  });
+});

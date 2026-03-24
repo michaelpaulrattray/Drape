@@ -2,10 +2,20 @@
  * LayersPanel — Right context panel for the Wardrobe tool.
  *
  * Shows the stack of selected garments with thumbnails, per-garment
- * style note inputs, and action buttons (generate, save outfit, clear).
+ * style note inputs, suggested action chips, custom refinement input,
+ * and action buttons (generate, save outfit, clear).
  */
-import { useCallback, useState } from "react";
-import { X, Sparkles, Save, Trash2, RefreshCw, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import {
+  X,
+  Sparkles,
+  Save,
+  Trash2,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
@@ -21,13 +31,128 @@ interface LayersPanelProps {
   onGenerate: () => void;
   /** Current VTO result URL (for outfit save) */
   currentResultUrl: string | null;
+  /** Refine a specific garment with an instruction */
+  onRefine?: (garmentId: number, instruction: string) => void;
+  /** Whether refinement is in progress */
+  isRefining?: boolean;
 }
 
+// ── Garment Refinement Row ──────────────────────────────────────
+function GarmentRefinementSection({
+  garmentId,
+  suggestedActions,
+  onRefine,
+  isRefining,
+}: {
+  garmentId: number;
+  suggestedActions: string[];
+  onRefine: (garmentId: number, instruction: string) => void;
+  isRefining: boolean;
+}) {
+  const [customText, setCustomText] = useState("");
+  const [activeChipLabel, setActiveChipLabel] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleChipClick = (label: string) => {
+    if (isRefining) return;
+    setActiveChipLabel(label);
+    onRefine(garmentId, label);
+  };
+
+  const handleCustomSubmit = () => {
+    if (!customText.trim() || isRefining) return;
+    setActiveChipLabel(null);
+    onRefine(garmentId, customText.trim());
+    setCustomText("");
+  };
+
+  return (
+    <div className="px-3 pb-2" style={{ borderTop: "1px solid rgba(0,0,0,0.03)" }}>
+      {/* Suggested action chips */}
+      {suggestedActions.length > 0 && (
+        <div
+          className="flex gap-1 overflow-x-auto pb-1 pt-2 no-scrollbar"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {suggestedActions.map((label) => {
+            const isActive = activeChipLabel === label && isRefining;
+            return (
+              <button
+                key={label}
+                onClick={() => handleChipClick(label)}
+                disabled={isRefining}
+                className="flex-shrink-0 flex items-center gap-1 transition-all disabled:opacity-40"
+                style={{
+                  fontSize: 8,
+                  fontWeight: isActive ? 600 : 400,
+                  padding: "3px 8px",
+                  borderRadius: 20,
+                  background: isActive ? "#1a1a1a" : "transparent",
+                  color: isActive ? "#f0ede8" : "#999",
+                  border: isActive ? "none" : "1px solid rgba(0,0,0,0.08)",
+                  cursor: isRefining ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {isActive && <Loader2 size={8} className="animate-spin" />}
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Custom instruction input */}
+      <div className="flex items-center gap-1.5 mt-1.5">
+        <input
+          ref={inputRef}
+          type="text"
+          value={customText}
+          onChange={(e) => setCustomText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleCustomSubmit();
+            if (e.key === "Escape") {
+              setCustomText("");
+              inputRef.current?.blur();
+            }
+          }}
+          disabled={isRefining}
+          placeholder="Type a styling instruction..."
+          className="flex-1 px-2 py-1.5 rounded-lg border-none outline-none disabled:opacity-40"
+          style={{
+            background: "#f8f6f2",
+            fontSize: 8,
+            color: "#1a1a1a",
+          }}
+          maxLength={200}
+        />
+        {customText.trim() && (
+          <button
+            onClick={handleCustomSubmit}
+            disabled={isRefining}
+            className="flex-shrink-0 px-2 py-1.5 rounded-lg font-medium transition-all hover:opacity-80 disabled:opacity-40"
+            style={{
+              background: "#1a1a1a",
+              color: "#f0ede8",
+              fontSize: 8,
+            }}
+          >
+            Apply
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main LayersPanel ────────────────────────────────────────────
 export function LayersPanel({
   isGenerating,
   hasResult,
   onGenerate,
   currentResultUrl,
+  onRefine,
+  isRefining = false,
 }: LayersPanelProps) {
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
   const toggleGarmentSelection = useWardrobeStore((s) => s.toggleGarmentSelection);
@@ -170,6 +295,7 @@ export function LayersPanel({
             const slotLabel =
               SLOT_DISPLAY_NAMES[garment.slotType as GarmentSlotType] ||
               garment.slotType;
+            const actions: string[] = (garment as Record<string, unknown>).suggestedActions as string[] ?? [];
 
             return (
               <div
@@ -256,6 +382,16 @@ export function LayersPanel({
                       </span>
                     </div>
                   </div>
+                )}
+
+                {/* Refinement UI: chips + custom input (only when result exists) */}
+                {isExpanded && hasResult && onRefine && (
+                  <GarmentRefinementSection
+                    garmentId={garment.id}
+                    suggestedActions={actions}
+                    onRefine={onRefine}
+                    isRefining={isRefining}
+                  />
                 )}
               </div>
             );

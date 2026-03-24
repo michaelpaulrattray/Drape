@@ -148,6 +148,8 @@ function WardrobeWorkspaceSection({
           hasResult={gen.currentResult !== null}
           onGenerate={gen.generate}
           currentResultUrl={gen.currentResult}
+          onRefine={gen.refineResult}
+          isRefining={gen.isGenerating}
         />
       </AnimatedPanel>
 
