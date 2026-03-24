@@ -351,6 +351,13 @@ const vtoRouter = router({
       modelImageUrl: z.string().url(),
       garmentId: z.number(),
       instruction: z.string().max(500),
+      allGarmentIds: z.array(z.number()).optional(),
+      tattooMap: z.object({
+        hasTattoos: z.boolean(),
+        tattooAreas: z.array(z.string()),
+        cleanAreas: z.array(z.string()),
+        promptFragment: z.string(),
+      }).optional(),
       sessionId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -361,6 +368,36 @@ const vtoRouter = router({
       if (!garment || garment.userId !== ctx.user.id) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Garment not found" });
       }
+
+      // Build outfit context and garment references from all active garments
+      let outfitContext: string | undefined;
+      let garmentReferenceUrls: { label: string; url: string }[] | undefined;
+
+      if (input.allGarmentIds && input.allGarmentIds.length > 0) {
+        const allGarments = await Promise.all(
+          input.allGarmentIds.map(async (id) => {
+            const g = await getGarmentById(id);
+            if (!g || g.userId !== ctx.user.id) return null;
+            return g;
+          }),
+        );
+        const validGarments = allGarments.filter(
+          (g): g is NonNullable<typeof g> =>
+            g !== null && g.status === "ready" && !!g.description && !g.description.startsWith("Analyzing"),
+        );
+
+        if (validGarments.length > 0) {
+          outfitContext = validGarments.map((g) => g.description).join(", ");
+          garmentReferenceUrls = validGarments
+            .filter((g) => g.isolatedImageUrl || g.originalImageUrl)
+            .map((g) => ({
+              label: g.description || g.shortName || g.slotType,
+              url: g.isolatedImageUrl || g.originalImageUrl,
+            }));
+        }
+      }
+
+      const tattooPromptFragment = input.tattooMap?.promptFragment;
 
       const genResult = await createGeneration({
         userId: ctx.user.id,
@@ -383,6 +420,9 @@ const vtoRouter = router({
             garmentLabel: garment.shortName || "garment",
             category: garment.slotType,
             instruction: input.instruction,
+            outfitContext,
+            garmentReferenceUrls,
+            tattooPromptFragment,
             userId: String(ctx.user.id),
             sessionId: input.sessionId ? String(input.sessionId) : "default",
           });

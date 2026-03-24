@@ -4371,3 +4371,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Add keyboard shortcuts (Space=generate, Z=undo, Shift+Z=redo)
 - [ ] Update RackPanel with full_look radio selection, decomposition trigger
 - [ ] Update LayersPanel with style note editing, suggested action chips
+- [x] Fix outfitDecomposition.ts: crop each detected garment with sharp + S3 instead of returning full outfit URL
+- [x] Fix vto.refine route: pass outfit context, garment reference URLs, and tattoo prompt fragment to refineGarment()

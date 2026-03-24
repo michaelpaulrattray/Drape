@@ -233,16 +233,23 @@ describe("Wardrobe Router Input Validation", () => {
     expect(valid.success).toBe(true);
   });
 
-  // Refinement schema
+  // Refinement schema (updated with outfit context + tattoo support)
   const refineSchema = z.object({
     currentResultUrl: z.string().url(),
     modelImageUrl: z.string().url(),
     garmentId: z.number(),
     instruction: z.string().max(500),
+    allGarmentIds: z.array(z.number()).optional(),
+    tattooMap: z.object({
+      hasTattoos: z.boolean(),
+      tattooAreas: z.array(z.string()),
+      cleanAreas: z.array(z.string()),
+      promptFragment: z.string(),
+    }).optional(),
     sessionId: z.number().optional(),
   });
 
-  it("should validate refinement input", () => {
+  it("should validate refinement input (basic)", () => {
     const valid = refineSchema.safeParse({
       currentResultUrl: "https://example.com/result.png",
       modelImageUrl: "https://example.com/model.png",
@@ -250,6 +257,37 @@ describe("Wardrobe Router Input Validation", () => {
       instruction: "Make the jacket more fitted",
     });
     expect(valid.success).toBe(true);
+  });
+
+  it("should validate refinement input with allGarmentIds and tattooMap", () => {
+    const valid = refineSchema.safeParse({
+      currentResultUrl: "https://example.com/result.png",
+      modelImageUrl: "https://example.com/model.png",
+      garmentId: 1,
+      instruction: "Roll the sleeves up",
+      allGarmentIds: [1, 2, 3],
+      tattooMap: {
+        hasTattoos: true,
+        tattooAreas: ["left_arm", "right_arm"],
+        cleanAreas: ["chest", "back"],
+        promptFragment: "Preserve visible tattoos on both arms.",
+      },
+    });
+    expect(valid.success).toBe(true);
+  });
+
+  it("should accept refinement without optional context fields", () => {
+    const valid = refineSchema.safeParse({
+      currentResultUrl: "https://example.com/result.png",
+      modelImageUrl: "https://example.com/model.png",
+      garmentId: 5,
+      instruction: "Unbutton the jacket",
+    });
+    expect(valid.success).toBe(true);
+    if (valid.success) {
+      expect(valid.data.allGarmentIds).toBeUndefined();
+      expect(valid.data.tattooMap).toBeUndefined();
+    }
   });
 
   it("should reject overly long refinement instructions", () => {
@@ -260,6 +298,34 @@ describe("Wardrobe Router Input Validation", () => {
       instruction: "x".repeat(501),
     });
     expect(invalid.success).toBe(false);
+  });
+
+  it("should build outfit context string from garment descriptions", () => {
+    // Simulates the server-side logic that builds outfitContext
+    const mockGarments = [
+      { description: "Black leather bomber jacket", status: "ready" },
+      { description: "White cotton t-shirt", status: "ready" },
+      { description: "Analyzing...", status: "ready" },
+      { description: null, status: "ready" },
+      { description: "Dark denim jeans", status: "processing" },
+    ];
+    const validGarments = mockGarments.filter(
+      (g) => g.status === "ready" && !!g.description && !g.description.startsWith("Analyzing"),
+    );
+    const outfitContext = validGarments.map((g) => g.description).join(", ");
+    expect(outfitContext).toBe("Black leather bomber jacket, White cotton t-shirt");
+    expect(validGarments).toHaveLength(2);
+  });
+
+  it("should extract tattoo prompt fragment from tattooMap", () => {
+    const tattooMap = {
+      hasTattoos: true,
+      tattooAreas: ["left_arm"],
+      cleanAreas: ["chest"],
+      promptFragment: "Preserve visible tattoos on left arm.",
+    };
+    const tattooPromptFragment = tattooMap.promptFragment;
+    expect(tattooPromptFragment).toBe("Preserve visible tattoos on left arm.");
   });
 
   // Outfit save schema
