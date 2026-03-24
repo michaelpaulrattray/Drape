@@ -4153,3 +4153,10 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Tainted Canvas Bug (Mar 24)
 - [x] BUG-CANVAS-1: Fixed tainted canvas — load fresh Image() with crossOrigin='anonymous' + cache-buster before drawing to canvas. Also fixed RefAnalysis sending S3 URL instead of base64 to Gemini
+
+## Body Type / Face Shape Investigation (Mar 24)
+- [x] INV-1: CONFIRMED SOT BEHAVIOR — "Slim" body type returns empty hint (no face shape guidance) in BOTH codebases. Face Shape was set to "Auto" so AI picks freely. East Asian heritage naturally tends toward rounder face shapes. Miu Miu brand descriptor says "casts eclectically, do NOT default to severe or angular". Not a bug — user should set Face Shape to "Oval" or "Diamond" for a slimmer face.
+
+## Body Type Hint Enhancement (Mar 24)
+- [x] ENH-1: Added headshot hint for "Slim" — "defined jawline, lean face with visible bone structure, slender neck, and narrow shoulders"
+- [x] ENH-2: Added fallback hint for "Model Standard" (not a selectable option, just the fallback when bodyType is undefined) — "lean proportions, defined bone structure, slender neck"

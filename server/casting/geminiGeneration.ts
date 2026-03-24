@@ -244,7 +244,9 @@ function bodyTypeHeadshotHint(bodyType?: string): string {
   if (bt === 'athletic' || bt === 'muscular') return 'BODY TYPE NOTE: Athletic/Muscular build — reflect in thicker neck, defined traps and shoulders visible in frame.';
   if (bt === 'petite') return 'BODY TYPE NOTE: Petite build — reflect in narrower shoulders, delicate neck, finer bone structure.';
   if (bt === 'ultra thin') return 'BODY TYPE NOTE: Ultra thin build — reflect in narrow neck, visible collarbones and tendons, leaner face.';
-  return '';
+  if (bt === 'slim') return 'BODY TYPE NOTE: Slim build — reflect in defined jawline, lean face with visible bone structure, slender neck, and narrow shoulders.';
+  // 'model standard' or unknown — neutral slim-leaning default
+  return 'BODY TYPE NOTE: Model-standard build — lean proportions, defined bone structure, slender neck.';
 }
 
 function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string): string {
