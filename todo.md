@@ -4387,3 +4387,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix full_look radio selection bug in toggleGarmentSelection
 - [x] Wire detectResultGarments into useWardrobeGeneration after every VTO generation
 - [x] Add overlay cache restore on undo/redo in useWardrobeGeneration
+- [x] Add SAFETY_BLOCK auto-retry with sanitized descriptions in generateVTO

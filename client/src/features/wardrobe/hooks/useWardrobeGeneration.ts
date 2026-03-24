@@ -158,7 +158,7 @@ export function useWardrobeGeneration({
 
   // ── Full VTO Generation ────────────────────────────────────
 
-  const generateVTO = useCallback(async () => {
+  const generateVTO = useCallback(async (isRetry = false) => {
     if (!modelImageUrl) {
       toast.error("No model image available for VTO");
       return;
@@ -205,9 +205,20 @@ export function useWardrobeGeneration({
     } catch (err: unknown) {
       if (genId !== generationIdRef.current) return;
       const msg = (err as Error)?.message || "VTO generation failed";
+      if (msg.includes("SAFETY_BLOCK") && !isRetry) {
+        // Auto-retry once — server sanitizes descriptions on re-fetch
+        console.warn("[VTO] Safety block detected — retrying with sanitized descriptions");
+        setGeneratingMessage("Adjusting descriptions...");
+        try {
+          await generateVTO(true);
+          return;
+        } catch {
+          // Retry also failed — fall through to show error
+        }
+      }
       if (msg.includes("SAFETY_BLOCK")) {
-        setErrorMessage("Generation blocked by safety filters. Try different garments or style notes.");
-        toast.error("Safety filter triggered — try adjusting your garments");
+        setErrorMessage("Generation blocked by safety filters — try different garments");
+        toast.error("Safety filter triggered — try different garments");
       } else if (msg.includes("TOO_MANY_REQUESTS")) {
         setErrorMessage("Rate limit reached. Please wait a moment.");
         toast.error("Too many requests — please wait");

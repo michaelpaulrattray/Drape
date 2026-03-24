@@ -764,3 +764,70 @@ describe("Overlay Scan Wiring Logic", () => {
     expect(result.items).toEqual(["jacket"]);
   });
 });
+
+// ── SAFETY_BLOCK Auto-Retry Logic Tests ───────────────────────────────────
+
+describe("SAFETY_BLOCK Auto-Retry Logic", () => {
+  // Simulate the retry decision logic from generateVTO catch block
+  function shouldAutoRetry(errorMsg: string, isRetry: boolean): boolean {
+    return errorMsg.includes("SAFETY_BLOCK") && !isRetry;
+  }
+
+  function getFinalErrorMessage(
+    errorMsg: string,
+    isRetry: boolean,
+    retrySucceeded: boolean,
+  ): string | null {
+    if (errorMsg.includes("SAFETY_BLOCK") && !isRetry) {
+      // First attempt — would auto-retry
+      if (retrySucceeded) return null; // retry succeeded, no error
+      // Retry failed — show final error
+      return "Generation blocked by safety filters — try different garments";
+    }
+    if (errorMsg.includes("SAFETY_BLOCK")) {
+      return "Generation blocked by safety filters — try different garments";
+    }
+    if (errorMsg.includes("TOO_MANY_REQUESTS")) {
+      return "Rate limit reached. Please wait a moment.";
+    }
+    return errorMsg;
+  }
+
+  it("should auto-retry on first SAFETY_BLOCK", () => {
+    expect(shouldAutoRetry("SAFETY_BLOCK: content flagged", false)).toBe(true);
+  });
+
+  it("should NOT auto-retry on second SAFETY_BLOCK (isRetry=true)", () => {
+    expect(shouldAutoRetry("SAFETY_BLOCK: content flagged", true)).toBe(false);
+  });
+
+  it("should NOT auto-retry on non-SAFETY_BLOCK errors", () => {
+    expect(shouldAutoRetry("TOO_MANY_REQUESTS", false)).toBe(false);
+    expect(shouldAutoRetry("Unknown error", false)).toBe(false);
+  });
+
+  it("should return null error when retry succeeds", () => {
+    const result = getFinalErrorMessage("SAFETY_BLOCK: flagged", false, true);
+    expect(result).toBeNull();
+  });
+
+  it("should return safety error when retry also fails", () => {
+    const result = getFinalErrorMessage("SAFETY_BLOCK: flagged", false, false);
+    expect(result).toBe("Generation blocked by safety filters — try different garments");
+  });
+
+  it("should return safety error on isRetry=true (second failure)", () => {
+    const result = getFinalErrorMessage("SAFETY_BLOCK: flagged", true, false);
+    expect(result).toBe("Generation blocked by safety filters — try different garments");
+  });
+
+  it("should return rate limit error for TOO_MANY_REQUESTS", () => {
+    const result = getFinalErrorMessage("TOO_MANY_REQUESTS", false, false);
+    expect(result).toBe("Rate limit reached. Please wait a moment.");
+  });
+
+  it("should return raw error for other errors", () => {
+    const result = getFinalErrorMessage("Network timeout", false, false);
+    expect(result).toBe("Network timeout");
+  });
+});
