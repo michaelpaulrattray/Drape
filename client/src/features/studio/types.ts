@@ -33,6 +33,10 @@ export interface CanvasState {
 export interface ToolAvailability {
   enabled: boolean;
   tooltip: string;
+  /** Whether switching to this tool requires a confirmation (e.g. will reset progress) */
+  needsConfirm?: boolean;
+  /** Message to show in the confirmation dialog */
+  confirmMessage?: string;
 }
 
 /** Derive tool availability from canvas state */
@@ -42,9 +46,14 @@ export function getToolAvailability(
 ): ToolAvailability {
   switch (tool) {
     case 'casting':
-      // Casting is disabled when model was uploaded (not cast)
+      // Casting is allowed when uploaded, but needs confirmation to reset
       if (canvas.modelSource === 'uploaded') {
-        return { enabled: false, tooltip: 'Upload detected — casting unavailable' };
+        return {
+          enabled: true,
+          tooltip: 'Casting Studio',
+          needsConfirm: true,
+          confirmMessage: 'Switching to Casting will clear your uploaded model and any wardrobe progress. This cannot be undone.',
+        };
       }
       return { enabled: true, tooltip: 'Casting Studio' };
 

@@ -4314,3 +4314,10 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Preload S3 image before triggering workspace transition
 - [x] Show upload progress in lobby (preview + progress bar + phase labels), only transition once image is cached
 - [x] Ensure panels don't assemble around an empty canvas (image preloaded before loadModelFromUpload)
+
+## Feature: Allow switching to Casting from uploaded model with confirmation
+- [x] Update getToolAvailability to enable Casting when uploaded model exists (needsConfirm + confirmMessage)
+- [x] Create ToolSwitchConfirmDialog component (warns progress will be reset)
+- [x] Wire confirmation into ToolRail — intercept click when needsConfirm is true
+- [x] On confirm: clearUploadedModel() then setActiveTool(pendingTool)
+- [x] Write/update tests for new tool availability and confirmation flow (1,255 total)

@@ -18,10 +18,38 @@ describe("getToolAvailability — uploaded model", () => {
     uploadedModelUrl: "https://s3.example.com/model.png",
   };
 
-  it("disables Casting when model is uploaded", () => {
+  it("enables Casting when model is uploaded but requires confirmation", () => {
     const result = getToolAvailability("casting", uploadedCanvas);
-    expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain("Upload detected");
+    expect(result.enabled).toBe(true);
+    expect(result.needsConfirm).toBe(true);
+    expect(result.confirmMessage).toBeTruthy();
+    expect(result.tooltip).toBe("Casting Studio");
+  });
+
+  it("does not require confirmation for Casting on empty canvas", () => {
+    const emptyCanvas: CanvasState = {
+      hasModel: false,
+      hasFullBody: false,
+      hasAllViews: false,
+      modelSource: null,
+      uploadedModelUrl: null,
+    };
+    const result = getToolAvailability("casting", emptyCanvas);
+    expect(result.enabled).toBe(true);
+    expect(result.needsConfirm).toBeFalsy();
+  });
+
+  it("does not require confirmation for Casting on cast model", () => {
+    const castCanvas: CanvasState = {
+      hasModel: true,
+      hasFullBody: true,
+      hasAllViews: false,
+      modelSource: "cast",
+      uploadedModelUrl: null,
+    };
+    const result = getToolAvailability("casting", castCanvas);
+    expect(result.enabled).toBe(true);
+    expect(result.needsConfirm).toBeFalsy();
   });
 
   it("enables Wardrobe when uploaded model has full body", () => {
