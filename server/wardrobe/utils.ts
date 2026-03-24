@@ -156,7 +156,7 @@ export function diagnoseResponse(response: any): ResponseDiagnosis {
 
 // ── Aspect Ratio Detection ────────────────────────────────────────────────
 
-export type GeminiAspectRatio = "16:9" | "4:3" | "1:1" | "4:5" | "3:4" | "2:3" | "9:16";
+export type GeminiAspectRatio = "21:9" | "16:9" | "4:3" | "1:1" | "4:5" | "3:4" | "2:3" | "9:16";
 
 /**
  * Fetch an image, measure its dimensions with sharp, and return
@@ -174,6 +174,7 @@ export async function getImageAspectBucket(
     const h = metadata.height ?? 1;
     const ratio = w / h;
 
+    if (ratio > 2.0) return "21:9";
     if (ratio > 1.4) return "16:9";
     if (ratio > 1.15) return "4:3";
     if (ratio > 0.9) return "1:1";

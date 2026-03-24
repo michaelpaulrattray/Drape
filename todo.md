@@ -4441,3 +4441,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add impossible action guards to garmentAnalysis.ts SUGGESTED_ACTIONS
 - [x] Add head-to-toe ordering to garmentAnalysis.ts full look prompt
 - [x] Add "pantyhose" to INNER_LAYER_TAGS in server/wardrobe/utils.ts after "stockings"
+- [x] Add 21:9 ultra-wide check as first ratio bucket in getImageAspectBucket
+- [x] Add description example to single garment DESCRIPTION prompt in garmentAnalysis.ts
+- [x] Add description example to full look DESCRIPTION prompt and strengthen SUGGESTED_ACTIONS guard in garmentAnalysis.ts

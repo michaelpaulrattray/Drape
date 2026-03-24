@@ -50,7 +50,7 @@ export async function analyzeGarmentMetadata(
 
 SHORT_NAME: A 2-3 word label for this outfit. Example: "Street Monochrome Set", "Summer Linen Look". Keep it concise and descriptive.
 
-DESCRIPTION: Write a single sentence listing EVERY visible item in the outfit — clothing, footwear, AND accessories. Go from head to toe. hat/sunglasses → outerwear → top → bottom → shoes. For each piece include its FIT/SILHOUETTE (e.g. oversized, cropped, slim, wide-leg), then type, color, and key details. You MUST mention footwear if visible. Do not skip shoes or accessories — every visible item must be listed.
+DESCRIPTION: Write a single sentence listing EVERY visible item in the outfit — clothing, footwear, AND accessories. Go from head to toe. hat/sunglasses → outerwear → top → bottom → shoes. For each piece include its FIT/SILHOUETTE (e.g. oversized, cropped, slim, wide-leg), then type, color, and key details. You MUST mention footwear if visible. Example: "Oversized black leather racing jacket over a cropped fitted black sports top, with skin-tight black compression shorts and white leather slip-on sneakers." Do not skip shoes or accessories — every visible item must be listed.
 
 TAGS: Return 4-8 tags covering the overall outfit. Include tags for the dominant pieces:
 - Fit tags: oversized, slim, relaxed, cropped, longline, fitted, tailored
@@ -61,12 +61,12 @@ TAGS: Return 4-8 tags covering the overall outfit. Include tags for the dominant
 
 Do NOT include subjective tags like "trendy", "stylish", "cool", "edgy", "statement".
 
-SUGGESTED_ACTIONS: Return 3-5 styling actions that could be applied to this outfit during a virtual try-on. These are physical adjustments a stylist would make. Examples: "Open jacket", "Tuck shirt", "Cuff pants", "Remove belt". Only suggest actions that make sense for the ACTUAL garments visible.`
+SUGGESTED_ACTIONS: Return 3-5 styling actions that could be applied to this outfit during a virtual try-on. These are physical adjustments a stylist would make. Examples: "Open jacket", "Tuck shirt", "Cuff pants", "Remove belt". Only suggest actions that make sense for the ACTUAL garments visible — if there are no sleeves do NOT suggest "Roll sleeves", if there are no buttons do NOT suggest "Unbutton".`
       : `${targetClause}Analyze this garment and return technical details for a wardrobe fitting system.
 
 SHORT_NAME: A 2-3 word label for this garment. Format: [Color] [Key Detail] [Type]. Examples: "White Cropped Vest", "Black Wide Trousers", "Red Bomber Jacket". Keep it concise — this is used as a display name, not a description.
 
-DESCRIPTION: Write a single sentence describing the garment. Start with FIT/SILHOUETTE first — how does it sit on the body? (e.g. "Extremely oversized and voluminous", "Slim-fit tapered", "Cropped and boxy", "Wide-leg pooling at ankles") Then include: garment type, primary material/fabric, color, and construction. The fit description must be specific enough that a tailor could replicate the silhouette.${label ? ` Describe the "${label}" ONLY.` : ""}
+DESCRIPTION: Write a single sentence describing the garment. Start with FIT/SILHOUETTE first — how does it sit on the body? (e.g. "Extremely oversized and voluminous", "Slim-fit tapered", "Cropped and boxy", "Wide-leg pooling at ankles") Then include: garment type, primary material/fabric, color, and construction. Example: "Dramatically oversized wide-leg cotton cargo pants in woodland camo with drawstring waist — legs are voluminous and pool over the shoes." Not: "Relaxed-fit cotton cargo pants in camo." The fit description must be specific enough that a tailor could replicate the silhouette.${label ? ` Describe the "${label}" ONLY.` : ""}
 
 TAGS: Return 3-6 specific technical tags. Use terms a pattern maker or buyer would use:
 - Fit tags: oversized, slim, relaxed, cropped, longline, fitted, tailored
