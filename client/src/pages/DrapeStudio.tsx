@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { trpc } from '@/lib/trpc';
 import { useLocation, useSearch } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { toast } from 'sonner';
@@ -14,7 +15,7 @@ import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition
 import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
-import { RackPanel, MainStage, LayersPanel, useWardrobeGeneration, useModelSetup } from '@/features/wardrobe';
+import { RackPanel, MainStage, LayersPanel, useWardrobeGeneration, useModelSetup, useWardrobeStore } from '@/features/wardrobe';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -51,6 +52,43 @@ function WardrobeWorkspaceSection({
 }) {
   const gen = useWardrobeGeneration({ modelImageUrl, modelId });
   useModelSetup(modelImageUrl);
+
+  const resultOverlayItems = useWardrobeStore((s) => s.resultOverlayItems);
+  const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
+  const { data: garments = [] } = trpc.wardrobe.garments.list.useQuery();
+
+  const handleStyleNote = useCallback((note: { garmentLabel: string; category: string; instruction: string }) => {
+    // Filter selected garments by the overlay item's category
+    const selectedArr = Array.from(selectedGarmentIds);
+    const categoryGarments = garments.filter(
+      (g) => selectedArr.includes(g.id) && g.slotType === note.category
+    );
+
+    if (categoryGarments.length === 0) {
+      // Fallback: first selected garment regardless of category
+      const fallbackId = selectedArr[0];
+      if (!fallbackId) return;
+      gen.refineResult(fallbackId, note.instruction);
+      return;
+    }
+
+    let bestMatch = categoryGarments[0];
+    if (categoryGarments.length > 1) {
+      // Word-overlap scoring: count how many overlay label words appear in description/shortName
+      const overlayWords = note.garmentLabel.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+      let bestScore = -1;
+      for (const g of categoryGarments) {
+        const haystack = `${g.shortName || ''} ${g.description || ''}`.toLowerCase();
+        const score = overlayWords.filter((w) => haystack.includes(w)).length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = g;
+        }
+      }
+    }
+
+    gen.refineResult(bestMatch.id, note.instruction);
+  }, [gen, garments, selectedGarmentIds]);
 
   return (
     <>
@@ -89,6 +127,8 @@ function WardrobeWorkspaceSection({
           onRedo={gen.redo}
           canUndo={gen.canUndo}
           canRedo={gen.canRedo}
+          resultOverlayItems={resultOverlayItems}
+          onStyleNote={handleStyleNote}
         />
       </div>
 

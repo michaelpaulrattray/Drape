@@ -928,3 +928,173 @@ describe("useModelSetup Decision Logic", () => {
     expect(shouldShowQualityWarning("good")).toBe(false);
   });
 });
+
+// ── GarmentOverlay Logic Tests ────────────────────────────────────────────
+
+describe("GarmentOverlay Logic", () => {
+  // Replicate the LAYER_Z constant from GarmentOverlay
+  const LAYER_Z: Record<string, number> = {
+    tops: 1,
+    bottoms: 2,
+    shoes: 3,
+    full_look: 4,
+    accessories: 5,
+  };
+
+  interface DetectedItem {
+    id: string;
+    label: string;
+    category: string;
+    box_2d: [number, number, number, number]; // [ymin, xmin, ymax, xmax]
+  }
+
+  // Replicate the hit detection logic
+  function getHitsAt(
+    items: DetectedItem[],
+    x: number,
+    y: number,
+  ): DetectedItem[] {
+    const hits: DetectedItem[] = [];
+    for (const item of items) {
+      const [ymin, xmin, ymax, xmax] = item.box_2d;
+      if (x >= xmin && x <= xmax && y >= ymin && y <= ymax) {
+        hits.push(item);
+      }
+    }
+    hits.sort(
+      (a, b) => (LAYER_Z[b.category] || 0) - (LAYER_Z[a.category] || 0),
+    );
+    return hits;
+  }
+
+  const sampleItems: DetectedItem[] = [
+    { id: "1", label: "White T-Shirt", category: "tops", box_2d: [0.1, 0.2, 0.5, 0.8] },
+    { id: "2", label: "Blue Jeans", category: "bottoms", box_2d: [0.4, 0.2, 0.9, 0.8] },
+    { id: "3", label: "Sneakers", category: "shoes", box_2d: [0.85, 0.3, 1.0, 0.7] },
+  ];
+
+  it("should return empty array when clicking outside all boxes", () => {
+    expect(getHitsAt(sampleItems, 0.05, 0.05)).toEqual([]);
+  });
+
+  it("should detect a single garment when clicking inside its box only", () => {
+    // Click in the top area where only the t-shirt exists
+    const hits = getHitsAt(sampleItems, 0.5, 0.2);
+    expect(hits).toHaveLength(1);
+    expect(hits[0].label).toBe("White T-Shirt");
+  });
+
+  it("should detect overlapping garments and sort by z-order (outermost first)", () => {
+    // Click in the overlap zone between tops and bottoms (y=0.45, x=0.5)
+    const hits = getHitsAt(sampleItems, 0.5, 0.45);
+    expect(hits).toHaveLength(2);
+    // Bottoms (z=2) should come before tops (z=1) — outermost first
+    expect(hits[0].category).toBe("bottoms");
+    expect(hits[1].category).toBe("tops");
+  });
+
+  it("should detect shoes at the bottom of the image", () => {
+    const hits = getHitsAt(sampleItems, 0.5, 0.9);
+    expect(hits).toHaveLength(2); // shoes + bottoms overlap
+    expect(hits[0].category).toBe("shoes"); // z=3 > z=2
+    expect(hits[1].category).toBe("bottoms");
+  });
+
+  it("should handle items with unknown categories (z=0)", () => {
+    const itemsWithUnknown: DetectedItem[] = [
+      ...sampleItems,
+      { id: "4", label: "Hat", category: "unknown", box_2d: [0.0, 0.3, 0.15, 0.7] },
+    ];
+    const hits = getHitsAt(itemsWithUnknown, 0.5, 0.1);
+    // Both t-shirt and hat overlap here
+    expect(hits).toHaveLength(2);
+    // Tops (z=1) should come before unknown (z=0)
+    expect(hits[0].category).toBe("tops");
+    expect(hits[1].category).toBe("unknown");
+  });
+
+  // Test word-overlap scoring for garment matching (DrapeStudio handleStyleNote logic)
+  interface Garment {
+    id: number;
+    shortName: string | null;
+    description: string | null;
+    slotType: string;
+  }
+
+  function findBestMatch(
+    garments: Garment[],
+    selectedIds: number[],
+    overlayLabel: string,
+    overlayCategory: string,
+  ): number | undefined {
+    const categoryGarments = garments.filter(
+      (g) => selectedIds.includes(g.id) && g.slotType === overlayCategory,
+    );
+    if (categoryGarments.length === 0) return selectedIds[0];
+    let bestMatch = categoryGarments[0];
+    if (categoryGarments.length > 1) {
+      const overlayWords = overlayLabel.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+      let bestScore = -1;
+      for (const g of categoryGarments) {
+        const haystack = `${g.shortName || ''} ${g.description || ''}`.toLowerCase();
+        const score = overlayWords.filter((w) => haystack.includes(w)).length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = g;
+        }
+      }
+    }
+    return bestMatch.id;
+  }
+
+  it("should match by word overlap when overlay label differs from shortName", () => {
+    const garments: Garment[] = [
+      { id: 1, shortName: "Black Bomber", description: "black leather bomber jacket", slotType: "tops" },
+      { id: 2, shortName: "White Tee", description: "plain white cotton t-shirt", slotType: "tops" },
+    ];
+    // Overlay detects "black leather bomber jacket" — should match id=1
+    expect(findBestMatch(garments, [1, 2], "black leather bomber jacket", "tops")).toBe(1);
+  });
+
+  it("should match partial words across shortName and description", () => {
+    const garments: Garment[] = [
+      { id: 1, shortName: "Black Bomber", description: "leather jacket", slotType: "tops" },
+      { id: 2, shortName: "White Tee", description: "cotton t-shirt", slotType: "tops" },
+    ];
+    // "white cotton tee" — 'white' in shortName, 'cotton' in description
+    expect(findBestMatch(garments, [1, 2], "white cotton tee", "tops")).toBe(2);
+  });
+
+  it("should filter by category before scoring", () => {
+    const garments: Garment[] = [
+      { id: 1, shortName: "Black Jeans", description: "slim fit black jeans", slotType: "bottoms" },
+      { id: 2, shortName: "Black Bomber", description: "black leather jacket", slotType: "tops" },
+    ];
+    // Overlay says category=bottoms, label="black slim jeans" — should only consider id=1
+    expect(findBestMatch(garments, [1, 2], "black slim jeans", "bottoms")).toBe(1);
+  });
+
+  it("should fall back to first selected when no category matches", () => {
+    const garments: Garment[] = [
+      { id: 1, shortName: "White Tee", description: "cotton tee", slotType: "tops" },
+    ];
+    // Category "shoes" has no matches — falls back to first selected
+    expect(findBestMatch(garments, [1], "sneakers", "shoes")).toBe(1);
+  });
+
+  it("should return single category garment without scoring", () => {
+    const garments: Garment[] = [
+      { id: 5, shortName: "Red Dress", description: "long red evening dress", slotType: "full_look" },
+    ];
+    expect(findBestMatch(garments, [5], "completely different label", "full_look")).toBe(5);
+  });
+
+  it("should ignore short words (<=2 chars) during scoring", () => {
+    const garments: Garment[] = [
+      { id: 1, shortName: "A B Jacket", description: "an ok jacket", slotType: "tops" },
+      { id: 2, shortName: "Denim Vest", description: "blue denim vest", slotType: "tops" },
+    ];
+    // "a b" are <=2 chars, filtered out. "denim" matches id=2
+    expect(findBestMatch(garments, [1, 2], "a b denim", "tops")).toBe(2);
+  });
+});

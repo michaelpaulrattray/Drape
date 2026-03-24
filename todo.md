@@ -4392,3 +4392,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Export useModelSetup from wardrobe barrel
 - [x] Wire useModelSetup in DrapeStudio WardrobeWorkspaceSection
 - [x] Add useModelSetup tests
+- [x] Create GarmentOverlay component (clickable bounding boxes with style note input)
+- [x] Update MainStage to accept and render GarmentOverlay
+- [x] Update DrapeStudio to pass overlay props through
+- [x] Add GarmentOverlay tests
+- [x] Update handleStyleNote to use word-overlap scoring for garment matching

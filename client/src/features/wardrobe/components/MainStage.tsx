@@ -8,6 +8,8 @@
 import { useCallback, useRef, useState } from "react";
 import { Loader2, Undo2, Redo2, Sparkles, Eye, RotateCcw } from "lucide-react";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
+import { GarmentOverlay } from "./GarmentOverlay";
+import type { DetectedItem } from "../types";
 
 interface MainStageProps {
   /** Clean full-body model image URL */
@@ -36,6 +38,10 @@ interface MainStageProps {
   canUndo: boolean;
   /** Whether redo is available */
   canRedo: boolean;
+  /** Detected garments in the result image for overlay */
+  resultOverlayItems?: DetectedItem[];
+  /** Called when user submits a style note via overlay */
+  onStyleNote?: (note: { garmentLabel: string; category: string; instruction: string }) => void;
 }
 
 /** Contextual tips shown during generation */
@@ -61,6 +67,8 @@ export function MainStage({
   onRedo,
   canUndo,
   canRedo,
+  resultOverlayItems = [],
+  onStyleNote,
 }: MainStageProps) {
   const selectedCount = useWardrobeStore((s) => s.selectedGarmentIds.size);
   const [isComparing, setIsComparing] = useState(false);
@@ -204,6 +212,15 @@ export function MainStage({
               boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
             }}
             draggable={false}
+          />
+        )}
+
+        {/* Garment overlay — clickable bounding boxes */}
+        {resultOverlayItems.length > 0 && !isGenerating && !isComparing && onStyleNote && (
+          <GarmentOverlay
+            items={resultOverlayItems}
+            onStyleNote={onStyleNote}
+            disabled={isGenerating}
           />
         )}
 
