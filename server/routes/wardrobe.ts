@@ -3,7 +3,7 @@
  *
  * Procedures:
  *   garments.list / get / upload / delete
- *   vto.generate / incremental / refine
+ *   vto.generate / incremental / refine / detectResultGarments
  *   decompose.analyze / import
  *   sessions.create / get / list / update / delete
  *   outfits.list / save / delete
@@ -433,6 +433,15 @@ const vtoRouter = router({
       );
 
       return { resultUrl: result.resultUrl };
+    }),
+
+  /** Detect garments in a VTO result image for clickable bounding box overlays */
+  detectResultGarments: protectedProcedure
+    .input(z.object({ resultUrl: z.string().url() }))
+    .mutation(async ({ ctx, input }) => {
+      throwIfRateLimited(ctx.user.id);
+      log.info(`Detecting garments in VTO result for user ${ctx.user.id}`);
+      return detectGarmentsInImage(input.resultUrl);
     }),
 });
 

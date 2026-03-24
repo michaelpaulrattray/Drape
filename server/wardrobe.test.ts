@@ -608,3 +608,25 @@ describe("Quality Check", () => {
     expect(missing.success).toBe(false);
   });
 });
+
+// ── Detect Result Garments Tests ──────────────────────────────────────────
+
+describe("Detect Result Garments", () => {
+  const { z } = require("zod");
+
+  it("should validate detectResultGarments input schema", () => {
+    const schema = z.object({ resultUrl: z.string().url() });
+    const valid = schema.safeParse({ resultUrl: "https://example.com/result.png" });
+    expect(valid.success).toBe(true);
+    const invalid = schema.safeParse({ resultUrl: "not-a-url" });
+    expect(invalid.success).toBe(false);
+    const missing = schema.safeParse({});
+    expect(missing.success).toBe(false);
+  });
+
+  it("should reject empty string as resultUrl", () => {
+    const schema = z.object({ resultUrl: z.string().url() });
+    const result = schema.safeParse({ resultUrl: "" });
+    expect(result.success).toBe(false);
+  });
+});

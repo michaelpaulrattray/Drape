@@ -4382,3 +4382,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update barrel export (index.ts) to add qualityCheck exports
 - [x] Add wardrobe.model.checkQuality tRPC endpoint
 - [x] Add quality check tests
+- [x] Add vto.detectResultGarments tRPC procedure
+- [x] Add detectResultGarments test
