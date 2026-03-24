@@ -4288,3 +4288,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Bridge uploaded model URL to wardrobe VTO base image
 - [x] Write vitest tests for upload flow and tool availability (16 tests)
 - [x] Verify all tests pass (1,249 total)
+
+## Phase 4c: Studio Lobby State
+- [x] Update StudioTool type to support null (ActiveTool = StudioTool | null)
+- [x] Update useStudioStore default activeTool to null
+- [x] Create StudioLobby component with animated CTAs (Cast / Upload)
+- [x] Remove upload zone from WarmEmptyState (restore to casting-only)
+- [x] Wire lobby into DrapeStudio — show when activeTool is null
+- [x] Add smooth transitions between lobby → tool states
+- [x] Update ToolRail with Home button and null state support
+- [x] Write/update vitest tests for lobby and null tool state (20 tests)
+- [x] Verify all tests pass (1,253 total)

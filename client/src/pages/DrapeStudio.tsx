@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 import { ToolRail } from '@/features/studio/components/ToolRail';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
+import { StudioLobby } from '@/features/studio/components/StudioLobby';
 import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
@@ -279,6 +280,9 @@ export default function DrapeStudio() {
     );
   }
 
+  /** Whether we're in lobby mode (no tool selected) */
+  const isLobby = activeTool === null;
+
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: '#eae7e1' }}>
       {/* Studio Header */}
@@ -308,11 +312,18 @@ export default function DrapeStudio() {
 
       {/* Main workspace: Tool Rail + Tool Content */}
       <div className="flex-1 flex min-h-0">
-        {/* Tool Rail — far left */}
-        <ToolRail canvas={canvas} />
+        {/* Tool Rail — far left (hidden in lobby) */}
+        {!isLobby && <ToolRail canvas={canvas} />}
 
         {/* Tool Content Area */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+          {/* Lobby — no tool selected */}
+          {isLobby && (
+            <StudioLobby
+              onSelectCasting={() => setActiveTool('casting')}
+            />
+          )}
+
           {activeTool === 'casting' && (
             <>
               {/* Left Panel — Control */}
@@ -367,7 +378,7 @@ export default function DrapeStudio() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center" style={{ color: '#999' }}>
                 <p style={{ fontSize: 13, fontWeight: 500 }}>Export Pack</p>
-                <p style={{ fontSize: 11, marginTop: 4 }}>Coming in Phase 4</p>
+                <p style={{ fontSize: 11, marginTop: 4 }}>Coming soon</p>
               </div>
             </div>
           )}

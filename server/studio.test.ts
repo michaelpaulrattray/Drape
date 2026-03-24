@@ -10,9 +10,9 @@ beforeEach(() => {
 // ─── useStudioStore ───────────────────────────────────────────────
 
 describe('useStudioStore', () => {
-  it('initializes with casting as the active tool', () => {
+  it('initializes in lobby state (null activeTool)', () => {
     const state = useStudioStore.getState();
-    expect(state.activeTool).toBe('casting');
+    expect(state.activeTool).toBeNull();
   });
 
   it('initializes with an empty canvas', () => {
@@ -52,7 +52,7 @@ describe('useStudioStore', () => {
     useStudioStore.getState().resetStudio();
 
     const state = useStudioStore.getState();
-    expect(state.activeTool).toBe('casting');
+    expect(state.activeTool).toBeNull();
     expect(state.canvas.hasModel).toBe(false);
     expect(state.isRailCollapsed).toBe(false);
   });

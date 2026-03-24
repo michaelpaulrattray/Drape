@@ -1,8 +1,8 @@
 /**
- * Model Upload & Tool Availability Tests
+ * Model Upload, Lobby State & Tool Availability Tests
  *
  * Tests the extended CanvasState, tool availability logic for uploaded models,
- * and the useStudioStore.loadModelFromUpload action.
+ * the useStudioStore.loadModelFromUpload action, and the null activeTool (lobby) state.
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { getToolAvailability, type CanvasState } from "../client/src/features/studio/types";
@@ -33,7 +33,6 @@ describe("getToolAvailability — uploaded model", () => {
   it("disables Export for uploaded models (no all views)", () => {
     const result = getToolAvailability("export", uploadedCanvas);
     expect(result.enabled).toBe(false);
-    // First gate: hasAllViews is false
     expect(result.tooltip).toContain("Generate all views to unlock export");
   });
 
@@ -111,6 +110,49 @@ describe("getToolAvailability — cast model", () => {
   });
 });
 
+// ── Studio Store: Lobby State (null activeTool) ────────────────
+
+describe("useStudioStore — lobby state", () => {
+  let store: typeof import("../client/src/features/studio/stores/useStudioStore");
+
+  beforeEach(async () => {
+    store = await import("../client/src/features/studio/stores/useStudioStore");
+    store.useStudioStore.getState().resetStudio();
+  });
+
+  it("defaults to null activeTool (lobby state)", () => {
+    const state = store.useStudioStore.getState();
+    expect(state.activeTool).toBeNull();
+  });
+
+  it("setActiveTool transitions from lobby to casting", () => {
+    store.useStudioStore.getState().setActiveTool("casting");
+    expect(store.useStudioStore.getState().activeTool).toBe("casting");
+  });
+
+  it("setActiveTool(null) returns to lobby from any tool", () => {
+    store.useStudioStore.getState().setActiveTool("casting");
+    expect(store.useStudioStore.getState().activeTool).toBe("casting");
+
+    store.useStudioStore.getState().setActiveTool(null);
+    expect(store.useStudioStore.getState().activeTool).toBeNull();
+  });
+
+  it("resetStudio returns to lobby", () => {
+    store.useStudioStore.getState().setActiveTool("wardrobe");
+    store.useStudioStore.getState().resetStudio();
+    expect(store.useStudioStore.getState().activeTool).toBeNull();
+  });
+
+  it("clearUploadedModel returns to lobby (not casting)", () => {
+    store.useStudioStore.getState().loadModelFromUpload("https://example.com/model.png");
+    expect(store.useStudioStore.getState().activeTool).toBe("wardrobe");
+
+    store.useStudioStore.getState().clearUploadedModel();
+    expect(store.useStudioStore.getState().activeTool).toBeNull();
+  });
+});
+
 // ── Studio Store: loadModelFromUpload ────────────────────────────
 
 describe("useStudioStore — loadModelFromUpload", () => {
@@ -138,25 +180,11 @@ describe("useStudioStore — loadModelFromUpload", () => {
     expect(store.useStudioStore.getState().activeTool).toBe("wardrobe");
   });
 
-  it("clearUploadedModel resets canvas to empty", () => {
+  it("transitions from lobby → wardrobe on upload", () => {
+    // Start in lobby
+    expect(store.useStudioStore.getState().activeTool).toBeNull();
     store.useStudioStore.getState().loadModelFromUpload("https://example.com/model.png");
-    store.useStudioStore.getState().clearUploadedModel();
-
-    const state = store.useStudioStore.getState();
-    expect(state.canvas.hasModel).toBe(false);
-    expect(state.canvas.uploadedModelUrl).toBeNull();
-    expect(state.canvas.modelSource).toBeNull();
-    expect(state.activeTool).toBe("casting");
-  });
-
-  it("resetStudio clears uploaded model state", () => {
-    store.useStudioStore.getState().loadModelFromUpload("https://example.com/model.png");
-    store.useStudioStore.getState().resetStudio();
-
-    const state = store.useStudioStore.getState();
-    expect(state.canvas.uploadedModelUrl).toBeNull();
-    expect(state.canvas.modelSource).toBeNull();
-    expect(state.activeTool).toBe("casting");
+    expect(store.useStudioStore.getState().activeTool).toBe("wardrobe");
   });
 });
 

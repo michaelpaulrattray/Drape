@@ -3,10 +3,14 @@
  *
  * The studio is a single workspace where tools operate on a shared canvas (the model).
  * Tools slide in/out via the ToolRail; the canvas persists across tool switches.
+ * When activeTool is null, the lobby/landing state is shown.
  */
 
 /** Available tools in the studio tool rail */
 export type StudioTool = 'casting' | 'wardrobe' | 'export';
+
+/** Active tool state — null means lobby (no tool selected) */
+export type ActiveTool = StudioTool | null;
 
 /** How the model was loaded into the canvas */
 export type ModelSource = 'cast' | 'uploaded' | null;

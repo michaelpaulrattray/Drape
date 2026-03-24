@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { StudioTool, CanvasState, ModelSource } from '../types';
+import type { StudioTool, ActiveTool, CanvasState, ModelSource } from '../types';
 
 /** Default empty canvas — no model loaded */
 const DEFAULT_CANVAS: CanvasState = {
@@ -12,9 +12,9 @@ const DEFAULT_CANVAS: CanvasState = {
 };
 
 interface StudioState {
-  /** Currently active tool in the tool rail */
-  activeTool: StudioTool;
-  setActiveTool: (tool: StudioTool) => void;
+  /** Currently active tool — null = lobby/landing state */
+  activeTool: ActiveTool;
+  setActiveTool: (tool: ActiveTool) => void;
 
   /** Shared canvas state — derived from model assets */
   canvas: CanvasState;
@@ -38,7 +38,7 @@ interface StudioState {
 export const useStudioStore = create<StudioState>()(
   devtools(
     (set) => ({
-      activeTool: 'casting',
+      activeTool: null, // Start in lobby state
       setActiveTool: (tool) => set({ activeTool: tool }, false, 'setActiveTool'),
 
       canvas: { ...DEFAULT_CANVAS },
@@ -59,7 +59,7 @@ export const useStudioStore = create<StudioState>()(
               modelSource: 'uploaded' as ModelSource,
               uploadedModelUrl: imageUrl,
             },
-            activeTool: 'wardrobe',
+            activeTool: 'wardrobe' as StudioTool,
           },
           false,
           'loadModelFromUpload'
@@ -69,7 +69,7 @@ export const useStudioStore = create<StudioState>()(
         set(
           {
             canvas: { ...DEFAULT_CANVAS },
-            activeTool: 'casting',
+            activeTool: null, // Return to lobby
           },
           false,
           'clearUploadedModel'
@@ -88,7 +88,7 @@ export const useStudioStore = create<StudioState>()(
       resetStudio: () =>
         set(
           {
-            activeTool: 'casting',
+            activeTool: null, // Reset to lobby
             canvas: { ...DEFAULT_CANVAS },
             isRailCollapsed: false,
           },
