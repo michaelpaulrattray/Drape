@@ -4440,3 +4440,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add fit/silhouette examples to garmentAnalysis.ts single garment prompt
 - [x] Add impossible action guards to garmentAnalysis.ts SUGGESTED_ACTIONS
 - [x] Add head-to-toe ordering to garmentAnalysis.ts full look prompt
+- [x] Add "pantyhose" to INNER_LAYER_TAGS in server/wardrobe/utils.ts after "stockings"

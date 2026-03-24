@@ -190,7 +190,7 @@ export async function getImageAspectBucket(
 // ── Layer Priority Helpers ─────────────────────────────────────────────────
 
 const INNER_LAYER_TAGS = [
-  "tights", "leggings", "compression", "thermal", "stockings",
+  "tights", "leggings", "compression", "thermal", "stockings", "pantyhose",
   "undershirt", "camisole", "tank", "sports-bra", "bralette",
   "liner", "slip", "base-layer", "fitted", "skin-tight",
 ];
