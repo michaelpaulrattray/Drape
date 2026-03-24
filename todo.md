@@ -4203,3 +4203,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Bug report: Floating button component with modal (bottom-right)
 - [x] Bug report: Wire into App.tsx layout
 - [x] Fix upscale mutation error during export (INVALID_ARGUMENT from Gemini)
+- [x] Move bug report button from floating bottom-right to top nav bar next to avatar

@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import ProfileSettingsModal from "@/components/ProfileSettingsModal";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
+import { BugReportTrigger } from "@/components/BugReportButton";
 
 const LOGO_URL = "/drape-logo-white.svg";
 const DEFAULT_AVATAR = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lkbGgJQVyIVaJXfM.png";
@@ -77,6 +78,9 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
             </svg>
             <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a' }}>{creditsBalance}</span>
           </button>
+
+          {/* Bug Report */}
+          <BugReportTrigger />
 
           {/* User Avatar */}
           <button
