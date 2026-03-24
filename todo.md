@@ -4204,3 +4204,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Bug report: Wire into App.tsx layout
 - [x] Fix upscale mutation error during export (INVALID_ARGUMENT from Gemini)
 - [x] Move bug report button from floating bottom-right to top nav bar next to avatar
+- [ ] Disable Identity/Views/Export buttons in workspace when no model has been generated
+- [x] Make Identity/Views/Export labels in WarmEmptyState visually inert (no hover, not clickable)

@@ -82,7 +82,7 @@ export function WarmEmptyState({ canGenerate, onGenerate }: WarmEmptyStateProps)
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mt-6" style={{ color: '#ccc', fontSize: 10, fontWeight: 500 }}>
+        <div className="flex items-center gap-4 mt-6" style={{ color: '#ccc', fontSize: 10, fontWeight: 500, opacity: 0.5, pointerEvents: 'none', userSelect: 'none' }}>
           <span className="flex items-center gap-1.5">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
