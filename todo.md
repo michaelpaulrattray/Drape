@@ -4309,3 +4309,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Consistent orchestrated timing via useStudioTransition hook
 - [x] Wardrobe upload path: upload triggers lobby→wardrobe transition with panels forming around model
 - [x] Verify all tests still pass (1,253 total)
+
+## Bug Fix: Upload-to-wardrobe image loading delay
+- [x] Preload S3 image before triggering workspace transition
+- [x] Show upload progress in lobby (preview + progress bar + phase labels), only transition once image is cached
+- [x] Ensure panels don't assemble around an empty canvas (image preloaded before loadModelFromUpload)

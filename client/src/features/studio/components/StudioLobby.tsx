@@ -2,17 +2,31 @@
  * StudioLobby — Landing state shown when no tool is selected.
  *
  * Two clear paths: "Cast a Model" (opens casting tool) or
- * "Upload Your Own" (uploads photo → opens wardrobe tool).
- * Features staggered entrance animations and smooth hover states.
+ * "Upload Your Own" (uploads photo → preloads S3 image → opens wardrobe tool).
+ *
+ * The key UX detail: after S3 upload completes we preload the returned URL
+ * into an Image() object. Only once the browser has the pixels cached do we
+ * trigger loadModelFromUpload → workspace transition. This prevents the
+ * panels from assembling around an empty canvas.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Camera, ImagePlus, Loader2, X, Sparkles, Upload } from 'lucide-react';
+import { Camera, ImagePlus, Loader2, X, Sparkles, Upload, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStudioStore } from '../stores/useStudioStore';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+/** Upload progress phases for the UI */
+type UploadPhase = 'reading' | 'uploading' | 'preloading' | 'ready';
+
+const PHASE_LABELS: Record<UploadPhase, string> = {
+  reading: 'Reading file...',
+  uploading: 'Uploading to cloud...',
+  preloading: 'Preparing canvas...',
+  ready: 'Ready!',
+};
 
 interface StudioLobbyProps {
   onSelectCasting: () => void;
@@ -31,9 +45,21 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
 
   // Upload state
   const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadPhase, setUploadPhase] = useState<UploadPhase | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isUploading = uploadPhase !== null;
+
+  /** Preload an image URL into the browser cache */
+  const preloadImage = useCallback((url: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Failed to preload image'));
+      img.src = url;
+    });
+  }, []);
 
   const processFile = useCallback(async (file: File) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -44,8 +70,10 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
       toast.error('Image must be under 10 MB');
       return;
     }
-    setIsUploading(true);
+
     try {
+      // Phase 1: Read file
+      setUploadPhase('reading');
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
@@ -53,19 +81,32 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
         reader.readAsDataURL(file);
       });
       setPreview(base64);
+
+      // Phase 2: Upload to S3
+      setUploadPhase('uploading');
       const result = await uploadMutation.mutateAsync({
         imageBase64: base64,
         fileName: file.name,
       });
+
+      // Phase 3: Preload the S3 URL into browser cache
+      setUploadPhase('preloading');
+      await preloadImage(result.url);
+
+      // Phase 4: Brief "ready" flash, then transition
+      setUploadPhase('ready');
+      await new Promise((r) => setTimeout(r, 300));
+
+      // Now the image is cached — transition will be instant
       loadModelFromUpload(result.url);
-      toast.success('Model photo uploaded — opening Wardrobe');
+      toast.success('Model loaded — Wardrobe ready');
     } catch (err: any) {
       toast.error(err?.message || 'Upload failed');
       setPreview(null);
     } finally {
-      setIsUploading(false);
+      setUploadPhase(null);
     }
-  }, [uploadMutation, loadModelFromUpload]);
+  }, [uploadMutation, loadModelFromUpload, preloadImage]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -92,6 +133,13 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
     if (file) processFile(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [processFile]);
+
+  /** Progress bar width based on phase */
+  const progressWidth = uploadPhase === 'reading' ? '15%'
+    : uploadPhase === 'uploading' ? '55%'
+    : uploadPhase === 'preloading' ? '85%'
+    : uploadPhase === 'ready' ? '100%'
+    : '0%';
 
   return (
     <div
@@ -157,13 +205,15 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
         {/* Card 1: Cast a Model */}
         <button
           onClick={onSelectCasting}
+          disabled={isUploading}
           className="group relative flex-1 flex flex-col items-center justify-center rounded-2xl overflow-hidden"
           style={{
             minHeight: 280,
             background: '#1a1a1a',
-            opacity: mounted ? 1 : 0,
+            opacity: mounted ? (isUploading ? 0.4 : 1) : 0,
             transform: mounted ? 'translateY(0)' : 'translateY(20px)',
             transition: 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s',
+            cursor: isUploading ? 'not-allowed' : 'pointer',
           }}
         >
           {/* Subtle gradient overlay */}
@@ -209,11 +259,6 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
               </span>
             </div>
           </div>
-
-          {/* Hover lift */}
-          <style>{`
-            .group:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.25); transform: translateY(-2px) !important; }
-          `}</style>
         </button>
 
         {/* Card 2: Upload Your Own */}
@@ -231,29 +276,72 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
           style={{
             minHeight: 280,
             background: isDragging ? 'rgba(26,26,26,0.04)' : '#fff',
-            border: `2px dashed ${isDragging ? '#1a1a1a' : 'rgba(0,0,0,0.1)'}`,
+            border: `2px ${isUploading ? 'solid' : 'dashed'} ${isDragging ? '#1a1a1a' : isUploading ? '#1a1a1a' : 'rgba(0,0,0,0.1)'}`,
             opacity: mounted ? 1 : 0,
             transform: mounted ? 'translateY(0)' : 'translateY(20px)',
             transition: 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s',
           }}
         >
-          {/* Preview overlay */}
+          {/* Preview overlay — shows local base64 immediately */}
           {preview && (
             <img
               src={preview}
               alt="Preview"
-              className="absolute inset-0 w-full h-full object-cover rounded-2xl"
-              style={{ opacity: isUploading ? 0.4 : 0.9 }}
+              className="absolute inset-0 w-full h-full object-cover rounded-xl"
+              style={{
+                opacity: isUploading ? 0.3 : 0.9,
+                transition: 'opacity 0.3s ease',
+              }}
             />
           )}
 
-          {/* Uploading state */}
+          {/* Upload progress state */}
           {isUploading ? (
-            <div className="relative z-10 flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1a1a1a' }} />
-              <span style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>
-                Uploading...
+            <div className="relative z-10 flex flex-col items-center gap-4 px-6">
+              {/* Phase icon */}
+              {uploadPhase === 'ready' ? (
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{
+                    background: '#1a1a1a',
+                    animation: 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                >
+                  <Check className="w-5 h-5" style={{ color: '#fff' }} />
+                </div>
+              ) : (
+                <Loader2
+                  className="w-8 h-8 animate-spin"
+                  style={{ color: '#1a1a1a' }}
+                />
+              )}
+
+              {/* Phase label */}
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#1a1a1a',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {uploadPhase ? PHASE_LABELS[uploadPhase] : ''}
               </span>
+
+              {/* Progress bar */}
+              <div
+                className="w-40 h-1 rounded-full overflow-hidden"
+                style={{ background: 'rgba(0,0,0,0.08)' }}
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: progressWidth,
+                    background: uploadPhase === 'ready' ? '#22c55e' : '#1a1a1a',
+                    transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease',
+                  }}
+                />
+              </div>
             </div>
           ) : !preview ? (
             <div className="relative z-10 flex flex-col items-center px-6 py-10">
@@ -294,7 +382,7 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
               onClick={(e) => {
                 e.stopPropagation();
                 setPreview(null);
-                setIsUploading(false);
+                setUploadPhase(null);
               }}
               className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center z-10"
               style={{ background: 'rgba(0,0,0,0.5)' }}
@@ -326,6 +414,14 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
       >
         You can switch between tools anytime from the sidebar
       </p>
+
+      {/* Keyframe for check icon */}
+      <style>{`
+        @keyframes scaleIn {
+          from { transform: scale(0); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
