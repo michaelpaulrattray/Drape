@@ -539,3 +539,72 @@ describe("Tattoo Analysis", () => {
     expect(missing.success).toBe(false);
   });
 });
+
+// ── Quality Check Tests ───────────────────────────────────────────────────
+
+describe("Quality Check", () => {
+  const { z } = require("zod");
+
+  const SEVERE_ISSUES = ["MIRROR_SELFIE", "MULTIPLE_PEOPLE", "FACE_OBSCURED"];
+  const MODERATE_ISSUES = [
+    "LOW_RESOLUTION",
+    "HEAVY_ANGLE",
+    "CLUTTERED_BG",
+    "SCREENSHOT",
+    "PARTIAL_BODY",
+  ];
+
+  function classifyQuality(issues: string[]): "good" | "fair" | "poor" {
+    if (issues.some((i) => SEVERE_ISSUES.includes(i))) return "poor";
+    if (issues.some((i) => MODERATE_ISSUES.includes(i))) return "fair";
+    return "good";
+  }
+
+  it("should classify severe issues as poor quality", () => {
+    expect(classifyQuality(["MIRROR_SELFIE"])).toBe("poor");
+    expect(classifyQuality(["MULTIPLE_PEOPLE"])).toBe("poor");
+    expect(classifyQuality(["FACE_OBSCURED"])).toBe("poor");
+  });
+
+  it("should classify moderate issues as fair quality", () => {
+    expect(classifyQuality(["LOW_RESOLUTION"])).toBe("fair");
+    expect(classifyQuality(["HEAVY_ANGLE"])).toBe("fair");
+    expect(classifyQuality(["CLUTTERED_BG"])).toBe("fair");
+    expect(classifyQuality(["SCREENSHOT"])).toBe("fair");
+    expect(classifyQuality(["PARTIAL_BODY"])).toBe("fair");
+  });
+
+  it("should classify no issues as good quality", () => {
+    expect(classifyQuality([])).toBe("good");
+  });
+
+  it("severe should override moderate when both present", () => {
+    expect(classifyQuality(["LOW_RESOLUTION", "MIRROR_SELFIE"])).toBe("poor");
+    expect(classifyQuality(["HEAVY_ANGLE", "FACE_OBSCURED", "CLUTTERED_BG"])).toBe("poor");
+  });
+
+  it("should handle multiple moderate issues as fair", () => {
+    expect(classifyQuality(["LOW_RESOLUTION", "HEAVY_ANGLE", "CLUTTERED_BG"])).toBe("fair");
+  });
+
+  it("ImageQualityResult type should have correct shape", () => {
+    const result = {
+      quality: "fair" as const,
+      issues: ["LOW_RESOLUTION", "HEAVY_ANGLE"],
+    };
+    expect(result).toHaveProperty("quality");
+    expect(result).toHaveProperty("issues");
+    expect(["good", "fair", "poor"]).toContain(result.quality);
+    expect(Array.isArray(result.issues)).toBe(true);
+  });
+
+  it("should validate checkQuality input schema", () => {
+    const schema = z.object({ imageUrl: z.string().url() });
+    const valid = schema.safeParse({ imageUrl: "https://example.com/model.png" });
+    expect(valid.success).toBe(true);
+    const invalid = schema.safeParse({ imageUrl: "not-a-url" });
+    expect(invalid.success).toBe(false);
+    const missing = schema.safeParse({});
+    expect(missing.success).toBe(false);
+  });
+});

@@ -7,7 +7,7 @@
  *   decompose.analyze / import
  *   sessions.create / get / list / update / delete
  *   outfits.list / save / delete
- *   model.listMinted / upload / analyzeTattoos
+ *   model.listMinted / upload / analyzeTattoos / checkQuality
  */
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
@@ -33,6 +33,7 @@ import { generateVirtualTryOn, incrementalComposite } from "../wardrobe/vtoGener
 import { refineGarment } from "../wardrobe/garmentRefinement";
 import { decomposeOutfit } from "../wardrobe/outfitDecomposition";
 import { analyzeTattoos } from "../wardrobe/tattooAnalysis";
+import { checkImageQuality } from "../wardrobe/qualityCheck";
 import type { GarmentForVTO } from "../wardrobe/utils";
 
 const log = createModuleLogger("routes/wardrobe");
@@ -672,6 +673,15 @@ const modelRouter = router({
       throwIfRateLimited(ctx.user.id);
       log.info(`Tattoo analysis requested for user ${ctx.user.id}`);
       return analyzeTattoos(input.imageUrl);
+    }),
+
+  /** Check model photo quality before VTO — returns quality rating + issues */
+  checkQuality: protectedProcedure
+    .input(z.object({ imageUrl: z.string().url() }))
+    .mutation(async ({ ctx, input }) => {
+      throwIfRateLimited(ctx.user.id);
+      log.info(`Quality check requested for user ${ctx.user.id}`);
+      return checkImageQuality(input.imageUrl);
     }),
 });
 

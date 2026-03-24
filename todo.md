@@ -4378,3 +4378,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update vtoGeneration.ts to import TattooMap from tattooAnalysis
 - [x] Add wardrobe.model.analyzeTattoos tRPC endpoint
 - [x] Add tattoo analysis tests
+- [x] Create server/wardrobe/qualityCheck.ts service (checkImageQuality + ImageQualityResult type)
+- [x] Update barrel export (index.ts) to add qualityCheck exports
+- [x] Add wardrobe.model.checkQuality tRPC endpoint
+- [x] Add quality check tests

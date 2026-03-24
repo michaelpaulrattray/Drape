@@ -52,6 +52,12 @@ export {
   type TattooMap,
 } from "./tattooAnalysis";
 
+// Service 6: Quality Check
+export {
+  checkImageQuality,
+  type ImageQualityResult,
+} from "./qualityCheck";
+
 // Shared Utilities
 export {
   type GarmentForVTO,
