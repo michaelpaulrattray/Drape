@@ -313,12 +313,15 @@ export function useCastingGeneration({
         throw new Error('No asset found for current view');
       }
       
+      // Read referenceImage fresh from store to avoid stale closure
+      const freshRefImage = useCastingFormStore.getState().prefs.referenceImage;
+      
       const result = await iterateMutation.mutateAsync({
         modelId: currentModelId,
         feedback: prompt,
         assetId: currentAsset.id,
         maskBase64,
-        referenceImage: prefs.referenceImage || undefined,
+        referenceImage: freshRefImage || undefined,
       });
 
       if (result.success && result.imageUrl) {
@@ -357,8 +360,10 @@ export function useCastingGeneration({
         refetchCreditsWithWarning();
         
         // Fire-and-forget: fetch suggestions — re-analyze reference if present (matches SOT)
-        if (prefs.referenceImage) {
-          handleAnalyzeReference(prefs.referenceImage)
+        // Read fresh from store to avoid stale closure
+        const latestRefImage = useCastingFormStore.getState().prefs.referenceImage;
+        if (latestRefImage) {
+          handleAnalyzeReference(latestRefImage)
             .then((attrs) => {
               if (attrs.length > 0) setSuggestions(attrs.map((a: string) => a));
               else fetchSuggestions(updatedPrompt, result.imageUrl);

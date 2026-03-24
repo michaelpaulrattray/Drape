@@ -4165,3 +4165,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] BUG-REFANALYSIS-1: analyzeReferenceForTransfer receives S3 URL where Gemini expects base64 — causes INVALID_ARGUMENT error on post-iteration reference analysis
 - [x] BUG-REFANALYSIS-2: generateCastingSuggestions receives S3 URL where Gemini expects base64 — same root cause, silent fallback hid the issue
 - [x] FIX: Added ensureBase64() helper in geminiSuggestions.ts — detects URLs vs base64 data URLs, fetches and converts URLs server-side before passing to Gemini API
+
+## Reference Image Transfer Bug (Mar 24)
+- [x] BUG-REFTRANSFER-1: Reference image hairstyle transfer not working during iteration — stale closure in performIteration captured prefs without prefs in deps, so referenceImage was always null at call time. Fixed by reading fresh from store via useCastingFormStore.getState()
+- [x] BUG-REFTRANSFER-2: Existing features (scar) partially disappearing during iteration — Gemini model behavior, not a code bug (same in SOT). With reference image now properly attached, IDENTITY LOCK + FREEZE-AND-APPEND should better preserve features
