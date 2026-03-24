@@ -4150,3 +4150,6 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Reference Image Bug (Mar 24)
 - [x] BUG-REF-1: Fixed reference image not passed during iteration — added referenceImage to iterate Zod schema, client sends prefs.referenceImage, server passes as additionalReference to iterateModel. Also added post-iteration reference re-analysis for better suggestions (matches SOT)
+
+## Tainted Canvas Bug (Mar 24)
+- [x] BUG-CANVAS-1: Fixed tainted canvas — load fresh Image() with crossOrigin='anonymous' + cache-buster before drawing to canvas. Also fixed RefAnalysis sending S3 URL instead of base64 to Gemini

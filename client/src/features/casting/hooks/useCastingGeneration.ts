@@ -358,7 +358,7 @@ export function useCastingGeneration({
         
         // Fire-and-forget: fetch suggestions — re-analyze reference if present (matches SOT)
         if (prefs.referenceImage) {
-          handleAnalyzeReference(prefs.referenceImage, result.imageUrl)
+          handleAnalyzeReference(prefs.referenceImage)
             .then((attrs) => {
               if (attrs.length > 0) setSuggestions(attrs.map((a: string) => a));
               else fetchSuggestions(updatedPrompt, result.imageUrl);

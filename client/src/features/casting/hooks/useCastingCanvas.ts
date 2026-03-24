@@ -116,9 +116,20 @@ export function useCastingCanvas(
   const getGuideOverlayDataUrl = useCallback(async (): Promise<string | undefined> => {
     if (maskPaths.length === 0 || !imageRef.current) return undefined;
     
-    const img = imageRef.current;
+    const origImg = imageRef.current;
     
     try {
+      // Load a fresh copy with crossOrigin to avoid tainted canvas from S3 images
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const freshImg = new Image();
+        freshImg.crossOrigin = 'anonymous';
+        freshImg.onload = () => resolve(freshImg);
+        freshImg.onerror = reject;
+        // Append cache-buster to force CORS preflight on the fresh request
+        const src = origImg.src;
+        freshImg.src = src + (src.includes('?') ? '&' : '?') + '_cors=1';
+      });
+
       const cvs = document.createElement('canvas');
       cvs.width = img.naturalWidth;
       cvs.height = img.naturalHeight;
