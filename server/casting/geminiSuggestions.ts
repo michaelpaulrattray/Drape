@@ -26,6 +26,23 @@ import { withTextQueue } from "./geminiQueue";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("casting/geminiSuggestions");
 
+/**
+ * Convert a URL or base64 data URL to a proper base64 data URL.
+ * If already base64, returns as-is. If URL, fetches and converts.
+ */
+async function ensureBase64(input: string): Promise<string> {
+  if (!input.startsWith('http')) return input;
+  try {
+    const response = await fetch(input);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const contentType = response.headers.get('content-type') || 'image/png';
+    return `data:${contentType};base64,${buffer.toString('base64')}`;
+  } catch (e) {
+    log.warn({ url: input.substring(0, 80) }, '[ensureBase64] Failed to fetch URL');
+    throw e;
+  }
+}
+
 // ============================================================================
 // JSON PARSING HELPERS
 // ============================================================================
@@ -128,8 +145,9 @@ Return ONLY a JSON array of exactly 6 strings.`;
 
   if (generatedImageBase64) {
     try {
-      const mimeType = extractMimeType(generatedImageBase64);
-      const cleanBase64 = extractBase64Data(generatedImageBase64);
+      const imageData = await ensureBase64(generatedImageBase64);
+      const mimeType = extractMimeType(imageData);
+      const cleanBase64 = extractBase64Data(imageData);
       if (!cleanBase64) throw new Error("Empty data");
       parts.push({ inlineData: { mimeType, data: cleanBase64 } });
     } catch (e) {
@@ -196,8 +214,9 @@ export const analyzeReferenceForTransfer = async (
 
   // Reference image first — it's the subject of analysis
   try {
-    const mimeType = extractMimeType(referenceImageBase64);
-    const cleanBase64 = extractBase64Data(referenceImageBase64);
+    const refData = await ensureBase64(referenceImageBase64);
+    const mimeType = extractMimeType(refData);
+    const cleanBase64 = extractBase64Data(refData);
     if (!cleanBase64) throw new Error("Empty data");
     parts.push({ inlineData: { mimeType, data: cleanBase64 } });
   } catch {
@@ -207,8 +226,9 @@ export const analyzeReferenceForTransfer = async (
   // Current model image for comparison (optional but helps differentiation)
   if (currentModelImageBase64) {
     try {
-      const mimeType = extractMimeType(currentModelImageBase64);
-      const cleanBase64 = extractBase64Data(currentModelImageBase64);
+      const modelData = await ensureBase64(currentModelImageBase64);
+      const mimeType = extractMimeType(modelData);
+      const cleanBase64 = extractBase64Data(modelData);
       if (cleanBase64) {
         parts.push({ inlineData: { mimeType, data: cleanBase64 } });
       }

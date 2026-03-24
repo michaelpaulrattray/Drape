@@ -4160,3 +4160,8 @@ The entry and configuration files are properly set up with several enhancements 
 ## Body Type Hint Enhancement (Mar 24)
 - [x] ENH-1: Added headshot hint for "Slim" — "defined jawline, lean face with visible bone structure, slender neck, and narrow shoulders"
 - [x] ENH-2: Added fallback hint for "Model Standard" (not a selectable option, just the fallback when bodyType is undefined) — "lean proportions, defined bone structure, slender neck"
+
+## RefAnalysis INVALID_ARGUMENT Bug (Mar 24)
+- [x] BUG-REFANALYSIS-1: analyzeReferenceForTransfer receives S3 URL where Gemini expects base64 — causes INVALID_ARGUMENT error on post-iteration reference analysis
+- [x] BUG-REFANALYSIS-2: generateCastingSuggestions receives S3 URL where Gemini expects base64 — same root cause, silent fallback hid the issue
+- [x] FIX: Added ensureBase64() helper in geminiSuggestions.ts — detects URLs vs base64 data URLs, fetches and converts URLs server-side before passing to Gemini API
