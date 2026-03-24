@@ -9,6 +9,9 @@ const DEFAULT_CANVAS: CanvasState = {
   hasAllViews: false,
   modelSource: null,
   uploadedModelUrl: null,
+  castModelId: null,
+  castMasterPrompt: null,
+  castFullBodyUrl: null,
 };
 
 interface StudioState {
@@ -22,6 +25,9 @@ interface StudioState {
 
   /** Load a model from an uploaded image URL */
   loadModelFromUpload: (imageUrl: string) => void;
+
+  /** Load a model from a previous cast (minted model from gallery) */
+  loadModelFromCast: (modelId: number, fullBodyUrl: string, masterPrompt: string) => void;
 
   /** Clear the uploaded model and reset to empty canvas */
   clearUploadedModel: () => void;
@@ -58,11 +64,33 @@ export const useStudioStore = create<StudioState>()(
               hasAllViews: false,
               modelSource: 'uploaded' as ModelSource,
               uploadedModelUrl: imageUrl,
+              castModelId: null,
+              castMasterPrompt: null,
+              castFullBodyUrl: null,
             },
             activeTool: 'wardrobe' as StudioTool,
           },
           false,
           'loadModelFromUpload'
+        ),
+
+      loadModelFromCast: (modelId, fullBodyUrl, masterPrompt) =>
+        set(
+          {
+            canvas: {
+              hasModel: true,
+              hasFullBody: true,
+              hasAllViews: false,
+              modelSource: 'cast' as ModelSource,
+              uploadedModelUrl: null,
+              castModelId: modelId,
+              castMasterPrompt: masterPrompt,
+              castFullBodyUrl: fullBodyUrl,
+            },
+            activeTool: 'wardrobe' as StudioTool,
+          },
+          false,
+          'loadModelFromCast'
         ),
 
       clearUploadedModel: () =>

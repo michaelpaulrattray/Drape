@@ -265,12 +265,13 @@ export default function DrapeStudio() {
   }, [prefs, setPrefs]);
 
   // Derive full-body URL for wardrobe VTO base image
-  // Priority: uploaded model URL > casting full body asset
+  // Priority: uploaded model URL > gallery cast URL > casting full body asset
   const fullBodyUrl = useMemo(() => {
     if (canvas.uploadedModelUrl) return canvas.uploadedModelUrl;
+    if (canvas.castFullBodyUrl) return canvas.castFullBodyUrl;
     const fullBodyAsset = currentAssets.find((a) => a.viewType === 'fullBody' && a.storageUrl);
     return fullBodyAsset?.storageUrl || null;
-  }, [canvas.uploadedModelUrl, currentAssets]);
+  }, [canvas.uploadedModelUrl, canvas.castFullBodyUrl, currentAssets]);
 
   // Form completion progress
   const formProgress = useMemo(() => {

@@ -1,24 +1,25 @@
 /**
  * StudioLobby — Landing state shown when no tool is selected.
  *
- * Two clear paths: "Cast a Model" (opens casting tool) or
- * "Upload Your Own" (uploads photo → preloads S3 image → opens wardrobe tool).
+ * Three paths:
+ *   1. "My Models" gallery — load a previously exported/minted model into wardrobe
+ *   2. "Upload Your Own" — upload a full-body photo → wardrobe
+ *   3. "Cast a Model" — open casting tool to generate a new model
  *
- * The key UX detail: after S3 upload completes we preload the returned URL
- * into an Image() object. Only once the browser has the pixels cached do we
- * trigger loadModelFromUpload → workspace transition. This prevents the
- * panels from assembling around an empty canvas.
+ * After S3 upload, the image is preloaded into the browser cache before
+ * triggering the workspace transition to prevent panels assembling around
+ * an empty canvas.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Camera, ImagePlus, Loader2, X, Sparkles, Upload, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStudioStore } from '../stores/useStudioStore';
+import { ModelGallery, type MintedModel } from './ModelGallery';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Upload progress phases for the UI */
 type UploadPhase = 'reading' | 'uploading' | 'preloading' | 'ready';
 
 const PHASE_LABELS: Record<UploadPhase, string> = {
@@ -34,9 +35,10 @@ interface StudioLobbyProps {
 
 export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
   const loadModelFromUpload = useStudioStore((s) => s.loadModelFromUpload);
+  const loadModelFromCast = useStudioStore((s) => s.loadModelFromCast);
   const uploadMutation = trpc.wardrobe.model.upload.useMutation();
 
-  // Entrance animation state
+  // Entrance animation
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setMounted(true));
@@ -48,10 +50,11 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
   const [uploadPhase, setUploadPhase] = useState<UploadPhase | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const isUploading = uploadPhase !== null;
 
-  /** Preload an image URL into the browser cache */
+  // Loading state for gallery model selection
+  const [loadingModelId, setLoadingModelId] = useState<number | null>(null);
+
   const preloadImage = useCallback((url: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -60,6 +63,24 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
       img.src = url;
     });
   }, []);
+
+  /** Handle selecting a minted model from the gallery */
+  const handleSelectModel = useCallback(async (model: MintedModel) => {
+    if (isUploading || loadingModelId) return;
+
+    try {
+      setLoadingModelId(model.id);
+      // Preload the thumbnail into browser cache
+      await preloadImage(model.thumbnailUrl);
+      // Load into wardrobe with identity data
+      loadModelFromCast(model.id, model.thumbnailUrl, model.masterPrompt);
+      toast.success(`${model.name || 'Model'} loaded — Wardrobe ready`);
+    } catch {
+      toast.error('Failed to load model');
+    } finally {
+      setLoadingModelId(null);
+    }
+  }, [isUploading, loadingModelId, preloadImage, loadModelFromCast]);
 
   const processFile = useCallback(async (file: File) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -72,7 +93,6 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
     }
 
     try {
-      // Phase 1: Read file
       setUploadPhase('reading');
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -82,22 +102,18 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
       });
       setPreview(base64);
 
-      // Phase 2: Upload to S3
       setUploadPhase('uploading');
       const result = await uploadMutation.mutateAsync({
         imageBase64: base64,
         fileName: file.name,
       });
 
-      // Phase 3: Preload the S3 URL into browser cache
       setUploadPhase('preloading');
       await preloadImage(result.url);
 
-      // Phase 4: Brief "ready" flash, then transition
       setUploadPhase('ready');
       await new Promise((r) => setTimeout(r, 300));
 
-      // Now the image is cached — transition will be instant
       loadModelFromUpload(result.url);
       toast.success('Model loaded — Wardrobe ready');
     } catch (err: any) {
@@ -134,12 +150,13 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [processFile]);
 
-  /** Progress bar width based on phase */
   const progressWidth = uploadPhase === 'reading' ? '15%'
     : uploadPhase === 'uploading' ? '55%'
     : uploadPhase === 'preloading' ? '85%'
     : uploadPhase === 'ready' ? '100%'
     : '0%';
+
+  const isBusy = isUploading || !!loadingModelId;
 
   return (
     <div
@@ -166,7 +183,7 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
 
       {/* Title */}
       <div
-        className="text-center mb-10 sm:mb-14"
+        className="text-center mb-8 sm:mb-10"
         style={{
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(12px)',
@@ -189,12 +206,25 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
             fontSize: 13,
             color: '#999',
             marginTop: 8,
-            maxWidth: 360,
+            maxWidth: 400,
             lineHeight: 1.5,
           }}
         >
-          Generate an AI model from scratch, or upload your own photo to dress.
+          Pick a saved model, upload your own photo, or generate one from scratch.
         </p>
+      </div>
+
+      {/* My Models Gallery — only renders if user has minted models */}
+      <div
+        className="w-full mb-8"
+        style={{
+          maxWidth: 680,
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(12px)',
+          transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s',
+        }}
+      >
+        <ModelGallery onSelectModel={handleSelectModel} />
       </div>
 
       {/* Two CTA cards */}
@@ -202,87 +232,28 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
         className="flex flex-col sm:flex-row items-stretch gap-5 sm:gap-6 w-full"
         style={{ maxWidth: 680 }}
       >
-        {/* Card 1: Cast a Model */}
-        <button
-          onClick={onSelectCasting}
-          disabled={isUploading}
-          className="group relative flex-1 flex flex-col items-center justify-center rounded-2xl overflow-hidden"
-          style={{
-            minHeight: 280,
-            background: '#1a1a1a',
-            opacity: mounted ? (isUploading ? 0.4 : 1) : 0,
-            transform: mounted ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s',
-            cursor: isUploading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {/* Subtle gradient overlay */}
-          <div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            style={{
-              background: 'radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.08) 0%, transparent 70%)',
-            }}
-          />
-
-          {/* Content */}
-          <div className="relative z-10 flex flex-col items-center px-6 py-10">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
-              style={{ background: 'rgba(255,255,255,0.1)' }}
-            >
-              <Camera className="w-7 h-7" style={{ color: '#fff' }} />
-            </div>
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>
-              Cast a Model
-            </span>
-            <span
-              style={{
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.45)',
-                marginTop: 6,
-                textAlign: 'center',
-                lineHeight: 1.5,
-                maxWidth: 200,
-              }}
-            >
-              AI-generate a model from your casting brief
-            </span>
-
-            {/* Sparkle badge */}
-            <div
-              className="flex items-center gap-1.5 mt-5 px-3 py-1.5 rounded-full transition-all duration-300 group-hover:scale-105"
-              style={{ background: 'rgba(255,255,255,0.08)' }}
-            >
-              <Sparkles className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.5)' }} />
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
-                AI-Powered
-              </span>
-            </div>
-          </div>
-        </button>
-
-        {/* Card 2: Upload Your Own */}
+        {/* Card 1: Upload Your Own */}
         <div
           className="group relative flex-1 flex flex-col items-center justify-center rounded-2xl overflow-hidden cursor-pointer"
           role="button"
           tabIndex={0}
-          onClick={() => !isUploading && fileInputRef.current?.click()}
+          onClick={() => !isBusy && fileInputRef.current?.click()}
           onKeyDown={(e) => {
-            if ((e.key === 'Enter' || e.key === ' ') && !isUploading) {
+            if ((e.key === 'Enter' || e.key === ' ') && !isBusy) {
               e.preventDefault();
               fileInputRef.current?.click();
             }
           }}
           style={{
-            minHeight: 280,
+            minHeight: 240,
             background: isDragging ? 'rgba(26,26,26,0.04)' : '#fff',
             border: `2px ${isUploading ? 'solid' : 'dashed'} ${isDragging ? '#1a1a1a' : isUploading ? '#1a1a1a' : 'rgba(0,0,0,0.1)'}`,
             opacity: mounted ? 1 : 0,
             transform: mounted ? 'translateY(0)' : 'translateY(20px)',
-            transition: 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s',
+            transition: 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s',
           }}
         >
-          {/* Preview overlay — shows local base64 immediately */}
+          {/* Preview overlay */}
           {preview && (
             <img
               src={preview}
@@ -295,10 +266,9 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
             />
           )}
 
-          {/* Upload progress state */}
+          {/* Upload progress */}
           {isUploading ? (
             <div className="relative z-10 flex flex-col items-center gap-4 px-6">
-              {/* Phase icon */}
               {uploadPhase === 'ready' ? (
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center"
@@ -310,29 +280,12 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
                   <Check className="w-5 h-5" style={{ color: '#fff' }} />
                 </div>
               ) : (
-                <Loader2
-                  className="w-8 h-8 animate-spin"
-                  style={{ color: '#1a1a1a' }}
-                />
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1a1a1a' }} />
               )}
-
-              {/* Phase label */}
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: '#1a1a1a',
-                  transition: 'all 0.2s ease',
-                }}
-              >
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
                 {uploadPhase ? PHASE_LABELS[uploadPhase] : ''}
               </span>
-
-              {/* Progress bar */}
-              <div
-                className="w-40 h-1 rounded-full overflow-hidden"
-                style={{ background: 'rgba(0,0,0,0.08)' }}
-              >
+              <div className="w-40 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -344,36 +297,29 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
               </div>
             </div>
           ) : !preview ? (
-            <div className="relative z-10 flex flex-col items-center px-6 py-10">
+            <div className="relative z-10 flex flex-col items-center px-6 py-8">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
                 style={{ background: '#f5f3ef' }}
               >
-                <ImagePlus className="w-7 h-7" style={{ color: '#999' }} />
+                <ImagePlus className="w-6 h-6" style={{ color: '#999' }} />
               </div>
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a' }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
                 Upload Your Own
               </span>
               <span
                 style={{
                   fontSize: 12,
                   color: '#999',
-                  marginTop: 6,
+                  marginTop: 5,
                   textAlign: 'center',
                   lineHeight: 1.5,
-                  maxWidth: 220,
+                  maxWidth: 200,
                 }}
               >
                 Drag & drop or click to upload a full-body photo
               </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: '#ccc',
-                  marginTop: 10,
-                  letterSpacing: '0.02em',
-                }}
-              >
+              <span style={{ fontSize: 10, color: '#ccc', marginTop: 8, letterSpacing: '0.02em' }}>
                 JPEG, PNG, WebP · Max 10 MB
               </span>
             </div>
@@ -399,6 +345,60 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
             className="hidden"
           />
         </div>
+
+        {/* Card 2: Cast a Model */}
+        <button
+          onClick={onSelectCasting}
+          disabled={isBusy}
+          className="group relative flex-1 flex flex-col items-center justify-center rounded-2xl overflow-hidden"
+          style={{
+            minHeight: 240,
+            background: '#1a1a1a',
+            opacity: mounted ? (isBusy ? 0.4 : 1) : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s',
+            cursor: isBusy ? 'not-allowed' : 'pointer',
+          }}
+        >
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            style={{
+              background: 'radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.08) 0%, transparent 70%)',
+            }}
+          />
+          <div className="relative z-10 flex flex-col items-center px-6 py-8">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
+              style={{ background: 'rgba(255,255,255,0.1)' }}
+            >
+              <Camera className="w-6 h-6" style={{ color: '#fff' }} />
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>
+              Cast a Model
+            </span>
+            <span
+              style={{
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.45)',
+                marginTop: 5,
+                textAlign: 'center',
+                lineHeight: 1.5,
+                maxWidth: 200,
+              }}
+            >
+              AI-generate a model from your casting brief
+            </span>
+            <div
+              className="flex items-center gap-1.5 mt-5 px-3 py-1.5 rounded-full transition-all duration-300 group-hover:scale-105"
+              style={{ background: 'rgba(255,255,255,0.08)' }}
+            >
+              <Sparkles className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
+                AI-Powered
+              </span>
+            </div>
+          </div>
+        </button>
       </div>
 
       {/* Bottom hint */}
@@ -415,7 +415,6 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
         You can switch between tools anytime from the sidebar
       </p>
 
-      {/* Keyframe for check icon */}
       <style>{`
         @keyframes scaleIn {
           from { transform: scale(0); opacity: 0; }

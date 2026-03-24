@@ -4321,3 +4321,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire confirmation into ToolRail — intercept click when needsConfirm is true
 - [x] On confirm: clearUploadedModel() then setActiveTool(pendingTool)
 - [x] Write/update tests for new tool availability and confirmation flow (1,255 total)
+
+## Feature: My Models Gallery in Studio Lobby
+- [x] Create server query: wardrobe.model.listMinted (active/minted models with frontFull thumbnail)
+- [x] Add loadModelFromCast action to useStudioStore (modelId, fullBodyUrl, masterPrompt)
+- [x] Create ModelGallery component (horizontal scroll, model cards with thumbnails)
+- [x] Wire ModelGallery into StudioLobby (three paths: My Models, Upload, Cast New)
+- [x] Write tests for new query, store action, and gallery rendering (14 tests)
+- [x] Verify all tests pass (1,269 total)

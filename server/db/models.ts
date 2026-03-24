@@ -2,7 +2,7 @@
  * Models Domain — model CRUD, minting, and model asset management.
  */
 
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import {
   models,
   modelAssets,
@@ -157,6 +157,69 @@ export async function deleteModel(
     log.error({ err: error }, "[Database] Failed to delete model:");
     return { success: false, error: "Failed to delete model" };
   }
+}
+
+/**
+ * Get user's minted (exported) models with their frontFull thumbnail.
+ * Only returns models with status 'active' that have a frontFull asset.
+ * Used by the studio lobby "My Models" gallery.
+ */
+export async function getUserMintedModelsWithThumbnail(
+  userId: number,
+  limit: number = 20
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get active (minted) models for this user
+  const userModels = await db
+    .select({
+      id: models.id,
+      name: models.name,
+      agencyId: models.agencyId,
+      masterPrompt: models.masterPrompt,
+      mintedAt: models.mintedAt,
+      createdAt: models.createdAt,
+    })
+    .from(models)
+    .where(and(eq(models.userId, userId), eq(models.status, "active")))
+    .orderBy(desc(models.mintedAt))
+    .limit(limit);
+
+  if (userModels.length === 0) return [];
+
+  // Get frontFull assets for these models
+  const modelIds = userModels.map((m) => m.id);
+  const assets = await db
+    .select({
+      modelId: modelAssets.modelId,
+      storageUrl: modelAssets.storageUrl,
+      viewType: modelAssets.viewType,
+    })
+    .from(modelAssets)
+    .where(inArray(modelAssets.modelId, modelIds));
+
+  // Build a map of modelId -> frontFull URL (prefer frontFull, fallback to frontClose)
+  const thumbMap = new Map<number, string>();
+  for (const asset of assets) {
+    if (asset.viewType === "frontFull") {
+      thumbMap.set(asset.modelId, asset.storageUrl);
+    } else if (asset.viewType === "frontClose" && !thumbMap.has(asset.modelId)) {
+      thumbMap.set(asset.modelId, asset.storageUrl);
+    }
+  }
+
+  // Only return models that have at least a thumbnail
+  return userModels
+    .filter((m) => thumbMap.has(m.id))
+    .map((m) => ({
+      id: m.id,
+      name: m.name,
+      agencyId: m.agencyId,
+      masterPrompt: m.masterPrompt,
+      thumbnailUrl: thumbMap.get(m.id)!,
+      mintedAt: m.mintedAt,
+    }));
 }
 
 // ============ Model Assets ============

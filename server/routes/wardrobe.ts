@@ -23,6 +23,7 @@ import {
   createSession, getSessionById, getUserSessions, updateSession, deleteSession,
   createGeneration,
 } from "../db";
+import { getUserMintedModelsWithThumbnail } from "../db/models";
 import { storagePut } from "../storage";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
@@ -595,6 +596,13 @@ const outfitRouter = router({
 // ── Model Upload Procedure ────────────────────────────────────────────────
 
 const modelRouter = router({
+  /** List user's exported/minted models with thumbnails for the lobby gallery */
+  listMinted: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      return await getUserMintedModelsWithThumbnail(ctx.user.id, input?.limit ?? 20);
+    }),
+
   upload: protectedProcedure
     .input(z.object({
       imageBase64: z.string().max(10_000_000),

@@ -27,6 +27,12 @@ export interface CanvasState {
   modelSource: ModelSource;
   /** URL of an uploaded model image (when source === 'uploaded') */
   uploadedModelUrl: string | null;
+  /** DB model ID when loaded from a previous cast (for cross-app retrieval) */
+  castModelId: number | null;
+  /** Master prompt when loaded from a previous cast (identity reinforcement) */
+  castMasterPrompt: string | null;
+  /** Full body URL when loaded from a previous cast */
+  castFullBodyUrl: string | null;
 }
 
 /** Tool availability derived from canvas state */
