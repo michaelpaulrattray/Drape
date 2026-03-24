@@ -4197,3 +4197,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Improvement #5: Deduplicate suggestion fallback arrays into shared constant
 - [x] Remove quality selector from export modal, default all exports to 2K
 - [x] Investigate and fix export errors from logs
+- [x] Remove non-functional 1K/2K quality toggle from ControlPanel sidebar

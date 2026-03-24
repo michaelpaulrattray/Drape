@@ -6,7 +6,7 @@ import HairColorWheel from "./components/HairColorWheel";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { generateRandomPreferences } from "./castingHelpers";
-import { ImageResolution, type GenerationState, type GeneratedAsset } from "@/features/casting/constants";
+import { type GenerationState, type GeneratedAsset } from "@/features/casting/constants";
 import { HAIR_STYLE_CONFIG, HAIR_TUCKS, HAIR_FADES } from "./hairStyleConfig";
 import {
   FieldLabel, ChipRow, OptionGrid, WarmSelectControl, EyeGrid,
@@ -60,7 +60,7 @@ export function ControlPanel({
   const updatePref = useCastingFormStore((s) => s.updatePref);
   const updatePrefs = useCastingFormStore((s) => s.updatePrefs);
   const setPrefs = useCastingFormStore((s) => s.setPrefs);
-  const { showMobilePanel, resolution, setResolution } = useCastingUIStore();
+  const { showMobilePanel } = useCastingUIStore();
 
   const [showAdvancedFace, setShowAdvancedFace] = useState(false);
   const [showAdvancedHair, setShowAdvancedHair] = useState(false);
@@ -337,18 +337,6 @@ export function ControlPanel({
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-3">
-          <span style={{ fontSize: 9, fontWeight: 500, color: '#999' }}>Quality</span>
-          <div className="flex p-0.5 rounded-lg" style={{ background: '#f5f3ef', border: '1px solid rgba(0,0,0,0.04)' }}>
-            {[ImageResolution.STD, ImageResolution.HIGH].map(r => (
-              <button key={r} onClick={() => setResolution(r)}
-                className="px-3 py-1 rounded-md transition-all"
-                style={{ fontSize: 9, fontWeight: 600, background: resolution === r ? '#1a1a1a' : 'transparent', color: resolution === r ? '#fff' : '#999' }}>
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <button
           data-debug-generate
