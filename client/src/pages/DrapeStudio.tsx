@@ -80,6 +80,8 @@ function WardrobeWorkspaceSection({
           generatingMessage={gen.generatingMessage}
           errorMessage={gen.errorMessage}
           onClearError={gen.clearError}
+          cooldownSeconds={gen.cooldownSeconds}
+          onRetry={gen.handleRetry}
           currentResult={gen.currentResult}
           onGenerate={gen.generate}
           onUndo={gen.undo}

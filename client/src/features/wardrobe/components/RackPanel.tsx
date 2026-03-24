@@ -195,6 +195,12 @@ export function RackPanel() {
                 }
                 isSelected={selectedGarmentIds.has(garment.id)}
                 isProcessing={garment.status === "processing"}
+                slotType={garment.slotType as import("../types").GarmentSlotType}
+                suggestedActions={
+                  Array.isArray(garment.suggestedActions)
+                    ? (garment.suggestedActions as string[])
+                    : []
+                }
                 onToggleSelect={toggleSelection}
                 onRemove={removeGarment}
               />

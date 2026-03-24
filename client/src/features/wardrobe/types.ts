@@ -89,3 +89,19 @@ export interface DecomposedGarment {
   boundingBox: { x: number; y: number; w: number; h: number };
   confidence: number;
 }
+
+/** Detected item from VTO result scanning (bounding box overlay) */
+export interface DetectedItem {
+  id: string;
+  label: string;
+  category: GarmentSlotType;
+  box_2d: [number, number, number, number];
+  confidence: number;
+}
+
+/** Per-garment overlay style note (from clicking garment on result image) */
+export interface OverlayStyleNote {
+  garmentId: number;
+  note: string;
+  dirty: boolean;
+}

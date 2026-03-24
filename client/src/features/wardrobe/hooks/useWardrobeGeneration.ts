@@ -2,12 +2,16 @@
  * useWardrobeGeneration — Hook for VTO generation, undo/redo, and tattoo analysis.
  *
  * Wraps tRPC mutations for VTO generation (full, incremental, refine),
- * manages session lifecycle, and delegates history to useWardrobeStore.
+ * manages session lifecycle, cooldown timer, retry mechanism, overlay
+ * detection, and delegates history to useWardrobeStore.
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
+
+/** Cooldown duration in seconds after each generation */
+const COOLDOWN_DURATION = 5;
 
 /** Params required to initialise the generation hook */
 interface UseWardrobeGenerationParams {
@@ -15,6 +19,12 @@ interface UseWardrobeGenerationParams {
   modelImageUrl: string | null;
   /** The casting model ID (null if uploaded model) */
   modelId: number | null;
+}
+
+/** Shape of the last operation for retry */
+interface LastOperation {
+  type: "generate" | "incremental" | "refine" | "styleRefresh";
+  args?: Record<string, unknown>;
 }
 
 export function useWardrobeGeneration({
@@ -36,14 +46,38 @@ export function useWardrobeGeneration({
   const canUndoVTO = useWardrobeStore((s) => s.canUndoVTO);
   const canRedoVTO = useWardrobeStore((s) => s.canRedoVTO);
   const currentVTOResult = useWardrobeStore((s) => s.currentVTOResult);
+  const snapshotSelection = useWardrobeStore((s) => s.snapshotSelection);
+  const restoreSelectionForIndex = useWardrobeStore((s) => s.restoreSelectionForIndex);
+  const cooldownSeconds = useWardrobeStore((s) => s.cooldownSeconds);
+  const setCooldownSeconds = useWardrobeStore((s) => s.setCooldownSeconds);
+  const errorMessage = useWardrobeStore((s) => s.errorMessage);
+  const setErrorMessage = useWardrobeStore((s) => s.setErrorMessage);
 
   // Local generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Track previous garment selection for incremental detection
   const prevGarmentIdsRef = useRef<Set<number>>(new Set());
+
+  // Last operation for retry
+  const lastOperationRef = useRef<LastOperation | null>(null);
+
+  // Generation ID to detect stale overlay results
+  const generationIdRef = useRef(0);
+
+  // ── Cooldown Timer ─────────────────────────────────────────
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownSeconds(Math.max(0, cooldownSeconds - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds, setCooldownSeconds]);
+
+  const startCooldown = useCallback(() => {
+    setCooldownSeconds(COOLDOWN_DURATION);
+  }, [setCooldownSeconds]);
 
   // ── Mutations ──────────────────────────────────────────────
 
@@ -101,6 +135,7 @@ export function useWardrobeGeneration({
     setIsGenerating(true);
     setGeneratingMessage("Dressing your model...");
     setErrorMessage(null);
+    const genId = ++generationIdRef.current;
 
     try {
       const sessionId = await ensureSession();
@@ -113,6 +148,8 @@ export function useWardrobeGeneration({
         if (note?.trim()) notes[String(id)] = note;
       }
 
+      lastOperationRef.current = { type: "generate" };
+
       const result = await generateMutation.mutateAsync({
         modelImageUrl,
         garmentIds,
@@ -121,11 +158,16 @@ export function useWardrobeGeneration({
         sessionId: sessionId ?? undefined,
       });
 
+      if (genId !== generationIdRef.current) return; // stale
+
       pushVTOResult(result.resultUrl);
+      snapshotSelection();
       prevGarmentIdsRef.current = new Set(garmentIds);
+      startCooldown();
       toast.success("Virtual try-on complete");
-    } catch (err: any) {
-      const msg = err?.message || "VTO generation failed";
+    } catch (err: unknown) {
+      if (genId !== generationIdRef.current) return;
+      const msg = (err as Error)?.message || "VTO generation failed";
       if (msg.includes("SAFETY_BLOCK")) {
         setErrorMessage("Generation blocked by safety filters. Try different garments or style notes.");
         toast.error("Safety filter triggered — try adjusting your garments");
@@ -137,12 +179,15 @@ export function useWardrobeGeneration({
         toast.error("VTO generation failed");
       }
     } finally {
-      setIsGenerating(false);
-      setGeneratingMessage(null);
+      if (genId === generationIdRef.current) {
+        setIsGenerating(false);
+        setGeneratingMessage(null);
+      }
     }
   }, [
     modelImageUrl, selectedGarmentIds, styleNotes, tattooMap,
-    ensureSession, generateMutation, pushVTOResult,
+    ensureSession, generateMutation, pushVTOResult, snapshotSelection,
+    startCooldown, setErrorMessage,
   ]);
 
   // ── Incremental Composite ──────────────────────────────────
@@ -159,19 +204,19 @@ export function useWardrobeGeneration({
     // Detect which garments changed
     const added = currentIds.filter((id) => !prevIds.has(id));
     const removed = Array.from(prevIds).filter((id) => !selectedGarmentIds.has(id));
-    const changedIds = [...added, ...removed.filter((id) => selectedGarmentIds.has(id))];
 
-    // If too many changes or no previous result, do full generation
-    if (changedIds.length === 0 && added.length === 0) {
+    // If too many changes or removals, do full generation
+    if (added.length === 0 && removed.length === 0) {
       return generateVTO();
     }
-    if (changedIds.length > 2 || removed.length > 0) {
+    if (added.length > 2 || removed.length > 0) {
       return generateVTO();
     }
 
     setIsGenerating(true);
     setGeneratingMessage("Updating outfit...");
     setErrorMessage(null);
+    const genId = ++generationIdRef.current;
 
     try {
       const sessionId = await ensureSession();
@@ -181,33 +226,40 @@ export function useWardrobeGeneration({
         if (note?.trim()) notes[String(id)] = note;
       }
 
-      // Determine changed slots (simplified — use the added garment IDs)
-      const changedSlots = added.length > 0 ? ["tops", "bottoms", "shoes", "accessories"] : [];
+      lastOperationRef.current = { type: "incremental" };
 
       const result = await incrementalMutation.mutateAsync({
         previousResultUrl: currentResult,
         modelImageUrl,
-        changedGarmentIds: added.length > 0 ? added : currentIds,
-        changedSlots,
+        changedGarmentIds: added,
+        changedSlots: [],
         allGarmentIds: currentIds,
         styleNotes: Object.keys(notes).length > 0 ? notes : undefined,
         tattooMap: tattooMap ?? undefined,
         sessionId: sessionId ?? undefined,
       });
 
+      if (genId !== generationIdRef.current) return;
+
       pushVTOResult(result.resultUrl);
+      snapshotSelection();
       prevGarmentIdsRef.current = new Set(currentIds);
+      startCooldown();
       toast.success("Outfit updated");
     } catch {
+      if (genId !== generationIdRef.current) return;
       toast.error("Incremental update failed — trying full generation");
       return generateVTO();
     } finally {
-      setIsGenerating(false);
-      setGeneratingMessage(null);
+      if (genId === generationIdRef.current) {
+        setIsGenerating(false);
+        setGeneratingMessage(null);
+      }
     }
   }, [
     currentVTOResult, modelImageUrl, selectedGarmentIds, styleNotes,
-    tattooMap, ensureSession, incrementalMutation, pushVTOResult, generateVTO,
+    tattooMap, ensureSession, incrementalMutation, pushVTOResult,
+    snapshotSelection, startCooldown, generateVTO, setErrorMessage,
   ]);
 
   // ── Refinement ─────────────────────────────────────────────
@@ -222,9 +274,16 @@ export function useWardrobeGeneration({
     setIsGenerating(true);
     setGeneratingMessage("Refining garment...");
     setErrorMessage(null);
+    const genId = ++generationIdRef.current;
 
     try {
       const sessionId = await ensureSession();
+
+      lastOperationRef.current = {
+        type: "refine",
+        args: { garmentId, instruction },
+      };
+
       const result = await refineMutation.mutateAsync({
         currentResultUrl: currentResult,
         modelImageUrl,
@@ -233,27 +292,77 @@ export function useWardrobeGeneration({
         sessionId: sessionId ?? undefined,
       });
 
+      if (genId !== generationIdRef.current) return;
+
       pushVTOResult(result.resultUrl);
+      snapshotSelection();
+      startCooldown();
       toast.success("Refinement applied");
-    } catch (err: any) {
-      const msg = err?.message || "Refinement failed";
+    } catch (err: unknown) {
+      if (genId !== generationIdRef.current) return;
+      const msg = (err as Error)?.message || "Refinement failed";
       setErrorMessage(msg);
       toast.error("Refinement failed");
     } finally {
-      setIsGenerating(false);
-      setGeneratingMessage(null);
+      if (genId === generationIdRef.current) {
+        setIsGenerating(false);
+        setGeneratingMessage(null);
+      }
     }
-  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, pushVTOResult]);
+  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage]);
+
+  // ── Retry Last Operation ───────────────────────────────────
+
+  const handleRetry = useCallback(async () => {
+    const lastOp = lastOperationRef.current;
+    if (!lastOp) {
+      toast.error("Nothing to retry");
+      return;
+    }
+
+    setErrorMessage(null);
+
+    switch (lastOp.type) {
+      case "generate":
+        return generateVTO();
+      case "incremental":
+        return generateIncremental();
+      case "refine": {
+        const args = lastOp.args as { garmentId: number; instruction: string } | undefined;
+        if (args) return refineResult(args.garmentId, args.instruction);
+        break;
+      }
+      case "styleRefresh":
+        return generateVTO();
+    }
+  }, [generateVTO, generateIncremental, refineResult, setErrorMessage]);
 
   // ── Smart Generate (decides full vs incremental) ───────────
 
   const smartGenerate = useCallback(async () => {
+    if (cooldownSeconds > 0) {
+      toast.error(`Please wait ${cooldownSeconds}s before generating again`);
+      return;
+    }
     const hasExistingResult = currentVTOResult() !== null;
     if (hasExistingResult) {
       return generateIncremental();
     }
     return generateVTO();
-  }, [currentVTOResult, generateIncremental, generateVTO]);
+  }, [currentVTOResult, generateIncremental, generateVTO, cooldownSeconds]);
+
+  // ── Undo/Redo with selection restore ───────────────────────
+
+  const handleUndo = useCallback(() => {
+    undoVTO();
+    // Restore selection after state update
+    setTimeout(() => restoreSelectionForIndex(), 0);
+  }, [undoVTO, restoreSelectionForIndex]);
+
+  const handleRedo = useCallback(() => {
+    redoVTO();
+    setTimeout(() => restoreSelectionForIndex(), 0);
+  }, [redoVTO, restoreSelectionForIndex]);
 
   return {
     /** Whether a VTO generation is in progress */
@@ -265,17 +374,22 @@ export function useWardrobeGeneration({
     /** Clear error message */
     clearError: () => setErrorMessage(null),
 
+    /** Cooldown seconds remaining */
+    cooldownSeconds,
+
     /** Generate VTO (smart: full or incremental based on state) */
     generate: smartGenerate,
     /** Force full VTO generation */
     generateFull: generateVTO,
     /** Refine a specific garment in the current result */
     refineResult,
+    /** Retry last failed operation */
+    handleRetry,
 
-    /** Undo to previous VTO result */
-    undo: undoVTO,
-    /** Redo to next VTO result */
-    redo: redoVTO,
+    /** Undo to previous VTO result (with selection restore) */
+    undo: handleUndo,
+    /** Redo to next VTO result (with selection restore) */
+    redo: handleRedo,
     /** Whether undo is available */
     canUndo: canUndoVTO(),
     /** Whether redo is available */

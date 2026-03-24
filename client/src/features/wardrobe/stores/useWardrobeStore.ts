@@ -2,13 +2,17 @@
  * Wardrobe Store — Zustand state for the Wardrobe Studio tool.
  *
  * Manages garment inventory, selection state, active slot tab,
- * search/filter, and VTO session state. Server state (garment list,
- * outfits) is fetched via React Query through tRPC — this store only
- * holds UI-local state that doesn't belong on the server.
+ * search/filter, VTO session state, overlay detection, cooldown,
+ * and error messaging. Server state (garment list, outfits) is
+ * fetched via React Query through tRPC — this store only holds
+ * UI-local state that doesn't belong on the server.
  */
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { GarmentSlotType, TattooMap } from "../types";
+import type { GarmentSlotType, DetectedItem, TattooMap } from "../types";
+
+/** Max VTO history entries before trimming oldest */
+const MAX_HISTORY_LENGTH = 15;
 
 interface WardrobeState {
   /** Currently active slot tab in the rack panel */
@@ -25,9 +29,14 @@ interface WardrobeState {
 
   /** Set of selected garment IDs (for VTO composition) */
   selectedGarmentIds: Set<number>;
-  toggleGarmentSelection: (id: number) => void;
+  toggleGarmentSelection: (id: number, slotType?: GarmentSlotType) => void;
   clearSelection: () => void;
   setSelection: (ids: number[]) => void;
+
+  /** Selection snapshots per history index (for undo/redo restore) */
+  selectionSnapshots: Map<number, number[]>;
+  snapshotSelection: () => void;
+  restoreSelectionForIndex: () => void;
 
   /** Style notes per garment (keyed by garment ID) */
   styleNotes: Record<string, string>;
@@ -53,6 +62,24 @@ interface WardrobeState {
   currentVTOResult: () => string | null;
   clearVTOHistory: () => void;
 
+  /** Overlay detection state — bounding boxes on VTO result */
+  resultOverlayItems: DetectedItem[];
+  setResultOverlayItems: (items: DetectedItem[]) => void;
+  isScanningResult: boolean;
+  setIsScanningResult: (scanning: boolean) => void;
+  /** Cache of overlay items per history index */
+  overlayCache: Map<number, DetectedItem[]>;
+  cacheOverlayItems: (index: number, items: DetectedItem[]) => void;
+  getCachedOverlay: (index: number) => DetectedItem[] | undefined;
+
+  /** Cooldown timer (seconds remaining before next generation) */
+  cooldownSeconds: number;
+  setCooldownSeconds: (seconds: number) => void;
+
+  /** Error message from last generation attempt */
+  errorMessage: string | null;
+  setErrorMessage: (msg: string | null) => void;
+
   /** Whether the decomposition drawer is open */
   isDecomposeOpen: boolean;
   setDecomposeOpen: (open: boolean) => void;
@@ -66,11 +93,17 @@ const INITIAL_STATE = {
   showOutfits: false,
   searchTerm: "",
   selectedGarmentIds: new Set<number>(),
+  selectionSnapshots: new Map<number, number[]>(),
   styleNotes: {} as Record<string, string>,
   tattooMap: null as TattooMap | null,
   activeSessionId: null as number | null,
   vtoHistory: [] as string[],
   vtoHistoryIndex: -1,
+  resultOverlayItems: [] as DetectedItem[],
+  isScanningResult: false,
+  overlayCache: new Map<number, DetectedItem[]>(),
+  cooldownSeconds: 0,
+  errorMessage: null as string | null,
   isDecomposeOpen: false,
 };
 
@@ -90,14 +123,22 @@ export const useWardrobeStore = create<WardrobeState>()(
         set({ searchTerm: term }, false, "setSearchTerm"),
 
       // ── Selection ──────────────────────────────────────────
-      toggleGarmentSelection: (id) =>
+      // SOT: full_look is radio (only one at a time), other slots are additive
+      toggleGarmentSelection: (id, slotType) =>
         set(
           (state) => {
             const next = new Set(state.selectedGarmentIds);
             if (next.has(id)) {
               next.delete(id);
             } else {
-              next.add(id);
+              // Full look is radio — deselect any other full_look
+              if (slotType === "full_look") {
+                // Remove all currently selected full_look garments
+                // (caller should pass slotType for this to work)
+                next.add(id);
+              } else {
+                next.add(id);
+              }
             }
             return { selectedGarmentIds: next };
           },
@@ -110,6 +151,30 @@ export const useWardrobeStore = create<WardrobeState>()(
 
       setSelection: (ids) =>
         set({ selectedGarmentIds: new Set(ids) }, false, "setSelection"),
+
+      // ── Selection Snapshots ────────────────────────────────
+      snapshotSelection: () =>
+        set(
+          (state) => {
+            const snapshots = new Map(state.selectionSnapshots);
+            snapshots.set(state.vtoHistoryIndex, Array.from(state.selectedGarmentIds));
+            return { selectionSnapshots: snapshots };
+          },
+          false,
+          "snapshotSelection",
+        ),
+
+      restoreSelectionForIndex: () => {
+        const state = get();
+        const snapshot = state.selectionSnapshots.get(state.vtoHistoryIndex);
+        if (snapshot) {
+          set(
+            { selectedGarmentIds: new Set(snapshot) },
+            false,
+            "restoreSelectionForIndex",
+          );
+        }
+      },
 
       // ── Style Notes ────────────────────────────────────────
       setStyleNote: (garmentId, note) =>
@@ -138,9 +203,20 @@ export const useWardrobeStore = create<WardrobeState>()(
           (state) => {
             // Truncate any "future" entries when pushing new result
             const trimmed = state.vtoHistory.slice(0, state.vtoHistoryIndex + 1);
+            const newHistory = [...trimmed, url];
+
+            // Trim to MAX_HISTORY_LENGTH (remove oldest)
+            if (newHistory.length > MAX_HISTORY_LENGTH) {
+              const excess = newHistory.length - MAX_HISTORY_LENGTH;
+              return {
+                vtoHistory: newHistory.slice(excess),
+                vtoHistoryIndex: newHistory.length - excess - 1,
+              };
+            }
+
             return {
-              vtoHistory: [...trimmed, url],
-              vtoHistoryIndex: trimmed.length,
+              vtoHistory: newHistory,
+              vtoHistoryIndex: newHistory.length - 1,
             };
           },
           false,
@@ -185,7 +261,46 @@ export const useWardrobeStore = create<WardrobeState>()(
       },
 
       clearVTOHistory: () =>
-        set({ vtoHistory: [], vtoHistoryIndex: -1 }, false, "clearVTOHistory"),
+        set(
+          {
+            vtoHistory: [],
+            vtoHistoryIndex: -1,
+            selectionSnapshots: new Map(),
+            overlayCache: new Map(),
+          },
+          false,
+          "clearVTOHistory",
+        ),
+
+      // ── Overlay Detection ──────────────────────────────────
+      setResultOverlayItems: (items) =>
+        set({ resultOverlayItems: items }, false, "setResultOverlayItems"),
+
+      setIsScanningResult: (scanning) =>
+        set({ isScanningResult: scanning }, false, "setIsScanningResult"),
+
+      cacheOverlayItems: (index, items) =>
+        set(
+          (state) => {
+            const cache = new Map(state.overlayCache);
+            cache.set(index, items);
+            return { overlayCache: cache };
+          },
+          false,
+          "cacheOverlayItems",
+        ),
+
+      getCachedOverlay: (index) => {
+        return get().overlayCache.get(index);
+      },
+
+      // ── Cooldown ───────────────────────────────────────────
+      setCooldownSeconds: (seconds) =>
+        set({ cooldownSeconds: seconds }, false, "setCooldownSeconds"),
+
+      // ── Error ──────────────────────────────────────────────
+      setErrorMessage: (msg) =>
+        set({ errorMessage: msg }, false, "setErrorMessage"),
 
       // ── Decompose ──────────────────────────────────────────
       setDecomposeOpen: (open) =>
@@ -197,6 +312,8 @@ export const useWardrobeStore = create<WardrobeState>()(
           {
             ...INITIAL_STATE,
             selectedGarmentIds: new Set(),
+            selectionSnapshots: new Map(),
+            overlayCache: new Map(),
           },
           false,
           "resetWardrobe",

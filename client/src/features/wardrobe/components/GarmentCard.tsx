@@ -6,7 +6,7 @@
  * Matches the SOT's warm minimalist aesthetic.
  */
 import { QualityBadge } from "./QualityBadge";
-import type { QualityIssue } from "../types";
+import type { QualityIssue, GarmentSlotType } from "../types";
 
 interface GarmentCardProps {
   id: number;
@@ -19,7 +19,9 @@ interface GarmentCardProps {
   qualityIssues: QualityIssue[];
   isSelected: boolean;
   isProcessing: boolean;
-  onToggleSelect: (id: number) => void;
+  slotType?: GarmentSlotType;
+  suggestedActions?: string[];
+  onToggleSelect: (id: number, slotType?: GarmentSlotType) => void;
   onRemove: (id: number) => void;
 }
 
@@ -34,6 +36,8 @@ export function GarmentCard({
   qualityIssues,
   isSelected,
   isProcessing,
+  slotType,
+  suggestedActions = [],
   onToggleSelect,
   onRemove,
 }: GarmentCardProps) {
@@ -55,7 +59,7 @@ export function GarmentCard({
       <div
         className="aspect-[3/4] relative cursor-pointer overflow-hidden"
         style={{ background: "#f0ebe3" }}
-        onClick={() => !isProcessing && onToggleSelect(id)}
+        onClick={() => !isProcessing && onToggleSelect(id, slotType)}
       >
         {displayUrl && (
           <img

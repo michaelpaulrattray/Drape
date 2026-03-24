@@ -6,7 +6,7 @@
  * and a contextual "Dress" / "Update" button.
  */
 import { useCallback, useRef, useState } from "react";
-import { Loader2, Undo2, Redo2, Sparkles, Eye } from "lucide-react";
+import { Loader2, Undo2, Redo2, Sparkles, Eye, RotateCcw } from "lucide-react";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
 
 interface MainStageProps {
@@ -20,6 +20,10 @@ interface MainStageProps {
   errorMessage: string | null;
   /** Clear error */
   onClearError: () => void;
+  /** Cooldown seconds remaining */
+  cooldownSeconds: number;
+  /** Retry last failed operation */
+  onRetry: () => void;
   /** Current VTO result URL (null = show clean model) */
   currentResult: string | null;
   /** Trigger VTO generation */
@@ -49,6 +53,8 @@ export function MainStage({
   generatingMessage,
   errorMessage,
   onClearError,
+  cooldownSeconds,
+  onRetry,
   currentResult,
   onGenerate,
   onUndo,
@@ -81,7 +87,7 @@ export function MainStage({
   // Determine which image to show
   const displayUrl = isComparing ? modelImageUrl : (currentResult || modelImageUrl);
   const hasResult = currentResult !== null;
-  const canGenerate = selectedCount > 0 && modelImageUrl && !isGenerating;
+  const canGenerate = selectedCount > 0 && modelImageUrl && !isGenerating && cooldownSeconds <= 0;
 
   // ── No model loaded state ──────────────────────────────────
   if (!modelImageUrl) {
@@ -255,6 +261,23 @@ export function MainStage({
         style={{ borderTop: "1px solid #e5e0d8" }}
       >
         {/* Generate / Update button */}
+        {/* Retry button (shown when there's an error) */}
+        {errorMessage && !isGenerating && (
+          <button
+            onClick={onRetry}
+            className="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all hover:opacity-90"
+            style={{
+              background: "rgba(220,38,38,0.9)",
+              color: "#fff",
+              fontSize: 10,
+            }}
+          >
+            <RotateCcw size={12} />
+            Retry
+          </button>
+        )}
+
+        {/* Generate / Update button */}
         <button
           onClick={onGenerate}
           disabled={!canGenerate}
@@ -266,8 +289,12 @@ export function MainStage({
           }}
         >
           <Sparkles size={14} />
-          {hasResult ? "Update Look" : "Dress Model"}
-          {selectedCount > 0 && (
+          {cooldownSeconds > 0
+            ? `Wait ${cooldownSeconds}s`
+            : hasResult
+              ? "Update Look"
+              : "Dress Model"}
+          {selectedCount > 0 && cooldownSeconds <= 0 && (
             <span
               className="font-mono ml-1 px-1.5 py-0.5 rounded-full"
               style={{

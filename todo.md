@@ -4351,3 +4351,23 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Home button shows confirmation when any model loaded (hasActiveSession check in ToolRail)
 - [x] Write 18 edge-case tests covering all transition scenarios (session-reset.test.ts)
 - [x] Verify all tests pass (1,287 total)
+
+## Wardrobe Studio — SOT Alignment (P0)
+- [ ] Add OverlayStyleNote, DetectedItem types to client types.ts
+- [ ] Create GarmentOverlay component (clickable bounding boxes on VTO results)
+- [ ] Create DecompositionDrawer component (full_look upload → detect → pick items)
+- [ ] Add detectResultGarments server endpoint
+- [ ] Add classifyEditSize server endpoint
+- [ ] Add checkIdentityMatch server endpoint
+- [ ] Wire new endpoints into wardrobe router
+- [ ] Update useWardrobeStore with overlay cache, selection snapshots, cooldown
+- [ ] Update useWardrobeGeneration with overlay detection, style refresh, edit classification
+- [ ] Integrate GarmentOverlay into MainStage
+- [ ] Add style refresh flow (detect dirty style notes → apply as styling-only update)
+- [ ] Add suggested actions to garment cards
+- [ ] Add edit size classification (small → refinement, large → full regen)
+- [ ] Add identity check post-refinement with auto-escalation
+- [ ] Add safety retry mechanism
+- [ ] Add keyboard shortcuts (Space=generate, Z=undo, Shift+Z=redo)
+- [ ] Update RackPanel with full_look radio selection, decomposition trigger
+- [ ] Update LayersPanel with style note editing, suggested action chips
