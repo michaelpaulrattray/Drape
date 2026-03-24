@@ -4428,3 +4428,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add sessions.seedChat and sessions.clearChat tRPC endpoints
 - [x] Wire seedChat/clearChat mutations in useWardrobeGeneration
 - [x] Add VTO session tests (14 tests covering seed, get, clear, expiry, isolation)
+
+## Final Parity Changes — Model Upgrades, Aspect Ratio, Prompt Tuning
+- [x] Upgrade model to gemini-3-pro-image-preview in vtoGeneration.ts, garmentRefinement.ts, vtoSession.ts
+- [x] Upgrade model to gemini-3-pro-preview in garmentDetection.ts
+- [x] Add getImageAspectBucket(imageUrl) to server/wardrobe/utils.ts (sharp-based)
+- [x] Use dynamic aspect ratio in vtoGeneration.ts (generateVirtualTryOn, incrementalComposite, style refresh)
+- [x] Use dynamic aspect ratio in garmentRefinement.ts
+- [x] Add belt/necklace bbox guidance to garmentDetection.ts prompt
+- [x] Add tuck-in/roll-sleeves/no-alter lines to style refresh prompt in vtoGeneration.ts
+- [x] Add fit/silhouette examples to garmentAnalysis.ts single garment prompt
+- [x] Add impossible action guards to garmentAnalysis.ts SUGGESTED_ACTIONS
+- [x] Add head-to-toe ordering to garmentAnalysis.ts full look prompt

@@ -5,7 +5,7 @@
  * dressed result. Supports layering, full-look overrides, tattoo preservation,
  * and incremental compositing (swap one garment without regenerating all).
  *
- * Gemini model: gemini-2.5-flash-image (image generation)
+ * Gemini model: gemini-3-pro-image-preview (image generation)
  * Queue lane: IMAGE (heavy, ~30-60s)
  * Credit cost: 5 points (full VTO), 3 points (incremental)
  */
@@ -18,6 +18,7 @@ import {
   uploadBase64ToS3,
   sanitizeDescription,
   sortByLayerPriority,
+  getImageAspectBucket,
   type GarmentForVTO,
 } from "./utils";
 import { createModuleLogger } from "../logging/logger";
@@ -237,11 +238,12 @@ Return the composite image.`;
 
     const contents = [{ text: prompt }, modelPart, ...garmentParts];
 
+    const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
     const chat = ai.chats.create({
-      model: "gemini-2.5-flash-image",
+      model: "gemini-3-pro-image-preview",
       config: {
         responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: { aspectRatio: "3:4" as any, imageSize: "1K" },
+        imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
         safetySettings: SAFETY_SETTINGS,
       },
     });
@@ -319,15 +321,19 @@ RULES:
 - Keep the model's identity, pose, and background exactly as in Image 1.
 - Keep ALL garments exactly as they appear in Image 2.
 - ONLY modify the physical styling (tucking, rolling, unbuttoning, cuffing, etc) as described above.
+- If a style note says "Tuck in", show the garment tucked into the waistband.
+- If a style note says "Roll sleeves", show the sleeves rolled up.
+- Do not alter fabric, color, fit, or garment identity — only the physical arrangement.
 ${tattooFragment}
 
 Return the updated image with styling changes applied.`;
 
+      const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
       const chat = ai.chats.create({
-        model: "gemini-2.5-flash-image",
+        model: "gemini-3-pro-image-preview",
         config: {
           responseModalities: ["TEXT", "IMAGE"],
-          imageConfig: { aspectRatio: "3:4" as any, imageSize: "1K" },
+          imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
           safetySettings: SAFETY_SETTINGS,
         },
       });
@@ -400,11 +406,12 @@ Merge the new garments realistically with the existing outfit in Image 2. Handle
       ...changedGarmentParts.map((d) => d.part),
     ];
 
+    const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
     const chat = ai.chats.create({
-      model: "gemini-2.5-flash-image",
+      model: "gemini-3-pro-image-preview",
       config: {
         responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: { aspectRatio: "3:4" as any, imageSize: "1K" },
+        imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
         safetySettings: SAFETY_SETTINGS,
       },
     });

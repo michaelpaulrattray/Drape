@@ -70,7 +70,7 @@ describe("VTO Session Manager", () => {
       expect(mockChatsCreate).toHaveBeenCalledOnce();
       expect(mockChatsCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: "gemini-2.5-flash-image",
+          model: "gemini-3-pro-image-preview",
           config: expect.objectContaining({
             responseModalities: ["TEXT"],
           }),

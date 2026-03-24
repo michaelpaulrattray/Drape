@@ -154,6 +154,39 @@ export function diagnoseResponse(response: any): ResponseDiagnosis {
   return result;
 }
 
+// ── Aspect Ratio Detection ────────────────────────────────────────────────
+
+export type GeminiAspectRatio = "16:9" | "4:3" | "1:1" | "4:5" | "3:4" | "2:3" | "9:16";
+
+/**
+ * Fetch an image, measure its dimensions with sharp, and return
+ * the closest Gemini-supported aspect ratio bucket.
+ */
+export async function getImageAspectBucket(
+  imageUrl: string,
+): Promise<GeminiAspectRatio> {
+  try {
+    const sharp = (await import("sharp")).default;
+    const response = await fetch(imageUrl);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const metadata = await sharp(buffer).metadata();
+    const w = metadata.width ?? 1;
+    const h = metadata.height ?? 1;
+    const ratio = w / h;
+
+    if (ratio > 1.4) return "16:9";
+    if (ratio > 1.15) return "4:3";
+    if (ratio > 0.9) return "1:1";
+    if (ratio > 0.72) return "4:5";
+    if (ratio > 0.6) return "3:4";
+    if (ratio > 0.5) return "2:3";
+    return "9:16";
+  } catch (e) {
+    log.warn(`Failed to detect aspect ratio for ${imageUrl}, defaulting to 3:4: ${e}`);
+    return "3:4";
+  }
+}
+
 // ── Layer Priority Helpers ─────────────────────────────────────────────────
 
 const INNER_LAYER_TAGS = [

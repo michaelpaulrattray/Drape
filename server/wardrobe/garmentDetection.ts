@@ -7,7 +7,7 @@
  * Used when a user uploads a photo containing clothing — either
  * a single garment or a full outfit to decompose.
  *
- * Gemini model: gemini-2.5-flash (text-only, structured JSON)
+ * Gemini model: gemini-3-pro-preview (text-only, structured JSON)
  * Queue lane: TEXT (lightweight, ~5-10s)
  * Credit cost: 1 point
  */
@@ -59,10 +59,11 @@ RULES:
 - Label should be specific: "black leather bomber jacket" not "jacket".
 - If a garment is partially hidden (e.g., t-shirt under open jacket), still detect it with the visible bounding box.
 - ACCESSORIES (belts, necklaces, chains, scarves, bracelets): These overlay other garments. The bounding box must hug the accessory itself as tightly as possible — NOT the garment behind it.
+- A belt bbox should be a thin horizontal strip across the waist, not a rectangle containing the full pants/skirt area. A necklace bbox should frame just the necklace, not the entire top underneath.
 - Bounding box coordinates must be normalized (0-1).`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro-preview",
       contents: [{ text: prompt }, imagePart],
       config: {
         responseMimeType: "application/json",
