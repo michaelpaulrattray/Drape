@@ -103,4 +103,63 @@ describe('PDF Service', () => {
     expect(result).toBeDefined();
     expect(result.byteLength).toBeGreaterThan(0);
   });
+
+  it('should generate PDF with only partial views (no walk/back)', async () => {
+    const dataPartialViews: PdfModelData = {
+      ...mockPdfData,
+      images: {
+        headshot: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        fullBody: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        profile: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      },
+    };
+    
+    const result = await generatePremiumIdentityPdf(dataPartialViews);
+    expect(result).toBeDefined();
+    expect(result.byteLength).toBeGreaterThan(0);
+  });
+
+  it('should not contain hardcoded fallback values in output', async () => {
+    const minimalData: PdfModelData = {
+      modelName: 'Fallback Test',
+      agencyId: 'MOD-26-FALL01',
+      sessionId: 'SES-FALL',
+      createdAt: '2026-03-24',
+      mintedAt: '2026-03-24',
+      ownerName: 'Test',
+      ownerId: 'user-fall',
+      masterPrompt: 'Test prompt',
+      preferences: {},
+      images: {},
+    };
+    
+    const result = await generatePremiumIdentityPdf(minimalData);
+    // Decode PDF text content to verify no hardcoded fallbacks
+    const text = new TextDecoder('latin1').decode(result);
+    // Should NOT contain old hardcoded values
+    expect(text).not.toContain('Bottega Veneta');
+    expect(text).not.toContain('Athletic Slim');
+    expect(text).not.toContain('4K Ultra');
+    expect(text).not.toContain('3840x5120');
+    expect(text).not.toContain('Organic Casting Engine');
+    expect(text.byteLength || result.byteLength).toBeGreaterThan(0);
+  });
+
+  it('should contain correct resolution in certificate', async () => {
+    const result = await generatePremiumIdentityPdf(mockPdfData);
+    const text = new TextDecoder('latin1').decode(result);
+    // Should contain the corrected resolution
+    expect(text).toContain('2048');
+    // Should NOT contain old fake resolution
+    expect(text).not.toContain('3840x5120');
+  });
+
+  it('should contain Drape branding throughout', async () => {
+    const result = await generatePremiumIdentityPdf(mockPdfData);
+    const text = new TextDecoder('latin1').decode(result);
+    expect(text).toContain('DRAPE');
+    expect(text).toContain('Casting Studio');
+    // Should NOT contain old engine name
+    expect(text).not.toContain('Organic Casting Engine');
+  });
 });

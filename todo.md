@@ -4206,3 +4206,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Move bug report button from floating bottom-right to top nav bar next to avatar
 - [ ] Disable Identity/Views/Export buttons in workspace when no model has been generated
 - [x] Make Identity/Views/Export labels in WarmEmptyState visually inert (no hover, not clickable)
+
+## PDF Export Pack Fixes
+- [x] PDF: Fix image stretching — preserve 1:1 aspect ratio in all image containers
+- [x] PDF: Update color palette from orange/dark to warm minimalist matching app design
+- [x] PDF: Handle missing views gracefully — only show views with actual images
+- [x] PDF: Remove hardcoded fallback data (height 5'10", body Athletic Slim, brand Bottega Veneta, vibe 45/35/20)
+- [x] PDF: Fix resolution display from "4K Ultra (3840x5120)" to "2K (2048x2048)"
+- [x] PDF: Fix Technical Appendix skin section wrong field mapping (tone/texture/finish swapped)
+- [x] PDF: Update hash visual identicon colors to warm palette
