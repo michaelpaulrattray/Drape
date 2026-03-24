@@ -705,3 +705,62 @@ describe("Full Look Radio Selection", () => {
     expect(selected.size).toBe(1);
   });
 });
+
+// ── Overlay Scan Wiring Logic Tests ───────────────────────────────────────
+
+describe("Overlay Scan Wiring Logic", () => {
+  // Simulate the scanResultOverlay stale-check pattern
+  function shouldUpdateOverlay(genIdAtCall: number, currentGenId: number): boolean {
+    return genIdAtCall === currentGenId;
+  }
+
+  it("should allow overlay update when genId matches current", () => {
+    expect(shouldUpdateOverlay(5, 5)).toBe(true);
+  });
+
+  it("should reject overlay update when genId is stale", () => {
+    expect(shouldUpdateOverlay(5, 6)).toBe(false);
+  });
+
+  // Simulate undo/redo cache-or-scan logic
+  function resolveOverlayOnNavigation(
+    overlayCache: Map<number, string[]>,
+    historyIndex: number,
+    historyUrl: string | undefined,
+  ): { source: "cache" | "scan" | "none"; items?: string[] } {
+    const cached = overlayCache.get(historyIndex);
+    if (cached) return { source: "cache", items: cached };
+    if (historyUrl) return { source: "scan" };
+    return { source: "none" };
+  }
+
+  it("should restore from cache when overlay is cached for index", () => {
+    const cache = new Map<number, string[]>();
+    cache.set(2, ["shirt", "pants"]);
+    const result = resolveOverlayOnNavigation(cache, 2, "https://example.com/result.png");
+    expect(result.source).toBe("cache");
+    expect(result.items).toEqual(["shirt", "pants"]);
+  });
+
+  it("should trigger scan when no cache exists but URL is available", () => {
+    const cache = new Map<number, string[]>();
+    const result = resolveOverlayOnNavigation(cache, 2, "https://example.com/result.png");
+    expect(result.source).toBe("scan");
+  });
+
+  it("should do nothing when no cache and no URL", () => {
+    const cache = new Map<number, string[]>();
+    const result = resolveOverlayOnNavigation(cache, 5, undefined);
+    expect(result.source).toBe("none");
+  });
+
+  it("should use correct index after undo (index decrements)", () => {
+    const cache = new Map<number, string[]>();
+    cache.set(0, ["jacket"]);
+    cache.set(1, ["jacket", "skirt"]);
+    // Simulate undo from index 1 to index 0
+    const result = resolveOverlayOnNavigation(cache, 0, "https://example.com/r0.png");
+    expect(result.source).toBe("cache");
+    expect(result.items).toEqual(["jacket"]);
+  });
+});

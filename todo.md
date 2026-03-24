@@ -4385,3 +4385,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add vto.detectResultGarments tRPC procedure
 - [x] Add detectResultGarments test
 - [x] Fix full_look radio selection bug in toggleGarmentSelection
+- [x] Wire detectResultGarments into useWardrobeGeneration after every VTO generation
+- [x] Add overlay cache restore on undo/redo in useWardrobeGeneration

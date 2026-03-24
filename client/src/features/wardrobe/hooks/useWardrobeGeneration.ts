@@ -53,6 +53,14 @@ export function useWardrobeGeneration({
   const errorMessage = useWardrobeStore((s) => s.errorMessage);
   const setErrorMessage = useWardrobeStore((s) => s.setErrorMessage);
 
+  // Overlay detection selectors
+  const setResultOverlayItems = useWardrobeStore((s) => s.setResultOverlayItems);
+  const setIsScanningResult = useWardrobeStore((s) => s.setIsScanningResult);
+  const cacheOverlayItems = useWardrobeStore((s) => s.cacheOverlayItems);
+  const getCachedOverlay = useWardrobeStore((s) => s.getCachedOverlay);
+  const vtoHistoryIndex = useWardrobeStore((s) => s.vtoHistoryIndex);
+  const vtoHistory = useWardrobeStore((s) => s.vtoHistory);
+
   // Local generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingMessage, setGeneratingMessage] = useState<string | null>(null);
@@ -100,6 +108,34 @@ export function useWardrobeGeneration({
       utils.wardrobe.sessions.list.invalidate();
     },
   });
+
+  const detectMutation = trpc.wardrobe.vto.detectResultGarments.useMutation();
+
+  // ── Overlay Scanning ───────────────────────────────────────
+
+  /** Fire-and-forget overlay scan after a successful generation */
+  const scanResultOverlay = useCallback(
+    (resultUrl: string, genId: number) => {
+      setIsScanningResult(true);
+      detectMutation
+        .mutateAsync({ resultUrl })
+        .then((detected) => {
+          if (generationIdRef.current !== genId) return;
+          const idx = useWardrobeStore.getState().vtoHistoryIndex;
+          setResultOverlayItems(detected);
+          cacheOverlayItems(idx, detected);
+        })
+        .catch((e) => {
+          console.warn("Overlay detection failed:", e);
+        })
+        .finally(() => {
+          if (generationIdRef.current === genId) {
+            setIsScanningResult(false);
+          }
+        });
+    },
+    [detectMutation, setIsScanningResult, setResultOverlayItems, cacheOverlayItems],
+  );
 
   // ── Session Management ─────────────────────────────────────
 
@@ -164,6 +200,7 @@ export function useWardrobeGeneration({
       snapshotSelection();
       prevGarmentIdsRef.current = new Set(garmentIds);
       startCooldown();
+      scanResultOverlay(result.resultUrl, genId);
       toast.success("Virtual try-on complete");
     } catch (err: unknown) {
       if (genId !== generationIdRef.current) return;
@@ -245,6 +282,7 @@ export function useWardrobeGeneration({
       snapshotSelection();
       prevGarmentIdsRef.current = new Set(currentIds);
       startCooldown();
+      scanResultOverlay(result.resultUrl, genId);
       toast.success("Outfit updated");
     } catch {
       if (genId !== generationIdRef.current) return;
@@ -297,6 +335,7 @@ export function useWardrobeGeneration({
       pushVTOResult(result.resultUrl);
       snapshotSelection();
       startCooldown();
+      scanResultOverlay(result.resultUrl, genId);
       toast.success("Refinement applied");
     } catch (err: unknown) {
       if (genId !== generationIdRef.current) return;
@@ -355,14 +394,33 @@ export function useWardrobeGeneration({
 
   const handleUndo = useCallback(() => {
     undoVTO();
-    // Restore selection after state update
-    setTimeout(() => restoreSelectionForIndex(), 0);
-  }, [undoVTO, restoreSelectionForIndex]);
+    setTimeout(() => {
+      restoreSelectionForIndex();
+      const state = useWardrobeStore.getState();
+      const cached = state.overlayCache.get(state.vtoHistoryIndex);
+      if (cached) {
+        setResultOverlayItems(cached);
+      } else {
+        const url = state.vtoHistory[state.vtoHistoryIndex];
+        if (url) scanResultOverlay(url, generationIdRef.current);
+      }
+    }, 0);
+  }, [undoVTO, restoreSelectionForIndex, setResultOverlayItems, scanResultOverlay]);
 
   const handleRedo = useCallback(() => {
     redoVTO();
-    setTimeout(() => restoreSelectionForIndex(), 0);
-  }, [redoVTO, restoreSelectionForIndex]);
+    setTimeout(() => {
+      restoreSelectionForIndex();
+      const state = useWardrobeStore.getState();
+      const cached = state.overlayCache.get(state.vtoHistoryIndex);
+      if (cached) {
+        setResultOverlayItems(cached);
+      } else {
+        const url = state.vtoHistory[state.vtoHistoryIndex];
+        if (url) scanResultOverlay(url, generationIdRef.current);
+      }
+    }, 0);
+  }, [redoVTO, restoreSelectionForIndex, setResultOverlayItems, scanResultOverlay]);
 
   return {
     /** Whether a VTO generation is in progress */
