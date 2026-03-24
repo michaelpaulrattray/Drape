@@ -281,8 +281,7 @@ export function useCastingGeneration({
         toast.success("Model generated successfully!");
         refetchCreditsWithWarning();
         
-        // Fire-and-forget: clear old session + fetch suggestions
-        handleClearSession();
+        // Fire-and-forget: fetch suggestions (session lifecycle handled server-side)
         fetchSuggestions(modelResult.masterPrompt || '', imageResult.imageUrl);
       }
 

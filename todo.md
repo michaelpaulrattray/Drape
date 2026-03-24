@@ -4169,3 +4169,7 @@ The entry and configuration files are properly set up with several enhancements 
 ## Reference Image Transfer Bug (Mar 24)
 - [x] BUG-REFTRANSFER-1: Reference image hairstyle transfer not working during iteration — stale closure in performIteration captured prefs without prefs in deps, so referenceImage was always null at call time. Fixed by reading fresh from store via useCastingFormStore.getState()
 - [x] BUG-REFTRANSFER-2: Existing features (scar) partially disappearing during iteration — Gemini model behavior, not a code bug (same in SOT). With reference image now properly attached, IDENTITY LOCK + FREEZE-AND-APPEND should better preserve features
+
+## Reference Image Transfer — Color Bleed Bug (Mar 24)
+- [x] BUG-REFTRANSFER-3: Hairstyle transfer from reference image also copies hair COLOR — ROOT CAUSE: client called handleClearSession() after NEW generation, destroying chat session. Iterations fell to stateless mode with weaker identity anchoring. Fixed by removing the redundant client-side session clear.
+- [x] BUG-REFTRANSFER-4: Poor quality of hairstyle transfer — same root cause as BUG-REFTRANSFER-3. Chat-based iteration provides conversation context for better attribute isolation and transfer fidelity.
