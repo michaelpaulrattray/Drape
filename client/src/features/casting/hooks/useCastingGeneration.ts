@@ -318,6 +318,7 @@ export function useCastingGeneration({
         feedback: prompt,
         assetId: currentAsset.id,
         maskBase64,
+        referenceImage: prefs.referenceImage || undefined,
       });
 
       if (result.success && result.imageUrl) {
@@ -355,8 +356,17 @@ export function useCastingGeneration({
         toast.success("Iteration complete!");
         refetchCreditsWithWarning();
         
-        // Fire-and-forget: fetch suggestions
-        fetchSuggestions(updatedPrompt, result.imageUrl);
+        // Fire-and-forget: fetch suggestions — re-analyze reference if present (matches SOT)
+        if (prefs.referenceImage) {
+          handleAnalyzeReference(prefs.referenceImage, result.imageUrl)
+            .then((attrs) => {
+              if (attrs.length > 0) setSuggestions(attrs.map((a: string) => a));
+              else fetchSuggestions(updatedPrompt, result.imageUrl);
+            })
+            .catch(() => fetchSuggestions(updatedPrompt, result.imageUrl));
+        } else {
+          fetchSuggestions(updatedPrompt, result.imageUrl);
+        }
         
         // Fire-and-forget: reconcile schema with actual image (matches SOT)
         // The image model may deviate from the text prompt — reconcile corrects the schema

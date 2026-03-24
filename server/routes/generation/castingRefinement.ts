@@ -28,6 +28,7 @@ export const castingRefinementRouter = router({
       feedback: z.string().min(1),
       assetId: z.number(),
       maskBase64: z.string().max(10_000_000).optional(),
+      referenceImage: z.string().max(10_000_000).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Rate limit by user to prevent API abuse
@@ -109,6 +110,7 @@ export const castingRefinementRouter = router({
                 castingBrand: (model.technicalSchema as any)?.context?.casting_for,
                 frame: targetAsset.viewType === 'frontClose' ? 'HEADSHOT' : 'FULL_BODY',
                 maskBase64: input.maskBase64,
+                additionalReference: input.referenceImage,
                 ethnicityHint,
                 userId: String(ctx.user.id),
               }

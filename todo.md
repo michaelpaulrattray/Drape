@@ -4147,3 +4147,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] DISC-2: Added server-side image compression via sharp (imageCompression.ts) — 1.5MB budget, cascading JPEG quality, integrated into fetchAsBase64
 - [x] DISC-3: Wired technicalSchema + bodyType through aiService.ts and castingImaging.ts routes to geminiViews.ts functions
 - [x] DISC-4: Added fire-and-forget reconcile call after iteration success. Changed route to accept imageUrl (fetches base64 server-side)
+
+## Reference Image Bug (Mar 24)
+- [x] BUG-REF-1: Fixed reference image not passed during iteration — added referenceImage to iterate Zod schema, client sends prefs.referenceImage, server passes as additionalReference to iterateModel. Also added post-iteration reference re-analysis for better suggestions (matches SOT)
