@@ -4218,3 +4218,15 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] PDF: Rename "IDENTITY DOCUMENT" to "IDENTITY DOSSIER" in footer for legal safety
 - [x] PDF: Add subtle disclaimer on cover page ("For creative and commercial reference only")
 - [x] Add subtle "Randomize" convenience option below "Fill Required Fields" button in casting panel
+
+## Phase 1: Unified Drape Studio Shell + Tool Rail
+- [x] Create features/studio/types.ts (CanvasState, StudioTool types)
+- [x] Create features/studio/stores/useStudioStore.ts (unified workspace state)
+- [x] Create features/studio/components/ToolRail.tsx (vertical icon bar)
+- [x] Refactor StudioHeader to features/studio/components/StudioHeader.tsx (dynamic studioName prop)
+- [x] Create pages/DrapeStudio.tsx (unified page rendering casting conditionally)
+- [x] Register /studio route in App.tsx
+- [x] Redirect /casting-studio to /studio?tool=casting
+- [x] Update Dashboard nav links to point to /studio
+- [x] Write vitest tests for useStudioStore and tool availability
+- [x] Verify casting functionality works identically in new shell

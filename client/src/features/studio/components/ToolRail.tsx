@@ -1,0 +1,99 @@
+import { Camera, Shirt, Download } from 'lucide-react';
+import { useStudioStore } from '../stores/useStudioStore';
+import {
+  type StudioTool,
+  STUDIO_TOOLS,
+  getToolAvailability,
+} from '../types';
+import type { CanvasState } from '../types';
+
+/** Icon mapping for each tool */
+const TOOL_ICONS: Record<StudioTool, React.ComponentType<{ className?: string }>> = {
+  casting: Camera,
+  wardrobe: Shirt,
+  export: Download,
+};
+
+interface ToolRailProps {
+  canvas: CanvasState;
+}
+
+export function ToolRail({ canvas }: ToolRailProps) {
+  const activeTool = useStudioStore((s) => s.activeTool);
+  const setActiveTool = useStudioStore((s) => s.setActiveTool);
+
+  return (
+    <div
+      className="hidden lg:flex flex-col items-center py-3 gap-1 flex-shrink-0"
+      style={{
+        width: 48,
+        background: '#fff',
+        borderRight: '1px solid rgba(0,0,0,0.06)',
+      }}
+    >
+      {STUDIO_TOOLS.map((tool) => {
+        const Icon = TOOL_ICONS[tool.id];
+        const availability = getToolAvailability(tool.id, canvas);
+        const isActive = activeTool === tool.id;
+
+        return (
+          <button
+            key={tool.id}
+            onClick={() => {
+              if (availability.enabled) {
+                setActiveTool(tool.id);
+              }
+            }}
+            disabled={!availability.enabled}
+            title={availability.tooltip}
+            className="relative w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-150 group"
+            style={{
+              background: isActive ? '#1a1a1a' : 'transparent',
+              color: isActive
+                ? '#fff'
+                : availability.enabled
+                  ? '#999'
+                  : '#d4d4d4',
+              cursor: availability.enabled ? 'pointer' : 'not-allowed',
+              opacity: availability.enabled ? 1 : 0.5,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive && availability.enabled) {
+                e.currentTarget.style.background = '#f5f3ef';
+                e.currentTarget.style.color = '#1a1a1a';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive && availability.enabled) {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#999';
+              }
+            }}
+          >
+            <Icon className="w-4 h-4" />
+
+            {/* Active indicator dot */}
+            {isActive && (
+              <div
+                className="absolute -left-px top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full"
+                style={{ background: '#1a1a1a' }}
+              />
+            )}
+
+            {/* Tooltip on hover */}
+            <div
+              className="absolute left-full ml-2 px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
+              style={{
+                background: '#1a1a1a',
+                color: '#fff',
+                fontSize: 10,
+              }}
+            >
+              {availability.tooltip}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

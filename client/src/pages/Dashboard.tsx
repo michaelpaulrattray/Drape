@@ -653,7 +653,7 @@ export default function Dashboard() {
               <p className="text-xs lg:text-sm text-[#757575]">Start creating</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Link href="/casting-studio">
+              <Link href="/studio">
                 <div className="group bg-white border border-[#D4D4D4] rounded-2xl p-6 cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-gray-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   

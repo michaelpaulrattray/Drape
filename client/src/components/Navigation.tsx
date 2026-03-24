@@ -29,9 +29,9 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
   });
 
   const navLinks = [
-    { href: "/casting-studio", label: "Casting Studio" },
-    { href: "/outfit-studio", label: "Outfit Studio" },
-    { href: "/photo-studio", label: "Photo Studio" },
+    { href: "/studio", label: "Drape Studio" },
+    { href: "/studio?tool=wardrobe", label: "Wardrobe" },
+    { href: "/studio?tool=export", label: "Export" },
   ];
 
   const handleLogout = async () => {
