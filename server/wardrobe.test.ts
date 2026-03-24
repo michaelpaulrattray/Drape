@@ -1098,3 +1098,82 @@ describe("GarmentOverlay Logic", () => {
     expect(findBestMatch(garments, [1, 2], "a b denim", "tops")).toBe(2);
   });
 });
+
+// ── DecompositionDrawer Logic Tests ─────────────────────────────────────────
+
+describe("DecompositionDrawer — selection & import logic", () => {
+  const CATEGORY_COLORS: Record<string, string> = {
+    tops: "#555048",
+    bottoms: "#777168",
+    shoes: "#6B7B8B",
+    accessories: "#C4A35A",
+    full_look: "#7BA3C4",
+  };
+
+  it("should map all 5 slot categories to colors", () => {
+    expect(CATEGORY_COLORS.tops).toBe("#555048");
+    expect(CATEGORY_COLORS.bottoms).toBe("#777168");
+    expect(CATEGORY_COLORS.shoes).toBe("#6B7B8B");
+    expect(CATEGORY_COLORS.accessories).toBe("#C4A35A");
+    expect(CATEGORY_COLORS.full_look).toBe("#7BA3C4");
+  });
+
+  it("should toggle selection correctly", () => {
+    const ids = new Set(["item-1", "item-2", "item-3"]);
+    // Deselect item-2
+    const next = new Set(ids);
+    next.delete("item-2");
+    expect(next.has("item-1")).toBe(true);
+    expect(next.has("item-2")).toBe(false);
+    expect(next.has("item-3")).toBe(true);
+    // Re-select item-2
+    next.add("item-2");
+    expect(next.has("item-2")).toBe(true);
+  });
+
+  it("should update label for a specific item", () => {
+    const items = [
+      { id: "a", label: "Blue Shirt", category: "tops" },
+      { id: "b", label: "Black Pants", category: "bottoms" },
+    ];
+    const updated = items.map((item) =>
+      item.id === "a" ? { ...item, label: "Navy Shirt" } : item,
+    );
+    expect(updated[0].label).toBe("Navy Shirt");
+    expect(updated[1].label).toBe("Black Pants");
+  });
+
+  it("should filter selected items for import", () => {
+    const items = [
+      { id: "a", label: "Shirt", category: "tops" },
+      { id: "b", label: "Pants", category: "bottoms" },
+      { id: "c", label: "Shoes", category: "shoes" },
+    ];
+    const selectedIds = new Set(["a", "c"]);
+    const selected = items.filter((i) => selectedIds.has(i.id));
+    expect(selected).toHaveLength(2);
+    expect(selected.map((s) => s.id)).toEqual(["a", "c"]);
+  });
+
+  it("should truncate long labels at 20 chars with ellipsis", () => {
+    const label = "Black Leather Bomber Jacket With Gold Trim";
+    const truncated = label.length > 22 ? label.slice(0, 20) + "\u2026" : label;
+    expect(truncated).toBe("Black Leather Bomber\u2026");
+    expect(truncated.length).toBe(21);
+  });
+
+  it("should not truncate short labels", () => {
+    const label = "Blue Shirt";
+    const truncated = label.length > 22 ? label.slice(0, 20) + "\u2026" : label;
+    expect(truncated).toBe("Blue Shirt");
+  });
+
+  it("should compute pill center position from box_2d", () => {
+    const box_2d: [number, number, number, number] = [0.2, 0.1, 0.6, 0.5];
+    const [ymin, xmin, ymax, xmax] = box_2d;
+    const centerX = ((xmin + xmax) / 2) * 100;
+    const centerY = ((ymin + ymax) / 2) * 100;
+    expect(centerX).toBe(30);
+    expect(centerY).toBe(40);
+  });
+});

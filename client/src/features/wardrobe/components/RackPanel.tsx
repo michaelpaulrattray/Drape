@@ -10,6 +10,7 @@ import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { useWardrobeInventory } from "../hooks/useWardrobeInventory";
 import { GarmentCard } from "./GarmentCard";
 import { SLOT_TABS, MAX_GARMENTS_PER_SLOT } from "../constants";
+import { Scissors } from "lucide-react";
 import type { GarmentSlotType } from "../types";
 
 export function RackPanel() {
@@ -19,6 +20,7 @@ export function RackPanel() {
   const setSearchTerm = useWardrobeStore((s) => s.setSearchTerm);
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
   const styleNotes = useWardrobeStore((s) => s.styleNotes);
+  const setDecomposeOpen = useWardrobeStore((s) => s.setDecomposeOpen);
 
   const {
     garments,
@@ -97,12 +99,22 @@ export function RackPanel() {
           >
             Wardrobe
           </h2>
-          <span
-            className="font-mono"
-            style={{ fontSize: 9, color: "#b8b3a8" }}
-          >
-            {slotCounts[activeSlot]}/{MAX_GARMENTS_PER_SLOT}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDecomposeOpen(true)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-[#f0ede8]"
+              title="Import from outfit photo"
+              style={{ color: "#999" }}
+            >
+              <Scissors size={13} strokeWidth={1.5} />
+            </button>
+            <span
+              className="font-mono"
+              style={{ fontSize: 9, color: "#b8b3a8" }}
+            >
+              {slotCounts[activeSlot]}/{MAX_GARMENTS_PER_SLOT}
+            </span>
+          </div>
         </div>
 
         {/* ── Slot Tabs ───────────────────────────────────── */}

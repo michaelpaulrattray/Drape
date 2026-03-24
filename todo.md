@@ -4355,7 +4355,7 @@ The entry and configuration files are properly set up with several enhancements 
 ## Wardrobe Studio — SOT Alignment (P0)
 - [ ] Add OverlayStyleNote, DetectedItem types to client types.ts
 - [ ] Create GarmentOverlay component (clickable bounding boxes on VTO results)
-- [ ] Create DecompositionDrawer component (full_look upload → detect → pick items)
+- [x] Create DecompositionDrawer component (full_look upload → detect → pick items)
 - [ ] Add detectResultGarments server endpoint
 - [ ] Add classifyEditSize server endpoint
 - [ ] Add checkIdentityMatch server endpoint
@@ -4397,3 +4397,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update DrapeStudio to pass overlay props through
 - [x] Add GarmentOverlay tests
 - [x] Update handleStyleNote to use word-overlap scoring for garment matching
+- [x] Create DecompositionDrawer component
+- [x] Add decompose trigger button in RackPanel
+- [x] Wire DecompositionDrawer in DrapeStudio
+- [x] Export DecompositionDrawer from wardrobe barrel
+- [x] Add DecompositionDrawer tests

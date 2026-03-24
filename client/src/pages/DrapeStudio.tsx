@@ -15,7 +15,7 @@ import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition
 import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
-import { RackPanel, MainStage, LayersPanel, useWardrobeGeneration, useModelSetup, useWardrobeStore } from '@/features/wardrobe';
+import { RackPanel, MainStage, LayersPanel, DecompositionDrawer, useWardrobeGeneration, useModelSetup, useWardrobeStore } from '@/features/wardrobe';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -55,6 +55,8 @@ function WardrobeWorkspaceSection({
 
   const resultOverlayItems = useWardrobeStore((s) => s.resultOverlayItems);
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
+  const isDecomposeOpen = useWardrobeStore((s) => s.isDecomposeOpen);
+  const setDecomposeOpen = useWardrobeStore((s) => s.setDecomposeOpen);
   const { data: garments = [] } = trpc.wardrobe.garments.list.useQuery();
 
   const handleStyleNote = useCallback((note: { garmentLabel: string; category: string; instruction: string }) => {
@@ -148,6 +150,9 @@ function WardrobeWorkspaceSection({
           currentResultUrl={gen.currentResult}
         />
       </AnimatedPanel>
+
+      {/* Decomposition Drawer */}
+      <DecompositionDrawer open={isDecomposeOpen} onClose={() => setDecomposeOpen(false)} />
     </>
   );
 }

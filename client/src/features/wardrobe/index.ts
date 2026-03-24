@@ -3,6 +3,7 @@ export { GarmentCard } from "./components/GarmentCard";
 export { QualityBadge } from "./components/QualityBadge";
 export { MainStage } from "./components/MainStage";
 export { GarmentOverlay } from "./components/GarmentOverlay";
+export { DecompositionDrawer } from "./components/DecompositionDrawer";
 export { LayersPanel } from "./components/LayersPanel";
 export { useWardrobeStore } from "./stores/useWardrobeStore";
 export { useWardrobeInventory } from "./hooks/useWardrobeInventory";
