@@ -5,7 +5,7 @@
  * search filter, and slot counts. Matches the warm minimalist
  * aesthetic of the Drape Studio.
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { useWardrobeInventory } from "../hooks/useWardrobeInventory";
 import { GarmentCard } from "./GarmentCard";
@@ -21,6 +21,7 @@ export function RackPanel() {
   const styleNotes = useWardrobeStore((s) => s.styleNotes);
 
   const {
+    garments,
     filteredGarments,
     isLoading,
     slotCounts,
@@ -29,6 +30,12 @@ export function RackPanel() {
     removeGarment,
     toggleSelection,
   } = useWardrobeInventory();
+
+  // IDs of all full_look garments — used for radio deselection
+  const fullLookIds = useMemo(
+    () => garments.filter((g) => g.slotType === "full_look").map((g) => g.id),
+    [garments],
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -201,7 +208,9 @@ export function RackPanel() {
                     ? (garment.suggestedActions as string[])
                     : []
                 }
-                onToggleSelect={toggleSelection}
+                onToggleSelect={(id, slot, _deselect) =>
+                  toggleSelection(id, slot, slot === "full_look" ? fullLookIds : undefined)
+                }
                 onRemove={removeGarment}
               />
             ))}

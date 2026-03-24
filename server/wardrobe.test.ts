@@ -630,3 +630,78 @@ describe("Detect Result Garments", () => {
     expect(result.success).toBe(false);
   });
 });
+
+// ── Full Look Radio Selection Tests ───────────────────────────────────────
+
+describe("Full Look Radio Selection", () => {
+  // Simulate the store's toggleGarmentSelection logic
+  function toggleGarmentSelection(
+    selectedIds: Set<number>,
+    id: number,
+    slotType?: string,
+    fullLookIdsToDeselect?: number[],
+  ): Set<number> {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      if (slotType === "full_look" && fullLookIdsToDeselect) {
+        for (const fid of fullLookIdsToDeselect) {
+          if (fid !== id) next.delete(fid);
+        }
+      }
+      next.add(id);
+    }
+    return next;
+  }
+
+  it("should deselect other full_look garments when selecting a new one", () => {
+    const allFullLookIds = [10, 20, 30];
+    let selected = new Set<number>([10]); // garment 10 already selected
+    selected = toggleGarmentSelection(selected, 20, "full_look", allFullLookIds);
+    expect(selected.has(20)).toBe(true);
+    expect(selected.has(10)).toBe(false);
+    expect(selected.size).toBe(1);
+  });
+
+  it("should not deselect non-full_look garments when selecting full_look", () => {
+    const allFullLookIds = [10, 20];
+    let selected = new Set<number>([10, 100, 200]); // 100, 200 are tops/bottoms
+    selected = toggleGarmentSelection(selected, 20, "full_look", allFullLookIds);
+    expect(selected.has(20)).toBe(true);
+    expect(selected.has(10)).toBe(false);
+    expect(selected.has(100)).toBe(true);
+    expect(selected.has(200)).toBe(true);
+  });
+
+  it("should toggle off a full_look garment when clicking it again", () => {
+    const allFullLookIds = [10, 20];
+    let selected = new Set<number>([10]);
+    selected = toggleGarmentSelection(selected, 10, "full_look", allFullLookIds);
+    expect(selected.has(10)).toBe(false);
+    expect(selected.size).toBe(0);
+  });
+
+  it("should not affect other slots when selecting non-full_look", () => {
+    let selected = new Set<number>([10, 50]);
+    selected = toggleGarmentSelection(selected, 60, "tops");
+    expect(selected.has(10)).toBe(true);
+    expect(selected.has(50)).toBe(true);
+    expect(selected.has(60)).toBe(true);
+  });
+
+  it("should work when fullLookIdsToDeselect is undefined (non-full_look slot)", () => {
+    let selected = new Set<number>([10]);
+    selected = toggleGarmentSelection(selected, 20, "tops", undefined);
+    expect(selected.has(10)).toBe(true);
+    expect(selected.has(20)).toBe(true);
+  });
+
+  it("should handle selecting first full_look with no prior selection", () => {
+    const allFullLookIds = [10, 20, 30];
+    let selected = new Set<number>();
+    selected = toggleGarmentSelection(selected, 10, "full_look", allFullLookIds);
+    expect(selected.has(10)).toBe(true);
+    expect(selected.size).toBe(1);
+  });
+});

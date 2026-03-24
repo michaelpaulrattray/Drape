@@ -29,7 +29,7 @@ interface WardrobeState {
 
   /** Set of selected garment IDs (for VTO composition) */
   selectedGarmentIds: Set<number>;
-  toggleGarmentSelection: (id: number, slotType?: GarmentSlotType) => void;
+  toggleGarmentSelection: (id: number, slotType?: GarmentSlotType, fullLookIdsToDeselect?: number[]) => void;
   clearSelection: () => void;
   setSelection: (ids: number[]) => void;
 
@@ -124,21 +124,20 @@ export const useWardrobeStore = create<WardrobeState>()(
 
       // ── Selection ──────────────────────────────────────────
       // SOT: full_look is radio (only one at a time), other slots are additive
-      toggleGarmentSelection: (id, slotType) =>
+      toggleGarmentSelection: (id, slotType, fullLookIdsToDeselect) =>
         set(
           (state) => {
             const next = new Set(state.selectedGarmentIds);
             if (next.has(id)) {
               next.delete(id);
             } else {
-              // Full look is radio — deselect any other full_look
-              if (slotType === "full_look") {
-                // Remove all currently selected full_look garments
-                // (caller should pass slotType for this to work)
-                next.add(id);
-              } else {
-                next.add(id);
+              // Full look is radio — deselect any other full_look first
+              if (slotType === "full_look" && fullLookIdsToDeselect) {
+                for (const fid of fullLookIdsToDeselect) {
+                  if (fid !== id) next.delete(fid);
+                }
               }
+              next.add(id);
             }
             return { selectedGarmentIds: next };
           },

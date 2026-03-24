@@ -21,7 +21,7 @@ interface GarmentCardProps {
   isProcessing: boolean;
   slotType?: GarmentSlotType;
   suggestedActions?: string[];
-  onToggleSelect: (id: number, slotType?: GarmentSlotType) => void;
+  onToggleSelect: (id: number, slotType?: GarmentSlotType, fullLookIdsToDeselect?: number[]) => void;
   onRemove: (id: number) => void;
 }
 

@@ -4384,3 +4384,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add quality check tests
 - [x] Add vto.detectResultGarments tRPC procedure
 - [x] Add detectResultGarments test
+- [x] Fix full_look radio selection bug in toggleGarmentSelection
