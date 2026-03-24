@@ -42,9 +42,9 @@ export interface ModelPreferences {
 }
 
 export enum ImageResolution {
-  STANDARD = "1024x1024",
-  HIGH = "2048x2048",
-  ULTRA = "4096x4096"
+  STANDARD = "1K",
+  HIGH = "2K",
+  ULTRA = "4K"
 }
 
 export enum AspectRatio {
