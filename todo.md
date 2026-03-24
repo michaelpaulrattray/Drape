@@ -4264,3 +4264,16 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Enable Wardrobe tool in ToolRail when full body exists
 - [x] Write vitest tests for wardrobe stores and upload flow (23 tests)
 - [x] Verify all tests pass (1,211 total)
+
+## Phase 4: VTO Generation (Main Stage + Canvas)
+- [x] Create client/src/features/wardrobe/hooks/useWardrobeGeneration.ts (VTO generation, undo/redo, tattoo analysis)
+- [x] Create client/src/features/wardrobe/components/MainStage.tsx (VTO canvas with result display, dress button, undo/redo controls, hold-to-compare)
+- [x] Create client/src/features/wardrobe/components/LayersPanel.tsx (selected garment stack, style notes, generate/refresh buttons)
+- [x] Wire MainStage into DrapeStudio center canvas for wardrobe tool
+- [x] Wire LayersPanel into DrapeStudio context panel for wardrobe tool
+- [x] Bridge casting model assets to wardrobe VTO base image (cross-studio state)
+- [x] Implement tattoo analysis support (tattooMap in store, passed to VTO generation)
+- [x] Implement VTO undo/redo with history persistence
+- [x] Implement hold-to-compare (hold to see clean model vs dressed result)
+- [x] Write vitest tests for useWardrobeGeneration hook (22 tests)
+- [x] Verify all tests pass (1,233 total)

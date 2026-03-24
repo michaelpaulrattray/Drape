@@ -11,7 +11,7 @@ import { StudioHeader } from '@/features/studio/components/StudioHeader';
 import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
-import { RackPanel } from '@/features/wardrobe';
+import { RackPanel, MainStage, LayersPanel, useWardrobeGeneration } from '@/features/wardrobe';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -31,6 +31,57 @@ import { generateRandomPreferences } from '@/features/casting/castingHelpers';
 
 /** Valid tool query param values */
 const VALID_TOOLS: StudioTool[] = ['casting', 'wardrobe', 'export'];
+
+/** Wardrobe workspace — extracted to avoid hook-in-conditional issues */
+function WardrobeWorkspaceSection({
+  modelImageUrl,
+  modelId,
+}: {
+  modelImageUrl: string | null;
+  modelId: number | null;
+}) {
+  const gen = useWardrobeGeneration({ modelImageUrl, modelId });
+
+  return (
+    <>
+      {/* Left Panel — Garment Rack */}
+      <div
+        className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 overflow-y-auto border-r relative"
+        style={{ borderColor: '#e5e0d8' }}
+      >
+        <RackPanel />
+      </div>
+
+      {/* Center — VTO Canvas */}
+      <MainStage
+        modelImageUrl={modelImageUrl}
+        isGenerating={gen.isGenerating}
+        generatingMessage={gen.generatingMessage}
+        errorMessage={gen.errorMessage}
+        onClearError={gen.clearError}
+        currentResult={gen.currentResult}
+        onGenerate={gen.generate}
+        onUndo={gen.undo}
+        onRedo={gen.redo}
+        canUndo={gen.canUndo}
+        canRedo={gen.canRedo}
+      />
+
+      {/* Right Panel — Layers */}
+      <div
+        className="hidden lg:block w-[240px] xl:w-[260px] flex-shrink-0 overflow-y-auto border-l"
+        style={{ borderColor: '#e5e0d8' }}
+      >
+        <LayersPanel
+          isGenerating={gen.isGenerating}
+          hasResult={gen.currentResult !== null}
+          onGenerate={gen.generate}
+          currentResultUrl={gen.currentResult}
+        />
+      </div>
+    </>
+  );
+}
 
 export default function DrapeStudio() {
   const [, navigate] = useLocation();
@@ -181,6 +232,12 @@ export default function DrapeStudio() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [prefs, setPrefs]);
 
+  // Derive full-body URL for wardrobe VTO base image
+  const fullBodyUrl = useMemo(() => {
+    const fullBodyAsset = currentAssets.find((a) => a.viewType === 'fullBody' && a.storageUrl);
+    return fullBodyAsset?.storageUrl || null;
+  }, [currentAssets]);
+
   // Form completion progress
   const formProgress = useMemo(() => {
     let completed = 0;
@@ -295,33 +352,10 @@ export default function DrapeStudio() {
           )}
 
           {activeTool === 'wardrobe' && (
-            <>
-              {/* Left Panel — Garment Rack */}
-              <div
-                className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 overflow-y-auto border-r relative"
-                style={{ borderColor: '#e5e0d8' }}
-              >
-                <RackPanel />
-              </div>
-
-              {/* Center — VTO Canvas (placeholder until Phase 4) */}
-              <div className="flex-1 flex items-center justify-center" style={{ background: '#f0ebe3' }}>
-                <div className="text-center">
-                  <div
-                    className="w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                    style={{ background: '#eae7e1' }}
-                  >
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                  </div>
-                  <p style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>Virtual Try-On Canvas</p>
-                  <p style={{ fontSize: 10, color: '#b8b3a8', marginTop: 4 }}>Select garments from your rack, then generate</p>
-                </div>
-              </div>
-            </>
+            <WardrobeWorkspaceSection
+              modelImageUrl={fullBodyUrl}
+              modelId={currentModelId}
+            />
           )}
 
           {activeTool === 'export' && (
