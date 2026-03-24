@@ -366,6 +366,27 @@ export function ControlPanel({
           )}
         </button>
 
+        <button
+          onClick={() => {
+            const randomPrefs = generateRandomPreferences();
+            updatePrefs(randomPrefs);
+            toast('Preferences randomized', { duration: 1500 });
+          }}
+          disabled={genState.isGenerating}
+          className="w-full mt-2 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-30"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 9, fontWeight: 500, color: '#c4c0b8', letterSpacing: '0.02em' }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+            <rect x="1" y="1" width="22" height="22" rx="4" />
+            <circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none" />
+            <circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+          </svg>
+          Randomize
+        </button>
+
         {user?.role === 'admin' && (
           <details className="mt-3 pt-3 border-t border-[rgba(0,0,0,0.05)] group">
             <summary className="text-[9px] text-[#b8b3a8] cursor-pointer hover:text-[#1a1a1a] transition-colors flex items-center gap-1.5 select-none">

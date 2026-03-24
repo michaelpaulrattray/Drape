@@ -4217,3 +4217,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] PDF: Update hash visual identicon colors to warm palette
 - [x] PDF: Rename "IDENTITY DOCUMENT" to "IDENTITY DOSSIER" in footer for legal safety
 - [x] PDF: Add subtle disclaimer on cover page ("For creative and commercial reference only")
+- [x] Add subtle "Randomize" convenience option below "Fill Required Fields" button in casting panel
