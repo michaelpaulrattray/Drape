@@ -1,9 +1,10 @@
 /**
  * ToolSwitchConfirmDialog — Shown when switching tools would reset progress.
  *
- * Minimal, on-brand dialog with a clear warning message and two actions.
- * Uses the same warm neutral palette as the rest of the studio.
+ * Uses React Portal to render at document.body, ensuring the overlay
+ * covers the full viewport even when ancestors have CSS transforms.
  */
+import { createPortal } from 'react-dom';
 import { AlertTriangle } from 'lucide-react';
 
 interface ToolSwitchConfirmDialogProps {
@@ -23,9 +24,9 @@ export function ToolSwitchConfirmDialog({
 }: ToolSwitchConfirmDialogProps) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-[9999] flex items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
       onClick={onCancel}
     >
@@ -89,6 +90,7 @@ export function ToolSwitchConfirmDialog({
           to { transform: scale(1); opacity: 1; }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }

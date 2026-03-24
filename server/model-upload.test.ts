@@ -33,19 +33,25 @@ describe("getToolAvailability — uploaded model", () => {
       hasAllViews: false,
       modelSource: null,
       uploadedModelUrl: null,
+      castModelId: null,
+      castMasterPrompt: null,
+      castFullBodyUrl: null,
     };
     const result = getToolAvailability("casting", emptyCanvas);
     expect(result.enabled).toBe(true);
     expect(result.needsConfirm).toBeFalsy();
   });
 
-  it("does not require confirmation for Casting on cast model", () => {
+  it("does not require confirmation for Casting on active cast (no gallery model)", () => {
     const castCanvas: CanvasState = {
       hasModel: true,
       hasFullBody: true,
       hasAllViews: false,
       modelSource: "cast",
       uploadedModelUrl: null,
+      castModelId: null,
+      castMasterPrompt: null,
+      castFullBodyUrl: null,
     };
     const result = getToolAvailability("casting", castCanvas);
     expect(result.enabled).toBe(true);

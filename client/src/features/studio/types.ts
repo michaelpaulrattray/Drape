@@ -52,13 +52,22 @@ export function getToolAvailability(
 ): ToolAvailability {
   switch (tool) {
     case 'casting':
-      // Casting is allowed when uploaded, but needs confirmation to reset
+      // Uploaded models need confirmation — switching clears the upload
       if (canvas.modelSource === 'uploaded') {
         return {
           enabled: true,
           tooltip: 'Casting Studio',
           needsConfirm: true,
           confirmMessage: 'Switching to Casting will clear your uploaded model and any wardrobe progress. This cannot be undone.',
+        };
+      }
+      // Gallery-loaded cast models need confirmation — switching starts a fresh cast
+      if (canvas.castModelId !== null) {
+        return {
+          enabled: true,
+          tooltip: 'Casting Studio',
+          needsConfirm: true,
+          confirmMessage: 'Switching to Casting will unload this model and start a fresh casting session. Any unsaved wardrobe progress will be lost.',
         };
       }
       return { enabled: true, tooltip: 'Casting Studio' };

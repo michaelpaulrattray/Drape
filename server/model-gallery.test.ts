@@ -69,11 +69,12 @@ describe("CanvasState with cast fields", () => {
 // ── Tool Availability for Gallery-Loaded Models ────────────────────────────
 
 describe("Tool availability for gallery-loaded models", () => {
-  it("enables Casting for gallery-loaded models (no confirmation needed)", () => {
+  it("enables Casting for gallery-loaded models with confirmation", () => {
     const result = getToolAvailability("casting", galleryLoadedCanvas);
     expect(result.enabled).toBe(true);
-    // Cast models don't need confirmation to switch to casting
-    expect(result.needsConfirm).toBeFalsy();
+    // Gallery-loaded cast models need confirmation to switch to casting
+    expect(result.needsConfirm).toBe(true);
+    expect(result.confirmMessage).toBeTruthy();
   });
 
   it("enables Wardrobe for gallery-loaded models", () => {

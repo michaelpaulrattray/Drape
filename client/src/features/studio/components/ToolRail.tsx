@@ -51,10 +51,12 @@ export function ToolRail({ canvas }: ToolRailProps) {
 
   const handleConfirm = useCallback(() => {
     if (!pendingTool) return;
-    // Clear uploaded model (resets canvas + wardrobe state)
+    // clearUploadedModel resets canvas to defaults and sets activeTool to null (lobby).
+    // We immediately override activeTool with the pending tool so the user
+    // goes straight to the target tool instead of flashing through the lobby.
     clearUploadedModel();
-    // Then switch to the target tool
-    setActiveTool(pendingTool);
+    // Override the lobby redirect — go directly to the target tool
+    setTimeout(() => setActiveTool(pendingTool), 0);
     setPendingTool(null);
     setConfirmMessage('');
   }, [pendingTool, clearUploadedModel, setActiveTool]);

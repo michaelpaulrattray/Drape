@@ -4334,3 +4334,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update SLOT_TABS in wardrobe constants to use Lucide icon components (Sparkles, Shirt, Layers, Footprints, Watch)
 - [x] Update RackPanel to render Lucide icons via <tab.icon /> component syntax
 - [x] Verify icons render correctly — all 1,269 tests passing
+
+## Bug Fix: Tool switch confirmation issues
+- [x] Fix: No confirmation dialog when switching from gallery-loaded model (cast with castModelId) to Casting
+- [x] Fix: Confirmation dialog renders inside ToolRail sidebar instead of as full-screen overlay (fixed with React Portal)
+- [x] Verify both fixes work correctly (1,269 tests passing)
