@@ -4141,3 +4141,9 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] QUAL-6: Fixed race drift — caused by missing ethnicityHint to image model. Added ethLock heritage-specific markers (East Asian eye markers, African nose/lip markers, platinum blonde example)
 - [x] QUAL-7: Simplified QueueStatusBar (queue position only when queued). LoadingOverlay now uses warm palette for first gen (no charcoal), dark overlay for iterations
 - [x] QUAL-8: Removed 'Mixed' from ETHNICITIES array — matches SOT. Blend UI handles mixed heritage via 2-ethnicity selector
+
+## SOT Comparison Round 2 — Remaining Discrepancies
+- [x] DISC-1: Changed iterate to FREEZE-AND-APPEND — appends amendment to existing prompt, compacts every 5, uses updateSchemaForIteration for surgical schema updates
+- [x] DISC-2: Added server-side image compression via sharp (imageCompression.ts) — 1.5MB budget, cascading JPEG quality, integrated into fetchAsBase64
+- [x] DISC-3: Wired technicalSchema + bodyType through aiService.ts and castingImaging.ts routes to geminiViews.ts functions
+- [x] DISC-4: Added fire-and-forget reconcile call after iteration success. Changed route to accept imageUrl (fetches base64 server-side)

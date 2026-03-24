@@ -358,6 +358,18 @@ export function useCastingGeneration({
         // Fire-and-forget: fetch suggestions
         fetchSuggestions(updatedPrompt, result.imageUrl);
         
+        // Fire-and-forget: reconcile schema with actual image (matches SOT)
+        // The image model may deviate from the text prompt — reconcile corrects the schema
+        reconcileMutation.mutateAsync({
+          modelId: currentModelId,
+          imageUrl: result.imageUrl,
+        }).then((reconciled) => {
+          if (reconciled.schema) setCurrentTechnicalSchema(reconciled.schema);
+          if (reconciled.description) setCurrentMasterPrompt(reconciled.description);
+        }).catch(() => {
+          // Silent fail — stale spec is better than crashing
+        });
+        
         // Auto-compact after 5+ amendments (matches SOT threshold)
         if (amendments.length + 1 >= 5 && (amendments.length + 1) % 5 === 0) {
           console.log('[Compaction] Auto-triggering after', amendments.length + 1, 'amendments');

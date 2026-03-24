@@ -206,10 +206,13 @@ export const castingImagingRouter = router({
           },
           async () => {
             const gender = (model.preferences as any)?.gender || 'female';
+            const bodyType = (model.preferences as any)?.bodyType;
             const genResult = await generateFullBody(
               model.masterPrompt,
               headshot.storageUrl,
-              gender
+              gender,
+              model.technicalSchema,
+              bodyType
             );
 
             if (!genResult.imageUrl) {
@@ -315,7 +318,8 @@ export const castingImagingRouter = router({
               model.masterPrompt,
               reference.storageUrl,
               gender,
-              input.viewType
+              input.viewType,
+              model.technicalSchema
             );
 
             if (!genResult.imageUrl) {

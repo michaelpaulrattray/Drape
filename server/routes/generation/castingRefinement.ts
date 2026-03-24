@@ -7,6 +7,7 @@ import {
   generateMasterPrompt, iterateModel, enhanceUserPrompt, upscaleImage,
   generateCastingSuggestions, analyzeReferenceForTransfer,
   reconcileSchemaWithImage, compactMasterPrompt, clearCastingSession,
+  updateSchemaForIteration,
   POINT_COSTS, ImageResolution,
 } from "../../casting/aiService";
 import { withAtomicCredits } from "../../casting/atomicCredits";
@@ -75,16 +76,25 @@ export const castingRefinementRouter = router({
             referenceId: `gen-${genResult.generationId}`,
           },
           async () => {
-            const updatedPromptResult = await generateMasterPrompt(
-              {
-                ...model.preferences as any,
-                userPrompt: input.feedback,
-                previousMasterPrompt: model.masterPrompt,
-              },
-              'ITERATE'
+            // ── FREEZE-AND-APPEND (matches SOT) ──
+            // Append user amendment to existing prompt instead of regenerating.
+            // This preserves the original prompt's nuances.
+            let rawPrompt = (model.masterPrompt || '') + `\n\nAPPLIED MODIFICATION: ${input.feedback}`;
+
+            // Count amendments — compact every 5 to prevent contradictory bloat
+            const amendmentCount = (rawPrompt.match(/APPLIED MODIFICATION:/g) || []).length;
+            let updatedMasterPrompt: string;
+            if (amendmentCount >= 5) {
+              updatedMasterPrompt = await compactMasterPrompt(rawPrompt, model.technicalSchema || {});
+            } else {
+              updatedMasterPrompt = rawPrompt;
+            }
+
+            // Surgically update only affected schema fields (for PDF stats)
+            const updatedSchema = await updateSchemaForIteration(
+              model.technicalSchema || {},
+              input.feedback
             );
-            const updatedMasterPrompt = updatedPromptResult.naturalDescription;
-            const updatedSchema = updatedPromptResult.technicalSchema;
 
             // Build ethnicityHint and CASTING OVERRIDES for image model
             const prefs = (model.preferences || {}) as any;
@@ -355,7 +365,7 @@ export const castingRefinementRouter = router({
   reconcile: protectedProcedure
     .input(z.object({
       modelId: z.number(),
-      imageBase64: z.string().min(1).max(10_000_000),
+      imageUrl: z.string().url(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Rate limit free Gemini calls to protect API quota
@@ -374,13 +384,20 @@ export const castingRefinementRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
 
+      // Fetch image as base64 server-side (avoids sending large payloads from client)
+      const imgResp = await fetch(input.imageUrl);
+      if (!imgResp.ok) throw new TRPCError({ code: "BAD_REQUEST", message: "Failed to fetch image" });
+      const imgBuf = Buffer.from(await imgResp.arrayBuffer());
+      const contentType = imgResp.headers.get('content-type') || 'image/png';
+      const imageBase64 = `data:${contentType};base64,${imgBuf.toString('base64')}`;
+
       const currentSchema = model.technicalSchema || {};
       const currentPrompt = model.masterPrompt || "";
 
       try {
         const { schema, description } = await reconcileSchemaWithImage(
           currentSchema,
-          input.imageBase64,
+          imageBase64,
           currentPrompt
         );
 

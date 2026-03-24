@@ -85,9 +85,12 @@ export const POINT_COSTS = CREDIT_COSTS;
 async function fetchAsBase64(url: string): Promise<string> {
   if (!url.startsWith('http')) return url;
   const response = await fetch(url);
-  const buffer = await response.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString('base64');
-  return `data:image/png;base64,${base64}`;
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const contentType = response.headers.get('content-type') || 'image/png';
+  const dataUrl = `data:${contentType};base64,${buffer.toString('base64')}`;
+  // Compress if over 1.5 MB — matches SOT's compressImageForApi
+  const { compressImageForApi } = await import('./imageCompression');
+  return compressImageForApi(dataUrl);
 }
 
 /**
@@ -223,11 +226,13 @@ export async function generateCastingImage(
 export async function generateFullBody(
   masterPrompt: string,
   headshotUrl: string,
-  gender: string
+  gender: string,
+  technicalSchema?: any,
+  bodyType?: string
 ): Promise<GenerationResult> {
   const headshotBase64 = await fetchAsBase64(headshotUrl);
 
-  const base64Result = await gemini.generateFullBody(masterPrompt, headshotBase64, gender);
+  const base64Result = await gemini.generateFullBody(masterPrompt, headshotBase64, gender, technicalSchema, bodyType);
 
   // Upload base64 to S3 for persistent storage
   const s3Url = await uploadBase64ToS3(base64Result, "fullbody");
@@ -246,12 +251,13 @@ export async function generateRemainingViews(
   masterPrompt: string,
   sourceImageUrl: string,
   gender: string,
-  viewType: 'side' | 'back' | 'walk'
+  viewType: 'side' | 'back' | 'walk',
+  technicalSchema?: any
 ): Promise<GenerationResult> {
   const sourceBase64 = await fetchAsBase64(sourceImageUrl);
 
   // Use the new single view generation function
-  const result = await gemini.generateSingleView(masterPrompt, sourceBase64, gender, viewType);
+  const result = await gemini.generateSingleView(masterPrompt, sourceBase64, gender, viewType, technicalSchema);
 
   // Upload base64 to S3 for persistent storage
   const s3Url = await uploadBase64ToS3(result.imageUrl, viewType);
