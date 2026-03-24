@@ -8,6 +8,7 @@ const DEFAULT_CANVAS: CanvasState = {
   hasFullBody: false,
   hasAllViews: false,
   modelSource: null,
+  uploadedModelUrl: null,
 };
 
 interface StudioState {
@@ -18,6 +19,12 @@ interface StudioState {
   /** Shared canvas state — derived from model assets */
   canvas: CanvasState;
   setCanvas: (canvas: Partial<CanvasState>) => void;
+
+  /** Load a model from an uploaded image URL */
+  loadModelFromUpload: (imageUrl: string) => void;
+
+  /** Clear the uploaded model and reset to empty canvas */
+  clearUploadedModel: () => void;
 
   /** Whether the tool rail is collapsed (mobile) */
   isRailCollapsed: boolean;
@@ -40,6 +47,32 @@ export const useStudioStore = create<StudioState>()(
           (state) => ({ canvas: { ...state.canvas, ...partial } }),
           false,
           'setCanvas'
+        ),
+
+      loadModelFromUpload: (imageUrl) =>
+        set(
+          {
+            canvas: {
+              hasModel: true,
+              hasFullBody: true,
+              hasAllViews: false,
+              modelSource: 'uploaded' as ModelSource,
+              uploadedModelUrl: imageUrl,
+            },
+            activeTool: 'wardrobe',
+          },
+          false,
+          'loadModelFromUpload'
+        ),
+
+      clearUploadedModel: () =>
+        set(
+          {
+            canvas: { ...DEFAULT_CANVAS },
+            activeTool: 'casting',
+          },
+          false,
+          'clearUploadedModel'
         ),
 
       isRailCollapsed: false,

@@ -128,12 +128,15 @@ export default function DrapeStudio() {
       hasFullBody &&
       currentAssets.some((a) => a.viewType === 'sideProfile' && a.storageUrl);
 
-    setCanvas({
-      hasModel,
-      hasFullBody,
-      hasAllViews,
-      modelSource: currentModelId ? 'cast' : canvas.modelSource,
-    });
+    // Only sync casting state if we're not in uploaded-model mode
+    if (canvas.modelSource !== 'uploaded') {
+      setCanvas({
+        hasModel,
+        hasFullBody,
+        hasAllViews,
+        modelSource: currentModelId ? 'cast' : canvas.modelSource,
+      });
+    }
   }, [currentAssets, currentModelId]);
 
   // Canvas drawing hook
@@ -233,10 +236,12 @@ export default function DrapeStudio() {
   }, [prefs, setPrefs]);
 
   // Derive full-body URL for wardrobe VTO base image
+  // Priority: uploaded model URL > casting full body asset
   const fullBodyUrl = useMemo(() => {
+    if (canvas.uploadedModelUrl) return canvas.uploadedModelUrl;
     const fullBodyAsset = currentAssets.find((a) => a.viewType === 'fullBody' && a.storageUrl);
     return fullBodyAsset?.storageUrl || null;
-  }, [currentAssets]);
+  }, [canvas.uploadedModelUrl, currentAssets]);
 
   // Form completion progress
   const formProgress = useMemo(() => {

@@ -21,6 +21,8 @@ export interface CanvasState {
   hasAllViews: boolean;
   /** How the model was loaded */
   modelSource: ModelSource;
+  /** URL of an uploaded model image (when source === 'uploaded') */
+  uploadedModelUrl: string | null;
 }
 
 /** Tool availability derived from canvas state */
@@ -36,6 +38,10 @@ export function getToolAvailability(
 ): ToolAvailability {
   switch (tool) {
     case 'casting':
+      // Casting is disabled when model was uploaded (not cast)
+      if (canvas.modelSource === 'uploaded') {
+        return { enabled: false, tooltip: 'Upload detected — casting unavailable' };
+      }
       return { enabled: true, tooltip: 'Casting Studio' };
 
     case 'wardrobe':

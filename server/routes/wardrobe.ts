@@ -592,6 +592,30 @@ const outfitRouter = router({
     }),
 });
 
+// ── Model Upload Procedure ────────────────────────────────────────────────
+
+const modelRouter = router({
+  upload: protectedProcedure
+    .input(z.object({
+      imageBase64: z.string().max(10_000_000),
+      fileName: z.string().max(256).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      throwIfRateLimited(ctx.user.id);
+
+      const suffix = Math.random().toString(36).slice(2, 10);
+      const fileKey = `${ctx.user.id}-models/upload-${Date.now()}-${suffix}.png`;
+      const imageBuffer = Buffer.from(
+        input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
+        "base64",
+      );
+      const { url } = await storagePut(fileKey, imageBuffer, "image/png");
+
+      log.info(`Model photo uploaded for user ${ctx.user.id}: ${fileKey}`);
+      return { url, fileKey };
+    }),
+});
+
 // ── Combined Wardrobe Router ───────────────────────────────────────────────
 
 export const wardrobeRouter = router({
@@ -600,4 +624,5 @@ export const wardrobeRouter = router({
   decompose: decomposeRouter,
   sessions: sessionRouter,
   outfits: outfitRouter,
+  model: modelRouter,
 });

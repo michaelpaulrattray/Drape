@@ -4277,3 +4277,14 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Implement hold-to-compare (hold to see clean model vs dressed result)
 - [x] Write vitest tests for useWardrobeGeneration hook (22 tests)
 - [x] Verify all tests pass (1,233 total)
+
+## Phase 4b: Upload Your Own Model
+- [x] Extend CanvasState with uploadedModelUrl field
+- [x] Update getToolAvailability — uploaded model disables Casting, enables Wardrobe
+- [x] Add loadModelFromUpload action to useStudioStore
+- [x] Create server-side model upload tRPC procedure (S3 upload, return URL)
+- [x] Create ModelUploadZone component (drag-and-drop + click-to-upload)
+- [x] Wire ModelUploadZone into DrapeStudio empty canvas state (WarmEmptyState)
+- [x] Bridge uploaded model URL to wardrobe VTO base image
+- [x] Write vitest tests for upload flow and tool availability (16 tests)
+- [x] Verify all tests pass (1,249 total)
