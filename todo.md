@@ -4189,3 +4189,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] ENH-REFTRANSFER-6: Add missing SOT lines for eye shape and eyebrow clarification
 - [x] Fix iris descriptions: Amber (HIGH - gemstone metaphor causing glowing eyes), Ice (translucency), Honey (sun-lit), Steel (metallic)
 - [x] Redesign loading overlay to Option B: line loader + cycling tips only, remove dot pattern, status text, timer
+- [x] Expand loading overlay contextual tips from 3-5 to 8-10 per category
