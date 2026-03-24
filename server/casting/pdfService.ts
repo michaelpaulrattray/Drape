@@ -190,7 +190,13 @@ function createCoverPage(doc: jsPDF, data: PdfModelData) {
   // Document type
   doc.setFontSize(8);
   doc.setTextColor(...C.muted);
-  doc.text('DIGITAL IDENTITY DOCUMENT', 15, 270);
+  doc.text('DIGITAL IDENTITY DOSSIER', 15, 270);
+
+  // Disclaimer — subtle, immersive
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(6);
+  doc.setTextColor(...C.muted);
+  doc.text('For creative and commercial reference only. This is not a legal identity document.', pw / 2, 280, { align: 'center' });
 
   // Footer
   doc.setFont('courier', 'normal');
@@ -852,7 +858,7 @@ function addPageFooter(doc: jsPDF, pageNum: number, totalPages: number, agencyId
   doc.setFontSize(7);
   doc.setTextColor(...C.stone);
   doc.text(
-    `Page ${pageNum} of ${totalPages}  \u2014  ${agencyId}  \u2014  DRAPE\u2122 IDENTITY DOCUMENT`,
+    `Page ${pageNum} of ${totalPages}  \u2014  ${agencyId}  \u2014  DRAPE\u2122 IDENTITY DOSSIER`,
     105,
     287,
     { align: 'center' },

@@ -4215,3 +4215,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] PDF: Fix resolution display from "4K Ultra (3840x5120)" to "2K (2048x2048)"
 - [x] PDF: Fix Technical Appendix skin section wrong field mapping (tone/texture/finish swapped)
 - [x] PDF: Update hash visual identicon colors to warm palette
+- [x] PDF: Rename "IDENTITY DOCUMENT" to "IDENTITY DOSSIER" in footer for legal safety
+- [x] PDF: Add subtle disclaimer on cover page ("For creative and commercial reference only")
