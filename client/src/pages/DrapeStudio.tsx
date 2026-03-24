@@ -150,6 +150,8 @@ function WardrobeWorkspaceSection({
           currentResultUrl={gen.currentResult}
           onRefine={gen.refineResult}
           isRefining={gen.isGenerating}
+          hasDirtyStyles={gen.hasDirtyStyles}
+          onApplyStyleChanges={gen.handleApplyStyleChanges}
         />
       </AnimatedPanel>
 

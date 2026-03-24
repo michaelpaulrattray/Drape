@@ -35,6 +35,10 @@ interface LayersPanelProps {
   onRefine?: (garmentId: number, instruction: string) => void;
   /** Whether refinement is in progress */
   isRefining?: boolean;
+  /** Whether any selected garment has dirty style notes */
+  hasDirtyStyles?: boolean;
+  /** Apply only the changed style notes */
+  onApplyStyleChanges?: () => void;
 }
 
 // ── Garment Refinement Row ──────────────────────────────────────
@@ -153,6 +157,8 @@ export function LayersPanel({
   currentResultUrl,
   onRefine,
   isRefining = false,
+  hasDirtyStyles = false,
+  onApplyStyleChanges,
 }: LayersPanelProps) {
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
   const toggleGarmentSelection = useWardrobeStore((s) => s.toggleGarmentSelection);
@@ -432,6 +438,24 @@ export function LayersPanel({
             </>
           )}
         </button>
+
+        {/* Apply Style Changes (only when dirty notes exist) */}
+        {hasDirtyStyles && hasResult && onApplyStyleChanges && (
+          <button
+            onClick={onApplyStyleChanges}
+            disabled={isGenerating}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium transition-all hover:opacity-90 disabled:opacity-30"
+            style={{
+              background: "transparent",
+              color: "#1a1a1a",
+              fontSize: 10,
+              border: "1px solid #d4cfc7",
+            }}
+          >
+            <RefreshCw size={12} />
+            Apply Style Changes
+          </button>
+        )}
 
         {/* Save outfit (only when result exists) */}
         {hasResult && (

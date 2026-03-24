@@ -80,6 +80,12 @@ interface WardrobeState {
   errorMessage: string | null;
   setErrorMessage: (msg: string | null) => void;
 
+  /** Snapshot of style notes at last generation (garmentId → note text) */
+  lastGenStyleNotes: Record<string, string>;
+  setLastGenStyleNotes: (notes: Record<string, string>) => void;
+  /** Whether any selected garment's style note differs from last generation */
+  hasDirtyStyles: () => boolean;
+
   /** Whether the decomposition drawer is open */
   isDecomposeOpen: boolean;
   setDecomposeOpen: (open: boolean) => void;
@@ -105,6 +111,7 @@ const INITIAL_STATE = {
   cooldownSeconds: 0,
   errorMessage: null as string | null,
   isDecomposeOpen: false,
+  lastGenStyleNotes: {} as Record<string, string>,
 };
 
 export const useWardrobeStore = create<WardrobeState>()(
@@ -301,6 +308,22 @@ export const useWardrobeStore = create<WardrobeState>()(
       setErrorMessage: (msg) =>
         set({ errorMessage: msg }, false, "setErrorMessage"),
 
+      // ── Style Refresh ────────────────────────────────────────
+      setLastGenStyleNotes: (notes) =>
+        set({ lastGenStyleNotes: notes }, false, "setLastGenStyleNotes"),
+
+      hasDirtyStyles: () => {
+        const s = get();
+        if (s.vtoHistory.length <= 1) return false;
+        if (Object.keys(s.lastGenStyleNotes).length === 0) return false;
+        return Array.from(s.selectedGarmentIds).some((id) => {
+          const key = String(id);
+          const lastNote = s.lastGenStyleNotes[key];
+          const currentNote = s.styleNotes[key] || "";
+          return lastNote !== undefined && lastNote !== currentNote;
+        });
+      },
+
       // ── Decompose ──────────────────────────────────────────
       setDecomposeOpen: (open) =>
         set({ isDecomposeOpen: open }, false, "setDecomposeOpen"),
@@ -313,6 +336,7 @@ export const useWardrobeStore = create<WardrobeState>()(
             selectedGarmentIds: new Set(),
             selectionSnapshots: new Map(),
             overlayCache: new Map(),
+            lastGenStyleNotes: {},
           },
           false,
           "resetWardrobe",

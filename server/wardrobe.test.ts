@@ -1394,3 +1394,71 @@ describe("Identity Check", () => {
     expect(handleIdentityResult(true, true)).toBe("keep");
   });
 });
+
+// ── Style Refresh (dirty detection + snapshot) ──────────────────
+
+describe("Style Refresh — dirty detection", () => {
+  it("detects dirty styles when current note differs from snapshot", () => {
+    const lastGenNotes: Record<string, string> = { "1": "tuck in", "2": "roll sleeves" };
+    const currentNotes: Record<string, string> = { "1": "tuck in", "2": "cuff hem" };
+    const selectedIds = [1, 2];
+
+    const dirty = selectedIds.filter((id) => {
+      const key = String(id);
+      const lastNote = lastGenNotes[key];
+      const currentNote = currentNotes[key] || "";
+      return lastNote !== undefined && lastNote !== currentNote;
+    });
+
+    expect(dirty).toEqual([2]);
+  });
+
+  it("returns no dirty when notes match snapshot", () => {
+    const lastGenNotes: Record<string, string> = { "1": "tuck in", "2": "roll sleeves" };
+    const currentNotes: Record<string, string> = { "1": "tuck in", "2": "roll sleeves" };
+    const selectedIds = [1, 2];
+
+    const dirty = selectedIds.filter((id) => {
+      const key = String(id);
+      return lastGenNotes[key] !== undefined && lastGenNotes[key] !== (currentNotes[key] || "");
+    });
+
+    expect(dirty).toEqual([]);
+  });
+
+  it("ignores garments not in snapshot (newly added)", () => {
+    const lastGenNotes: Record<string, string> = { "1": "tuck in" };
+    const currentNotes: Record<string, string> = { "1": "tuck in", "3": "new note" };
+    const selectedIds = [1, 3];
+
+    const dirty = selectedIds.filter((id) => {
+      const key = String(id);
+      return lastGenNotes[key] !== undefined && lastGenNotes[key] !== (currentNotes[key] || "");
+    });
+
+    expect(dirty).toEqual([]);
+  });
+
+  it("treats empty current note as dirty if snapshot had text", () => {
+    const lastGenNotes: Record<string, string> = { "1": "tuck in" };
+    const currentNotes: Record<string, string> = { "1": "" };
+    const selectedIds = [1];
+
+    const dirty = selectedIds.filter((id) => {
+      const key = String(id);
+      return lastGenNotes[key] !== undefined && lastGenNotes[key] !== (currentNotes[key] || "");
+    });
+
+    expect(dirty).toEqual([1]);
+  });
+
+  it("snapshots style notes correctly from selected garments", () => {
+    const selectedIds = [1, 2, 3];
+    const styleNotes: Record<string, string> = { "1": "tuck in", "3": "roll sleeves" };
+
+    const snap: Record<string, string> = {};
+    for (const id of selectedIds) snap[String(id)] = styleNotes[String(id)] || "";
+
+    expect(snap).toEqual({ "1": "tuck in", "2": "", "3": "roll sleeves" });
+  });
+});

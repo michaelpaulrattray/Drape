@@ -4363,7 +4363,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [ ] Update useWardrobeStore with overlay cache, selection snapshots, cooldown
 - [ ] Update useWardrobeGeneration with overlay detection, style refresh, edit classification
 - [ ] Integrate GarmentOverlay into MainStage
-- [ ] Add style refresh flow (detect dirty style notes → apply as styling-only update)
+- [x] Add style refresh flow (detect dirty style notes → apply as styling-only update)
 - [ ] Add suggested actions to garment cards
 - [ ] Add edit size classification (small → refinement, large → full regen)
 - [ ] Add identity check post-refinement with auto-escalation
@@ -4417,3 +4417,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add wardrobe.vto.checkIdentity tRPC endpoint
 - [x] Wire checkIdentity into refineResult in useWardrobeGeneration
 - [x] Add identityCheck tests
+- [x] Add lastGenStyleNotes + hasDirtyStyles to useWardrobeStore
+- [x] Add handleApplyStyleChanges + snapshot after generation in useWardrobeGeneration
+- [x] Add Apply Style Changes button in LayersPanel
+- [x] Wire style refresh props in DrapeStudio
+- [x] Add style refresh tests

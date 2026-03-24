@@ -53,6 +53,10 @@ export function useWardrobeGeneration({
   const errorMessage = useWardrobeStore((s) => s.errorMessage);
   const setErrorMessage = useWardrobeStore((s) => s.setErrorMessage);
 
+  // Style refresh selectors
+  const setLastGenStyleNotes = useWardrobeStore((s) => s.setLastGenStyleNotes);
+  const hasDirtyStyles = useWardrobeStore((s) => s.hasDirtyStyles);
+
   // Overlay detection selectors
   const setResultOverlayItems = useWardrobeStore((s) => s.setResultOverlayItems);
   const setIsScanningResult = useWardrobeStore((s) => s.setIsScanningResult);
@@ -206,6 +210,10 @@ export function useWardrobeGeneration({
       prevGarmentIdsRef.current = new Set(garmentIds);
       startCooldown();
       scanResultOverlay(result.resultUrl, genId);
+      // Snapshot style notes for dirty detection
+      const snap: Record<string, string> = {};
+      for (const id of garmentIds) snap[String(id)] = styleNotes[String(id)] || "";
+      setLastGenStyleNotes(snap);
       toast.success("Virtual try-on complete");
     } catch (err: unknown) {
       if (genId !== generationIdRef.current) return;
@@ -299,6 +307,10 @@ export function useWardrobeGeneration({
       prevGarmentIdsRef.current = new Set(currentIds);
       startCooldown();
       scanResultOverlay(result.resultUrl, genId);
+      // Snapshot style notes for dirty detection
+      const incSnap: Record<string, string> = {};
+      for (const id of currentIds) incSnap[String(id)] = styleNotes[String(id)] || "";
+      setLastGenStyleNotes(incSnap);
       toast.success("Outfit updated");
     } catch {
       if (genId !== generationIdRef.current) return;
@@ -371,6 +383,10 @@ export function useWardrobeGeneration({
       snapshotSelection();
       startCooldown();
       scanResultOverlay(result.resultUrl, genId);
+      // Snapshot style notes for dirty detection
+      const refSnap: Record<string, string> = {};
+      for (const id of Array.from(selectedGarmentIds)) refSnap[String(id)] = styleNotes[String(id)] || "";
+      setLastGenStyleNotes(refSnap);
 
       // Identity check — only on first attempt, not on auto-retries
       if (!identityRetryRef.current) {
@@ -433,6 +449,74 @@ export function useWardrobeGeneration({
         return generateVTO();
     }
   }, [generateVTO, generateIncremental, refineResult, setErrorMessage]);
+
+  // ── Style Refresh ─────────────────────────────────────────
+
+  const handleApplyStyleChanges = useCallback(async () => {
+    const result = currentVTOResult();
+    if (!result || !modelImageUrl || isGenerating) return;
+
+    // Find garments whose style notes changed since last generation
+    const state = useWardrobeStore.getState();
+    const dirtyIds: number[] = [];
+    for (const id of Array.from(state.selectedGarmentIds)) {
+      const key = String(id);
+      const lastNote = state.lastGenStyleNotes[key];
+      const currentNote = state.styleNotes[key] || "";
+      if (lastNote !== undefined && lastNote !== currentNote) {
+        dirtyIds.push(id);
+      }
+    }
+    if (dirtyIds.length === 0) return;
+
+    setIsGenerating(true);
+    setGeneratingMessage("Applying style changes...");
+    setResultOverlayItems([]);
+    setErrorMessage(null);
+    const genId = ++generationIdRef.current;
+
+    try {
+      const sessionId = await ensureSession();
+      lastOperationRef.current = { type: "styleRefresh" };
+
+      const res = await incrementalMutation.mutateAsync({
+        modelImageUrl,
+        previousResultUrl: result,
+        allGarmentIds: Array.from(state.selectedGarmentIds),
+        changedGarmentIds: dirtyIds,
+        changedSlots: [],
+        styleNotes: Object.keys(state.styleNotes).length > 0 ? state.styleNotes : undefined,
+        tattooMap: tattooMap ?? undefined,
+        sessionId: sessionId ?? undefined,
+        isStyleRefresh: true,
+      });
+
+      if (genId !== generationIdRef.current) return;
+
+      pushVTOResult(res.resultUrl);
+      snapshotSelection();
+      startCooldown();
+      scanResultOverlay(res.resultUrl, genId);
+      // Update snapshot
+      const snap: Record<string, string> = {};
+      for (const id of Array.from(state.selectedGarmentIds)) snap[String(id)] = state.styleNotes[String(id)] || "";
+      setLastGenStyleNotes(snap);
+      toast.success("Style changes applied");
+    } catch {
+      if (genId !== generationIdRef.current) return;
+      toast.error("Style refresh failed");
+    } finally {
+      if (genId === generationIdRef.current) {
+        setIsGenerating(false);
+        setGeneratingMessage(null);
+      }
+    }
+  }, [
+    currentVTOResult, modelImageUrl, isGenerating, tattooMap,
+    ensureSession, incrementalMutation, pushVTOResult, snapshotSelection,
+    startCooldown, setErrorMessage, setLastGenStyleNotes, setResultOverlayItems,
+    scanResultOverlay,
+  ]);
 
   // ── Smart Generate (decides full vs incremental) ───────────
 
@@ -515,5 +599,10 @@ export function useWardrobeGeneration({
 
     /** Active session ID */
     sessionId: activeSessionId,
+
+    /** Whether any selected garment has dirty style notes */
+    hasDirtyStyles: hasDirtyStyles(),
+    /** Apply only the changed style notes (style refresh) */
+    handleApplyStyleChanges,
   };
 }
