@@ -4388,3 +4388,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire detectResultGarments into useWardrobeGeneration after every VTO generation
 - [x] Add overlay cache restore on undo/redo in useWardrobeGeneration
 - [x] Add SAFETY_BLOCK auto-retry with sanitized descriptions in generateVTO
+- [x] Create useModelSetup hook (tattoo analysis, quality check, clear history on model change)
+- [x] Export useModelSetup from wardrobe barrel
+- [x] Wire useModelSetup in DrapeStudio WardrobeWorkspaceSection
+- [x] Add useModelSetup tests

@@ -831,3 +831,100 @@ describe("SAFETY_BLOCK Auto-Retry Logic", () => {
     expect(result).toBe("Network timeout");
   });
 });
+
+// ── useModelSetup Decision Logic Tests ────────────────────────────────────
+
+describe("useModelSetup Decision Logic", () => {
+  // Simulate the hook's decision logic for what to do on model URL change
+  interface ModelSetupActions {
+    clearHistory: boolean;
+    clearTattooMap: boolean;
+    runTattooAnalysis: boolean;
+    runQualityCheck: boolean;
+  }
+
+  function getModelSetupActions(
+    newUrl: string | null,
+    prevUrl: string | null,
+  ): ModelSetupActions | null {
+    // Skip if URL hasn't changed
+    if (newUrl === prevUrl) return null;
+
+    const actions: ModelSetupActions = {
+      clearHistory: true,
+      clearTattooMap: true,
+      runTattooAnalysis: false,
+      runQualityCheck: false,
+    };
+
+    if (newUrl) {
+      actions.runTattooAnalysis = true;
+      actions.runQualityCheck = true;
+    }
+
+    return actions;
+  }
+
+  it("should skip all actions when URL has not changed", () => {
+    const result = getModelSetupActions(
+      "https://example.com/model.jpg",
+      "https://example.com/model.jpg",
+    );
+    expect(result).toBeNull();
+  });
+
+  it("should clear history and run analyses when URL changes to a new model", () => {
+    const result = getModelSetupActions(
+      "https://example.com/model2.jpg",
+      "https://example.com/model1.jpg",
+    );
+    expect(result).toEqual({
+      clearHistory: true,
+      clearTattooMap: true,
+      runTattooAnalysis: true,
+      runQualityCheck: true,
+    });
+  });
+
+  it("should clear history and run analyses when URL set from null", () => {
+    const result = getModelSetupActions("https://example.com/model.jpg", null);
+    expect(result).toEqual({
+      clearHistory: true,
+      clearTattooMap: true,
+      runTattooAnalysis: true,
+      runQualityCheck: true,
+    });
+  });
+
+  it("should clear history but NOT run analyses when URL set to null", () => {
+    const result = getModelSetupActions(null, "https://example.com/model.jpg");
+    expect(result).toEqual({
+      clearHistory: true,
+      clearTattooMap: true,
+      runTattooAnalysis: false,
+      runQualityCheck: false,
+    });
+  });
+
+  it("should skip when both are null (no change)", () => {
+    const result = getModelSetupActions(null, null);
+    expect(result).toBeNull();
+  });
+
+  // Simulate quality check toast decision
+  function shouldShowQualityWarning(quality: "good" | "fair" | "poor"): boolean {
+    return quality === "poor";
+  }
+
+  it("should show warning toast for poor quality", () => {
+    expect(shouldShowQualityWarning("poor")).toBe(true);
+  });
+
+  it("should NOT show warning toast for fair quality", () => {
+    expect(shouldShowQualityWarning("fair")).toBe(false);
+  });
+
+  it("should NOT show warning toast for good quality", () => {
+    expect(shouldShowQualityWarning("good")).toBe(false);
+  });
+});

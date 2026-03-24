@@ -6,5 +6,6 @@ export { LayersPanel } from "./components/LayersPanel";
 export { useWardrobeStore } from "./stores/useWardrobeStore";
 export { useWardrobeInventory } from "./hooks/useWardrobeInventory";
 export { useWardrobeGeneration } from "./hooks/useWardrobeGeneration";
+export { useModelSetup } from "./hooks/useModelSetup";
 export type * from "./types";
 export * from "./constants";

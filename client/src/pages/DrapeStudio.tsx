@@ -14,7 +14,7 @@ import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition
 import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
-import { RackPanel, MainStage, LayersPanel, useWardrobeGeneration } from '@/features/wardrobe';
+import { RackPanel, MainStage, LayersPanel, useWardrobeGeneration, useModelSetup } from '@/features/wardrobe';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -50,6 +50,7 @@ function WardrobeWorkspaceSection({
   rightReady: boolean;
 }) {
   const gen = useWardrobeGeneration({ modelImageUrl, modelId });
+  useModelSetup(modelImageUrl);
 
   return (
     <>
