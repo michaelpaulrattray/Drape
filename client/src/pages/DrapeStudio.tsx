@@ -9,6 +9,8 @@ import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 import { ToolRail } from '@/features/studio/components/ToolRail';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
 import { StudioLobby } from '@/features/studio/components/StudioLobby';
+import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
+import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition';
 import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
@@ -37,39 +39,62 @@ const VALID_TOOLS: StudioTool[] = ['casting', 'wardrobe', 'export'];
 function WardrobeWorkspaceSection({
   modelImageUrl,
   modelId,
+  leftReady,
+  centerReady,
+  rightReady,
 }: {
   modelImageUrl: string | null;
   modelId: number | null;
+  leftReady: boolean;
+  centerReady: boolean;
+  rightReady: boolean;
 }) {
   const gen = useWardrobeGeneration({ modelImageUrl, modelId });
 
   return (
     <>
       {/* Left Panel — Garment Rack */}
-      <div
+      <AnimatedPanel
+        ready={leftReady}
+        from="left"
+        offset={60}
+        duration={500}
         className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 overflow-y-auto border-r relative"
         style={{ borderColor: '#e5e0d8' }}
       >
         <RackPanel />
-      </div>
+      </AnimatedPanel>
 
       {/* Center — VTO Canvas */}
-      <MainStage
-        modelImageUrl={modelImageUrl}
-        isGenerating={gen.isGenerating}
-        generatingMessage={gen.generatingMessage}
-        errorMessage={gen.errorMessage}
-        onClearError={gen.clearError}
-        currentResult={gen.currentResult}
-        onGenerate={gen.generate}
-        onUndo={gen.undo}
-        onRedo={gen.redo}
-        canUndo={gen.canUndo}
-        canRedo={gen.canRedo}
-      />
+      <div
+        className="flex-1 min-w-0"
+        style={{
+          opacity: centerReady ? 1 : 0,
+          transform: centerReady ? 'scale(1)' : 'scale(0.97)',
+          transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        <MainStage
+          modelImageUrl={modelImageUrl}
+          isGenerating={gen.isGenerating}
+          generatingMessage={gen.generatingMessage}
+          errorMessage={gen.errorMessage}
+          onClearError={gen.clearError}
+          currentResult={gen.currentResult}
+          onGenerate={gen.generate}
+          onUndo={gen.undo}
+          onRedo={gen.redo}
+          canUndo={gen.canUndo}
+          canRedo={gen.canRedo}
+        />
+      </div>
 
       {/* Right Panel — Layers */}
-      <div
+      <AnimatedPanel
+        ready={rightReady}
+        from="right"
+        offset={60}
+        duration={500}
         className="hidden lg:block w-[240px] xl:w-[260px] flex-shrink-0 overflow-y-auto border-l"
         style={{ borderColor: '#e5e0d8' }}
       >
@@ -79,7 +104,7 @@ function WardrobeWorkspaceSection({
           onGenerate={gen.generate}
           currentResultUrl={gen.currentResult}
         />
-      </div>
+      </AnimatedPanel>
     </>
   );
 }
@@ -91,6 +116,9 @@ export default function DrapeStudio() {
 
   // Studio store
   const { activeTool, setActiveTool, canvas, setCanvas } = useStudioStore();
+
+  // Orchestrated transition phases
+  const transition = useStudioTransition(activeTool);
 
   // Parse ?tool= query param on mount
   useEffect(() => {
@@ -280,7 +308,6 @@ export default function DrapeStudio() {
     );
   }
 
-  /** Whether we're in lobby mode (no tool selected) */
   const isLobby = activeTool === null;
 
   return (
@@ -312,70 +339,126 @@ export default function DrapeStudio() {
 
       {/* Main workspace: Tool Rail + Tool Content */}
       <div className="flex-1 flex min-h-0">
-        {/* Tool Rail — far left (hidden in lobby) */}
-        {!isLobby && <ToolRail canvas={canvas} />}
+        {/* Tool Rail — slides in from left */}
+        {!isLobby && (
+          <div
+            style={{
+              opacity: transition.railReady ? 1 : 0,
+              transform: transition.railReady ? 'translateX(0)' : 'translateX(-48px)',
+              transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          >
+            <ToolRail canvas={canvas} />
+          </div>
+        )}
 
         {/* Tool Content Area */}
-        <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-          {/* Lobby — no tool selected */}
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
+          {/* Lobby — fades in/out */}
           {isLobby && (
-            <StudioLobby
-              onSelectCasting={() => setActiveTool('casting')}
-            />
+            <div
+              className="absolute inset-0 z-10"
+              style={{
+                opacity: transition.lobbyVisible ? 1 : 0,
+                transition: 'opacity 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+                pointerEvents: transition.lobbyVisible ? 'auto' : 'none',
+              }}
+            >
+              <StudioLobby
+                onSelectCasting={() => setActiveTool('casting')}
+              />
+            </div>
           )}
 
+          {/* Casting workspace — panels slide in from edges */}
           {activeTool === 'casting' && (
             <>
-              {/* Left Panel — Control */}
-              <ControlPanel
-                user={user}
-                isFormValid={isFormValid}
-                genState={genState}
-                currentAssets={currentAssets}
-                handleGenerate={handleGenerate}
-              />
+              {/* Left Panel — Control (slides from left) */}
+              <AnimatedPanel
+                ready={transition.leftReady}
+                from="left"
+                offset={60}
+                duration={500}
+                className="w-full lg:w-auto flex-shrink-0"
+              >
+                <ControlPanel
+                  user={user}
+                  isFormValid={isFormValid}
+                  genState={genState}
+                  currentAssets={currentAssets}
+                  handleGenerate={handleGenerate}
+                />
+              </AnimatedPanel>
 
-              {/* Center — Image Viewer */}
-              <ImageViewerPanel
-                currentImageUrl={currentImageUrl ?? undefined}
-                currentAssets={currentAssets}
-                genState={genState}
-                isViewLocked={isViewLocked}
-                hasDownstreamDependencies={hasDownstreamDependencies}
-                isIterationAllowed={isIterationAllowed}
-                isMasking={isMasking}
-                maskPathsCount={maskPaths.length}
-                formProgress={formProgress}
-                nextStage={nextStage}
-                canvasRef={canvasRef}
-                imageRef={imageRef}
-                handlePointerDown={handlePointerDown}
-                handlePointerMove={handlePointerMove}
-                handlePointerUp={handlePointerUp}
-                handleUndo={handleUndo}
-                handleRedo={handleRedo}
-                handleRetry={handleRetry}
-                handleGenerate={handleGenerate}
-                handleEnhance={handleEnhance}
-                handleRefineSubmit={handleRefineSubmit}
-                canUndo={canUndo}
-                canRedo={canRedo}
-              />
+              {/* Center — Image Viewer (scales up) */}
+              <div
+                className="flex-1 min-w-0"
+                style={{
+                  opacity: transition.centerReady ? 1 : 0,
+                  transform: transition.centerReady ? 'scale(1)' : 'scale(0.97)',
+                  transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                <ImageViewerPanel
+                  currentImageUrl={currentImageUrl ?? undefined}
+                  currentAssets={currentAssets}
+                  genState={genState}
+                  isViewLocked={isViewLocked}
+                  hasDownstreamDependencies={hasDownstreamDependencies}
+                  isIterationAllowed={isIterationAllowed}
+                  isMasking={isMasking}
+                  maskPathsCount={maskPaths.length}
+                  formProgress={formProgress}
+                  nextStage={nextStage}
+                  canvasRef={canvasRef}
+                  imageRef={imageRef}
+                  handlePointerDown={handlePointerDown}
+                  handlePointerMove={handlePointerMove}
+                  handlePointerUp={handlePointerUp}
+                  handleUndo={handleUndo}
+                  handleRedo={handleRedo}
+                  handleRetry={handleRetry}
+                  handleGenerate={handleGenerate}
+                  handleEnhance={handleEnhance}
+                  handleRefineSubmit={handleRefineSubmit}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                />
+              </div>
 
-              {/* Right Panel — Master Prompt */}
-              <MasterPromptPanel />
+              {/* Right Panel — Master Prompt (slides from right) */}
+              <AnimatedPanel
+                ready={transition.rightReady}
+                from="right"
+                offset={60}
+                duration={500}
+                className="hidden lg:block flex-shrink-0"
+              >
+                <MasterPromptPanel />
+              </AnimatedPanel>
             </>
           )}
 
+          {/* Wardrobe workspace — panels slide in from edges */}
           {activeTool === 'wardrobe' && (
             <WardrobeWorkspaceSection
               modelImageUrl={fullBodyUrl}
               modelId={currentModelId}
+              leftReady={transition.leftReady}
+              centerReady={transition.centerReady}
+              rightReady={transition.rightReady}
             />
           )}
 
+          {/* Export placeholder */}
           {activeTool === 'export' && (
-            <div className="flex-1 flex items-center justify-center">
+            <div
+              className="flex-1 flex items-center justify-center"
+              style={{
+                opacity: transition.centerReady ? 1 : 0,
+                transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
               <div className="text-center" style={{ color: '#999' }}>
                 <p style={{ fontSize: 13, fontWeight: 500 }}>Export Pack</p>
                 <p style={{ fontSize: 11, marginTop: 4 }}>Coming soon</p>

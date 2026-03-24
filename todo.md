@@ -4299,3 +4299,13 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update ToolRail with Home button and null state support
 - [x] Write/update vitest tests for lobby and null tool state (20 tests)
 - [x] Verify all tests pass (1,253 total)
+
+## Phase 4d: Studio Assembly Animations
+- [x] ToolRail slides in from left when transitioning from lobby → tool
+- [x] Left panel (ControlPanel / RackPanel) slides in from left with stagger
+- [x] Right panel (MasterPrompt / LayersPanel) slides in from right with stagger
+- [x] Center canvas scales up smoothly as panels appear
+- [x] Lobby fades out before tool workspace fades/slides in
+- [x] Consistent orchestrated timing via useStudioTransition hook
+- [x] Wardrobe upload path: upload triggers lobby→wardrobe transition with panels forming around model
+- [x] Verify all tests still pass (1,253 total)
