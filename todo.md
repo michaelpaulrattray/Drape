@@ -4250,3 +4250,17 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add wardrobe generation types to daily quota tracking
 - [x] Write vitest tests for wardrobe services (32 tests passing)
 - [x] Verify all tests pass (1188 total)
+
+## Phase 3: Garment Upload Pipeline (Client)
+- [x] Create client/src/features/wardrobe/types.ts (client-side wardrobe types)
+- [x] Create client/src/features/wardrobe/constants.ts (slot configs, layer priorities)
+- [x] Create client/src/features/wardrobe/stores/useWardrobeStore.ts (combined inventory + UI state)
+- [x] (Merged into useWardrobeStore.ts — single store per feature)
+- [x] Create client/src/features/wardrobe/hooks/useWardrobeInventory.ts
+- [x] Create client/src/features/wardrobe/components/GarmentCard.tsx
+- [x] Create client/src/features/wardrobe/components/QualityBadge.tsx
+- [x] Create client/src/features/wardrobe/components/RackPanel.tsx
+- [x] Wire RackPanel into DrapeStudio as wardrobe tool panel
+- [x] Enable Wardrobe tool in ToolRail when full body exists
+- [x] Write vitest tests for wardrobe stores and upload flow (23 tests)
+- [x] Verify all tests pass (1,211 total)

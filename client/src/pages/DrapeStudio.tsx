@@ -10,6 +10,9 @@ import { ToolRail } from '@/features/studio/components/ToolRail';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
 import type { StudioTool } from '@/features/studio/types';
 
+// Wardrobe tool imports
+import { RackPanel } from '@/features/wardrobe';
+
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
@@ -292,12 +295,33 @@ export default function DrapeStudio() {
           )}
 
           {activeTool === 'wardrobe' && (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center" style={{ color: '#999' }}>
-                <p style={{ fontSize: 13, fontWeight: 500 }}>Wardrobe Studio</p>
-                <p style={{ fontSize: 11, marginTop: 4 }}>Coming in Phase 3</p>
+            <>
+              {/* Left Panel — Garment Rack */}
+              <div
+                className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 overflow-y-auto border-r relative"
+                style={{ borderColor: '#e5e0d8' }}
+              >
+                <RackPanel />
               </div>
-            </div>
+
+              {/* Center — VTO Canvas (placeholder until Phase 4) */}
+              <div className="flex-1 flex items-center justify-center" style={{ background: '#f0ebe3' }}>
+                <div className="text-center">
+                  <div
+                    className="w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                    style={{ background: '#eae7e1' }}
+                  >
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </div>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>Virtual Try-On Canvas</p>
+                  <p style={{ fontSize: 10, color: '#b8b3a8', marginTop: 4 }}>Select garments from your rack, then generate</p>
+                </div>
+              </div>
+            </>
           )}
 
           {activeTool === 'export' && (
