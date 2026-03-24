@@ -4187,3 +4187,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] ENH-REFTRANSFER-4: Allow expression transfer (facial muscles only, no pose/head angle)
 - [x] ENH-REFTRANSFER-5: Add skin finish as transferable attribute
 - [x] ENH-REFTRANSFER-6: Add missing SOT lines for eye shape and eyebrow clarification
+- [x] Fix iris descriptions: Amber (HIGH - gemstone metaphor causing glowing eyes), Ice (translucency), Honey (sun-lit), Steel (metallic)

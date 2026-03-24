@@ -334,18 +334,18 @@ export const getSkinDescription = (texture?: string, finish?: string): string =>
  * Used by prompt assembly to give the image model precise rendering instructions.
  */
 export const irisDescriptions: Record<string, string> = {
-  'Ice': 'pale icy blue with near-white inner ring, high translucency, cool silver undertone',
+  'Ice': 'pale icy blue with near-white inner ring, light-diffusing clarity, cool silver undertone',
   'Sky': 'clear medium blue with subtle teal shifts, visible radial striations, bright and open',
   'Azure': 'deep saturated blue with navy outer ring, vivid cobalt mid-zone, striking contrast',
   'Navy': 'very dark blue, almost indigo — reads as dark with blue undertone only visible in direct light',
   'Grey': 'cool neutral grey with blue-silver undertone, visible darker grey striations through the iris',
-  'Steel': 'dark gunmetal grey with metallic blue-silver flecks, cool and dense, low warmth',
+  'Steel': 'dark gunmetal grey with cool-toned blue-silver flecks, dense and muted, low warmth',
   'Mint': 'pale green-grey with cool aqua undertone, unusual and striking, desaturated green',
   'Green': 'true forest green with golden-brown flecks near the pupil, warm-cool split',
   'Olive': 'muted green-brown with gold undertone, earthy and warm, chameleon quality',
   'Hazel': 'multi-tonal: amber-brown near pupil blending to green-grey at the outer iris, warm center cool edge',
-  'Amber': 'warm golden-brown with honey translucency, catches light like amber resin, vivid and warm',
-  'Honey': 'light warm brown with golden highlights, lighter than standard brown, sun-lit quality',
+  'Amber': 'warm golden-brown with tawny undertone, lighter than standard brown with visible radial copper-gold striations, natural warmth',
+  'Honey': 'light warm brown with golden highlights, lighter than standard brown, naturally low pigment density',
   'Brown': 'rich chocolate brown with visible depth variation, warmer at center, darker at limbal ring',
   'Dark': 'very deep brown, nearly black — iris detail only visible under direct light, subtle warm undertone',
   'Black': 'iris and pupil nearly indistinguishable, extremely dark with faint brown micro-texture only visible at macro distance',
