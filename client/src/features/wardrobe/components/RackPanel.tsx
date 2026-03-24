@@ -114,7 +114,7 @@ export function RackPanel() {
                   fontSize: 9,
                 }}
               >
-                <span style={{ fontSize: 14 }}>{tab.icon}</span>
+                <tab.icon size={14} strokeWidth={1.5} />
                 <span
                   className="font-medium"
                   style={{ letterSpacing: "-0.01em" }}

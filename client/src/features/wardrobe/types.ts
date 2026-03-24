@@ -44,7 +44,8 @@ export interface SlotTab {
   id: GarmentSlotType;
   label: string;
   shortLabel: string;
-  icon: string;
+  /** Lucide icon component for the slot tab */
+  icon: React.ComponentType<{ className?: string; size?: number; strokeWidth?: number }>;
 }
 
 /** Saved outfit — a combination of garments with style notes */

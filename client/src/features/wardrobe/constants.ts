@@ -1,15 +1,16 @@
 /**
  * Wardrobe Studio — Constants
  */
+import { Shirt, Layers, Footprints, Watch, Sparkles } from "lucide-react";
 import type { SlotTab, GarmentSlotType } from "./types";
 
 /** Ordered slot tabs for the rack panel */
 export const SLOT_TABS: SlotTab[] = [
-  { id: "full_look", label: "Full Looks", shortLabel: "Looks", icon: "👗" },
-  { id: "tops", label: "Tops", shortLabel: "Tops", icon: "👕" },
-  { id: "bottoms", label: "Bottoms", shortLabel: "Btms", icon: "👖" },
-  { id: "shoes", label: "Shoes", shortLabel: "Shoes", icon: "👟" },
-  { id: "accessories", label: "Accessories", shortLabel: "Acc", icon: "🎒" },
+  { id: "full_look", label: "Full Looks", shortLabel: "Looks", icon: Sparkles },
+  { id: "tops", label: "Tops", shortLabel: "Tops", icon: Shirt },
+  { id: "bottoms", label: "Bottoms", shortLabel: "Btms", icon: Layers },
+  { id: "shoes", label: "Shoes", shortLabel: "Shoes", icon: Footprints },
+  { id: "accessories", label: "Accessories", shortLabel: "Acc", icon: Watch },
 ];
 
 /** Maximum garments per slot */

@@ -4329,3 +4329,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Wire ModelGallery into StudioLobby (three paths: My Models, Upload, Cast New)
 - [x] Write tests for new query, store action, and gallery rendering (14 tests)
 - [x] Verify all tests pass (1,269 total)
+
+## Fix: Replace emoji slot icons with Lucide line icons
+- [x] Update SLOT_TABS in wardrobe constants to use Lucide icon components (Sparkles, Shirt, Layers, Footprints, Watch)
+- [x] Update RackPanel to render Lucide icons via <tab.icon /> component syntax
+- [x] Verify icons render correctly — all 1,269 tests passing

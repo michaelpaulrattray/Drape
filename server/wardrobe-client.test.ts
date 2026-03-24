@@ -32,7 +32,9 @@ describe("Wardrobe Constants", () => {
       expect(tab).toHaveProperty("icon");
       expect(typeof tab.label).toBe("string");
       expect(typeof tab.shortLabel).toBe("string");
-      expect(typeof tab.icon).toBe("string");
+      // Lucide icons are React.memo wrapped — typeof is 'object'
+      expect(tab.icon).toBeTruthy();
+      expect(typeof tab.icon === 'function' || typeof tab.icon === 'object').toBe(true);
     }
   });
 
