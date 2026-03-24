@@ -27,6 +27,7 @@ import { publicAnnouncementsRouter } from "./routes/announcements";
 import { accessRouter } from "./routes/access";
 import { accountRouter } from "./routes/account";
 import { bugReportsRouter } from "./routes/bugReports";
+import { wardrobeRouter } from "./routes/wardrobe";
 
 export const appRouter = router({
   system: systemRouter,
@@ -51,6 +52,7 @@ export const appRouter = router({
   access: accessRouter,
   account: accountRouter,
   bugReports: bugReportsRouter,
+  wardrobe: wardrobeRouter,
 });
 
 export type AppRouter = typeof appRouter;

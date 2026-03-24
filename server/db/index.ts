@@ -165,3 +165,23 @@ export {
   deactivateInviteCode,
   approveUserDirectly,
 } from "./inviteCodes";
+
+// Wardrobe
+export {
+  createGarment,
+  getGarmentById,
+  getUserGarments,
+  getUserGarmentsBySlot,
+  updateGarment,
+  deleteGarment,
+  createOutfit,
+  getUserOutfits,
+  getOutfitById,
+  updateOutfit,
+  deleteOutfit,
+  createSession,
+  getSessionById,
+  getUserSessions,
+  updateSession,
+  deleteSession,
+} from "./wardrobe";

@@ -212,6 +212,10 @@ export const generations = mysqlTable("generations", {
     "multiView",
     "iteration",
     "upscale",
+    "wardrobeVTO",
+    "wardrobeComposite",
+    "wardrobeRefinement",
+    "wardrobeDigitize",
   ]).notNull(),
   status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
   pointsCost: int("pointsCost").notNull(),
@@ -592,7 +596,7 @@ export const bugReports = mysqlTable("bug_reports", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   description: text("description").notNull(),
-  category: mysqlEnum("category", ["casting", "export", "billing", "ui", "other"]).default("other").notNull(),
+  category: mysqlEnum("category", ["casting", "wardrobe", "export", "billing", "ui", "other"]).default("other").notNull(),
   page: varchar("page", { length: 256 }), // URL/route where bug was reported
   modelId: int("modelId"), // Model ID if applicable
   userAgent: varchar("userAgent", { length: 512 }),
@@ -605,3 +609,80 @@ export const bugReports = mysqlTable("bug_reports", {
 ]);
 export type BugReport = typeof bugReports.$inferSelect;
 export type InsertBugReport = typeof bugReports.$inferInsert;
+
+// ============================================================================
+// WARDROBE STUDIO
+// ============================================================================
+
+/**
+ * Wardrobe garments — user's persistent garment library.
+ * Each garment goes through: upload → detection → digitization → analysis.
+ * Garments persist permanently in the user's closet.
+ */
+export const wardrobeGarments = mysqlTable("wardrobe_garments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  slotType: mysqlEnum("slotType", ["full_look", "tops", "bottoms", "shoes", "accessories"]).notNull(),
+  shortName: varchar("shortName", { length: 128 }),
+  description: text("description"),
+  tags: json("tags"),                          // string[]
+  suggestedActions: json("suggestedActions"),    // string[]
+  originalImageUrl: text("originalImageUrl").notNull(), // S3 URL of uploaded image
+  originalImageKey: varchar("originalImageKey", { length: 256 }),
+  isolatedImageUrl: text("isolatedImageUrl"),    // S3 URL of digitized flat-lay
+  isolatedImageKey: varchar("isolatedImageKey", { length: 256 }),
+  sourceImageUrl: text("sourceImageUrl"),        // S3 URL of cropped source (from detection)
+  sourceImageKey: varchar("sourceImageKey", { length: 256 }),
+  qualityIssues: json("qualityIssues"),          // string[] from quality check
+  detectedItems: json("detectedItems"),          // DetectedItem[] (for full_look decomposition)
+  status: mysqlEnum("status", ["processing", "ready", "failed"]).default("processing").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ([
+  index("idx_wardrobe_garments_user").on(table.userId, table.slotType),
+]));
+
+export type WardrobeGarment = typeof wardrobeGarments.$inferSelect;
+export type InsertWardrobeGarment = typeof wardrobeGarments.$inferInsert;
+
+/**
+ * Wardrobe outfits — saved garment combinations.
+ * Users can save and reload outfit presets with style notes.
+ */
+export const wardrobeOutfits = mysqlTable("wardrobe_outfits", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  garmentIds: json("garmentIds").notNull(),       // number[] of wardrobe_garment IDs
+  styleNotes: json("styleNotes"),                  // Record<garmentId, string>
+  resultThumbUrl: text("resultThumbUrl"),          // S3 URL of VTO result thumbnail
+  resultThumbKey: varchar("resultThumbKey", { length: 256 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  index("idx_wardrobe_outfits_user").on(table.userId),
+]));
+
+export type WardrobeOutfit = typeof wardrobeOutfits.$inferSelect;
+export type InsertWardrobeOutfit = typeof wardrobeOutfits.$inferInsert;
+
+/**
+ * Wardrobe sessions — VTO generation history for undo/redo persistence.
+ * Tracks the current canvas state and history stack per user per model.
+ */
+export const wardrobeSessions = mysqlTable("wardrobe_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  modelId: int("modelId"),                        // FK to models table (null if uploaded model)
+  modelImageUrl: text("modelImageUrl").notNull(),  // S3 URL of the base model image
+  history: json("history"),                        // string[] of S3 URLs for undo/redo stack
+  historyIndex: int("historyIndex").default(0),
+  activeGarmentIds: json("activeGarmentIds"),      // number[] currently selected
+  tattooMapData: json("tattooMapData"),            // TattooMap cached result
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ([
+  index("idx_wardrobe_sessions_user").on(table.userId),
+]));
+
+export type WardrobeSession = typeof wardrobeSessions.$inferSelect;
+export type InsertWardrobeSession = typeof wardrobeSessions.$inferInsert;

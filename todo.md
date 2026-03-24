@@ -4230,3 +4230,23 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update Dashboard nav links to point to /studio
 - [x] Write vitest tests for useStudioStore and tool availability
 - [x] Verify casting functionality works identically in new shell
+
+## Phase 2: Foundation (DB + Server Services + Dead Code Cleanup)
+- [x] Remove old pages/CastingStudio.tsx
+- [x] Audit and remove helix component/code if unused (DNAHelix.tsx removed)
+- [x] Audit and remove any other dead code/orphaned imports (old casting/StudioHeader.tsx removed)
+- [x] Add garments table to drizzle/schema.ts
+- [x] Add wardrobeSessions table to drizzle/schema.ts
+- [x] Add outfits table to drizzle/schema.ts
+- [x] Push database migration (pnpm db:push)
+- [x] Create server/wardrobe/garmentDetection.ts
+- [x] Create server/wardrobe/garmentDigitization.ts
+- [x] Create server/wardrobe/garmentAnalysis.ts
+- [x] Create server/wardrobe/vtoGeneration.ts
+- [x] Create server/wardrobe/garmentRefinement.ts
+- [x] Create server/wardrobe/outfitDecomposition.ts
+- [x] Create wardrobe tRPC procedures (server/routes/wardrobe.ts)
+- [x] Wire wardrobe router into main appRouter
+- [x] Add wardrobe generation types to daily quota tracking
+- [x] Write vitest tests for wardrobe services (32 tests passing)
+- [x] Verify all tests pass (1188 total)

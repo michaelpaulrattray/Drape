@@ -24,6 +24,10 @@ const IMAGE_GEN_TYPES = [
   "multiView",
   "iteration",
   "upscale",
+  "wardrobeVTO",
+  "wardrobeComposite",
+  "wardrobeRefinement",
+  "wardrobeDigitize",
 ] as const;
 
 /**
@@ -46,7 +50,7 @@ export async function getUserDailyGenerationCount(
       and(
         eq(generations.userId, userId),
         gte(generations.createdAt, todayStart),
-        sql`${generations.type} IN ('castingImage', 'fullBody', 'multiView', 'iteration', 'upscale')`,
+        sql`${generations.type} IN ('castingImage', 'fullBody', 'multiView', 'iteration', 'upscale', 'wardrobeVTO', 'wardrobeComposite', 'wardrobeRefinement', 'wardrobeDigitize')`,
         sql`${generations.status} != 'failed'`,
       ),
     );
