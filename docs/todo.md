@@ -4580,3 +4580,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Fix Casting surgical/eraser tool buttons positioned off to the right (moved sideOverlay inside hover container)
 - [x] Fix uneven top/bottom padding on Casting canvas (changed maxHeight from 100vh-100px to 100vh-140px)
 - [x] Remove Wardrobe imageStyle marginTop: 50px to make both canvases pixel-identical
+
+## Canvas Footer Color Mismatch
+- [x] Fix mismatched background color strip at bottom of canvas (DrapeStudio wrapper #eae7e1 → #f0ebe3 to match StudioCanvas)

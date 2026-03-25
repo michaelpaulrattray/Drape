@@ -403,7 +403,7 @@ export default function DrapeStudio() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: '#eae7e1' }}
+        style={{ background: '#f0ebe3' }}
       >
         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1a1a1a' }} />
       </div>
@@ -413,7 +413,7 @@ export default function DrapeStudio() {
   const isLobby = activeTool === null;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden" style={{ background: '#eae7e1' }}>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: '#f0ebe3' }}>
       {/* Studio Header */}
       <StudioHeader
         creditsBalance={creditsData?.balance || 0}
