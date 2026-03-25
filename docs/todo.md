@@ -4483,3 +4483,5 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Adjust image maxHeight from calc(100vh - 200px) to calc(100vh - 160px)
 - [x] Move shortcuts to absolute-positioned bottom of canvas with fade transition
 - [x] Strip toolbar to undo/redo only, show "Original" text only during compare mode
+- [x] Visual edit: Add paddingTop 60px to DrapeStudio center canvas wrapper
+- [x] Visual edit: Add paddingTop 8px to RackPanel garment grid

@@ -178,7 +178,7 @@ export function RackPanel() {
         className="flex-1 overflow-y-auto px-4 pb-4"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+        onDrop={handleDrop} style={{paddingTop: '8px'}}
       >
         {isLoading ? (
           <LoadingSkeleton />
