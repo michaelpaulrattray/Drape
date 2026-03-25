@@ -112,7 +112,7 @@ function WardrobeWorkspaceSection({
         style={{
           opacity: centerReady ? 1 : 0,
           transform: centerReady ? 'scale(1)' : 'scale(0.97)',
-          transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)', paddingTop: '60px',
+          transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
         <MainStage

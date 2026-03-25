@@ -43,9 +43,9 @@ export function useWardrobeGeneration({
   const pushVTOResult = useWardrobeStore((s) => s.pushVTOResult);
   const undoVTO = useWardrobeStore((s) => s.undoVTO);
   const redoVTO = useWardrobeStore((s) => s.redoVTO);
-  const canUndoVTO = useWardrobeStore((s) => s.canUndoVTO);
-  const canRedoVTO = useWardrobeStore((s) => s.canRedoVTO);
-  const currentVTOResult = useWardrobeStore((s) => s.currentVTOResult);
+  const canUndoVTOFn = useWardrobeStore((s) => s.canUndoVTO);
+  const canRedoVTOFn = useWardrobeStore((s) => s.canRedoVTO);
+  const currentVTOResultFn = useWardrobeStore((s) => s.currentVTOResult);
   const snapshotSelection = useWardrobeStore((s) => s.snapshotSelection);
   const restoreSelectionForIndex = useWardrobeStore((s) => s.restoreSelectionForIndex);
   const cooldownSeconds = useWardrobeStore((s) => s.cooldownSeconds);
@@ -55,7 +55,7 @@ export function useWardrobeGeneration({
 
   // Style refresh selectors
   const setLastGenStyleNotes = useWardrobeStore((s) => s.setLastGenStyleNotes);
-  const hasDirtyStyles = useWardrobeStore((s) => s.hasDirtyStyles);
+  const hasDirtyStylesFn = useWardrobeStore((s) => s.hasDirtyStyles);
 
   // Overlay detection selectors
   const setResultOverlayItems = useWardrobeStore((s) => s.setResultOverlayItems);
@@ -64,6 +64,24 @@ export function useWardrobeGeneration({
   const getCachedOverlay = useWardrobeStore((s) => s.getCachedOverlay);
   const vtoHistoryIndex = useWardrobeStore((s) => s.vtoHistoryIndex);
   const vtoHistory = useWardrobeStore((s) => s.vtoHistory);
+
+  // Reactive derived values — these trigger re-renders when vtoHistory/vtoHistoryIndex change
+  const currentResultReactive = useWardrobeStore((s) => {
+    if (s.vtoHistory.length === 0 || s.vtoHistoryIndex < 0) return null;
+    return s.vtoHistory[s.vtoHistoryIndex] ?? null;
+  });
+  const canUndoReactive = useWardrobeStore((s) => s.vtoHistoryIndex > 0);
+  const canRedoReactive = useWardrobeStore((s) => s.vtoHistoryIndex < s.vtoHistory.length - 1);
+  const hasDirtyReactive = useWardrobeStore((s) => {
+    if (s.vtoHistory.length <= 1) return false;
+    if (Object.keys(s.lastGenStyleNotes).length === 0) return false;
+    return Array.from(s.selectedGarmentIds).some((id) => {
+      const key = String(id);
+      const lastNote = s.lastGenStyleNotes[key];
+      const currentNote = s.styleNotes[key] || "";
+      return lastNote !== undefined && lastNote !== currentNote;
+    });
+  });
 
   // Local generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -266,7 +284,7 @@ export function useWardrobeGeneration({
   // ── Incremental Composite ──────────────────────────────────
 
   const generateIncremental = useCallback(async () => {
-    const currentResult = currentVTOResult();
+    const currentResult = currentVTOResultFn();
     if (!currentResult || !modelImageUrl) {
       return generateVTO();
     }
@@ -345,7 +363,7 @@ export function useWardrobeGeneration({
       }
     }
   }, [
-    currentVTOResult, modelImageUrl, selectedGarmentIds, styleNotes,
+    currentVTOResultFn, modelImageUrl, selectedGarmentIds, styleNotes,
     tattooMap, ensureSession, incrementalMutation, pushVTOResult,
     snapshotSelection, startCooldown, generateVTO, setErrorMessage,
     seedChatMutation, activeSessionId,
@@ -354,7 +372,7 @@ export function useWardrobeGeneration({
   // ── Refinement ─────────────────────────────────────────────
 
   const refineResult = useCallback(async (garmentId: number, instruction: string) => {
-    const currentResult = currentVTOResult();
+    const currentResult = currentVTOResultFn();
     if (!currentResult || !modelImageUrl) {
       toast.error("No VTO result to refine");
       return;
@@ -449,7 +467,7 @@ export function useWardrobeGeneration({
         setGeneratingMessage(null);
       }
     }
-  }, [currentVTOResult, modelImageUrl, ensureSession, refineMutation, classifyMutation, identityMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage, clearChatMutation, activeSessionId]);
+  }, [currentVTOResultFn, modelImageUrl, ensureSession, refineMutation, classifyMutation, identityMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage, clearChatMutation, activeSessionId]);
 
   // ── Retry Last Operation ───────────────────────────────────
 
@@ -480,7 +498,7 @@ export function useWardrobeGeneration({
   // ── Style Refresh ─────────────────────────────────────────
 
   const handleApplyStyleChanges = useCallback(async () => {
-    const result = currentVTOResult();
+    const result = currentVTOResultFn();
     if (!result || !modelImageUrl || isGenerating) return;
 
     // Find garments whose style notes changed since last generation
@@ -549,7 +567,7 @@ export function useWardrobeGeneration({
       }
     }
   }, [
-    currentVTOResult, modelImageUrl, isGenerating, tattooMap,
+    currentVTOResultFn, modelImageUrl, isGenerating, tattooMap,
     ensureSession, incrementalMutation, pushVTOResult, snapshotSelection,
     startCooldown, setErrorMessage, setLastGenStyleNotes, setResultOverlayItems,
     scanResultOverlay, seedChatMutation, activeSessionId,
@@ -562,12 +580,12 @@ export function useWardrobeGeneration({
       toast.error(`Please wait ${cooldownSeconds}s before generating again`);
       return;
     }
-    const hasExistingResult = currentVTOResult() !== null;
+    const hasExistingResult = currentVTOResultFn() !== null;
     if (hasExistingResult) {
       return generateIncremental();
     }
     return generateVTO();
-  }, [currentVTOResult, generateIncremental, generateVTO, cooldownSeconds]);
+  }, [currentVTOResultFn, generateIncremental, generateVTO, cooldownSeconds]);
 
   // ── Undo/Redo with selection restore ───────────────────────
 
@@ -628,11 +646,11 @@ export function useWardrobeGeneration({
     /** Redo to next VTO result (with selection restore) */
     redo: handleRedo,
     /** Whether undo is available */
-    canUndo: canUndoVTO(),
+    canUndo: canUndoReactive,
     /** Whether redo is available */
-    canRedo: canRedoVTO(),
+    canRedo: canRedoReactive,
     /** Current VTO result URL */
-    currentResult: currentVTOResult(),
+    currentResult: currentResultReactive,
 
     /** Current index in VTO history (0 = first result) */
     historyIndex: vtoHistoryIndex,
@@ -641,7 +659,7 @@ export function useWardrobeGeneration({
     sessionId: activeSessionId,
 
     /** Whether any selected garment has dirty style notes */
-    hasDirtyStyles: hasDirtyStyles(),
+    hasDirtyStyles: hasDirtyReactive,
     /** Apply only the changed style notes (style refresh) */
     handleApplyStyleChanges,
   };

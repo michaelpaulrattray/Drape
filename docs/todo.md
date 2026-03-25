@@ -4553,3 +4553,7 @@ The entry and configuration files are properly set up with several enhancements 
 ## Wardrobe Toolbar Redesign + Retry
 - [x] Match Casting's persistent toolbar design — move outside image div, add green dot + version label (Dressed · v1/v2), same position/styling as Casting
 - [x] Add Retry button — top-right corner, same design as Casting (RotateCcw icon + Retry label), wired to onRetry
+
+## Wardrobe Toolbar Not Rendering — Zustand Reactivity Fix
+- [x] Fix Zustand reactivity: replace function-call selectors (currentVTOResult(), canUndoVTO(), canRedoVTO(), hasDirtyStyles()) with inline derived selectors in useWardrobeGeneration return object so React re-renders when vtoHistory/vtoHistoryIndex change
+- [x] Remove paddingTop: 60px from DrapeStudio center wrapper (line 115) — Casting doesn't have this, StudioHeader already takes its space in flex layout
