@@ -11,7 +11,7 @@
  *   - Same smart "Original" / "Previous" compare badge
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Undo2, Redo2, Sparkles, RotateCcw } from "lucide-react";
+import { Loader2, Undo2, Redo2 } from "lucide-react";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { GarmentOverlay } from "./GarmentOverlay";
 import type { DetectedItem } from "../types";
@@ -391,54 +391,6 @@ export function MainStage({
         )}
       </div>
 
-      {/* ── Bottom Action Bar ─────────────────────────────── */}
-      <div className="flex items-center justify-center gap-3 px-6 py-2">
-        {/* Retry button (shown when there's an error) */}
-        {errorMessage && !isGenerating && (
-          <button
-            onClick={onRetry}
-            className="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all hover:opacity-90"
-            style={{
-              background: "rgba(220,38,38,0.9)",
-              color: "#fff",
-              fontSize: 10,
-            }}
-          >
-            <RotateCcw size={12} />
-            Retry
-          </button>
-        )}
-
-        {/* Generate / Update button */}
-        <button
-          onClick={onGenerate}
-          disabled={!canGenerate}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-full font-medium transition-all hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{
-            background: "#1a1a1a",
-            color: "#fff",
-            fontSize: 11,
-          }}
-        >
-          <Sparkles size={14} />
-          {cooldownSeconds > 0
-            ? `Wait ${cooldownSeconds}s`
-            : hasResult
-              ? "Update Look"
-              : "Dress Model"}
-          {selectedCount > 0 && cooldownSeconds <= 0 && (
-            <span
-              className="font-mono ml-1 px-1.5 py-0.5 rounded-full"
-              style={{
-                fontSize: 8,
-                background: "rgba(255,255,255,0.2)",
-              }}
-            >
-              {selectedCount}
-            </span>
-          )}
-        </button>
-      </div>
     </div>
   );
 }

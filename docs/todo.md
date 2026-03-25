@@ -4515,3 +4515,6 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Wardrobe MainStage Auto-Hide Bug
 - [x] Bug: Toolbars (undo/redo, shortcuts) disappear when mouse leaves the image but is still on the canvas — moved onMouseEnter/Leave from inner canvas div to outer MainStage wrapper
+
+## Wardrobe MainStage Cleanup
+- [x] Remove Dress/Update button from MainStage bottom area (redundant — already in right panel, matches Casting's clean canvas)
