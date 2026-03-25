@@ -12,6 +12,7 @@
  * - withTimeout / withSingleRetry503
  */
 
+import { IMAGE_PRO, IMAGE_FLASH, TEXT_PRO, TEXT_MID, TEXT_ECONOMY, TEXT_HEAVY_FALLBACK, TEXT_LIGHT_FALLBACK, IMAGE_FALLBACK } from "@shared/modelRegistry";
 import type { ModelPreferences, GeminiPart } from "./geminiTypes";
 import { ImageResolution, AspectRatio, GenerationMode } from "./geminiTypes";
 import {
@@ -176,7 +177,7 @@ export const generateMasterPrompt = async (
     };
   };
 
-  const MODELS = ['gemini-3-pro-preview', 'gemini-3-flash-preview', 'gemini-2.5-flash'];
+  const MODELS = [...TEXT_HEAVY_FALLBACK];
 
   for (let i = 0; i < MODELS.length; i++) {
     const model = MODELS[i];
@@ -474,7 +475,7 @@ export const enhanceUserPrompt = async (originalPrompt: string): Promise<string>
   REFINED OUTPUT:
   `;
 
-  const MODELS = ['gemini-3-flash-preview', 'gemini-2.5-flash'];
+  const MODELS = [...TEXT_LIGHT_FALLBACK];
 
   for (let i = 0; i < MODELS.length; i++) {
     try {
@@ -654,7 +655,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
   // ── PATH 2: Chat-based NEW generation (create session) ──
   if (mode === GenerationMode.NEW) {
     sessionMap.delete(userId);
-    const PRIMARY_MODEL = 'gemini-3-pro-image-preview';
+    const PRIMARY_MODEL = IMAGE_PRO;
     try {
       const chat = ai.chats.create({
         model: PRIMARY_MODEL,
@@ -697,7 +698,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
     return extractImage(response);
   };
 
-  const IMAGE_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+  const IMAGE_MODELS = [...IMAGE_FALLBACK];
 
   for (let i = 0; i < IMAGE_MODELS.length; i++) {
     const model = IMAGE_MODELS[i];

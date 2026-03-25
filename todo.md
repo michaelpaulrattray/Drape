@@ -4449,6 +4449,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Create server/shared/modelRegistry.ts with semantic model slots and fallback chains
 - [x] Create MODEL_CHANGELOG.md with decision framework
 - [x] Update Wardrobe files (10) to use registry imports
-- [ ] Update Casting files (6) to use registry imports
-- [ ] Upgrade TEXT_PRO: gemini-3-pro-preview → gemini-3.1-pro-preview (shut down Mar 9)
-- [ ] Upgrade IMAGE_FLASH: gemini-2.5-flash-image → gemini-3.1-flash-image-preview (gen-behind)
+- [x] Update Casting files (7) to use registry imports (geminiGeneration, geminiViews, geminiSuggestions, geminiSchemaUpdater, geminiPromptCompactor, geminiClient, aiService)
+- [x] Upgrade TEXT_PRO: gemini-3-pro-preview → gemini-3.1-pro-preview (via registry)
+- [x] Upgrade IMAGE_FLASH: gemini-2.5-flash-image → gemini-3.1-flash-image-preview (via registry)

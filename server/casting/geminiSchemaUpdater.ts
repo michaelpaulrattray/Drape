@@ -12,6 +12,7 @@
  *   DR-16: reconcileSchemaWithImage treats the IMAGE as truth, not the schema.
  */
 
+import { TEXT_ECONOMY, TEXT_MID, TEXT_LIGHT_FALLBACK } from "@shared/modelRegistry";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -89,7 +90,7 @@ RULES:
 
 OUTPUT: The updated schema JSON object.`;
 
-  const MODELS = ["gemini-2.5-flash", "gemini-3-flash-preview"];
+  const MODELS = [TEXT_ECONOMY, TEXT_MID];
 
   for (let i = 0; i < MODELS.length; i++) {
     try {
@@ -198,7 +199,7 @@ OUTPUT: JSON with exactly two keys:
   "description": "<surgically corrected description — brand/mood/lighting preserved>"
 }`;
 
-  const MODELS = ["gemini-3-flash-preview", "gemini-2.5-flash"];
+  const MODELS = [...TEXT_LIGHT_FALLBACK];
 
   for (let i = 0; i < MODELS.length; i++) {
     try {

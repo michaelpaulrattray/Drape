@@ -10,6 +10,7 @@
  * - Updated formatGeminiError with more specific messages
  */
 
+import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { ENV } from "../_core/env";
 import { createModuleLogger } from "../logging/logger";
@@ -241,7 +242,7 @@ export const checkIdentityConsistency = async (
     const ai = getAiClient();
     const response = await withTimeout(
       ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: TEXT_ECONOMY,
         contents: {
           parts: [
             { inlineData: { data: extractBase64Data(sourceImageBase64), mimeType: sourceMimeType } },

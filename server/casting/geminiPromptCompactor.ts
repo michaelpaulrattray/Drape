@@ -15,6 +15,7 @@
  *   - Fails safe — returns bloated prompt unchanged on error
  */
 
+import { TEXT_ECONOMY, TEXT_MID } from "@shared/modelRegistry";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -62,7 +63,7 @@ ${bloatedPrompt}
 
 Rewritten clean description:`;
 
-  const MODELS = ["gemini-2.5-flash", "gemini-3-flash-preview"];
+  const MODELS = [TEXT_ECONOMY, TEXT_MID];
 
   for (let i = 0; i < MODELS.length; i++) {
     try {

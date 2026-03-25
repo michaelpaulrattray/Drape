@@ -8,6 +8,7 @@
  * - Uses buildIdentityAnchor for identity consistency
  */
 
+import { IMAGE_PRO, IMAGE_FALLBACK } from "@shared/modelRegistry";
 import type { ModelViews, GeminiPart } from "./geminiTypes";
 import { ImageResolution, AspectRatio } from "./geminiTypes";
 import {
@@ -110,7 +111,7 @@ export const generateFullBody = async (
     return imageUrl;
   };
 
-  const BODY_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+  const BODY_MODELS = [...IMAGE_FALLBACK];
 
   for (let i = 0; i < BODY_MODELS.length; i++) {
     const model = BODY_MODELS[i];
@@ -197,7 +198,7 @@ export const generateRemainingViews = async (
       return { key: config.key, url: imageUrl };
     };
 
-    const VIEW_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+    const VIEW_MODELS = [...IMAGE_FALLBACK];
 
     for (let i = 0; i < VIEW_MODELS.length; i++) {
       try {
@@ -290,7 +291,7 @@ export const generateSingleView = async (
     return { imageUrl, engineUsed: model };
   };
 
-  const VIEW_MODELS = ['gemini-3-pro-image-preview', 'gemini-2.5-flash-image'];
+  const VIEW_MODELS = [...IMAGE_FALLBACK];
 
   for (let i = 0; i < VIEW_MODELS.length; i++) {
     const model = VIEW_MODELS[i];
@@ -333,7 +334,7 @@ export const upscaleExistingImage = async (
     { text: UPSCALE_PROMPT },
   ];
 
-  const modelName = 'gemini-3-pro-image-preview';
+  const modelName = IMAGE_PRO;
 
   try {
     const response = await withTimeout(

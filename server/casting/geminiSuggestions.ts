@@ -14,6 +14,7 @@
  *   - View-aware — adapts suggestions to active view (headshot vs full body)
  */
 
+import { TEXT_MID } from "@shared/modelRegistry";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -168,7 +169,7 @@ Return ONLY a JSON array of exactly 6 strings.`;
   try {
     const response = await withTimeout(
       ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: TEXT_MID,
         contents: { parts },
         config: {
           responseMimeType: "application/json",
@@ -296,7 +297,7 @@ Return ONLY a JSON array of strings.`,
   try {
     const response = await withTimeout(
       ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: TEXT_MID,
         contents: { parts },
         config: {
           responseMimeType: "application/json",

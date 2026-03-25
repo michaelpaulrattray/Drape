@@ -4,6 +4,7 @@
  * Uses Google Gemini API directly with exact same models as reference app
  */
 
+import { IMAGE_PRO } from "@shared/modelRegistry";
 import * as gemini from "./geminiService";
 import { storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
@@ -239,7 +240,7 @@ export async function generateFullBody(
 
   return {
     imageUrl: s3Url,
-    engineUsed: 'gemini-3-pro-image-preview', // May be flash fallback but we don't track here
+    engineUsed: IMAGE_PRO, // May be flash fallback but we don't track here
   };
 }
 
