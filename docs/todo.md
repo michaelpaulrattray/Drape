@@ -4476,3 +4476,6 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Wardrobe Canvas Sizing
 - [x] Fix model image overflow — image too large in fullscreen, bottom toolbar hidden off-screen
+- [x] Move shortcuts hint bar from bottom action bar into image wrapper (below overlay)
+- [x] Remove bottom bar border-top and reduce padding (py-4 → py-2)
+- [x] Add h-0 to canvas area div and overflow-hidden to outer flex-col container

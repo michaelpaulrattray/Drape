@@ -187,7 +187,7 @@ export function MainStage({
 
   return (
     <div
-      className="flex-1 flex flex-col relative"
+      className="flex-1 flex flex-col relative overflow-hidden"
       style={{ background: "#f0ebe3" }}
     >
       {/* ── Unified Floating Toolbar ─────────────────────────── */}
@@ -248,7 +248,7 @@ export function MainStage({
       </div>
 
       {/* ── Canvas Area ───────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center relative min-h-0">
+      <div className="flex-1 flex items-center justify-center relative min-h-0 h-0">
         {displayUrl && (
           <div className="relative inline-block">
             <img
@@ -275,6 +275,40 @@ export function MainStage({
                 onStyleNote={onStyleNote}
                 disabled={isGenerating}
               />
+            )}
+            {/* Shortcuts hint bar — directly below image */}
+            {!isGenerating && (
+              <div
+                className="mt-2 flex items-center justify-center gap-3 pointer-events-none"
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: 10,
+                  background: "rgba(255,255,255,0.7)",
+                  backdropFilter: "blur(8px)",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+                  width: "fit-content",
+                  margin: "8px auto 0",
+                }}
+              >
+                {(hasResult ? SHORTCUT_HINTS_WITH_COMPARE : SHORTCUT_HINTS).map((s) => (
+                  <div key={s.key} className="flex items-center gap-1.5">
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: "#bbb",
+                        padding: "1px 4px",
+                        borderRadius: 3,
+                        background: "rgba(0,0,0,0.04)",
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {s.key}
+                    </span>
+                    <span style={{ fontSize: 9, color: "#bbb" }}>{s.label}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -328,10 +362,7 @@ export function MainStage({
       </div>
 
       {/* ── Bottom Action Bar ─────────────────────────────── */}
-      <div
-        className="flex items-center justify-center gap-3 px-6 py-4"
-        style={{ borderTop: "1px solid #e5e0d8" }}
-      >
+      <div className="flex items-center justify-center gap-3 px-6 py-2">
         {/* Retry button (shown when there's an error) */}
         {errorMessage && !isGenerating && (
           <button
@@ -377,39 +408,6 @@ export function MainStage({
             </span>
           )}
         </button>
-
-        {/* Shortcuts hint bar */}
-        {!isGenerating && (
-          <div
-            className="flex items-center gap-3 pointer-events-none"
-            style={{
-              padding: "5px 14px",
-              borderRadius: 10,
-              background: "rgba(255,255,255,0.7)",
-              backdropFilter: "blur(8px)",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
-            }}
-          >
-            {(hasResult ? SHORTCUT_HINTS_WITH_COMPARE : SHORTCUT_HINTS).map((s) => (
-              <div key={s.key} className="flex items-center gap-1.5">
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: "#bbb",
-                    padding: "1px 4px",
-                    borderRadius: 3,
-                    background: "rgba(0,0,0,0.04)",
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {s.key}
-                </span>
-                <span style={{ fontSize: 9, color: "#bbb" }}>{s.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
