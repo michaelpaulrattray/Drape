@@ -144,25 +144,7 @@ export function MainStage({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [canGenerate, isGenerating, cooldownSeconds, canUndo, canRedo, onGenerate, onUndo, onRedo]);
 
-  // Status dot color
-  const statusDotBg = isComparing
-    ? "#7c8aef"
-    : isGenerating
-      ? "#e8a83e"
-      : hasResult
-        ? "#5cad5c"
-        : "#ccc";
 
-  const statusDotShadow = isGenerating ? "0 0 6px rgba(232,168,62,0.4)" : "none";
-
-  // Status text
-  const statusText = isComparing
-    ? "Comparing..."
-    : isGenerating
-      ? (generatingMessage || "Processing...")
-      : cooldownSeconds > 0
-        ? `Rate limited · ${cooldownSeconds}s`
-        : "Wardrobe Studio";
 
   // ── No model loaded state ──────────────────────────────────
   if (!modelImageUrl) {
@@ -226,28 +208,16 @@ export function MainStage({
           <Undo2 size={14} />
         </button>
 
-        {/* Divider */}
-        <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
-
-        {/* Status */}
-        <div className="flex items-center gap-2 px-2.5">
-          <div
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: statusDotBg,
-              boxShadow: statusDotShadow,
-              transition: "background 0.3s",
-            }}
-          />
-          <span style={{ fontSize: 10, fontWeight: 500, color: "#888" }}>
-            {statusText}
-          </span>
-        </div>
-
-        {/* Divider */}
-        <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
+        {/* Compare label — only visible during compare */}
+        {isComparing && (
+          <>
+            <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
+            <span className="px-2" style={{ fontSize: 10, fontWeight: 500, color: "#888" }}>
+              Original
+            </span>
+            <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
+          </>
+        )}
 
         {/* Redo */}
         <button
@@ -276,7 +246,7 @@ export function MainStage({
               className="block transition-all duration-300 select-none"
               style={{
                 maxWidth: "calc(100% - 2rem)",
-                maxHeight: "calc(100vh - 200px)",
+                maxHeight: "calc(100vh - 160px)",
                 borderRadius: 16,
                 boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
                 opacity: isGenerating ? 0.4 : 1,
@@ -292,40 +262,40 @@ export function MainStage({
                 disabled={isGenerating}
               />
             )}
-            {/* Shortcuts hint bar — directly below image */}
-            {!isGenerating && (
-              <div
-                className="mt-2 flex items-center justify-center gap-3 pointer-events-none"
-                style={{
-                  padding: "5px 14px",
-                  borderRadius: 10,
-                  background: "rgba(255,255,255,0.7)",
-                  backdropFilter: "blur(8px)",
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
-                  width: "fit-content",
-                  margin: "8px auto 0",
-                }}
-              >
-                {(hasResult ? SHORTCUT_HINTS_WITH_COMPARE : SHORTCUT_HINTS).map((s) => (
-                  <div key={s.key} className="flex items-center gap-1.5">
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        color: "#bbb",
-                        padding: "1px 4px",
-                        borderRadius: 3,
-                        background: "rgba(0,0,0,0.04)",
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {s.key}
-                    </span>
-                    <span style={{ fontSize: 9, color: "#bbb" }}>{s.label}</span>
-                  </div>
-                ))}
+          </div>
+        )}
+
+        {/* Shortcuts hint bar — absolutely positioned at bottom of canvas */}
+        {displayUrl && (
+          <div
+            className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 pointer-events-none transition-opacity duration-200"
+            style={{
+              padding: "5px 14px",
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.7)",
+              backdropFilter: "blur(8px)",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+              opacity: isGenerating ? 0 : 1,
+            }}
+          >
+            {(hasResult ? SHORTCUT_HINTS_WITH_COMPARE : SHORTCUT_HINTS).map((s) => (
+              <div key={s.key} className="flex items-center gap-1.5">
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: "#bbb",
+                    padding: "1px 4px",
+                    borderRadius: 3,
+                    background: "rgba(0,0,0,0.04)",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  {s.key}
+                </span>
+                <span style={{ fontSize: 9, color: "#bbb" }}>{s.label}</span>
               </div>
-            )}
+            ))}
           </div>
         )}
 

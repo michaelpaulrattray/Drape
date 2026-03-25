@@ -4480,3 +4480,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove bottom bar border-top and reduce padding (py-4 → py-2)
 - [x] Add h-0 to canvas area div and overflow-hidden to outer flex-col container
 - [x] Fix hold-to-compare blocked by overlay: move pointer handlers to wrapper, add 150ms delay
+- [x] Adjust image maxHeight from calc(100vh - 200px) to calc(100vh - 160px)
+- [x] Move shortcuts to absolute-positioned bottom of canvas with fade transition
+- [x] Strip toolbar to undo/redo only, show "Original" text only during compare mode
