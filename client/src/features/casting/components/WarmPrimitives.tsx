@@ -337,31 +337,93 @@ export const CollapsibleSection = ({ id, title, icon, isOpen, onToggle, completi
 
 // ── Summary Strip ─────────────────────────────
 
-const SUMMARY_ICONS: Record<string, string> = {
-  gender: '♀♂',
-  age: '⏳',
-  ethnicity: '🌍',
-  skin: '◐',
-  eyes: '◉',
-  hair: '✂',
-  style: '✦',
-  brand: '◆',
+// Inline SVG icon helpers for SummaryStrip (no emojis)
+const sz = 8;
+const sw = 1.8;
+const SummaryIconFemale = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <circle cx="12" cy="8" r="5" /><line x1="12" y1="13" x2="12" y2="21" /><line x1="9" y1="18" x2="15" y2="18" />
+  </svg>
+);
+const SummaryIconMale = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <circle cx="10" cy="14" r="5" /><line x1="14" y1="10" x2="21" y2="3" /><polyline points="15 3 21 3 21 9" />
+  </svg>
+);
+const SummaryIconNeutral = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <circle cx="12" cy="12" r="9" /><line x1="12" y1="3" x2="12" y2="21" />
+  </svg>
+);
+const SummaryIconAge = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+const SummaryIconGlobe = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+);
+const SummaryIconSkin = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+    <path d="M2 12h20" />
+  </svg>
+);
+const SummaryIconEye = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+  </svg>
+);
+const SummaryIconScissors = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line x1="14.47" y1="14.48" x2="20" y2="20" /><line x1="8.12" y1="8.12" x2="12" y2="12" />
+  </svg>
+);
+const SummaryIconStyle = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+const SummaryIconBrand = () => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 8v8" /><path d="M8 12h8" />
+  </svg>
+);
+
+const SUMMARY_ICON_MAP: Record<string, () => React.JSX.Element> = {
+  gender_female: SummaryIconFemale,
+  gender_male: SummaryIconMale,
+  gender_neutral: SummaryIconNeutral,
+  age: SummaryIconAge,
+  ethnicity: SummaryIconGlobe,
+  skin: SummaryIconSkin,
+  eyes: SummaryIconEye,
+  hair: SummaryIconScissors,
+  style: SummaryIconStyle,
+  brand: SummaryIconBrand,
 };
 
 export const SummaryStrip = ({ prefs, ethnicityBlend }: {
   prefs: Record<string, unknown>;
   ethnicityBlend: { name: string; pct: number }[];
 }) => {
-  const items: { icon: string; label: string }[] = [];
+  const items: { iconKey: string; label: string }[] = [];
 
-  if (prefs.gender) items.push({ icon: (prefs.gender as string) === 'Female' ? '♀' : (prefs.gender as string) === 'Male' ? '♂' : '⚥', label: prefs.gender as string });
-  if (prefs.age) items.push({ icon: SUMMARY_ICONS.age, label: `${prefs.age}y` });
-  if (ethnicityBlend.length > 0) items.push({ icon: SUMMARY_ICONS.ethnicity, label: ethnicityBlend.map(e => e.pct < 100 ? `${e.pct}% ${e.name}` : e.name).join(' · ') });
-  if (prefs.skinTone) items.push({ icon: SUMMARY_ICONS.skin, label: (prefs.skinTone as string).split(' / ')[0] });
-  if (prefs.eyeColor) items.push({ icon: SUMMARY_ICONS.eyes, label: `${prefs.eyeColor}` });
-  if (prefs.hairColor) items.push({ icon: SUMMARY_ICONS.hair, label: prefs.hairColor as string });
-  if (prefs.hairStyle) items.push({ icon: SUMMARY_ICONS.style, label: prefs.hairStyle as string });
-  if (prefs.castingBrand) items.push({ icon: SUMMARY_ICONS.brand, label: prefs.castingBrand as string });
+  if (prefs.gender) {
+    const g = prefs.gender as string;
+    const key = g === 'Female' ? 'gender_female' : g === 'Male' ? 'gender_male' : 'gender_neutral';
+    items.push({ iconKey: key, label: g });
+  }
+  if (prefs.age) items.push({ iconKey: 'age', label: `${prefs.age}y` });
+  if (ethnicityBlend.length > 0) items.push({ iconKey: 'ethnicity', label: ethnicityBlend.map(e => e.pct < 100 ? `${e.pct}% ${e.name}` : e.name).join(' · ') });
+  if (prefs.skinTone) items.push({ iconKey: 'skin', label: (prefs.skinTone as string).split(' / ')[0] });
+  if (prefs.eyeColor) items.push({ iconKey: 'eyes', label: `${prefs.eyeColor}` });
+  if (prefs.hairColor) items.push({ iconKey: 'hair', label: prefs.hairColor as string });
+  if (prefs.hairStyle) items.push({ iconKey: 'style', label: prefs.hairStyle as string });
+  if (prefs.castingBrand) items.push({ iconKey: 'brand', label: prefs.castingBrand as string });
 
   if (items.length <= 2) return null;
 
@@ -378,25 +440,28 @@ export const SummaryStrip = ({ prefs, ethnicityBlend }: {
         scrollbarWidth: 'none',
       }}
     >
-      {items.map((item, i) => (
-        <span
-          key={i}
-          className="flex items-center gap-1 shrink-0"
-          style={{
-            padding: '3px 8px',
-            borderRadius: 20,
-            background: 'rgba(0,0,0,0.04)',
-            fontSize: 9,
-            fontWeight: 500,
-            color: '#888',
-            whiteSpace: 'nowrap',
-            letterSpacing: '0.01em',
-          }}
-        >
-          <span style={{ fontSize: 8, opacity: 0.7 }}>{item.icon}</span>
-          {item.label}
-        </span>
-      ))}
+      {items.map((item, i) => {
+        const IconComp = SUMMARY_ICON_MAP[item.iconKey];
+        return (
+          <span
+            key={i}
+            className="flex items-center gap-1 shrink-0"
+            style={{
+              padding: '3px 8px',
+              borderRadius: 20,
+              background: 'rgba(0,0,0,0.04)',
+              fontSize: 9,
+              fontWeight: 500,
+              color: '#888',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.01em',
+            }}
+          >
+            <span style={{ opacity: 0.55, display: 'flex', alignItems: 'center' }}>{IconComp && <IconComp />}</span>
+            {item.label}
+          </span>
+        );
+      })}
     </div>
   );
 };

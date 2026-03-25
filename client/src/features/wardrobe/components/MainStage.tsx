@@ -9,7 +9,8 @@
  *   - Same smart "Original" / "Previous" compare badge
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Undo2, Redo2 } from "lucide-react";
+import { Undo2, Redo2 } from "lucide-react";
+import { LoadingOverlay } from "@/features/casting/components/ImageViewer";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { GarmentOverlay } from "./GarmentOverlay";
 import type { DetectedItem } from "../types";
@@ -33,13 +34,7 @@ interface MainStageProps {
   onStyleNote?: (note: { garmentLabel: string; category: string; instruction: string }) => void;
 }
 
-const GENERATION_TIPS = [
-  "Matching fabric textures and drape...",
-  "Preserving identity and tattoos...",
-  "Layering garments with realistic physics...",
-  "Adjusting fit to body proportions...",
-  "Rendering construction details...",
-];
+
 
 const SHORTCUT_HINTS = [
   { key: "Space", label: "Generate" },
@@ -72,14 +67,7 @@ export function MainStage({
 }: MainStageProps) {
   const selectedCount = useWardrobeStore((s) => s.selectedGarmentIds.size);
   const [isComparing, setIsComparing] = useState(false);
-  const tipIndexRef = useRef(0);
-  const [tipIndex, setTipIndex] = useState(0);
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
-
-  const cycleTip = useCallback(() => {
-    tipIndexRef.current = (tipIndexRef.current + 1) % GENERATION_TIPS.length;
-    setTipIndex(tipIndexRef.current);
-  }, []);
 
   // Hold-to-compare
   const compareTimerRef = useRef<number | null>(null);
@@ -386,29 +374,12 @@ export function MainStage({
             </div>
           )}
 
-          {/* Generation overlay */}
+          {/* Generation overlay — shared with Casting */}
           {isGenerating && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div
-                className="flex flex-col items-center gap-3 px-6 py-5 rounded-2xl"
-                style={{
-                  background: "rgba(26,26,26,0.85)",
-                  backdropFilter: "blur(12px)",
-                }}
-              >
-                <Loader2 size={24} color="#fff" className="animate-spin" />
-                <p className="font-medium" style={{ fontSize: 11, color: "#fff" }}>
-                  {generatingMessage || "Generating..."}
-                </p>
-                <p
-                  className="font-mono"
-                  style={{ fontSize: 8, color: "rgba(255,255,255,0.5)" }}
-                  onClick={cycleTip}
-                >
-                  {GENERATION_TIPS[tipIndex]}
-                </p>
-              </div>
-            </div>
+            <LoadingOverlay
+              statusMessage={generatingMessage || "Dressing model..."}
+              isFirstGeneration={!hasResult}
+            />
           )}
         </div>
       </div>

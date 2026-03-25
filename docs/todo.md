@@ -4560,3 +4560,9 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Wardrobe Toolbar — Show on Model Load (not just after VTO)
 - [x] Change toolbar gate from `hasResult` to `modelImageUrl` so toolbar appears whenever a model is on canvas, with grey dot + "Wardrobe Studio" default state and disabled undo/redo
+
+## Casting ↔ Wardrobe Visual Parity
+- [x] Remove colored emojis from Casting ControlPanel status tags — replace with Lucide SVG icons only
+- [x] Remove warm gradient header from Casting ControlPanel — match Wardrobe's flat/neutral header style
+- [x] Match canvas and panel background colors between Casting and Wardrobe (ensure consistency)
+- [x] Add Casting-style loading/waiting state (scan line + contextual tips) to Wardrobe MainStage

@@ -144,13 +144,13 @@ export function ControlPanel({
       h-full flex-shrink-0 z-20
     `}
       style={{
-        width: 300, background: '#fff',
+        width: 300, background: '#faf8f5',
         borderRadius: '0 18px 18px 0',
         boxShadow: '8px 0 40px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)',
       }}
     >
       {/* Header */}
-      <div className="p-4 pb-3" style={{ background: 'linear-gradient(to bottom, #faf8f5, #fff)' }}>
+      <div className="p-4 pb-3">
         <div className="flex items-center justify-between">
           <div>
             <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>Casting</div>
