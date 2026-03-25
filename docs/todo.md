@@ -4575,3 +4575,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Migrate Casting to use StudioCanvas (MaskCanvas, ViewTabs, RefinePanel as overlay slots)
 - [x] Remove old MainStage.tsx and simplify ImageViewerPanel.tsx (ImageViewerPanel now delegates to StudioCanvas internally)
 - [x] Verify zero flicker on tool switch, shared image stays in place (0 TS errors, 1395 tests passing)
+
+## Canvas Layout Parity Fixes
+- [x] Fix Casting surgical/eraser tool buttons positioned off to the right (moved sideOverlay inside hover container)
+- [x] Fix uneven top/bottom padding on Casting canvas (changed maxHeight from 100vh-100px to 100vh-140px)
+- [x] Remove Wardrobe imageStyle marginTop: 50px to make both canvases pixel-identical

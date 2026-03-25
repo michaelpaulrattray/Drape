@@ -143,7 +143,6 @@ function WardrobeWorkspaceSection({
         <StudioCanvas
           displayUrl={gen.currentResult || modelImageUrl}
           imageAlt={hasResult ? 'Virtual try-on result' : 'Model'}
-          imageStyle={{ marginTop: 50 }}
           isGenerating={gen.isGenerating}
           generatingMessage={gen.generatingMessage}
           hasResult={hasResult}

@@ -341,15 +341,14 @@ export function StudioCanvas({
 
       {/* ── Image area ── */}
       <div className="flex-1 relative min-h-0 flex items-center justify-center bg-transparent">
-        {/* Side overlay slot (tool buttons, next stage CTA) */}
-        {sideOverlay}
-
         {/* Image + overlays hover container */}
         <div
           className="relative h-full max-w-full flex items-center justify-center select-none"
           onMouseEnter={() => { setImageAreaHovered(true); onHoverChange?.(true); }}
           onMouseLeave={() => { setImageAreaHovered(false); onHoverChange?.(false); }}
         >
+          {/* Side overlay slot (tool buttons, next stage CTA) */}
+          {sideOverlay}
           {/* Image wrapper */}
           {activeDisplayUrl && (
             <div
@@ -366,7 +365,7 @@ export function StudioCanvas({
                 className="block transition-all duration-300 select-none"
                 style={{
                   maxWidth: "calc(100vw - 620px)",
-                  maxHeight: "calc(100vh - 100px)",
+                  maxHeight: "calc(100vh - 140px)",
                   borderRadius: 16,
                   boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
                   opacity: isGenerating ? 0.5 : 1,
