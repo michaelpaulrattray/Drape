@@ -4512,3 +4512,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Audit Casting pipeline: hardcodes AspectRatio.PORTRAIT ("3:4") in every call
 - [x] Audit Wardrobe VTO pipeline: was calling getImageAspectBucket inside each generation function
 - [x] Fix root cause: moved getImageAspectBucket to router level, detect once per call against modelImageUrl, pass locked ratio to all generation functions (vtoGeneration, incrementalComposite, refineGarment)
+
+## Wardrobe MainStage Auto-Hide Bug
+- [x] Bug: Toolbars (undo/redo, shortcuts) disappear when mouse leaves the image but is still on the canvas — moved onMouseEnter/Leave from inner canvas div to outer MainStage wrapper

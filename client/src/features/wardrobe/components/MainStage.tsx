@@ -198,6 +198,8 @@ export function MainStage({
     <div
       className="flex-1 flex flex-col relative overflow-hidden"
       style={{ background: "#f0ebe3" }}
+      onMouseEnter={() => setImageAreaHovered(true)}
+      onMouseLeave={() => setImageAreaHovered(false)}
     >
       {/* ── Unified Floating Toolbar (auto-hide) ──────────────── */}
       <div
@@ -252,8 +254,6 @@ export function MainStage({
       {/* ── Canvas Area ───────────────────────────────────── */}
       <div
         className="flex-1 flex items-center justify-center relative min-h-0 h-0"
-        onMouseEnter={() => setImageAreaHovered(true)}
-        onMouseLeave={() => setImageAreaHovered(false)}
       >
         {displayUrl && (
           <div
