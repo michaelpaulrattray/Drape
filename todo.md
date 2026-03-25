@@ -1,3 +1,4 @@
 - [x] Fix Wardrobe accessibility bug: viewType mismatch ('fullBody'→'frontFull', 'sideProfile'→'sideClose') in DrapeStudio sync effect
 - [x] Improve LoadingOverlay contrast: increase scan line and tip text opacity against #f0ebe3 background
 - [x] Add pulse animation to Wardrobe icon in ToolRail when hasFullBody becomes true
+- [x] Fix Wardrobe tools not auto-hiding on mouse-off (should match Casting's hover behavior via shared StudioCanvas)

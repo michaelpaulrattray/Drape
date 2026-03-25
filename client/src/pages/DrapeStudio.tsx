@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useLocation, useSearch } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -53,6 +53,9 @@ function WardrobeWorkspaceSection({
 }) {
   const gen = useWardrobeGeneration({ modelImageUrl, modelId });
   useModelSetup(modelImageUrl);
+
+  // Track hover state from StudioCanvas for auto-hiding overlays
+  const [imageAreaHovered, setImageAreaHovered] = useState(false);
 
   const resultOverlayItems = useWardrobeStore((s) => s.resultOverlayItems);
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
@@ -176,11 +179,12 @@ function WardrobeWorkspaceSection({
               onStyleNote={handleStyleNote}
             />
           }
+          onHoverChange={setImageAreaHovered}
           bottomOverlay={
             <WardrobeShortcutsBar
               hasResult={hasResult}
               isGenerating={gen.isGenerating}
-              controlsVisible={true}
+              controlsVisible={imageAreaHovered}
             />
           }
         />
