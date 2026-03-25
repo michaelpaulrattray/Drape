@@ -5,6 +5,7 @@
  * Large edits (structural, >30% image change) trigger full regeneration.
  * Defaults to 'small' on failure — identity check downstream catches bad results.
  */
+import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import { getAiClient, withTextQueue } from "./utils";
 
 export type EditSize = "small" | "large";
@@ -38,7 +39,7 @@ export async function classifyEditSize(
   try {
     const response = await withTextQueue(() =>
       ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: TEXT_ECONOMY,
         contents: [{ text: CLASSIFIER_PROMPT(instruction) }],
       }),
     );

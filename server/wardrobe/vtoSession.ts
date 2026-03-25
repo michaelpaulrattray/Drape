@@ -5,9 +5,10 @@
  * share context. Sessions are keyed by userId-sessionId and auto-evict
  * after 30 minutes.
  *
- * Gemini model: gemini-3-pro-image-preview (TEXT-only response for seeding)
+ * Gemini model: IMAGE_PRO from modelRegistry (TEXT-only response for seeding)
  * Queue lane: none (seeding is lightweight, no image generation)
  */
+import { IMAGE_PRO } from "@shared/modelRegistry";
 import { getAiClient, SAFETY_SETTINGS, toInlinePart } from "./utils";
 import { createModuleLogger } from "../logging/logger";
 
@@ -65,7 +66,7 @@ export async function seedSession(
   const resultPart = await toInlinePart(resultUrl);
 
   const chat = ai.chats.create({
-    model: "gemini-3-pro-image-preview",
+    model: IMAGE_PRO,
     config: {
       responseModalities: ["TEXT"],
       safetySettings: SAFETY_SETTINGS,

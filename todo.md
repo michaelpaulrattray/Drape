@@ -4444,3 +4444,11 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Add 21:9 ultra-wide check as first ratio bucket in getImageAspectBucket
 - [x] Add description example to single garment DESCRIPTION prompt in garmentAnalysis.ts
 - [x] Add description example to full look DESCRIPTION prompt and strengthen SUGGESTED_ACTIONS guard in garmentAnalysis.ts
+
+## Centralized Model Registry
+- [x] Create server/shared/modelRegistry.ts with semantic model slots and fallback chains
+- [x] Create MODEL_CHANGELOG.md with decision framework
+- [x] Update Wardrobe files (10) to use registry imports
+- [ ] Update Casting files (6) to use registry imports
+- [ ] Upgrade TEXT_PRO: gemini-3-pro-preview → gemini-3.1-pro-preview (shut down Mar 9)
+- [ ] Upgrade IMAGE_FLASH: gemini-2.5-flash-image → gemini-3.1-flash-image-preview (gen-behind)

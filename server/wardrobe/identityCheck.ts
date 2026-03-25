@@ -6,6 +6,7 @@
  * identity is preserved, false if drifted. Defaults to true on failure
  * to avoid blocking the user.
  */
+import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import { getAiClient, withTextQueue, toInlinePart } from "./utils";
 
 const IDENTITY_PROMPT = `Compare these two images. Image 1 is the original photo of a person. Image 2 is a generated edit of that same person.
@@ -31,7 +32,7 @@ export async function checkIdentityMatch(
 
     const response = await withTextQueue(() =>
       ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: TEXT_ECONOMY,
         contents: [
           {
             parts: [

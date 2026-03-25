@@ -4,10 +4,11 @@
  * Takes a garment image (crop or full photo) and produces a clean
  * flat-lay studio version on a warm cream background.
  *
- * Gemini model: gemini-2.5-flash-image (image generation, fast)
+ * Gemini model: IMAGE_FLASH from modelRegistry (image generation, fast)
  * Queue lane: IMAGE (heavy, ~15-30s)
  * Credit cost: 2 points
  */
+import { IMAGE_FLASH } from "@shared/modelRegistry";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -62,7 +63,7 @@ RULES:
 - No shadows. No reflections. No styling props. Just the garment on #f0ebe3.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
+      model: IMAGE_FLASH,
       contents: [{ text: prompt }, garmentPart],
       config: {
         responseModalities: ["TEXT", "IMAGE"],

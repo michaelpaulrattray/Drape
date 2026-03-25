@@ -4,10 +4,11 @@
  * Refines a specific garment in an existing VTO result — applies
  * targeted edits like "unbutton jacket", "roll sleeves", "tuck shirt".
  *
- * Gemini model: gemini-3-pro-image-preview (image generation)
+ * Gemini model: IMAGE_PRO from modelRegistry (image generation)
  * Queue lane: IMAGE (heavy, ~15-30s)
  * Credit cost: 3 points
  */
+import { IMAGE_PRO } from "@shared/modelRegistry";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -109,7 +110,7 @@ Return the edited image.`;
     } else {
       const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
       chat = ai.chats.create({
-        model: "gemini-3-pro-image-preview",
+        model: IMAGE_PRO,
         config: {
           responseModalities: ["TEXT", "IMAGE"],
           imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },

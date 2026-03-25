@@ -4,10 +4,11 @@
  * Analyzes a garment image and extracts structured metadata:
  * short name, description, tags, and suggested styling actions.
  *
- * Gemini model: gemini-2.5-flash (text-only, structured JSON)
+ * Gemini model: TEXT_ECONOMY from modelRegistry (text-only, structured JSON)
  * Queue lane: TEXT (lightweight, ~5-10s)
  * Credit cost: 1 point (bundled with detection)
  */
+import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import { Type } from "@google/genai";
 import {
   getAiClient,
@@ -88,7 +89,7 @@ NEVER suggest actions for features the garment does NOT have.
 A sleeveless top CANNOT have "Roll sleeves". A pullover CANNOT have "Unbutton".`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: TEXT_ECONOMY,
       contents: [{ text: prompt }, garmentPart],
       config: {
         responseMimeType: "application/json",

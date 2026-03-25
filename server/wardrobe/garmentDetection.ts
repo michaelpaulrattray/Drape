@@ -7,10 +7,11 @@
  * Used when a user uploads a photo containing clothing — either
  * a single garment or a full outfit to decompose.
  *
- * Gemini model: gemini-3-pro-preview (text-only, structured JSON)
+ * Gemini model: TEXT_PRO from modelRegistry (text-only, structured JSON)
  * Queue lane: TEXT (lightweight, ~5-10s)
  * Credit cost: 1 point
  */
+import { TEXT_PRO } from "@shared/modelRegistry";
 import { Type } from "@google/genai";
 import {
   getAiClient,
@@ -63,7 +64,7 @@ RULES:
 - Bounding box coordinates must be normalized (0-1).`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: TEXT_PRO,
       contents: [{ text: prompt }, imagePart],
       config: {
         responseMimeType: "application/json",

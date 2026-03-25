@@ -5,10 +5,11 @@
  * dressed result. Supports layering, full-look overrides, tattoo preservation,
  * and incremental compositing (swap one garment without regenerating all).
  *
- * Gemini model: gemini-3-pro-image-preview (image generation)
+ * Gemini model: IMAGE_PRO from modelRegistry (image generation)
  * Queue lane: IMAGE (heavy, ~30-60s)
  * Credit cost: 5 points (full VTO), 3 points (incremental)
  */
+import { IMAGE_PRO } from "@shared/modelRegistry";
 import {
   getAiClient,
   SAFETY_SETTINGS,
@@ -240,7 +241,7 @@ Return the composite image.`;
 
     const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
     const chat = ai.chats.create({
-      model: "gemini-3-pro-image-preview",
+      model: IMAGE_PRO,
       config: {
         responseModalities: ["TEXT", "IMAGE"],
         imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
@@ -330,7 +331,7 @@ Return the updated image with styling changes applied.`;
 
       const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
       const chat = ai.chats.create({
-        model: "gemini-3-pro-image-preview",
+        model: IMAGE_PRO,
         config: {
           responseModalities: ["TEXT", "IMAGE"],
           imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
@@ -408,7 +409,7 @@ Merge the new garments realistically with the existing outfit in Image 2. Handle
 
     const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
     const chat = ai.chats.create({
-      model: "gemini-3-pro-image-preview",
+      model: IMAGE_PRO,
       config: {
         responseModalities: ["TEXT", "IMAGE"],
         imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },

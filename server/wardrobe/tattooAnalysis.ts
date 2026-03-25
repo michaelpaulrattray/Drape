@@ -6,10 +6,11 @@
  * generation and refinement to prevent hallucinating or removing
  * tattoos.
  *
- * Gemini model: gemini-2.5-flash (text-only, structured JSON)
+ * Gemini model: TEXT_ECONOMY from modelRegistry (text-only, structured JSON)
  * Queue lane: TEXT (lightweight, ~5-10s)
  * Credit cost: 0 (free analysis, same as SOT)
  */
+import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import {
   getAiClient,
   withTextQueue,
@@ -93,7 +94,7 @@ Respond with JSON only:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: TEXT_ECONOMY,
       contents: [{ text: prompt }, imagePart],
       config: { responseMimeType: "application/json" },
     });

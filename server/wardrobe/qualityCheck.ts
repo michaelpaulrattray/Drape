@@ -4,10 +4,11 @@
  * Checks uploaded model photos for issues that would cause poor VTO
  * results: mirror selfies, low resolution, face obscured, etc.
  *
- * Gemini model: gemini-2.5-flash (text-only, structured JSON)
+ * Gemini model: TEXT_ECONOMY from modelRegistry (text-only, structured JSON)
  * Queue lane: TEXT (lightweight, ~5-10s)
  * Credit cost: 0 (free pre-flight check)
  */
+import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import {
   getAiClient,
   withTextQueue,
@@ -70,7 +71,7 @@ If no issues: {"issues": []}
 Only include issues you are confident about.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: TEXT_ECONOMY,
       contents: [imagePart, { text: prompt }],
       config: { responseMimeType: "application/json" },
     });
