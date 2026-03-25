@@ -4502,3 +4502,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] 8. Wardrobe add imageAreaHovered auto-hide for toolbar and shortcuts
 - [x] 9. Wardrobe add cursor grab when result exists
 - [x] 10. Both studios smart Original/Previous badge on image during compare
+
+## Wardrobe MainStage Bugs
+- [x] Bug: Toolbar (undo/redo) and shortcuts bar are off-center — shifted left relative to the image
+- [x] Bug: Image size changes between VTO generations — not staying fixed/stable

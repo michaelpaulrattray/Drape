@@ -96,6 +96,21 @@ export function MainStage({
   const [tipIndex, setTipIndex] = useState(0);
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
 
+  // Locked image dimensions — captured on first load, held across VTO generations
+  const [lockedSize, setLockedSize] = useState<{ w: number; h: number } | null>(null);
+
+  // Reset locked size when model image changes (new model loaded)
+  useEffect(() => {
+    setLockedSize(null);
+  }, [modelImageUrl]);
+
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    if (!lockedSize) {
+      const img = e.currentTarget;
+      setLockedSize({ w: img.clientWidth, h: img.clientHeight });
+    }
+  }, [lockedSize]);
+
   // Cycle tips during generation
   const cycleTip = useCallback(() => {
     tipIndexRef.current = (tipIndexRef.current + 1) % GENERATION_TIPS.length;
@@ -201,7 +216,7 @@ export function MainStage({
     >
       {/* ── Unified Floating Toolbar (auto-hide) ──────────────── */}
       <div
-        className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 pointer-events-auto transition-all duration-200"
+        className="absolute top-3 left-1/2 z-20 flex items-center gap-1 pointer-events-auto transition-all duration-200"
         style={{
           padding: "3px 4px",
           borderRadius: 14,
@@ -209,7 +224,9 @@ export function MainStage({
           boxShadow: "0 2px 14px rgba(0,0,0,0.05)",
           backdropFilter: "blur(12px)",
           opacity: controlsVisible ? 1 : 0,
-          transform: controlsVisible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(-8px)",
+          transform: controlsVisible
+            ? "translateX(-50%) translateY(0)"
+            : "translateX(-50%) translateY(-8px)",
           pointerEvents: controlsVisible ? "auto" : "none",
         }}
       >
@@ -256,7 +273,11 @@ export function MainStage({
         {displayUrl && (
           <div
             className="relative"
-            style={{ borderRadius: 16, overflow: "hidden" }}
+            style={{
+              borderRadius: 16,
+              overflow: "hidden",
+              ...(lockedSize ? { width: lockedSize.w, height: lockedSize.h } : {}),
+            }}
             onPointerDown={handleCompareStart}
             onPointerUp={handleCompareEnd}
             onPointerLeave={handleCompareEnd}
@@ -266,8 +287,10 @@ export function MainStage({
               alt={hasResult && !isComparing ? "Virtual try-on result" : "Model"}
               className="block transition-all duration-300 select-none"
               style={{
-                maxWidth: "calc(100% - 2rem)",
-                maxHeight: "calc(100vh - 100px)",
+                ...(lockedSize
+                  ? { width: lockedSize.w, height: lockedSize.h, objectFit: "contain" as const }
+                  : { maxWidth: "calc(100% - 2rem)", maxHeight: "calc(100vh - 100px)" }
+                ),
                 borderRadius: 16,
                 boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
                 opacity: isGenerating ? 0.5 : 1,
@@ -275,6 +298,7 @@ export function MainStage({
                 cursor: hasResult && !isGenerating ? "grab" : "default",
               }}
               draggable={false}
+              onLoad={handleImageLoad}
             />
             {/* Garment overlay — clickable bounding boxes */}
             {resultOverlayItems.length > 0 && !isGenerating && !isComparing && onStyleNote && (
@@ -307,7 +331,7 @@ export function MainStage({
         {/* Shortcuts hint bar — auto-hide with controls */}
         {displayUrl && (
           <div
-            className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 pointer-events-none transition-all duration-200"
+            className="absolute bottom-2 left-1/2 z-10 flex items-center gap-3 pointer-events-none transition-all duration-200"
             style={{
               padding: "5px 14px",
               borderRadius: 10,
@@ -315,7 +339,9 @@ export function MainStage({
               backdropFilter: "blur(8px)",
               boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
               opacity: controlsVisible && !isGenerating ? 1 : 0,
-              transform: controlsVisible && !isGenerating ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(8px)",
+              transform: controlsVisible && !isGenerating
+                ? "translateX(-50%) translateY(0)"
+                : "translateX(-50%) translateY(8px)",
             }}
           >
             {(hasResult ? SHORTCUT_HINTS_WITH_COMPARE : SHORTCUT_HINTS).map((s) => (
@@ -369,7 +395,7 @@ export function MainStage({
 
         {/* Error overlay */}
         {errorMessage && !isGenerating && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+          <div className="absolute bottom-6 left-1/2 z-10" style={{ transform: "translateX(-50%)" }}>
             <div
               className="flex items-center gap-2 px-4 py-2 rounded-full"
               style={{ background: "rgba(220,38,38,0.9)", backdropFilter: "blur(8px)" }}
