@@ -4549,3 +4549,7 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Wardrobe MainStage Auto-Hide Bug (Round 3)
 - [x] Investigate how Casting ImageViewerPanel handles auto-hide and replicate exact pattern in Wardrobe MainStage — restructured: toolbar + shortcuts are now INSIDE the hover-tracked container (h-full max-w-full), matching Casting's pattern exactly
+
+## Wardrobe Toolbar Redesign + Retry
+- [x] Match Casting's persistent toolbar design — move outside image div, add green dot + version label (Dressed · v1/v2), same position/styling as Casting
+- [x] Add Retry button — top-right corner, same design as Casting (RotateCcw icon + Retry label), wired to onRetry
