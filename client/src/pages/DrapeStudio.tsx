@@ -15,8 +15,7 @@ import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition
 import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
-import { RackPanel, LayersPanel, DecompositionDrawer, useWardrobeGeneration, useModelSetup, useWardrobeStore, WardrobeEmptyState, WardrobeImageOverlay, WardrobeShortcutsBar } from '@/features/wardrobe';
-import { StudioCanvas } from '@/features/studio/components/StudioCanvas';
+import { WardrobeWorkspaceSection } from '@/features/wardrobe';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -33,189 +32,11 @@ import { useCastingGeneration } from '@/features/casting/hooks/useCastingGenerat
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingViewGeneration';
 import { generateRandomPreferences } from '@/features/casting/castingHelpers';
+import { CastModelModal } from '@/features/studio/components/CastModelModal';
+import { useCastGate } from '@/features/studio/hooks/useCastGate';
 
 /** Valid tool query param values */
 const VALID_TOOLS: StudioTool[] = ['casting', 'wardrobe', 'export'];
-
-/** Wardrobe workspace — extracted to avoid hook-in-conditional issues */
-function WardrobeWorkspaceSection({
-  modelImageUrl,
-  modelId,
-  leftReady,
-  centerReady,
-  rightReady,
-}: {
-  modelImageUrl: string | null;
-  modelId: number | null;
-  leftReady: boolean;
-  centerReady: boolean;
-  rightReady: boolean;
-}) {
-  const gen = useWardrobeGeneration({ modelImageUrl, modelId });
-  useModelSetup(modelImageUrl);
-
-  // Track hover state from StudioCanvas for auto-hiding overlays
-  const [imageAreaHovered, setImageAreaHovered] = useState(false);
-
-  const resultOverlayItems = useWardrobeStore((s) => s.resultOverlayItems);
-  const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
-  const selectedCount = useWardrobeStore((s) => s.selectedGarmentIds.size);
-  const isDecomposeOpen = useWardrobeStore((s) => s.isDecomposeOpen);
-  const setDecomposeOpen = useWardrobeStore((s) => s.setDecomposeOpen);
-  const { data: garments = [] } = trpc.wardrobe.garments.list.useQuery();
-
-  const hasResult = gen.currentResult !== null;
-  const canGenerate = selectedCount > 0 && !!modelImageUrl && !gen.isGenerating && gen.cooldownSeconds <= 0;
-
-  const handleStyleNote = useCallback((note: { garmentLabel: string; category: string; instruction: string }) => {
-    const selectedArr = Array.from(selectedGarmentIds);
-    const categoryGarments = garments.filter(
-      (g) => selectedArr.includes(g.id) && g.slotType === note.category
-    );
-
-    if (categoryGarments.length === 0) {
-      const fallbackId = selectedArr[0];
-      if (!fallbackId) return;
-      gen.refineResult(fallbackId, note.instruction);
-      return;
-    }
-
-    let bestMatch = categoryGarments[0];
-    if (categoryGarments.length > 1) {
-      const overlayWords = note.garmentLabel.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
-      let bestScore = -1;
-      for (const g of categoryGarments) {
-        const haystack = `${g.shortName || ''} ${g.description || ''}`.toLowerCase();
-        const score = overlayWords.filter((w) => haystack.includes(w)).length;
-        if (score > bestScore) {
-          bestScore = score;
-          bestMatch = g;
-        }
-      }
-    }
-
-    gen.refineResult(bestMatch.id, note.instruction);
-  }, [gen, garments, selectedGarmentIds]);
-
-  // Wardrobe-specific keyboard handler (Space to generate)
-  const wardrobeKeyHandler = useCallback((e: KeyboardEvent) => {
-    if (e.key === ' ') {
-      e.preventDefault();
-      if (canGenerate) gen.generate();
-      return true;
-    }
-    return false;
-  }, [canGenerate, gen]);
-
-  // Derive toolbar status — just tool name, spinner handles generating state
-  const statusLabel = 'Wardrobe';
-  const statusColor = '#ccc'; // unused now but kept for interface
-  const statusGlow = undefined;
-
-  // Compare URL: show previous VTO result (or original model if on first VTO)
-  const compareUrl = (() => {
-    if (!hasResult) return null;
-    // If we're at v2+, show the previous VTO result
-    if (gen.historyIndex > 0) {
-      const prevUrl = useWardrobeStore.getState().vtoHistory[gen.historyIndex - 1];
-      return prevUrl ?? modelImageUrl;
-    }
-    // At v1, compare against the original model
-    return modelImageUrl;
-  })();
-  const compareLabel = gen.historyIndex <= 0 ? 'Original' : 'Previous';
-
-  return (
-    <>
-      {/* Left Panel — Garment Rack */}
-      <AnimatedPanel
-        ready={leftReady}
-        from="left"
-        offset={60}
-        duration={500}
-        className="w-full lg:w-[280px] xl:w-[300px] flex-shrink-0 overflow-y-auto border-r relative"
-        style={{ borderColor: '#e5e0d8' }}
-      >
-        <RackPanel />
-      </AnimatedPanel>
-
-      {/* Center — Unified StudioCanvas */}
-      <div
-        className="flex-1 min-w-0 h-full"
-        style={{
-          opacity: centerReady ? 1 : 0,
-          transform: centerReady ? 'scale(1)' : 'scale(0.97)',
-          transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
-      >
-        <StudioCanvas
-          displayUrl={gen.currentResult || modelImageUrl}
-          imageAlt={hasResult ? 'Virtual try-on result' : 'Model'}
-          isGenerating={gen.isGenerating}
-          generatingMessage={gen.generatingMessage}
-          hasResult={hasResult}
-          onUndo={gen.undo}
-          onRedo={gen.redo}
-          canUndo={gen.canUndo}
-          canRedo={gen.canRedo}
-          statusLabel={statusLabel}
-          statusColor={statusColor}
-          statusGlow={statusGlow}
-          errorMessage={gen.errorMessage}
-          onClearError={gen.clearError}
-          onRetry={gen.handleRetry}
-          compareUrl={compareUrl}
-          compareLabel={compareLabel}
-          loadingMessage={gen.generatingMessage || 'Dressing model...'}
-          isFirstGeneration={!hasResult}
-          showToolbar={!!modelImageUrl}
-          emptyState={!modelImageUrl ? <WardrobeEmptyState /> : undefined}
-          extraKeyHandler={wardrobeKeyHandler}
-          imageOverlay={
-            <WardrobeImageOverlay
-              resultOverlayItems={resultOverlayItems}
-              isGenerating={gen.isGenerating}
-              isComparing={false}
-              onStyleNote={handleStyleNote}
-            />
-          }
-          onHoverChange={setImageAreaHovered}
-          bottomOverlay={
-            <WardrobeShortcutsBar
-              hasResult={hasResult}
-              isGenerating={gen.isGenerating}
-              controlsVisible={imageAreaHovered}
-            />
-          }
-        />
-      </div>
-
-      {/* Right Panel — Layers */}
-      <AnimatedPanel
-        ready={rightReady}
-        from="right"
-        offset={60}
-        duration={500}
-        className="hidden lg:block w-[240px] xl:w-[260px] flex-shrink-0 overflow-y-auto border-l"
-        style={{ borderColor: '#e5e0d8' }}
-      >
-        <LayersPanel
-          isGenerating={gen.isGenerating}
-          hasResult={hasResult}
-          onGenerate={gen.generate}
-          currentResultUrl={gen.currentResult}
-          onRefine={gen.refineResult}
-          isRefining={gen.isGenerating}
-          hasDirtyStyles={gen.hasDirtyStyles}
-          onApplyStyleChanges={gen.handleApplyStyleChanges}
-        />
-      </AnimatedPanel>
-
-      {/* Decomposition Drawer */}
-      <DecompositionDrawer open={isDecomposeOpen} onClose={() => setDecomposeOpen(false)} />
-    </>
-  );
-}
 
 export default function DrapeStudio() {
   const [, navigate] = useLocation();
@@ -374,6 +195,20 @@ export default function DrapeStudio() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [prefs, setPrefs]);
 
+  // ── Cast Model Gate ──────────────────────────────────────
+  const {
+    showCastModal,
+    setShowCastModal,
+    isCasting,
+    castingMessage,
+    needsSideView,
+    handleCastAndContinue,
+  } = useCastGate({
+    currentModelId,
+    currentAssets,
+    refetchCreditsWithWarning,
+  });
+
   // Derive full-body URL for wardrobe VTO base image
   // Priority: uploaded model URL > gallery cast URL > casting full body asset
   const fullBodyUrl = useMemo(() => {
@@ -459,7 +294,7 @@ export default function DrapeStudio() {
               transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
-            <ToolRail canvas={canvas} />
+            <ToolRail canvas={canvas} onWardrobeGate={() => setShowCastModal(true)} />
           </div>
         )}
 
@@ -578,6 +413,18 @@ export default function DrapeStudio() {
           )}
         </div>
       </div>
+
+      {/* Cast Model Modal — gate before wardrobe for draft models */}
+      <CastModelModal
+        isOpen={showCastModal}
+        onClose={() => setShowCastModal(false)}
+        onConfirm={handleCastAndContinue}
+        needsSideView={needsSideView}
+        creditBalance={creditsData?.balance || 0}
+        isCasting={isCasting}
+        castingMessage={castingMessage}
+        previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
+      />
 
       {/* Credit Top-up Modal */}
       <CreditTopupModal

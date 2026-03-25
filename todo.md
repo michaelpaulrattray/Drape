@@ -4,3 +4,6 @@
 - [x] Fix Wardrobe tools not auto-hiding on mouse-off (should match Casting's hover behavior via shared StudioCanvas)
 - [x] Fix: Wardrobe shows "No model on canvas" after switching from Casting with full body — model URL not passing through
 - [x] Add contextual next-step chip in casting shortcuts bar (Next → Full Body, Dress this model →, Export Identity →)
+- [x] Implement CastModelModal — gate Wardrobe access behind identity save (auto-generate missing side view + mint model)
+- [x] Wire CastModelModal into ToolRail click handler and DrapeStudio orchestration
+- [x] Add Wardrobe image download button for saving dressed model images

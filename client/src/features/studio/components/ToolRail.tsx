@@ -27,9 +27,11 @@ const TOOL_LABELS: Record<string, string> = {
 
 interface ToolRailProps {
   canvas: CanvasState;
+  /** Called when user clicks Wardrobe but model needs casting first */
+  onWardrobeGate?: () => void;
 }
 
-export function ToolRail({ canvas }: ToolRailProps) {
+export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
   const activeTool = useStudioStore((s) => s.activeTool);
   const setActiveTool = useStudioStore((s) => s.setActiveTool);
   const { resetToLobby, resetAndSwitchTo } = useSessionReset();
@@ -68,6 +70,12 @@ export function ToolRail({ canvas }: ToolRailProps) {
     if (!availability.enabled) return;
 
     clearPulse(toolId);
+
+    // Intercept wardrobe click for draft models — show cast modal
+    if (toolId === 'wardrobe' && onWardrobeGate && canvas.castModelId === null && canvas.modelSource === 'cast') {
+      onWardrobeGate();
+      return;
+    }
 
     if (availability.needsConfirm) {
       setPendingAction(toolId);

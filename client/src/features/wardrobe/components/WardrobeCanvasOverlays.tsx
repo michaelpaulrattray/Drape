@@ -5,6 +5,7 @@
  * when the active tool is "wardrobe". Keeps wardrobe-specific rendering
  * logic co-located with the wardrobe feature.
  */
+import { Download } from 'lucide-react';
 import { GarmentOverlay } from "./GarmentOverlay";
 import type { DetectedItem } from "../types";
 
@@ -25,9 +26,10 @@ interface ShortcutsBarProps {
   hasResult: boolean;
   isGenerating: boolean;
   controlsVisible: boolean;
+  onDownload?: () => void;
 }
 
-export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible }: ShortcutsBarProps) {
+export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible, onDownload }: ShortcutsBarProps) {
   if (isGenerating) return null;
   return (
     <div
@@ -60,6 +62,24 @@ export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible 
           <span style={{ fontSize: 9, color: "#bbb" }}>{s.label}</span>
         </div>
       ))}
+
+      {/* Download button — only shown when a VTO result exists */}
+      {hasResult && onDownload && (
+        <>
+          <div style={{ width: 1, height: 12, background: 'rgba(0,0,0,0.08)' }} />
+          <button
+            onClick={onDownload}
+            className="flex items-center gap-1 pointer-events-auto rounded-md px-2 py-0.5 transition-colors"
+            style={{ background: 'transparent', cursor: 'pointer' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            title="Download image"
+          >
+            <Download className="w-3 h-3" style={{ color: '#999' }} />
+            <span style={{ fontSize: 9, color: '#999', fontWeight: 500 }}>Save</span>
+          </button>
+        </>
+      )}
     </div>
   );
 }

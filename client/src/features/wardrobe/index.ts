@@ -9,5 +9,6 @@ export { useWardrobeStore } from "./stores/useWardrobeStore";
 export { useWardrobeInventory } from "./hooks/useWardrobeInventory";
 export { useWardrobeGeneration } from "./hooks/useWardrobeGeneration";
 export { useModelSetup } from "./hooks/useModelSetup";
+export { WardrobeWorkspaceSection } from "./WardrobeWorkspaceSection";
 export type * from "./types";
 export * from "./constants";
