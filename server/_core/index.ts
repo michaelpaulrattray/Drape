@@ -135,6 +135,21 @@ function registerShutdownHandlers(): void {
 // ============================================================================
 
 async function startServer() {
+  // Fail fast if critical env vars are missing
+  const REQUIRED_ENV = [
+    "DATABASE_URL",
+    "GEMINI_API_KEY",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "JWT_SECRET",
+  ];
+  const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variable(s): ${missing.join(", ")}`
+    );
+  }
+
   const app = express();
   const server = createServer(app);
   httpServer = server;

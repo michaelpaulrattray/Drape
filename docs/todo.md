@@ -4461,3 +4461,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Delete empty drizzle/relations.ts
 - [x] Remove 6 dead one-time scripts, kept generate-mock-pdf.mjs + upload scripts
 - [x] Add sync comments for TattooMap and DetectedItem in client wardrobe types.ts
+
+## Pre-Launch Hardening
+- [x] Add startup env validation guard in server/_core/index.ts
