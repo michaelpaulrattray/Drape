@@ -260,11 +260,11 @@ export default function DrapeStudio() {
     if (isExternalModel) return;
 
     const hasModel = currentAssets.some((a) => a.viewType === 'frontClose' && a.storageUrl);
-    const hasFullBody = currentAssets.some((a) => a.viewType === 'fullBody' && a.storageUrl);
+    const hasFullBody = currentAssets.some((a) => a.viewType === 'frontFull' && a.storageUrl);
     const hasAllViews =
       hasModel &&
       hasFullBody &&
-      currentAssets.some((a) => a.viewType === 'sideProfile' && a.storageUrl);
+      currentAssets.some((a) => a.viewType === 'sideClose' && a.storageUrl);
 
     setCanvas({
       hasModel,

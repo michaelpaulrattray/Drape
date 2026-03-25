@@ -4601,3 +4601,8 @@ The entry and configuration files are properly set up with several enhancements 
 ## Cleanup & LoadingOverlay Tips
 - [x] Delete dead MainStage.tsx (removed file, barrel export, and updated test)
 - [x] Add wardrobe-specific contextual tips to LoadingOverlay CONTEXTUAL_TIPS map (10 wardrobe tips + regex matcher)
+
+## Wardrobe Access & Loading Indicator
+- [ ] Fix Wardrobe still not selectable after full-body cast (investigate hasFullBody not being set correctly)
+- [ ] Add subtle pulse to Wardrobe tool rail icon when full-body cast is ready
+- [ ] Improve loading indicator readability — scan line and tip text hard to read against blurred skin-tone backgrounds

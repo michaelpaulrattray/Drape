@@ -113,11 +113,11 @@ export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: Loa
   }, [statusMessage]);
 
   // Palette — warm tones for first gen, light for iterations (dark backdrop)
-  const lineTrack = isFirstGeneration ? 'rgba(138,128,120,0.12)' : 'rgba(80,70,60,0.12)';
+  const lineTrack = isFirstGeneration ? 'rgba(138,128,120,0.25)' : 'rgba(80,70,60,0.25)';
   const lineGlow = isFirstGeneration
-    ? 'linear-gradient(90deg, transparent, rgba(138,128,120,0.5), transparent)'
-    : 'linear-gradient(90deg, transparent, rgba(80,70,60,0.6), transparent)';
-  const tipColor = isFirstGeneration ? 'rgba(138,128,120,0.45)' : 'rgba(80,70,60,0.5)';
+    ? 'linear-gradient(90deg, transparent, rgba(138,128,120,0.8), transparent)'
+    : 'linear-gradient(90deg, transparent, rgba(80,70,60,0.85), transparent)';
+  const tipColor = isFirstGeneration ? 'rgba(100,90,80,0.65)' : 'rgba(60,50,40,0.7)';
 
   return (
     <div className="absolute inset-0 z-40 flex flex-col items-center justify-center">

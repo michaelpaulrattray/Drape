@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Camera, Shirt, Download, Home } from 'lucide-react';
 import { useStudioStore } from '../stores/useStudioStore';
 import { useSessionReset } from '../hooks/useSessionReset';
@@ -38,6 +38,25 @@ export function ToolRail({ canvas }: ToolRailProps) {
   const [pendingAction, setPendingAction] = useState<StudioTool | 'home' | null>(null);
   const [confirmMessage, setConfirmMessage] = useState('');
 
+  // Pulse animation state for wardrobe nudge
+  const [pulsingTool, setPulsingTool] = useState<StudioTool | null>(null);
+  const prevHasFullBody = useRef(canvas.hasFullBody);
+
+  // Detect when hasFullBody transitions from false → true and wardrobe isn't active
+  useEffect(() => {
+    if (!prevHasFullBody.current && canvas.hasFullBody && activeTool !== 'wardrobe') {
+      setPulsingTool('wardrobe');
+      const timer = setTimeout(() => setPulsingTool(null), 4000);
+      return () => clearTimeout(timer);
+    }
+    prevHasFullBody.current = canvas.hasFullBody;
+  }, [canvas.hasFullBody, activeTool]);
+
+  // Clear pulse when user clicks the pulsing tool
+  const clearPulse = useCallback((toolId: StudioTool) => {
+    if (pulsingTool === toolId) setPulsingTool(null);
+  }, [pulsingTool]);
+
   /**
    * Determine whether any active session exists that would be lost
    * by navigating away (Home or tool switch).
@@ -48,13 +67,15 @@ export function ToolRail({ canvas }: ToolRailProps) {
     const availability = getToolAvailability(toolId, canvas);
     if (!availability.enabled) return;
 
+    clearPulse(toolId);
+
     if (availability.needsConfirm) {
       setPendingAction(toolId);
       setConfirmMessage(availability.confirmMessage || 'This action will reset your current progress.');
     } else {
       setActiveTool(toolId);
     }
-  }, [canvas, setActiveTool]);
+  }, [canvas, setActiveTool, clearPulse]);
 
   const handleHomeClick = useCallback(() => {
     if (hasActiveSession) {
@@ -134,6 +155,7 @@ export function ToolRail({ canvas }: ToolRailProps) {
           const Icon = TOOL_ICONS[tool.id];
           const availability = getToolAvailability(tool.id, canvas);
           const isActive = activeTool === tool.id;
+          const isPulsing = pulsingTool === tool.id;
 
           return (
             <button
@@ -167,6 +189,17 @@ export function ToolRail({ canvas }: ToolRailProps) {
             >
               <Icon className="w-4 h-4" />
 
+              {/* Pulse ring animation — nudge when tool becomes available */}
+              {isPulsing && (
+                <span
+                  className="absolute inset-0 rounded-lg pointer-events-none"
+                  style={{
+                    border: '1.5px solid rgba(26,26,26,0.35)',
+                    animation: 'toolPulse 1.5s ease-out infinite',
+                  }}
+                />
+              )}
+
               {/* Active indicator dot */}
               {isActive && (
                 <div
@@ -190,6 +223,15 @@ export function ToolRail({ canvas }: ToolRailProps) {
           );
         })}
       </div>
+
+      {/* Pulse animation keyframes */}
+      <style>{`
+        @keyframes toolPulse {
+          0% { opacity: 1; transform: scale(1); }
+          70% { opacity: 0; transform: scale(1.35); }
+          100% { opacity: 0; transform: scale(1.35); }
+        }
+      `}</style>
 
       {/* Confirmation dialog — rendered via Portal at document.body */}
       <ToolSwitchConfirmDialog
