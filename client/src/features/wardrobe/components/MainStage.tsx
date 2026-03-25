@@ -167,7 +167,7 @@ export function MainStage({
        * Sits OUTSIDE the image hover container so it's always visible.
        * Same position: absolute top-3 left-1/2 -translate-x-1/2 z-20
        */}
-      {hasResult && (
+      {modelImageUrl && (
         <div
           className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 pointer-events-auto"
           style={{
@@ -202,7 +202,9 @@ export function MainStage({
                   ? "#7c8aef"
                   : isGenerating
                     ? "#e8a83e"
-                    : "#5cad5c",
+                    : hasResult
+                      ? "#5cad5c"
+                      : "#ccc",
                 boxShadow: isGenerating ? "0 0 6px rgba(232,168,62,0.4)" : "none",
                 transition: "background 0.2s",
               }}
@@ -212,7 +214,9 @@ export function MainStage({
                 ? "Comparing..."
                 : isGenerating
                   ? (generatingMessage || "Generating...")
-                  : `Dressed · v${historyIndex + 1}`}
+                  : hasResult
+                    ? `Dressed · v${historyIndex + 1}`
+                    : "Wardrobe Studio"}
             </span>
           </div>
 

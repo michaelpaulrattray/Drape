@@ -4557,3 +4557,6 @@ The entry and configuration files are properly set up with several enhancements 
 ## Wardrobe Toolbar Not Rendering — Zustand Reactivity Fix
 - [x] Fix Zustand reactivity: replace function-call selectors (currentVTOResult(), canUndoVTO(), canRedoVTO(), hasDirtyStyles()) with inline derived selectors in useWardrobeGeneration return object so React re-renders when vtoHistory/vtoHistoryIndex change
 - [x] Remove paddingTop: 60px from DrapeStudio center wrapper (line 115) — Casting doesn't have this, StudioHeader already takes its space in flex layout
+
+## Wardrobe Toolbar — Show on Model Load (not just after VTO)
+- [x] Change toolbar gate from `hasResult` to `modelImageUrl` so toolbar appears whenever a model is on canvas, with grey dot + "Wardrobe Studio" default state and disabled undo/redo
