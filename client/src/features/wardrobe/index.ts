@@ -2,6 +2,7 @@ export { RackPanel } from "./components/RackPanel";
 export { GarmentCard } from "./components/GarmentCard";
 export { QualityBadge } from "./components/QualityBadge";
 export { MainStage } from "./components/MainStage";
+export { WardrobeEmptyState, WardrobeImageOverlay, WardrobeShortcutsBar } from "./components/WardrobeCanvasOverlays";
 export { GarmentOverlay } from "./components/GarmentOverlay";
 export { DecompositionDrawer } from "./components/DecompositionDrawer";
 export { LayersPanel } from "./components/LayersPanel";

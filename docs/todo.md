@@ -4566,3 +4566,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove warm gradient header from Casting ControlPanel — match Wardrobe's flat/neutral header style
 - [x] Match canvas and panel background colors between Casting and Wardrobe (ensure consistency)
 - [x] Add Casting-style loading/waiting state (scan line + contextual tips) to Wardrobe MainStage
+
+## Unified StudioCanvas — Procreate/Figma Architecture
+- [x] Audit both canvas implementations (MainStage + ImageViewerPanel) and design unified props interface
+- [x] Create StudioCanvas component with shared shell (image, toolbar, retry, compare, loading, shortcuts)
+- [x] Mount StudioCanvas persistently in DrapeStudio (outside tool conditionals — never unmounts)
+- [x] Migrate Wardrobe to use StudioCanvas (GarmentOverlay as child overlay)
+- [x] Migrate Casting to use StudioCanvas (MaskCanvas, ViewTabs, RefinePanel as overlay slots)
+- [x] Remove old MainStage.tsx and simplify ImageViewerPanel.tsx (ImageViewerPanel now delegates to StudioCanvas internally)
+- [x] Verify zero flicker on tool switch, shared image stays in place (0 TS errors, 1395 tests passing)

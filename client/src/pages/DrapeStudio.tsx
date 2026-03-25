@@ -15,7 +15,8 @@ import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition
 import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
-import { RackPanel, MainStage, LayersPanel, DecompositionDrawer, useWardrobeGeneration, useModelSetup, useWardrobeStore } from '@/features/wardrobe';
+import { RackPanel, LayersPanel, DecompositionDrawer, useWardrobeGeneration, useModelSetup, useWardrobeStore, WardrobeEmptyState, WardrobeImageOverlay, WardrobeShortcutsBar } from '@/features/wardrobe';
+import { StudioCanvas } from '@/features/studio/components/StudioCanvas';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -55,19 +56,21 @@ function WardrobeWorkspaceSection({
 
   const resultOverlayItems = useWardrobeStore((s) => s.resultOverlayItems);
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
+  const selectedCount = useWardrobeStore((s) => s.selectedGarmentIds.size);
   const isDecomposeOpen = useWardrobeStore((s) => s.isDecomposeOpen);
   const setDecomposeOpen = useWardrobeStore((s) => s.setDecomposeOpen);
   const { data: garments = [] } = trpc.wardrobe.garments.list.useQuery();
 
+  const hasResult = gen.currentResult !== null;
+  const canGenerate = selectedCount > 0 && !!modelImageUrl && !gen.isGenerating && gen.cooldownSeconds <= 0;
+
   const handleStyleNote = useCallback((note: { garmentLabel: string; category: string; instruction: string }) => {
-    // Filter selected garments by the overlay item's category
     const selectedArr = Array.from(selectedGarmentIds);
     const categoryGarments = garments.filter(
       (g) => selectedArr.includes(g.id) && g.slotType === note.category
     );
 
     if (categoryGarments.length === 0) {
-      // Fallback: first selected garment regardless of category
       const fallbackId = selectedArr[0];
       if (!fallbackId) return;
       gen.refineResult(fallbackId, note.instruction);
@@ -76,7 +79,6 @@ function WardrobeWorkspaceSection({
 
     let bestMatch = categoryGarments[0];
     if (categoryGarments.length > 1) {
-      // Word-overlap scoring: count how many overlay label words appear in description/shortName
       const overlayWords = note.garmentLabel.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
       let bestScore = -1;
       for (const g of categoryGarments) {
@@ -92,6 +94,29 @@ function WardrobeWorkspaceSection({
     gen.refineResult(bestMatch.id, note.instruction);
   }, [gen, garments, selectedGarmentIds]);
 
+  // Wardrobe-specific keyboard handler (Space to generate)
+  const wardrobeKeyHandler = useCallback((e: KeyboardEvent) => {
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (canGenerate) gen.generate();
+      return true;
+    }
+    return false;
+  }, [canGenerate, gen]);
+
+  // Derive toolbar status
+  const statusLabel = gen.isGenerating
+    ? (gen.generatingMessage || 'Generating...')
+    : hasResult
+      ? `Dressed · v${gen.historyIndex + 1}`
+      : 'Wardrobe Studio';
+  const statusColor = gen.isGenerating ? '#e8a83e' : hasResult ? '#5cad5c' : '#ccc';
+  const statusGlow = gen.isGenerating ? '0 0 6px rgba(232,168,62,0.4)' : undefined;
+
+  // Compare URL: original model image when there's a result
+  const compareUrl = hasResult ? modelImageUrl : null;
+  const compareLabel = gen.historyIndex <= 0 ? 'Original' : 'Previous';
+
   return (
     <>
       {/* Left Panel — Garment Rack */}
@@ -106,7 +131,7 @@ function WardrobeWorkspaceSection({
         <RackPanel />
       </AnimatedPanel>
 
-      {/* Center — VTO Canvas */}
+      {/* Center — Unified StudioCanvas */}
       <div
         className="flex-1 min-w-0"
         style={{
@@ -115,23 +140,45 @@ function WardrobeWorkspaceSection({
           transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        <MainStage
-          modelImageUrl={modelImageUrl}
+        <StudioCanvas
+          displayUrl={gen.currentResult || modelImageUrl}
+          imageAlt={hasResult ? 'Virtual try-on result' : 'Model'}
+          imageStyle={{ marginTop: 50 }}
           isGenerating={gen.isGenerating}
           generatingMessage={gen.generatingMessage}
-          errorMessage={gen.errorMessage}
-          onClearError={gen.clearError}
-          cooldownSeconds={gen.cooldownSeconds}
-          onRetry={gen.handleRetry}
-          currentResult={gen.currentResult}
-          onGenerate={gen.generate}
+          hasResult={hasResult}
           onUndo={gen.undo}
           onRedo={gen.redo}
           canUndo={gen.canUndo}
           canRedo={gen.canRedo}
-          historyIndex={gen.historyIndex}
-          resultOverlayItems={resultOverlayItems}
-          onStyleNote={handleStyleNote}
+          statusLabel={statusLabel}
+          statusColor={statusColor}
+          statusGlow={statusGlow}
+          errorMessage={gen.errorMessage}
+          onClearError={gen.clearError}
+          onRetry={gen.handleRetry}
+          compareUrl={compareUrl}
+          compareLabel={compareLabel}
+          loadingMessage={gen.generatingMessage || 'Dressing model...'}
+          isFirstGeneration={!hasResult}
+          showToolbar={!!modelImageUrl}
+          emptyState={!modelImageUrl ? <WardrobeEmptyState /> : undefined}
+          extraKeyHandler={wardrobeKeyHandler}
+          imageOverlay={
+            <WardrobeImageOverlay
+              resultOverlayItems={resultOverlayItems}
+              isGenerating={gen.isGenerating}
+              isComparing={false}
+              onStyleNote={handleStyleNote}
+            />
+          }
+          bottomOverlay={
+            <WardrobeShortcutsBar
+              hasResult={hasResult}
+              isGenerating={gen.isGenerating}
+              controlsVisible={true}
+            />
+          }
         />
       </div>
 
@@ -146,7 +193,7 @@ function WardrobeWorkspaceSection({
       >
         <LayersPanel
           isGenerating={gen.isGenerating}
-          hasResult={gen.currentResult !== null}
+          hasResult={hasResult}
           onGenerate={gen.generate}
           currentResultUrl={gen.currentResult}
           onRefine={gen.refineResult}
