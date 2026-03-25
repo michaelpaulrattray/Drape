@@ -4583,3 +4583,7 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Canvas Footer Color Mismatch
 - [x] Fix mismatched background color strip at bottom of canvas (DrapeStudio wrapper #eae7e1 → #f0ebe3 to match StudioCanvas)
+
+## Loading State Consistency
+- [x] Audit and fix image opacity/blur differences between Casting and Wardrobe during generation
+- [x] Ensure LoadingOverlay, opacity, and blur are fully shared through StudioCanvas with no tool-specific overrides (isFirstGeneration now auto-derived from displayUrl)

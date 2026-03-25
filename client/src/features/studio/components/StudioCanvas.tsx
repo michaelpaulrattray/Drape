@@ -70,6 +70,7 @@ export interface StudioCanvasProps {
 
   // ── Loading ──
   loadingMessage?: string;
+  /** @deprecated — isFirstGeneration is now derived automatically from displayUrl presence */
   isFirstGeneration?: boolean;
 
   // ── Empty state ──
@@ -429,11 +430,11 @@ export function StudioCanvas({
           {/* Bottom overlay slot (RefinePanel, shortcuts, suggestions) */}
           {bottomOverlay}
 
-          {/* Generation overlay */}
+          {/* Generation overlay — isFirstGeneration is always false here because an image is behind the overlay */}
           {isGenerating && (
             <LoadingOverlay
               statusMessage={loadingMessage || generatingMessage || "Processing..."}
-              isFirstGeneration={isFirstGeneration}
+              isFirstGeneration={false}
             />
           )}
         </div>
