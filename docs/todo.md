@@ -4464,3 +4464,7 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Pre-Launch Hardening
 - [x] Add startup env validation guard in server/_core/index.ts
+
+## Wardrobe Overlay Bugs
+- [x] Fix hold-to-compare firing on overlay clicks (move compare handlers from canvas div to img element)
+- [x] Fix overlay coordinates offset from image (wrap img + overlay in tight relative container)

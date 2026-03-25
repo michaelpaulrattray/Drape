@@ -195,33 +195,32 @@ export function MainStage({
       </div>
 
       {/* ── Canvas Area ───────────────────────────────────── */}
-      <div
-        className="flex-1 flex items-center justify-center p-6 relative overflow-hidden"
-        onPointerDown={handleCompareStart}
-        onPointerUp={handleCompareEnd}
-        onPointerLeave={handleCompareEnd}
-      >
+      <div className="flex-1 flex items-center justify-center p-6 relative overflow-hidden">
         {displayUrl && (
-          <img
-            src={displayUrl}
-            alt={hasResult && !isComparing ? "Virtual try-on result" : "Model"}
-            className="max-h-full max-w-full object-contain rounded-xl transition-opacity duration-300"
-            style={{
-              opacity: isGenerating ? 0.4 : 1,
-              filter: isGenerating ? "blur(2px)" : "none",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-            }}
-            draggable={false}
-          />
-        )}
-
-        {/* Garment overlay — clickable bounding boxes */}
-        {resultOverlayItems.length > 0 && !isGenerating && !isComparing && onStyleNote && (
-          <GarmentOverlay
-            items={resultOverlayItems}
-            onStyleNote={onStyleNote}
-            disabled={isGenerating}
-          />
+          <div className="relative max-h-full max-w-full">
+            <img
+              src={displayUrl}
+              alt={hasResult && !isComparing ? "Virtual try-on result" : "Model"}
+              className="max-h-full max-w-full object-contain rounded-xl transition-opacity duration-300 select-none"
+              style={{
+                opacity: isGenerating ? 0.4 : 1,
+                filter: isGenerating ? "blur(2px)" : "none",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+              }}
+              draggable={false}
+              onPointerDown={handleCompareStart}
+              onPointerUp={handleCompareEnd}
+              onPointerLeave={handleCompareEnd}
+            />
+            {/* Garment overlay — clickable bounding boxes */}
+            {resultOverlayItems.length > 0 && !isGenerating && !isComparing && onStyleNote && (
+              <GarmentOverlay
+                items={resultOverlayItems}
+                onStyleNote={onStyleNote}
+                disabled={isGenerating}
+              />
+            )}
+          </div>
         )}
 
         {/* Generation overlay */}
