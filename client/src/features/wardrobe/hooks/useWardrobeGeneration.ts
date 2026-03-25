@@ -634,6 +634,9 @@ export function useWardrobeGeneration({
     /** Current VTO result URL */
     currentResult: currentVTOResult(),
 
+    /** Current index in VTO history (0 = first result) */
+    historyIndex: vtoHistoryIndex,
+
     /** Active session ID */
     sessionId: activeSessionId,
 

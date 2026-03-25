@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback, RefObject } from "react";
+import { Undo2, Redo2 } from "lucide-react";
 import { ViewTabs, RefinePanel, LoadingOverlay, WarmEmptyState } from "./components/ImageViewer";
 import { MaskCanvas } from "./components/ImageViewer/MaskCanvas";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
@@ -257,7 +258,7 @@ export function ImageViewerPanel({
   return (
     <main
       className="flex-1 flex flex-col h-[calc(100vh-64px)] lg:h-screen overflow-hidden relative"
-      style={{ background: '#eae7e1' }}
+      style={{ background: '#f0ebe3' }}
     >
       {/* View strip */}
       <ViewTabs nextStage={nextStage} />
@@ -397,10 +398,9 @@ export function ImageViewerPanel({
               disabled={!canUndo() || genState.isGenerating}
               className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
               style={{ color: '#888' }}
+              title="Undo (Z)"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
+              <Undo2 size={14} />
             </button>
 
             <div style={{ width: 1, height: 14, background: 'rgba(0,0,0,0.06)' }} />
@@ -429,10 +429,9 @@ export function ImageViewerPanel({
               disabled={!canRedo() || genState.isGenerating}
               className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
               style={{ color: '#888' }}
+              title="Redo (⇧Z)"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              <Redo2 size={14} />
             </button>
           </div>
 
@@ -500,8 +499,7 @@ export function ImageViewerPanel({
                       maxHeight: 'calc(100vh - 100px)',
                       boxShadow: '0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)',
                       opacity: genState.isGenerating ? 0.5 : 1,
-                      filter: genState.isGenerating ? 'blur(4px)' : 'none',
-                      transform: genState.isGenerating ? 'scale(0.97)' : 'scale(1)',
+                      filter: genState.isGenerating ? 'blur(2px)' : 'none',
                       cursor: getPreviousImage() ? 'grab' : 'default',
                     }}
                     onLoad={(e) => e.currentTarget.classList.add('loaded')}
@@ -511,15 +509,14 @@ export function ImageViewerPanel({
                   />
                 )}
 
-                {/* Comparing badge */}
+                {/* Comparing badge — smart: "Original" at v0, "Previous" for iterations */}
                 {isComparing && (
-                  <div className="absolute top-3 left-3 z-10"
+                  <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full"
                     style={{
-                      padding: '3px 8px', borderRadius: 6,
-                      background: 'rgba(124,138,239,0.9)', backdropFilter: 'blur(8px)',
-                      fontSize: 9, fontWeight: 600, color: '#fff', letterSpacing: '0.03em',
+                      background: 'rgba(124,138,239,0.85)', backdropFilter: 'blur(8px)',
+                      fontSize: 9, fontWeight: 600, color: '#fff', letterSpacing: '0.02em',
                     }}>
-                    Previous
+                    {historyIndex <= 1 ? 'Original' : 'Previous'}
                   </div>
                 )}
 

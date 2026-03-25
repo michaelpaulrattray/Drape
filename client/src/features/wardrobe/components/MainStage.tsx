@@ -4,6 +4,11 @@
  * Shows the clean model when no VTO result exists, or the dressed
  * result after generation. Provides undo/redo, hold-to-compare,
  * and a contextual "Dress" / "Update" button.
+ *
+ * Shares a unified canvas language with Casting's ImageViewerPanel:
+ *   - Same background, border-radius, shadow, generating effects
+ *   - Same auto-hide behavior for toolbar + shortcuts on mouse-out
+ *   - Same smart "Original" / "Previous" compare badge
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Undo2, Redo2, Sparkles, RotateCcw } from "lucide-react";
@@ -38,6 +43,8 @@ interface MainStageProps {
   canUndo: boolean;
   /** Whether redo is available */
   canRedo: boolean;
+  /** Current index in the undo/redo history (0 = original) */
+  historyIndex?: number;
   /** Detected garments in the result image for overlay */
   resultOverlayItems?: DetectedItem[];
   /** Called when user submits a style note via overlay */
@@ -79,6 +86,7 @@ export function MainStage({
   onRedo,
   canUndo,
   canRedo,
+  historyIndex = 0,
   resultOverlayItems = [],
   onStyleNote,
 }: MainStageProps) {
@@ -86,6 +94,7 @@ export function MainStage({
   const [isComparing, setIsComparing] = useState(false);
   const tipIndexRef = useRef(0);
   const [tipIndex, setTipIndex] = useState(0);
+  const [imageAreaHovered, setImageAreaHovered] = useState(false);
 
   // Cycle tips during generation
   const cycleTip = useCallback(() => {
@@ -123,6 +132,9 @@ export function MainStage({
   const hasResult = currentResult !== null;
   const canGenerate = selectedCount > 0 && modelImageUrl && !isGenerating && cooldownSeconds <= 0;
 
+  // Smart compare label: "Original" if at v1 (first result), "Previous" for iterations
+  const compareLabel = historyIndex <= 0 ? "Original" : "Previous";
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -144,7 +156,8 @@ export function MainStage({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [canGenerate, isGenerating, cooldownSeconds, canUndo, canRedo, onGenerate, onUndo, onRedo]);
 
-
+  // Controls visible when hovered OR generating (always show during gen)
+  const controlsVisible = imageAreaHovered || isGenerating;
 
   // ── No model loaded state ──────────────────────────────────
   if (!modelImageUrl) {
@@ -186,15 +199,18 @@ export function MainStage({
       className="flex-1 flex flex-col relative overflow-hidden"
       style={{ background: "#f0ebe3" }}
     >
-      {/* ── Unified Floating Toolbar ─────────────────────────── */}
+      {/* ── Unified Floating Toolbar (auto-hide) ──────────────── */}
       <div
-        className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 pointer-events-auto"
+        className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 pointer-events-auto transition-all duration-200"
         style={{
           padding: "3px 4px",
           borderRadius: 14,
           background: "rgba(255,255,255,0.85)",
           boxShadow: "0 2px 14px rgba(0,0,0,0.05)",
           backdropFilter: "blur(12px)",
+          opacity: controlsVisible ? 1 : 0,
+          transform: controlsVisible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(-8px)",
+          pointerEvents: controlsVisible ? "auto" : "none",
         }}
       >
         {/* Undo */}
@@ -213,7 +229,7 @@ export function MainStage({
           <>
             <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
             <span className="px-2" style={{ fontSize: 10, fontWeight: 500, color: "#888" }}>
-              Original
+              {compareLabel}
             </span>
             <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
           </>
@@ -232,10 +248,15 @@ export function MainStage({
       </div>
 
       {/* ── Canvas Area ───────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center relative min-h-0 h-0">
+      <div
+        className="flex-1 flex items-center justify-center relative min-h-0 h-0"
+        onMouseEnter={() => setImageAreaHovered(true)}
+        onMouseLeave={() => setImageAreaHovered(false)}
+      >
         {displayUrl && (
           <div
-            className="relative inline-block"
+            className="relative"
+            style={{ borderRadius: 16, overflow: "hidden" }}
             onPointerDown={handleCompareStart}
             onPointerUp={handleCompareEnd}
             onPointerLeave={handleCompareEnd}
@@ -246,11 +267,12 @@ export function MainStage({
               className="block transition-all duration-300 select-none"
               style={{
                 maxWidth: "calc(100% - 2rem)",
-                maxHeight: "calc(100vh - 160px)",
+                maxHeight: "calc(100vh - 100px)",
                 borderRadius: 16,
                 boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
-                opacity: isGenerating ? 0.4 : 1,
+                opacity: isGenerating ? 0.5 : 1,
                 filter: isGenerating ? "blur(2px)" : "none",
+                cursor: hasResult && !isGenerating ? "grab" : "default",
               }}
               draggable={false}
             />
@@ -262,20 +284,38 @@ export function MainStage({
                 disabled={isGenerating}
               />
             )}
+
+            {/* Compare badge — top-left of image */}
+            {isComparing && (
+              <div
+                className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full"
+                style={{
+                  background: "rgba(124,138,239,0.85)",
+                  backdropFilter: "blur(8px)",
+                  fontSize: 9,
+                  fontWeight: 600,
+                  color: "#fff",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {compareLabel}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Shortcuts hint bar — absolutely positioned at bottom of canvas */}
+        {/* Shortcuts hint bar — auto-hide with controls */}
         {displayUrl && (
           <div
-            className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 pointer-events-none transition-opacity duration-200"
+            className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 pointer-events-none transition-all duration-200"
             style={{
               padding: "5px 14px",
               borderRadius: 10,
               background: "rgba(255,255,255,0.7)",
               backdropFilter: "blur(8px)",
               boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
-              opacity: isGenerating ? 0 : 1,
+              opacity: controlsVisible && !isGenerating ? 1 : 0,
+              transform: controlsVisible && !isGenerating ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(8px)",
             }}
           >
             {(hasResult ? SHORTCUT_HINTS_WITH_COMPARE : SHORTCUT_HINTS).map((s) => (

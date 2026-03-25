@@ -4485,3 +4485,20 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Strip toolbar to undo/redo only, show "Original" text only during compare mode
 - [x] Visual edit: Add paddingTop 60px to DrapeStudio center canvas wrapper
 - [x] Visual edit: Add paddingTop 8px to RackPanel garment grid
+
+## Unified Overlay Auto-Hide Behavior
+- [x] Audit Casting MainStage auto-hide pattern (hover state, fade timing, which controls hide)
+- [x] Apply same auto-hide pattern to Wardrobe MainStage (toolbar, shortcuts, overlays)
+- [x] Ensure consistent fade timing and behavior across both studios
+
+## UI/UX Consistency Audit - Approved Changes
+- [x] 1. Casting bg to #f0ebe3 (match Wardrobe)
+- [x] 2. Wardrobe image maxHeight to calc(100vh - 100px) (match Casting)
+- [x] 3. Wardrobe generating opacity to 0.5 (already correct)
+- [x] 4. Casting generating blur to blur(2px) (match Wardrobe)
+- [x] 5. Casting remove scale(0.97) during generating
+- [x] 6. Wardrobe adopt Casting overflow hidden wrapper (borderRadius 16)
+- [x] 7. Casting swap chevron SVGs to Lucide Undo2/Redo2
+- [x] 8. Wardrobe add imageAreaHovered auto-hide for toolbar and shortcuts
+- [x] 9. Wardrobe add cursor grab when result exists
+- [x] 10. Both studios smart Original/Previous badge on image during compare

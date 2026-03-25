@@ -129,6 +129,7 @@ function WardrobeWorkspaceSection({
           onRedo={gen.redo}
           canUndo={gen.canUndo}
           canRedo={gen.canRedo}
+          historyIndex={gen.historyIndex}
           resultOverlayItems={resultOverlayItems}
           onStyleNote={handleStyleNote}
         />
