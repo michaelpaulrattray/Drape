@@ -2,15 +2,18 @@
  * RackPanel — Garment inventory panel for the Wardrobe tool.
  *
  * Displays the 5-slot tab bar, garment grid, upload drop zone,
- * search filter, and slot counts. Matches the warm minimalist
- * aesthetic of the Drape Studio.
+ * search filter, slot counts, and saved outfits (in the Looks tab).
+ * Matches the warm minimalist aesthetic of the Drape Studio.
  */
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { useWardrobeInventory } from "../hooks/useWardrobeInventory";
 import { GarmentCard } from "./GarmentCard";
+import { SavedOutfitCard } from "./SavedOutfitCard";
 import { SLOT_TABS, MAX_GARMENTS_PER_SLOT } from "../constants";
 import { Scissors } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import type { GarmentSlotType } from "../types";
 
 export function RackPanel() {
@@ -21,6 +24,9 @@ export function RackPanel() {
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
   const styleNotes = useWardrobeStore((s) => s.styleNotes);
   const setDecomposeOpen = useWardrobeStore((s) => s.setDecomposeOpen);
+  const setSelection = useWardrobeStore((s) => s.setSelection);
+  const clearStyleNotes = useWardrobeStore((s) => s.clearStyleNotes);
+  const setStyleNote = useWardrobeStore((s) => s.setStyleNote);
 
   const {
     garments,
@@ -32,6 +38,39 @@ export function RackPanel() {
     removeGarment,
     toggleSelection,
   } = useWardrobeInventory();
+
+  // ── Saved Outfits (only fetched when on Looks tab) ────────
+  const isLooksTab = activeSlot === "full_look";
+  const outfitsQuery = trpc.wardrobe.outfits.list.useQuery(undefined, {
+    enabled: isLooksTab,
+  });
+  const deleteOutfitMutation = trpc.wardrobe.outfits.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Outfit deleted");
+      outfitsQuery.refetch();
+    },
+    onError: () => toast.error("Failed to delete outfit"),
+  });
+
+  const handleLoadOutfit = useCallback(
+    (garmentIds: number[], notes: Record<string, string>) => {
+      clearStyleNotes();
+      setSelection(garmentIds);
+      for (const [id, note] of Object.entries(notes)) {
+        setStyleNote(Number(id), note);
+      }
+    },
+    [clearStyleNotes, setSelection, setStyleNote],
+  );
+
+  const handleDeleteOutfit = useCallback(
+    (outfitId: number) => {
+      deleteOutfitMutation.mutate({ outfitId });
+    },
+    [deleteOutfitMutation],
+  );
+
+  const savedOutfits = outfitsQuery.data ?? [];
 
   // IDs of all full_look garments — used for radio deselection
   const fullLookIds = useMemo(
@@ -182,7 +221,7 @@ export function RackPanel() {
       >
         {isLoading ? (
           <LoadingSkeleton />
-        ) : filteredGarments.length === 0 && !isDragOver ? (
+        ) : filteredGarments.length === 0 && !isDragOver && !(isLooksTab && savedOutfits.length > 0) ? (
           <EmptySlot
             slotType={activeSlot}
             onUploadClick={() => fileInputRef.current?.click()}
@@ -254,6 +293,44 @@ export function RackPanel() {
                 </span>
               </button>
             )}
+          </div>
+        )}
+
+        {/* ── Saved Outfits (Looks tab only) ────────────── */}
+        {isLooksTab && savedOutfits.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className="flex-1 h-px"
+                style={{ background: "#e5e0d8" }}
+              />
+              <span
+                className="font-mono uppercase"
+                style={{ fontSize: 8, color: "#b8b3a8", letterSpacing: "0.05em" }}
+              >
+                Saved Outfits
+              </span>
+              <div
+                className="flex-1 h-px"
+                style={{ background: "#e5e0d8" }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {savedOutfits.map((outfit) => (
+                <SavedOutfitCard
+                  key={outfit.id}
+                  id={outfit.id}
+                  name={outfit.name}
+                  garmentIds={outfit.garmentIds as number[]}
+                  styleNotes={outfit.styleNotes as Record<string, string> | null}
+                  resultThumbUrl={outfit.resultThumbUrl}
+                  createdAt={outfit.createdAt}
+                  onLoad={handleLoadOutfit}
+                  onDelete={handleDeleteOutfit}
+                  isDeleting={deleteOutfitMutation.isPending}
+                />
+              ))}
+            </div>
           </div>
         )}
 

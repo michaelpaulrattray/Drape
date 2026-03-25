@@ -4518,3 +4518,9 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Wardrobe MainStage Cleanup
 - [x] Remove Dress/Update button from MainStage bottom area (redundant — already in right panel, matches Casting's clean canvas)
+
+## Wardrobe Panel Issues
+- [x] Investigate: "1/10" counter = slotCounts[activeSlot]/MAX_GARMENTS_PER_SLOT (capacity indicator, not related to scissors)
+- [x] Investigate: Save outfit writes to wardrobeOutfits table but RackPanel never queries it — Looks tab only shows garments with slotType=full_look
+- [x] Show saved outfits in the Looks tab alongside uploaded full looks (query outfits.list, display SavedOutfitCard, click to load)
+- [x] Keep current 10/50 caps, defer tier-based caps to later
