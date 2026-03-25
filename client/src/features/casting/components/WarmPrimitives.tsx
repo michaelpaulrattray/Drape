@@ -270,8 +270,8 @@ export const EthnicityBlender = ({ selected, onChange }: {
 
 // ── Collapsible Section ───────────────────────
 
-export const CollapsibleSection = ({ id, title, isOpen, onToggle, completionRatio, children }: {
-  id: string; title: string; isOpen: boolean; onToggle: (id: string) => void; completionRatio: number; children: React.ReactNode;
+export const CollapsibleSection = ({ id, title, icon, isOpen, onToggle, completionRatio, children }: {
+  id: string; title: string; icon?: React.ReactNode; isOpen: boolean; onToggle: (id: string) => void; completionRatio: number; children: React.ReactNode;
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
@@ -305,6 +305,7 @@ export const CollapsibleSection = ({ id, title, isOpen, onToggle, completionRati
             style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>
             <polyline points="9 18 15 12 9 6" />
           </svg>
+          {icon && <span style={{ color: isOpen ? '#1a1a1a' : '#bbb', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}>{icon}</span>}
           <span style={{ fontSize: 10, fontWeight: 500, color: '#999', letterSpacing: '0.06em' }}>{title.toUpperCase()}</span>
         </div>
         <div className="flex items-center gap-1">

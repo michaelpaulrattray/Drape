@@ -4528,3 +4528,8 @@ The entry and configuration files are properly set up with several enhancements 
 ## Saved Outfit Edge Cases
 - [x] Handle deleted garments when loading a saved outfit — cross-reference IDs against inventory, warn if any missing
 - [x] Invalidate outfits query after save in LayersPanel so Looks tab refreshes immediately
+
+## Casting ControlPanel Polish — Tier 1
+- [x] 1. Lucide icons on section headers (Palette, Dumbbell, ScanFace, Droplets, Scissors)
+- [x] 2. Overall progress ring in panel header showing casting readiness %
+- [x] 3. Lucide icons on Generate + Randomize buttons (Sparkles, Dices)

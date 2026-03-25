@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices } from "lucide-react";
 import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
 import HairColorWheel from "./components/HairColorWheel";
@@ -48,6 +48,45 @@ interface ControlPanelProps {
   genState: GenerationState;
   currentAssets: GeneratedAsset[];
   handleGenerate: () => void;
+}
+
+// ── Progress Ring ────────────────────────────
+
+function CastingProgressRing({ completions }: { completions: Record<string, number> }) {
+  const values = Object.values(completions);
+  const overall = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+  const pct = Math.round(overall * 100);
+  const r = 16;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference - (overall * circumference);
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: 40, height: 40 }}>
+      <svg width="40" height="40" viewBox="0 0 40 40" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="20" cy="20" r={r} fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="3" />
+        <circle
+          cx="20" cy="20" r={r} fill="none"
+          stroke={pct === 100 ? '#1a1a1a' : '#c4c0b8'}
+          strokeWidth="3" strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: 'stroke-dashoffset 0.4s ease, stroke 0.3s' }}
+        />
+      </svg>
+      <span
+        className="absolute"
+        style={{
+          fontSize: 9,
+          fontWeight: 600,
+          color: pct === 100 ? '#1a1a1a' : '#b8b3a8',
+          fontFamily: 'ui-monospace, monospace',
+          transition: 'color 0.3s',
+        }}
+      >
+        {pct}%
+      </span>
+    </div>
+  );
 }
 
 // ── Main Component ────────────────────────────
@@ -112,8 +151,14 @@ export function ControlPanel({
     >
       {/* Header */}
       <div className="p-4 pb-3">
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>Casting</div>
-        <div style={{ fontSize: 10, color: '#b8b3a8' }}>Build your model from scratch</div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>Casting</div>
+            <div style={{ fontSize: 10, color: '#b8b3a8' }}>Build your model from scratch</div>
+          </div>
+          {/* Progress Ring */}
+          <CastingProgressRing completions={completions} />
+        </div>
       </div>
 
       <SummaryStrip prefs={prefs as unknown as Record<string, unknown>} ethnicityBlend={ethnicityBlend} />
@@ -122,7 +167,7 @@ export function ControlPanel({
       <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
 
         {/* ═══ CASTING BASICS ═══ */}
-        <CollapsibleSection id="basics" title="Casting Basics" isOpen={openSections.basics} onToggle={toggleSection} completionRatio={completions.basics}>
+        <CollapsibleSection id="basics" title="Casting Basics" icon={<Palette size={12} strokeWidth={1.8} />} isOpen={openSections.basics} onToggle={toggleSection} completionRatio={completions.basics}>
           <div className="space-y-4">
             <div>
               <FieldLabel>Brand Direction</FieldLabel>
@@ -177,13 +222,13 @@ export function ControlPanel({
         </CollapsibleSection>
 
         {/* ═══ PHYSIQUE ═══ */}
-        <CollapsibleSection id="physique" title="Physique" isOpen={openSections.physique} onToggle={toggleSection} completionRatio={completions.physique}>
+        <CollapsibleSection id="physique" title="Physique" icon={<Dumbbell size={12} strokeWidth={1.8} />} isOpen={openSections.physique} onToggle={toggleSection} completionRatio={completions.physique}>
           <OptionGrid cols={2} options={["Ultra Thin", "Slim", "Athletic", "Muscular", "Curvy", "Petite"]}
             selected={prefs.bodyType || "Slim"} onSelect={(val) => updatePref('bodyType', val)} />
         </CollapsibleSection>
 
         {/* ═══ FACE STRUCTURE ═══ */}
-        <CollapsibleSection id="face" title="Face Structure" isOpen={openSections.face} onToggle={toggleSection} completionRatio={completions.face}>
+        <CollapsibleSection id="face" title="Face Structure" icon={<ScanFace size={12} strokeWidth={1.8} />} isOpen={openSections.face} onToggle={toggleSection} completionRatio={completions.face}>
           <div className="space-y-5">
             <div className="space-y-2">
               <FieldLabel>Face Shape</FieldLabel>
@@ -218,7 +263,7 @@ export function ControlPanel({
         </CollapsibleSection>
 
         {/* ═══ SKIN & COMPLEXION ═══ */}
-        <CollapsibleSection id="skin" title="Skin & Complexion" isOpen={openSections.skin} onToggle={toggleSection} completionRatio={completions.skin}>
+        <CollapsibleSection id="skin" title="Skin & Complexion" icon={<Droplets size={12} strokeWidth={1.8} />} isOpen={openSections.skin} onToggle={toggleSection} completionRatio={completions.skin}>
           <div className="space-y-5">
             <div className="space-y-2">
               <FieldLabel filled={!!prefs.skinTone}>Skin Tone</FieldLabel>
@@ -232,7 +277,7 @@ export function ControlPanel({
         </CollapsibleSection>
 
         {/* ═══ EYES & HAIR ═══ */}
-        <CollapsibleSection id="hair" title="Eyes & Hair" isOpen={openSections.hair} onToggle={toggleSection} completionRatio={completions.hair}>
+        <CollapsibleSection id="hair" title="Eyes & Hair" icon={<Scissors size={12} strokeWidth={1.8} />} isOpen={openSections.hair} onToggle={toggleSection} completionRatio={completions.hair}>
           <div className="space-y-5">
             <div className="space-y-2">
               <FieldLabel filled={!!prefs.eyeColor}>Iris Color</FieldLabel>
@@ -360,7 +405,7 @@ export function ControlPanel({
             </>
           ) : (
             <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3" /></svg>
+              <Sparkles size={14} strokeWidth={2} />
               <span>{isFormValid ? (currentAssets.length > 0 ? 'Recast Model' : 'Cast Model') : 'Fill Required Fields'}</span>
             </>
           )}
@@ -376,14 +421,7 @@ export function ControlPanel({
           className="w-full mt-2 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-30"
           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 9, fontWeight: 500, color: '#c4c0b8', letterSpacing: '0.02em' }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
-            <rect x="1" y="1" width="22" height="22" rx="4" />
-            <circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none" />
-            <circle cx="16" cy="8" r="1.5" fill="currentColor" stroke="none" />
-            <circle cx="8" cy="16" r="1.5" fill="currentColor" stroke="none" />
-            <circle cx="16" cy="16" r="1.5" fill="currentColor" stroke="none" />
-            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
-          </svg>
+          <Dices size={10} strokeWidth={1.8} style={{ opacity: 0.6 }} />
           Randomize
         </button>
 
