@@ -4587,3 +4587,6 @@ The entry and configuration files are properly set up with several enhancements 
 ## Loading State Consistency
 - [x] Audit and fix image opacity/blur differences between Casting and Wardrobe during generation
 - [x] Ensure LoadingOverlay, opacity, and blur are fully shared through StudioCanvas with no tool-specific overrides (isFirstGeneration now auto-derived from displayUrl)
+
+## Real Flex Layout Fix
+- [x] Ensure StudioCanvas fills 100% of its allocated flex space — added h-full to center wrappers (Casting + Wardrobe) and all StudioCanvas root divs

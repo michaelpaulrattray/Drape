@@ -133,7 +133,7 @@ function WardrobeWorkspaceSection({
 
       {/* Center — Unified StudioCanvas */}
       <div
-        className="flex-1 min-w-0"
+        className="flex-1 min-w-0 h-full"
         style={{
           opacity: centerReady ? 1 : 0,
           transform: centerReady ? 'scale(1)' : 'scale(0.97)',
@@ -494,7 +494,7 @@ export default function DrapeStudio() {
 
               {/* Center — Image Viewer (scales up) */}
               <div
-                className="flex-1 min-w-0"
+                className="flex-1 min-w-0 h-full"
                 style={{
                   opacity: transition.centerReady ? 1 : 0,
                   transform: transition.centerReady ? 'scale(1)' : 'scale(0.97)',

@@ -213,7 +213,7 @@ export function StudioCanvas({
   if (!displayUrl && !isGenerating && emptyState) {
     return (
       <div
-        className="flex-1 flex items-center justify-center"
+        className="flex-1 h-full flex items-center justify-center"
         style={{ background: "#f0ebe3" }}
       >
         {emptyState}
@@ -225,7 +225,7 @@ export function StudioCanvas({
   if (!displayUrl && isGenerating) {
     return (
       <div
-        className="flex-1 flex flex-col relative overflow-hidden"
+        className="flex-1 h-full flex flex-col relative overflow-hidden"
         style={{ background: "#f0ebe3" }}
       >
         {topOverlay}
@@ -241,7 +241,7 @@ export function StudioCanvas({
 
   return (
     <div
-      className="flex-1 flex flex-col relative overflow-hidden"
+      className="flex-1 h-full flex flex-col relative overflow-hidden"
       style={{ background: "#f0ebe3" }}
     >
       {/* ── Top overlay slot (ViewTabs, identity warnings) ── */}
