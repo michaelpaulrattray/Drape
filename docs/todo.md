@@ -4473,3 +4473,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Replace separate undo/redo pill + compare badge with unified frosted-glass toolbar (status dot + text)
 - [x] Add keyboard shortcuts (Space=generate, Z=undo, Shift+Z=redo)
 - [x] Add shortcuts hint bar in bottom action area
+
+## Wardrobe Canvas Sizing
+- [x] Fix model image overflow — image too large in fullscreen, bottom toolbar hidden off-screen

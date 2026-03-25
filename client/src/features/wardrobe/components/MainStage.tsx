@@ -248,17 +248,20 @@ export function MainStage({
       </div>
 
       {/* ── Canvas Area ───────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center relative min-h-0">
         {displayUrl && (
-          <div className="relative max-h-full max-w-full">
+          <div className="relative inline-block">
             <img
               src={displayUrl}
               alt={hasResult && !isComparing ? "Virtual try-on result" : "Model"}
-              className="max-h-full max-w-full object-contain rounded-xl transition-opacity duration-300 select-none"
+              className="block transition-all duration-300 select-none"
               style={{
+                maxWidth: "calc(100% - 2rem)",
+                maxHeight: "calc(100vh - 200px)",
+                borderRadius: 16,
+                boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
                 opacity: isGenerating ? 0.4 : 1,
                 filter: isGenerating ? "blur(2px)" : "none",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
               }}
               draggable={false}
               onPointerDown={handleCompareStart}
