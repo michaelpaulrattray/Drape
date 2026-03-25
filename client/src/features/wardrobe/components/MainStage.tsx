@@ -291,7 +291,7 @@ export function MainStage({
                   boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
                   opacity: isGenerating ? 0.5 : 1,
                   filter: isGenerating ? "blur(2px)" : "none",
-                  cursor: hasResult && !isGenerating ? "grab" : "default",
+                  cursor: hasResult && !isGenerating ? "grab" : "default", marginTop: '50px',
                 }}
                 draggable={false}
               />
