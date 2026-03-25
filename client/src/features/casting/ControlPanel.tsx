@@ -150,7 +150,7 @@ export function ControlPanel({
       }}
     >
       {/* Header */}
-      <div className="p-4 pb-3">
+      <div className="p-4 pb-3" style={{ background: 'linear-gradient(to bottom, #faf8f5, #fff)' }}>
         <div className="flex items-center justify-between">
           <div>
             <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>Casting</div>
@@ -407,6 +407,11 @@ export function ControlPanel({
             <>
               <Sparkles size={14} strokeWidth={2} />
               <span>{isFormValid ? (currentAssets.length > 0 ? 'Recast Model' : 'Cast Model') : 'Fill Required Fields'}</span>
+              {isFormValid && (
+                <span style={{ fontSize: 8, fontWeight: 500, color: 'rgba(240,237,232,0.45)', marginLeft: 4, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.04em' }}>
+                  {navigator.platform?.includes('Mac') ? '⌘G' : 'Ctrl+G'}
+                </span>
+              )}
             </>
           )}
         </button>

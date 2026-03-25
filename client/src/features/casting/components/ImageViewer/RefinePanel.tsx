@@ -1,4 +1,5 @@
 import { RefObject, useRef, useState, useEffect } from 'react';
+import { Sparkles, SendHorizontal } from 'lucide-react';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 
 // ============ Types ============
@@ -178,7 +179,7 @@ export function RefinePanel({
               {isEnhancing ? (
                 <div className="w-3 h-3 border-2 border-t-transparent border-gray-400 rounded-full animate-spin" />
               ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
+                <Sparkles size={14} strokeWidth={2} />
               )}
             </button>
           </>
@@ -218,7 +219,7 @@ export function RefinePanel({
         <button
           onClick={handleSubmit}
           disabled={!refineInput.trim()}
-          className="flex-shrink-0 px-4 py-2 rounded-lg transition-all mb-0.5"
+          className="flex-shrink-0 px-4 py-2 rounded-lg transition-all mb-0.5 flex items-center gap-1.5"
           style={{
             background: refineInput.trim() ? '#1a1a1a' : '#e8e5df',
             color: refineInput.trim() ? '#fff' : '#aaa',
@@ -226,7 +227,8 @@ export function RefinePanel({
             fontWeight: 600,
           }}
         >
-          Apply
+          <SendHorizontal size={12} strokeWidth={2} style={{ marginRight: -2 }} />
+          <span>Apply</span>
         </button>
       </div>
     </div>

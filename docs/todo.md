@@ -4538,3 +4538,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] 4. Chip hover states + selection ring on OptionGrid and ChipRow
 - [x] 5. Animated section reveal on CollapsibleSection open (opacity + translateY)
 - [x] 6. SummaryStrip redesign — horizontal scroll icon+label badges
+
+## Casting ControlPanel Polish — Tier 3
+- [x] 7. Warm gradient on panel header (linear-gradient #faf8f5 → #fff)
+- [x] 8. RefinePanel Lucide icon swap (Sparkles for enhance, SendHorizontal for submit)
+- [x] 9. Keyboard shortcut hints on Generate button (⌘G / Ctrl+G)
