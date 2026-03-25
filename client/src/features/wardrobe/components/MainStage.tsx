@@ -5,8 +5,8 @@
  * result after generation. Provides undo/redo, hold-to-compare,
  * and a contextual "Dress" / "Update" button.
  */
-import { useCallback, useRef, useState } from "react";
-import { Loader2, Undo2, Redo2, Sparkles, Eye, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2, Undo2, Redo2, Sparkles, RotateCcw } from "lucide-react";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { GarmentOverlay } from "./GarmentOverlay";
 import type { DetectedItem } from "../types";
@@ -53,6 +53,18 @@ const GENERATION_TIPS = [
   "Rendering construction details...",
 ];
 
+/** Keyboard shortcut definitions */
+const SHORTCUT_HINTS = [
+  { key: "Space", label: "Generate" },
+  { key: "Z", label: "Undo" },
+  { key: "⇧Z", label: "Redo" },
+];
+
+const SHORTCUT_HINTS_WITH_COMPARE = [
+  ...SHORTCUT_HINTS,
+  { key: "Hold", label: "Compare" },
+];
+
 export function MainStage({
   modelImageUrl,
   isGenerating,
@@ -97,6 +109,47 @@ export function MainStage({
   const hasResult = currentResult !== null;
   const canGenerate = selectedCount > 0 && modelImageUrl && !isGenerating && cooldownSeconds <= 0;
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
+      switch (e.key) {
+        case " ":
+          e.preventDefault();
+          if (canGenerate && !isGenerating && cooldownSeconds <= 0) onGenerate();
+          break;
+        case "z":
+        case "Z":
+          if (e.metaKey || e.ctrlKey) break;
+          if (e.shiftKey) { if (canRedo && !isGenerating) onRedo(); }
+          else { if (canUndo && !isGenerating) onUndo(); }
+          break;
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canGenerate, isGenerating, cooldownSeconds, canUndo, canRedo, onGenerate, onUndo, onRedo]);
+
+  // Status dot color
+  const statusDotBg = isComparing
+    ? "#7c8aef"
+    : isGenerating
+      ? "#e8a83e"
+      : hasResult
+        ? "#5cad5c"
+        : "#ccc";
+
+  const statusDotShadow = isGenerating ? "0 0 6px rgba(232,168,62,0.4)" : "none";
+
+  // Status text
+  const statusText = isComparing
+    ? "Comparing..."
+    : isGenerating
+      ? (generatingMessage || "Processing...")
+      : cooldownSeconds > 0
+        ? `Rate limited · ${cooldownSeconds}s`
+        : "Wardrobe Studio";
+
   // ── No model loaded state ──────────────────────────────────
   if (!modelImageUrl) {
     return (
@@ -137,61 +190,61 @@ export function MainStage({
       className="flex-1 flex flex-col relative"
       style={{ background: "#f0ebe3" }}
     >
-      {/* ── Top Controls ──────────────────────────────────── */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-        {/* Undo / Redo */}
-        {hasResult && (
-          <div
-            className="flex items-center gap-1 rounded-full px-1 py-1"
-            style={{ background: "rgba(26,26,26,0.7)", backdropFilter: "blur(8px)" }}
-          >
-            <button
-              onClick={onUndo}
-              disabled={!canUndo || isGenerating}
-              className="p-1.5 rounded-full transition-all hover:bg-white/10 disabled:opacity-30"
-              title="Undo"
-            >
-              <Undo2 size={14} color="#fff" />
-            </button>
-            <button
-              onClick={onRedo}
-              disabled={!canRedo || isGenerating}
-              className="p-1.5 rounded-full transition-all hover:bg-white/10 disabled:opacity-30"
-              title="Redo"
-            >
-              <Redo2 size={14} color="#fff" />
-            </button>
-          </div>
-        )}
+      {/* ── Unified Floating Toolbar ─────────────────────────── */}
+      <div
+        className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 pointer-events-auto"
+        style={{
+          padding: "3px 4px",
+          borderRadius: 14,
+          background: "rgba(255,255,255,0.85)",
+          boxShadow: "0 2px 14px rgba(0,0,0,0.05)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        {/* Undo */}
+        <button
+          onClick={onUndo}
+          disabled={!canUndo || isGenerating}
+          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
+          style={{ color: "#888" }}
+          title="Undo (Z)"
+        >
+          <Undo2 size={14} />
+        </button>
 
-        {/* Compare badge */}
-        {hasResult && (
+        {/* Divider */}
+        <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
+
+        {/* Status */}
+        <div className="flex items-center gap-2 px-2.5">
           <div
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 select-none"
             style={{
-              background: isComparing
-                ? "rgba(255,255,255,0.9)"
-                : "rgba(26,26,26,0.7)",
-              backdropFilter: "blur(8px)",
-              transition: "background 0.2s",
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: statusDotBg,
+              boxShadow: statusDotShadow,
+              transition: "background 0.3s",
             }}
-          >
-            <Eye
-              size={12}
-              color={isComparing ? "#1a1a1a" : "#fff"}
-            />
-            <span
-              className="font-mono uppercase"
-              style={{
-                fontSize: 8,
-                color: isComparing ? "#1a1a1a" : "#fff",
-                letterSpacing: "0.05em",
-              }}
-            >
-              {isComparing ? "Original" : "Result"}
-            </span>
-          </div>
-        )}
+          />
+          <span style={{ fontSize: 10, fontWeight: 500, color: "#888" }}>
+            {statusText}
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
+
+        {/* Redo */}
+        <button
+          onClick={onRedo}
+          disabled={!canRedo || isGenerating}
+          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
+          style={{ color: "#888" }}
+          title="Redo (⇧Z)"
+        >
+          <Redo2 size={14} />
+        </button>
       </div>
 
       {/* ── Canvas Area ───────────────────────────────────── */}
@@ -276,7 +329,6 @@ export function MainStage({
         className="flex items-center justify-center gap-3 px-6 py-4"
         style={{ borderTop: "1px solid #e5e0d8" }}
       >
-        {/* Generate / Update button */}
         {/* Retry button (shown when there's an error) */}
         {errorMessage && !isGenerating && (
           <button
@@ -323,14 +375,37 @@ export function MainStage({
           )}
         </button>
 
-        {/* Hold-to-compare hint */}
-        {hasResult && !isGenerating && (
-          <span
-            className="font-mono"
-            style={{ fontSize: 8, color: "#b8b3a8" }}
+        {/* Shortcuts hint bar */}
+        {!isGenerating && (
+          <div
+            className="flex items-center gap-3 pointer-events-none"
+            style={{
+              padding: "5px 14px",
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.7)",
+              backdropFilter: "blur(8px)",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+            }}
           >
-            Hold to compare
-          </span>
+            {(hasResult ? SHORTCUT_HINTS_WITH_COMPARE : SHORTCUT_HINTS).map((s) => (
+              <div key={s.key} className="flex items-center gap-1.5">
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: "#bbb",
+                    padding: "1px 4px",
+                    borderRadius: 3,
+                    background: "rgba(0,0,0,0.04)",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  {s.key}
+                </span>
+                <span style={{ fontSize: 9, color: "#bbb" }}>{s.label}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
