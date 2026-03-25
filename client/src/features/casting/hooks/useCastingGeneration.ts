@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
+import { useStudioStore } from "@/features/studio/stores/useStudioStore";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
 import {
   CREDIT_COSTS,
@@ -281,6 +282,8 @@ export function useCastingGeneration({
         clearAmendments();
         setIdentityWarning(null);
         toast.success("Model generated successfully!");
+        // Update shared canvas state — model exists but no full body yet
+        useStudioStore.getState().setCanvas({ hasModel: true, modelSource: 'cast' });
         refetchCreditsWithWarning();
         
         // Fire-and-forget: fetch suggestions (session lifecycle handled server-side)

@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
+import { useStudioStore } from "@/features/studio/stores/useStudioStore";
 import { CREDIT_COSTS, type GeneratedAsset } from "@/features/casting/constants";
 
 interface UseCastingViewGenerationParams {
@@ -76,6 +77,8 @@ export function useCastingViewGeneration({
             pushHistory(newAssets);
             setActiveView("frontFull");
             toast.success("Full body generated!");
+            // Update shared canvas state so Wardrobe becomes available in ToolRail
+            useStudioStore.getState().setCanvas({ hasModel: true, hasFullBody: true, modelSource: 'cast' });
             refetchCreditsWithWarning();
           }
 

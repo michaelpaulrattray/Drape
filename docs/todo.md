@@ -4590,3 +4590,10 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Real Flex Layout Fix
 - [x] Ensure StudioCanvas fills 100% of its allocated flex space — added h-full to center wrappers (Casting + Wardrobe) and all StudioCanvas root divs
+
+## Canvas Polish — 5 Fixes
+- [x] Lighten LoadingOverlay backdrop for subsequent generations (opacity 0.85→0.35, blur 16px→6px)
+- [x] Simplify toolbar status label — tool name only, no colored dot, inline spinner for generating state
+- [x] Remove next-stage arrow button from Casting canvas (tool rail handles navigation)
+- [x] Fix wardrobe tool not accessible after full-body cast (setCanvas hasFullBody in useCastingViewGeneration + hasModel in useCastingGeneration)
+- [x] Fix wardrobe compare showing previous VTO result (reads vtoHistory[index-1], falls back to model image for v1)

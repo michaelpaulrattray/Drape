@@ -272,20 +272,16 @@ export function StudioCanvas({
 
           <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
 
-          {/* Status pill */}
-          <div className="flex items-center gap-2 px-2.5">
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: isComparing ? "#7c8aef" : statusColor,
-                boxShadow: statusGlow || "none",
-                transition: "background 0.2s",
-              }}
-            />
-            <span style={{ fontSize: 10, fontWeight: 500, color: "#888" }}>
-              {isComparing ? "Comparing..." : statusLabel}
+          {/* Status label */}
+          <div className="flex items-center gap-1.5 px-2.5">
+            {isGenerating && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ color: '#999' }}>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            )}
+            <span style={{ fontSize: 10, fontWeight: isGenerating ? 400 : 500, color: isGenerating ? '#aaa' : '#888', transition: 'all 0.2s' }}>
+              {isComparing ? "Comparing" : statusLabel}
             </span>
           </div>
 

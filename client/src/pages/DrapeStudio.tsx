@@ -104,17 +104,22 @@ function WardrobeWorkspaceSection({
     return false;
   }, [canGenerate, gen]);
 
-  // Derive toolbar status
-  const statusLabel = gen.isGenerating
-    ? (gen.generatingMessage || 'Generating...')
-    : hasResult
-      ? `Dressed · v${gen.historyIndex + 1}`
-      : 'Wardrobe Studio';
-  const statusColor = gen.isGenerating ? '#e8a83e' : hasResult ? '#5cad5c' : '#ccc';
-  const statusGlow = gen.isGenerating ? '0 0 6px rgba(232,168,62,0.4)' : undefined;
+  // Derive toolbar status — just tool name, spinner handles generating state
+  const statusLabel = 'Wardrobe';
+  const statusColor = '#ccc'; // unused now but kept for interface
+  const statusGlow = undefined;
 
-  // Compare URL: original model image when there's a result
-  const compareUrl = hasResult ? modelImageUrl : null;
+  // Compare URL: show previous VTO result (or original model if on first VTO)
+  const compareUrl = (() => {
+    if (!hasResult) return null;
+    // If we're at v2+, show the previous VTO result
+    if (gen.historyIndex > 0) {
+      const prevUrl = useWardrobeStore.getState().vtoHistory[gen.historyIndex - 1];
+      return prevUrl ?? modelImageUrl;
+    }
+    // At v1, compare against the original model
+    return modelImageUrl;
+  })();
   const compareLabel = gen.historyIndex <= 0 ? 'Original' : 'Previous';
 
   return (

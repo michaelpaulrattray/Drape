@@ -153,8 +153,6 @@ export function ImageViewerPanel({
   const {
     activeView,
     activeTool,
-    isAutoGenerating,
-    setAutoGenCancelled,
     unlockMode,
     setRefineInput,
   } = useCastingUIStore();
@@ -224,11 +222,10 @@ export function ImageViewerPanel({
   }, [currentAssets.length, prefs.referenceImage]);
 
   // ── Derive StudioCanvas props ──
-  const statusLabel = genState.isGenerating
-    ? (genState.currentStep || 'Generating...')
-    : `${VIEW_DISPLAY_NAMES[activeView] ?? activeView} · v${historyIndex + 1}`;
-  const statusColor = genState.isGenerating ? '#e8a83e' : '#5cad5c';
-  const statusGlow = genState.isGenerating ? '0 0 6px rgba(232,168,62,0.4)' : undefined;
+  // Status label — just tool name, spinner handles generating state
+  const statusLabel = 'Casting';
+  const statusColor = '#ccc'; // unused now but kept for interface
+  const statusGlow = undefined;
 
   // ── Top overlay: ViewTabs + Identity Warning ──
   const topOverlay = (
@@ -335,52 +332,9 @@ export function ImageViewerPanel({
     />
   ) : undefined;
 
-  // ── Side overlay: Tool buttons + Next stage CTA ──
+  // ── Side overlay: Tool buttons ──
   const sideOverlay = hasAssets ? (
     <>
-      {/* Next stage CTA */}
-      {nextStage && !genState.isGenerating && (
-        <div className="absolute top-1/2 right-8 -translate-y-1/2 z-40 flex flex-col items-end space-y-4 animate-in fade-in slide-in-from-right-8 duration-700">
-          <div className="text-right space-y-1 drop-shadow-md">
-            <div className="flex items-center justify-end space-x-2">
-              <div className="flex space-x-1">
-                {[...Array(nextStage.total)].map((_, i) => (
-                  <div key={i} className={`h-1 w-3 rounded-full ${
-                    i + 1 < nextStage.step ? 'bg-white' : i + 1 === nextStage.step ? 'bg-white animate-pulse' : 'bg-neutral-700'
-                  }`} />
-                ))}
-              </div>
-              <span className="text-[9px] font-mono uppercase tracking-widest text-neutral-400">
-                {nextStage.step > nextStage.total ? 'Workflow Complete' : isAutoGenerating ? 'Auto' : 'Next Stage'}
-              </span>
-            </div>
-            <p className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-              {nextStage.label}
-            </p>
-          </div>
-          {!isAutoGenerating ? (
-            <button
-              onClick={nextStage.action}
-              className="group relative w-16 h-16 bg-white rounded-full flex items-center justify-center hover:scale-110 transition-all duration-300"
-              style={{ boxShadow: '0 0 40px rgba(255,255,255,0.2)' }}
-            >
-              <div className="absolute inset-0 rounded-full border border-white opacity-50 group-hover:animate-ping" />
-              <svg width="18" height="18" fill="none" stroke="#1a1a1a" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </button>
-          ) : (
-            <button
-              onClick={() => setAutoGenCancelled(true)}
-              className="px-3 py-1.5 rounded-lg transition-all"
-              style={{ background: 'rgba(220,53,69,0.1)', color: '#dc3545', fontSize: 10, fontWeight: 600 }}
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      )}
-
       {/* Tools bar — surgical + eraser */}
       {!genState.isGenerating && hasAssets && (
         <div
