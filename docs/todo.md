@@ -4543,3 +4543,6 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] 7. Warm gradient on panel header (linear-gradient #faf8f5 → #fff)
 - [x] 8. RefinePanel Lucide icon swap (Sparkles for enhance, SendHorizontal for submit)
 - [x] 9. Keyboard shortcut hints on Generate button (⌘G / Ctrl+G)
+
+## Wardrobe MainStage Auto-Hide Bug (Round 2)
+- [x] Bug: Toolbars still visible when mouse is on canvas but not over image — moved onMouseEnter/Leave from outer wrapper to inner canvas area div
