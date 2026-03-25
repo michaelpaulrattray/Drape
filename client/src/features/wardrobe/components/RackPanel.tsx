@@ -52,15 +52,32 @@ export function RackPanel() {
     onError: () => toast.error("Failed to delete outfit"),
   });
 
+  // Build a set of all current garment IDs for fast lookup
+  const inventoryIdSet = useMemo(
+    () => new Set(garments.map((g) => g.id)),
+    [garments],
+  );
+
   const handleLoadOutfit = useCallback(
     (garmentIds: number[], notes: Record<string, string>) => {
+      const validIds = garmentIds.filter((id) => inventoryIdSet.has(id));
+      const removedCount = garmentIds.length - validIds.length;
+
       clearStyleNotes();
-      setSelection(garmentIds);
+      setSelection(validIds);
       for (const [id, note] of Object.entries(notes)) {
-        setStyleNote(Number(id), note);
+        if (inventoryIdSet.has(Number(id))) {
+          setStyleNote(Number(id), note);
+        }
+      }
+
+      if (removedCount > 0) {
+        toast.warning(
+          `${validIds.length} of ${garmentIds.length} garments loaded — ${removedCount} ${removedCount === 1 ? "was" : "were"} removed from your wardrobe`,
+        );
       }
     },
-    [clearStyleNotes, setSelection, setStyleNote],
+    [clearStyleNotes, setSelection, setStyleNote, inventoryIdSet],
   );
 
   const handleDeleteOutfit = useCallback(

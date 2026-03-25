@@ -180,10 +180,12 @@ export function LayersPanel({
   );
 
   // Save outfit mutation
+  const utils = trpc.useUtils();
   const saveOutfitMutation = trpc.wardrobe.outfits.save.useMutation({
     onSuccess: () => {
       toast.success("Outfit saved");
       setOutfitName("");
+      utils.wardrobe.outfits.list.invalidate();
     },
     onError: () => {
       toast.error("Failed to save outfit");

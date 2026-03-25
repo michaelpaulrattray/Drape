@@ -4524,3 +4524,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Investigate: Save outfit writes to wardrobeOutfits table but RackPanel never queries it — Looks tab only shows garments with slotType=full_look
 - [x] Show saved outfits in the Looks tab alongside uploaded full looks (query outfits.list, display SavedOutfitCard, click to load)
 - [x] Keep current 10/50 caps, defer tier-based caps to later
+
+## Saved Outfit Edge Cases
+- [x] Handle deleted garments when loading a saved outfit — cross-reference IDs against inventory, warn if any missing
+- [x] Invalidate outfits query after save in LayersPanel so Looks tab refreshes immediately
