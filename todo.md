@@ -2,3 +2,5 @@
 - [x] Improve LoadingOverlay contrast: increase scan line and tip text opacity against #f0ebe3 background
 - [x] Add pulse animation to Wardrobe icon in ToolRail when hasFullBody becomes true
 - [x] Fix Wardrobe tools not auto-hiding on mouse-off (should match Casting's hover behavior via shared StudioCanvas)
+- [x] Fix: Wardrobe shows "No model on canvas" after switching from Casting with full body — model URL not passing through
+- [x] Add contextual next-step chip in casting shortcuts bar (Next → Full Body, Dress this model →, Export Identity →)

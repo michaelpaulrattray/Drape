@@ -379,7 +379,7 @@ export default function DrapeStudio() {
   const fullBodyUrl = useMemo(() => {
     if (canvas.uploadedModelUrl) return canvas.uploadedModelUrl;
     if (canvas.castFullBodyUrl) return canvas.castFullBodyUrl;
-    const fullBodyAsset = currentAssets.find((a) => a.viewType === 'fullBody' && a.storageUrl);
+    const fullBodyAsset = currentAssets.find((a) => a.viewType === 'frontFull' && a.storageUrl);
     return fullBodyAsset?.storageUrl || null;
   }, [canvas.uploadedModelUrl, canvas.castFullBodyUrl, currentAssets]);
 

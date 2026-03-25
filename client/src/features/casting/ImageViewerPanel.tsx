@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback, RefObject } from "react";
-import { ViewTabs, RefinePanel, WarmEmptyState } from "./components/ImageViewer";
+import { ViewTabs, RefinePanel, WarmEmptyState, RotatingSuggestions, ToolButton, NextStepChip } from "./components/ImageViewer";
 import { MaskCanvas } from "./components/ImageViewer/MaskCanvas";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
@@ -15,69 +15,7 @@ const VIEW_DISPLAY_NAMES: Record<string, string> = {
   sideClose: 'Side',
 };
 
-// ============ SlotChip + RotatingSuggestions ============
 
-function SlotChip({ slotIdeas, intervalMs, onSelect }: { slotIdeas: string[]; intervalMs: number; onSelect: (idea: string) => void }) {
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => { setIndex(0); setVisible(true); }, [slotIdeas]);
-
-  useEffect(() => {
-    if (slotIdeas.length <= 1) return;
-    const timer = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIndex(i => (i + 1) % slotIdeas.length);
-        setVisible(true);
-      }, 300);
-    }, intervalMs);
-    return () => clearInterval(timer);
-  }, [slotIdeas, intervalMs]);
-
-  if (!slotIdeas.length) return null;
-  const idea = slotIdeas[index];
-
-  return (
-    <button
-      onClick={() => onSelect(idea)}
-      title={idea}
-      className="px-3 py-1.5 rounded-full transition-all"
-      style={{
-        background: 'rgba(255,255,255,0.8)',
-        backdropFilter: 'blur(8px)',
-        boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
-        fontSize: 10, color: '#777',
-        border: '1px solid rgba(0,0,0,0.04)',
-        maxWidth: 200, overflow: 'hidden',
-        textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        opacity: visible ? 1 : 0,
-        transition: 'opacity 0.3s ease',
-        flexShrink: 0,
-      }}
-      onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#1a1a1a'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; e.currentTarget.style.color = '#777'; }}
-    >
-      {idea}
-    </button>
-  );
-}
-
-function RotatingSuggestions({ ideas, onSelect }: { ideas: string[]; onSelect: (idea: string) => void }) {
-  const slots = useMemo(() => {
-    const buckets: string[][] = [[], [], []];
-    ideas.forEach((idea, i) => buckets[i % 3].push(idea));
-    return buckets;
-  }, [ideas]);
-  const intervals = [5000, 6500, 8000];
-  return (
-    <div className="flex items-center gap-1.5 justify-center" style={{ flexWrap: 'nowrap' }}>
-      {slots.map((slot, i) => slot.length > 0 && (
-        <SlotChip key={i} slotIdeas={slot} intervalMs={intervals[i]} onSelect={onSelect} />
-      ))}
-    </div>
-  );
-}
 
 // ============ Types ============
 
@@ -439,10 +377,10 @@ export function ImageViewerPanel({
           referenceImage={prefs.referenceImage}
         />
 
-        {/* Shortcuts Bar */}
+        {/* Shortcuts Bar + Next Step Chip */}
         {!genState.isGenerating && (
           <div
-            className="mt-2 flex items-center justify-center gap-3 pointer-events-none"
+            className="mt-2 flex items-center justify-center gap-3"
             style={{
               padding: '5px 14px', borderRadius: 10,
               background: 'rgba(255,255,255,0.7)',
@@ -451,25 +389,36 @@ export function ImageViewerPanel({
               width: 'fit-content', margin: '8px auto 0',
             }}
           >
-            {[
-              { key: 'Z', label: 'Undo' },
-              { key: '⇧Z', label: 'Redo' },
-              { key: '/', label: 'Refine' },
-              ...(prefs.referenceImage ? [{ key: 'F', label: 'Ref' }] : []),
-              ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
-            ].map(s => (
-              <div key={s.key} className="flex items-center gap-1.5">
-                <span style={{
-                  fontSize: 9, fontWeight: 700, color: '#bbb',
-                  padding: '1px 4px', borderRadius: 3,
-                  background: 'rgba(0,0,0,0.04)',
-                  fontFamily: 'monospace',
-                }}>
-                  {s.key}
-                </span>
-                <span style={{ fontSize: 9, color: '#bbb' }}>{s.label}</span>
-              </div>
-            ))}
+            {/* Keyboard hints */}
+            <div className="flex items-center gap-3 pointer-events-none">
+              {[
+                { key: 'Z', label: 'Undo' },
+                { key: '⇧Z', label: 'Redo' },
+                { key: '/', label: 'Refine' },
+                ...(prefs.referenceImage ? [{ key: 'F', label: 'Ref' }] : []),
+                ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
+              ].map(s => (
+                <div key={s.key} className="flex items-center gap-1.5">
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, color: '#bbb',
+                    padding: '1px 4px', borderRadius: 3,
+                    background: 'rgba(0,0,0,0.04)',
+                    fontFamily: 'monospace',
+                  }}>
+                    {s.key}
+                  </span>
+                  <span style={{ fontSize: 9, color: '#bbb' }}>{s.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Next step chip — contextual guidance */}
+            {nextStage && (
+              <>
+                <div style={{ width: 1, height: 12, background: 'rgba(0,0,0,0.08)' }} />
+                <NextStepChip nextStage={nextStage} />
+              </>
+            )}
           </div>
         )}
 
@@ -536,21 +485,4 @@ export function ImageViewerPanel({
   );
 }
 
-// ============ ToolButton Helper ============
 
-function ToolButton({ active, onClick, icon }: { active: boolean; onClick: () => void; icon: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
-      style={{
-        background: active ? '#1a1a1a' : 'rgba(255,255,255,0.85)',
-        color: active ? '#fff' : '#888',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
-        backdropFilter: 'blur(8px)',
-      }}
-    >
-      {icon}
-    </button>
-  );
-}
