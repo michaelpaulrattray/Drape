@@ -4597,3 +4597,7 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Remove next-stage arrow button from Casting canvas (tool rail handles navigation)
 - [x] Fix wardrobe tool not accessible after full-body cast (setCanvas hasFullBody in useCastingViewGeneration + hasModel in useCastingGeneration)
 - [x] Fix wardrobe compare showing previous VTO result (reads vtoHistory[index-1], falls back to model image for v1)
+
+## Cleanup & LoadingOverlay Tips
+- [x] Delete dead MainStage.tsx (removed file, barrel export, and updated test)
+- [x] Add wardrobe-specific contextual tips to LoadingOverlay CONTEXTUAL_TIPS map (10 wardrobe tips + regex matcher)

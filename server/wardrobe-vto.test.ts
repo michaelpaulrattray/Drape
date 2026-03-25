@@ -228,10 +228,11 @@ describe("useWardrobeGeneration contract", () => {
 
 // ── Component Export Tests ────────────────────────────────────
 describe("Component exports", () => {
-  it("MainStage is exported from the wardrobe barrel", async () => {
+  it("WardrobeCanvasOverlays are exported from the wardrobe barrel", async () => {
     const mod = await import("../client/src/features/wardrobe/index");
-    expect(mod).toHaveProperty("MainStage");
-    expect(typeof mod.MainStage).toBe("function");
+    expect(mod).toHaveProperty("WardrobeEmptyState");
+    expect(mod).toHaveProperty("WardrobeImageOverlay");
+    expect(mod).toHaveProperty("WardrobeShortcutsBar");
   });
 
   it("LayersPanel is exported from the wardrobe barrel", async () => {

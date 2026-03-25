@@ -48,6 +48,18 @@ const CONTEXTUAL_TIPS: Record<string, string[]> = {
     'Sheet views help casting directors evaluate bone structure in 3D',
     'Each view can be iterated independently after generation',
   ],
+  wardrobe: [
+    'Fabric textures are matched to the garment type — knit, silk, denim',
+    'Tattoos and skin details are preserved through the draping process',
+    'Layering order matters — the AI renders garments front to back',
+    'Style notes let you adjust fit, color, and drape per garment',
+    'The model\'s pose and body shape influence how fabric falls',
+    'Each VTO result is saved — undo to compare different outfit combinations',
+    'Garment selection order affects layering — jackets go over shirts',
+    'Skin tone and lighting are matched to keep the look photorealistic',
+    'Try different style notes on the same outfit for subtle variations',
+    'The identity prompt carries over from Casting to keep consistency',
+  ],
 };
 
 const FALLBACK_TIPS = [
@@ -78,6 +90,7 @@ export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: Loa
     if (/side.*back|sheet/i.test(msg)) return CONTEXTUAL_TIPS.sheet;
     if (/refin|updating spec|compacting|analyzing/i.test(msg)) return CONTEXTUAL_TIPS.iterate;
     if (/writing casting|casting headshot/i.test(msg)) return CONTEXTUAL_TIPS.newCast;
+    if (/drap|wardrobe|vto|try.?on|outfit|garment/i.test(msg)) return CONTEXTUAL_TIPS.wardrobe;
     return FALLBACK_TIPS;
   };
 
