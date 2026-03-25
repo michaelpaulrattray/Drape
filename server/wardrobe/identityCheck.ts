@@ -8,6 +8,9 @@
  */
 import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import { getAiClient, withTextQueue, toInlinePart } from "./utils";
+import { createModuleLogger } from "../logging/logger";
+
+const log = createModuleLogger("wardrobe/identityCheck");
 
 const IDENTITY_PROMPT = `Compare these two images. Image 1 is the original photo of a person. Image 2 is a generated edit of that same person.
 Do they appear to be the same person? Focus on facial features, skin tone, body type, and hair. Small changes in lighting or pose are okay, but the IDENTITY must be preserved.
@@ -48,7 +51,7 @@ export async function checkIdentityMatch(
     const text = (response.text ?? "YES").trim().toUpperCase();
     return text.includes("YES");
   } catch (error) {
-    console.warn("[Identity Check] Failed, assuming YES:", error);
+    log.warn({ err: error }, "[IdentityCheck] Failed, assuming YES");
     return true;
   }
 }

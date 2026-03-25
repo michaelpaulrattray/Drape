@@ -1,8 +1,0 @@
-{
-  "query": "SELECT userId, balance, monthlyCredits, bonusCredits, lastRefreshedAt FROM points WHERE userId = 1;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute SELECT userId, balance, monthlyCredits, bonusCredits, lastRefreshedAt FROM points WHERE userId = 1;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'monthlycredits' in 'field list'"
-  ]
-}

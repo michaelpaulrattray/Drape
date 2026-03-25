@@ -1,3 +1,7 @@
+# Agent artifacts
+.manus/
+__manus__/
+
 # Dependencies
 **/node_modules
 .pnpm-store/

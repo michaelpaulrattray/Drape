@@ -69,7 +69,8 @@ export interface WardrobeSession {
   createdAt: string;
 }
 
-/** Tattoo map for VTO identity preservation */
+/** Tattoo map for VTO identity preservation.
+ *  Must stay in sync with server/wardrobe/tattooAnalysis.ts TattooMap */
 export interface TattooMap {
   hasTattoos: boolean;
   tattooAreas: string[];
@@ -90,7 +91,8 @@ export interface DecomposedGarment {
   confidence: number;
 }
 
-/** Detected item from VTO result scanning (bounding box overlay) */
+/** Detected item from VTO result scanning (bounding box overlay).
+ *  Must stay in sync with server/wardrobe/garmentDetection.ts DetectedItem */
 export interface DetectedItem {
   id: string;
   label: string;

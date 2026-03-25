@@ -1,9 +1,0 @@
-{
-  "query": "SHOW COLUMNS FROM users LIKE 'approved';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute SHOW COLUMNS FROM users LIKE 'approved';",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1672
-}

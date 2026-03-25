@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `change_request_attachments` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `changeRequestId` int,\n  `filename` varchar(256) NOT NULL,\n  `fileKey` varchar(512) NOT NULL,\n  `url` text NOT NULL,\n  `mimeType` varchar(128) NOT NULL,\n  `size` int NOT NULL,\n  `uploadedById` int NOT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT (now())\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute CREATE TABLE IF NOT EXISTS `change_request_attachments` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `changeRequestId` int,\n  `filename` varchar(256) NOT NULL,\n  `fileKey` varchar(512) NOT NULL,\n  `url` text NOT NULL,\n  `mimeType` varchar(128) NOT NULL,\n  `size` int NOT NULL,\n  `uploadedById` int NOT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT (now())\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1810
-}

@@ -7,6 +7,9 @@
  */
 import { TEXT_ECONOMY } from "@shared/modelRegistry";
 import { getAiClient, withTextQueue } from "./utils";
+import { createModuleLogger } from "../logging/logger";
+
+const log = createModuleLogger("wardrobe/editClassifier");
 
 export type EditSize = "small" | "large";
 
@@ -47,7 +50,7 @@ export async function classifyEditSize(
     const text = (response.text ?? "").trim().toUpperCase();
     return text.includes("LARGE") ? "large" : "small";
   } catch (error) {
-    console.warn("[Edit Classifier] Failed, defaulting to small:", error);
+    log.warn({ err: error }, "[EditClassifier] Failed, defaulting to small");
     return "small";
   }
 }

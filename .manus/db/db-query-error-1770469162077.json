@@ -1,8 +1,0 @@
-{
-  "query": "ALTER TABLE users ADD COLUMN referralCode VARCHAR(16) UNIQUE, ADD COLUMN referredByUserId INT;\n\nCREATE TABLE IF NOT EXISTS referrals (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  referrerUserId INT NOT NULL,\n  referredUserId INT,\n  referredEmail VARCHAR(320),\n  status ENUM('pending', 'signed_up', 'completed', 'expired') NOT NULL DEFAULT 'pending',\n  referrerCredited BOOLEAN NOT NULL DEFAULT FALSE,\n  referredCredited BOOLEAN NOT NULL DEFAULT FALSE,\n  creditsAwarded INT NOT NULL DEFAULT 0,\n  completedAt TIMESTAMP NULL,\n  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute ALTER TABLE users ADD COLUMN referralCode VARCHAR(16) UNIQUE, ADD COLUMN referredByUserId INT;\n\nCREATE TABLE IF NOT EXISTS referrals (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  referrerUserId INT NOT NULL,\n  referredUserId INT,\n  referredEmail VARCHAR(320),\n  status ENUM('pending', 'signed_up', 'completed', 'expired') NOT NULL DEFAULT 'pending',\n  referrerCredited BOOLEAN NOT NULL DEFAULT FALSE,\n  referredCredited BOOLEAN NOT NULL DEFAULT FALSE,\n  creditsAwarded INT NOT NULL DEFAULT 0,\n  completedAt TIMESTAMP NULL,\n  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
-  "returncode": 1,
-  "logs": [
-    "ERROR 8200 (HY000) at line 1: unsupported add column 'referralcode' constraint UNIQUE KEY when altering 'EZPuXPuVfNWAAbrrMBoHnm.users'"
-  ]
-}

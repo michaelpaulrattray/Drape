@@ -1,9 +1,0 @@
-{
-  "query": "CREATE INDEX `idx_audit_severity_created` ON `audit_logs` (`severity`,`createdAt`);\nCREATE INDEX `idx_audit_user` ON `audit_logs` (`userId`,`createdAt`);\nCREATE INDEX `idx_credit_txn_user_ref` ON `point_transactions` (`userId`,`referenceId`);\nCREATE INDEX `idx_credit_txn_user_created` ON `point_transactions` (`userId`,`createdAt`);\nCREATE INDEX `idx_generations_user` ON `generations` (`userId`,`createdAt`);\nCREATE INDEX `idx_generations_status` ON `generations` (`status`,`createdAt`);\nCREATE INDEX `idx_model_assets_model` ON `model_assets` (`modelId`);\nCREATE INDEX `idx_models_user` ON `models` (`userId`,`status`);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute CREATE INDEX `idx_audit_severity_created` ON `audit_logs` (`severity`,`createdAt`);\nCREATE INDEX `idx_audit_user` ON `audit_logs` (`userId`,`createdAt`);\nCREATE INDEX `idx_credit_txn_user_ref` ON `point_transactions` (`userId`,`referenceId`);\nCREATE INDEX `idx_credit_txn_user_created` ON `point_transactions` (`userId`,`createdAt`);\nCREATE INDEX `idx_generations_user` ON `generations` (`userId`,`createdAt`);\nCREATE INDEX `idx_generations_status` ON `generations` (`status`,`createdAt`);\nCREATE INDEX `idx_model_assets_model` ON `model_assets` (`modelId`);\nCREATE INDEX `idx_models_user` ON `models` (`userId`,`status`);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 7125
-}

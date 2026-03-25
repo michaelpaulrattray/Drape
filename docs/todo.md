@@ -4452,3 +4452,12 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Update Casting files (7) to use registry imports (geminiGeneration, geminiViews, geminiSuggestions, geminiSchemaUpdater, geminiPromptCompactor, geminiClient, aiService)
 - [x] Upgrade TEXT_PRO: gemini-3-pro-preview → gemini-3.1-pro-preview (via registry)
 - [x] Upgrade IMAGE_FLASH: gemini-2.5-flash-image → gemini-3.1-flash-image-preview (via registry)
+
+## Housekeeping Cleanup
+- [x] Remove .manus/ and client/public/__manus__/ directories, add to .gitignore
+- [x] Fix logging in editClassifier.ts and identityCheck.ts (console.warn → pino logger)
+- [x] Move audit/migration docs to docs/archive/, upload scripts to scripts/, todo.md to docs/
+- [x] Delete dead client components (AIChatBox, ManusDialog, AppLayout) — verified no imports
+- [x] Delete empty drizzle/relations.ts
+- [x] Remove 6 dead one-time scripts, kept generate-mock-pdf.mjs + upload scripts
+- [x] Add sync comments for TattooMap and DetectedItem in client wardrobe types.ts

@@ -1,8 +1,0 @@
-{
-  "query": "ALTER TABLE points \nADD COLUMN stripeCustomerId VARCHAR(64),\nADD COLUMN stripeSubscriptionId VARCHAR(64),\nADD COLUMN subscriptionStatus ENUM('active', 'canceled', 'past_due', 'unpaid', 'trialing'),\nADD COLUMN currentPeriodStart TIMESTAMP NULL,\nADD COLUMN currentPeriodEnd TIMESTAMP NULL;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3g5tTw6dM74NTgU.cb69d3511748 --database EZPuXPuVfNWAAbrrMBoHnm --execute ALTER TABLE points \nADD COLUMN stripeCustomerId VARCHAR(64),\nADD COLUMN stripeSubscriptionId VARCHAR(64),\nADD COLUMN subscriptionStatus ENUM('active', 'canceled', 'past_due', 'unpaid', 'trialing'),\nADD COLUMN currentPeriodStart TIMESTAMP NULL,\nADD COLUMN currentPeriodEnd TIMESTAMP NULL;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1060 (42S21) at line 1: Duplicate column name 'stripeCustomerId'"
-  ]
-}
