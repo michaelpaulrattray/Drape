@@ -4546,3 +4546,6 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Wardrobe MainStage Auto-Hide Bug (Round 2)
 - [x] Bug: Toolbars still visible when mouse is on canvas but not over image — moved onMouseEnter/Leave from outer wrapper to inner canvas area div
+
+## Wardrobe MainStage Auto-Hide Bug (Round 3)
+- [x] Investigate how Casting ImageViewerPanel handles auto-hide and replicate exact pattern in Wardrobe MainStage — restructured: toolbar + shortcuts are now INSIDE the hover-tracked container (h-full max-w-full), matching Casting's pattern exactly

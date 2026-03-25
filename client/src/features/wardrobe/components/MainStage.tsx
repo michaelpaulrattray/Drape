@@ -3,12 +3,18 @@
  *
  * Shows the clean model when no VTO result exists, or the dressed
  * result after generation. Provides undo/redo, hold-to-compare,
- * and a contextual "Dress" / "Update" button.
+ * and keyboard shortcuts.
  *
  * Shares a unified canvas language with Casting's ImageViewerPanel:
  *   - Same background, border-radius, shadow, generating effects
  *   - Same auto-hide behavior for toolbar + shortcuts on mouse-out
  *   - Same smart "Original" / "Previous" compare badge
+ *
+ * Auto-hide pattern (matches Casting):
+ *   The hover-tracked container wraps the image AND all floating
+ *   controls (toolbar, shortcuts). This way hovering any control
+ *   keeps imageAreaHovered=true. The container uses h-full + max-w-full
+ *   so it hugs the image content area, not the full stage background.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Undo2, Redo2 } from "lucide-react";
@@ -199,62 +205,69 @@ export function MainStage({
       className="flex-1 flex flex-col relative overflow-hidden"
       style={{ background: "#f0ebe3" }}
     >
-      {/* ── Unified Floating Toolbar (auto-hide) ──────────────── */}
+      {/* ── Canvas Area ─────────────────────────────────────
+       * This is the hover-tracked container (matches Casting's pattern).
+       * The toolbar and shortcuts are INSIDE this div so hovering them
+       * keeps imageAreaHovered=true. Uses h-full + max-w-full to hug
+       * the image content area.
+       */}
       <div
-        className="absolute top-3 left-1/2 z-20 flex items-center gap-1 pointer-events-auto transition-all duration-200"
-        style={{
-          padding: "3px 4px",
-          borderRadius: 14,
-          background: "rgba(255,255,255,0.85)",
-          boxShadow: "0 2px 14px rgba(0,0,0,0.05)",
-          backdropFilter: "blur(12px)",
-          opacity: controlsVisible ? 1 : 0,
-          transform: controlsVisible
-            ? "translateX(-50%) translateY(0)"
-            : "translateX(-50%) translateY(-8px)",
-          pointerEvents: controlsVisible ? "auto" : "none",
-        }}
-      >
-        {/* Undo */}
-        <button
-          onClick={onUndo}
-          disabled={!canUndo || isGenerating}
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
-          style={{ color: "#888" }}
-          title="Undo (Z)"
-        >
-          <Undo2 size={14} />
-        </button>
-
-        {/* Compare label — only visible during compare */}
-        {isComparing && (
-          <>
-            <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
-            <span className="px-2" style={{ fontSize: 10, fontWeight: 500, color: "#888" }}>
-              {compareLabel}
-            </span>
-            <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
-          </>
-        )}
-
-        {/* Redo */}
-        <button
-          onClick={onRedo}
-          disabled={!canRedo || isGenerating}
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
-          style={{ color: "#888" }}
-          title="Redo (⇧Z)"
-        >
-          <Redo2 size={14} />
-        </button>
-      </div>
-
-      {/* ── Canvas Area ───────────────────────────────────── */}
-      <div
-        className="flex-1 flex items-center justify-center relative min-h-0 h-0"
+        className="relative h-full max-w-full flex items-center justify-center select-none"
+        style={{ margin: "0 auto" }}
         onMouseEnter={() => setImageAreaHovered(true)}
         onMouseLeave={() => setImageAreaHovered(false)}
       >
+        {/* ── Floating Toolbar (undo/redo) ──────────────── */}
+        <div
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 pointer-events-auto transition-all duration-200"
+          style={{
+            padding: "3px 4px",
+            borderRadius: 14,
+            background: "rgba(255,255,255,0.85)",
+            boxShadow: "0 2px 14px rgba(0,0,0,0.05)",
+            backdropFilter: "blur(12px)",
+            opacity: controlsVisible ? 1 : 0,
+            transform: controlsVisible
+              ? "translateY(0)"
+              : "translateY(-8px)",
+            pointerEvents: controlsVisible ? "auto" : "none",
+          }}
+        >
+          {/* Undo */}
+          <button
+            onClick={onUndo}
+            disabled={!canUndo || isGenerating}
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
+            style={{ color: "#888" }}
+            title="Undo (Z)"
+          >
+            <Undo2 size={14} />
+          </button>
+
+          {/* Compare label — only visible during compare */}
+          {isComparing && (
+            <>
+              <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
+              <span className="px-2" style={{ fontSize: 10, fontWeight: 500, color: "#888" }}>
+                {compareLabel}
+              </span>
+              <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
+            </>
+          )}
+
+          {/* Redo */}
+          <button
+            onClick={onRedo}
+            disabled={!canRedo || isGenerating}
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
+            style={{ color: "#888" }}
+            title="Redo (⇧Z)"
+          >
+            <Redo2 size={14} />
+          </button>
+        </div>
+
+        {/* ── Image wrapper ──────────────────────────────── */}
         {displayUrl && (
           <div
             className="relative"
@@ -268,7 +281,7 @@ export function MainStage({
               alt={hasResult && !isComparing ? "Virtual try-on result" : "Model"}
               className="block transition-all duration-300 select-none"
               style={{
-                maxWidth: "calc(100% - 2rem)",
+                maxWidth: "calc(100vw - 620px)",
                 maxHeight: "calc(100vh - 100px)",
                 borderRadius: 16,
                 boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
@@ -306,10 +319,10 @@ export function MainStage({
           </div>
         )}
 
-        {/* Shortcuts hint bar — auto-hide with controls */}
+        {/* ── Shortcuts hint bar ─────────────────────────── */}
         {displayUrl && (
           <div
-            className="absolute bottom-2 left-1/2 z-10 flex items-center gap-3 pointer-events-none transition-all duration-200"
+            className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 pointer-events-none transition-all duration-200"
             style={{
               padding: "5px 14px",
               borderRadius: 10,
@@ -318,8 +331,8 @@ export function MainStage({
               boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
               opacity: controlsVisible && !isGenerating ? 1 : 0,
               transform: controlsVisible && !isGenerating
-                ? "translateX(-50%) translateY(0)"
-                : "translateX(-50%) translateY(8px)",
+                ? "translateY(0)"
+                : "translateY(8px)",
             }}
           >
             {(hasResult ? SHORTCUT_HINTS_WITH_COMPARE : SHORTCUT_HINTS).map((s) => (
@@ -373,7 +386,7 @@ export function MainStage({
 
         {/* Error overlay */}
         {errorMessage && !isGenerating && (
-          <div className="absolute bottom-6 left-1/2 z-10" style={{ transform: "translateX(-50%)" }}>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
             <div
               className="flex items-center gap-2 px-4 py-2 rounded-full"
               style={{ background: "rgba(220,38,38,0.9)", backdropFilter: "blur(8px)" }}
@@ -390,7 +403,6 @@ export function MainStage({
           </div>
         )}
       </div>
-
     </div>
   );
 }
