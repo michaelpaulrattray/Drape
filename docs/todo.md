@@ -4533,3 +4533,8 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] 1. Lucide icons on section headers (Palette, Dumbbell, ScanFace, Droplets, Scissors)
 - [x] 2. Overall progress ring in panel header showing casting readiness %
 - [x] 3. Lucide icons on Generate + Randomize buttons (Sparkles, Dices)
+
+## Casting ControlPanel Polish — Tier 2
+- [x] 4. Chip hover states + selection ring on OptionGrid and ChipRow
+- [x] 5. Animated section reveal on CollapsibleSection open (opacity + translateY)
+- [x] 6. SummaryStrip redesign — horizontal scroll icon+label badges

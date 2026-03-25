@@ -44,11 +44,13 @@ export const ChipRow = ({ options, selected, onSelect, allowDeselect = false }: 
         <button
           key={opt}
           onClick={() => allowDeselect && selected === opt ? onSelect('') : onSelect(opt)}
-          className="py-2 rounded-xl text-center transition-all"
+          className="py-2 rounded-xl text-center transition-all hover:shadow-sm"
           style={{
             fontSize: 10, fontWeight: selected === opt ? 600 : 400,
             background: selected === opt ? '#1a1a1a' : '#f5f3ef',
             color: selected === opt ? '#fff' : '#888',
+            boxShadow: selected === opt ? '0 0 0 2px rgba(26,26,26,0.15)' : undefined,
+            transform: selected === opt ? 'scale(1.02)' : undefined,
           }}
         >
           {opt}
@@ -72,11 +74,13 @@ export const OptionGrid = ({ options, selected, onSelect, cols = 3, showAutoRese
           <button
             key={opt}
             onClick={() => showAutoReset && selected === opt ? onSelect('Auto') : onSelect(opt)}
-            className="py-2.5 rounded-xl text-center transition-all"
+            className="py-2.5 rounded-xl text-center transition-all hover:shadow-sm"
             style={{
               fontSize: 10, fontWeight: selected === opt ? 600 : 400,
               background: selected === opt ? '#1a1a1a' : '#f5f3ef',
               color: selected === opt ? '#fff' : '#888',
+              boxShadow: selected === opt ? '0 0 0 2px rgba(26,26,26,0.15)' : undefined,
+              transform: selected === opt ? 'scale(1.02)' : undefined,
             }}
           >
             {opt}
@@ -315,7 +319,17 @@ export const CollapsibleSection = ({ id, title, icon, isOpen, onToggle, completi
         </div>
       </button>
       <div style={{ height, overflow: 'hidden', transition: 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-        <div ref={contentRef} className="px-4 pb-4">{children}</div>
+        <div
+          ref={contentRef}
+          className="px-4 pb-4"
+          style={{
+            opacity: isOpen ? 1 : 0,
+            transform: isOpen ? 'translateY(0)' : 'translateY(-6px)',
+            transition: 'opacity 0.2s ease 0.05s, transform 0.2s ease 0.05s',
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -323,27 +337,65 @@ export const CollapsibleSection = ({ id, title, icon, isOpen, onToggle, completi
 
 // ── Summary Strip ─────────────────────────────
 
+const SUMMARY_ICONS: Record<string, string> = {
+  gender: '♀♂',
+  age: '⏳',
+  ethnicity: '🌍',
+  skin: '◐',
+  eyes: '◉',
+  hair: '✂',
+  style: '✦',
+  brand: '◆',
+};
+
 export const SummaryStrip = ({ prefs, ethnicityBlend }: {
   prefs: Record<string, unknown>;
   ethnicityBlend: { name: string; pct: number }[];
 }) => {
-  const tags = [
-    prefs.gender as string,
-    prefs.age && `${prefs.age}y`,
-    ethnicityBlend.length > 0 && ethnicityBlend.map(e => e.pct < 100 ? `${e.pct}% ${e.name}` : e.name).join(' · '),
-    (prefs.skinTone as string)?.split(' / ')[0],
-    prefs.eyeColor && `${prefs.eyeColor} eyes`,
-    prefs.hairColor as string,
-    prefs.hairStyle as string,
-    prefs.castingBrand as string,
-  ].filter(Boolean);
+  const items: { icon: string; label: string }[] = [];
 
-  if (tags.length <= 2) return null;
+  if (prefs.gender) items.push({ icon: (prefs.gender as string) === 'Female' ? '♀' : (prefs.gender as string) === 'Male' ? '♂' : '⚥', label: prefs.gender as string });
+  if (prefs.age) items.push({ icon: SUMMARY_ICONS.age, label: `${prefs.age}y` });
+  if (ethnicityBlend.length > 0) items.push({ icon: SUMMARY_ICONS.ethnicity, label: ethnicityBlend.map(e => e.pct < 100 ? `${e.pct}% ${e.name}` : e.name).join(' · ') });
+  if (prefs.skinTone) items.push({ icon: SUMMARY_ICONS.skin, label: (prefs.skinTone as string).split(' / ')[0] });
+  if (prefs.eyeColor) items.push({ icon: SUMMARY_ICONS.eyes, label: `${prefs.eyeColor}` });
+  if (prefs.hairColor) items.push({ icon: SUMMARY_ICONS.hair, label: prefs.hairColor as string });
+  if (prefs.hairStyle) items.push({ icon: SUMMARY_ICONS.style, label: prefs.hairStyle as string });
+  if (prefs.castingBrand) items.push({ icon: SUMMARY_ICONS.brand, label: prefs.castingBrand as string });
+
+  if (items.length <= 2) return null;
 
   return (
-    <div className="px-4 py-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', background: 'rgba(245,243,239,0.5)', display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-      {tags.map((tag, i) => (
-        <span key={i} style={{ padding: '2px 6px', borderRadius: 4, background: 'rgba(0,0,0,0.04)', fontSize: 8, fontWeight: 500, color: '#999', whiteSpace: 'nowrap' }}>{String(tag)}</span>
+    <div
+      className="custom-scrollbar"
+      style={{
+        borderBottom: '1px solid rgba(0,0,0,0.04)',
+        background: 'rgba(245,243,239,0.5)',
+        display: 'flex',
+        gap: 4,
+        padding: '6px 16px',
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+      }}
+    >
+      {items.map((item, i) => (
+        <span
+          key={i}
+          className="flex items-center gap-1 shrink-0"
+          style={{
+            padding: '3px 8px',
+            borderRadius: 20,
+            background: 'rgba(0,0,0,0.04)',
+            fontSize: 9,
+            fontWeight: 500,
+            color: '#888',
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.01em',
+          }}
+        >
+          <span style={{ fontSize: 8, opacity: 0.7 }}>{item.icon}</span>
+          {item.label}
+        </span>
       ))}
     </div>
   );
