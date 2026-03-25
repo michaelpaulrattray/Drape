@@ -325,7 +325,7 @@ export function MainStage({
                     fontWeight: 600,
                     color: "#777",
                     opacity: imageAreaHovered ? 1 : 0,
-                    pointerEvents: imageAreaHovered ? "auto" : "none",
+                    pointerEvents: imageAreaHovered ? "auto" : "none", marginTop: '50px',
                   }}
                   title="Regenerate this look"
                 >
