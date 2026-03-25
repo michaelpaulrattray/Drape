@@ -19,8 +19,8 @@ import {
   uploadBase64ToS3,
   sanitizeDescription,
   sortByLayerPriority,
-  getImageAspectBucket,
   type GarmentForVTO,
+  type GeminiAspectRatio,
 } from "./utils";
 import { createModuleLogger } from "../logging/logger";
 import type { TattooMap } from "./tattooAnalysis";
@@ -158,6 +158,8 @@ export interface VTOParams {
   tattooMap?: TattooMap;
   userId: string;
   sessionId: string;
+  /** Pre-detected aspect ratio — avoids re-detection drift across generations */
+  aspectRatio?: GeminiAspectRatio;
 }
 
 export interface VTOResult {
@@ -239,12 +241,12 @@ Return the composite image.`;
 
     const contents = [{ text: prompt }, modelPart, ...garmentParts];
 
-    const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
+    const ar = params.aspectRatio || "3:4";
     const chat = ai.chats.create({
       model: IMAGE_PRO,
       config: {
         responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
+        imageConfig: { aspectRatio: ar as any, imageSize: "1K" },
         safetySettings: SAFETY_SETTINGS,
       },
     });
@@ -269,7 +271,7 @@ Return the composite image.`;
     );
 
     log.info(
-      `VTO generated for session ${params.sessionId} with ${sortedGarments.length} garments`,
+      `VTO generated for session ${params.sessionId} with ${sortedGarments.length} garments (ar=${ar})`,
     );
     return { resultUrl };
   }, "vto-generation");
@@ -287,6 +289,8 @@ export interface IncrementalParams {
   isStyleRefresh?: boolean;
   userId: string;
   sessionId: string;
+  /** Pre-detected aspect ratio — avoids re-detection drift across generations */
+  aspectRatio?: GeminiAspectRatio;
 }
 
 /**
@@ -329,12 +333,12 @@ ${tattooFragment}
 
 Return the updated image with styling changes applied.`;
 
-      const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
+      const ar = params.aspectRatio || "3:4";
       const chat = ai.chats.create({
         model: IMAGE_PRO,
         config: {
           responseModalities: ["TEXT", "IMAGE"],
-          imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
+          imageConfig: { aspectRatio: ar as any, imageSize: "1K" },
           safetySettings: SAFETY_SETTINGS,
         },
       });
@@ -407,12 +411,12 @@ Merge the new garments realistically with the existing outfit in Image 2. Handle
       ...changedGarmentParts.map((d) => d.part),
     ];
 
-    const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
+    const arSwap = params.aspectRatio || "3:4";
     const chat = ai.chats.create({
       model: IMAGE_PRO,
       config: {
         responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
+        imageConfig: { aspectRatio: arSwap as any, imageSize: "1K" },
         safetySettings: SAFETY_SETTINGS,
       },
     });

@@ -4506,3 +4506,9 @@ The entry and configuration files are properly set up with several enhancements 
 ## Wardrobe MainStage Bugs
 - [x] Bug: Toolbar (undo/redo) and shortcuts bar are off-center — shifted left relative to the image
 - [x] Bug: Image size changes between VTO generations — not staying fixed/stable
+
+## Wardrobe Image Size Consistency Investigation
+- [x] Revert lockedSize frontend hack from MainStage (match Casting approach)
+- [x] Audit Casting pipeline: hardcodes AspectRatio.PORTRAIT ("3:4") in every call
+- [x] Audit Wardrobe VTO pipeline: was calling getImageAspectBucket inside each generation function
+- [x] Fix root cause: moved getImageAspectBucket to router level, detect once per call against modelImageUrl, pass locked ratio to all generation functions (vtoGeneration, incrementalComposite, refineGarment)

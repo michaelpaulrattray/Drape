@@ -37,7 +37,7 @@ import { checkImageQuality } from "../wardrobe/qualityCheck";
 import { classifyEditSize } from "../wardrobe/editClassifier";
 import { checkIdentityMatch } from "../wardrobe/identityCheck";
 import { seedSession, clearSession } from "../wardrobe/vtoSession";
-import type { GarmentForVTO } from "../wardrobe/utils";
+import { getImageAspectBucket, type GarmentForVTO } from "../wardrobe/utils";
 
 const log = createModuleLogger("routes/wardrobe");
 
@@ -249,12 +249,14 @@ const vtoRouter = router({
           referenceId: `gen-${genResult.generationId}`,
         },
         async () => {
+          const aspectRatio = await getImageAspectBucket(input.modelImageUrl);
           return generateVirtualTryOn({
             modelImageUrl: input.modelImageUrl,
             garments: garments.map((g) => toGarmentForVTO(g, input.styleNotes?.[String(g.id)])),
             tattooMap: input.tattooMap,
             userId: String(ctx.user.id),
             sessionId: input.sessionId ? String(input.sessionId) : "default",
+            aspectRatio,
           });
         },
       );
@@ -334,6 +336,7 @@ const vtoRouter = router({
           referenceId: `gen-${genResult.generationId}`,
         },
         async () => {
+          const aspectRatio = await getImageAspectBucket(input.modelImageUrl);
           return incrementalComposite({
             previousResultUrl: input.previousResultUrl,
             modelImageUrl: input.modelImageUrl,
@@ -344,6 +347,7 @@ const vtoRouter = router({
             isStyleRefresh: input.isStyleRefresh,
             userId: String(ctx.user.id),
             sessionId: input.sessionId ? String(input.sessionId) : "default",
+            aspectRatio,
           });
         },
       );
@@ -420,6 +424,7 @@ const vtoRouter = router({
           referenceId: `gen-${genResult.generationId}`,
         },
         async () => {
+          const aspectRatio = await getImageAspectBucket(input.modelImageUrl);
           return refineGarment({
             resultImageUrl: input.currentResultUrl,
             modelImageUrl: input.modelImageUrl,
@@ -431,6 +436,7 @@ const vtoRouter = router({
             tattooPromptFragment,
             userId: String(ctx.user.id),
             sessionId: input.sessionId ? String(input.sessionId) : "default",
+            aspectRatio,
           });
         },
       );

@@ -17,7 +17,7 @@ import {
   diagnoseResponse,
   uploadBase64ToS3,
   sanitizeDescription,
-  getImageAspectBucket,
+  type GeminiAspectRatio,
 } from "./utils";
 import { getSession } from "./vtoSession";
 import { createModuleLogger } from "../logging/logger";
@@ -35,6 +35,8 @@ export interface RefinementParams {
   tattooPromptFragment?: string;
   userId: string;
   sessionId: string;
+  /** Pre-detected aspect ratio — avoids re-detection drift across generations */
+  aspectRatio?: GeminiAspectRatio;
 }
 
 export interface RefinementResult {
@@ -108,12 +110,12 @@ Return the edited image.`;
       );
       chat = existingSession.chat;
     } else {
-      const aspectRatio = await getImageAspectBucket(params.modelImageUrl);
+      const ar = params.aspectRatio || "3:4";
       chat = ai.chats.create({
         model: IMAGE_PRO,
         config: {
           responseModalities: ["TEXT", "IMAGE"],
-          imageConfig: { aspectRatio: aspectRatio as any, imageSize: "1K" },
+          imageConfig: { aspectRatio: ar as any, imageSize: "1K" },
           safetySettings: SAFETY_SETTINGS,
         },
       });

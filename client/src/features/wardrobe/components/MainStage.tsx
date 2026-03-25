@@ -96,21 +96,6 @@ export function MainStage({
   const [tipIndex, setTipIndex] = useState(0);
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
 
-  // Locked image dimensions — captured on first load, held across VTO generations
-  const [lockedSize, setLockedSize] = useState<{ w: number; h: number } | null>(null);
-
-  // Reset locked size when model image changes (new model loaded)
-  useEffect(() => {
-    setLockedSize(null);
-  }, [modelImageUrl]);
-
-  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    if (!lockedSize) {
-      const img = e.currentTarget;
-      setLockedSize({ w: img.clientWidth, h: img.clientHeight });
-    }
-  }, [lockedSize]);
-
   // Cycle tips during generation
   const cycleTip = useCallback(() => {
     tipIndexRef.current = (tipIndexRef.current + 1) % GENERATION_TIPS.length;
@@ -273,11 +258,7 @@ export function MainStage({
         {displayUrl && (
           <div
             className="relative"
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              ...(lockedSize ? { width: lockedSize.w, height: lockedSize.h } : {}),
-            }}
+            style={{ borderRadius: 16, overflow: "hidden" }}
             onPointerDown={handleCompareStart}
             onPointerUp={handleCompareEnd}
             onPointerLeave={handleCompareEnd}
@@ -287,10 +268,8 @@ export function MainStage({
               alt={hasResult && !isComparing ? "Virtual try-on result" : "Model"}
               className="block transition-all duration-300 select-none"
               style={{
-                ...(lockedSize
-                  ? { width: lockedSize.w, height: lockedSize.h, objectFit: "contain" as const }
-                  : { maxWidth: "calc(100% - 2rem)", maxHeight: "calc(100vh - 100px)" }
-                ),
+                maxWidth: "calc(100% - 2rem)",
+                maxHeight: "calc(100vh - 100px)",
                 borderRadius: 16,
                 boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
                 opacity: isGenerating ? 0.5 : 1,
@@ -298,7 +277,6 @@ export function MainStage({
                 cursor: hasResult && !isGenerating ? "grab" : "default",
               }}
               draggable={false}
-              onLoad={handleImageLoad}
             />
             {/* Garment overlay — clickable bounding boxes */}
             {resultOverlayItems.length > 0 && !isGenerating && !isComparing && onStyleNote && (
