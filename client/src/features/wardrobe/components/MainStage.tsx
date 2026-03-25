@@ -93,15 +93,29 @@ export function MainStage({
     setTipIndex(tipIndexRef.current);
   }, []);
 
-  // Hold-to-compare handlers
+  // Hold-to-compare handlers (150ms delay so quick clicks go to overlay)
+  const compareTimerRef = useRef<number | null>(null);
+
   const handleCompareStart = useCallback(() => {
-    if (currentResult && modelImageUrl) {
+    if (!currentResult || !modelImageUrl) return;
+    compareTimerRef.current = window.setTimeout(() => {
       setIsComparing(true);
-    }
+    }, 150);
   }, [currentResult, modelImageUrl]);
 
   const handleCompareEnd = useCallback(() => {
+    if (compareTimerRef.current) {
+      clearTimeout(compareTimerRef.current);
+      compareTimerRef.current = null;
+    }
     setIsComparing(false);
+  }, []);
+
+  // Cleanup compare timer on unmount
+  useEffect(() => {
+    return () => {
+      if (compareTimerRef.current) clearTimeout(compareTimerRef.current);
+    };
   }, []);
 
   // Determine which image to show
@@ -250,7 +264,12 @@ export function MainStage({
       {/* ── Canvas Area ───────────────────────────────────── */}
       <div className="flex-1 flex items-center justify-center relative min-h-0 h-0">
         {displayUrl && (
-          <div className="relative inline-block">
+          <div
+            className="relative inline-block"
+            onPointerDown={handleCompareStart}
+            onPointerUp={handleCompareEnd}
+            onPointerLeave={handleCompareEnd}
+          >
             <img
               src={displayUrl}
               alt={hasResult && !isComparing ? "Virtual try-on result" : "Model"}
@@ -264,9 +283,6 @@ export function MainStage({
                 filter: isGenerating ? "blur(2px)" : "none",
               }}
               draggable={false}
-              onPointerDown={handleCompareStart}
-              onPointerUp={handleCompareEnd}
-              onPointerLeave={handleCompareEnd}
             />
             {/* Garment overlay — clickable bounding boxes */}
             {resultOverlayItems.length > 0 && !isGenerating && !isComparing && onStyleNote && (

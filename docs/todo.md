@@ -4479,3 +4479,4 @@ The entry and configuration files are properly set up with several enhancements 
 - [x] Move shortcuts hint bar from bottom action bar into image wrapper (below overlay)
 - [x] Remove bottom bar border-top and reduce padding (py-4 → py-2)
 - [x] Add h-0 to canvas area div and overflow-hidden to outer flex-col container
+- [x] Fix hold-to-compare blocked by overlay: move pointer handlers to wrapper, add 150ms delay
