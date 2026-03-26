@@ -74,3 +74,4 @@
 - [x] Bug: Rate-limit error toast showing for background mutations — suppressed TOO_MANY_REQUESTS in global mutation error handler
 - [x] Add delete button to each session card on the lobby to remove old/unwanted sessions
 - [x] Bug: Clicking 'Cast a Model' from lobby loads stale session — now resets casting, wardrobe, and canvas state before entering casting
+- [x] Fix: Delete X button on compact session cards overlaps the Resume button — moved to top-left over thumbnail

@@ -78,7 +78,7 @@ function DeleteBtn({ onClick, size = 22 }: { onClick: (e: React.MouseEvent) => v
         width: size,
         height: size,
         top: size === 22 ? 6 : 4,
-        right: size === 22 ? 6 : 4,
+        ...(size === 22 ? { right: 6 } : { left: 4 }),
         background: 'rgba(0,0,0,0.08)',
         cursor: 'pointer',
       }}
