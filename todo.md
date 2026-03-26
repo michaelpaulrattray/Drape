@@ -57,3 +57,4 @@
 - [ ] Persist Gemini chat context across session restore — prevent model drift on refinements
 - [x] Clean up draft models from DB — verified only Janet and Dumb exist (no cleanup needed)
 - [x] Fix lobby loading experience — lifted queries to StudioLobby, coordinated skeleton → reveal animation
+- [x] Fix janky image loading when switching from Wardrobe to Casting — preload casting asset URLs before panel reveal

@@ -34,6 +34,7 @@ import { useCastingGeneration } from '@/features/casting/hooks/useCastingGenerat
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingViewGeneration';
 import { useDebugShortcuts } from '@/features/studio/hooks/useDebugShortcuts';
+import { useImagePreloader } from '@/features/studio/hooks/useImagePreloader';
 import { CastModelModal } from '@/features/studio/components/CastModelModal';
 import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
@@ -50,7 +51,17 @@ export default function DrapeStudio() {
   const { activeTool, setActiveTool, canvas, setCanvas } = useStudioStore();
 
   // Orchestrated transition phases
-  const transition = useStudioTransition(activeTool);
+  const baseTransition = useStudioTransition(activeTool);
+
+  // Preload casting images so they're in browser cache before panels reveal
+  const castingAssetUrls = useCastingGenerationStore((s) =>
+    activeTool === 'casting' ? s.currentAssets.map((a) => a.storageUrl) : [],
+  );
+  const { ready: castingImagesReady } = useImagePreloader(castingAssetUrls);
+  const transition = useMemo(() => {
+    if (activeTool !== 'casting' || castingImagesReady) return baseTransition;
+    return { ...baseTransition, centerReady: false, rightReady: false };
+  }, [activeTool, castingImagesReady, baseTransition]);
 
   // Session persistence — restore on mount, auto-save on changes
   const { isRestoring } = useSessionRestore(isAuthenticated);
@@ -84,9 +95,7 @@ export default function DrapeStudio() {
     setIsTopupOpen,
   } = useCastingUIStore();
 
-  // Sync canvas state from casting assets → shared canvas.
-  // Skip when the canvas is owned by an uploaded photo or a gallery-loaded model
-  // (those sources manage their own canvas state via useSessionReset).
+  // Sync casting assets → shared canvas (skip for uploaded/gallery models)
   useEffect(() => {
     const isExternalModel = canvas.modelSource === 'uploaded' || canvas.castModelId !== null;
     if (isExternalModel) return;
@@ -177,9 +186,7 @@ export default function DrapeStudio() {
   // Keyboard shortcuts (admin debug)
   useDebugShortcuts();
 
-  // ── Hydrate casting store for gallery-loaded models ──────────────────
-  // When switching to Casting with a gallery model, the generation store
-  // may be empty (assets live in DB, not in Zustand). Fetch and hydrate.
+  // Hydrate casting store for gallery-loaded models (assets in DB, not Zustand)
   const modelAssetsQuery = trpc.models.get.useQuery(
     { modelId: canvas.castModelId! },
     {
@@ -210,13 +217,9 @@ export default function DrapeStudio() {
     }
   }, [modelAssetsQuery.data, currentAssets.length]);
 
-  // Read-only mode: casting overview is locked for any saved/minted model
-  // This allows seamless switching to Casting without a destructive reset modal
-  const isReadOnly = activeTool === 'casting' && (
-    canvas.isMinted || canvas.castModelId !== null
-  );
+  // Read-only: locked for any saved/minted model (seamless switch, no reset modal)
+  const isReadOnly = activeTool === 'casting' && (canvas.isMinted || canvas.castModelId !== null);
 
-  // Non-cast models (uploaded or loaded from gallery without casting) — show placeholder
   const isNonCastModel = activeTool === 'casting' && canvas.modelSource === 'uploaded';
 
   // New Model — resets entire session
@@ -243,8 +246,7 @@ export default function DrapeStudio() {
     refetchCreditsWithWarning,
   });
 
-  // Derive full-body URL for wardrobe VTO base image
-  // Priority: uploaded model URL > gallery cast URL > casting full body asset
+  // Full-body URL for wardrobe (uploaded > gallery > casting asset)
   const fullBodyUrl = useMemo(() => {
     if (canvas.uploadedModelUrl) return canvas.uploadedModelUrl;
     if (canvas.castFullBodyUrl) return canvas.castFullBodyUrl;
@@ -252,19 +254,10 @@ export default function DrapeStudio() {
     return fullBodyAsset?.storageUrl || null;
   }, [canvas.uploadedModelUrl, canvas.castFullBodyUrl, currentAssets]);
 
-  // Form completion progress (12 fields total)
+  // Form completion progress (12 fields)
   const formProgress = useMemo(() => {
-    const checks = [
-      !!prefs.castingBrand,
-      !!(prefs.castingVibe && (prefs.castingVibe.editorial > 0 || prefs.castingVibe.commercial > 0 || prefs.castingVibe.runway > 0)),
-      !!prefs.gender,
-      !!(prefs.age && prefs.ethnicity),
-      !!prefs.bodyType, !!prefs.faceShape, !!prefs.skinTone,
-      !!(prefs.skinTexture || prefs.skinFinish),
-      !!prefs.eyeColor, !!prefs.eyeColor, // counts as 2
-      !!prefs.hairColor, !!prefs.hairStyle,
-    ];
-    return Math.round((checks.filter(Boolean).length / 12) * 100);
+    const c = [!!prefs.castingBrand, !!(prefs.castingVibe && (prefs.castingVibe.editorial > 0 || prefs.castingVibe.commercial > 0 || prefs.castingVibe.runway > 0)), !!prefs.gender, !!(prefs.age && prefs.ethnicity), !!prefs.bodyType, !!prefs.faceShape, !!prefs.skinTone, !!(prefs.skinTexture || prefs.skinFinish), !!prefs.eyeColor, !!prefs.eyeColor, !!prefs.hairColor, !!prefs.hairStyle];
+    return Math.round((c.filter(Boolean).length / 12) * 100);
   }, [prefs]);
 
   // Loading state
