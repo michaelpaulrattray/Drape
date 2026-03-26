@@ -12,3 +12,8 @@
 - [ ] Make side view generation optional in CastModelModal (recommended but not required)
 - [ ] Persist minted state across page refresh (load model assets from DB on page load)
 - [x] Add "New Model" escape button in read-only Casting mode
+- [x] Add generic studio.getLastSession server endpoint (queries wardrobe_sessions, future-proof for scenery etc.)
+- [x] Add DB helper getLatestUserSession in server/db/wardrobe.ts
+- [x] Build ContinueSessionCard component for StudioLobby
+- [x] Wire ContinueSessionCard into StudioLobby with restore logic
+- [ ] Future: "Projects" feature — multi-model session switching (post-launch)

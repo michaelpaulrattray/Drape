@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useSessionReset } from '../hooks/useSessionReset';
 import { ModelGallery, type MintedModel } from './ModelGallery';
+import { ContinueSessionCard } from './ContinueSessionCard';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -34,7 +35,7 @@ interface StudioLobbyProps {
 }
 
 export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
-  const { loadUploadedModel, loadGalleryModel } = useSessionReset();
+  const { loadUploadedModel, loadGalleryModel, resumeWardrobeSession } = useSessionReset();
   const uploadMutation = trpc.wardrobe.model.upload.useMutation();
 
   // Entrance animation
@@ -211,6 +212,26 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
         >
           Pick a saved model, upload your own photo, or generate one from scratch.
         </p>
+      </div>
+
+      {/* Continue Session — only renders if user has an active wardrobe session */}
+      <div
+        className="w-full mb-6"
+        style={{
+          maxWidth: 680,
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(12px)',
+          transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.03s',
+        }}
+      >
+        <ContinueSessionCard
+          onContinue={(session) => {
+            if (session.tool === 'wardrobe') {
+              resumeWardrobeSession(session);
+              toast.success(`Resumed session — ${session.modelName || 'Uploaded Model'}`);
+            }
+          }}
+        />
       </div>
 
       {/* My Models Gallery — only renders if user has minted models */}

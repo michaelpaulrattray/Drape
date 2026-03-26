@@ -22,6 +22,7 @@ import {
   updateGarment, deleteGarment,
   createOutfit, getUserOutfits, getOutfitById, deleteOutfit,
   createSession, getSessionById, getUserSessions, updateSession, deleteSession,
+  getLatestUserSession,
   createGeneration,
 } from "../db";
 import { getUserMintedModelsWithThumbnail } from "../db/models";
@@ -599,6 +600,12 @@ const sessionRouter = router({
   list: protectedProcedure
     .query(async ({ ctx }) => {
       return getUserSessions(ctx.user.id);
+    }),
+
+  /** Get the user's most recent session with VTO history (for "Continue Session" lobby card) */
+  getLatest: protectedProcedure
+    .query(async ({ ctx }) => {
+      return getLatestUserSession(ctx.user.id);
     }),
 
   update: protectedProcedure

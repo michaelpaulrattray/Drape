@@ -14,6 +14,7 @@
 import { useCallback } from 'react';
 import { useStudioStore } from '../stores/useStudioStore';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
+import { persistSession } from './useSessionPersistence';
 import type { StudioTool } from '../types';
 
 export function useSessionReset() {
@@ -68,10 +69,52 @@ export function useSessionReset() {
     loadModelFromCast(modelId, fullBodyUrl, masterPrompt);
   }, [resetWardrobe, loadModelFromCast]);
 
+  /**
+   * Resume a wardrobe session from the DB — restores canvas, wardrobe
+   * VTO history, garment selection, and session ID.
+   * Used by: ContinueSessionCard in the lobby.
+   */
+  const resumeWardrobeSession = useCallback((session: {
+    sessionId: number;
+    modelId: number | null;
+    modelName: string | null;
+    masterPrompt: string | null;
+    modelImageUrl: string;
+    history: string[];
+    historyIndex: number;
+    activeGarmentIds: number[];
+  }) => {
+    // Clear any stale state first
+    resetWardrobe();
+
+    // Set canvas state based on whether this is a cast or uploaded model
+    if (session.modelId && session.masterPrompt) {
+      loadModelFromCast(session.modelId, session.modelImageUrl, session.masterPrompt);
+    } else {
+      loadModelFromUpload(session.modelImageUrl);
+    }
+
+    // Hydrate wardrobe store with DB session data
+    const wardrobeStore = useWardrobeStore.getState();
+    wardrobeStore.setActiveSessionId(session.sessionId);
+    wardrobeStore.setSelection(session.activeGarmentIds);
+
+    // Restore VTO history
+    for (const url of session.history) {
+      wardrobeStore.pushVTOResult(url);
+    }
+
+    // Persist to localStorage so refresh works immediately
+    if (session.modelId) {
+      persistSession(session.modelId, 'wardrobe', true);
+    }
+  }, [resetWardrobe, loadModelFromCast, loadModelFromUpload]);
+
   return {
     resetToLobby,
     resetAndSwitchTo,
     loadUploadedModel,
     loadGalleryModel,
+    resumeWardrobeSession,
   };
 }

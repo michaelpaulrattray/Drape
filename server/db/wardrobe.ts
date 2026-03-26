@@ -1,12 +1,13 @@
 /**
  * Wardrobe DB Helpers — CRUD operations for garments, outfits, and sessions.
  */
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNotNull } from "drizzle-orm";
 import { getDb } from "./connection";
 import {
   wardrobeGarments,
   wardrobeOutfits,
   wardrobeSessions,
+  models,
   type InsertWardrobeGarment,
   type InsertWardrobeOutfit,
   type InsertWardrobeSession,
@@ -174,4 +175,63 @@ export async function deleteSession(sessionId: number, userId: number) {
         eq(wardrobeSessions.userId, userId),
       ),
     );
+}
+
+/**
+ * Get the user's most recent active session across all tools.
+ * Currently queries wardrobe_sessions; future tools (scenery, editorial)
+ * can be added as additional queries in a union pattern.
+ *
+ * Returns null if no session with at least 1 VTO result exists.
+ */
+export async function getLatestUserSession(userId: number) {
+  const db = (await getDb())!;
+
+  // Get most recent wardrobe session that has at least one history entry
+  const [session] = await db
+    .select()
+    .from(wardrobeSessions)
+    .where(
+      and(
+        eq(wardrobeSessions.userId, userId),
+        isNotNull(wardrobeSessions.history),
+      ),
+    )
+    .orderBy(desc(wardrobeSessions.updatedAt))
+    .limit(1);
+
+  if (!session) return null;
+
+  const history = (session.history as string[]) || [];
+  if (history.length === 0) return null;
+
+  // If session is linked to a cast model, fetch model name
+  let modelName: string | null = null;
+  let masterPrompt: string | null = null;
+  if (session.modelId) {
+    const [model] = await db
+      .select({ name: models.name, masterPrompt: models.masterPrompt })
+      .from(models)
+      .where(eq(models.id, session.modelId))
+      .limit(1);
+    if (model) {
+      modelName = model.name;
+      masterPrompt = model.masterPrompt;
+    }
+  }
+
+  return {
+    tool: "wardrobe" as const,
+    sessionId: session.id,
+    modelId: session.modelId,
+    modelName,
+    masterPrompt,
+    modelImageUrl: session.modelImageUrl,
+    lastResultUrl: history[history.length - 1],
+    iterationCount: history.length,
+    activeGarmentIds: (session.activeGarmentIds as number[]) || [],
+    history,
+    historyIndex: session.historyIndex ?? history.length - 1,
+    updatedAt: session.updatedAt,
+  };
 }
