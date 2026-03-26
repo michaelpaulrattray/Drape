@@ -86,6 +86,13 @@ interface WardrobeState {
   /** Whether any selected garment's style note differs from last generation */
   hasDirtyStyles: () => boolean;
 
+  /** Whether a VTO generation is currently in progress (persists across remounts) */
+  isGenerating: boolean;
+  setIsGenerating: (generating: boolean) => void;
+  /** Current generation step message */
+  generatingMessage: string | null;
+  setGeneratingMessage: (msg: string | null) => void;
+
   /** Whether the decomposition drawer is open */
   isDecomposeOpen: boolean;
   setDecomposeOpen: (open: boolean) => void;
@@ -110,6 +117,8 @@ const INITIAL_STATE = {
   overlayCache: new Map<number, DetectedItem[]>(),
   cooldownSeconds: 0,
   errorMessage: null as string | null,
+  isGenerating: false,
+  generatingMessage: null as string | null,
   isDecomposeOpen: false,
   lastGenStyleNotes: {} as Record<string, string>,
 };
@@ -208,21 +217,46 @@ export const useWardrobeStore = create<WardrobeState>()(
         set(
           (state) => {
             // Truncate any "future" entries when pushing new result
-            const trimmed = state.vtoHistory.slice(0, state.vtoHistoryIndex + 1);
+            const keepCount = state.vtoHistoryIndex + 1;
+            const trimmed = state.vtoHistory.slice(0, keepCount);
             const newHistory = [...trimmed, url];
 
-            // Trim to MAX_HISTORY_LENGTH (remove oldest)
+            // Prune orphaned future keys from Maps
+            const snapshots = new Map(state.selectionSnapshots);
+            const overlay = new Map(state.overlayCache);
+            for (const key of Array.from(snapshots.keys())) {
+              if (key >= keepCount) snapshots.delete(key);
+            }
+            for (const key of Array.from(overlay.keys())) {
+              if (key >= keepCount) overlay.delete(key);
+            }
+
+            // Trim to MAX_HISTORY_LENGTH (remove oldest) and shift Map keys
             if (newHistory.length > MAX_HISTORY_LENGTH) {
               const excess = newHistory.length - MAX_HISTORY_LENGTH;
+              const shiftedSnapshots = new Map<number, number[]>();
+              const shiftedOverlay = new Map<number, DetectedItem[]>();
+              Array.from(snapshots.entries()).forEach(([key, val]) => {
+                const newKey = key - excess;
+                if (newKey >= 0) shiftedSnapshots.set(newKey, val);
+              });
+              Array.from(overlay.entries()).forEach(([key, val]) => {
+                const newKey = key - excess;
+                if (newKey >= 0) shiftedOverlay.set(newKey, val);
+              });
               return {
                 vtoHistory: newHistory.slice(excess),
                 vtoHistoryIndex: newHistory.length - excess - 1,
+                selectionSnapshots: shiftedSnapshots,
+                overlayCache: shiftedOverlay,
               };
             }
 
             return {
               vtoHistory: newHistory,
               vtoHistoryIndex: newHistory.length - 1,
+              selectionSnapshots: snapshots,
+              overlayCache: overlay,
             };
           },
           false,
@@ -325,6 +359,12 @@ export const useWardrobeStore = create<WardrobeState>()(
       },
 
       // ── Decompose ──────────────────────────────────────────
+      // ── Generation State (persists across remounts) ────────
+      setIsGenerating: (generating) =>
+        set({ isGenerating: generating }, false, "setIsGenerating"),
+      setGeneratingMessage: (msg) =>
+        set({ generatingMessage: msg }, false, "setGeneratingMessage"),
+
       setDecomposeOpen: (open) =>
         set({ isDecomposeOpen: open }, false, "setDecomposeOpen"),
 

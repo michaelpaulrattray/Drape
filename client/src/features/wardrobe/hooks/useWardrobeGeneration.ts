@@ -5,7 +5,7 @@
  * manages session lifecycle, cooldown timer, retry mechanism, overlay
  * detection, and delegates history to useWardrobeStore.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useWardrobeStore } from "../stores/useWardrobeStore";
@@ -83,9 +83,11 @@ export function useWardrobeGeneration({
     });
   });
 
-  // Local generation state
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatingMessage, setGeneratingMessage] = useState<string | null>(null);
+  // Generation state from store (persists across remounts)
+  const isGenerating = useWardrobeStore((s) => s.isGenerating);
+  const setIsGenerating = useWardrobeStore((s) => s.setIsGenerating);
+  const generatingMessage = useWardrobeStore((s) => s.generatingMessage);
+  const setGeneratingMessage = useWardrobeStore((s) => s.setGeneratingMessage);
 
   // Track previous garment selection for incremental detection
   const prevGarmentIdsRef = useRef<Set<number>>(new Set());
@@ -168,26 +170,36 @@ export function useWardrobeGeneration({
 
   // ── Session Management ─────────────────────────────────────
 
+  // Mutex ref to prevent double session creation (fix #3)
+  const sessionCreatingRef = useRef<Promise<number | null> | null>(null);
+
   const ensureSession = useCallback(async (): Promise<number | null> => {
     if (activeSessionId) return activeSessionId;
     if (!modelImageUrl) return null;
+    // Return existing in-flight promise to prevent race
+    if (sessionCreatingRef.current) return sessionCreatingRef.current;
 
-    try {
-      const result = await createSessionMutation.mutateAsync({
-        modelId: modelId ?? undefined,
-        modelImageUrl,
+    sessionCreatingRef.current = createSessionMutation
+      .mutateAsync({ modelId: modelId ?? undefined, modelImageUrl })
+      .then((result) => {
+        setActiveSessionId(result.sessionId);
+        return result.sessionId;
+      })
+      .catch(() => {
+        toast.error("Failed to create wardrobe session");
+        return null;
+      })
+      .finally(() => {
+        sessionCreatingRef.current = null;
       });
-      setActiveSessionId(result.sessionId);
-      return result.sessionId;
-    } catch {
-      toast.error("Failed to create wardrobe session");
-      return null;
-    }
+
+    return sessionCreatingRef.current;
   }, [activeSessionId, modelImageUrl, modelId, createSessionMutation, setActiveSessionId]);
 
   // ── Full VTO Generation ────────────────────────────────────
 
   const generateVTO = useCallback(async (isRetry = false) => {
+    if (useWardrobeStore.getState().isGenerating && !isRetry) return; // guard #4
     if (!modelImageUrl) {
       toast.error("No model image available for VTO");
       return;
@@ -284,6 +296,7 @@ export function useWardrobeGeneration({
   // ── Incremental Composite ──────────────────────────────────
 
   const generateIncremental = useCallback(async () => {
+    if (useWardrobeStore.getState().isGenerating) return; // guard #4
     const currentResult = currentVTOResultFn();
     if (!currentResult || !modelImageUrl) {
       return generateVTO();

@@ -134,6 +134,10 @@ export function useSessionRestore(isAuthenticated: boolean) {
       genStore.setCurrentModelId(model.id);
       genStore.setCurrentAssets(restoredAssets);
       genStore.pushHistory(restoredAssets);
+      // Fix #2: hydrate masterPrompt so MasterPromptPanel shows data after restore
+      if (model.masterPrompt) {
+        genStore.setCurrentMasterPrompt(model.masterPrompt);
+      }
     }
 
     // Restore active tool

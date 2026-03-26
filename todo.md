@@ -17,3 +17,10 @@
 - [x] Build ContinueSessionCard component for StudioLobby
 - [x] Wire ContinueSessionCard into StudioLobby with restore logic
 - [ ] Future: "Projects" feature — multi-model session switching (post-launch)
+- [x] Fix #1: VTO history wipe on session resume — useModelSetup clears history when modelImageUrl changes
+- [x] Fix #2: Missing masterPrompt in casting generation store on session restore
+- [x] Fix #3: ensureSession double-creation race — add mutex ref
+- [x] Fix #4: No isGenerating guard on generateVTO/generateIncremental — add early return
+- [x] Fix #5: overlayCache and selectionSnapshots not pruned/shifted on history truncation
+- [x] Fix #6: isGenerating is local state — move to Zustand store for cross-remount persistence
+- [x] Fix #7: DecompositionDrawer URL.createObjectURL never revoked

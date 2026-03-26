@@ -24,8 +24,12 @@ export function useModelSetup(modelImageUrl: string | null): void {
     if (modelImageUrl === prevUrlRef.current) return;
     prevUrlRef.current = modelImageUrl;
 
-    // Always clear state on model change
-    clearVTOHistory();
+    // Clear state on model change — but skip if VTO history already exists
+    // (session resume case: history was just hydrated, don't wipe it)
+    const hasHistory = useWardrobeStore.getState().vtoHistory.length > 0;
+    if (!hasHistory) {
+      clearVTOHistory();
+    }
     setTattooMap(null);
 
     // No API calls if model is cleared

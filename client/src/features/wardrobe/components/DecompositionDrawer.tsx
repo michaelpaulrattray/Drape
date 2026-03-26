@@ -48,9 +48,10 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
     }
   }, [open]);
 
-  // Reset state when closed
+  // Reset state when closed — revoke blob URL to prevent memory leak (fix #7)
   useEffect(() => {
     if (!open) {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
       setItems([]);
       setPreviewUrl(null);
       setSourceImageUrl(null);
@@ -58,6 +59,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
       setEditingId(null);
       setIsScanning(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const handleFileSelect = useCallback(
