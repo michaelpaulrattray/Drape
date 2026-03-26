@@ -163,10 +163,14 @@ export function ImageViewerPanel({
   }, [currentAssets.length, prefs.referenceImage, isReadOnly]);
 
   // ── Derive StudioCanvas props ──
-  // Status label — just tool name, spinner handles generating state
-  const statusLabel = 'Casting';
-  const statusColor = '#ccc'; // unused now but kept for interface
-  const statusGlow = undefined;
+  const viewName = VIEW_DISPLAY_NAMES[activeView] || activeView;
+  const statusLabel = genState.isGenerating
+    ? (genState.currentStep || 'Generating...')
+    : isReadOnly && hasResult
+      ? `${viewName} \u00b7 final`
+      : hasResult
+        ? `${viewName} \u00b7 v${historyIndex + 1}`
+        : 'Set up your model';
 
   // ── Top overlay: ViewTabs + Identity Warning ──
   const topOverlay = (
@@ -467,8 +471,6 @@ export function ImageViewerPanel({
       canUndo={!isReadOnly && canUndo()}
       canRedo={!isReadOnly && canRedo()}
       statusLabel={statusLabel}
-      statusColor={statusColor}
-      statusGlow={statusGlow}
       errorMessage={genState.error ? (
         genState.error.includes('safety') || genState.error.includes('Safety')
           ? 'Brief flagged by safety filter — try rephrasing.'

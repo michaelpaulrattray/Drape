@@ -134,16 +134,22 @@ export function WardrobeWorkspaceSection({
     [canGenerate, gen]
   );
 
-  // Derive contextual toolbar status from selected garment slots
-  const selectedSlotSummary = useMemo(() => {
+  // Derive contextual toolbar status from selected garments
+  const garmentSummary = useMemo(() => {
     const slotLabels: Record<string, string> = {
       full_look: 'Full Look', tops: 'Top', bottoms: 'Bottoms',
       shoes: 'Shoes', accessories: 'Acc',
     };
-    const types = new Set(
-      garments.filter((g) => selectedGarmentIds.has(g.id)).map((g) => g.slotType as string)
-    );
-    if (types.size === 0) return '';
+    const selected = garments.filter((g) => selectedGarmentIds.has(g.id));
+    if (selected.length === 0) return '';
+    // 1-2 garments: use short names for specificity
+    if (selected.length <= 2) {
+      return selected
+        .map((g) => g.shortName || slotLabels[g.slotType as string] || g.slotType)
+        .join(' + ');
+    }
+    // 3+: use slot type labels to keep it compact
+    const types = new Set(selected.map((g) => g.slotType as string));
     const ordered: string[] = [];
     for (const slot of ['full_look', 'tops', 'bottoms', 'shoes', 'accessories']) {
       if (types.has(slot)) ordered.push(slotLabels[slot] || slot);
@@ -152,16 +158,12 @@ export function WardrobeWorkspaceSection({
   }, [garments, selectedGarmentIds]);
 
   const statusLabel = gen.isGenerating
-    ? (gen.generatingMessage || 'Processing...')
-    : gen.cooldownSeconds > 0
-      ? `Rate limited \u00b7 ${gen.cooldownSeconds}s`
-      : hasResult && selectedSlotSummary
-        ? `${selectedSlotSummary} \u00b7 v${gen.historyIndex + 1}`
-        : selectedSlotSummary
-          ? selectedSlotSummary
-          : 'Wardrobe';
-  const statusColor = gen.isGenerating ? '#e8a83e' : hasResult ? '#5cad5c' : '#ccc';
-  const statusGlow = gen.isGenerating ? '0 0 6px rgba(232,168,62,0.4)' : undefined;
+    ? (gen.generatingMessage || 'Dressing your model...')
+    : hasResult && garmentSummary
+      ? `${garmentSummary} \u00b7 v${gen.historyIndex + 1}`
+      : garmentSummary
+        ? garmentSummary
+        : 'Select garments to begin';
 
   // Compare URL: show previous VTO result (or original model if on first VTO)
   const compareUrl = (() => {
@@ -196,8 +198,6 @@ export function WardrobeWorkspaceSection({
         <StudioCanvas
           displayUrl={gen.currentResult || modelImageUrl}
           statusLabel={statusLabel}
-          statusColor={statusColor}
-          statusGlow={statusGlow}
           isGenerating={gen.isGenerating}
           hasResult={hasResult}
           emptyState={<WardrobeEmptyState />}

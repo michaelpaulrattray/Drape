@@ -39,3 +39,8 @@
 - [x] Nice-to-have: Smart decomposition for non-full-look uploads — upload to S3, detect garments, open drawer if >2 matching items found in target category
 - [x] Disable generate button when any selected garment has status 'processing' — add hasProcessingSelected guard + visual disable
 - [x] Replace generic toolbar status text with contextual garment slot summary (e.g. 'Top + Bottoms · v3')
+- [x] Remove rate limit text and status dot lights from toolbar — too clunky/breaks immersion
+- [x] Improve default state text (not just 'Wardrobe'/'Casting' — user already knows the tool)
+- [x] Show garment short names when 1-2 items selected (e.g. 'White Tee + Dark Jeans · v2')
+- [x] Add fade/slide transition animation when toolbar status text changes
+- [x] Apply same contextual status pattern to Casting Studio toolbar

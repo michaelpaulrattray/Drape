@@ -49,11 +49,11 @@ export interface StudioCanvasProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  /** Text shown in the status pill, e.g. "Dressed · v1" or "Headshot · v2" */
+  /** Text shown in the status pill, e.g. "White Tee + Jeans · v2" or "Headshot · v2" */
   statusLabel: string;
-  /** Dot color: green for result, amber for generating, grey for idle */
-  statusColor: string;
-  /** Optional glow on the status dot */
+  /** @deprecated — kept for interface compat, no longer rendered */
+  statusColor?: string;
+  /** @deprecated — kept for interface compat, no longer rendered */
   statusGlow?: string;
 
   // ── Error ──
@@ -127,8 +127,6 @@ export function StudioCanvas({
   canUndo,
   canRedo,
   statusLabel,
-  statusColor,
-  statusGlow,
   errorMessage,
   onClearError,
   onRetry,
@@ -272,15 +270,24 @@ export function StudioCanvas({
 
           <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
 
-          {/* Status label */}
-          <div className="flex items-center gap-1.5 px-2.5">
+          {/* Status label with fade transition */}
+          <div className="flex items-center gap-1.5 px-2.5 relative" style={{ minWidth: 60, height: 20, overflow: 'hidden' }}>
             {isGenerating && (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ color: '#999' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ color: '#999', flexShrink: 0 }}>
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
             )}
-            <span style={{ fontSize: 10, fontWeight: isGenerating ? 400 : 500, color: isGenerating ? '#aaa' : '#888', transition: 'all 0.2s' }}>
+            <span
+              key={isComparing ? '__comparing__' : statusLabel}
+              className="studio-status-fade-in"
+              style={{
+                fontSize: 10,
+                fontWeight: isGenerating ? 400 : 500,
+                color: isGenerating ? '#aaa' : '#888',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {isComparing ? "Comparing" : statusLabel}
             </span>
           </div>

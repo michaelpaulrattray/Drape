@@ -166,6 +166,29 @@
 }
 
 /* ============================================
+ * STUDIO TOOLBAR STATUS TRANSITION
+ * ============================================ */
+
+/**
+ * Subtle fade + slide for toolbar status text changes.
+ * Applied via key= on the <span> so React remounts on text change.
+ */
+@keyframes studio-status-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.studio-status-fade-in {
+  animation: studio-status-fade 250ms ease-out forwards;
+}
+
+/* ============================================
  * SPIN ANIMATIONS
  * ============================================ */
 
