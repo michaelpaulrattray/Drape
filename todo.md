@@ -133,3 +133,6 @@
 - [x] Bug: Disabled tools in ToolRail show not-allowed cursor (red circle with line) — breaks immersion, should use default cursor
 - [x] Add subtle unlock glow animation to ToolRail when tools become available (e.g. after casting)
 - [~] Match garment digitization prompt background to rack card color (#f0ebe3) — declined by user
+- [x] Remove Resume buttons from compact session cards — clicking the card itself navigates, button is redundant
+- [x] Move trash icon to end of compact session card — more room now that Resume button is removed
+- [x] Fix draft cast Resume button hover state — no visual feedback on hover

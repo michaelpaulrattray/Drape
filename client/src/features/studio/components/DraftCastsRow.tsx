@@ -133,10 +133,9 @@ export function DraftCastsRow({ drafts, onResume, onDelete, isDeletingId }: Draf
                   style={{
                     fontSize: 10,
                     fontWeight: 600,
-                    color: '#1a1a1a',
-                    background: '#f5f3ef',
-                    transition: 'background 0.15s ease',
-                    ...(isHovered ? { background: '#ebe8e2' } : {}),
+                    color: isHovered ? '#fff' : '#1a1a1a',
+                    background: isHovered ? '#1a1a1a' : '#f5f3ef',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   Resume

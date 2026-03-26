@@ -9,6 +9,7 @@
  */
 import { useState, useCallback } from 'react';
 import { Play, Clock, Layers } from 'lucide-react';
+// Play used in FeaturedCard + section header, Clock in FeaturedCard, Layers in both
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { DeleteOverlayButton } from './DeleteOverlayButton';
@@ -212,22 +213,10 @@ function CompactCard({ session, onContinue, onDelete }: CardProps) {
           </span>
           <DeleteOverlayButton
             onClick={handleDelete}
-            size={20}
+            size={18}
             variant="inline"
             title="Remove session"
           />
-          <div
-            className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full"
-            style={{
-              background: isHovered ? '#1a1a1a' : '#f5f3ef',
-              color: isHovered ? '#fff' : '#999',
-              fontSize: 9,
-              fontWeight: 600,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Play className="w-2 h-2" />Resume
-          </div>
         </div>
       </div>
     </button>
