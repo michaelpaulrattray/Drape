@@ -177,23 +177,7 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
                 />
               )}
 
-              {/* Hover action hint */}
-              <div
-                className="absolute inset-0 flex items-center justify-center transition-opacity duration-200"
-                style={{ opacity: isHovered ? 1 : 0 }}
-              >
-                <span
-                  className="px-3 py-1.5 rounded-full backdrop-blur-sm"
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: '#fff',
-                    background: 'rgba(0,0,0,0.5)',
-                  }}
-                >
-                  Load Model
-                </span>
-              </div>
+
             </div>
           );
         })}

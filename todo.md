@@ -136,3 +136,4 @@
 - [x] Remove Resume buttons from compact session cards — clicking the card itself navigates, button is redundant
 - [x] Move trash icon to end of compact session card — more room now that Resume button is removed
 - [x] Fix draft cast Resume button hover state — no visual feedback on hover
+- [x] Remove "Load Model" hover overlay text from MY MODELS cards — click behavior is implied
