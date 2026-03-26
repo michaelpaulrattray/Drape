@@ -41,19 +41,50 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
   const uploadMutation = trpc.wardrobe.model.upload.useMutation();
   const utils = trpc.useUtils();
 
-  // Delete model/draft mutation
+  // Delete model/draft mutation — optimistic removal for instant feel
   const [deletingModelId, setDeletingModelId] = useState<number | null>(null);
   const deleteModelMutation = trpc.models.delete.useMutation({
+    onMutate: async ({ modelId }) => {
+      // Cancel in-flight queries to avoid overwriting optimistic update
+      await utils.wardrobe.model.listMinted.cancel();
+      await utils.wardrobe.model.listDrafts.cancel();
+      await utils.wardrobe.sessions.getRecent.cancel();
+
+      // Snapshot previous data for rollback
+      const prevMinted = utils.wardrobe.model.listMinted.getData();
+      const prevDrafts = utils.wardrobe.model.listDrafts.getData();
+      const prevSessions = utils.wardrobe.sessions.getRecent.getData();
+
+      // Optimistic: remove from all caches immediately
+      utils.wardrobe.model.listMinted.setData(undefined, (old) =>
+        old ? old.filter((m: { id: number }) => m.id !== modelId) : [],
+      );
+      utils.wardrobe.model.listDrafts.setData(undefined, (old) =>
+        old ? old.filter((m: { id: number }) => m.id !== modelId) : [],
+      );
+      utils.wardrobe.sessions.getRecent.setData(undefined, (old) =>
+        old ? old.filter((s: { modelId: number | null }) => s.modelId !== modelId) : [],
+      );
+
+      return { prevMinted, prevDrafts, prevSessions };
+    },
+    onError: (err, _vars, ctx) => {
+      // Rollback on failure
+      if (ctx?.prevMinted) utils.wardrobe.model.listMinted.setData(undefined, ctx.prevMinted);
+      if (ctx?.prevDrafts) utils.wardrobe.model.listDrafts.setData(undefined, ctx.prevDrafts);
+      if (ctx?.prevSessions) utils.wardrobe.sessions.getRecent.setData(undefined, ctx.prevSessions);
+      toast.error(err.message || 'Failed to delete model');
+      setDeletingModelId(null);
+    },
     onSuccess: () => {
-      utils.wardrobe.model.listMinted.invalidate();
-      utils.wardrobe.model.listDrafts.invalidate();
-      utils.wardrobe.sessions.getRecent.invalidate();
       toast.success('Model deleted');
       setDeletingModelId(null);
     },
-    onError: (err) => {
-      toast.error(err.message || 'Failed to delete model');
-      setDeletingModelId(null);
+    onSettled: () => {
+      // Refetch to ensure consistency with server
+      utils.wardrobe.model.listMinted.invalidate();
+      utils.wardrobe.model.listDrafts.invalidate();
+      utils.wardrobe.sessions.getRecent.invalidate();
     },
   });
 

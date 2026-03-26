@@ -137,3 +137,4 @@
 - [x] Move trash icon to end of compact session card — more room now that Resume button is removed
 - [x] Fix draft cast Resume button hover state — no visual feedback on hover
 - [x] Remove "Load Model" hover overlay text from MY MODELS cards — click behavior is implied
+- [x] Bug: Delete operations (sessions, models, drafts) have noticeable UI delay — should feel instant with optimistic updates
