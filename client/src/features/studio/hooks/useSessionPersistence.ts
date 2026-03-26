@@ -140,8 +140,8 @@ export function useSessionRestore(isAuthenticated: boolean) {
       }
     }
 
-    // Restore active tool
-    setActiveTool(session.activeTool);
+    // Do NOT restore activeTool — user should always land in lobby
+    // and choose to resume from the Recent Sessions list.
   }, [isAuthenticated, modelQuery.data, setCanvas, setActiveTool]);
 
   return { isRestoring: modelQuery.isLoading && readPersistedSession() !== null };

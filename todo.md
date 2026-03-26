@@ -97,3 +97,4 @@
 - [x] UI: Change 'Minted' label to 'Casted' in export panel
 - [x] UI: Cleaner/less cramped identity attributes layout in export panel
 - [x] Data: Session look count should reflect saved gallery looks, not VTO history iterations
+- [x] Bug: Studio still restores last tool (e.g. export) instead of lobby when navigating from dashboard
