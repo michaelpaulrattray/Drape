@@ -1,7 +1,7 @@
 /**
  * ExportPanel — Right-side panel for the Export Pack tool.
  *
- * Shows model identity card, view gallery with individual downloads,
+ * Shows model identity card, view gallery, saved wardrobe looks gallery,
  * mint status, and full pack / PDF download actions.
  *
  * Matches the warm minimalist design language (cream/obsidian/stone).
@@ -13,10 +13,11 @@ import {
   Package,
   Shield,
   Loader2,
-  Check,
   Image as ImageIcon,
+  Bookmark,
+  Trash2,
 } from "lucide-react";
-import { useExportPack, type ExportStep } from "./useExportPack";
+import { useExportPack, type ExportStep, type SavedLook } from "./useExportPack";
 import type { GeneratedAsset } from "@/features/casting/constants";
 
 interface ExportPanelProps {
@@ -41,6 +42,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
     isMinted,
     agencyId,
     viewAssets,
+    savedLooks,
     preferences,
     isLoading,
     step,
@@ -48,19 +50,19 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
     isExporting,
     mintModel,
     downloadImage,
+    downloadLookImage,
     downloadPdf,
     downloadZip,
+    deleteSavedLook,
   } = useExportPack({ modelId, assets });
 
   const [hoveredView, setHoveredView] = useState<string | null>(null);
+  const [hoveredLook, setHoveredLook] = useState<number | null>(null);
 
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2
-          className="w-5 h-5 animate-spin"
-          style={{ color: "#b8b3a8" }}
-        />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#b8b3a8" }} />
       </div>
     );
   }
@@ -71,9 +73,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
         <div className="text-center" style={{ color: "#999" }}>
           <Package className="w-8 h-8 mx-auto mb-3" style={{ color: "#ccc" }} />
           <p style={{ fontSize: 12, fontWeight: 500 }}>No model loaded</p>
-          <p style={{ fontSize: 11, marginTop: 4 }}>
-            Cast and generate views first
-          </p>
+          <p style={{ fontSize: 11, marginTop: 4 }}>Cast and generate views first</p>
         </div>
       </div>
     );
@@ -82,117 +82,73 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div
-        className="flex-shrink-0 px-5 pt-5 pb-3"
-        style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}
-      >
+      <div className="flex-shrink-0 px-5 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
         <div className="flex items-center justify-between mb-1">
-          <span
-            style={{
-              fontSize: 9,
-              fontWeight: 600,
-              color: "#b8b3a8",
-              letterSpacing: "0.08em",
-            }}
-          >
+          <span style={{ fontSize: 9, fontWeight: 600, color: "#b8b3a8", letterSpacing: "0.08em" }}>
             EXPORT PACK
           </span>
           {isMinted && (
             <span
               className="flex items-center gap-1 px-2 py-0.5 rounded-full"
-              style={{
-                fontSize: 9,
-                fontWeight: 600,
-                color: "#1a1a1a",
-                background: "#eae7e1",
-              }}
+              style={{ fontSize: 9, fontWeight: 600, color: "#1a1a1a", background: "#eae7e1" }}
             >
               <Shield className="w-2.5 h-2.5" />
               MINTED
             </span>
           )}
         </div>
-        <p
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: "#1a1a1a",
-            marginBottom: 2,
-          }}
-        >
+        <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 2 }}>
           {modelName}
         </p>
         {agencyId && (
-          <p style={{ fontSize: 10, color: "#b8b3a8", fontFamily: "monospace" }}>
-            {agencyId}
-          </p>
+          <p style={{ fontSize: 10, color: "#b8b3a8", fontFamily: "monospace" }}>{agencyId}</p>
         )}
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-5 py-4" style={{ gap: 20 }}>
+      <div className="flex-1 overflow-y-auto px-5 py-4">
         {/* ── View Gallery ────────────────────────────────── */}
         <section className="mb-5">
           <SectionLabel icon={ImageIcon} label="VIEWS" count={viewAssets.length} />
           <div className="grid grid-cols-2 gap-2 mt-2">
             {viewAssets.map((asset) => (
-              <div
+              <ViewThumbnail
                 key={asset.viewType}
-                className="relative rounded-xl overflow-hidden cursor-pointer group"
-                style={{
-                  background: "#f5f3ef",
-                  aspectRatio: "1",
-                }}
+                asset={asset}
+                isHovered={hoveredView === asset.viewType}
                 onMouseEnter={() => setHoveredView(asset.viewType)}
                 onMouseLeave={() => setHoveredView(null)}
-                onClick={() => downloadImage(asset)}
-              >
-                <img
-                  src={asset.storageUrl}
-                  alt={asset.label}
-                  className="w-full h-full object-cover"
-                />
-                {/* Hover overlay */}
-                <div
-                  className="absolute inset-0 flex items-center justify-center transition-opacity duration-200"
-                  style={{
-                    background: "rgba(26,26,26,0.4)",
-                    opacity: hoveredView === asset.viewType ? 1 : 0,
-                  }}
-                >
-                  <Download className="w-4 h-4" style={{ color: "#fff" }} />
-                </div>
-                {/* Label */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 px-2 py-1.5"
-                  style={{
-                    background:
-                      "linear-gradient(to top, rgba(0,0,0,0.5), transparent)",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 500,
-                      color: "#fff",
-                    }}
-                  >
-                    {asset.label}
-                  </span>
-                </div>
-              </div>
+                onDownload={() => downloadImage(asset)}
+              />
             ))}
           </div>
         </section>
+
+        {/* ── Saved Looks Gallery ─────────────────────────── */}
+        {savedLooks.length > 0 && (
+          <section className="mb-5">
+            <SectionLabel icon={Bookmark} label="LOOKS" count={savedLooks.length} />
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {savedLooks.map((look) => (
+                <LookThumbnail
+                  key={look.id}
+                  look={look}
+                  isHovered={hoveredLook === look.id}
+                  onMouseEnter={() => setHoveredLook(look.id)}
+                  onMouseLeave={() => setHoveredLook(null)}
+                  onDownload={() => downloadLookImage(look)}
+                  onDelete={() => deleteSavedLook(look.id)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ── Model Attributes ────────────────────────────── */}
         {preferences && (
           <section className="mb-5">
             <SectionLabel icon={Shield} label="IDENTITY" />
-            <div
-              className="mt-2 rounded-xl p-3"
-              style={{ background: "#f5f3ef" }}
-            >
+            <div className="mt-2 rounded-xl p-3" style={{ background: "#f5f3ef" }}>
               <AttributeGrid preferences={preferences} />
             </div>
           </section>
@@ -201,29 +157,17 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
         {/* ── Export Progress ─────────────────────────────── */}
         {isExporting && (
           <section className="mb-5">
-            <div
-              className="rounded-xl p-3"
-              style={{ background: "#f5f3ef" }}
-            >
+            <div className="rounded-xl p-3" style={{ background: "#f5f3ef" }}>
               <div className="flex items-center gap-2 mb-2">
-                <Loader2
-                  className="w-3.5 h-3.5 animate-spin"
-                  style={{ color: "#1a1a1a" }}
-                />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "#1a1a1a" }} />
                 <span style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a" }}>
                   {STEP_LABELS[step]}
                 </span>
               </div>
-              <div
-                className="w-full rounded-full overflow-hidden"
-                style={{ height: 3, background: "rgba(0,0,0,0.06)" }}
-              >
+              <div className="w-full rounded-full overflow-hidden" style={{ height: 3, background: "rgba(0,0,0,0.06)" }}>
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${progress}%`,
-                    background: "#1a1a1a",
-                  }}
+                  style={{ width: `${progress}%`, background: "#1a1a1a" }}
                 />
               </div>
             </div>
@@ -232,95 +176,44 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
       </div>
 
       {/* ── Footer Actions ────────────────────────────────── */}
-      <div
-        className="flex-shrink-0 px-5 py-4"
-        style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}
-      >
-        {/* Mint button — shown only if not yet minted */}
+      <div className="flex-shrink-0 px-5 py-4" style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
         {!isMinted && (
-          <button
+          <ActionButton
             onClick={mintModel}
             disabled={isExporting}
-            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 mb-2 transition-all duration-200"
-            style={{
-              background: "transparent",
-              border: "1.5px solid rgba(0,0,0,0.1)",
-              color: "#1a1a1a",
-              fontSize: 11,
-              fontWeight: 600,
-              opacity: isExporting ? 0.5 : 1,
-              cursor: isExporting ? "not-allowed" : "pointer",
-            }}
-            onMouseEnter={(e) => {
-              if (!isExporting) e.currentTarget.style.borderColor = "rgba(0,0,0,0.25)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(0,0,0,0.1)";
-            }}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            Mint Identity
-          </button>
+            variant="outline"
+            icon={Shield}
+            label="Mint Identity"
+            className="mb-2"
+          />
         )}
 
-        {/* PDF download */}
-        <button
+        <ActionButton
           onClick={downloadPdf}
           disabled={isExporting}
-          className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 mb-2 transition-all duration-200"
-          style={{
-            background: "transparent",
-            border: "1.5px solid rgba(0,0,0,0.1)",
-            color: "#1a1a1a",
-            fontSize: 11,
-            fontWeight: 600,
-            opacity: isExporting ? 0.5 : 1,
-            cursor: isExporting ? "not-allowed" : "pointer",
-          }}
-          onMouseEnter={(e) => {
-            if (!isExporting) e.currentTarget.style.borderColor = "rgba(0,0,0,0.25)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "rgba(0,0,0,0.1)";
-          }}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          Identity Document
-        </button>
+          variant="outline"
+          icon={FileText}
+          label="Identity Document"
+          className="mb-2"
+        />
 
-        {/* Full ZIP pack */}
-        <button
+        <ActionButton
           onClick={downloadZip}
           disabled={isExporting}
-          className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 transition-all duration-200"
-          style={{
-            background: "#1a1a1a",
-            color: "#fff",
-            fontSize: 11,
-            fontWeight: 600,
-            opacity: isExporting ? 0.7 : 1,
-            cursor: isExporting ? "not-allowed" : "pointer",
-          }}
-          onMouseEnter={(e) => {
-            if (!isExporting) e.currentTarget.style.background = "#333";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#1a1a1a";
-          }}
-        >
-          {isExporting ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Package className="w-3.5 h-3.5" />
-          )}
-          Download Full Pack (2K)
-        </button>
+          variant="primary"
+          icon={isExporting ? Loader2 : Package}
+          label={
+            savedLooks.length > 0
+              ? `Download Full Pack (2K) · ${viewAssets.length + savedLooks.length} files`
+              : "Download Full Pack (2K)"
+          }
+          iconSpin={isExporting}
+        />
 
-        <p
-          className="text-center mt-2"
-          style={{ fontSize: 9, color: "#b8b3a8" }}
-        >
-          All exports rendered at 2K resolution
+        <p className="text-center mt-2" style={{ fontSize: 9, color: "#b8b3a8" }}>
+          {savedLooks.length > 0
+            ? `${viewAssets.length} views + ${savedLooks.length} looks · 2K resolution`
+            : "All exports rendered at 2K resolution"}
         </p>
       </div>
     </div>
@@ -341,25 +234,13 @@ function SectionLabel({
   return (
     <div className="flex items-center gap-1.5">
       <Icon className="w-3 h-3" style={{ color: "#b8b3a8" }} />
-      <span
-        style={{
-          fontSize: 9,
-          fontWeight: 600,
-          color: "#b8b3a8",
-          letterSpacing: "0.08em",
-        }}
-      >
+      <span style={{ fontSize: 9, fontWeight: 600, color: "#b8b3a8", letterSpacing: "0.08em" }}>
         {label}
       </span>
       {count !== undefined && (
         <span
           className="ml-auto px-1.5 py-0.5 rounded-full"
-          style={{
-            fontSize: 8,
-            fontWeight: 600,
-            color: "#999",
-            background: "rgba(0,0,0,0.04)",
-          }}
+          style={{ fontSize: 8, fontWeight: 600, color: "#999", background: "rgba(0,0,0,0.04)" }}
         >
           {count}
         </span>
@@ -368,19 +249,155 @@ function SectionLabel({
   );
 }
 
-function AttributeGrid({
-  preferences,
+function ViewThumbnail({
+  asset,
+  isHovered,
+  onMouseEnter,
+  onMouseLeave,
+  onDownload,
 }: {
-  preferences: Record<string, string | undefined>;
+  asset: GeneratedAsset & { label: string };
+  isHovered: boolean;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onDownload: () => void;
 }) {
+  return (
+    <div
+      className="relative rounded-xl overflow-hidden cursor-pointer group"
+      style={{ background: "#f5f3ef", aspectRatio: "1" }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onDownload}
+    >
+      <img src={asset.storageUrl} alt={asset.label} className="w-full h-full object-cover" />
+      <div
+        className="absolute inset-0 flex items-center justify-center transition-opacity duration-200"
+        style={{ background: "rgba(26,26,26,0.4)", opacity: isHovered ? 1 : 0 }}
+      >
+        <Download className="w-4 h-4" style={{ color: "#fff" }} />
+      </div>
+      <div
+        className="absolute bottom-0 left-0 right-0 px-2 py-1.5"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}
+      >
+        <span style={{ fontSize: 9, fontWeight: 500, color: "#fff" }}>{asset.label}</span>
+      </div>
+    </div>
+  );
+}
+
+function LookThumbnail({
+  look,
+  isHovered,
+  onMouseEnter,
+  onMouseLeave,
+  onDownload,
+  onDelete,
+}: {
+  look: SavedLook;
+  isHovered: boolean;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
+}) {
+  const displayName = look.name || `Look ${look.id}`;
+
+  return (
+    <div
+      className="relative rounded-xl overflow-hidden cursor-pointer group"
+      style={{ background: "#f5f3ef", aspectRatio: "1" }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onDownload}
+    >
+      <img src={look.imageUrl} alt={displayName} className="w-full h-full object-cover" />
+      {/* Hover overlay with download + delete */}
+      <div
+        className="absolute inset-0 flex items-center justify-center gap-3 transition-opacity duration-200"
+        style={{ background: "rgba(26,26,26,0.4)", opacity: isHovered ? 1 : 0 }}
+      >
+        <Download className="w-4 h-4" style={{ color: "#fff" }} />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="p-1 rounded-full transition-colors"
+          style={{ background: "rgba(255,255,255,0.2)" }}
+          title="Remove look"
+        >
+          <Trash2 className="w-3.5 h-3.5" style={{ color: "#fff" }} />
+        </button>
+      </div>
+      {/* Label */}
+      <div
+        className="absolute bottom-0 left-0 right-0 px-2 py-1.5"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}
+      >
+        <span style={{ fontSize: 9, fontWeight: 500, color: "#fff" }}>{displayName}</span>
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({
+  onClick,
+  disabled,
+  variant,
+  icon: Icon,
+  label,
+  iconSpin,
+  className = "",
+}: {
+  onClick: () => void;
+  disabled: boolean;
+  variant: "outline" | "primary";
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  label: string;
+  iconSpin?: boolean;
+  className?: string;
+}) {
+  const isPrimary = variant === "primary";
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full flex items-center justify-center gap-2 rounded-xl py-2.5 transition-all duration-200 ${className}`}
+      style={{
+        background: isPrimary ? "#1a1a1a" : "transparent",
+        border: isPrimary ? "none" : "1.5px solid rgba(0,0,0,0.1)",
+        color: isPrimary ? "#fff" : "#1a1a1a",
+        fontSize: 11,
+        fontWeight: 600,
+        opacity: disabled ? (isPrimary ? 0.7 : 0.5) : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.background = isPrimary ? "#333" : "rgba(0,0,0,0.02)";
+          if (!isPrimary) e.currentTarget.style.borderColor = "rgba(0,0,0,0.25)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = isPrimary ? "#1a1a1a" : "transparent";
+        if (!isPrimary) e.currentTarget.style.borderColor = "rgba(0,0,0,0.1)";
+      }}
+    >
+      <Icon className={`w-3.5 h-3.5 ${iconSpin ? "animate-spin" : ""}`} />
+      {label}
+    </button>
+  );
+}
+
+function AttributeGrid({ preferences }: { preferences: Record<string, string | undefined> }) {
   const entries = Object.entries(preferences).filter(
     ([, v]) => v !== undefined && v !== null && v !== "",
   );
 
   if (entries.length === 0) {
-    return (
-      <p style={{ fontSize: 10, color: "#999" }}>No attributes recorded</p>
-    );
+    return <p style={{ fontSize: 10, color: "#999" }}>No attributes recorded</p>;
   }
 
   return (
@@ -398,14 +415,7 @@ function AttributeGrid({
           >
             {formatLabel(key)}
           </span>
-          <p
-            style={{
-              fontSize: 10,
-              color: "#1a1a1a",
-              fontWeight: 500,
-              lineHeight: 1.3,
-            }}
-          >
+          <p style={{ fontSize: 10, color: "#1a1a1a", fontWeight: 500, lineHeight: 1.3 }}>
             {String(value)}
           </p>
         </div>

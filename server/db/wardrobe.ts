@@ -7,10 +7,12 @@ import {
   wardrobeGarments,
   wardrobeOutfits,
   wardrobeSessions,
+  wardrobeLooks,
   models,
   type InsertWardrobeGarment,
   type InsertWardrobeOutfit,
   type InsertWardrobeSession,
+  type InsertWardrobeLook,
 } from "../../drizzle/schema";
 
 // ── Garments ───────────────────────────────────────────────────────────────
@@ -266,6 +268,62 @@ function formatSession() {
     tattooMapData: unknown;
     styleNotes: Record<string, string> | null;
   };
+}
+
+// ── Looks (curated VTO results) ───────────────────────────────────────
+
+export async function saveLook(data: InsertWardrobeLook) {
+  const db = (await getDb())!;
+  const [result] = await db.insert(wardrobeLooks).values(data).$returningId();
+  return result.id;
+}
+
+export async function getUserLooksByModel(userId: number, modelId: number) {
+  const db = (await getDb())!;
+  return db
+    .select()
+    .from(wardrobeLooks)
+    .where(
+      and(
+        eq(wardrobeLooks.userId, userId),
+        eq(wardrobeLooks.modelId, modelId),
+      ),
+    )
+    .orderBy(desc(wardrobeLooks.createdAt));
+}
+
+export async function getUserLooks(userId: number) {
+  const db = (await getDb())!;
+  return db
+    .select()
+    .from(wardrobeLooks)
+    .where(eq(wardrobeLooks.userId, userId))
+    .orderBy(desc(wardrobeLooks.createdAt));
+}
+
+export async function renameLook(lookId: number, userId: number, name: string) {
+  const db = (await getDb())!;
+  await db
+    .update(wardrobeLooks)
+    .set({ name })
+    .where(
+      and(
+        eq(wardrobeLooks.id, lookId),
+        eq(wardrobeLooks.userId, userId),
+      ),
+    );
+}
+
+export async function deleteLook(lookId: number, userId: number) {
+  const db = (await getDb())!;
+  await db
+    .delete(wardrobeLooks)
+    .where(
+      and(
+        eq(wardrobeLooks.id, lookId),
+        eq(wardrobeLooks.userId, userId),
+      ),
+    );
 }
 
 /**

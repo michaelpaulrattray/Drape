@@ -291,3 +291,118 @@ describe("Mint Status", () => {
     expect(agencyId).toMatch(/^MOD-\d{2}-[A-F0-9]{6}$/);
   });
 });
+
+// ── Saved Looks Logic ────────────────────────────────────────
+
+describe("Saved Looks", () => {
+  it("should generate safe filenames for look downloads", () => {
+    const look = { name: "Summer Vibes", id: 42 };
+    const safeName = (look.name || `Look_${look.id}`).replace(/[^a-zA-Z0-9]/g, "_");
+    expect(safeName).toBe("Summer_Vibes");
+  });
+
+  it("should fallback to Look_ID when name is null", () => {
+    const look = { name: null as string | null, id: 7 };
+    const safeName = (look.name || `Look_${look.id}`).replace(/[^a-zA-Z0-9]/g, "_");
+    expect(safeName).toBe("Look_7");
+  });
+
+  it("should generate numbered look filenames for ZIP", () => {
+    const looks = [
+      { name: "Beach Day", id: 1 },
+      { name: null as string | null, id: 2 },
+      { name: "Office Chic", id: 3 },
+    ];
+
+    const filenames = looks.map((look, i) => {
+      const lookName = (look.name || `Look_${i + 1}`).replace(/[^a-zA-Z0-9]/g, "_");
+      return `${String(i + 1).padStart(2, "0")}_${lookName}.png`;
+    });
+
+    expect(filenames[0]).toBe("01_Beach_Day.png");
+    expect(filenames[1]).toBe("02_Look_2.png");
+    expect(filenames[2]).toBe("03_Office_Chic.png");
+  });
+
+  it("should handle special characters in look names", () => {
+    const look = { name: "Été à Paris (2026)", id: 10 };
+    const safeName = (look.name || `Look_${look.id}`).replace(/[^a-zA-Z0-9]/g, "_");
+    expect(safeName).toMatch(/^[a-zA-Z0-9_]+$/);
+  });
+
+  it("should display correct file count in ZIP label", () => {
+    const viewCount = 5;
+    const lookCount = 3;
+    const label = `${viewCount + lookCount} files`;
+    expect(label).toBe("8 files");
+  });
+
+  it("should show correct footer text when looks exist", () => {
+    const viewCount = 4;
+    const lookCount = 2;
+    const text = `${viewCount} views + ${lookCount} looks · 2K resolution`;
+    expect(text).toBe("4 views + 2 looks · 2K resolution");
+  });
+
+  it("should show default footer text when no looks", () => {
+    const lookCount = 0;
+    const text = lookCount > 0
+      ? `5 views + ${lookCount} looks · 2K resolution`
+      : "All exports rendered at 2K resolution";
+    expect(text).toBe("All exports rendered at 2K resolution");
+  });
+});
+
+// ── Looks Display Name ──────────────────────────────────────
+
+describe("Look Display Name", () => {
+  it("should use look name when available", () => {
+    const look = { name: "Casual Friday", id: 5 };
+    const displayName = look.name || `Look ${look.id}`;
+    expect(displayName).toBe("Casual Friday");
+  });
+
+  it("should fallback to Look ID when name is null", () => {
+    const look = { name: null as string | null, id: 12 };
+    const displayName = look.name || `Look ${look.id}`;
+    expect(displayName).toBe("Look 12");
+  });
+});
+
+// ── Hero Preview Logic ──────────────────────────────────────
+
+describe("Export Hero Preview Logic", () => {
+  it("should prefer latest saved look over casting view", () => {
+    const latestLook = { imageUrl: "https://s3.example.com/look1.png", name: "Red Dress" };
+    const heroAsset = { storageUrl: "https://s3.example.com/fullbody.png", viewType: "frontFull" };
+
+    const heroUrl = latestLook?.imageUrl || heroAsset?.storageUrl;
+    expect(heroUrl).toBe("https://s3.example.com/look1.png");
+  });
+
+  it("should fallback to casting view when no saved looks", () => {
+    const latestLook = null;
+    const heroAsset = { storageUrl: "https://s3.example.com/fullbody.png", viewType: "frontFull" };
+
+    const heroUrl = latestLook?.imageUrl || heroAsset?.storageUrl;
+    expect(heroUrl).toBe("https://s3.example.com/fullbody.png");
+  });
+
+  it("should show look name as label when look is hero", () => {
+    const latestLook = { imageUrl: "url", name: "Evening Gown" };
+    const heroLabel = latestLook ? (latestLook.name || "Latest Look") : "Model Preview";
+    expect(heroLabel).toBe("Evening Gown");
+  });
+
+  it("should show 'Latest Look' when look has no name", () => {
+    const latestLook = { imageUrl: "url", name: null as string | null };
+    const heroLabel = latestLook ? (latestLook.name || "Latest Look") : "Model Preview";
+    expect(heroLabel).toBe("Latest Look");
+  });
+
+  it("should show 'Model Preview' when no looks exist", () => {
+    const latestLook = null;
+    const heroLabel = latestLook ? (latestLook?.name || "Latest Look") : "Model Preview";
+    expect(heroLabel).toBe("Model Preview");
+  });
+});

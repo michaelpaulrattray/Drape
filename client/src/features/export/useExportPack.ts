@@ -3,10 +3,11 @@
  *
  * Handles:
  *  - Fetching model data (name, agencyId, mint status, assets, preferences)
+ *  - Fetching saved wardrobe looks for the model
  *  - Minting (if not yet minted)
  *  - PDF identity document generation + download
- *  - ZIP pack generation (all views + PDF) + download
- *  - Individual image download
+ *  - ZIP pack generation (all views + looks + PDF) + download
+ *  - Individual image download (views and looks)
  *
  * All heavy lifting (PDF, proxy, upscale) runs through existing tRPC endpoints.
  */
@@ -51,6 +52,14 @@ export type ExportStep =
   | "compressing"
   | "done";
 
+export interface SavedLook {
+  id: number;
+  imageUrl: string;
+  name: string | null;
+  garmentIds: unknown;
+  createdAt: Date;
+}
+
 interface UseExportPackParams {
   modelId: number | null;
   assets: GeneratedAsset[];
@@ -66,11 +75,19 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     { enabled: !!modelId, staleTime: 30_000 },
   );
 
+  const looksQuery = trpc.wardrobe.looks.list.useQuery(
+    { modelId: modelId! },
+    { enabled: !!modelId, staleTime: 10_000 },
+  );
+
   // Mutations
   const mintMutation = trpc.generation.mint.useMutation();
   const generatePdfMutation = trpc.generation.generatePdf.useMutation();
   const upscaleMutation = trpc.generation.upscale.useMutation();
   const proxyImageMutation = trpc.generation.proxyImage.useMutation();
+  const deleteLookMutation = trpc.wardrobe.looks.delete.useMutation();
+  const renameLookMutation = trpc.wardrobe.looks.rename.useMutation();
+  const utils = trpc.useUtils();
 
   const model = modelQuery.data ?? null;
   const isMinted = !!model?.agencyId;
@@ -88,6 +105,17 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
         label: VIEW_LABELS[a.viewType] || a.viewType,
       }));
   }, [assets]);
+
+  /** Saved wardrobe looks */
+  const savedLooks: SavedLook[] = useMemo(() => {
+    return (looksQuery.data ?? []).map((look) => ({
+      id: look.id,
+      imageUrl: look.imageUrl,
+      name: look.name,
+      garmentIds: look.garmentIds,
+      createdAt: look.createdAt,
+    }));
+  }, [looksQuery.data]);
 
   /** Preferences extracted from technical schema */
   const preferences = useMemo(() => {
@@ -125,6 +153,48 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     }
   }, []);
 
+  // ── Download single look image ────────────────────────────
+  const downloadLookImage = useCallback(async (look: SavedLook) => {
+    try {
+      const res = await fetch(look.imageUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = (look.name || `Look_${look.id}`).replace(/[^a-zA-Z0-9]/g, "_");
+      a.download = `${safeName}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download look");
+    }
+  }, []);
+
+  // ── Delete a saved look ───────────────────────────────────
+  const deleteSavedLook = useCallback(async (lookId: number) => {
+    if (!modelId) return;
+    try {
+      await deleteLookMutation.mutateAsync({ lookId });
+      utils.wardrobe.looks.list.invalidate({ modelId });
+      toast.success("Look removed");
+    } catch {
+      toast.error("Failed to delete look");
+    }
+  }, [modelId, deleteLookMutation, utils]);
+
+  // ── Rename a saved look ───────────────────────────────────
+  const renameSavedLook = useCallback(async (lookId: number, name: string) => {
+    if (!modelId) return;
+    try {
+      await renameLookMutation.mutateAsync({ lookId, name });
+      utils.wardrobe.looks.list.invalidate({ modelId });
+    } catch {
+      toast.error("Failed to rename look");
+    }
+  }, [modelId, renameLookMutation, utils]);
+
   // ── Mint model ─────────────────────────────────────────────
   const mintModel = useCallback(async () => {
     if (!modelId) return;
@@ -146,7 +216,6 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     setStep("generating-pdf");
     setProgress(10);
     try {
-      // Proxy images for PDF
       const pdfImages: Record<string, string> = {};
       for (const asset of assets) {
         const key = VIEW_TO_PDF_KEY[asset.viewType];
@@ -200,10 +269,10 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
       setStep("upscaling");
       setProgress(5);
       const zip = new JSZip();
-      const total = assets.length + 1; // +1 for PDF
+      const totalItems = assets.length + savedLooks.length + 1; // views + looks + PDF
       let done = 0;
 
-      // Add images (upscaled to 2K)
+      // Add casting views (upscaled to 2K)
       for (const asset of assets) {
         const filename = VIEW_FILENAMES[asset.viewType] || `${asset.viewType}.png`;
         let imageUrl = asset.storageUrl;
@@ -228,7 +297,31 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
         } catch { /* skip */ }
 
         done++;
-        setProgress(Math.round((done / total) * 80));
+        setProgress(Math.round((done / totalItems) * 75));
+      }
+
+      // Add saved wardrobe looks (original resolution, in LOOKS/ subfolder)
+      if (savedLooks.length > 0) {
+        const looksFolder = zip.folder("LOOKS");
+        for (let i = 0; i < savedLooks.length; i++) {
+          const look = savedLooks[i];
+          const lookName = (look.name || `Look_${i + 1}`).replace(/[^a-zA-Z0-9]/g, "_");
+          const lookFilename = `${String(i + 1).padStart(2, "0")}_${lookName}.png`;
+
+          try {
+            const proxy = await proxyImageMutation.mutateAsync({ imageUrl: look.imageUrl });
+            if (proxy.success && proxy.base64) {
+              const b64 = proxy.base64.split(",")[1];
+              const bin = atob(b64);
+              const bytes = new Uint8Array(bin.length);
+              for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+              looksFolder!.file(lookFilename, bytes);
+            }
+          } catch { /* skip */ }
+
+          done++;
+          setProgress(Math.round((done / totalItems) * 75));
+        }
       }
 
       // Generate PDF
@@ -276,7 +369,7 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
       setStep("idle");
       setProgress(0);
     }
-  }, [modelId, assets, modelName, agencyId]);
+  }, [modelId, assets, savedLooks, modelName, agencyId]);
 
   return {
     // Data
@@ -285,6 +378,7 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     isMinted,
     agencyId,
     viewAssets,
+    savedLooks,
     preferences,
     isLoading: modelQuery.isLoading,
     // Export state
@@ -294,8 +388,11 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     // Actions
     mintModel,
     downloadImage,
+    downloadLookImage,
     downloadPdf,
     downloadZip,
+    deleteSavedLook,
+    renameSavedLook,
     refetch: modelQuery.refetch,
   };
 }

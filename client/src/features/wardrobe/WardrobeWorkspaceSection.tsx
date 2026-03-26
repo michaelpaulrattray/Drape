@@ -5,8 +5,9 @@
  * Renders the rack panel, canvas with overlays, layers panel, and
  * decomposition drawer.
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
 import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { StudioCanvas } from '@/features/studio/components/StudioCanvas';
@@ -99,6 +100,37 @@ export function WardrobeWorkspaceSection({
     },
     [gen, garments, selectedGarmentIds]
   );
+
+  // Save current VTO result as a curated look
+  const saveLookMutation = trpc.wardrobe.looks.save.useMutation();
+  const utils = trpc.useUtils();
+  const isSavingLook = saveLookMutation.isPending;
+  const lastSavedUrlRef = useRef<string | null>(null);
+
+  const handleSaveLook = useCallback(async () => {
+    const imageUrl = gen.currentResult;
+    if (!imageUrl || !modelId) return;
+    // Prevent double-saving the same result
+    if (lastSavedUrlRef.current === imageUrl) {
+      toast.info('This look is already saved');
+      return;
+    }
+    try {
+      const garmentIds = Array.from(selectedGarmentIds);
+      const sessionId = useWardrobeStore.getState().activeSessionId;
+      await saveLookMutation.mutateAsync({
+        modelId,
+        imageUrl,
+        garmentIds,
+        ...(sessionId ? { sessionId } : {}),
+      });
+      lastSavedUrlRef.current = imageUrl;
+      utils.wardrobe.looks.list.invalidate({ modelId });
+      toast.success('Look saved to gallery');
+    } catch {
+      toast.error('Failed to save look');
+    }
+  }, [gen.currentResult, modelId, selectedGarmentIds, saveLookMutation, utils]);
 
   // Download current VTO result image
   const handleDownloadResult = useCallback(async () => {
@@ -224,6 +256,8 @@ export function WardrobeWorkspaceSection({
               isGenerating={gen.isGenerating}
               controlsVisible={imageAreaHovered}
               onDownload={handleDownloadResult}
+              onSaveLook={modelId ? handleSaveLook : undefined}
+              isSavingLook={isSavingLook}
             />
           }
         />

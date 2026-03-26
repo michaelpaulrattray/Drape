@@ -20,7 +20,7 @@ import { WardrobeWorkspaceSection } from '@/features/wardrobe';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
 
 // Export tool imports
-import { ExportPanel } from '@/features/export';
+import { ExportPanel, ExportHeroPreview } from '@/features/export';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -458,28 +458,12 @@ export default function DrapeStudio() {
 
           {activeTool === 'export' && (
             <>
-              {/* Center — Model preview (largest view) */}
-              <div
-                className="flex-1 flex items-center justify-center p-6"
-                style={{
-                  opacity: transition.centerReady ? 1 : 0,
-                  transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-              >
-                {(() => {
-                  const heroAsset = currentAssets.find((a) => a.viewType === 'frontFull')
-                    || currentAssets.find((a) => a.viewType === 'frontClose');
-                  if (!heroAsset) return null;
-                  return (
-                    <img
-                      src={heroAsset.storageUrl}
-                      alt="Model preview"
-                      className="max-h-full max-w-full object-contain rounded-2xl"
-                      style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.08)' }}
-                    />
-                  );
-                })()}
-              </div>
+              {/* Center — Model preview (largest view or latest saved look) */}
+              <ExportHeroPreview
+                assets={currentAssets}
+                modelId={canvas.castModelId || currentModelId}
+                centerReady={transition.centerReady}
+              />
 
               {/* Right Panel — Export controls */}
               <AnimatedPanel

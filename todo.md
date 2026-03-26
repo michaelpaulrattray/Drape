@@ -83,3 +83,11 @@
 - [x] Build ExportPanel component — model card, view gallery, PDF download, mint status
 - [x] Wire ExportPanel into DrapeStudio replacing the "Coming soon" placeholder
 - [x] Write tests for export pack feature
+- [x] Add wardrobe_looks DB table (id, userId, sessionId, modelId, imageUrl, name, garmentIds, createdAt)
+- [x] Add DB helpers for looks CRUD (saveLook, getUserLooks, deleteLook, renameLook)
+- [x] Add backend endpoints: looks.save, looks.list, looks.delete, looks.rename
+- [x] Add "Save Look" button in wardrobe viewer (near existing download button)
+- [x] Extend ExportPanel with LOOKS gallery section (query by modelId)
+- [x] Extend useExportPack to include saved looks in ZIP under LOOKS/ subfolder
+- [x] Update center preview to show latest saved look as hero when looks exist
+- [x] Write tests for looks feature

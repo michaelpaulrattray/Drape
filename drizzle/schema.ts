@@ -687,3 +687,21 @@ export const wardrobeSessions = mysqlTable("wardrobe_sessions", {
 
 export type WardrobeSession = typeof wardrobeSessions.$inferSelect;
 export type InsertWardrobeSession = typeof wardrobeSessions.$inferInsert;
+
+// ── Wardrobe Looks (curated VTO results saved by the user) ──────────
+export const wardrobeLooks = mysqlTable("wardrobe_looks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  sessionId: int("sessionId"),                   // FK to wardrobe_sessions (optional — look persists if session deleted)
+  modelId: int("modelId").notNull(),             // FK to models table — required for export grouping
+  imageUrl: text("imageUrl").notNull(),           // S3 URL of the saved VTO result
+  name: varchar("name", { length: 100 }),         // Optional user-given name (defaults to "Look N")
+  garmentIds: json("garmentIds"),                 // number[] snapshot of garments worn at save time
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  index("idx_wardrobe_looks_user").on(table.userId),
+  index("idx_wardrobe_looks_model").on(table.modelId),
+]));
+
+export type WardrobeLook = typeof wardrobeLooks.$inferSelect;
+export type InsertWardrobeLook = typeof wardrobeLooks.$inferInsert;

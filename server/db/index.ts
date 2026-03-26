@@ -187,4 +187,9 @@ export {
   getLatestUserSession,
   getRecentUserSessions,
   capUserSessions,
+  saveLook,
+  getUserLooksByModel,
+  getUserLooks,
+  renameLook,
+  deleteLook,
 } from "./wardrobe";

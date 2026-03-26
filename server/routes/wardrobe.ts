@@ -24,6 +24,7 @@ import {
   createSession, getSessionById, getUserSessions, updateSession, deleteSession,
   getLatestUserSession, getRecentUserSessions, capUserSessions,
   createGeneration,
+  saveLook, getUserLooksByModel, renameLook, deleteLook,
 } from "../db";
 import { getUserMintedModelsWithThumbnail } from "../db/models";
 import { storagePut } from "../storage";
@@ -804,7 +805,61 @@ const modelRouter = router({
     }),
 });
 
-// ── Combined Wardrobe Router ───────────────────────────────────────────────
+// ── Looks Router (curated VTO results) ────────────────────────────────────────
+
+const looksRouter = router({
+  /** Save the current VTO result as a curated look */
+  save: protectedProcedure
+    .input(z.object({
+      sessionId: z.number().optional(),
+      modelId: z.number(),
+      imageUrl: z.string().url(),
+      name: z.string().max(100).optional(),
+      garmentIds: z.array(z.number()),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const lookId = await saveLook({
+        userId: ctx.user.id,
+        sessionId: input.sessionId ?? null,
+        modelId: input.modelId,
+        imageUrl: input.imageUrl,
+        name: input.name ?? null,
+        garmentIds: input.garmentIds,
+      });
+      log.info(`Look saved: id=${lookId} model=${input.modelId} user=${ctx.user.id}`);
+      return { lookId };
+    }),
+
+  /** List saved looks for a specific model */
+  list: protectedProcedure
+    .input(z.object({ modelId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return getUserLooksByModel(ctx.user.id, input.modelId);
+    }),
+
+  /** Rename a saved look */
+  rename: protectedProcedure
+    .input(z.object({
+      lookId: z.number(),
+      name: z.string().max(100),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await renameLook(input.lookId, ctx.user.id, input.name);
+      log.info(`Look renamed: id=${input.lookId} user=${ctx.user.id}`);
+      return { success: true };
+    }),
+
+  /** Delete a saved look */
+  delete: protectedProcedure
+    .input(z.object({ lookId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await deleteLook(input.lookId, ctx.user.id);
+      log.info(`Look deleted: id=${input.lookId} user=${ctx.user.id}`);
+      return { success: true };
+    }),
+});
+
+// ── Combined Wardrobe Router ───────────────────────────────────────────────────────────────
 
 export const wardrobeRouter = router({
   garments: garmentRouter,
@@ -813,4 +868,5 @@ export const wardrobeRouter = router({
   sessions: sessionRouter,
   outfits: outfitRouter,
   model: modelRouter,
+  looks: looksRouter,
 });
