@@ -1,6 +1,7 @@
 /**
  * RecentSessionsRow — Lobby section showing up to 4 recent sessions as
- * compact horizontal cards. Users can click any card to restore that session.
+ * stacked cards. The most recent session is larger/featured, the rest are
+ * compact rows underneath. All cards are visible without horizontal scrolling.
  *
  * Receives pre-fetched sessions array from StudioLobby so loading is
  * coordinated across all lobby sections.
@@ -50,15 +51,13 @@ interface RecentSessionsRowProps {
   onContinue: (session: SessionData) => void;
 }
 
-/** Single session card — compact horizontal layout */
-function SessionCard({
+/** Featured card — larger layout for the most recent session */
+function FeaturedCard({
   session,
   onContinue,
-  isFirst,
 }: {
   session: SessionData;
   onContinue: (session: SessionData) => void;
-  isFirst: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -97,10 +96,9 @@ function SessionCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       disabled={isRestoring}
-      className="flex-shrink-0 rounded-2xl overflow-hidden relative group text-left"
+      className="w-full rounded-2xl overflow-hidden relative group text-left"
       style={{
-        width: isFirst ? '100%' : 280,
-        height: isFirst ? 96 : 88,
+        height: 96,
         background: '#fff',
         border: `1.5px solid ${isHovered ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.06)'}`,
         transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.2s ease',
@@ -110,57 +108,25 @@ function SessionCard({
       }}
     >
       <div className="flex h-full">
-        {/* Model thumbnail */}
-        <div className="relative flex-shrink-0" style={{ width: isFirst ? 72 : 60 }}>
-          <img
-            src={session.modelImageUrl}
-            alt={displayName}
-            className="w-full h-full object-cover"
-            loading="eager"
-          />
-          <div
-            className="absolute inset-y-0 right-0 w-4"
-            style={{ background: 'linear-gradient(to right, transparent, #fff)' }}
-          />
+        <div className="relative flex-shrink-0" style={{ width: 72 }}>
+          <img src={session.modelImageUrl} alt={displayName} className="w-full h-full object-cover" loading="eager" />
+          <div className="absolute inset-y-0 right-0 w-4" style={{ background: 'linear-gradient(to right, transparent, #fff)' }} />
         </div>
-
-        {/* Info section */}
         <div className="flex-1 flex items-center px-3 gap-3 min-w-0">
           <div className="flex-1 min-w-0">
-            <p
-              className="truncate"
-              style={{ fontSize: isFirst ? 13 : 12, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}
-            >
-              {displayName}
-            </p>
+            <p className="truncate" style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>{displayName}</p>
             <div className="flex items-center gap-2.5 mt-1">
               <span className="flex items-center gap-1" style={{ fontSize: 10, color: '#999' }}>
-                <Layers className="w-3 h-3" />
-                {session.iterationCount} {session.iterationCount === 1 ? 'look' : 'looks'}
+                <Layers className="w-3 h-3" />{session.iterationCount} {session.iterationCount === 1 ? 'look' : 'looks'}
               </span>
               <span className="flex items-center gap-1" style={{ fontSize: 10, color: '#bbb' }}>
-                <Clock className="w-3 h-3" />
-                {timeAgo(new Date(session.updatedAt))}
+                <Clock className="w-3 h-3" />{timeAgo(new Date(session.updatedAt))}
               </span>
             </div>
           </div>
-
-          {/* Last result thumbnail — only on first (larger) card */}
-          {isFirst && (
-            <div
-              className="flex-shrink-0 rounded-lg overflow-hidden"
-              style={{ width: 56, height: 72, border: '1px solid rgba(0,0,0,0.06)' }}
-            >
-              <img
-                src={session.lastResultUrl}
-                alt="Last result"
-                className="w-full h-full object-cover"
-                loading="eager"
-              />
-            </div>
-          )}
-
-          {/* CTA pill */}
+          <div className="flex-shrink-0 rounded-lg overflow-hidden" style={{ width: 56, height: 72, border: '1px solid rgba(0,0,0,0.06)' }}>
+            <img src={session.lastResultUrl} alt="Last result" className="w-full h-full object-cover" loading="eager" />
+          </div>
           <div
             className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full transition-all"
             style={{
@@ -172,14 +138,94 @@ function SessionCard({
             }}
           >
             <Play className="w-2.5 h-2.5" />
-            {isFirst ? (
-              <>
-                <span className="hidden sm:inline">Continue in {toolLabel}</span>
-                <span className="sm:hidden">Continue</span>
-              </>
-            ) : (
-              <span>Resume</span>
-            )}
+            <span className="hidden sm:inline">Continue in {toolLabel}</span>
+            <span className="sm:hidden">Continue</span>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/** Compact card — smaller row for older sessions */
+function CompactCard({
+  session,
+  onContinue,
+}: {
+  session: SessionData;
+  onContinue: (session: SessionData) => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+
+  const handleClick = useCallback(async () => {
+    if (isRestoring) return;
+    setIsRestoring(true);
+    try {
+      await Promise.all([
+        new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => reject();
+          img.src = session.modelImageUrl;
+        }),
+        new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => reject();
+          img.src = session.lastResultUrl;
+        }),
+      ]);
+      onContinue(session);
+    } catch {
+      toast.error('Failed to restore session');
+      setIsRestoring(false);
+    }
+  }, [session, isRestoring, onContinue]);
+
+  const displayName = session.modelName || 'Uploaded Model';
+
+  return (
+    <button
+      onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      disabled={isRestoring}
+      className="w-full rounded-xl overflow-hidden relative group text-left"
+      style={{
+        height: 56,
+        background: '#fff',
+        border: `1.5px solid ${isHovered ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.05)'}`,
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+        transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
+        boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.06)' : '0 1px 4px rgba(0,0,0,0.02)',
+        opacity: isRestoring ? 0.7 : 1,
+      }}
+    >
+      <div className="flex h-full items-center">
+        <div className="relative flex-shrink-0" style={{ width: 44 }}>
+          <img src={session.modelImageUrl} alt={displayName} className="w-full h-full object-cover" loading="eager" />
+          <div className="absolute inset-y-0 right-0 w-3" style={{ background: 'linear-gradient(to right, transparent, #fff)' }} />
+        </div>
+        <div className="flex-1 flex items-center px-3 gap-2 min-w-0">
+          <p className="truncate flex-1" style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>{displayName}</p>
+          <span className="flex items-center gap-1 flex-shrink-0" style={{ fontSize: 10, color: '#bbb' }}>
+            <Layers className="w-2.5 h-2.5" />{session.iterationCount}
+          </span>
+          <span className="flex-shrink-0" style={{ fontSize: 10, color: '#ccc' }}>
+            {timeAgo(new Date(session.updatedAt))}
+          </span>
+          <div
+            className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full"
+            style={{
+              background: isHovered ? '#1a1a1a' : '#f5f3ef',
+              color: isHovered ? '#fff' : '#999',
+              fontSize: 9,
+              fontWeight: 600,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Play className="w-2 h-2" />Resume
           </div>
         </div>
       </div>
@@ -189,6 +235,8 @@ function SessionCard({
 
 export function RecentSessionsRow({ sessions, onContinue }: RecentSessionsRowProps) {
   if (!sessions || sessions.length === 0) return null;
+
+  const [featured, ...rest] = sessions;
 
   return (
     <div className="w-full">
@@ -200,19 +248,14 @@ export function RecentSessionsRow({ sessions, onContinue }: RecentSessionsRowPro
         </span>
       </div>
 
-      {/* Single session — full width card */}
-      {sessions.length === 1 ? (
-        <SessionCard session={sessions[0]} onContinue={onContinue} isFirst />
-      ) : (
-        /* Multiple sessions — horizontal scroll */
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
-          {sessions.map((session, i) => (
-            <SessionCard
-              key={session.sessionId}
-              session={session}
-              onContinue={onContinue}
-              isFirst={i === 0}
-            />
+      {/* Featured (most recent) session */}
+      <FeaturedCard session={featured} onContinue={onContinue} />
+
+      {/* Older sessions — compact rows below */}
+      {rest.length > 0 && (
+        <div className="flex flex-col gap-2 mt-2">
+          {rest.map((session) => (
+            <CompactCard key={session.sessionId} session={session} onContinue={onContinue} />
           ))}
         </div>
       )}

@@ -70,3 +70,4 @@
 - [x] Update bottom hint text (remove "replace" wording since sessions now persist)
 - [x] Bug: Multi-session lobby — fixed modelId source (use canvas.castModelId not casting store), reset casting store on model load/resume, fixed corrupted session 90003
 - [x] Bug: Lobby still shows only 1 session card — fixed: getRecent query was never invalidated after session create/VTO generation (only `list` was)
+- [x] Bug: Multi-session cards hidden behind horizontal scroll — rewrote layout as vertical stack (featured + compact rows)
