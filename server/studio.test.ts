@@ -119,14 +119,18 @@ describe('getToolAvailability', () => {
     expect(getToolAvailability('wardrobe', withFullBody).enabled).toBe(true);
   });
 
-  // Export requires all views + cast model
-  it('export is disabled without all views', () => {
-    const result = getToolAvailability('export', withFullBody);
+  // Export requires full body + cast model
+  it('export is disabled without full body', () => {
+    const result = getToolAvailability('export', frontCloseOnly);
     expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain('all views');
+    expect(result.tooltip).toContain('full body');
   });
 
-  it('export is enabled with all views from cast model', () => {
+  it('export is enabled once full body exists for cast model', () => {
+    expect(getToolAvailability('export', withFullBody).enabled).toBe(true);
+  });
+
+  it('export is also enabled with all views from cast model', () => {
     expect(getToolAvailability('export', allViewsCast).enabled).toBe(true);
   });
 

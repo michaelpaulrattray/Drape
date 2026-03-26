@@ -64,10 +64,10 @@ describe("getToolAvailability — uploaded model", () => {
     expect(result.tooltip).toBe("Wardrobe Studio");
   });
 
-  it("disables Export for uploaded models (no all views)", () => {
+  it("disables Export for uploaded models (not a cast model)", () => {
     const result = getToolAvailability("export", uploadedCanvas);
     expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain("Generate all views to unlock export");
+    expect(result.tooltip).toContain("Export requires a cast model");
   });
 
   it("disables Export for uploaded models even with all views", () => {
@@ -133,14 +133,25 @@ describe("getToolAvailability — cast model", () => {
     expect(result.enabled).toBe(true);
   });
 
+  it("enables Export when cast model has full body", () => {
+    const result = getToolAvailability("export", castWithFullBody);
+    expect(result.enabled).toBe(true);
+  });
+
   it("enables Export when cast model has all views", () => {
     const result = getToolAvailability("export", castWithAllViews);
     expect(result.enabled).toBe(true);
   });
 
-  it("disables Export when not all views", () => {
-    const result = getToolAvailability("export", castWithFullBody);
+  it("disables Export when no full body", () => {
+    const noFullBody: CanvasState = {
+      ...emptyCanvas,
+      hasModel: true,
+      modelSource: "cast",
+    };
+    const result = getToolAvailability("export", noFullBody);
     expect(result.enabled).toBe(false);
+    expect(result.tooltip).toContain("full body");
   });
 });
 

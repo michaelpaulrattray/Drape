@@ -3,6 +3,8 @@
  *
  * Tests the view label/filename mapping, PDF key mapping, attribute formatting,
  * and export panel data derivation logic.
+ *
+ * Note: The app has 3 view types: frontClose (Headshot), frontFull (Full Body), sideClose (Profile).
  */
 import { describe, it, expect } from "vitest";
 
@@ -13,41 +15,31 @@ describe("Export View Mapping", () => {
     frontClose: "Headshot",
     frontFull: "Full Body",
     sideClose: "Profile",
-    sideFull: "Walk",
-    backFull: "Rear",
   };
 
   const VIEW_FILENAMES: Record<string, string> = {
     frontClose: "01_Headshot_Primary.png",
     frontFull: "02_Full_Body_Standing.png",
     sideClose: "03_Profile_Head.png",
-    sideFull: "04_Full_Body_Walk.png",
-    backFull: "05_Full_Body_Rear.png",
   };
 
   const VIEW_TO_PDF_KEY: Record<string, string> = {
     frontClose: "headshot",
     frontFull: "fullBody",
     sideClose: "profile",
-    sideFull: "walk",
-    backFull: "back",
   };
 
-  it("should have labels for all 5 standard view types", () => {
-    expect(Object.keys(VIEW_LABELS)).toHaveLength(5);
+  it("should have labels for all 3 standard view types", () => {
+    expect(Object.keys(VIEW_LABELS)).toHaveLength(3);
     expect(VIEW_LABELS.frontClose).toBe("Headshot");
     expect(VIEW_LABELS.frontFull).toBe("Full Body");
     expect(VIEW_LABELS.sideClose).toBe("Profile");
-    expect(VIEW_LABELS.sideFull).toBe("Walk");
-    expect(VIEW_LABELS.backFull).toBe("Rear");
   });
 
   it("should have numbered filenames for ZIP ordering", () => {
     expect(VIEW_FILENAMES.frontClose).toMatch(/^01_/);
     expect(VIEW_FILENAMES.frontFull).toMatch(/^02_/);
     expect(VIEW_FILENAMES.sideClose).toMatch(/^03_/);
-    expect(VIEW_FILENAMES.sideFull).toMatch(/^04_/);
-    expect(VIEW_FILENAMES.backFull).toMatch(/^05_/);
   });
 
   it("all filenames should end with .png", () => {
@@ -60,8 +52,6 @@ describe("Export View Mapping", () => {
     expect(VIEW_TO_PDF_KEY.frontClose).toBe("headshot");
     expect(VIEW_TO_PDF_KEY.frontFull).toBe("fullBody");
     expect(VIEW_TO_PDF_KEY.sideClose).toBe("profile");
-    expect(VIEW_TO_PDF_KEY.sideFull).toBe("walk");
-    expect(VIEW_TO_PDF_KEY.backFull).toBe("back");
   });
 
   it("all view types should have both labels and filenames", () => {
@@ -104,13 +94,12 @@ describe("Attribute Label Formatting", () => {
 // ── View Asset Sorting ────────────────────────────────────────
 
 describe("View Asset Sorting", () => {
-  const ORDER = ["frontClose", "frontFull", "sideClose", "sideFull", "backFull"];
+  const ORDER = ["frontClose", "frontFull", "sideClose"];
 
   it("should sort assets in the correct display order", () => {
     const unsorted = [
-      { viewType: "backFull", storageUrl: "url5" },
-      { viewType: "frontClose", storageUrl: "url1" },
       { viewType: "sideClose", storageUrl: "url3" },
+      { viewType: "frontClose", storageUrl: "url1" },
       { viewType: "frontFull", storageUrl: "url2" },
     ];
 
@@ -121,7 +110,6 @@ describe("View Asset Sorting", () => {
     expect(sorted[0].viewType).toBe("frontClose");
     expect(sorted[1].viewType).toBe("frontFull");
     expect(sorted[2].viewType).toBe("sideClose");
-    expect(sorted[3].viewType).toBe("backFull");
   });
 
   it("should filter out unknown view types", () => {
@@ -129,8 +117,6 @@ describe("View Asset Sorting", () => {
       frontClose: "Headshot",
       frontFull: "Full Body",
       sideClose: "Profile",
-      sideFull: "Walk",
-      backFull: "Rear",
     };
 
     const assets = [
@@ -292,6 +278,38 @@ describe("Mint Status", () => {
   });
 });
 
+// ── Tool Availability — Export Gate ─────────────────────────────
+
+describe("Export Tool Availability", () => {
+  function getExportAvailability(canvas: { hasFullBody: boolean; modelSource: string | null }) {
+    if (!canvas.hasFullBody) return { enabled: false, tooltip: "Generate full body to unlock export" };
+    if (canvas.modelSource !== "cast") return { enabled: false, tooltip: "Export requires a cast model" };
+    return { enabled: true, tooltip: "Export Identity Pack" };
+  }
+
+  it("should be enabled when model has full body and is cast", () => {
+    const result = getExportAvailability({ hasFullBody: true, modelSource: "cast" });
+    expect(result.enabled).toBe(true);
+  });
+
+  it("should be disabled when no full body", () => {
+    const result = getExportAvailability({ hasFullBody: false, modelSource: "cast" });
+    expect(result.enabled).toBe(false);
+    expect(result.tooltip).toContain("full body");
+  });
+
+  it("should be disabled for uploaded models", () => {
+    const result = getExportAvailability({ hasFullBody: true, modelSource: "uploaded" });
+    expect(result.enabled).toBe(false);
+    expect(result.tooltip).toContain("cast model");
+  });
+
+  it("should be disabled when modelSource is null", () => {
+    const result = getExportAvailability({ hasFullBody: true, modelSource: null });
+    expect(result.enabled).toBe(false);
+  });
+});
+
 // ── Saved Looks Logic ────────────────────────────────────────
 
 describe("Saved Looks", () => {
@@ -331,23 +349,23 @@ describe("Saved Looks", () => {
   });
 
   it("should display correct file count in ZIP label", () => {
-    const viewCount = 5;
+    const viewCount = 3;
     const lookCount = 3;
     const label = `${viewCount + lookCount} files`;
-    expect(label).toBe("8 files");
+    expect(label).toBe("6 files");
   });
 
   it("should show correct footer text when looks exist", () => {
-    const viewCount = 4;
+    const viewCount = 3;
     const lookCount = 2;
     const text = `${viewCount} views + ${lookCount} looks · 2K resolution`;
-    expect(text).toBe("4 views + 2 looks · 2K resolution");
+    expect(text).toBe("3 views + 2 looks · 2K resolution");
   });
 
   it("should show default footer text when no looks", () => {
     const lookCount = 0;
     const text = lookCount > 0
-      ? `5 views + ${lookCount} looks · 2K resolution`
+      ? `3 views + ${lookCount} looks · 2K resolution`
       : "All exports rendered at 2K resolution";
     expect(text).toBe("All exports rendered at 2K resolution");
   });

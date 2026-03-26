@@ -22,8 +22,6 @@ const VIEW_LABELS: Record<string, string> = {
   frontClose: "Headshot",
   frontFull: "Full Body",
   sideClose: "Profile",
-  sideFull: "Walk",
-  backFull: "Rear",
 };
 
 /** Filenames inside the ZIP for each view type */
@@ -31,8 +29,6 @@ const VIEW_FILENAMES: Record<string, string> = {
   frontClose: "01_Headshot_Primary.png",
   frontFull: "02_Full_Body_Standing.png",
   sideClose: "03_Profile_Head.png",
-  sideFull: "04_Full_Body_Walk.png",
-  backFull: "05_Full_Body_Rear.png",
 };
 
 /** PDF key mapping */
@@ -40,8 +36,6 @@ const VIEW_TO_PDF_KEY: Record<string, string> = {
   frontClose: "headshot",
   frontFull: "fullBody",
   sideClose: "profile",
-  sideFull: "walk",
-  backFull: "back",
 };
 
 export type ExportStep =
@@ -96,7 +90,7 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
 
   /** Sorted assets with labels */
   const viewAssets = useMemo(() => {
-    const order = ["frontClose", "frontFull", "sideClose", "sideFull", "backFull"];
+    const order = ["frontClose", "frontFull", "sideClose"];
     return assets
       .filter((a) => VIEW_LABELS[a.viewType])
       .sort((a, b) => order.indexOf(a.viewType) - order.indexOf(b.viewType))

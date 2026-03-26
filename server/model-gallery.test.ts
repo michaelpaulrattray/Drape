@@ -81,18 +81,20 @@ describe("Tool availability for gallery-loaded models", () => {
     expect(result.enabled).toBe(true);
   });
 
-  it("disables Export for gallery-loaded models (no all views)", () => {
+  it("enables Export for gallery-loaded models with full body", () => {
+    // Export gate is hasFullBody + cast model — galleryLoadedCanvas has both
     const result = getToolAvailability("export", galleryLoadedCanvas);
-    expect(result.enabled).toBe(false);
+    expect(result.enabled).toBe(true);
   });
 
-  it("enables Export for gallery-loaded models with all views", () => {
-    const withAllViews: CanvasState = {
+  it("disables Export for gallery-loaded models without full body", () => {
+    const noFullBody: CanvasState = {
       ...galleryLoadedCanvas,
-      hasAllViews: true,
+      hasFullBody: false,
     };
-    const result = getToolAvailability("export", withAllViews);
-    expect(result.enabled).toBe(true);
+    const result = getToolAvailability("export", noFullBody);
+    expect(result.enabled).toBe(false);
+    expect(result.tooltip).toContain("full body");
   });
 });
 

@@ -68,8 +68,8 @@ export function getToolAvailability(
       return { enabled: true, tooltip: 'Wardrobe Studio' };
 
     case 'export':
-      if (!canvas.hasAllViews) {
-        return { enabled: false, tooltip: 'Generate all views to unlock export' };
+      if (!canvas.hasFullBody) {
+        return { enabled: false, tooltip: 'Generate full body to unlock export' };
       }
       // Export is only available for cast models (not uploaded)
       if (canvas.modelSource !== 'cast') {
