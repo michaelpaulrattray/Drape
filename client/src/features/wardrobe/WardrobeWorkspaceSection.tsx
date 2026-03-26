@@ -6,12 +6,13 @@
  * decomposition drawer.
  */
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, Check } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
 import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { StudioCanvas } from '@/features/studio/components/StudioCanvas';
+import { ToolButton } from '@/features/casting/components/ImageViewer';
 import {
   RackPanel,
   LayersPanel,
@@ -45,6 +46,13 @@ export function WardrobeWorkspaceSection({
   // Track hover state from StudioCanvas for auto-hiding overlays
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
 
+  // Flash effect state for "Shoot Look"
+  const [showFlash, setShowFlash] = useState(false);
+
+  // Track whether the current result has already been saved
+  const [savedForUrl, setSavedForUrl] = useState<string | null>(null);
+  const isAlreadySaved = savedForUrl === gen.currentResult && gen.currentResult !== null;
+
   const resultOverlayItems = useWardrobeStore((s) => s.resultOverlayItems);
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
   const selectedCount = useWardrobeStore((s) => s.selectedGarmentIds.size);
@@ -66,7 +74,6 @@ export function WardrobeWorkspaceSection({
       if (categoryGarments.length === 0) {
         const fallbackId = selectedArr[0];
         if (!fallbackId) return;
-        // Accumulate the style note for fallback garment
         const fallbackNote = useWardrobeStore.getState().styleNotes[String(fallbackId)] || '';
         const updatedFallback = fallbackNote ? `${fallbackNote}; ${note.instruction}` : note.instruction;
         useWardrobeStore.getState().setStyleNote(fallbackId, updatedFallback);
@@ -91,12 +98,9 @@ export function WardrobeWorkspaceSection({
         }
       }
 
-      // Accumulate the style note (semicolon-separated, matching SOT pattern)
       const currentNote = useWardrobeStore.getState().styleNotes[String(bestMatch.id)] || '';
       const updatedNote = currentNote ? `${currentNote}; ${note.instruction}` : note.instruction;
       useWardrobeStore.getState().setStyleNote(bestMatch.id, updatedNote);
-
-      // Then trigger refinement
       gen.refineResult(bestMatch.id, note.instruction);
     },
     [gen, garments, selectedGarmentIds]
@@ -111,12 +115,15 @@ export function WardrobeWorkspaceSection({
   const handleSaveLook = useCallback(async () => {
     const imageUrl = gen.currentResult;
     if (!imageUrl || !modelId) return;
-    // Prevent double-saving the same result
     if (lastSavedUrlRef.current === imageUrl) {
       toast.info('This look is already saved');
       return;
     }
     try {
+      // Trigger flash effect
+      setShowFlash(true);
+      setTimeout(() => setShowFlash(false), 300);
+
       const garmentIds = Array.from(selectedGarmentIds);
       const sessionId = useWardrobeStore.getState().activeSessionId;
       await saveLookMutation.mutateAsync({
@@ -126,6 +133,7 @@ export function WardrobeWorkspaceSection({
         ...(sessionId ? { sessionId } : {}),
       });
       lastSavedUrlRef.current = imageUrl;
+      setSavedForUrl(imageUrl);
       utils.wardrobe.looks.list.invalidate({ modelId });
       toast.success('Look saved to gallery');
     } catch {
@@ -149,7 +157,6 @@ export function WardrobeWorkspaceSection({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      // Fallback: open in new tab
       window.open(imageUrl, '_blank');
     }
   }, [gen.currentResult]);
@@ -159,6 +166,7 @@ export function WardrobeWorkspaceSection({
   const handleResetLook = useCallback(() => {
     if (gen.isGenerating) return;
     resetToOriginal();
+    setSavedForUrl(null);
     toast.success('Reset to original model');
   }, [gen.isGenerating, resetToOriginal]);
 
@@ -183,13 +191,11 @@ export function WardrobeWorkspaceSection({
     };
     const selected = garments.filter((g) => selectedGarmentIds.has(g.id));
     if (selected.length === 0) return '';
-    // 1-2 garments: use short names for specificity
     if (selected.length <= 2) {
       return selected
         .map((g) => g.shortName || slotLabels[g.slotType as string] || g.slotType)
         .join(' + ');
     }
-    // 3+: use slot type labels to keep it compact
     const types = new Set(selected.map((g) => g.slotType as string));
     const ordered: string[] = [];
     for (const slot of ['full_look', 'tops', 'bottoms', 'shoes', 'accessories']) {
@@ -217,6 +223,11 @@ export function WardrobeWorkspaceSection({
   })();
   const compareLabel = gen.historyIndex <= 0 ? 'Original' : 'Previous';
 
+  // Camera button icon — show checkmark if already saved
+  const cameraIcon = isAlreadySaved
+    ? <Check size={18} style={{ color: '#22c55e' }} />
+    : <Camera size={18} />;
+
   return (
     <>
       {/* Left Panel — Rack */}
@@ -236,6 +247,23 @@ export function WardrobeWorkspaceSection({
 
       {/* Center — Canvas */}
       <div className="flex-1 min-w-0 relative">
+        {/* Camera shutter flash overlay */}
+        {showFlash && (
+          <div
+            className="absolute inset-0 z-50 pointer-events-none"
+            style={{
+              background: 'rgba(255,255,255,0.85)',
+              animation: 'shutterFlash 300ms ease-out forwards',
+            }}
+          />
+        )}
+        <style>{`
+          @keyframes shutterFlash {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+          }
+        `}</style>
+
         <StudioCanvas
           displayUrl={gen.currentResult || modelImageUrl}
           statusLabel={statusLabel}
@@ -265,24 +293,11 @@ export function WardrobeWorkspaceSection({
                 className="absolute top-1/2 -translate-y-1/2 right-4 flex flex-col gap-2 z-30 transition-opacity duration-200"
                 style={{ opacity: imageAreaHovered ? 1 : 0, pointerEvents: imageAreaHovered ? 'auto' : 'none' }}
               >
-                <button
+                <ToolButton
+                  active={isAlreadySaved}
                   onClick={handleSaveLook}
-                  disabled={isSavingLook || !modelId}
-                  className="flex items-center justify-center rounded-xl transition-all"
-                  style={{
-                    width: 40, height: 40,
-                    background: 'rgba(255,255,255,0.85)',
-                    backdropFilter: 'blur(8px)',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    cursor: isSavingLook ? 'not-allowed' : 'pointer',
-                    opacity: isSavingLook ? 0.5 : 1,
-                  }}
-                  onMouseEnter={(e) => { if (!isSavingLook) e.currentTarget.style.background = 'rgba(255,255,255,1)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; }}
-                  title="Shoot Look"
-                >
-                  <Camera size={18} style={{ color: '#1a1a1a' }} />
-                </button>
+                  icon={cameraIcon}
+                />
               </div>
             ) : undefined
           }

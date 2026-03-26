@@ -109,3 +109,6 @@
 - [x] Move Reset Look button below Dress/Update Look as a secondary text link
 - [x] Increase garment card thumbnail size (32→48px) and text size in LayersPanel
 - [x] Move "Keep" (save to gallery) to canvas overlay — Camera icon, right side, hover-reveal, tooltip "Shoot Look"
+- [x] Add subtle camera shutter flash effect when tapping "Shoot Look" on canvas
+- [x] Prevent duplicate saves — visually disable Camera button after save, re-enable on new VTO result
+- [x] Match Camera icon button styling to Casting's ToolButton pattern for visual consistency
