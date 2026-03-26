@@ -27,3 +27,4 @@
 - [x] Remove destructive reset modal from Casting icon click — switch directly to read-only Casting Studio
 - [x] Handle uploaded model state in Casting — show "not cast" message with Cast New Model CTA
 - [x] Move reset confirmation to "New Model" button inside Casting read-only footer
+- [x] Fix: Gallery-loaded models show empty "Ready to Cast" in Casting overview — hydrate casting generation store with model assets from DB

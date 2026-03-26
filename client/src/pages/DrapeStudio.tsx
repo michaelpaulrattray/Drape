@@ -31,7 +31,7 @@ import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingViewGeneration';
-import { generateRandomPreferences } from '@/features/casting/castingHelpers';
+import { useDebugShortcuts } from '@/features/studio/hooks/useDebugShortcuts';
 import { CastModelModal } from '@/features/studio/components/CastModelModal';
 import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
@@ -64,7 +64,7 @@ export default function DrapeStudio() {
   }, []); // Only on mount
 
   // Casting stores
-  const { prefs, setPrefs, modelName } = useCastingFormStore();
+  const { prefs, modelName } = useCastingFormStore();
   const {
     genState,
     setGenState,
@@ -173,32 +173,40 @@ export default function DrapeStudio() {
   }, [authLoading, isAuthenticated, user, navigate]);
 
   // Keyboard shortcuts (admin debug)
+  useDebugShortcuts();
+
+  // ── Hydrate casting store for gallery-loaded models ──────────────────
+  // When switching to Casting with a gallery model, the generation store
+  // may be empty (assets live in DB, not in Zustand). Fetch and hydrate.
+  const modelAssetsQuery = trpc.models.get.useQuery(
+    { modelId: canvas.castModelId! },
+    {
+      enabled: activeTool === 'casting' && canvas.castModelId !== null && currentAssets.length === 0,
+      retry: false,
+    }
+  );
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        e.preventDefault();
-        const randomPrefs = generateRandomPreferences();
-        setPrefs({ ...prefs, ...randomPrefs });
-        toast.success('Debug: Form populated with random preferences');
+    if (!modelAssetsQuery.data) return;
+    if (currentAssets.length > 0) return; // already hydrated
+
+    const model = modelAssetsQuery.data;
+    const assets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
+    const genStore = useCastingGenerationStore.getState();
+
+    const mapped = assets
+      .filter((a) => ['frontClose', 'frontFull', 'sideClose'].includes(a.viewType))
+      .map((a) => ({ id: a.id, viewType: a.viewType, storageUrl: a.storageUrl }));
+
+    if (mapped.length > 0) {
+      genStore.setCurrentModelId(model.id);
+      genStore.setCurrentAssets(mapped);
+      genStore.pushHistory(mapped);
+      if (model.masterPrompt) {
+        genStore.setCurrentMasterPrompt(model.masterPrompt);
       }
-      if (e.ctrlKey && e.shiftKey && e.key === 'G') {
-        e.preventDefault();
-        const randomPrefs = generateRandomPreferences();
-        setPrefs({ ...prefs, ...randomPrefs });
-        toast.success('Debug: Auto-generating model...');
-        setTimeout(() => {
-          const generateBtn = document.querySelector(
-            '[data-debug-generate]'
-          ) as HTMLButtonElement;
-          if (generateBtn && !generateBtn.disabled) {
-            generateBtn.click();
-          }
-        }, 200);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [prefs, setPrefs]);
+    }
+  }, [modelAssetsQuery.data, currentAssets.length]);
 
   // Read-only mode: casting overview is locked for any saved/minted model
   // This allows seamless switching to Casting without a destructive reset modal
@@ -241,28 +249,19 @@ export default function DrapeStudio() {
     return fullBodyAsset?.storageUrl || null;
   }, [canvas.uploadedModelUrl, canvas.castFullBodyUrl, currentAssets]);
 
-  // Form completion progress
+  // Form completion progress (12 fields total)
   const formProgress = useMemo(() => {
-    let completed = 0;
-    const totalFields = 12;
-    if (prefs.castingBrand) completed += 1;
-    if (
-      prefs.castingVibe &&
-      (prefs.castingVibe.editorial > 0 ||
-        prefs.castingVibe.commercial > 0 ||
-        prefs.castingVibe.runway > 0)
-    )
-      completed += 1;
-    if (prefs.gender) completed += 1;
-    if (prefs.age && prefs.ethnicity) completed += 1;
-    if (prefs.bodyType) completed += 1;
-    if (prefs.faceShape) completed += 1;
-    if (prefs.skinTone) completed += 1;
-    if (prefs.skinTexture || prefs.skinFinish) completed += 1;
-    if (prefs.eyeColor) completed += 2;
-    if (prefs.hairColor) completed += 1;
-    if (prefs.hairStyle) completed += 1;
-    return Math.round((completed / totalFields) * 100);
+    const checks = [
+      !!prefs.castingBrand,
+      !!(prefs.castingVibe && (prefs.castingVibe.editorial > 0 || prefs.castingVibe.commercial > 0 || prefs.castingVibe.runway > 0)),
+      !!prefs.gender,
+      !!(prefs.age && prefs.ethnicity),
+      !!prefs.bodyType, !!prefs.faceShape, !!prefs.skinTone,
+      !!(prefs.skinTexture || prefs.skinFinish),
+      !!prefs.eyeColor, !!prefs.eyeColor, // counts as 2
+      !!prefs.hairColor, !!prefs.hairStyle,
+    ];
+    return Math.round((checks.filter(Boolean).length / 12) * 100);
   }, [prefs]);
 
   // Loading state
