@@ -232,6 +232,13 @@
       "when": 1774357154250,
       "tag": "0032_past_banshee",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1774503065309,
+      "tag": "0033_luxuriant_silhouette",
+      "breakpoints": true
     }
   ]
 }

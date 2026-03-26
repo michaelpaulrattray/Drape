@@ -17,6 +17,7 @@ import type { StudioTool } from '@/features/studio/types';
 
 // Wardrobe tool imports
 import { WardrobeWorkspaceSection } from '@/features/wardrobe';
+import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -223,6 +224,7 @@ export default function DrapeStudio() {
     useStudioStore.getState().resetStudio();
     useCastingGenerationStore.getState().resetGeneration();
     useCastingFormStore.getState().resetForm();
+    useWardrobeStore.getState().resetWardrobe();
     clearPersistedSession();
     toast.success('Starting fresh canvas');
   }, []);

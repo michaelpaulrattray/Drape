@@ -44,6 +44,7 @@ interface ContinueSessionCardProps {
     history: string[];
     historyIndex: number;
     tattooMapData: unknown;
+    styleNotes: Record<string, string> | null;
   }) => void;
 }
 

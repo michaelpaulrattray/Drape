@@ -234,5 +234,6 @@ export async function getLatestUserSession(userId: number) {
     historyIndex: session.historyIndex ?? history.length - 1,
     updatedAt: session.updatedAt,
     tattooMapData: session.tattooMapData ?? null,
+    styleNotes: (session.styleNotes as Record<string, string>) ?? null,
   };
 }

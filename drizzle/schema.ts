@@ -678,6 +678,7 @@ export const wardrobeSessions = mysqlTable("wardrobe_sessions", {
   historyIndex: int("historyIndex").default(0),
   activeGarmentIds: json("activeGarmentIds"),      // number[] currently selected
   tattooMapData: json("tattooMapData"),            // TattooMap cached result
+  styleNotes: json("styleNotes"),                    // Record<garmentId, string> for style instructions
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ([

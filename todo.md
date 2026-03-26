@@ -51,3 +51,7 @@
 - [x] Bug: Casting shows 'This model was uploaded' for saved/minted models — should distinguish source
 - [x] Bug: Session restore missing tattooMap — persist and restore tattoo data across sessions
 - [x] Audit: check for any other missing state in session restore flow
+- [x] Critical Bug: Casting new model after session restore doesn't update Wardrobe's model — Wardrobe still shows old restored model
+- [x] Bug: Restored session from saved cast model shows 'uploaded' in Casting (pre-fix sessions)
+- [x] Persist styleNotes across session restore — prevent style instructions from being lost
+- [ ] Persist Gemini chat context across session restore — prevent model drift on refinements

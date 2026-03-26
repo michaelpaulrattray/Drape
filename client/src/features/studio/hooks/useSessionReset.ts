@@ -84,6 +84,7 @@ export function useSessionReset() {
     historyIndex: number;
     activeGarmentIds: number[];
     tattooMapData?: unknown;
+    styleNotes?: Record<string, string> | null;
   }) => {
     // Clear any stale state first
     resetWardrobe();
@@ -115,6 +116,13 @@ export function useSessionReset() {
       wardrobeStore.setTattooMap(
         session.tattooMapData as { hasTattoos: boolean; tattooAreas: string[]; cleanAreas: string[]; promptFragment: string },
       );
+    }
+
+    // Restore style notes (e.g. "roll up sleeves", "tuck in")
+    if (session.styleNotes) {
+      for (const [garmentId, note] of Object.entries(session.styleNotes)) {
+        if (note) wardrobeStore.setStyleNote(Number(garmentId), note);
+      }
     }
 
     // Persist to localStorage so refresh works immediately
