@@ -95,8 +95,16 @@ export function DeleteOverlayButton({
     : title || "Delete";
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick(e as unknown as React.MouseEvent);
+        }
+      }}
       className={[
         "flex items-center justify-center rounded-full z-10",
         variant === "overlay"
@@ -124,6 +132,6 @@ export function DeleteOverlayButton({
       ) : (
         <Trash2 style={{ width: iconSize, height: iconSize, color: "#fff" }} />
       )}
-    </button>
+    </div>
   );
 }

@@ -128,3 +128,4 @@
 - [x] Refine delete buttons: use Trash2 icon instead of X, no red hover (breaks immersion)
 - [x] Move compact session card delete button inline before Resume (currently overlapping)
 - [x] Reduce MY MODELS delete button size slightly (24→20px)
+- [x] Bug: Nested button error — DeleteOverlayButton renders <button> inside parent <button> elements (FeaturedCard, CompactCard)
