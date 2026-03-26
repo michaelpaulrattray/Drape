@@ -146,6 +146,12 @@ export function ImageViewerPanel({
 
   // Casting-specific keyboard handler
   const castingKeyHandler = useCallback((e: KeyboardEvent) => {
+    // Ctrl+G / ⌘G — trigger generation (works even with no assets yet)
+    if (e.key === 'g' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (!isReadOnly && !genState.isGenerating) handleGenerate();
+      return true;
+    }
     if (currentAssets.length === 0) return false;
     if (isReadOnly) return false; // No editing shortcuts in read-only mode
     switch (e.key) {
@@ -160,7 +166,7 @@ export function ImageViewerPanel({
         break;
     }
     return false;
-  }, [currentAssets.length, prefs.referenceImage, isReadOnly]);
+  }, [currentAssets.length, prefs.referenceImage, isReadOnly, genState.isGenerating, handleGenerate]);
 
   // ── Derive StudioCanvas props ──
   const viewName = VIEW_DISPLAY_NAMES[activeView] || activeView;

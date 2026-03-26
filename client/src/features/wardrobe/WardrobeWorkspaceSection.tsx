@@ -153,7 +153,15 @@ export function WardrobeWorkspaceSection({
     }
   }, [gen.currentResult]);
 
-  // Wardrobe-specific keyboard handler (Space to generate)
+  // Reset Look — clears VTO state, reverts canvas to original model
+  const resetToOriginal = useWardrobeStore((s) => s.resetToOriginal);
+  const handleResetLook = useCallback(() => {
+    if (gen.isGenerating) return;
+    resetToOriginal();
+    toast.success('Reset to original model');
+  }, [gen.isGenerating, resetToOriginal]);
+
+  // Wardrobe-specific keyboard handler (Space to generate, R to reset look)
   const wardrobeKeyHandler = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === ' ') {
@@ -161,9 +169,16 @@ export function WardrobeWorkspaceSection({
         if (canGenerate) gen.generate();
         return true;
       }
+      if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        if (hasResult) {
+          e.preventDefault();
+          handleResetLook();
+          return true;
+        }
+      }
       return false;
     },
-    [canGenerate, gen]
+    [canGenerate, gen, hasResult, handleResetLook]
   );
 
   // Derive contextual toolbar status from selected garments
@@ -282,6 +297,7 @@ export function WardrobeWorkspaceSection({
             hasDirtyStyles={gen.hasDirtyStyles}
             onApplyStyleChanges={gen.handleApplyStyleChanges}
             hasProcessingSelected={gen.hasProcessingSelected}
+            onResetLook={handleResetLook}
           />
         </StudioSidePanel>
       </AnimatedPanel>

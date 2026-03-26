@@ -102,3 +102,5 @@
 - [x] Bug 2: Decompose import passes full outfit photo to digitizer instead of crop — need cropUrl pipeline
 - [x] Bug 3: VTO service image fallback chain is backwards — should prefer isolated over raw
 - [x] Add subtle visibility hint to decomposed garments — extend detection with visibility score, show QualityBadge-style indicator for partially hidden items
+- [x] Add "Reset Look" button in LayersPanel + keyboard shortcut (R) in wardrobe — clears VTO history, selection, style notes, reverts canvas to original model
+- [x] Audit and fix keyboard shortcuts across casting and wardrobe — Ctrl+G reported broken in casting

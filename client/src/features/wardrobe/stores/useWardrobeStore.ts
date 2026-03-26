@@ -105,6 +105,9 @@ interface WardrobeState {
   pendingQuickDetect: { sourceImageUrl: string; garments: DetectedItem[] } | null;
   setPendingQuickDetect: (data: { sourceImageUrl: string; garments: DetectedItem[] } | null) => void;
 
+  /** Reset VTO state only — reverts canvas to original model without clearing inventory/session */
+  resetToOriginal: () => void;
+
   /** Reset all wardrobe state */
   resetWardrobe: () => void;
 }
@@ -384,7 +387,26 @@ export const useWardrobeStore = create<WardrobeState>()(
       setPendingQuickDetect: (data) =>
         set({ pendingQuickDetect: data }, false, "setPendingQuickDetect"),
 
-      // ── Reset ──────────────────────────────────────────────
+      // ── Reset to Original ("Reset Look") ────────────────
+      resetToOriginal: () =>
+        set(
+          {
+            vtoHistory: [],
+            vtoHistoryIndex: -1,
+            selectedGarmentIds: new Set(),
+            selectionSnapshots: new Map(),
+            overlayCache: new Map(),
+            resultOverlayItems: [],
+            styleNotes: {},
+            lastGenStyleNotes: {},
+            errorMessage: null,
+            // Preserve: activeSessionId, activeSlot, searchTerm, tattooMap, showOutfits
+          },
+          false,
+          "resetToOriginal",
+        ),
+
+      // ── Reset ──────────────────────────────────────────
       resetWardrobe: () =>
         set(
           {

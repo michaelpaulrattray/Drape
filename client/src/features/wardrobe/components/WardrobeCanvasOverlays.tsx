@@ -19,6 +19,7 @@ const SHORTCUT_HINTS = [
 
 const SHORTCUT_HINTS_WITH_COMPARE = [
   ...SHORTCUT_HINTS,
+  { key: "R", label: "Reset Look" },
   { key: "Hold", label: "Compare" },
 ];
 

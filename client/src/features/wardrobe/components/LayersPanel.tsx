@@ -12,6 +12,7 @@ import {
   Save,
   Trash2,
   RefreshCw,
+  RotateCcw,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +33,8 @@ interface LayersPanelProps {
   onApplyStyleChanges?: () => void;
   /** Whether any selected garment is still processing */
   hasProcessingSelected?: boolean;
+  /** Reset VTO state to original model */
+  onResetLook?: () => void;
 }
 
 // ── Garment Row ─────────────────────────────────────────────────
@@ -300,6 +303,7 @@ export function LayersPanel({
   hasDirtyStyles = false,
   onApplyStyleChanges,
   hasProcessingSelected = false,
+  onResetLook,
 }: LayersPanelProps) {
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
   const toggleGarmentSelection = useWardrobeStore((s) => s.toggleGarmentSelection);
@@ -377,6 +381,16 @@ export function LayersPanel({
             <span className="font-mono" style={{ fontSize: 9, color: "#b8b3a8" }}>
               {selectedGarments.length} item{selectedGarments.length !== 1 ? "s" : ""}
             </span>
+            {hasResult && onResetLook && (
+              <button
+                onClick={onResetLook}
+                disabled={isGenerating}
+                className="p-1 rounded hover:bg-[#f0ebe3] transition-colors disabled:opacity-30"
+                title="Reset Look (R)"
+              >
+                <RotateCcw size={12} color="#999" />
+              </button>
+            )}
             <button onClick={clearSelection} className="p-1 rounded hover:bg-[#f0ebe3] transition-colors" title="Clear all">
               <Trash2 size={12} color="#999" />
             </button>
