@@ -121,23 +121,30 @@ export function useWardrobeGeneration({
 
   // ── Mutations ──────────────────────────────────────────────
 
-  const createSessionMutation = trpc.wardrobe.sessions.create.useMutation();
+  const createSessionMutation = trpc.wardrobe.sessions.create.useMutation({
+    onSuccess: () => {
+      utils.wardrobe.sessions.getRecent.invalidate();
+    },
+  });
 
   const generateMutation = trpc.wardrobe.vto.generate.useMutation({
     onSuccess: () => {
       utils.wardrobe.sessions.list.invalidate();
+      utils.wardrobe.sessions.getRecent.invalidate();
     },
   });
 
   const incrementalMutation = trpc.wardrobe.vto.incremental.useMutation({
     onSuccess: () => {
       utils.wardrobe.sessions.list.invalidate();
+      utils.wardrobe.sessions.getRecent.invalidate();
     },
   });
 
   const refineMutation = trpc.wardrobe.vto.refine.useMutation({
     onSuccess: () => {
       utils.wardrobe.sessions.list.invalidate();
+      utils.wardrobe.sessions.getRecent.invalidate();
     },
   });
 
