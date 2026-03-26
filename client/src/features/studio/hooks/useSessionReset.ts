@@ -6,14 +6,15 @@
  * are always cleaned up together. No store is left with stale data.
  *
  * Scenarios handled:
- *  - "Switch & Reset" confirmation (uploaded/gallery model → casting)
  *  - Home button (any active session → lobby)
  *  - Loading a new model from upload (clears old wardrobe session)
  *  - Loading a new model from gallery (clears old wardrobe session)
+ *  - Resuming a saved wardrobe session from the DB
  */
 import { useCallback } from 'react';
 import { useStudioStore } from '../stores/useStudioStore';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
+import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { persistSession } from './useSessionPersistence';
 import type { StudioTool } from '../types';
 
@@ -24,6 +25,7 @@ export function useSessionReset() {
   const loadModelFromUpload = useStudioStore((s) => s.loadModelFromUpload);
   const loadModelFromCast = useStudioStore((s) => s.loadModelFromCast);
   const resetWardrobe = useWardrobeStore((s) => s.resetWardrobe);
+  const resetCasting = useCastingGenerationStore((s) => s.resetGeneration);
 
   /**
    * Full reset — clears everything and returns to lobby.
@@ -31,8 +33,9 @@ export function useSessionReset() {
    */
   const resetToLobby = useCallback(() => {
     resetWardrobe();
+    resetCasting();
     resetStudio();
-  }, [resetWardrobe, resetStudio]);
+  }, [resetWardrobe, resetCasting, resetStudio]);
 
   /**
    * Switch tool with reset — clears model + wardrobe, then navigates
@@ -48,16 +51,17 @@ export function useSessionReset() {
   }, [resetWardrobe, clearUploadedModel, setActiveTool]);
 
   /**
-   * Load a new uploaded model — clears old wardrobe session first.
+   * Load a new uploaded model — clears old wardrobe + casting state first.
    * Used by: StudioLobby upload flow.
    */
   const loadUploadedModel = useCallback((imageUrl: string) => {
     resetWardrobe();
+    resetCasting();
     loadModelFromUpload(imageUrl);
-  }, [resetWardrobe, loadModelFromUpload]);
+  }, [resetWardrobe, resetCasting, loadModelFromUpload]);
 
   /**
-   * Load a gallery cast model — clears old wardrobe session first.
+   * Load a gallery cast model — clears old wardrobe + casting state first.
    * Used by: StudioLobby "My Models" gallery.
    */
   const loadGalleryModel = useCallback((
@@ -66,13 +70,14 @@ export function useSessionReset() {
     masterPrompt: string,
   ) => {
     resetWardrobe();
+    resetCasting();
     loadModelFromCast(modelId, fullBodyUrl, masterPrompt);
-  }, [resetWardrobe, loadModelFromCast]);
+  }, [resetWardrobe, resetCasting, loadModelFromCast]);
 
   /**
    * Resume a wardrobe session from the DB — restores canvas, wardrobe
    * VTO history, garment selection, and session ID.
-   * Used by: ContinueSessionCard in the lobby.
+   * Used by: RecentSessionsRow in the lobby.
    */
   const resumeWardrobeSession = useCallback((session: {
     sessionId: number;
@@ -86,11 +91,11 @@ export function useSessionReset() {
     tattooMapData?: unknown;
     styleNotes?: Record<string, string> | null;
   }) => {
-    // Clear any stale state first
+    // Clear ALL stale state — wardrobe + casting
     resetWardrobe();
+    resetCasting();
 
     // Set canvas state based on whether this is a cast or uploaded model.
-    // Use modelId alone — masterPrompt may be null for older models.
     if (session.modelId) {
       loadModelFromCast(
         session.modelId,
@@ -129,7 +134,7 @@ export function useSessionReset() {
     if (session.modelId) {
       persistSession(session.modelId, 'wardrobe', true);
     }
-  }, [resetWardrobe, loadModelFromCast, loadModelFromUpload]);
+  }, [resetWardrobe, resetCasting, loadModelFromCast, loadModelFromUpload]);
 
   return {
     resetToLobby,

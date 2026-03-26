@@ -441,7 +441,7 @@ export default function DrapeStudio() {
           {activeTool === 'wardrobe' && (
             <WardrobeWorkspaceSection
               modelImageUrl={fullBodyUrl}
-              modelId={currentModelId}
+              modelId={canvas.castModelId}
               leftReady={transition.leftReady}
               centerReady={transition.centerReady}
               rightReady={transition.rightReady}

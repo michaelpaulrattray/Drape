@@ -68,3 +68,4 @@
 - [x] Frontend: replace single ContinueSessionCard with multi-session horizontal scroll
 - [x] Update StudioLobby to use new multi-session endpoint and pass array to component
 - [x] Update bottom hint text (remove "replace" wording since sessions now persist)
+- [x] Bug: Multi-session lobby — fixed modelId source (use canvas.castModelId not casting store), reset casting store on model load/resume, fixed corrupted session 90003
