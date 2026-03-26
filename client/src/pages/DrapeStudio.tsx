@@ -54,8 +54,10 @@ export default function DrapeStudio() {
   const baseTransition = useStudioTransition(activeTool);
 
   // Preload casting images so they're in browser cache before panels reveal
-  const castingAssetUrls = useCastingGenerationStore((s) =>
-    activeTool === 'casting' ? s.currentAssets.map((a) => a.storageUrl) : [],
+  const castingAssets = useCastingGenerationStore((s) => s.currentAssets);
+  const castingAssetUrls = useMemo(
+    () => activeTool === 'casting' ? castingAssets.map((a) => a.storageUrl) : [],
+    [activeTool, castingAssets],
   );
   const { ready: castingImagesReady } = useImagePreloader(castingAssetUrls);
   const transition = useMemo(() => {
