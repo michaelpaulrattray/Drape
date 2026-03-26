@@ -6,8 +6,9 @@
  * and style notes into the wardrobe store.
  */
 import { useCallback, useState } from "react";
-import { Trash2, Layers } from "lucide-react";
+import { Layers } from "lucide-react";
 import { toast } from "sonner";
+import { DeleteOverlayButton } from "@/features/studio/components/DeleteOverlayButton";
 
 interface SavedOutfitCardProps {
   id: number;
@@ -103,18 +104,14 @@ export function SavedOutfitCard({
           </span>
         </div>
 
-        {/* Delete button */}
-        <button
+        {/* Delete button — standardized overlay */}
+        <DeleteOverlayButton
           onClick={handleDelete}
-          disabled={isDeleting}
-          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{
-            background: "rgba(220,38,38,0.85)",
-            backdropFilter: "blur(4px)",
-          }}
-        >
-          <Trash2 size={10} color="#fff" />
-        </button>
+          isDeleting={isDeleting}
+          size={24}
+          placement="top-right"
+          title="Delete outfit"
+        />
       </div>
 
       {/* Info */}

@@ -123,3 +123,8 @@
 - [x] Bug: Duplicate save to gallery possible after session resume — lastSavedUrlRef resets on re-mount, needs server-side tracking
 - [x] Bug: Camera icon active state (black button + green tick) is jarring — replace with subtle checkmark animation that fades back to camera icon
 - [x] Bug: Nested button HTML error on /studio page — button inside button causing React DOM validation warning
+- [x] Increase garment card thumbnail and text size in LayersPanel — still too small and hard to read
+- [x] Standardize delete buttons across all lobby components — inconsistent styles between ModelGallery, DraftCastsRow, ContinueSessionCard, SavedOutfitCard
+- [x] Refine delete buttons: use Trash2 icon instead of X, no red hover (breaks immersion)
+- [x] Move compact session card delete button inline before Resume (currently overlapping)
+- [x] Reduce MY MODELS delete button size slightly (24→20px)

@@ -8,9 +8,10 @@
  * Renders nothing if no sessions are provided.
  */
 import { useState, useCallback } from 'react';
-import { Play, Clock, Layers, X } from 'lucide-react';
+import { Play, Clock, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { DeleteOverlayButton } from './DeleteOverlayButton';
 
 const TOOL_LABELS: Record<string, string> = {
   wardrobe: 'Wardrobe',
@@ -67,30 +68,6 @@ function preloadImages(urls: string[]) {
   );
 }
 
-/** Delete button — circular X, appears on hover */
-function DeleteBtn({ onClick, size = 22 }: { onClick: (e: React.MouseEvent) => void; size?: number }) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      className="absolute z-10 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-      style={{
-        width: size,
-        height: size,
-        top: size === 22 ? 6 : 4,
-        ...(size === 22 ? { right: 6 } : { left: 4 }),
-        background: 'rgba(0,0,0,0.08)',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={(e) => { (e.currentTarget.style.background = 'rgba(220,38,38,0.12)'); }}
-      onMouseLeave={(e) => { (e.currentTarget.style.background = 'rgba(0,0,0,0.08)'); }}
-    >
-      <X style={{ width: size * 0.55, height: size * 0.55, color: '#666' }} />
-    </div>
-  );
-}
-
 /** Featured card — larger layout for the most recent session */
 function FeaturedCard({ session, onContinue, onDelete }: CardProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -133,7 +110,12 @@ function FeaturedCard({ session, onContinue, onDelete }: CardProps) {
         opacity: isRestoring ? 0.7 : 1,
       }}
     >
-      <DeleteBtn onClick={handleDelete} size={22} />
+      <DeleteOverlayButton
+        onClick={handleDelete}
+        size={20}
+        placement="top-right"
+        title="Remove session"
+      />
       <div className="flex h-full">
         <div className="relative flex-shrink-0" style={{ width: 72 }}>
           <img src={session.modelImageUrl} alt={displayName} className="w-full h-full object-cover" loading="eager" />
@@ -215,7 +197,6 @@ function CompactCard({ session, onContinue, onDelete }: CardProps) {
         opacity: isRestoring ? 0.7 : 1,
       }}
     >
-      <DeleteBtn onClick={handleDelete} size={18} />
       <div className="flex h-full items-center">
         <div className="relative flex-shrink-0" style={{ width: 44 }}>
           <img src={session.modelImageUrl} alt={displayName} className="w-full h-full object-cover" loading="eager" />
@@ -229,6 +210,12 @@ function CompactCard({ session, onContinue, onDelete }: CardProps) {
           <span className="flex-shrink-0" style={{ fontSize: 10, color: '#ccc' }}>
             {timeAgo(new Date(session.updatedAt))}
           </span>
+          <DeleteOverlayButton
+            onClick={handleDelete}
+            size={20}
+            variant="inline"
+            title="Remove session"
+          />
           <div
             className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full"
             style={{

@@ -5,7 +5,9 @@
  * but haven't been exported/minted yet. Allows users to resume casting.
  */
 import { useState } from 'react';
-import { Pencil, Loader2, Trash2 } from 'lucide-react';
+import { Pencil } from 'lucide-react';
+import { DeleteOverlayButton } from './DeleteOverlayButton';
+
 function timeAgo(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
@@ -67,7 +69,7 @@ export function DraftCastsRow({ drafts, onResume, onDelete, isDeletingId }: Draf
           return (
             <div
               key={draft.id}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 group"
               style={{
                 background: isHovered ? 'rgba(0,0,0,0.03)' : 'transparent',
                 border: '1px solid rgba(0,0,0,0.06)',
@@ -115,25 +117,16 @@ export function DraftCastsRow({ drafts, onResume, onDelete, isDeletingId }: Draf
               {/* Actions */}
               <div className="flex items-center gap-2">
                 {onDelete && (
-                  <button
+                  <DeleteOverlayButton
                     onClick={(e) => {
                       e.stopPropagation();
                       if (!isDeleting) onDelete(draft.id);
                     }}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-red-50"
-                    style={{
-                      color: '#ccc',
-                      opacity: isHovered ? 1 : 0,
-                      transition: 'opacity 0.15s ease',
-                    }}
+                    isDeleting={isDeleting}
+                    size={18}
+                    variant="inline"
                     title="Delete draft"
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
-                    )}
-                  </button>
+                  />
                 )}
                 <span
                   className="px-3 py-1 rounded-full text-nowrap"

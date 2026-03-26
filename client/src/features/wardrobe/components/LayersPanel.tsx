@@ -119,8 +119,8 @@ function GarmentRow({
       {/* Collapsed row */}
       <div
         onClick={onToggle}
-        className="flex items-center gap-2 rounded-xl transition-colors cursor-pointer"
-        style={{ padding: "7px 8px" }}
+        className="flex items-center gap-2.5 rounded-xl transition-colors cursor-pointer"
+        style={{ padding: "8px 10px" }}
         onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.015)")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
       >
@@ -138,30 +138,30 @@ function GarmentRow({
         {/* Thumbnail */}
         <div
           className="flex-shrink-0 rounded-lg overflow-hidden"
-          style={{ width: 42, height: 52, background: "#eae7e1", border: "1px solid rgba(0,0,0,0.04)" }}
+          style={{ width: 56, height: 68, background: "#eae7e1", border: "1px solid rgba(0,0,0,0.04)" }}
         >
           {imgUrl && <img src={imgUrl} alt="" className="w-full h-full object-contain" />}
         </div>
 
         {/* Name + color dots */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {colors.length > 0 && !isExpanded && (
               <div className="flex -space-x-0.5 flex-shrink-0">
                 {colors.slice(0, 3).map((c, i) => (
                   <div key={i} className="rounded-full" style={{
-                    width: i === 0 ? 7 : 5, height: i === 0 ? 7 : 5,
+                    width: i === 0 ? 8 : 6, height: i === 0 ? 8 : 6,
                     background: c.hex,
                     boxShadow: "0 0 0 1px rgba(255,255,255,0.9)",
                   }} title={c.name} />
                 ))}
               </div>
             )}
-            <span className="block truncate" style={{ fontSize: 12, fontWeight: 500, color: "#1a1a1a" }}>
+            <span className="block truncate" style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a" }}>
               {garment.shortName || "Untitled"}
             </span>
           </div>
-          <span className="block" style={{ fontSize: 8, color: "#b8b3a8", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          <span className="block" style={{ fontSize: 9, color: "#b8b3a8", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 1 }}>
             {slotLabel}
           </span>
         </div>
@@ -169,8 +169,8 @@ function GarmentRow({
         {/* Edit count badge */}
         {editCount > 0 && !isExpanded && (
           <div className="flex-shrink-0 rounded-full flex items-center justify-center" style={{
-            minWidth: 14, height: 14, padding: "0 4px",
-            background: "#1a1a1a", color: "#fff", fontSize: 8, fontWeight: 700,
+            minWidth: 16, height: 16, padding: "0 5px",
+            background: "#1a1a1a", color: "#fff", fontSize: 9, fontWeight: 700,
           }}>
             {editCount}
           </div>
@@ -179,13 +179,13 @@ function GarmentRow({
 
       {/* Expanded section */}
       {isExpanded && (
-        <div style={{ padding: "0 8px 8px 48px" }}>
+        <div style={{ padding: "0 8px 8px 82px" }}>
           {/* Color swatches */}
           {colors.length > 0 && (
             <div className="flex items-center gap-1.5" style={{ marginBottom: 6, paddingBottom: 4, borderBottom: "1px solid rgba(0,0,0,0.03)" }}>
               {colors.slice(0, 3).map((c, i) => (
                 <div key={i} className="rounded-full cursor-default" title={c.name} style={{
-                  width: 12, height: 12, background: c.hex,
+                  width: 14, height: 14, background: c.hex,
                   boxShadow: "0 0 0 1px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.04)",
                 }} />
               ))}
