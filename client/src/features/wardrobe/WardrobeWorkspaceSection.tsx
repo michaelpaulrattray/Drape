@@ -5,8 +5,8 @@
  * Renders the rack panel, canvas with overlays, layers panel, and
  * decomposition drawer.
  */
-import { useState, useCallback, useMemo, useRef } from 'react';
-import { Camera, Check } from 'lucide-react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Camera } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
@@ -49,9 +49,26 @@ export function WardrobeWorkspaceSection({
   // Flash effect state for "Shoot Look"
   const [showFlash, setShowFlash] = useState(false);
 
-  // Track whether the current result has already been saved
-  const [savedForUrl, setSavedForUrl] = useState<string | null>(null);
-  const isAlreadySaved = savedForUrl === gen.currentResult && gen.currentResult !== null;
+  // Brief checkmark animation state (shows for 1.5s after save, then reverts to camera)
+  const [showCheckmark, setShowCheckmark] = useState(false);
+
+  // Track saved URLs server-side to prevent duplicates across session resume
+  const savedUrlsRef = useRef<Set<string>>(new Set());
+
+  // Pre-populate saved URLs from existing looks on mount
+  const { data: existingLooks } = trpc.wardrobe.looks.list.useQuery(
+    { modelId: modelId! },
+    { enabled: !!modelId }
+  );
+
+  useEffect(() => {
+    if (existingLooks && existingLooks.length > 0) {
+      const urls = new Set(existingLooks.map((l: { imageUrl: string }) => l.imageUrl));
+      savedUrlsRef.current = urls;
+    }
+  }, [existingLooks]);
+
+  const isAlreadySaved = gen.currentResult !== null && savedUrlsRef.current.has(gen.currentResult);
 
   const resultOverlayItems = useWardrobeStore((s) => s.resultOverlayItems);
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
@@ -115,7 +132,7 @@ export function WardrobeWorkspaceSection({
   const handleSaveLook = useCallback(async () => {
     const imageUrl = gen.currentResult;
     if (!imageUrl || !modelId) return;
-    if (lastSavedUrlRef.current === imageUrl) {
+    if (savedUrlsRef.current.has(imageUrl) || lastSavedUrlRef.current === imageUrl) {
       toast.info('This look is already saved');
       return;
     }
@@ -123,6 +140,10 @@ export function WardrobeWorkspaceSection({
       // Trigger flash effect
       setShowFlash(true);
       setTimeout(() => setShowFlash(false), 300);
+
+      // Show brief checkmark then revert to camera
+      setShowCheckmark(true);
+      setTimeout(() => setShowCheckmark(false), 1500);
 
       const garmentIds = Array.from(selectedGarmentIds);
       const sessionId = useWardrobeStore.getState().activeSessionId;
@@ -133,10 +154,11 @@ export function WardrobeWorkspaceSection({
         ...(sessionId ? { sessionId } : {}),
       });
       lastSavedUrlRef.current = imageUrl;
-      setSavedForUrl(imageUrl);
+      savedUrlsRef.current.add(imageUrl);
       utils.wardrobe.looks.list.invalidate({ modelId });
       toast.success('Look saved to gallery');
     } catch {
+      setShowCheckmark(false);
       toast.error('Failed to save look');
     }
   }, [gen.currentResult, modelId, selectedGarmentIds, saveLookMutation, utils]);
@@ -166,7 +188,7 @@ export function WardrobeWorkspaceSection({
   const handleResetLook = useCallback(() => {
     if (gen.isGenerating) return;
     resetToOriginal();
-    setSavedForUrl(null);
+    setShowCheckmark(false);
     toast.success('Reset to original model');
   }, [gen.isGenerating, resetToOriginal]);
 
@@ -223,10 +245,8 @@ export function WardrobeWorkspaceSection({
   })();
   const compareLabel = gen.historyIndex <= 0 ? 'Original' : 'Previous';
 
-  // Camera button icon — show checkmark if already saved
-  const cameraIcon = isAlreadySaved
-    ? <Check size={18} style={{ color: '#22c55e' }} />
-    : <Camera size={18} />;
+  // Camera icon — brief checkmark after save, otherwise always camera
+  const cameraButtonDisabled = isAlreadySaved || isSavingLook || showCheckmark;
 
   return (
     <>
@@ -262,6 +282,11 @@ export function WardrobeWorkspaceSection({
             0% { opacity: 1; }
             100% { opacity: 0; }
           }
+          @keyframes checkFadeIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+          }
         `}</style>
 
         <StudioCanvas
@@ -294,9 +319,33 @@ export function WardrobeWorkspaceSection({
                 style={{ opacity: imageAreaHovered ? 1 : 0, pointerEvents: imageAreaHovered ? 'auto' : 'none' }}
               >
                 <ToolButton
-                  active={isAlreadySaved}
-                  onClick={handleSaveLook}
-                  icon={cameraIcon}
+                  active={false}
+                  onClick={cameraButtonDisabled ? () => {} : handleSaveLook}
+                  icon={
+                    showCheckmark ? (
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ animation: 'checkFadeIn 300ms ease-out forwards' }}
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      <Camera
+                        size={18}
+                        style={{
+                          opacity: cameraButtonDisabled ? 0.4 : 1,
+                          transition: 'opacity 200ms ease',
+                        }}
+                      />
+                    )
+                  }
                 />
               </div>
             ) : undefined

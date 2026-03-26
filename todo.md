@@ -120,3 +120,5 @@
 - [x] Add delete button to DraftCastsRow cards with confirmation dialog
 - [x] Bug: Resuming a draft cast from lobby enters read-only casting mode — should be editable since model is not minted
 - [x] Cap Draft Casts display to 3 most recent in lobby — preserve all drafts in DB, no auto-deletion of paid content
+- [x] Bug: Duplicate save to gallery possible after session resume — lastSavedUrlRef resets on re-mount, needs server-side tracking
+- [x] Bug: Camera icon active state (black button + green tick) is jarring — replace with subtle checkmark animation that fades back to camera icon
