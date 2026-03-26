@@ -170,9 +170,16 @@ export function useWardrobeInventory() {
           fileName: file.name,
         });
 
-        toast.success(
-          `${result.shortName || "Garment"} added to your wardrobe`,
-        );
+        // Gentle tip if quality issues detected, otherwise normal success
+        if (result.qualityIssues && Array.isArray(result.qualityIssues) && result.qualityIssues.length > 0) {
+          toast.success(
+            `${result.shortName || "Garment"} added \u2014 tip: higher res photos give better results`,
+          );
+        } else {
+          toast.success(
+            `${result.shortName || "Garment"} added to your wardrobe`,
+          );
+        }
         return result;
       } catch {
         // Error toast handled by mutation onError

@@ -44,3 +44,6 @@
 - [x] Show garment short names when 1-2 items selected (e.g. 'White Tee + Dark Jeans · v2')
 - [x] Add fade/slide transition animation when toolbar status text changes
 - [x] Apply same contextual status pattern to Casting Studio toolbar
+- [x] Add checkImageQuality to garment upload pipeline — run in parallel with detect, persist qualityIssues to DB
+- [x] Show toast warning when garment upload completes with quality issues
+- [x] Show quality warning badge/icon on garment card in rack panel

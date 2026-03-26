@@ -1,8 +1,9 @@
 /**
- * QualityBadge — Shows quality issue indicators on garment cards.
+ * QualityBadge — Subtle quality indicator on garment cards.
  *
- * Displays a small colored dot in the corner of the garment card
- * with a tooltip showing the issue details on hover.
+ * Displays a small muted info dot in the corner of the garment card.
+ * On hover, a tooltip shows the detected issues. Uses the warm
+ * muted palette to avoid feeling alarming or breaking immersion.
  */
 import type { QualityIssue } from "../types";
 
@@ -10,38 +11,35 @@ interface QualityBadgeProps {
   issues: QualityIssue[];
 }
 
-const SEVERITY_COLORS: Record<QualityIssue["severity"], string> = {
-  low: "#8B7355",
-  medium: "#D4A017",
-  high: "#C75050",
-};
-
 export function QualityBadge({ issues }: QualityBadgeProps) {
   if (!issues || issues.length === 0) return null;
 
-  const worst = issues.reduce((a, b) => {
-    const order = { high: 3, medium: 2, low: 1 };
-    return order[b.severity] > order[a.severity] ? b : a;
-  }, issues[0]);
-
   return (
     <div className="absolute bottom-2 right-2 z-10 group/badge">
+      {/* Subtle muted dot — warm palette, not alarming */}
       <div
-        className="w-2 h-2 rounded-full"
-        style={{ background: SEVERITY_COLORS[worst.severity] }}
-      />
-      {/* Tooltip */}
+        className="w-2.5 h-2.5 rounded-full flex items-center justify-center"
+        style={{ background: "rgba(139,115,85,0.35)" }}
+      >
+        <span style={{ fontSize: 7, color: "#8B7355", fontWeight: 700, lineHeight: 1 }}>!</span>
+      </div>
+      {/* Tooltip on hover */}
       <div
-        className="absolute bottom-full right-0 mb-1 px-2 py-1 rounded opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
+        className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1.5 rounded-lg opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none"
         style={{
-          background: "#1a1a1a",
-          color: "#fff",
+          background: "rgba(26,26,26,0.9)",
+          backdropFilter: "blur(8px)",
+          color: "#e8e4de",
           fontSize: 9,
-          maxWidth: 180,
+          maxWidth: 200,
+          lineHeight: 1.4,
         }}
       >
         {issues.map((issue, i) => (
-          <div key={i}>{issue.message}</div>
+          <div key={i} className="flex items-start gap-1">
+            <span style={{ color: "#8B7355", flexShrink: 0 }}>&middot;</span>
+            <span>{issue.message}</span>
+          </div>
         ))}
       </div>
     </div>

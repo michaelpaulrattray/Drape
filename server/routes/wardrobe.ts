@@ -142,8 +142,11 @@ const garmentRouter = router({
             description: "Wardrobe garment upload pipeline",
           },
           async () => {
-            // Detect garment type
-            const detected = await detectGarmentsInImage(originalUrl);
+            // Detect garment type + quality check in parallel
+            const [detected, quality] = await Promise.all([
+              detectGarmentsInImage(originalUrl),
+              checkImageQuality(originalUrl),
+            ]);
             const primaryItem = detected[0];
             const label = primaryItem?.label || input.slotType;
 
@@ -161,17 +164,19 @@ const garmentRouter = router({
               label,
             );
 
-            return { detected, digitized, metadata };
+            return { detected, digitized, metadata, quality };
           },
         );
 
         // Update garment record with results
+        const qualityIssues = result.quality.issues.length > 0 ? result.quality.issues : null;
         await updateGarment(garmentId, {
           shortName: result.metadata.shortName,
           description: result.metadata.description,
           tags: result.metadata.tags,
           suggestedActions: result.metadata.suggestedActions,
           isolatedImageUrl: result.digitized.flatLayUrl,
+          qualityIssues,
           status: "ready",
         });
 
@@ -181,6 +186,7 @@ const garmentRouter = router({
           garmentId,
           shortName: result.metadata.shortName,
           isolatedImageUrl: result.digitized.flatLayUrl,
+          qualityIssues,
           status: "ready" as const,
         };
       } catch (err) {

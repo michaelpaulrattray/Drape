@@ -10,11 +10,27 @@ import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { useWardrobeInventory } from "../hooks/useWardrobeInventory";
 import { GarmentCard } from "./GarmentCard";
 import { SavedOutfitCard } from "./SavedOutfitCard";
-import { SLOT_TABS, MAX_GARMENTS_PER_SLOT } from "../constants";
+import { SLOT_TABS, MAX_GARMENTS_PER_SLOT, QUALITY_ISSUE_LABELS } from "../constants";
+import type { QualityIssue } from "../types";
 import { Scissors } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { GarmentSlotType } from "../types";
+
+/** Severity mapping for raw quality issue codes from the server */
+const SEVERE_CODES = new Set(["MIRROR_SELFIE", "MULTIPLE_PEOPLE", "FACE_OBSCURED"]);
+const MODERATE_CODES = new Set(["LOW_RESOLUTION", "HEAVY_ANGLE", "CLUTTERED_BG", "SCREENSHOT", "PARTIAL_BODY"]);
+
+/** Convert raw issue codes (string[]) from DB into typed QualityIssue[] */
+function parseQualityIssues(raw: unknown): QualityIssue[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((v): v is string => typeof v === "string")
+    .map((code) => ({
+      severity: SEVERE_CODES.has(code) ? "high" : MODERATE_CODES.has(code) ? "medium" : "low" as const,
+      message: QUALITY_ISSUE_LABELS[code] || code.replace(/_/g, " ").toLowerCase(),
+    }));
+}
 
 export function RackPanel() {
   const activeSlot = useWardrobeStore((s) => s.activeSlot);
@@ -260,14 +276,7 @@ export function RackPanel() {
                     : []
                 }
                 styleNote={styleNotes[String(garment.id)]}
-                qualityIssues={
-                  Array.isArray(garment.qualityIssues)
-                    ? (garment.qualityIssues as {
-                        severity: "low" | "medium" | "high";
-                        message: string;
-                      }[])
-                    : []
-                }
+                qualityIssues={parseQualityIssues(garment.qualityIssues)}
                 isSelected={selectedGarmentIds.has(garment.id)}
                 isProcessing={garment.status === "processing"}
                 slotType={garment.slotType as import("../types").GarmentSlotType}
