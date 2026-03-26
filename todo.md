@@ -129,3 +129,4 @@
 - [x] Move compact session card delete button inline before Resume (currently overlapping)
 - [x] Reduce MY MODELS delete button size slightly (24→20px)
 - [x] Bug: Nested button error — DeleteOverlayButton renders <button> inside parent <button> elements (FeaturedCard, CompactCard)
+- [x] Bug: Resuming draft cast from lobby has noticeable delay — should feel instantaneous like Recent Sessions and My Models

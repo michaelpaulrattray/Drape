@@ -342,7 +342,7 @@ export default function DrapeStudio() {
                   setCanvas({ castModelId: null, castFullBodyUrl: null, castMasterPrompt: null, hasModel: false, hasFullBody: false, hasAllViews: false, modelSource: null, uploadedModelUrl: null, isMinted: false });
                   setActiveTool('casting');
                 }}
-                onResumeDraft={async (draft: DraftModel) => {
+                onResumeDraft={(draft: DraftModel) => {
                   // Reset stores first
                   useCastingGenerationStore.getState().resetGeneration();
                   useCastingUIStore.getState().resetUI();
@@ -363,17 +363,38 @@ export default function DrapeStudio() {
                     formStore.setModelName(draft.name || '');
                   }
 
-                  // Fetch model assets from server to populate canvas
-                  try {
-                    const model = await trpcUtils.models.get.fetch({ modelId: draft.id });
+                  // Set canvas immediately with the thumbnail we already have
+                  // (the draft thumbnail is the headshot — good enough for instant transition)
+                  setCanvas({
+                    castModelId: draft.id,
+                    castFullBodyUrl: null,
+                    castMasterPrompt: draft.masterPrompt,
+                    hasModel: true,
+                    hasFullBody: false,
+                    hasAllViews: false,
+                    modelSource: 'cast',
+                    uploadedModelUrl: null,
+                    isMinted: false,
+                  });
+
+                  // Switch to casting tool instantly — no waiting
+                  setActiveTool('casting');
+                  toast.success(`Resumed draft \u2014 ${draft.name || 'Draft Model'}`);
+
+                  // Fetch full assets in background and update stores when ready
+                  trpcUtils.models.get.fetch({ modelId: draft.id }).then((model) => {
                     if (model?.assets?.length) {
+                      const currentGenStore = useCastingGenerationStore.getState();
+                      // Only update if we're still on this draft (user didn't navigate away)
+                      if (currentGenStore.currentModelId !== draft.id) return;
+
                       const restoredAssets = model.assets.map((a: { id: number; viewType: string; storageUrl: string }) => ({
                         id: a.id,
                         viewType: a.viewType,
                         storageUrl: a.storageUrl,
                       }));
-                      genStore.setCurrentAssets(restoredAssets);
-                      genStore.pushHistory(restoredAssets);
+                      currentGenStore.setCurrentAssets(restoredAssets);
+                      currentGenStore.pushHistory(restoredAssets);
 
                       const fullBody = model.assets.find((a: { viewType: string }) => a.viewType === 'frontFull');
                       const sideView = model.assets.find((a: { viewType: string }) => a.viewType === 'sideClose');
@@ -389,38 +410,10 @@ export default function DrapeStudio() {
                         uploadedModelUrl: null,
                         isMinted: false,
                       });
-                    } else {
-                      // No assets fetched — set minimal canvas
-                      setCanvas({
-                        castModelId: draft.id,
-                        castFullBodyUrl: null,
-                        castMasterPrompt: draft.masterPrompt,
-                        hasModel: true,
-                        hasFullBody: false,
-                        hasAllViews: false,
-                        modelSource: 'cast',
-                        uploadedModelUrl: null,
-                        isMinted: false,
-                      });
                     }
-                  } catch {
-                    // Fallback — set canvas without assets
-                    setCanvas({
-                      castModelId: draft.id,
-                      castFullBodyUrl: null,
-                      castMasterPrompt: draft.masterPrompt,
-                      hasModel: true,
-                      hasFullBody: false,
-                      hasAllViews: false,
-                      modelSource: 'cast',
-                      uploadedModelUrl: null,
-                      isMinted: false,
-                    });
-                  }
-
-                  // Switch to casting tool
-                  setActiveTool('casting');
-                  toast.success(`Resumed draft — ${draft.name || 'Draft Model'}`);
+                  }).catch(() => {
+                    // Silently fail — canvas already has minimal state set above
+                  });
                 }}
               />
             </div>
