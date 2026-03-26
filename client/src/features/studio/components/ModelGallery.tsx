@@ -1,12 +1,12 @@
 /**
  * ModelGallery — Horizontal scrollable gallery of user's exported/minted models.
  *
- * Shown in the studio lobby. Click a model to load it into the wardrobe.
- * Only shows models with status "active" (exported) that have a thumbnail.
+ * Shown in the studio lobby. Receives pre-fetched model data from StudioLobby
+ * so loading can be coordinated across all lobby sections.
+ * Click a model to load it into the wardrobe.
  */
 import { useRef, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Crown } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
 
 /** Shape returned by wardrobe.model.listMinted */
 export interface MintedModel {
@@ -19,11 +19,11 @@ export interface MintedModel {
 }
 
 interface ModelGalleryProps {
+  models: MintedModel[];
   onSelectModel: (model: MintedModel) => void;
 }
 
-export function ModelGallery({ onSelectModel }: ModelGalleryProps) {
-  const { data: models, isLoading } = trpc.wardrobe.model.listMinted.useQuery();
+export function ModelGallery({ models, onSelectModel }: ModelGalleryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
@@ -36,30 +36,8 @@ export function ModelGallery({ onSelectModel }: ModelGalleryProps) {
     });
   }, []);
 
-  // Don't render anything if loading or no models
-  if (isLoading) {
-    return (
-      <div className="w-full">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <Crown className="w-3.5 h-3.5" style={{ color: '#999' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#999', letterSpacing: '0.05em' }}>
-            MY MODELS
-          </span>
-        </div>
-        <div className="flex gap-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="flex-shrink-0 rounded-xl animate-pulse"
-              style={{ width: 120, height: 160, background: '#f0ede8' }}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!models || models.length === 0) return null;
+  // Don't render if no models
+  if (models.length === 0) return null;
 
   return (
     <div className="w-full">
@@ -114,7 +92,7 @@ export function ModelGallery({ onSelectModel }: ModelGalleryProps) {
           return (
             <button
               key={model.id}
-              onClick={() => onSelectModel(model as MintedModel)}
+              onClick={() => onSelectModel(model)}
               onMouseEnter={() => setHoveredId(model.id)}
               onMouseLeave={() => setHoveredId(null)}
               className="flex-shrink-0 rounded-xl overflow-hidden relative group"

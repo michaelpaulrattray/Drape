@@ -3,13 +3,12 @@
  * wardrobe (or future tool) session. Shows model thumbnail, last VTO result,
  * model name, time ago, and iteration count.
  *
- * Renders nothing if no resumable session exists.
- * Future-proof: the `tool` field from the server determines the label
- * ("Continue in Wardrobe", "Continue in Scenery", etc.).
+ * Receives pre-fetched session data from StudioLobby so loading can be
+ * coordinated across all lobby sections.
+ * Renders nothing if no session is provided.
  */
 import { useState, useCallback } from 'react';
 import { Play, Clock, Layers } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 
 /** Tool display config — extend when adding new studio tools */
@@ -30,29 +29,29 @@ function timeAgo(date: Date): string {
   return `${days}d ago`;
 }
 
-interface ContinueSessionCardProps {
-  onContinue: (session: {
-    tool: string;
-    sessionId: number;
-    modelId: number | null;
-    modelName: string | null;
-    masterPrompt: string | null;
-    modelImageUrl: string;
-    lastResultUrl: string;
-    iterationCount: number;
-    activeGarmentIds: number[];
-    history: string[];
-    historyIndex: number;
-    tattooMapData: unknown;
-    styleNotes: Record<string, string> | null;
-  }) => void;
+export interface SessionData {
+  tool: string;
+  sessionId: number;
+  modelId: number | null;
+  modelName: string | null;
+  masterPrompt: string | null;
+  modelImageUrl: string;
+  lastResultUrl: string;
+  iterationCount: number;
+  activeGarmentIds: number[];
+  history: string[];
+  historyIndex: number;
+  tattooMapData: unknown;
+  styleNotes: Record<string, string> | null;
+  updatedAt: Date | string;
 }
 
-export function ContinueSessionCard({ onContinue }: ContinueSessionCardProps) {
-  const { data: session, isLoading } = trpc.wardrobe.sessions.getLatest.useQuery(
-    undefined,
-    { staleTime: 30_000 },
-  );
+interface ContinueSessionCardProps {
+  session: SessionData | null;
+  onContinue: (session: SessionData) => void;
+}
+
+export function ContinueSessionCard({ session, onContinue }: ContinueSessionCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
@@ -82,8 +81,8 @@ export function ContinueSessionCard({ onContinue }: ContinueSessionCardProps) {
     }
   }, [session, isRestoring, onContinue]);
 
-  // Don't render if loading or no session
-  if (isLoading || !session) return null;
+  // Don't render if no session
+  if (!session) return null;
 
   const toolLabel = TOOL_LABELS[session.tool] || session.tool;
   const displayName = session.modelName || 'Uploaded Model';

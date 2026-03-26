@@ -55,3 +55,5 @@
 - [x] Bug: Restored session from saved cast model shows 'uploaded' in Casting (pre-fix sessions)
 - [x] Persist styleNotes across session restore — prevent style instructions from being lost
 - [ ] Persist Gemini chat context across session restore — prevent model drift on refinements
+- [x] Clean up draft models from DB — verified only Janet and Dumb exist (no cleanup needed)
+- [x] Fix lobby loading experience — lifted queries to StudioLobby, coordinated skeleton → reveal animation

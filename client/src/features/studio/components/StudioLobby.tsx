@@ -6,9 +6,9 @@
  *   2. "Upload Your Own" — upload a full-body photo → wardrobe
  *   3. "Cast a Model" — open casting tool to generate a new model
  *
- * After S3 upload, the image is preloaded into the browser cache before
- * triggering the workspace transition to prevent panels assembling around
- * an empty canvas.
+ * Queries are lifted here so we can coordinate loading: the entrance
+ * animation only fires after both the session and gallery queries settle,
+ * preventing janky pop-in where elements appear one by one.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Camera, ImagePlus, Loader2, X, Sparkles, Upload, Check } from 'lucide-react';
@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useSessionReset } from '../hooks/useSessionReset';
 import { ModelGallery, type MintedModel } from './ModelGallery';
-import { ContinueSessionCard } from './ContinueSessionCard';
+import { ContinueSessionCard, type SessionData } from './ContinueSessionCard';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -38,12 +38,26 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
   const { loadUploadedModel, loadGalleryModel, resumeWardrobeSession } = useSessionReset();
   const uploadMutation = trpc.wardrobe.model.upload.useMutation();
 
-  // Entrance animation
+  // ── Lift queries here for coordinated loading ──────────────
+  const {
+    data: models,
+    isLoading: modelsLoading,
+  } = trpc.wardrobe.model.listMinted.useQuery();
+
+  const {
+    data: latestSession,
+    isLoading: sessionLoading,
+  } = trpc.wardrobe.sessions.getLatest.useQuery(undefined, { staleTime: 30_000 });
+
+  const dataReady = !modelsLoading && !sessionLoading;
+
+  // Entrance animation — only fires once both queries settle
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    if (!dataReady) return;
     const raf = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [dataReady]);
 
   // Upload state
   const [isDragging, setIsDragging] = useState(false);
@@ -158,6 +172,56 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
 
   const isBusy = isUploading || !!loadingModelId;
 
+  // ── Loading skeleton ───────────────────────────────────────
+  if (!dataReady) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10">
+        <div className="w-full" style={{ maxWidth: 680 }}>
+          {/* Title skeleton */}
+          <div className="flex flex-col items-center gap-3 mb-10">
+            <div
+              className="rounded-lg animate-pulse"
+              style={{ width: 260, height: 28, background: 'rgba(0,0,0,0.05)' }}
+            />
+            <div
+              className="rounded-lg animate-pulse"
+              style={{ width: 340, height: 14, background: 'rgba(0,0,0,0.03)' }}
+            />
+          </div>
+
+          {/* Session card skeleton */}
+          <div
+            className="rounded-2xl animate-pulse mb-6"
+            style={{ height: 96, background: 'rgba(0,0,0,0.03)' }}
+          />
+
+          {/* Gallery skeleton */}
+          <div className="flex gap-3 mb-8">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 rounded-xl animate-pulse"
+                style={{ width: 120, height: 160, background: 'rgba(0,0,0,0.04)' }}
+              />
+            ))}
+          </div>
+
+          {/* CTA cards skeleton */}
+          <div className="flex gap-5">
+            <div
+              className="flex-1 rounded-2xl animate-pulse"
+              style={{ height: 240, background: 'rgba(0,0,0,0.03)' }}
+            />
+            <div
+              className="flex-1 rounded-2xl animate-pulse"
+              style={{ height: 240, background: 'rgba(0,0,0,0.06)' }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 overflow-y-auto"
@@ -225,6 +289,7 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
         }}
       >
         <ContinueSessionCard
+          session={(latestSession as SessionData) ?? null}
           onContinue={(session) => {
             if (session.tool === 'wardrobe') {
               resumeWardrobeSession(session);
@@ -244,7 +309,10 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
           transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s',
         }}
       >
-        <ModelGallery onSelectModel={handleSelectModel} />
+        <ModelGallery
+          models={(models as MintedModel[]) ?? []}
+          onSelectModel={handleSelectModel}
+        />
       </div>
 
       {/* Two CTA cards */}
@@ -303,7 +371,7 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
                 <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1a1a1a' }} />
               )}
               <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
-                {uploadPhase ? PHASE_LABELS[uploadPhase] : ''}
+                {PHASE_LABELS[uploadPhase!]}
               </span>
               <div className="w-40 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
                 <div
