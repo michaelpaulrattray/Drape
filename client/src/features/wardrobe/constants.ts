@@ -25,6 +25,9 @@ export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 /** Maximum file size for garment upload (8MB) */
 export const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 
+/** If quickDetect finds more than this many items in the target category, open decomposition drawer */
+export const SMART_DETECT_THRESHOLD = 2;
+
 /** Slot type display names */
 export const SLOT_DISPLAY_NAMES: Record<GarmentSlotType, string> = {
   full_look: "Full Look",

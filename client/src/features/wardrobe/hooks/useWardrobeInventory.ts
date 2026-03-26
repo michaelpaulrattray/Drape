@@ -3,6 +3,11 @@
  *
  * Wraps tRPC queries/mutations for the garment inventory with
  * optimistic updates, file validation, and upload state tracking.
+ *
+ * Smart decomposition: non-full-look uploads are pre-scanned via
+ * quickDetect. If >SMART_DETECT_THRESHOLD items are found in the
+ * target category, the DecompositionDrawer opens for user review
+ * instead of uploading directly.
  */
 import { useCallback, useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -12,6 +17,7 @@ import {
   ACCEPTED_IMAGE_TYPES,
   MAX_FILE_SIZE_BYTES,
   MAX_GARMENTS_PER_SLOT,
+  SMART_DETECT_THRESHOLD,
 } from "../constants";
 import type { GarmentSlotType } from "../types";
 
@@ -35,6 +41,9 @@ function validateFile(file: File): string | null {
   }
   return null;
 }
+
+/** Slots eligible for smart decomposition pre-scan */
+const SCANNABLE_SLOTS: GarmentSlotType[] = ["tops", "bottoms", "shoes", "accessories"];
 
 export function useWardrobeInventory() {
   const utils = trpc.useUtils();
@@ -66,6 +75,9 @@ export function useWardrobeInventory() {
       toast.error(err.message || "Failed to upload garment");
     },
   });
+
+  // ── Quick detect mutation (smart decomposition pre-scan) ─
+  const quickDetectMutation = trpc.wardrobe.garments.quickDetect.useMutation();
 
   // ── Delete mutation ──────────────────────────────────────
   const deleteMutation = trpc.wardrobe.garments.delete.useMutation({
@@ -126,8 +138,32 @@ export function useWardrobeInventory() {
 
       try {
         const base64 = await fileToBase64(file);
-        toast.info("Analyzing garment...", { duration: 3000 });
+        toast.info("Analyzing garment...", { duration: 5000 });
 
+        // Smart decomposition: pre-scan for scannable slots
+        if (SCANNABLE_SLOTS.includes(slot)) {
+          try {
+            const scan = await quickDetectMutation.mutateAsync({
+              imageBase64: base64,
+              targetSlot: slot as "tops" | "bottoms" | "shoes" | "accessories",
+            });
+
+            if (scan.matchingCount > SMART_DETECT_THRESHOLD) {
+              // Multiple items detected — open drawer for user review
+              useWardrobeStore.getState().setPendingQuickDetect({
+                sourceImageUrl: scan.sourceImageUrl,
+                garments: scan.garments,
+              });
+              useWardrobeStore.getState().setPendingDecomposeFile(file);
+              useWardrobeStore.getState().setDecomposeOpen(true);
+              return null;
+            }
+          } catch {
+            // Detection failed — fall through to normal upload
+          }
+        }
+
+        // Normal upload pipeline (single garment or detection passed)
         const result = await uploadMutation.mutateAsync({
           imageBase64: base64,
           slotType: slot,
@@ -149,7 +185,7 @@ export function useWardrobeInventory() {
         });
       }
     },
-    [activeSlot, garments, uploadMutation],
+    [activeSlot, garments, uploadMutation, quickDetectMutation],
   );
 
   // ── Delete handler ───────────────────────────────────────

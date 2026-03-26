@@ -189,6 +189,38 @@ const garmentRouter = router({
       }
     }),
 
+  /** Lightweight scan: upload to S3 + detect garments without digitize/analyze pipeline */
+  quickDetect: protectedProcedure
+    .input(z.object({
+      imageBase64: z.string().max(10_000_000),
+      targetSlot: z.enum(["tops", "bottoms", "shoes", "accessories"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      throwIfRateLimited(ctx.user.id);
+
+      // Upload to S3
+      const suffix = Math.random().toString(36).slice(2, 8);
+      const fileKey = `${ctx.user.id}-wardrobe/scan-${Date.now()}-${suffix}.png`;
+      const imageBuffer = Buffer.from(
+        input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
+        "base64",
+      );
+      const { url: sourceImageUrl } = await storagePut(fileKey, imageBuffer, "image/png");
+
+      // Run lightweight detection (no credits — UX guard only)
+      const detected = await detectGarmentsInImage(sourceImageUrl);
+      const matchingCount = detected.filter((d) => d.category === input.targetSlot).length;
+
+      log.info(`quickDetect for user ${ctx.user.id}: ${detected.length} total, ${matchingCount} matching '${input.targetSlot}'`);
+
+      return {
+        sourceImageUrl,
+        garments: detected,
+        matchingCount,
+        totalCount: detected.length,
+      };
+    }),
+
   delete: protectedProcedure
     .input(z.object({ garmentId: z.number() }))
     .mutation(async ({ ctx, input }) => {

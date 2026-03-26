@@ -59,13 +59,15 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
       setSelectedIds(new Set());
       setEditingId(null);
       setIsScanning(false);
-      // Clear pending file when drawer closes
+      // Clear pending state when drawer closes
       useWardrobeStore.getState().setPendingDecomposeFile(null);
+      useWardrobeStore.getState().setPendingQuickDetect(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const pendingDecomposeFile = useWardrobeStore((s) => s.pendingDecomposeFile);
+  const pendingQuickDetect = useWardrobeStore((s) => s.pendingQuickDetect);
   const pendingProcessedRef = useRef(false);
 
   const handleFileSelect = useCallback(
@@ -108,14 +110,30 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
     [analyzeMutation],
   );
 
-  // Auto-analyze pending file from full_look upload intercept
+  // Auto-populate from pending file or pre-scanned quickDetect results
   useEffect(() => {
-    if (open && pendingDecomposeFile && !pendingProcessedRef.current) {
-      pendingProcessedRef.current = true;
+    if (!open || pendingProcessedRef.current) return;
+    if (!pendingDecomposeFile && !pendingQuickDetect) return;
+
+    pendingProcessedRef.current = true;
+
+    // If quickDetect already ran (smart decomposition), skip the full analyze call
+    if (pendingQuickDetect && pendingDecomposeFile) {
+      const blobUrl = URL.createObjectURL(pendingDecomposeFile);
+      setPreviewUrl(blobUrl);
+      setSourceImageUrl(pendingQuickDetect.sourceImageUrl);
+      setItems(pendingQuickDetect.garments);
+      setSelectedIds(new Set(pendingQuickDetect.garments.map((d) => d.id)));
+      return;
+    }
+
+    // Otherwise run the full analyze (full_look upload path)
+    if (pendingDecomposeFile) {
       handleFileSelect(pendingDecomposeFile);
     }
+
     if (!open) pendingProcessedRef.current = false;
-  }, [open, pendingDecomposeFile, handleFileSelect]);
+  }, [open, pendingDecomposeFile, pendingQuickDetect, handleFileSelect]);
 
   const toggleSelection = useCallback((id: string) => {
     setSelectedIds((prev) => {

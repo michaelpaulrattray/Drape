@@ -101,6 +101,10 @@ interface WardrobeState {
   pendingDecomposeFile: File | null;
   setPendingDecomposeFile: (file: File | null) => void;
 
+  /** Pre-scanned quick-detect results (S3 URL + detected items from smart decomposition) */
+  pendingQuickDetect: { sourceImageUrl: string; garments: DetectedItem[] } | null;
+  setPendingQuickDetect: (data: { sourceImageUrl: string; garments: DetectedItem[] } | null) => void;
+
   /** Reset all wardrobe state */
   resetWardrobe: () => void;
 }
@@ -125,6 +129,7 @@ const INITIAL_STATE = {
   generatingMessage: null as string | null,
   isDecomposeOpen: false,
   pendingDecomposeFile: null as File | null,
+  pendingQuickDetect: null as { sourceImageUrl: string; garments: DetectedItem[] } | null,
   lastGenStyleNotes: {} as Record<string, string>,
 };
 
@@ -375,6 +380,9 @@ export const useWardrobeStore = create<WardrobeState>()(
 
       setPendingDecomposeFile: (file) =>
         set({ pendingDecomposeFile: file }, false, "setPendingDecomposeFile"),
+
+      setPendingQuickDetect: (data) =>
+        set({ pendingQuickDetect: data }, false, "setPendingQuickDetect"),
 
       // ── Reset ──────────────────────────────────────────────
       resetWardrobe: () =>
