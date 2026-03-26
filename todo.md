@@ -47,3 +47,7 @@
 - [x] Add checkImageQuality to garment upload pipeline — run in parallel with detect, persist qualityIssues to DB
 - [x] Show toast warning when garment upload completes with quality issues
 - [x] Show quality warning badge/icon on garment card in rack panel
+- [x] Bug: Session restore missing overlay — auto-scan VTO result overlay after session resume
+- [x] Bug: Casting shows 'This model was uploaded' for saved/minted models — should distinguish source
+- [x] Bug: Session restore missing tattooMap — persist and restore tattoo data across sessions
+- [x] Audit: check for any other missing state in session restore flow

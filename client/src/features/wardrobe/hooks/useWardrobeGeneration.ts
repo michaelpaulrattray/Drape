@@ -103,6 +103,9 @@ export function useWardrobeGeneration({
   // Generation ID to detect stale overlay results
   const generationIdRef = useRef(0);
 
+  // Track: auto-scan overlay after session restore
+  const hasScannedOnRestore = useRef(false);
+
   // ── Cooldown Timer ─────────────────────────────────────────
   useEffect(() => {
     if (cooldownSeconds <= 0) return;
@@ -172,6 +175,25 @@ export function useWardrobeGeneration({
     },
     [detectMutation, setIsScanningResult, setResultOverlayItems, cacheOverlayItems],
   );
+
+  // ── Auto-scan overlay after session restore ─────────────────
+  useEffect(() => {
+    if (hasScannedOnRestore.current) return;
+    const state = useWardrobeStore.getState();
+    // Detect: session was restored with VTO history but no overlay items
+    if (
+      state.vtoHistory.length > 0 &&
+      state.vtoHistoryIndex >= 0 &&
+      state.resultOverlayItems.length === 0 &&
+      !state.isScanningResult
+    ) {
+      const currentUrl = state.vtoHistory[state.vtoHistoryIndex];
+      if (currentUrl) {
+        hasScannedOnRestore.current = true;
+        scanResultOverlay(currentUrl, generationIdRef.current);
+      }
+    }
+  }, [vtoHistoryIndex, scanResultOverlay]);
 
   // ── Session Management ─────────────────────────────────────
 

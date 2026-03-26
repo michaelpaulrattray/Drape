@@ -310,6 +310,7 @@ const vtoRouter = router({
             history,
             historyIndex: history.length - 1,
             activeGarmentIds: input.garmentIds,
+            ...(input.tattooMap ? { tattooMapData: input.tattooMap } : {}),
           });
         }
       }

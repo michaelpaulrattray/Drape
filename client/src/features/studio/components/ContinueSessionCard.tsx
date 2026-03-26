@@ -43,6 +43,7 @@ interface ContinueSessionCardProps {
     activeGarmentIds: number[];
     history: string[];
     historyIndex: number;
+    tattooMapData: unknown;
   }) => void;
 }
 

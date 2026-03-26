@@ -215,8 +215,8 @@ export default function DrapeStudio() {
     canvas.isMinted || canvas.castModelId !== null
   );
 
-  // Uploaded models have no casting data — show a "not cast" placeholder
-  const isUploadedModel = activeTool === 'casting' && canvas.modelSource === 'uploaded';
+  // Non-cast models (uploaded or loaded from gallery without casting) — show placeholder
+  const isNonCastModel = activeTool === 'casting' && canvas.modelSource === 'uploaded';
 
   // New Model — resets entire session
   const handleNewModel = useCallback(() => {
@@ -339,7 +339,7 @@ export default function DrapeStudio() {
             </div>
           )}
 
-          {activeTool === 'casting' && isUploadedModel && (
+          {activeTool === 'casting' && isNonCastModel && (
             <div
               className="flex-1 flex items-center justify-center"
               style={{
@@ -355,10 +355,10 @@ export default function DrapeStudio() {
                   <Camera className="w-6 h-6" style={{ color: '#999' }} />
                 </div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
-                  This model was uploaded
+                  This model was not cast
                 </p>
                 <p style={{ fontSize: 12, color: '#999', lineHeight: 1.5, marginBottom: 20 }}>
-                  Uploaded photos skip the casting process. To use the Casting Studio,
+                  This model was loaded without casting data. To use the Casting Studio,
                   start a new model from scratch.
                 </p>
                 <button
@@ -374,7 +374,7 @@ export default function DrapeStudio() {
             </div>
           )}
 
-          {activeTool === 'casting' && !isUploadedModel && (
+          {activeTool === 'casting' && !isNonCastModel && (
             <>
               {/* Left Panel — Control (slides from left) */}
               <AnimatedPanel

@@ -30,24 +30,30 @@ export function useModelSetup(modelImageUrl: string | null): void {
     if (!hasHistory) {
       clearVTOHistory();
     }
-    setTattooMap(null);
+    // Skip tattoo clear + re-analysis if already restored from DB (session resume)
+    const existingTattooMap = useWardrobeStore.getState().tattooMap;
+    if (!existingTattooMap) {
+      setTattooMap(null);
+    }
 
     // No API calls if model is cleared
     if (!modelImageUrl) return;
 
-    // Fire-and-forget tattoo analysis
-    analyzeMutation
-      .mutateAsync({ imageUrl: modelImageUrl })
-      .then((map) => {
-        setTattooMap(map);
-        if (map.hasTattoos) {
-          console.log(`[Tattoo Map] Found: ${map.tattooAreas.join(", ")}`);
-          console.log(`[Tattoo Map] Clean: ${map.cleanAreas.join(", ")}`);
-        }
-      })
-      .catch(() => {
-        // Non-critical — tattoo map stays null
-      });
+    // Skip tattoo analysis if we already have a map (restored from DB)
+    if (!existingTattooMap) {
+      analyzeMutation
+        .mutateAsync({ imageUrl: modelImageUrl })
+        .then((map) => {
+          setTattooMap(map);
+          if (map.hasTattoos) {
+            console.log(`[Tattoo Map] Found: ${map.tattooAreas.join(", ")}`);
+            console.log(`[Tattoo Map] Clean: ${map.cleanAreas.join(", ")}`);
+          }
+        })
+        .catch(() => {
+          // Non-critical — tattoo map stays null
+        });
+    }
 
     // Fire-and-forget quality check
     qualityMutation

@@ -83,13 +83,19 @@ export function useSessionReset() {
     history: string[];
     historyIndex: number;
     activeGarmentIds: number[];
+    tattooMapData?: unknown;
   }) => {
     // Clear any stale state first
     resetWardrobe();
 
-    // Set canvas state based on whether this is a cast or uploaded model
-    if (session.modelId && session.masterPrompt) {
-      loadModelFromCast(session.modelId, session.modelImageUrl, session.masterPrompt);
+    // Set canvas state based on whether this is a cast or uploaded model.
+    // Use modelId alone — masterPrompt may be null for older models.
+    if (session.modelId) {
+      loadModelFromCast(
+        session.modelId,
+        session.modelImageUrl,
+        session.masterPrompt || '',
+      );
     } else {
       loadModelFromUpload(session.modelImageUrl);
     }
@@ -102,6 +108,13 @@ export function useSessionReset() {
     // Restore VTO history
     for (const url of session.history) {
       wardrobeStore.pushVTOResult(url);
+    }
+
+    // Restore tattoo map from DB (avoids redundant re-analysis)
+    if (session.tattooMapData) {
+      wardrobeStore.setTattooMap(
+        session.tattooMapData as { hasTattoos: boolean; tattooAreas: string[]; cleanAreas: string[]; promptFragment: string },
+      );
     }
 
     // Persist to localStorage so refresh works immediately
