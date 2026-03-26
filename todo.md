@@ -7,3 +7,8 @@
 - [x] Implement CastModelModal — gate Wardrobe access behind identity save (auto-generate missing side view + mint model)
 - [x] Wire CastModelModal into ToolRail click handler and DrapeStudio orchestration
 - [x] Add Wardrobe image download button for saving dressed model images
+- [ ] Fix: Cast modal re-appears when switching back to Casting after already minting
+- [x] Implement read-only Casting mode after mint (disable refine/retry/regenerate, allow side view gen + export)
+- [ ] Make side view generation optional in CastModelModal (recommended but not required)
+- [ ] Persist minted state across page refresh (load model assets from DB on page load)
+- [x] Add "New Model" escape button in read-only Casting mode

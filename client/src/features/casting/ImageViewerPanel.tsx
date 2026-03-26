@@ -50,6 +50,7 @@ interface ImageViewerPanelProps {
   handleRefineSubmit: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  isReadOnly?: boolean;
 }
 
 // ============ Main Component ============
@@ -78,6 +79,7 @@ export function ImageViewerPanel({
   handleRefineSubmit,
   canUndo,
   canRedo,
+  isReadOnly,
 }: ImageViewerPanelProps) {
   const { prefs, updatePref } = useCastingFormStore();
   const {
@@ -145,6 +147,7 @@ export function ImageViewerPanel({
   // Casting-specific keyboard handler
   const castingKeyHandler = useCallback((e: KeyboardEvent) => {
     if (currentAssets.length === 0) return false;
+    if (isReadOnly) return false; // No editing shortcuts in read-only mode
     switch (e.key) {
       case '/': {
         const refineEl = document.querySelector('[data-refine-input]') as HTMLTextAreaElement;
@@ -157,7 +160,7 @@ export function ImageViewerPanel({
         break;
     }
     return false;
-  }, [currentAssets.length, prefs.referenceImage]);
+  }, [currentAssets.length, prefs.referenceImage, isReadOnly]);
 
   // ── Derive StudioCanvas props ──
   // Status label — just tool name, spinner handles generating state
@@ -270,8 +273,8 @@ export function ImageViewerPanel({
     />
   ) : undefined;
 
-  // ── Side overlay: Tool buttons ──
-  const sideOverlay = hasAssets ? (
+  // ── Side overlay: Tool buttons (hidden in read-only mode) ──
+  const sideOverlay = hasAssets && !isReadOnly ? (
     <>
       {/* Tools bar — surgical + eraser */}
       {!genState.isGenerating && hasAssets && (
@@ -323,8 +326,8 @@ export function ImageViewerPanel({
   // ── Bottom overlay: Contextual tip + Refine panel + Shortcuts + Suggestions ──
   const bottomOverlay = hasAssets ? (
     <>
-      {/* Contextual Tip for New Model */}
-      {historyIndex <= 0 && !genState.isGenerating && (!suggestions || suggestions.length === 0) && !isLoadingSuggestions && (
+      {/* Contextual Tip for New Model — hidden in read-only */}
+      {!isReadOnly && historyIndex <= 0 && !genState.isGenerating && (!suggestions || suggestions.length === 0) && !isLoadingSuggestions && (
         <div className="absolute bottom-32 left-1/2 z-10 px-3 py-2 rounded-lg pointer-events-none transition-all duration-300 ease-out"
           style={{
             background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', fontSize: 10, color: '#b8b3a8', maxWidth: 280, textAlign: 'center',
@@ -345,8 +348,8 @@ export function ImageViewerPanel({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Inline Masking Helper */}
-        {isMasking && (
+        {/* Inline Masking Helper — hidden in read-only */}
+        {!isReadOnly && isMasking && (
           <div className="mb-2 flex justify-center relative z-30">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
               style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
@@ -364,18 +367,20 @@ export function ImageViewerPanel({
           </div>
         )}
 
-        {/* Refine panel */}
-        <RefinePanel
-          maskPathsCount={maskPathsCount}
-          isMasking={isMasking}
-          isViewLocked={isViewLocked}
-          isIterationAllowed={isIterationAllowed}
-          textAreaRef={textAreaRef}
-          handleGenerate={handleGenerate}
-          handleEnhance={handleEnhance}
-          handleRefineSubmit={handleRefineSubmit}
-          referenceImage={prefs.referenceImage}
-        />
+        {/* Refine panel — hidden in read-only */}
+        {!isReadOnly && (
+          <RefinePanel
+            maskPathsCount={maskPathsCount}
+            isMasking={isMasking}
+            isViewLocked={isViewLocked}
+            isIterationAllowed={isIterationAllowed}
+            textAreaRef={textAreaRef}
+            handleGenerate={handleGenerate}
+            handleEnhance={handleEnhance}
+            handleRefineSubmit={handleRefineSubmit}
+            referenceImage={prefs.referenceImage}
+          />
+        )}
 
         {/* Shortcuts Bar + Next Step Chip */}
         {!genState.isGenerating && (
@@ -389,15 +394,20 @@ export function ImageViewerPanel({
               width: 'fit-content', margin: '8px auto 0',
             }}
           >
-            {/* Keyboard hints */}
+            {/* Keyboard hints — simplified in read-only (only compare) */}
             <div className="flex items-center gap-3 pointer-events-none">
-              {[
-                { key: 'Z', label: 'Undo' },
-                { key: '⇧Z', label: 'Redo' },
-                { key: '/', label: 'Refine' },
-                ...(prefs.referenceImage ? [{ key: 'F', label: 'Ref' }] : []),
-                ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
-              ].map(s => (
+              {(isReadOnly
+                ? [
+                    ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
+                  ]
+                : [
+                    { key: 'Z', label: 'Undo' },
+                    { key: '⇧Z', label: 'Redo' },
+                    { key: '/', label: 'Refine' },
+                    ...(prefs.referenceImage ? [{ key: 'F', label: 'Ref' }] : []),
+                    ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
+                  ]
+              ).map(s => (
                 <div key={s.key} className="flex items-center gap-1.5">
                   <span style={{
                     fontSize: 9, fontWeight: 700, color: '#bbb',
@@ -422,8 +432,8 @@ export function ImageViewerPanel({
           </div>
         )}
 
-        {/* Quick Ideas — rotating suggestions */}
-        {!genState.isGenerating && activeTool === 'none' && (isLoadingSuggestions || (suggestions && suggestions.length > 0)) && (
+        {/* Quick Ideas — hidden in read-only */}
+        {!isReadOnly && !genState.isGenerating && activeTool === 'none' && (isLoadingSuggestions || (suggestions && suggestions.length > 0)) && (
           <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20">
             {isLoadingSuggestions ? (
               <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-full mx-auto w-fit"
@@ -454,8 +464,8 @@ export function ImageViewerPanel({
       hasResult={hasResult}
       onUndo={handleUndo}
       onRedo={handleRedo}
-      canUndo={canUndo()}
-      canRedo={canRedo()}
+      canUndo={!isReadOnly && canUndo()}
+      canRedo={!isReadOnly && canRedo()}
       statusLabel={statusLabel}
       statusColor={statusColor}
       statusGlow={statusGlow}
@@ -465,7 +475,7 @@ export function ImageViewerPanel({
           : genState.error
       ) : undefined}
       onClearError={() => setGenState((p) => ({ ...p, error: null }))}
-      onRetry={handleRetry}
+      onRetry={isReadOnly ? () => {} : handleRetry}
       compareUrl={compareUrl}
       compareLabel={compareLabel}
       loadingMessage={genState.currentStep || 'Processing...'}

@@ -34,6 +34,7 @@ import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingVie
 import { generateRandomPreferences } from '@/features/casting/castingHelpers';
 import { CastModelModal } from '@/features/studio/components/CastModelModal';
 import { useCastGate } from '@/features/studio/hooks/useCastGate';
+import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
 
 /** Valid tool query param values */
 const VALID_TOOLS: StudioTool[] = ['casting', 'wardrobe', 'export'];
@@ -49,6 +50,10 @@ export default function DrapeStudio() {
   // Orchestrated transition phases
   const transition = useStudioTransition(activeTool);
 
+  // Session persistence — restore on mount, auto-save on changes
+  const { isRestoring } = useSessionRestore(isAuthenticated);
+  useSessionAutoSave();
+
   // Parse ?tool= query param on mount
   useEffect(() => {
     const params = new URLSearchParams(searchString);
@@ -59,7 +64,7 @@ export default function DrapeStudio() {
   }, []); // Only on mount
 
   // Casting stores
-  const { prefs, setPrefs } = useCastingFormStore();
+  const { prefs, setPrefs, modelName } = useCastingFormStore();
   const {
     genState,
     setGenState,
@@ -195,6 +200,18 @@ export default function DrapeStudio() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [prefs, setPrefs]);
 
+  // Read-only mode: casting is locked after model is minted
+  const isReadOnly = canvas.isMinted && activeTool === 'casting';
+
+  // New Model — resets entire session
+  const handleNewModel = useCallback(() => {
+    useStudioStore.getState().resetStudio();
+    useCastingGenerationStore.getState().resetGeneration();
+    useCastingFormStore.getState().resetForm();
+    clearPersistedSession();
+    toast.success('Starting fresh canvas');
+  }, []);
+
   // ── Cast Model Gate ──────────────────────────────────────
   const {
     showCastModal,
@@ -243,7 +260,7 @@ export default function DrapeStudio() {
   }, [prefs]);
 
   // Loading state
-  if (authLoading) {
+  if (authLoading || isRestoring) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -333,6 +350,9 @@ export default function DrapeStudio() {
                   genState={genState}
                   currentAssets={currentAssets}
                   handleGenerate={handleGenerate}
+                  isReadOnly={isReadOnly}
+                  onNewModel={handleNewModel}
+                  modelName={modelName}
                 />
               </AnimatedPanel>
 
@@ -369,6 +389,7 @@ export default function DrapeStudio() {
                   handleRefineSubmit={handleRefineSubmit}
                   canUndo={canUndo}
                   canRedo={canRedo}
+                  isReadOnly={isReadOnly}
                 />
               </div>
 
@@ -420,7 +441,6 @@ export default function DrapeStudio() {
         onClose={() => setShowCastModal(false)}
         onConfirm={handleCastAndContinue}
         needsSideView={needsSideView}
-        creditBalance={creditsData?.balance || 0}
         isCasting={isCasting}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}

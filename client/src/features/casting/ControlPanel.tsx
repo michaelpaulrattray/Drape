@@ -1,44 +1,17 @@
 import { useState, useMemo } from "react";
-import { Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices } from "lucide-react";
+import { Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
 import HairColorWheel from "./components/HairColorWheel";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { generateRandomPreferences } from "./castingHelpers";
-import { type GenerationState, type GeneratedAsset } from "@/features/casting/constants";
+import { type GenerationState, type GeneratedAsset, BRAND_OPTIONS, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS } from "@/features/casting/constants";
 import { HAIR_STYLE_CONFIG, HAIR_TUCKS, HAIR_FADES } from "./hairStyleConfig";
 import {
   FieldLabel, ChipRow, OptionGrid, WarmSelectControl, EyeGrid,
   EthnicityBlender, CollapsibleSection, SummaryStrip, SkinToneGrid,
 } from "./components/WarmPrimitives";
-
-// ── Data ──────────────────────────────────────
-
-const BRAND_OPTIONS = [
-  { value: "Gucci", desc: "Eclectic / Quirky" },
-  { value: "Prada", desc: "Intellectual / Severe" },
-  { value: "Saint Laurent", desc: "Heroin Chic / Edgy" },
-  { value: "Balenciaga", desc: "Brutalist / Street" },
-  { value: "Miu Miu", desc: "Subversive / Youthful" },
-  { value: "Versace", desc: "Glamour / Bombshell" },
-  { value: "Zara", desc: "Trendy / Polished" },
-  { value: "Social Media", desc: "Creator / Authentic" },
-];
-
-const SKIN_TEXTURES = ["Raw / Standard", "Glass / Perfect", "Freckled", "Textured / Acneic", "Mature"];
-const SKIN_FINISHES = ["Natural", "Matte / Powdered", "Dewy / Sweat", "Oily"];
-
-const CHAR_OPTIONS = {
-  jawline: ["Sharp / Chiseled", "Soft / Rounded", "Strong / Pronounced", "Receding / Weak", "Snatched"],
-  cheekbones: ["High", "Defined", "Soft"],
-  cheeks: ["Slightly Hollow", "Full", "Balanced"],
-  eyeShape: ["Thin Almond", "Monolids", "Wide-Set", "Round", "Hooded"],
-  noseShape: ["Thin", "Straight Bridge", "Rounded", "Prominent", "Button"],
-  lipShape: ["Full", "Subtle", "Lip Lift", "Wide", "Cupid's Bow"],
-  eyebrows: ["Brushed Up", "Straight", "Arched", "Bold", "Bleached", "Auto"],
-  facialHair: ["Clean Shaven", "Stubble", "Short Beard", "Full Beard"],
-};
 
 // ── Props ─────────────────────────────────────
 
@@ -48,6 +21,9 @@ interface ControlPanelProps {
   genState: GenerationState;
   currentAssets: GeneratedAsset[];
   handleGenerate: () => void;
+  isReadOnly?: boolean;
+  onNewModel?: () => void;
+  modelName?: string;
 }
 
 // ── Progress Ring ────────────────────────────
@@ -93,6 +69,7 @@ function CastingProgressRing({ completions }: { completions: Record<string, numb
 
 export function ControlPanel({
   user, isFormValid, genState, currentAssets, handleGenerate,
+  isReadOnly, onNewModel, modelName,
 }: ControlPanelProps) {
   // Use store's functional updaters — no stale closure risk
   const prefs = useCastingFormStore((s) => s.prefs);
@@ -153,18 +130,39 @@ export function ControlPanel({
       <div className="p-4 pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>Casting</div>
-            <div style={{ fontSize: 10, color: '#b8b3a8' }}>Build your model from scratch</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
+              {isReadOnly ? (modelName || 'Cast Model') : 'Casting'}
+            </div>
+            <div style={{ fontSize: 10, color: '#b8b3a8' }}>
+              {isReadOnly ? 'Identity locked' : 'Build your model from scratch'}
+            </div>
           </div>
-          {/* Progress Ring */}
-          <CastingProgressRing completions={completions} />
+          {isReadOnly ? (
+            <div className="flex items-center justify-center" style={{ width: 40, height: 40 }}>
+              <Lock size={16} strokeWidth={1.5} style={{ color: '#c4c0b8' }} />
+            </div>
+          ) : (
+            <CastingProgressRing completions={completions} />
+          )}
         </div>
       </div>
 
       <SummaryStrip prefs={prefs as unknown as Record<string, unknown>} ethnicityBlend={ethnicityBlend} />
 
+      {/* Read-only banner */}
+      {isReadOnly && (
+        <div className="mx-4 mb-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(26,26,26,0.04)', border: '1px solid rgba(26,26,26,0.06)' }}>
+          <p style={{ fontSize: 10, fontWeight: 500, color: '#999', lineHeight: 1.5 }}>
+            This model has been cast and their identity is locked. You can still export or dress them.
+          </p>
+        </div>
+      )}
+
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
+      <div
+        className="flex-1 overflow-y-auto min-h-0 custom-scrollbar"
+        style={isReadOnly ? { pointerEvents: 'none', opacity: 0.4 } : undefined}
+      >
 
         {/* ═══ CASTING BASICS ═══ */}
         <CollapsibleSection id="basics" title="Casting Basics" icon={<Palette size={12} strokeWidth={1.8} />} isOpen={openSections.basics} onToggle={toggleSection} completionRatio={completions.basics}>
@@ -376,90 +374,109 @@ export function ControlPanel({
 
       {/* ═══ FOOTER ═══ */}
       <div className="px-4 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-        {prefs.referenceImage && (
-          <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: '#f9f8f5', fontSize: 10, color: '#b8b3a8', lineHeight: 1.5 }}>
-            Reference will be used for feature transfer on next iteration. Press F to toggle visibility.
-          </div>
-        )}
+        {isReadOnly ? (
+          <button
+            onClick={onNewModel}
+            className="w-full py-3.5 rounded-xl transition-all duration-300"
+            style={{
+              background: '#1a1a1a',
+              color: '#f0ede8',
+              fontSize: 13, fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <Plus size={14} strokeWidth={2} />
+            <span>New Model</span>
+          </button>
+        ) : (
+          <>
+            {prefs.referenceImage && (
+              <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: '#f9f8f5', fontSize: 10, color: '#b8b3a8', lineHeight: 1.5 }}>
+                Reference will be used for feature transfer on next iteration. Press F to toggle visibility.
+              </div>
+            )}
 
-
-        <button
-          data-debug-generate
-          onClick={handleGenerate}
-          disabled={genState.isGenerating || !isFormValid}
-          className="w-full py-3.5 rounded-xl transition-all duration-300"
-          style={{
-            background: !genState.isGenerating && isFormValid ? '#1a1a1a' : '#e8e5df',
-            color: !genState.isGenerating && isFormValid ? '#f0ede8' : '#aaa',
-            fontSize: 13, fontWeight: 600,
-            cursor: !genState.isGenerating && isFormValid ? 'pointer' : 'not-allowed',
-            boxShadow: !genState.isGenerating && isFormValid ? '0 4px 24px rgba(0,0,0,0.12)' : 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            opacity: isFormValid ? 1 : 0.5,
-          }}
-        >
-          {genState.isGenerating ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>{genState.currentStep || 'Casting...'}</span>
-            </>
-          ) : (
-            <>
-              <Sparkles size={14} strokeWidth={2} />
-              <span>{isFormValid ? (currentAssets.length > 0 ? 'Recast Model' : 'Cast Model') : 'Fill Required Fields'}</span>
-              {isFormValid && (
-                <span style={{ fontSize: 8, fontWeight: 500, color: 'rgba(240,237,232,0.45)', marginLeft: 4, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.04em' }}>
-                  {navigator.platform?.includes('Mac') ? '⌘G' : 'Ctrl+G'}
-                </span>
+            <button
+              data-debug-generate
+              onClick={handleGenerate}
+              disabled={genState.isGenerating || !isFormValid}
+              className="w-full py-3.5 rounded-xl transition-all duration-300"
+              style={{
+                background: !genState.isGenerating && isFormValid ? '#1a1a1a' : '#e8e5df',
+                color: !genState.isGenerating && isFormValid ? '#f0ede8' : '#aaa',
+                fontSize: 13, fontWeight: 600,
+                cursor: !genState.isGenerating && isFormValid ? 'pointer' : 'not-allowed',
+                boxShadow: !genState.isGenerating && isFormValid ? '0 4px 24px rgba(0,0,0,0.12)' : 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                opacity: isFormValid ? 1 : 0.5,
+              }}
+            >
+              {genState.isGenerating ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>{genState.currentStep || 'Casting...'}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} strokeWidth={2} />
+                  <span>{isFormValid ? (currentAssets.length > 0 ? 'Recast Model' : 'Cast Model') : 'Fill Required Fields'}</span>
+                  {isFormValid && (
+                    <span style={{ fontSize: 8, fontWeight: 500, color: 'rgba(240,237,232,0.45)', marginLeft: 4, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.04em' }}>
+                      {navigator.platform?.includes('Mac') ? '⌘G' : 'Ctrl+G'}
+                    </span>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </button>
+            </button>
 
-        <button
-          onClick={() => {
-            const randomPrefs = generateRandomPreferences();
-            updatePrefs(randomPrefs);
-            toast('Preferences randomized', { duration: 1500 });
-          }}
-          disabled={genState.isGenerating}
-          className="w-full mt-2 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-30"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 9, fontWeight: 500, color: '#c4c0b8', letterSpacing: '0.02em' }}
-        >
-          <Dices size={10} strokeWidth={1.8} style={{ opacity: 0.6 }} />
-          Randomize
-        </button>
+            <button
+              onClick={() => {
+                const randomPrefs = generateRandomPreferences();
+                updatePrefs(randomPrefs);
+                toast('Preferences randomized', { duration: 1500 });
+              }}
+              disabled={genState.isGenerating}
+              className="w-full mt-2 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-30"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 9, fontWeight: 500, color: '#c4c0b8', letterSpacing: '0.02em' }}
+            >
+              <Dices size={10} strokeWidth={1.8} style={{ opacity: 0.6 }} />
+              Randomize
+            </button>
 
-        {user?.role === 'admin' && (
-          <details className="mt-3 pt-3 border-t border-[rgba(0,0,0,0.05)] group">
-            <summary className="text-[9px] text-[#b8b3a8] cursor-pointer hover:text-[#1a1a1a] transition-colors flex items-center gap-1.5 select-none">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
-                className="transition-transform group-open:rotate-90"><polyline points="9 18 15 12 9 6" /></svg>
-              Admin Tools
-            </summary>
-            <div className="mt-2 flex gap-2">
-              <button onClick={handleDebugFill} disabled={genState.isGenerating}
-                className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
-                style={{ background: '#f5f3ef', fontSize: 9, fontWeight: 500, color: '#999', cursor: 'pointer', border: 'none' }}>
-                Random Fill
-              </button>
-              <button
-                onClick={() => {
-                  const randomPrefs = generateRandomPreferences();
-                  updatePrefs(randomPrefs);
-                  toast.success('Auto-generating model...');
-                  setTimeout(() => {
-                    const btn = document.querySelector('[data-debug-generate]') as HTMLButtonElement;
-                    if (btn && !btn.disabled) btn.click();
-                  }, 200);
-                }}
-                disabled={genState.isGenerating}
-                className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
-                style={{ background: '#f5f3ef', fontSize: 9, fontWeight: 500, color: '#999', cursor: 'pointer', border: 'none' }}>
-                Auto Generate
-              </button>
-            </div>
-          </details>
+            {user?.role === 'admin' && (
+              <details className="mt-3 pt-3 border-t border-[rgba(0,0,0,0.05)] group">
+                <summary className="text-[9px] text-[#b8b3a8] cursor-pointer hover:text-[#1a1a1a] transition-colors flex items-center gap-1.5 select-none">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+                    className="transition-transform group-open:rotate-90"><polyline points="9 18 15 12 9 6" /></svg>
+                  Admin Tools
+                </summary>
+                <div className="mt-2 flex gap-2">
+                  <button onClick={handleDebugFill} disabled={genState.isGenerating}
+                    className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
+                    style={{ background: '#f5f3ef', fontSize: 9, fontWeight: 500, color: '#999', cursor: 'pointer', border: 'none' }}>
+                    Random Fill
+                  </button>
+                  <button
+                    onClick={() => {
+                      const randomPrefs = generateRandomPreferences();
+                      updatePrefs(randomPrefs);
+                      toast.success('Auto-generating model...');
+                      setTimeout(() => {
+                        const btn = document.querySelector('[data-debug-generate]') as HTMLButtonElement;
+                        if (btn && !btn.disabled) btn.click();
+                      }, 200);
+                    }}
+                    disabled={genState.isGenerating}
+                    className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
+                    style={{ background: '#f5f3ef', fontSize: 9, fontWeight: 500, color: '#999', cursor: 'pointer', border: 'none' }}>
+                    Auto Generate
+                  </button>
+                </div>
+              </details>
+            )}
+          </>
         )}
       </div>
     </aside>

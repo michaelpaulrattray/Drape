@@ -24,6 +24,8 @@ export function useCastGate({
   refetchCreditsWithWarning,
 }: UseCastGateParams) {
   const setActiveTool = useStudioStore((s) => s.setActiveTool);
+  const setCanvas = useStudioStore((s) => s.setCanvas);
+  const isMinted = useStudioStore((s) => s.canvas.isMinted);
 
   const [showCastModal, setShowCastModal] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
@@ -38,15 +40,15 @@ export function useCastGate({
   const updateModelMutation = trpc.models.update.useMutation();
 
   const handleCastAndContinue = useCallback(
-    async (characterName: string) => {
+    async (characterName: string, generateSideView: boolean = true) => {
       if (!currentModelId) {
         toast.error('No model to cast');
         return;
       }
       setIsCasting(true);
       try {
-        // Step 1: Generate side view if missing
-        if (needsSideView) {
+        // Step 1: Generate side view if requested and missing
+        if (needsSideView && generateSideView) {
           setCastingMessage('Generating side view...');
           const result = await generateMultiViewMutation.mutateAsync({
             modelId: currentModelId,
@@ -82,6 +84,9 @@ export function useCastGate({
           throw new Error('Failed to cast model');
         }
 
+        // Mark as minted in canvas state
+        setCanvas({ isMinted: true, castModelId: currentModelId });
+
         toast.success(`${characterName} has been cast!`);
         setShowCastModal(false);
 
@@ -89,7 +94,7 @@ export function useCastGate({
         setActiveTool('wardrobe');
 
         // Refetch credits after side view generation
-        if (needsSideView) refetchCreditsWithWarning();
+        if (needsSideView && generateSideView) refetchCreditsWithWarning();
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Casting failed';
@@ -107,6 +112,7 @@ export function useCastGate({
       generateMultiViewMutation,
       updateModelMutation,
       setActiveTool,
+      setCanvas,
       refetchCreditsWithWarning,
     ]
   );
@@ -115,6 +121,7 @@ export function useCastGate({
     showCastModal,
     setShowCastModal,
     isCasting,
+    isMinted,
     castingMessage,
     needsSideView,
     handleCastAndContinue,

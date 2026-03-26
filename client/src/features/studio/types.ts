@@ -33,6 +33,8 @@ export interface CanvasState {
   castMasterPrompt: string | null;
   /** Full body URL when loaded from a previous cast */
   castFullBodyUrl: string | null;
+  /** Whether the model has been minted (identity locked, status: active) */
+  isMinted: boolean;
 }
 
 /** Tool availability derived from canvas state */

@@ -12,6 +12,7 @@ const DEFAULT_CANVAS: CanvasState = {
   castModelId: null,
   castMasterPrompt: null,
   castFullBodyUrl: null,
+  isMinted: false,
 };
 
 interface StudioState {
@@ -67,6 +68,7 @@ export const useStudioStore = create<StudioState>()(
               castModelId: null,
               castMasterPrompt: null,
               castFullBodyUrl: null,
+              isMinted: false,
             },
             activeTool: 'wardrobe' as StudioTool,
           },
@@ -86,6 +88,7 @@ export const useStudioStore = create<StudioState>()(
               castModelId: modelId,
               castMasterPrompt: masterPrompt,
               castFullBodyUrl: fullBodyUrl,
+              isMinted: true, // Gallery-loaded models are always minted
             },
             activeTool: 'wardrobe' as StudioTool,
           },

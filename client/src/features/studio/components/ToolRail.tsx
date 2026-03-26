@@ -72,7 +72,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
     clearPulse(toolId);
 
     // Intercept wardrobe click for draft models — show cast modal
-    if (toolId === 'wardrobe' && onWardrobeGate && canvas.castModelId === null && canvas.modelSource === 'cast') {
+    if (toolId === 'wardrobe' && onWardrobeGate && !canvas.isMinted && canvas.modelSource === 'cast') {
       onWardrobeGate();
       return;
     }
