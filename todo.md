@@ -31,3 +31,4 @@
 - [x] Audit and unify panel designs between Casting and Wardrobe (widths, rounded edges, spacing)
 - [x] Decide on shared StudioSidePanel shell component — used by both Casting and Wardrobe
 - [x] Fix 1: Accumulate style notes from overlay clicks in store before calling refineResult
+- [x] Fix 2: Replace LayersPanel textarea with parsed chips + freeform tags (SOT pattern: toggleChip, removeFreeform, addCustom, edit count badge)
