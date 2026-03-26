@@ -33,6 +33,11 @@ export function useWardrobeGeneration({
 }: UseWardrobeGenerationParams) {
   const utils = trpc.useUtils();
 
+  // Garments from tRPC cache (for processing status check)
+  const { data: garments = [] } = trpc.wardrobe.garments.list.useQuery(undefined, {
+    staleTime: 30_000,
+  });
+
   // Store selectors
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
   const styleNotes = useWardrobeStore((s) => s.styleNotes);
@@ -588,9 +593,22 @@ export function useWardrobeGeneration({
 
   // ── Smart Generate (decides full vs incremental) ───────────
 
+  // Derived: whether any selected garment is still processing
+  const hasProcessingSelected = garments.some(
+    (g) => selectedGarmentIds.has(g.id) && g.status === "processing",
+  );
+
   const smartGenerate = useCallback(async () => {
     if (cooldownSeconds > 0) {
       toast.error(`Please wait ${cooldownSeconds}s before generating again`);
+      return;
+    }
+    // Guard: block generation while selected garments are still processing
+    const processingCheck = garments.some(
+      (g) => selectedGarmentIds.has(g.id) && g.status === "processing",
+    );
+    if (processingCheck) {
+      toast.error("Wait for all garments to finish processing");
       return;
     }
     const hasExistingResult = currentVTOResultFn() !== null;
@@ -598,7 +616,7 @@ export function useWardrobeGeneration({
       return generateIncremental();
     }
     return generateVTO();
-  }, [currentVTOResultFn, generateIncremental, generateVTO, cooldownSeconds]);
+  }, [currentVTOResultFn, generateIncremental, generateVTO, cooldownSeconds, garments, selectedGarmentIds]);
 
   // ── Undo/Redo with selection restore ───────────────────────
 
@@ -675,5 +693,8 @@ export function useWardrobeGeneration({
     hasDirtyStyles: hasDirtyReactive,
     /** Apply only the changed style notes (style refresh) */
     handleApplyStyleChanges,
+
+    /** Whether any selected garment is still processing (blocks generation) */
+    hasProcessingSelected,
   };
 }

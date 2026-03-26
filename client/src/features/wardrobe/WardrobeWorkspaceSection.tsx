@@ -52,7 +52,7 @@ export function WardrobeWorkspaceSection({
 
   const hasResult = gen.currentResult !== null;
   const canGenerate =
-    selectedCount > 0 && !!modelImageUrl && !gen.isGenerating && gen.cooldownSeconds <= 0;
+    selectedCount > 0 && !!modelImageUrl && !gen.isGenerating && gen.cooldownSeconds <= 0 && !gen.hasProcessingSelected;
 
   const handleStyleNote = useCallback(
     (note: { garmentLabel: string; category: string; instruction: string }) => {
@@ -223,6 +223,7 @@ export function WardrobeWorkspaceSection({
             isRefining={gen.isGenerating}
             hasDirtyStyles={gen.hasDirtyStyles}
             onApplyStyleChanges={gen.handleApplyStyleChanges}
+            hasProcessingSelected={gen.hasProcessingSelected}
           />
         </StudioSidePanel>
       </AnimatedPanel>

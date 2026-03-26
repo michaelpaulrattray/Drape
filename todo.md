@@ -37,3 +37,4 @@
 - [x] Auto-analyze pendingDecomposeFile when DecompositionDrawer opens
 - [x] Add 'Keep as Full Look' button in DecompositionDrawer
 - [x] Nice-to-have: Smart decomposition for non-full-look uploads — upload to S3, detect garments, open drawer if >2 matching items found in target category
+- [x] Disable generate button when any selected garment has status 'processing' — add hasProcessingSelected guard + visual disable

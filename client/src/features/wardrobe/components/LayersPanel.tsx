@@ -30,6 +30,8 @@ interface LayersPanelProps {
   isRefining?: boolean;
   hasDirtyStyles?: boolean;
   onApplyStyleChanges?: () => void;
+  /** Whether any selected garment is still processing */
+  hasProcessingSelected?: boolean;
 }
 
 // ── Garment Row ─────────────────────────────────────────────────
@@ -297,6 +299,7 @@ export function LayersPanel({
   currentResultUrl,
   hasDirtyStyles = false,
   onApplyStyleChanges,
+  hasProcessingSelected = false,
 }: LayersPanelProps) {
   const selectedGarmentIds = useWardrobeStore((s) => s.selectedGarmentIds);
   const toggleGarmentSelection = useWardrobeStore((s) => s.toggleGarmentSelection);
@@ -400,7 +403,7 @@ export function LayersPanel({
       <div className="px-4 py-3 flex flex-col gap-2" style={{ borderTop: "1px solid #e5e0d8" }}>
         <button
           onClick={onGenerate}
-          disabled={isGenerating || selectedGarments.length === 0}
+          disabled={isGenerating || selectedGarments.length === 0 || !!hasProcessingSelected}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full font-medium transition-all hover:opacity-90 disabled:opacity-30"
           style={{ background: "#1a1a1a", color: "#fff", fontSize: 10 }}
         >
