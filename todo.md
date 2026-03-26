@@ -78,3 +78,8 @@
 - [x] Bug: Decomp modal image cutoff — full-body image is cropped, legs are missing
 - [x] Bug: Slow garment import — importing selected garments from decomp takes too long
 - [x] UX: Improve wardrobe item loading — garment cards feel janky/delayed when appearing
+- [ ] UX: Adjust garment digitization prompt background color to match rack card (#f0ebe3) for visual cohesion
+- [x] Build useExportPack hook — wraps PDF generation, image download, and mint logic
+- [x] Build ExportPanel component — model card, view gallery, PDF download, mint status
+- [x] Wire ExportPanel into DrapeStudio replacing the "Coming soon" placeholder
+- [x] Write tests for export pack feature
