@@ -28,7 +28,7 @@ interface ExportPanelProps {
 /** Step label mapping */
 const STEP_LABELS: Record<ExportStep, string> = {
   idle: "",
-  minting: "Minting identity...",
+  minting: "Casting identity...",
   upscaling: "Upscaling to 2K...",
   "generating-pdf": "Generating document...",
   compressing: "Compressing pack...",
@@ -93,7 +93,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
               style={{ fontSize: 9, fontWeight: 600, color: "#1a1a1a", background: "#eae7e1" }}
             >
               <Shield className="w-2.5 h-2.5" />
-              MINTED
+              CASTED
             </span>
           )}
         </div>
@@ -183,7 +183,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
             disabled={isExporting}
             variant="outline"
             icon={Shield}
-            label="Mint Identity"
+            label="Cast Identity"
             className="mb-2"
           />
         )}
@@ -401,21 +401,30 @@ function AttributeGrid({ preferences }: { preferences: Record<string, string | u
   }
 
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-      {entries.map(([key, value]) => (
-        <div key={key}>
+    <div className="flex flex-col">
+      {entries.map(([key, value], i) => (
+        <div
+          key={key}
+          className="flex items-baseline justify-between gap-3 py-1.5"
+          style={i < entries.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.05)" } : undefined}
+        >
           <span
+            className="flex-shrink-0"
             style={{
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: 600,
               color: "#b8b3a8",
-              letterSpacing: "0.06em",
+              letterSpacing: "0.04em",
               textTransform: "uppercase",
+              minWidth: 70,
             }}
           >
             {formatLabel(key)}
           </span>
-          <p style={{ fontSize: 10, color: "#1a1a1a", fontWeight: 500, lineHeight: 1.3 }}>
+          <p
+            className="text-right"
+            style={{ fontSize: 10, color: "#1a1a1a", fontWeight: 500, lineHeight: 1.4 }}
+          >
             {String(value)}
           </p>
         </div>

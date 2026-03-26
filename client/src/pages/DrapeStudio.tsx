@@ -69,8 +69,9 @@ export default function DrapeStudio() {
   const { isRestoring } = useSessionRestore(isAuthenticated);
   useSessionAutoSave();
 
-  // Parse ?tool= query param on mount
+  // Always start in lobby on mount, then check for ?tool= override
   useEffect(() => {
+    setActiveTool(null); // Reset to lobby on every navigation to /studio
     const params = new URLSearchParams(searchString);
     const toolParam = params.get('tool') as StudioTool | null;
     if (toolParam && VALID_TOOLS.includes(toolParam)) {

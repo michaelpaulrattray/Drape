@@ -238,6 +238,22 @@ export async function getRecentUserSessions(userId: number, limit = MAX_SESSIONS
     }
   }
 
+  // Batch-fetch saved look counts per modelId from wardrobe_looks
+  const lookCountMap = new Map<number, number>();
+  if (modelIds.length > 0) {
+    const lookRows = await db
+      .select({
+        modelId: wardrobeLooks.modelId,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(wardrobeLooks)
+      .where(sql`${wardrobeLooks.modelId} IN (${sql.join(modelIds.map((id) => sql`${id}`), sql`, `)})`)
+      .groupBy(wardrobeLooks.modelId);
+    for (const r of lookRows) {
+      if (r.modelId) lookCountMap.set(r.modelId, Number(r.count));
+    }
+  }
+
   return rows
     .map((session) => {
       const history = (session.history as string[]) || [];
@@ -252,6 +268,7 @@ export async function getRecentUserSessions(userId: number, limit = MAX_SESSIONS
         modelImageUrl: session.modelImageUrl,
         lastResultUrl: history[history.length - 1],
         iterationCount: history.length,
+        savedLookCount: session.modelId ? (lookCountMap.get(session.modelId) ?? 0) : 0,
         activeGarmentIds: (session.activeGarmentIds as number[]) || [],
         history,
         historyIndex: session.historyIndex ?? history.length - 1,
@@ -274,6 +291,7 @@ function formatSession() {
     modelImageUrl: string;
     lastResultUrl: string;
     iterationCount: number;
+    savedLookCount: number;
     activeGarmentIds: number[];
     history: string[];
     historyIndex: number;

@@ -38,6 +38,7 @@ export interface SessionData {
   modelImageUrl: string;
   lastResultUrl: string;
   iterationCount: number;
+  savedLookCount: number;
   activeGarmentIds: number[];
   history: string[];
   historyIndex: number;
@@ -143,7 +144,7 @@ function FeaturedCard({ session, onContinue, onDelete }: CardProps) {
             <p className="truncate" style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>{displayName}</p>
             <div className="flex items-center gap-2.5 mt-1">
               <span className="flex items-center gap-1" style={{ fontSize: 10, color: '#999' }}>
-                <Layers className="w-3 h-3" />{session.iterationCount} {session.iterationCount === 1 ? 'look' : 'looks'}
+                <Layers className="w-3 h-3" />{session.savedLookCount} {session.savedLookCount === 1 ? 'look' : 'looks'}
               </span>
               <span className="flex items-center gap-1" style={{ fontSize: 10, color: '#bbb' }}>
                 <Clock className="w-3 h-3" />{timeAgo(new Date(session.updatedAt))}
@@ -223,7 +224,7 @@ function CompactCard({ session, onContinue, onDelete }: CardProps) {
         <div className="flex-1 flex items-center px-3 gap-2 min-w-0">
           <p className="truncate flex-1" style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>{displayName}</p>
           <span className="flex items-center gap-1 flex-shrink-0" style={{ fontSize: 10, color: '#bbb' }}>
-            <Layers className="w-2.5 h-2.5" />{session.iterationCount}
+            <Layers className="w-2.5 h-2.5" />{session.savedLookCount}
           </span>
           <span className="flex-shrink-0" style={{ fontSize: 10, color: '#ccc' }}>
             {timeAgo(new Date(session.updatedAt))}

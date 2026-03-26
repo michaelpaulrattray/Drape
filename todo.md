@@ -93,3 +93,7 @@
 - [x] Write tests for looks feature
 - [x] Bug: Export button in ToolRail is disabled/unclickable when in Wardrobe mode
 - [x] Deduplicate recent sessions in lobby by modelId — show only the latest session per model
+- [x] UX: Always return to lobby when navigating back to studio from profile/dashboard
+- [x] UI: Change 'Minted' label to 'Casted' in export panel
+- [x] UI: Cleaner/less cramped identity attributes layout in export panel
+- [x] Data: Session look count should reflect saved gallery looks, not VTO history iterations
