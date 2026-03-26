@@ -1462,3 +1462,79 @@ describe("Style Refresh — dirty detection", () => {
     expect(snap).toEqual({ "1": "tuck in", "2": "", "3": "roll sleeves" });
   });
 });
+
+// ── Session Deduplication Logic Tests ────────────────────────────────────
+
+describe("session deduplication by modelId", () => {
+  /**
+   * Pure-function replica of the deduplication logic in getRecentUserSessions.
+   * We test the algorithm in isolation without needing a DB connection.
+   */
+  function deduplicateSessions(
+    rows: Array<{ id: number; modelId: number | null; updatedAt: Date }>,
+    limit: number,
+  ) {
+    const seenModelIds = new Set<number>();
+    return rows
+      .filter((row) => {
+        if (row.modelId == null) return true;
+        if (seenModelIds.has(row.modelId)) return false;
+        seenModelIds.add(row.modelId);
+        return true;
+      })
+      .slice(0, limit);
+  }
+
+  it("keeps only the latest session per modelId", () => {
+    const rows = [
+      { id: 4, modelId: 1, updatedAt: new Date("2026-01-04") },
+      { id: 3, modelId: 1, updatedAt: new Date("2026-01-03") },
+      { id: 2, modelId: 2, updatedAt: new Date("2026-01-02") },
+      { id: 1, modelId: 2, updatedAt: new Date("2026-01-01") },
+    ];
+    const result = deduplicateSessions(rows, 4);
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.id)).toEqual([4, 2]);
+  });
+
+  it("treats null modelId sessions as unique (uploaded models)", () => {
+    const rows = [
+      { id: 5, modelId: null, updatedAt: new Date("2026-01-05") },
+      { id: 4, modelId: null, updatedAt: new Date("2026-01-04") },
+      { id: 3, modelId: 1, updatedAt: new Date("2026-01-03") },
+    ];
+    const result = deduplicateSessions(rows, 4);
+    expect(result).toHaveLength(3);
+    expect(result.map((r) => r.id)).toEqual([5, 4, 3]);
+  });
+
+  it("respects the limit after deduplication", () => {
+    const rows = [
+      { id: 6, modelId: 1, updatedAt: new Date("2026-01-06") },
+      { id: 5, modelId: 2, updatedAt: new Date("2026-01-05") },
+      { id: 4, modelId: 3, updatedAt: new Date("2026-01-04") },
+      { id: 3, modelId: 4, updatedAt: new Date("2026-01-03") },
+      { id: 2, modelId: 5, updatedAt: new Date("2026-01-02") },
+    ];
+    const result = deduplicateSessions(rows, 3);
+    expect(result).toHaveLength(3);
+    expect(result.map((r) => r.id)).toEqual([6, 5, 4]);
+  });
+
+  it("handles mixed cast and uploaded models", () => {
+    const rows = [
+      { id: 5, modelId: 1, updatedAt: new Date("2026-01-05") },
+      { id: 4, modelId: null, updatedAt: new Date("2026-01-04") },
+      { id: 3, modelId: 1, updatedAt: new Date("2026-01-03") }, // duplicate of model 1
+      { id: 2, modelId: 2, updatedAt: new Date("2026-01-02") },
+    ];
+    const result = deduplicateSessions(rows, 4);
+    expect(result).toHaveLength(3);
+    expect(result.map((r) => r.id)).toEqual([5, 4, 2]);
+  });
+
+  it("returns empty array for empty input", () => {
+    const result = deduplicateSessions([], 4);
+    expect(result).toHaveLength(0);
+  });
+});

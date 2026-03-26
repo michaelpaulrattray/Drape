@@ -200,7 +200,10 @@ const MAX_SESSIONS_PER_USER = 4;
 export async function getRecentUserSessions(userId: number, limit = MAX_SESSIONS_PER_USER) {
   const db = (await getDb())!;
 
-  const rows = await db
+  // Fetch more rows than needed so we can deduplicate by modelId and still
+  // return up to `limit` unique models. Sessions with null modelId (uploaded
+  // models) are each treated as unique.
+  const rawRows = await db
     .select()
     .from(wardrobeSessions)
     .where(
@@ -210,7 +213,17 @@ export async function getRecentUserSessions(userId: number, limit = MAX_SESSIONS
       ),
     )
     .orderBy(desc(wardrobeSessions.updatedAt))
-    .limit(limit);
+    .limit(limit * 3);
+
+  // Deduplicate: keep only the latest session per modelId.
+  // Sessions with null modelId (uploaded models) pass through individually.
+  const seenModelIds = new Set<number>();
+  const rows = rawRows.filter((row) => {
+    if (row.modelId == null) return true; // uploaded model — always keep
+    if (seenModelIds.has(row.modelId)) return false;
+    seenModelIds.add(row.modelId);
+    return true;
+  }).slice(0, limit);
 
   // Batch-fetch model names for sessions linked to cast models
   const modelIds = Array.from(new Set(rows.map((r) => r.modelId).filter(Boolean))) as number[];

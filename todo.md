@@ -92,3 +92,4 @@
 - [x] Update center preview to show latest saved look as hero when looks exist
 - [x] Write tests for looks feature
 - [x] Bug: Export button in ToolRail is disabled/unclickable when in Wardrobe mode
+- [x] Deduplicate recent sessions in lobby by modelId — show only the latest session per model
