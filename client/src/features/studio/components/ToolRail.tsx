@@ -86,13 +86,10 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
   }, [canvas, setActiveTool, clearPulse]);
 
   const handleHomeClick = useCallback(() => {
-    if (hasActiveSession) {
-      setPendingAction('home');
-      setConfirmMessage('Returning to start will clear your current model and any unsaved wardrobe progress. This cannot be undone.');
-    } else {
-      setActiveTool(null);
-    }
-  }, [hasActiveSession, setActiveTool]);
+    // Session is auto-saved to DB — safe to navigate without confirmation.
+    // The lobby's "Continue Session" card will let the user resume.
+    setActiveTool(null);
+  }, [setActiveTool]);
 
   const handleConfirm = useCallback(() => {
     if (!pendingAction) return;

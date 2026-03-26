@@ -498,9 +498,11 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(8px)',
           transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s',
+          maxWidth: 360,
+          lineHeight: 1.6,
         }}
       >
-        You can switch between tools anytime from the sidebar
+        Your session saves automatically. Starting a new model will replace your current session.
       </p>
 
       <style>{`

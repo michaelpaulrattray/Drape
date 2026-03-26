@@ -61,3 +61,5 @@
 - [x] Bug: Infinite re-render loop in DrapeStudio — stabilized Zustand selector with useMemo
 - [x] Casting panel transitions don't feel as smooth as Wardrobe — removed center opacity/scale gate, preloader now cache-warms only
 - [x] Add client-side guard to skip analyzeTattoos/checkQuality when model URL hasn't changed since last successful call
+- [x] Remove lobby confirmation modal — make lobby navigation frictionless (session auto-saves)
+- [x] Add subtle note on lobby about session replacement when starting new
