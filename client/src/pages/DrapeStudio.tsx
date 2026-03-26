@@ -224,8 +224,8 @@ export default function DrapeStudio() {
     }
   }, [modelAssetsQuery.data, currentAssets.length]);
 
-  // Read-only: locked for any saved/minted model (seamless switch, no reset modal)
-  const isReadOnly = activeTool === 'casting' && (canvas.isMinted || canvas.castModelId !== null);
+  // Read-only: locked only for minted models (drafts remain editable)
+  const isReadOnly = activeTool === 'casting' && canvas.isMinted;
 
   const isNonCastModel = activeTool === 'casting' && canvas.modelSource === 'uploaded';
 

@@ -118,3 +118,4 @@
 - [x] Add server-side models.delete procedure with cascade (delete assets, sessions, looks)
 - [x] Add delete button (X on hover) to ModelGallery cards with confirmation dialog
 - [x] Add delete button to DraftCastsRow cards with confirmation dialog
+- [x] Bug: Resuming a draft cast from lobby enters read-only casting mode — should be editable since model is not minted
