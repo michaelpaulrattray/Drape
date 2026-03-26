@@ -72,3 +72,4 @@
 - [x] Bug: Lobby still shows only 1 session card — fixed: getRecent query was never invalidated after session create/VTO generation (only `list` was)
 - [x] Bug: Multi-session cards hidden behind horizontal scroll — rewrote layout as vertical stack (featured + compact rows)
 - [x] Bug: Rate-limit error toast showing for background mutations — suppressed TOO_MANY_REQUESTS in global mutation error handler
+- [x] Add delete button to each session card on the lobby to remove old/unwanted sessions

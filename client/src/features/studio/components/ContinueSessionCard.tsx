@@ -1,17 +1,17 @@
 /**
  * RecentSessionsRow — Lobby section showing up to 4 recent sessions as
  * stacked cards. The most recent session is larger/featured, the rest are
- * compact rows underneath. All cards are visible without horizontal scrolling.
+ * compact rows underneath. Each card has a delete button (visible on hover).
  *
  * Receives pre-fetched sessions array from StudioLobby so loading is
  * coordinated across all lobby sections.
  * Renders nothing if no sessions are provided.
  */
 import { useState, useCallback } from 'react';
-import { Play, Clock, Layers } from 'lucide-react';
+import { Play, Clock, Layers, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { trpc } from '@/lib/trpc';
 
-/** Tool display config — extend when adding new studio tools */
 const TOOL_LABELS: Record<string, string> = {
   wardrobe: 'Wardrobe',
   scenery: 'Scenery',
@@ -46,19 +46,52 @@ export interface SessionData {
   updatedAt: Date | string;
 }
 
-interface RecentSessionsRowProps {
-  sessions: SessionData[];
+interface CardProps {
+  session: SessionData;
   onContinue: (session: SessionData) => void;
+  onDelete: (sessionId: number) => void;
+}
+
+function preloadImages(urls: string[]) {
+  return Promise.all(
+    urls.map(
+      (url) =>
+        new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve();
+          img.onerror = () => reject();
+          img.src = url;
+        }),
+    ),
+  );
+}
+
+/** Delete button — circular X, appears on hover */
+function DeleteBtn({ onClick, size = 22 }: { onClick: (e: React.MouseEvent) => void; size?: number }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      className="absolute z-10 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+      style={{
+        width: size,
+        height: size,
+        top: size === 22 ? 6 : 4,
+        right: size === 22 ? 6 : 4,
+        background: 'rgba(0,0,0,0.08)',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => { (e.currentTarget.style.background = 'rgba(220,38,38,0.12)'); }}
+      onMouseLeave={(e) => { (e.currentTarget.style.background = 'rgba(0,0,0,0.08)'); }}
+    >
+      <X style={{ width: size * 0.55, height: size * 0.55, color: '#666' }} />
+    </div>
+  );
 }
 
 /** Featured card — larger layout for the most recent session */
-function FeaturedCard({
-  session,
-  onContinue,
-}: {
-  session: SessionData;
-  onContinue: (session: SessionData) => void;
-}) {
+function FeaturedCard({ session, onContinue, onDelete }: CardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
@@ -66,26 +99,18 @@ function FeaturedCard({
     if (isRestoring) return;
     setIsRestoring(true);
     try {
-      await Promise.all([
-        new Promise<void>((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve();
-          img.onerror = () => reject();
-          img.src = session.modelImageUrl;
-        }),
-        new Promise<void>((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve();
-          img.onerror = () => reject();
-          img.src = session.lastResultUrl;
-        }),
-      ]);
+      await preloadImages([session.modelImageUrl, session.lastResultUrl]);
       onContinue(session);
     } catch {
       toast.error('Failed to restore session');
       setIsRestoring(false);
     }
   }, [session, isRestoring, onContinue]);
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => { e.stopPropagation(); onDelete(session.sessionId); },
+    [session.sessionId, onDelete],
+  );
 
   const toolLabel = TOOL_LABELS[session.tool] || session.tool;
   const displayName = session.modelName || 'Uploaded Model';
@@ -107,6 +132,7 @@ function FeaturedCard({
         opacity: isRestoring ? 0.7 : 1,
       }}
     >
+      <DeleteBtn onClick={handleDelete} size={22} />
       <div className="flex h-full">
         <div className="relative flex-shrink-0" style={{ width: 72 }}>
           <img src={session.modelImageUrl} alt={displayName} className="w-full h-full object-cover" loading="eager" />
@@ -148,13 +174,7 @@ function FeaturedCard({
 }
 
 /** Compact card — smaller row for older sessions */
-function CompactCard({
-  session,
-  onContinue,
-}: {
-  session: SessionData;
-  onContinue: (session: SessionData) => void;
-}) {
+function CompactCard({ session, onContinue, onDelete }: CardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
@@ -162,26 +182,18 @@ function CompactCard({
     if (isRestoring) return;
     setIsRestoring(true);
     try {
-      await Promise.all([
-        new Promise<void>((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve();
-          img.onerror = () => reject();
-          img.src = session.modelImageUrl;
-        }),
-        new Promise<void>((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => resolve();
-          img.onerror = () => reject();
-          img.src = session.lastResultUrl;
-        }),
-      ]);
+      await preloadImages([session.modelImageUrl, session.lastResultUrl]);
       onContinue(session);
     } catch {
       toast.error('Failed to restore session');
       setIsRestoring(false);
     }
   }, [session, isRestoring, onContinue]);
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => { e.stopPropagation(); onDelete(session.sessionId); },
+    [session.sessionId, onDelete],
+  );
 
   const displayName = session.modelName || 'Uploaded Model';
 
@@ -202,6 +214,7 @@ function CompactCard({
         opacity: isRestoring ? 0.7 : 1,
       }}
     >
+      <DeleteBtn onClick={handleDelete} size={18} />
       <div className="flex h-full items-center">
         <div className="relative flex-shrink-0" style={{ width: 44 }}>
           <img src={session.modelImageUrl} alt={displayName} className="w-full h-full object-cover" loading="eager" />
@@ -233,14 +246,49 @@ function CompactCard({
   );
 }
 
+interface RecentSessionsRowProps {
+  sessions: SessionData[];
+  onContinue: (session: SessionData) => void;
+}
+
 export function RecentSessionsRow({ sessions, onContinue }: RecentSessionsRowProps) {
+  const utils = trpc.useUtils();
+  const deleteMutation = trpc.wardrobe.sessions.delete.useMutation({
+    onMutate: async ({ sessionId }) => {
+      // Optimistic: remove from cache immediately
+      await utils.wardrobe.sessions.getRecent.cancel();
+      const prev = utils.wardrobe.sessions.getRecent.getData();
+      utils.wardrobe.sessions.getRecent.setData(undefined, (old) =>
+        old ? old.filter((s: SessionData) => s.sessionId !== sessionId) : [],
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) utils.wardrobe.sessions.getRecent.setData(undefined, ctx.prev);
+      toast.error('Failed to remove session');
+    },
+    onSuccess: () => {
+      toast.success('Session removed');
+    },
+    onSettled: () => {
+      utils.wardrobe.sessions.getRecent.invalidate();
+      utils.wardrobe.sessions.list.invalidate();
+    },
+  });
+
+  const handleDelete = useCallback(
+    (sessionId: number) => {
+      deleteMutation.mutate({ sessionId });
+    },
+    [deleteMutation],
+  );
+
   if (!sessions || sessions.length === 0) return null;
 
   const [featured, ...rest] = sessions;
 
   return (
     <div className="w-full">
-      {/* Header */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <Play className="w-3.5 h-3.5" style={{ color: '#999' }} />
         <span style={{ fontSize: 11, fontWeight: 600, color: '#999', letterSpacing: '0.05em' }}>
@@ -248,14 +296,12 @@ export function RecentSessionsRow({ sessions, onContinue }: RecentSessionsRowPro
         </span>
       </div>
 
-      {/* Featured (most recent) session */}
-      <FeaturedCard session={featured} onContinue={onContinue} />
+      <FeaturedCard session={featured} onContinue={onContinue} onDelete={handleDelete} />
 
-      {/* Older sessions — compact rows below */}
       {rest.length > 0 && (
         <div className="flex flex-col gap-2 mt-2">
           {rest.map((session) => (
-            <CompactCard key={session.sessionId} session={session} onContinue={onContinue} />
+            <CompactCard key={session.sessionId} session={session} onContinue={onContinue} onDelete={handleDelete} />
           ))}
         </div>
       )}
