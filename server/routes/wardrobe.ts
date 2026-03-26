@@ -26,7 +26,7 @@ import {
   createGeneration,
   saveLook, getUserLooksByModel, renameLook, deleteLook,
 } from "../db";
-import { getUserMintedModelsWithThumbnail } from "../db/models";
+import { getUserMintedModelsWithThumbnail, getUserDraftModelsWithThumbnail } from "../db/models";
 import { storagePut } from "../storage";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
@@ -770,6 +770,13 @@ const modelRouter = router({
     .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
     .query(async ({ ctx, input }) => {
       return await getUserMintedModelsWithThumbnail(ctx.user.id, input?.limit ?? 20);
+    }),
+
+  /** List user's draft (unfinished) models with thumbnails for the lobby "Draft Casts" row */
+  listDrafts: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(10).default(4) }).optional())
+    .query(async ({ ctx, input }) => {
+      return await getUserDraftModelsWithThumbnail(ctx.user.id, input?.limit ?? 4);
     }),
 
   upload: protectedProcedure

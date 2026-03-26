@@ -1,7 +1,7 @@
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, createModelAsset, getModelAssets,
-  createGeneration, updateGeneration, updateModel,
+  createGeneration, updateGeneration,
 } from "../../db";
 import { deductPoints, addCredits } from "../../db";
 import {
@@ -124,8 +124,8 @@ export const castingImagingRouter = router({
           completedAt: new Date(),
         });
 
-        // Update model status to active
-        await updateModel(input.modelId, { status: "active" });
+        // Model stays as 'draft' until explicit export/mint
+        // (previously auto-set to 'active' here, causing drafts to appear in MY MODELS)
 
         return {
           success: true,

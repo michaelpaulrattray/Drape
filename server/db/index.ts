@@ -58,6 +58,7 @@ export {
   getModelAssetsForCleanup,
   deleteModelWithAssetKeys,
 } from "./models";
+export { getUserDraftModelsWithThumbnail } from "./models";
 
 // Generations
 export {

@@ -10,6 +10,7 @@ import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 import { ToolRail } from '@/features/studio/components/ToolRail';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
 import { StudioLobby } from '@/features/studio/components/StudioLobby';
+import type { DraftModel } from '@/features/studio/components/DraftCastsRow';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
 import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition';
@@ -52,6 +53,9 @@ export default function DrapeStudio() {
 
   // Studio store
   const { activeTool, setActiveTool, canvas, setCanvas } = useStudioStore();
+
+  // tRPC utils for imperative fetching (draft resume)
+  const trpcUtils = trpc.useUtils();
 
   // Orchestrated transition phases
   const baseTransition = useStudioTransition(activeTool);
@@ -337,6 +341,86 @@ export default function DrapeStudio() {
                   useWardrobeStore.getState().resetWardrobe();
                   setCanvas({ castModelId: null, castFullBodyUrl: null, castMasterPrompt: null, hasModel: false, hasFullBody: false, hasAllViews: false, modelSource: null, uploadedModelUrl: null, isMinted: false });
                   setActiveTool('casting');
+                }}
+                onResumeDraft={async (draft: DraftModel) => {
+                  // Reset stores first
+                  useCastingGenerationStore.getState().resetGeneration();
+                  useCastingUIStore.getState().resetUI();
+                  useWardrobeStore.getState().resetWardrobe();
+
+                  // Restore casting generation state from the draft
+                  const genStore = useCastingGenerationStore.getState();
+                  genStore.setCurrentModelId(draft.id);
+                  genStore.setCurrentMasterPrompt(draft.masterPrompt);
+                  if (draft.technicalSchema) {
+                    genStore.setCurrentTechnicalSchema(draft.technicalSchema);
+                  }
+
+                  // Restore form preferences if available
+                  if (draft.preferences) {
+                    const formStore = useCastingFormStore.getState();
+                    formStore.setPrefs(draft.preferences as any);
+                    formStore.setModelName(draft.name || '');
+                  }
+
+                  // Fetch model assets from server to populate canvas
+                  try {
+                    const model = await trpcUtils.models.get.fetch({ modelId: draft.id });
+                    if (model?.assets?.length) {
+                      const restoredAssets = model.assets.map((a: { id: number; viewType: string; storageUrl: string }) => ({
+                        id: a.id,
+                        viewType: a.viewType,
+                        storageUrl: a.storageUrl,
+                      }));
+                      genStore.setCurrentAssets(restoredAssets);
+                      genStore.pushHistory(restoredAssets);
+
+                      const fullBody = model.assets.find((a: { viewType: string }) => a.viewType === 'frontFull');
+                      const sideView = model.assets.find((a: { viewType: string }) => a.viewType === 'sideClose');
+
+                      setCanvas({
+                        castModelId: draft.id,
+                        castFullBodyUrl: fullBody?.storageUrl || null,
+                        castMasterPrompt: draft.masterPrompt,
+                        hasModel: true,
+                        hasFullBody: !!fullBody,
+                        hasAllViews: !!(fullBody && sideView),
+                        modelSource: 'cast',
+                        uploadedModelUrl: null,
+                        isMinted: false,
+                      });
+                    } else {
+                      // No assets fetched — set minimal canvas
+                      setCanvas({
+                        castModelId: draft.id,
+                        castFullBodyUrl: null,
+                        castMasterPrompt: draft.masterPrompt,
+                        hasModel: true,
+                        hasFullBody: false,
+                        hasAllViews: false,
+                        modelSource: 'cast',
+                        uploadedModelUrl: null,
+                        isMinted: false,
+                      });
+                    }
+                  } catch {
+                    // Fallback — set canvas without assets
+                    setCanvas({
+                      castModelId: draft.id,
+                      castFullBodyUrl: null,
+                      castMasterPrompt: draft.masterPrompt,
+                      hasModel: true,
+                      hasFullBody: false,
+                      hasAllViews: false,
+                      modelSource: 'cast',
+                      uploadedModelUrl: null,
+                      isMinted: false,
+                    });
+                  }
+
+                  // Switch to casting tool
+                  setActiveTool('casting');
+                  toast.success(`Resumed draft — ${draft.name || 'Draft Model'}`);
                 }}
               />
             </div>

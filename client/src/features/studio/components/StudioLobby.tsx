@@ -17,6 +17,7 @@ import { trpc } from '@/lib/trpc';
 import { useSessionReset } from '../hooks/useSessionReset';
 import { ModelGallery, type MintedModel } from './ModelGallery';
 import { RecentSessionsRow, type SessionData } from './ContinueSessionCard';
+import { DraftCastsRow, type DraftModel } from './DraftCastsRow';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -32,9 +33,10 @@ const PHASE_LABELS: Record<UploadPhase, string> = {
 
 interface StudioLobbyProps {
   onSelectCasting: () => void;
+  onResumeDraft?: (draft: DraftModel) => void;
 }
 
-export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
+export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps) {
   const { loadUploadedModel, loadGalleryModel, resumeWardrobeSession } = useSessionReset();
   const uploadMutation = trpc.wardrobe.model.upload.useMutation();
 
@@ -49,7 +51,12 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
     isLoading: sessionLoading,
   } = trpc.wardrobe.sessions.getRecent.useQuery(undefined, { staleTime: 30_000 });
 
-  const dataReady = !modelsLoading && !sessionLoading;
+  const {
+    data: draftModels,
+    isLoading: draftsLoading,
+  } = trpc.wardrobe.model.listDrafts.useQuery(undefined, { staleTime: 30_000 });
+
+  const dataReady = !modelsLoading && !sessionLoading && !draftsLoading;
 
   // Entrance animation — only fires once both queries settle
   const [mounted, setMounted] = useState(false);
@@ -298,6 +305,24 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
           }}
         />
       </div>
+
+      {/* Draft Casts — unfinished casting sessions with assets */}
+      {(draftModels as DraftModel[] | undefined)?.length ? (
+        <div
+          className="w-full mb-6"
+          style={{
+            maxWidth: 680,
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(12px)',
+            transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.04s',
+          }}
+        >
+          <DraftCastsRow
+            drafts={(draftModels as DraftModel[]) ?? []}
+            onResume={(draft) => onResumeDraft?.(draft)}
+          />
+        </div>
+      ) : null}
 
       {/* My Models Gallery — only renders if user has minted models */}
       <div

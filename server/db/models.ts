@@ -222,6 +222,71 @@ export async function getUserMintedModelsWithThumbnail(
     }));
 }
 
+/**
+ * Get user's draft (unfinished) models with their headshot thumbnail.
+ * Only returns models with status 'draft' that have at least one asset.
+ * Used by the studio lobby "Draft Casts" row.
+ */
+export async function getUserDraftModelsWithThumbnail(
+  userId: number,
+  limit: number = 4
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const draftModels = await db
+    .select({
+      id: models.id,
+      name: models.name,
+      masterPrompt: models.masterPrompt,
+      preferences: models.preferences,
+      technicalSchema: models.technicalSchema,
+      createdAt: models.createdAt,
+    })
+    .from(models)
+    .where(and(eq(models.userId, userId), eq(models.status, "draft")))
+    .orderBy(desc(models.createdAt))
+    .limit(limit);
+
+  if (draftModels.length === 0) return [];
+
+  const modelIds = draftModels.map((m) => m.id);
+  const assets = await db
+    .select({
+      modelId: modelAssets.modelId,
+      storageUrl: modelAssets.storageUrl,
+      viewType: modelAssets.viewType,
+    })
+    .from(modelAssets)
+    .where(inArray(modelAssets.modelId, modelIds));
+
+  // Build thumbnail map — prefer frontClose (headshot), fallback to any asset
+  const thumbMap = new Map<number, string>();
+  const assetCountMap = new Map<number, number>();
+  for (const asset of assets) {
+    assetCountMap.set(asset.modelId, (assetCountMap.get(asset.modelId) ?? 0) + 1);
+    if (asset.viewType === "frontClose") {
+      thumbMap.set(asset.modelId, asset.storageUrl);
+    } else if (!thumbMap.has(asset.modelId)) {
+      thumbMap.set(asset.modelId, asset.storageUrl);
+    }
+  }
+
+  // Only return drafts that have at least one asset (user paid for generation)
+  return draftModels
+    .filter((m) => thumbMap.has(m.id))
+    .map((m) => ({
+      id: m.id,
+      name: m.name,
+      masterPrompt: m.masterPrompt,
+      preferences: m.preferences,
+      technicalSchema: m.technicalSchema,
+      thumbnailUrl: thumbMap.get(m.id)!,
+      assetCount: assetCountMap.get(m.id) ?? 0,
+      createdAt: m.createdAt,
+    }));
+}
+
 // ============ Model Assets ============
 
 export async function createModelAsset(

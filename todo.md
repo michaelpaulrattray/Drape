@@ -112,3 +112,5 @@
 - [x] Add subtle camera shutter flash effect when tapping "Shoot Look" on canvas
 - [x] Prevent duplicate saves — visually disable Camera button after save, re-enable on new VTO result
 - [x] Match Camera icon button styling to Casting's ToolButton pattern for visual consistency
+- [x] Bug: Draft casting sessions prematurely create model records in MY MODELS — headshot-only drafts appear as saved models before user completes the cast
+- [x] Bug: Casting sessions with generated headshots don't appear in Recent Sessions after exiting — user loses access to paid content
