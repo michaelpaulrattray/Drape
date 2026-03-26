@@ -63,3 +63,8 @@
 - [x] Add client-side guard to skip analyzeTattoos/checkQuality when model URL hasn't changed since last successful call
 - [x] Remove lobby confirmation modal — make lobby navigation frictionless (session auto-saves)
 - [x] Add subtle note on lobby about session replacement when starting new
+- [x] Backend: add getRecentSessions query returning up to 4 sessions with VTO history
+- [x] Backend: cap sessions at 4 per user — delete oldest when creating 5th
+- [x] Frontend: replace single ContinueSessionCard with multi-session horizontal scroll
+- [x] Update StudioLobby to use new multi-session endpoint and pass array to component
+- [x] Update bottom hint text (remove "replace" wording since sessions now persist)

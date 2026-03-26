@@ -22,7 +22,7 @@ import {
   updateGarment, deleteGarment,
   createOutfit, getUserOutfits, getOutfitById, deleteOutfit,
   createSession, getSessionById, getUserSessions, updateSession, deleteSession,
-  getLatestUserSession,
+  getLatestUserSession, getRecentUserSessions, capUserSessions,
   createGeneration,
 } from "../db";
 import { getUserMintedModelsWithThumbnail } from "../db/models";
@@ -624,6 +624,8 @@ const sessionRouter = router({
         historyIndex: 0,
         activeGarmentIds: [],
       });
+      // Enforce session cap — delete oldest beyond limit
+      await capUserSessions(ctx.user.id);
       return { sessionId };
     }),
 
@@ -646,6 +648,12 @@ const sessionRouter = router({
   getLatest: protectedProcedure
     .query(async ({ ctx }) => {
       return getLatestUserSession(ctx.user.id);
+    }),
+
+  /** Get up to 4 recent sessions for the lobby multi-session cards */
+  getRecent: protectedProcedure
+    .query(async ({ ctx }) => {
+      return getRecentUserSessions(ctx.user.id);
     }),
 
   update: protectedProcedure

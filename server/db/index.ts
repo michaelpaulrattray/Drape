@@ -185,4 +185,6 @@ export {
   updateSession,
   deleteSession,
   getLatestUserSession,
+  getRecentUserSessions,
+  capUserSessions,
 } from "./wardrobe";

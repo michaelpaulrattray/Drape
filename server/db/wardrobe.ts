@@ -1,7 +1,7 @@
 /**
  * Wardrobe DB Helpers — CRUD operations for garments, outfits, and sessions.
  */
-import { eq, and, desc, isNotNull } from "drizzle-orm";
+import { eq, and, desc, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "./connection";
 import {
   wardrobeGarments,
@@ -185,10 +185,20 @@ export async function deleteSession(sessionId: number, userId: number) {
  * Returns null if no session with at least 1 VTO result exists.
  */
 export async function getLatestUserSession(userId: number) {
+  const sessions = await getRecentUserSessions(userId, 1);
+  return sessions[0] ?? null;
+}
+
+const MAX_SESSIONS_PER_USER = 4;
+
+/**
+ * Get the user's N most recent sessions that have at least 1 VTO result.
+ * Enriches each session with model name/masterPrompt if linked to a cast model.
+ */
+export async function getRecentUserSessions(userId: number, limit = MAX_SESSIONS_PER_USER) {
   const db = (await getDb())!;
 
-  // Get most recent wardrobe session that has at least one history entry
-  const [session] = await db
+  const rows = await db
     .select()
     .from(wardrobeSessions)
     .where(
@@ -198,42 +208,82 @@ export async function getLatestUserSession(userId: number) {
       ),
     )
     .orderBy(desc(wardrobeSessions.updatedAt))
-    .limit(1);
+    .limit(limit);
 
-  if (!session) return null;
-
-  const history = (session.history as string[]) || [];
-  if (history.length === 0) return null;
-
-  // If session is linked to a cast model, fetch model name
-  let modelName: string | null = null;
-  let masterPrompt: string | null = null;
-  if (session.modelId) {
-    const [model] = await db
-      .select({ name: models.name, masterPrompt: models.masterPrompt })
+  // Batch-fetch model names for sessions linked to cast models
+  const modelIds = Array.from(new Set(rows.map((r) => r.modelId).filter(Boolean))) as number[];
+  const modelMap = new Map<number, { name: string | null; masterPrompt: string | null }>();
+  if (modelIds.length > 0) {
+    const modelRows = await db
+      .select({ id: models.id, name: models.name, masterPrompt: models.masterPrompt })
       .from(models)
-      .where(eq(models.id, session.modelId))
-      .limit(1);
-    if (model) {
-      modelName = model.name;
-      masterPrompt = model.masterPrompt;
+      .where(sql`${models.id} IN (${sql.join(modelIds.map((id) => sql`${id}`), sql`, `)})`);
+    for (const m of modelRows) {
+      modelMap.set(m.id, { name: m.name, masterPrompt: m.masterPrompt });
     }
   }
 
-  return {
-    tool: "wardrobe" as const,
-    sessionId: session.id,
-    modelId: session.modelId,
-    modelName,
-    masterPrompt,
-    modelImageUrl: session.modelImageUrl,
-    lastResultUrl: history[history.length - 1],
-    iterationCount: history.length,
-    activeGarmentIds: (session.activeGarmentIds as number[]) || [],
-    history,
-    historyIndex: session.historyIndex ?? history.length - 1,
-    updatedAt: session.updatedAt,
-    tattooMapData: session.tattooMapData ?? null,
-    styleNotes: (session.styleNotes as Record<string, string>) ?? null,
+  return rows
+    .map((session) => {
+      const history = (session.history as string[]) || [];
+      if (history.length === 0) return null;
+      const model = session.modelId ? modelMap.get(session.modelId) : null;
+      return {
+        tool: "wardrobe" as const,
+        sessionId: session.id,
+        modelId: session.modelId,
+        modelName: model?.name ?? null,
+        masterPrompt: model?.masterPrompt ?? null,
+        modelImageUrl: session.modelImageUrl,
+        lastResultUrl: history[history.length - 1],
+        iterationCount: history.length,
+        activeGarmentIds: (session.activeGarmentIds as number[]) || [],
+        history,
+        historyIndex: session.historyIndex ?? history.length - 1,
+        updatedAt: session.updatedAt,
+        tattooMapData: session.tattooMapData ?? null,
+        styleNotes: (session.styleNotes as Record<string, string>) ?? null,
+      };
+    })
+    .filter(Boolean) as Array<NonNullable<ReturnType<typeof formatSession>>>;
+}
+
+/** Placeholder for type inference — not called directly */
+function formatSession() {
+  return null as null | {
+    tool: "wardrobe";
+    sessionId: number;
+    modelId: number | null;
+    modelName: string | null;
+    masterPrompt: string | null;
+    modelImageUrl: string;
+    lastResultUrl: string;
+    iterationCount: number;
+    activeGarmentIds: number[];
+    history: string[];
+    historyIndex: number;
+    updatedAt: Date;
+    tattooMapData: unknown;
+    styleNotes: Record<string, string> | null;
   };
+}
+
+/**
+ * Cap sessions per user — delete oldest sessions beyond the limit.
+ * Called after creating a new session to enforce the cap.
+ */
+export async function capUserSessions(userId: number) {
+  const db = (await getDb())!;
+  const allSessions = await db
+    .select({ id: wardrobeSessions.id })
+    .from(wardrobeSessions)
+    .where(eq(wardrobeSessions.userId, userId))
+    .orderBy(desc(wardrobeSessions.updatedAt));
+
+  if (allSessions.length <= MAX_SESSIONS_PER_USER) return;
+
+  const idsToDelete = allSessions.slice(MAX_SESSIONS_PER_USER).map((s) => s.id);
+  for (const id of idsToDelete) {
+    await db.delete(wardrobeSessions).where(eq(wardrobeSessions.id, id));
+  }
 }

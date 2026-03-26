@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useSessionReset } from '../hooks/useSessionReset';
 import { ModelGallery, type MintedModel } from './ModelGallery';
-import { ContinueSessionCard, type SessionData } from './ContinueSessionCard';
+import { RecentSessionsRow, type SessionData } from './ContinueSessionCard';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -45,9 +45,9 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
   } = trpc.wardrobe.model.listMinted.useQuery();
 
   const {
-    data: latestSession,
+    data: recentSessions,
     isLoading: sessionLoading,
-  } = trpc.wardrobe.sessions.getLatest.useQuery(undefined, { staleTime: 30_000 });
+  } = trpc.wardrobe.sessions.getRecent.useQuery(undefined, { staleTime: 30_000 });
 
   const dataReady = !modelsLoading && !sessionLoading;
 
@@ -288,8 +288,8 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
           transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.03s',
         }}
       >
-        <ContinueSessionCard
-          session={(latestSession as SessionData) ?? null}
+        <RecentSessionsRow
+          sessions={((recentSessions ?? []) as SessionData[])}
           onContinue={(session) => {
             if (session.tool === 'wardrobe') {
               resumeWardrobeSession(session);
@@ -502,7 +502,7 @@ export function StudioLobby({ onSelectCasting }: StudioLobbyProps) {
           lineHeight: 1.6,
         }}
       >
-        Your session saves automatically. Starting a new model will replace your current session.
+        Your sessions save automatically.
       </p>
 
       <style>{`
