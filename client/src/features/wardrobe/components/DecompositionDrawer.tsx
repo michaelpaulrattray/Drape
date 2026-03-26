@@ -98,13 +98,15 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
 
         const result = await analyzeMutation.mutateAsync({ imageBase64: base64 });
         setSourceImageUrl(result.sourceImageUrl);
-        const detected = (result.garments as Array<DetectedItem & { cropUrl?: string }>).map(g => ({
+        const detected = (result.garments as Array<DetectedItem>).map(g => ({
           id: g.id,
           label: g.label,
           category: g.category,
           box_2d: g.box_2d,
           confidence: g.confidence,
           cropUrl: g.cropUrl,
+          visibility: g.visibility ?? 100,
+          ...(g.visibilityNote ? { visibilityNote: g.visibilityNote } : {}),
         }));
         setItems(detected);
         setSelectedIds(new Set(detected.map((d) => d.id)));
@@ -129,8 +131,12 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
       const blobUrl = URL.createObjectURL(pendingDecomposeFile);
       setPreviewUrl(blobUrl);
       setSourceImageUrl(pendingQuickDetect.sourceImageUrl);
-      setItems(pendingQuickDetect.garments);
-      setSelectedIds(new Set(pendingQuickDetect.garments.map((d) => d.id)));
+      const withVisibility = pendingQuickDetect.garments.map(g => ({
+        ...g,
+        visibility: g.visibility ?? 100,
+      }));
+      setItems(withVisibility);
+      setSelectedIds(new Set(withVisibility.map((d) => d.id)));
       return;
     }
 
@@ -459,18 +465,49 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                           )}
 
                           {/* Category badge */}
-                          <span
-                            className="inline-block mt-1.5 px-2 py-0.5 rounded-full"
-                            style={{
-                              fontSize: 9,
-                              fontWeight: 600,
-                              backgroundColor: color + "12",
-                              color: color,
-                              border: `1px solid ${color}25`,
-                            }}
-                          >
-                            {item.category.replace("_", " ")}
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <span
+                              className="inline-block px-2 py-0.5 rounded-full"
+                              style={{
+                                fontSize: 9,
+                                fontWeight: 600,
+                                backgroundColor: color + "12",
+                                color: color,
+                                border: `1px solid ${color}25`,
+                              }}
+                            >
+                              {item.category.replace("_", " ")}
+                            </span>
+
+                            {/* Visibility hint — subtle, QualityBadge-style */}
+                            {item.visibility < 50 && (
+                              <span className="group/vis relative">
+                                <span
+                                  className="inline-flex items-center justify-center rounded-full"
+                                  style={{
+                                    width: 14,
+                                    height: 14,
+                                    background: "rgba(139,115,85,0.2)",
+                                  }}
+                                >
+                                  <span style={{ fontSize: 7, color: "#8B7355", fontWeight: 700, lineHeight: 1 }}>!</span>
+                                </span>
+                                <span
+                                  className="absolute bottom-full left-0 mb-1 px-2 py-1 rounded-lg opacity-0 group-hover/vis:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
+                                  style={{
+                                    background: "rgba(26,26,26,0.9)",
+                                    backdropFilter: "blur(8px)",
+                                    color: "#e8e4de",
+                                    fontSize: 9,
+                                    lineHeight: 1.4,
+                                    zIndex: 20,
+                                  }}
+                                >
+                                  {item.visibilityNote || "Partially hidden"}
+                                </span>
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

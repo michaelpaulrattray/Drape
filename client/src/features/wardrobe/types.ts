@@ -100,6 +100,8 @@ export interface DetectedItem {
   box_2d: [number, number, number, number];
   confidence: number;
   cropUrl?: string;
+  visibility: number; // 0-100: how much of the garment is visible
+  visibilityNote?: string; // e.g. "mostly hidden under blazer"
 }
 
 /** Per-garment overlay style note (from clicking garment on result image) */

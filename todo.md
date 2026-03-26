@@ -101,3 +101,4 @@
 - [x] Bug 1: toGarmentForVTO sends wrong image — should prefer isolatedImageUrl over originalImageUrl
 - [x] Bug 2: Decompose import passes full outfit photo to digitizer instead of crop — need cropUrl pipeline
 - [x] Bug 3: VTO service image fallback chain is backwards — should prefer isolated over raw
+- [x] Add subtle visibility hint to decomposed garments — extend detection with visibility score, show QualityBadge-style indicator for partially hidden items

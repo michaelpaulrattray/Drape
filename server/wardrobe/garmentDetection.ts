@@ -30,6 +30,8 @@ export interface DetectedItem {
   label: string;
   confidence: number;
   box_2d: [number, number, number, number]; // ymin, xmin, ymax, xmax (0-1)
+  visibility: number; // 0-100: how much of the garment is actually visible
+  visibilityNote?: string; // brief context, e.g. "mostly hidden under blazer"
 }
 
 /**
@@ -59,6 +61,8 @@ RULES:
 - Bounding boxes should tightly frame each garment with minimal extra space.
 - Label should be specific: "black leather bomber jacket" not "jacket".
 - If a garment is partially hidden (e.g., t-shirt under open jacket), still detect it with the visible bounding box.
+- For each garment, estimate 'visibility' (0-100): what percentage of the garment's surface area is actually visible and unobscured. A fully visible garment = 100. A t-shirt mostly hidden under a blazer with only the neckline showing = 15-25. A shirt with sleeves rolled up under a vest = 40-60.
+- If visibility < 50, also provide a short 'visibilityNote' explaining what's obscuring it (e.g., "mostly hidden under blazer").
 - ACCESSORIES (belts, necklaces, chains, scarves, bracelets): These overlay other garments. The bounding box must hug the accessory itself as tightly as possible — NOT the garment behind it.
 - A belt bbox should be a thin horizontal strip across the waist, not a rectangle containing the full pants/skirt area. A necklace bbox should frame just the necklace, not the entire top underneath.
 - Bounding box coordinates must be normalized (0-1).`;
@@ -76,6 +80,8 @@ RULES:
               category: { type: Type.STRING },
               label: { type: Type.STRING },
               confidence: { type: Type.NUMBER },
+              visibility: { type: Type.NUMBER, description: "0-100: percentage of garment surface visible" },
+              visibilityNote: { type: Type.STRING, description: "Brief note if partially hidden" },
               boundingBox: {
                 type: Type.ARRAY,
                 items: { type: Type.NUMBER },
@@ -119,6 +125,8 @@ RULES:
         label: item.label,
         confidence: item.confidence,
         box_2d: box as [number, number, number, number],
+        visibility: Math.max(0, Math.min(100, Math.round(item.visibility ?? 100))),
+        ...(item.visibilityNote ? { visibilityNote: item.visibilityNote } : {}),
       };
     });
 
