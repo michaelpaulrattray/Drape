@@ -25,6 +25,9 @@ const TOOL_LABELS: Record<string, string> = {
   home: 'Start',
 };
 
+/** Track which tools were previously enabled to detect unlock transitions */
+type ToolEnabledMap = Record<StudioTool, boolean>;
+
 interface ToolRailProps {
   canvas: CanvasState;
   /** Called when user clicks Wardrobe but model needs casting first */
@@ -40,24 +43,56 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
   const [pendingAction, setPendingAction] = useState<StudioTool | 'home' | null>(null);
   const [confirmMessage, setConfirmMessage] = useState('');
 
-  // Pulse animation state for wardrobe nudge
-  const [pulsingTool, setPulsingTool] = useState<StudioTool | null>(null);
-  const prevHasFullBody = useRef(canvas.hasFullBody);
+  // Glow animation state — tracks which tools are currently glowing
+  const [glowingTools, setGlowingTools] = useState<Set<StudioTool>>(new Set());
+  const prevEnabledRef = useRef<ToolEnabledMap | null>(null);
 
-  // Detect when hasFullBody transitions from false → true and wardrobe isn't active
+  // Detect when any tool transitions from disabled → enabled
   useEffect(() => {
-    if (!prevHasFullBody.current && canvas.hasFullBody && activeTool !== 'wardrobe') {
-      setPulsingTool('wardrobe');
-      const timer = setTimeout(() => setPulsingTool(null), 4000);
-      return () => clearTimeout(timer);
+    const currentEnabled: ToolEnabledMap = {} as ToolEnabledMap;
+    for (const tool of STUDIO_TOOLS) {
+      currentEnabled[tool.id] = getToolAvailability(tool.id, canvas).enabled;
     }
-    prevHasFullBody.current = canvas.hasFullBody;
-  }, [canvas.hasFullBody, activeTool]);
 
-  // Clear pulse when user clicks the pulsing tool
-  const clearPulse = useCallback((toolId: StudioTool) => {
-    if (pulsingTool === toolId) setPulsingTool(null);
-  }, [pulsingTool]);
+    const prev = prevEnabledRef.current;
+    if (prev) {
+      const newlyUnlocked: StudioTool[] = [];
+      for (const tool of STUDIO_TOOLS) {
+        if (!prev[tool.id] && currentEnabled[tool.id] && activeTool !== tool.id) {
+          newlyUnlocked.push(tool.id);
+        }
+      }
+      if (newlyUnlocked.length > 0) {
+        setGlowingTools((s) => {
+          const next = new Set(s);
+          newlyUnlocked.forEach((id) => next.add(id));
+          return next;
+        });
+        // Auto-clear glow after 3 breathing cycles (~4.5s)
+        const timer = setTimeout(() => {
+          setGlowingTools((s) => {
+            const next = new Set(s);
+            newlyUnlocked.forEach((id) => next.delete(id));
+            return next;
+          });
+        }, 4500);
+        return () => clearTimeout(timer);
+      }
+    }
+
+    prevEnabledRef.current = currentEnabled;
+  }, [canvas, activeTool]);
+
+  // Clear glow when user clicks a glowing tool
+  const clearGlow = useCallback((toolId: StudioTool) => {
+    if (glowingTools.has(toolId)) {
+      setGlowingTools((s) => {
+        const next = new Set(s);
+        next.delete(toolId);
+        return next;
+      });
+    }
+  }, [glowingTools]);
 
   /**
    * Determine whether any active session exists that would be lost
@@ -69,7 +104,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
     const availability = getToolAvailability(toolId, canvas);
     if (!availability.enabled) return;
 
-    clearPulse(toolId);
+    clearGlow(toolId);
 
     // Intercept wardrobe click for draft models — show cast modal
     if (toolId === 'wardrobe' && onWardrobeGate && !canvas.isMinted && canvas.modelSource === 'cast') {
@@ -83,7 +118,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
     } else {
       setActiveTool(toolId);
     }
-  }, [canvas, setActiveTool, clearPulse]);
+  }, [canvas, setActiveTool, clearGlow]);
 
   const handleHomeClick = useCallback(() => {
     // Session is auto-saved to DB — safe to navigate without confirmation.
@@ -160,7 +195,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
           const Icon = TOOL_ICONS[tool.id];
           const availability = getToolAvailability(tool.id, canvas);
           const isActive = activeTool === tool.id;
-          const isPulsing = pulsingTool === tool.id;
+          const isGlowing = glowingTools.has(tool.id);
 
           return (
             <button
@@ -170,14 +205,21 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
               title={availability.tooltip}
               className="relative w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 group"
               style={{
-                background: isActive ? '#1a1a1a' : 'transparent',
+                background: isActive
+                  ? '#1a1a1a'
+                  : isGlowing
+                    ? '#f5f3ef'
+                    : 'transparent',
                 color: isActive
                   ? '#fff'
-                  : availability.enabled
-                    ? '#999'
-                    : '#d4d4d4',
+                  : isGlowing
+                    ? '#1a1a1a'
+                    : availability.enabled
+                      ? '#999'
+                      : '#d4d4d4',
                 cursor: availability.enabled ? 'pointer' : 'default',
                 opacity: availability.enabled ? 1 : 0.5,
+                animation: isGlowing ? 'toolGlow 1.5s ease-in-out 3' : 'none',
               }}
               onMouseEnter={(e) => {
                 if (!isActive && availability.enabled) {
@@ -186,24 +228,13 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isActive && availability.enabled) {
+                if (!isActive && availability.enabled && !isGlowing) {
                   e.currentTarget.style.background = 'transparent';
                   e.currentTarget.style.color = '#999';
                 }
               }}
             >
               <Icon className="w-4 h-4" />
-
-              {/* Pulse ring animation — nudge when tool becomes available */}
-              {isPulsing && (
-                <span
-                  className="absolute inset-0 rounded-lg pointer-events-none"
-                  style={{
-                    border: '1.5px solid rgba(26,26,26,0.35)',
-                    animation: 'toolPulse 1.5s ease-out infinite',
-                  }}
-                />
-              )}
 
               {/* Active indicator dot */}
               {isActive && (
@@ -229,12 +260,18 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
         })}
       </div>
 
-      {/* Pulse animation keyframes */}
+      {/* Unlock glow animation keyframes — soft breathing box-shadow */}
       <style>{`
-        @keyframes toolPulse {
-          0% { opacity: 1; transform: scale(1); }
-          70% { opacity: 0; transform: scale(1.35); }
-          100% { opacity: 0; transform: scale(1.35); }
+        @keyframes toolGlow {
+          0% {
+            box-shadow: 0 0 0 0 rgba(26, 26, 26, 0);
+          }
+          50% {
+            box-shadow: 0 0 10px 2px rgba(26, 26, 26, 0.15);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(26, 26, 26, 0);
+          }
         }
       `}</style>
 
