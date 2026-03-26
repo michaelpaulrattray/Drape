@@ -98,7 +98,14 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
 
         const result = await analyzeMutation.mutateAsync({ imageBase64: base64 });
         setSourceImageUrl(result.sourceImageUrl);
-        const detected = result.garments as DetectedItem[];
+        const detected = (result.garments as Array<DetectedItem & { cropUrl?: string }>).map(g => ({
+          id: g.id,
+          label: g.label,
+          category: g.category,
+          box_2d: g.box_2d,
+          confidence: g.confidence,
+          cropUrl: g.cropUrl,
+        }));
         setItems(detected);
         setSelectedIds(new Set(detected.map((d) => d.id)));
       } catch {
@@ -162,6 +169,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
         selected.map((item) =>
           importMutation.mutateAsync({
             sourceImageUrl,
+            cropUrl: item.cropUrl,
             label: item.label,
             slotType: item.category as "tops" | "bottoms" | "shoes" | "accessories" | "full_look",
           }),
@@ -192,6 +200,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
     try {
       await importMutation.mutateAsync({
         sourceImageUrl,
+        cropUrl: sourceImageUrl,
         label: "Full Outfit",
         slotType: "full_look",
       });

@@ -193,14 +193,10 @@ export async function generateVirtualTryOn(
     // Build garment image parts
     const garmentParts = await Promise.all(
       sortedGarments.map(async (g) => {
-        // Accessories: prefer flat-lay (isolated) over crop
-        if (g.type === "accessories" && g.isolatedPreviewUrl) {
-          return toInlinePart(g.isolatedPreviewUrl);
-        }
-        // Standard: original crop → source image → flat-lay
+        // Prefer isolated flat-lay (best quality) → crop → source image
+        if (g.isolatedPreviewUrl) return toInlinePart(g.isolatedPreviewUrl);
         if (g.imageUrl) return toInlinePart(g.imageUrl);
         if (g.sourceImageUrl) return toInlinePart(g.sourceImageUrl);
-        if (g.isolatedPreviewUrl) return toInlinePart(g.isolatedPreviewUrl);
         throw new Error(`Garment ${g.id} has no image source`);
       }),
     );
@@ -370,10 +366,10 @@ Return the updated image with styling changes applied.`;
     const changedGarmentParts = await Promise.all(
       params.changedGarments.map(async (g) => {
         let part;
-        if (g.imageUrl) part = await toInlinePart(g.imageUrl);
+        // Prefer isolated flat-lay (best quality) → crop → source image
+        if (g.isolatedPreviewUrl) part = await toInlinePart(g.isolatedPreviewUrl);
+        else if (g.imageUrl) part = await toInlinePart(g.imageUrl);
         else if (g.sourceImageUrl) part = await toInlinePart(g.sourceImageUrl);
-        else if (g.isolatedPreviewUrl)
-          part = await toInlinePart(g.isolatedPreviewUrl);
         if (!part) throw new Error(`Garment ${g.id} missing image data`);
         return { garment: g, part };
       }),

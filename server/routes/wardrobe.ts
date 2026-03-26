@@ -67,7 +67,7 @@ function toGarmentForVTO(
     shortName: g.shortName ?? undefined,
     description: g.description ?? undefined,
     tags: Array.isArray(g.tags) ? g.tags as string[] : undefined,
-    imageUrl: g.originalImageUrl,
+    imageUrl: g.isolatedImageUrl || g.originalImageUrl,
     isolatedPreviewUrl: g.isolatedImageUrl ?? undefined,
     sourceImageUrl: g.sourceImageUrl ?? undefined,
     styleNote,
@@ -553,6 +553,7 @@ const decomposeRouter = router({
   import: protectedProcedure
     .input(z.object({
       sourceImageUrl: z.string().url(),
+      cropUrl: z.string().url().optional(),
       label: z.string(),
       slotType: z.enum(["full_look", "tops", "bottoms", "shoes", "accessories"]),
     }))
@@ -560,11 +561,15 @@ const decomposeRouter = router({
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
-      // Create garment record
+      // Use crop URL if available (decomposed garment), otherwise fall back to source
+      const garmentImageUrl = input.cropUrl || input.sourceImageUrl;
+
+      // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
       const garmentId = await createGarment({
         userId: ctx.user.id,
         slotType: input.slotType,
-        originalImageUrl: input.sourceImageUrl,
+        originalImageUrl: garmentImageUrl,
+        sourceImageUrl: input.cropUrl ? input.sourceImageUrl : undefined,
         shortName: input.label,
         status: "processing",
       });
@@ -577,8 +582,9 @@ const decomposeRouter = router({
             description: "Import garment from decomposition",
           },
           async () => {
+            // Digitize from the CROP, not the full outfit
             const digitized = await digitizeGarment(
-              input.sourceImageUrl,
+              garmentImageUrl,
               input.slotType,
               input.label,
               String(ctx.user.id),

@@ -99,6 +99,7 @@ export interface DetectedItem {
   category: GarmentSlotType;
   box_2d: [number, number, number, number];
   confidence: number;
+  cropUrl?: string;
 }
 
 /** Per-garment overlay style note (from clicking garment on result image) */

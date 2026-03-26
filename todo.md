@@ -98,3 +98,6 @@
 - [x] UI: Cleaner/less cramped identity attributes layout in export panel
 - [x] Data: Session look count should reflect saved gallery looks, not VTO history iterations
 - [x] Bug: Studio still restores last tool (e.g. export) instead of lobby when navigating from dashboard
+- [x] Bug 1: toGarmentForVTO sends wrong image — should prefer isolatedImageUrl over originalImageUrl
+- [x] Bug 2: Decompose import passes full outfit photo to digitizer instead of crop — need cropUrl pipeline
+- [x] Bug 3: VTO service image fallback chain is backwards — should prefer isolated over raw
