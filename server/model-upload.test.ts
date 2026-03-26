@@ -18,11 +18,11 @@ describe("getToolAvailability — uploaded model", () => {
     uploadedModelUrl: "https://s3.example.com/model.png",
   };
 
-  it("enables Casting when model is uploaded but requires confirmation", () => {
+  it("enables Casting when model is uploaded without confirmation (shows placeholder)", () => {
     const result = getToolAvailability("casting", uploadedCanvas);
     expect(result.enabled).toBe(true);
-    expect(result.needsConfirm).toBe(true);
-    expect(result.confirmMessage).toBeTruthy();
+    // Uploaded models switch seamlessly — DrapeStudio shows a 'not cast' placeholder
+    expect(result.needsConfirm).toBeFalsy();
     expect(result.tooltip).toBe("Casting Studio");
   });
 

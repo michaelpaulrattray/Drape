@@ -3,7 +3,7 @@ import { trpc } from '@/lib/trpc';
 import { useLocation, useSearch } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 
 // Studio infrastructure
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
@@ -200,8 +200,14 @@ export default function DrapeStudio() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [prefs, setPrefs]);
 
-  // Read-only mode: casting is locked after model is minted
-  const isReadOnly = canvas.isMinted && activeTool === 'casting';
+  // Read-only mode: casting overview is locked for any saved/minted model
+  // This allows seamless switching to Casting without a destructive reset modal
+  const isReadOnly = activeTool === 'casting' && (
+    canvas.isMinted || canvas.castModelId !== null
+  );
+
+  // Uploaded models have no casting data — show a "not cast" placeholder
+  const isUploadedModel = activeTool === 'casting' && canvas.modelSource === 'uploaded';
 
   // New Model — resets entire session
   const handleNewModel = useCallback(() => {
@@ -334,7 +340,42 @@ export default function DrapeStudio() {
           )}
 
           {/* Casting workspace — panels slide in from edges */}
-          {activeTool === 'casting' && (
+          {activeTool === 'casting' && isUploadedModel && (
+            <div
+              className="flex-1 flex items-center justify-center"
+              style={{
+                opacity: transition.centerReady ? 1 : 0,
+                transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
+              <div className="text-center" style={{ maxWidth: 340 }}>
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'rgba(0,0,0,0.04)' }}
+                >
+                  <Camera className="w-6 h-6" style={{ color: '#999' }} />
+                </div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
+                  This model was uploaded
+                </p>
+                <p style={{ fontSize: 12, color: '#999', lineHeight: 1.5, marginBottom: 20 }}>
+                  Uploaded photos skip the casting process. To use the Casting Studio,
+                  start a new model from scratch.
+                </p>
+                <button
+                  onClick={handleNewModel}
+                  className="px-5 py-2.5 rounded-full text-white transition-all duration-200"
+                  style={{ background: '#1a1a1a', fontSize: 12, fontWeight: 500 }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#333'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#1a1a1a'; }}
+                >
+                  Cast New Model
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTool === 'casting' && !isUploadedModel && (
             <>
               {/* Left Panel — Control (slides from left) */}
               <AnimatedPanel

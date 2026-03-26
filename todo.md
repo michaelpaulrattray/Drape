@@ -24,3 +24,6 @@
 - [x] Fix #5: overlayCache and selectionSnapshots not pruned/shifted on history truncation
 - [x] Fix #6: isGenerating is local state — move to Zustand store for cross-remount persistence
 - [x] Fix #7: DecompositionDrawer URL.createObjectURL never revoked
+- [x] Remove destructive reset modal from Casting icon click — switch directly to read-only Casting Studio
+- [x] Handle uploaded model state in Casting — show "not cast" message with Cast New Model CTA
+- [x] Move reset confirmation to "New Model" button inside Casting read-only footer

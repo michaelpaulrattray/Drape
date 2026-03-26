@@ -298,7 +298,7 @@ describe('Session Reset — useSessionReset actions', () => {
   });
 
   describe('Tool availability with confirmation', () => {
-    it('requires confirmation for Casting when uploaded model exists', () => {
+    it('does NOT require confirmation for Casting when uploaded model exists (shows placeholder)', () => {
       const uploadedCanvas = {
         hasModel: true,
         hasFullBody: true,
@@ -312,10 +312,10 @@ describe('Session Reset — useSessionReset actions', () => {
       
       const result = getToolAvailability('casting', uploadedCanvas);
       expect(result.enabled).toBe(true);
-      expect(result.needsConfirm).toBe(true);
+      expect(result.needsConfirm).toBeFalsy();
     });
 
-    it('requires confirmation for Casting when gallery model is loaded', () => {
+    it('does NOT require confirmation for Casting when gallery model is loaded (read-only view)', () => {
       const galleryCanvas = {
         hasModel: true,
         hasFullBody: true,
@@ -329,7 +329,7 @@ describe('Session Reset — useSessionReset actions', () => {
       
       const result = getToolAvailability('casting', galleryCanvas);
       expect(result.enabled).toBe(true);
-      expect(result.needsConfirm).toBe(true);
+      expect(result.needsConfirm).toBeFalsy();
     });
 
     it('does NOT require confirmation for Casting when canvas is from active casting', () => {
