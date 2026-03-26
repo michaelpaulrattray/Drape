@@ -233,7 +233,7 @@ export async function getUserMintedModelsWithThumbnail(
  */
 export async function getUserDraftModelsWithThumbnail(
   userId: number,
-  limit: number = 4
+  limit: number = 3
 ) {
   const db = await getDb();
   if (!db) return [];

@@ -119,3 +119,4 @@
 - [x] Add delete button (X on hover) to ModelGallery cards with confirmation dialog
 - [x] Add delete button to DraftCastsRow cards with confirmation dialog
 - [x] Bug: Resuming a draft cast from lobby enters read-only casting mode — should be editable since model is not minted
+- [x] Cap Draft Casts display to 3 most recent in lobby — preserve all drafts in DB, no auto-deletion of paid content
