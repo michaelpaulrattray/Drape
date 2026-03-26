@@ -33,6 +33,8 @@ queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
+    // Suppress rate-limit errors — they're transient and handled locally by mutations
+    if (error instanceof TRPCClientError && error.data?.code === 'TOO_MANY_REQUESTS') return;
     console.error("[API Mutation Error]", error);
   }
 });
