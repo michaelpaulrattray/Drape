@@ -39,6 +39,40 @@ interface StudioLobbyProps {
 export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps) {
   const { loadUploadedModel, loadGalleryModel, resumeWardrobeSession } = useSessionReset();
   const uploadMutation = trpc.wardrobe.model.upload.useMutation();
+  const utils = trpc.useUtils();
+
+  // Delete model/draft mutation
+  const [deletingModelId, setDeletingModelId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const deleteModelMutation = trpc.models.delete.useMutation({
+    onSuccess: () => {
+      utils.wardrobe.model.listMinted.invalidate();
+      utils.wardrobe.model.listDrafts.invalidate();
+      utils.wardrobe.sessions.getRecent.invalidate();
+      toast.success('Model deleted');
+      setDeletingModelId(null);
+      setConfirmDeleteId(null);
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to delete model');
+      setDeletingModelId(null);
+      setConfirmDeleteId(null);
+    },
+  });
+
+  const handleDeleteModel = useCallback((modelId: number) => {
+    if (confirmDeleteId === modelId) {
+      // Second click — confirmed
+      setDeletingModelId(modelId);
+      deleteModelMutation.mutate({ modelId });
+    } else {
+      // First click — ask for confirmation
+      setConfirmDeleteId(modelId);
+      toast('Tap delete again to confirm', { duration: 3000 });
+      // Auto-clear confirmation after 3s
+      setTimeout(() => setConfirmDeleteId((prev) => prev === modelId ? null : prev), 3000);
+    }
+  }, [confirmDeleteId, deleteModelMutation]);
 
   // ── Lift queries here for coordinated loading ──────────────
   const {
@@ -320,6 +354,8 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
           <DraftCastsRow
             drafts={(draftModels as DraftModel[]) ?? []}
             onResume={(draft) => onResumeDraft?.(draft)}
+            onDelete={handleDeleteModel}
+            isDeletingId={deletingModelId}
           />
         </div>
       ) : null}
@@ -337,6 +373,9 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
         <ModelGallery
           models={(models as MintedModel[]) ?? []}
           onSelectModel={handleSelectModel}
+          onDeleteModel={handleDeleteModel}
+          deletingModelId={deletingModelId}
+          confirmDeleteId={confirmDeleteId}
         />
       </div>
 

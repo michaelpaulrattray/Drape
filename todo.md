@@ -114,3 +114,7 @@
 - [x] Match Camera icon button styling to Casting's ToolButton pattern for visual consistency
 - [x] Bug: Draft casting sessions prematurely create model records in MY MODELS — headshot-only drafts appear as saved models before user completes the cast
 - [x] Bug: Casting sessions with generated headshots don't appear in Recent Sessions after exiting — user loses access to paid content
+- [x] Fix existing draft model in DB — revert status from 'active' to 'draft' for the headshot-only model
+- [x] Add server-side models.delete procedure with cascade (delete assets, sessions, looks)
+- [x] Add delete button (X on hover) to ModelGallery cards with confirmation dialog
+- [x] Add delete button to DraftCastsRow cards with confirmation dialog

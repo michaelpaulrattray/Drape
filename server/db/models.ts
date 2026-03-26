@@ -6,6 +6,8 @@ import { eq, desc, and, inArray } from "drizzle-orm";
 import {
   models,
   modelAssets,
+  wardrobeSessions,
+  wardrobeLooks,
   InsertModel,
   InsertModelAsset,
 } from "../../drizzle/schema";
@@ -149,6 +151,8 @@ export async function deleteModel(
 
   try {
     await withTransaction(async (tx) => {
+      await tx.delete(wardrobeLooks).where(eq(wardrobeLooks.modelId, modelId));
+      await tx.delete(wardrobeSessions).where(eq(wardrobeSessions.modelId, modelId));
       await tx.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
       await tx.delete(models).where(eq(models.id, modelId));
     });
@@ -369,6 +373,8 @@ export async function deleteModelWithAssetKeys(modelId: number): Promise<{
       .filter((k): k is string => k !== null);
 
     await withTransaction(async (tx) => {
+      await tx.delete(wardrobeLooks).where(eq(wardrobeLooks.modelId, modelId));
+      await tx.delete(wardrobeSessions).where(eq(wardrobeSessions.modelId, modelId));
       await tx.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
       await tx.delete(models).where(eq(models.id, modelId));
     });

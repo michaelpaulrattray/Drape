@@ -6,7 +6,7 @@
  * Click a model to load it into the wardrobe.
  */
 import { useRef, useState, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Crown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Crown, X, Loader2 } from 'lucide-react';
 
 /** Shape returned by wardrobe.model.listMinted */
 export interface MintedModel {
@@ -21,9 +21,12 @@ export interface MintedModel {
 interface ModelGalleryProps {
   models: MintedModel[];
   onSelectModel: (model: MintedModel) => void;
+  onDeleteModel?: (modelId: number) => void;
+  deletingModelId?: number | null;
+  confirmDeleteId?: number | null;
 }
 
-export function ModelGallery({ models, onSelectModel }: ModelGalleryProps) {
+export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingModelId, confirmDeleteId }: ModelGalleryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
@@ -150,6 +153,28 @@ export function ModelGallery({ models, onSelectModel }: ModelGalleryProps) {
                   </p>
                 )}
               </div>
+
+              {/* Delete button — top-left on hover */}
+              {onDeleteModel && isHovered && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteModel(model.id);
+                  }}
+                  className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center z-20 transition-colors"
+                  style={{
+                    background: confirmDeleteId === model.id ? 'rgba(239,68,68,0.9)' : 'rgba(0,0,0,0.5)',
+                    backdropFilter: 'blur(4px)',
+                  }}
+                  title={confirmDeleteId === model.id ? 'Tap again to confirm' : 'Delete model'}
+                >
+                  {deletingModelId === model.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#fff' }} />
+                  ) : (
+                    <X className="w-3 h-3" style={{ color: '#fff' }} />
+                  )}
+                </button>
+              )}
 
               {/* Hover action hint */}
               <div
