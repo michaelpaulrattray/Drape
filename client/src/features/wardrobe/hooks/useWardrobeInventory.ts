@@ -101,6 +101,13 @@ export function useWardrobeInventory() {
         return null;
       }
 
+      // Full look uploads are intercepted — open decomposition drawer
+      if (slot === "full_look") {
+        useWardrobeStore.getState().setPendingDecomposeFile(file);
+        useWardrobeStore.getState().setDecomposeOpen(true);
+        return null;
+      }
+
       // Check slot capacity
       const slotGarments = garments.filter((g) => g.slotType === slot);
       if (slotGarments.length >= MAX_GARMENTS_PER_SLOT) {

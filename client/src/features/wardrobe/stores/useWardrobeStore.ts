@@ -97,6 +97,10 @@ interface WardrobeState {
   isDecomposeOpen: boolean;
   setDecomposeOpen: (open: boolean) => void;
 
+  /** Pending file for auto-decomposition (set when full_look upload is intercepted) */
+  pendingDecomposeFile: File | null;
+  setPendingDecomposeFile: (file: File | null) => void;
+
   /** Reset all wardrobe state */
   resetWardrobe: () => void;
 }
@@ -120,6 +124,7 @@ const INITIAL_STATE = {
   isGenerating: false,
   generatingMessage: null as string | null,
   isDecomposeOpen: false,
+  pendingDecomposeFile: null as File | null,
   lastGenStyleNotes: {} as Record<string, string>,
 };
 
@@ -367,6 +372,9 @@ export const useWardrobeStore = create<WardrobeState>()(
 
       setDecomposeOpen: (open) =>
         set({ isDecomposeOpen: open }, false, "setDecomposeOpen"),
+
+      setPendingDecomposeFile: (file) =>
+        set({ pendingDecomposeFile: file }, false, "setPendingDecomposeFile"),
 
       // ── Reset ──────────────────────────────────────────────
       resetWardrobe: () =>

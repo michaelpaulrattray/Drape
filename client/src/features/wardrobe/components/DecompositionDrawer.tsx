@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Scissors } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { useWardrobeStore } from "../stores/useWardrobeStore";
 import type { DetectedItem } from "../types";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -58,9 +59,14 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
       setSelectedIds(new Set());
       setEditingId(null);
       setIsScanning(false);
+      // Clear pending file when drawer closes
+      useWardrobeStore.getState().setPendingDecomposeFile(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const pendingDecomposeFile = useWardrobeStore((s) => s.pendingDecomposeFile);
+  const pendingProcessedRef = useRef(false);
 
   const handleFileSelect = useCallback(
     async (file: File) => {
@@ -101,6 +107,15 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
     },
     [analyzeMutation],
   );
+
+  // Auto-analyze pending file from full_look upload intercept
+  useEffect(() => {
+    if (open && pendingDecomposeFile && !pendingProcessedRef.current) {
+      pendingProcessedRef.current = true;
+      handleFileSelect(pendingDecomposeFile);
+    }
+    if (!open) pendingProcessedRef.current = false;
+  }, [open, pendingDecomposeFile, handleFileSelect]);
 
   const toggleSelection = useCallback((id: string) => {
     setSelectedIds((prev) => {

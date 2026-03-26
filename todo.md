@@ -32,3 +32,7 @@
 - [x] Decide on shared StudioSidePanel shell component — used by both Casting and Wardrobe
 - [x] Fix 1: Accumulate style notes from overlay clicks in store before calling refineResult
 - [x] Fix 2: Replace LayersPanel textarea with parsed chips + freeform tags (SOT pattern: toggleChip, removeFreeform, addCustom, edit count badge)
+- [x] Intercept full_look slot upload to open DecompositionDrawer instead of normal upload
+- [x] Add pendingDecomposeFile to useWardrobeStore
+- [x] Auto-analyze pendingDecomposeFile when DecompositionDrawer opens
+- [x] Add 'Keep as Full Look' button in DecompositionDrawer
