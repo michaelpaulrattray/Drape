@@ -176,7 +176,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
                   : availability.enabled
                     ? '#999'
                     : '#d4d4d4',
-                cursor: availability.enabled ? 'pointer' : 'not-allowed',
+                cursor: availability.enabled ? 'pointer' : 'default',
                 opacity: availability.enabled ? 1 : 0.5,
               }}
               onMouseEnter={(e) => {

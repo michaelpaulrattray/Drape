@@ -63,6 +63,7 @@
 - [x] Add client-side guard to skip analyzeTattoos/checkQuality when model URL hasn't changed since last successful call
 - [x] Remove lobby confirmation modal — make lobby navigation frictionless (session auto-saves)
 - [x] Add subtle note on lobby about session replacement when starting new
+<<<<<<< Updated upstream
 - [x] Backend: add getRecentSessions query returning up to 4 sessions with VTO history
 - [x] Backend: cap sessions at 4 per user — delete oldest when creating 5th
 - [x] Frontend: replace single ContinueSessionCard with multi-session horizontal scroll
@@ -130,3 +131,6 @@
 - [x] Reduce MY MODELS delete button size slightly (24→20px)
 - [x] Bug: Nested button error — DeleteOverlayButton renders <button> inside parent <button> elements (FeaturedCard, CompactCard)
 - [x] Bug: Resuming draft cast from lobby has noticeable delay — should feel instantaneous like Recent Sessions and My Models
+=======
+- [x] Bug: Disabled tools in ToolRail show not-allowed cursor (red circle with line) — breaks immersion, should use default cursor
+>>>>>>> Stashed changes
