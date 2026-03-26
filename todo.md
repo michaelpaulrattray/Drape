@@ -59,3 +59,4 @@
 - [x] Fix lobby loading experience — lifted queries to StudioLobby, coordinated skeleton → reveal animation
 - [x] Fix janky image loading when switching from Wardrobe to Casting — preload casting asset URLs before panel reveal
 - [x] Bug: Infinite re-render loop in DrapeStudio — stabilized Zustand selector with useMemo
+- [x] Casting panel transitions don't feel as smooth as Wardrobe — removed center opacity/scale gate, preloader now cache-warms only

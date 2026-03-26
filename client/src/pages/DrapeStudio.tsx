@@ -53,17 +53,14 @@ export default function DrapeStudio() {
   // Orchestrated transition phases
   const baseTransition = useStudioTransition(activeTool);
 
-  // Preload casting images so they're in browser cache before panels reveal
+  // Eagerly preload casting images into browser cache (warm S3 URLs)
   const castingAssets = useCastingGenerationStore((s) => s.currentAssets);
   const castingAssetUrls = useMemo(
     () => activeTool === 'casting' ? castingAssets.map((a) => a.storageUrl) : [],
     [activeTool, castingAssets],
   );
-  const { ready: castingImagesReady } = useImagePreloader(castingAssetUrls);
-  const transition = useMemo(() => {
-    if (activeTool !== 'casting' || castingImagesReady) return baseTransition;
-    return { ...baseTransition, centerReady: false, rightReady: false };
-  }, [activeTool, castingImagesReady, baseTransition]);
+  useImagePreloader(castingAssetUrls); // cache-warm only, don't gate transitions
+  const transition = baseTransition;
 
   // Session persistence — restore on mount, auto-save on changes
   const { isRestoring } = useSessionRestore(isAuthenticated);
@@ -395,15 +392,8 @@ export default function DrapeStudio() {
                 </StudioSidePanel>
               </AnimatedPanel>
 
-              {/* Center — Image Viewer (scales up) */}
-              <div
-                className="flex-1 min-w-0 h-full"
-                style={{
-                  opacity: transition.centerReady ? 1 : 0,
-                  transform: transition.centerReady ? 'scale(1)' : 'scale(0.97)',
-                  transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1), transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-              >
+              {/* Center — Image Viewer */}
+              <div className="flex-1 min-w-0 h-full relative">
                 <ImageViewerPanel
                   currentImageUrl={currentImageUrl ?? undefined}
                   currentAssets={currentAssets}
