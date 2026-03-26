@@ -104,3 +104,8 @@
 - [x] Add subtle visibility hint to decomposed garments — extend detection with visibility score, show QualityBadge-style indicator for partially hidden items
 - [x] Add "Reset Look" button in LayersPanel + keyboard shortcut (R) in wardrobe — clears VTO history, selection, style notes, reverts canvas to original model
 - [x] Audit and fix keyboard shortcuts across casting and wardrobe — Ctrl+G reported broken in casting
+- [x] Remove R keyboard shortcut for Reset Look — too easy to hit accidentally
+- [x] Clean up shortcuts bar — remove "Reset Look" hint, it was too long and looked odd
+- [x] Move Reset Look button below Dress/Update Look as a secondary text link
+- [x] Increase garment card thumbnail size (32→48px) and text size in LayersPanel
+- [x] Move "Keep" (save to gallery) to canvas overlay — Camera icon, right side, hover-reveal, tooltip "Shoot Look"

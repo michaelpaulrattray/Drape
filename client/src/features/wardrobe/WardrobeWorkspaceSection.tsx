@@ -6,6 +6,7 @@
  * decomposition drawer.
  */
 import { useState, useCallback, useMemo, useRef } from 'react';
+import { Camera } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
@@ -161,7 +162,7 @@ export function WardrobeWorkspaceSection({
     toast.success('Reset to original model');
   }, [gen.isGenerating, resetToOriginal]);
 
-  // Wardrobe-specific keyboard handler (Space to generate, R to reset look)
+  // Wardrobe-specific keyboard handler (Space to generate)
   const wardrobeKeyHandler = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === ' ') {
@@ -169,16 +170,9 @@ export function WardrobeWorkspaceSection({
         if (canGenerate) gen.generate();
         return true;
       }
-      if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
-        if (hasResult) {
-          e.preventDefault();
-          handleResetLook();
-          return true;
-        }
-      }
       return false;
     },
-    [canGenerate, gen, hasResult, handleResetLook]
+    [canGenerate, gen]
   );
 
   // Derive contextual toolbar status from selected garments
@@ -265,14 +259,39 @@ export function WardrobeWorkspaceSection({
             />
           }
           onHoverChange={setImageAreaHovered}
+          sideOverlay={
+            hasResult && !gen.isGenerating ? (
+              <div
+                className="absolute top-1/2 -translate-y-1/2 right-4 flex flex-col gap-2 z-30 transition-opacity duration-200"
+                style={{ opacity: imageAreaHovered ? 1 : 0, pointerEvents: imageAreaHovered ? 'auto' : 'none' }}
+              >
+                <button
+                  onClick={handleSaveLook}
+                  disabled={isSavingLook || !modelId}
+                  className="flex items-center justify-center rounded-xl transition-all"
+                  style={{
+                    width: 40, height: 40,
+                    background: 'rgba(255,255,255,0.85)',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    cursor: isSavingLook ? 'not-allowed' : 'pointer',
+                    opacity: isSavingLook ? 0.5 : 1,
+                  }}
+                  onMouseEnter={(e) => { if (!isSavingLook) e.currentTarget.style.background = 'rgba(255,255,255,1)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.85)'; }}
+                  title="Shoot Look"
+                >
+                  <Camera size={18} style={{ color: '#1a1a1a' }} />
+                </button>
+              </div>
+            ) : undefined
+          }
           bottomOverlay={
             <WardrobeShortcutsBar
               hasResult={hasResult}
               isGenerating={gen.isGenerating}
               controlsVisible={imageAreaHovered}
               onDownload={handleDownloadResult}
-              onSaveLook={modelId ? handleSaveLook : undefined}
-              isSavingLook={isSavingLook}
             />
           }
         />

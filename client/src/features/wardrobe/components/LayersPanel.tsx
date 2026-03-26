@@ -12,7 +12,6 @@ import {
   Save,
   Trash2,
   RefreshCw,
-  RotateCcw,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -139,7 +138,7 @@ function GarmentRow({
         {/* Thumbnail */}
         <div
           className="flex-shrink-0 rounded-lg overflow-hidden"
-          style={{ width: 30, height: 38, background: "#eae7e1", border: "1px solid rgba(0,0,0,0.04)" }}
+          style={{ width: 42, height: 52, background: "#eae7e1", border: "1px solid rgba(0,0,0,0.04)" }}
         >
           {imgUrl && <img src={imgUrl} alt="" className="w-full h-full object-contain" />}
         </div>
@@ -158,11 +157,11 @@ function GarmentRow({
                 ))}
               </div>
             )}
-            <span className="block truncate" style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a" }}>
+            <span className="block truncate" style={{ fontSize: 12, fontWeight: 500, color: "#1a1a1a" }}>
               {garment.shortName || "Untitled"}
             </span>
           </div>
-          <span className="block" style={{ fontSize: 7, color: "#b8b3a8", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          <span className="block" style={{ fontSize: 8, color: "#b8b3a8", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" }}>
             {slotLabel}
           </span>
         </div>
@@ -381,16 +380,6 @@ export function LayersPanel({
             <span className="font-mono" style={{ fontSize: 9, color: "#b8b3a8" }}>
               {selectedGarments.length} item{selectedGarments.length !== 1 ? "s" : ""}
             </span>
-            {hasResult && onResetLook && (
-              <button
-                onClick={onResetLook}
-                disabled={isGenerating}
-                className="p-1 rounded hover:bg-[#f0ebe3] transition-colors disabled:opacity-30"
-                title="Reset Look (R)"
-              >
-                <RotateCcw size={12} color="#999" />
-              </button>
-            )}
             <button onClick={clearSelection} className="p-1 rounded hover:bg-[#f0ebe3] transition-colors" title="Clear all">
               <Trash2 size={12} color="#999" />
             </button>
@@ -438,6 +427,17 @@ export function LayersPanel({
             style={{ background: "transparent", color: "#1a1a1a", fontSize: 10, border: "1px solid #d4cfc7" }}
           >
             <RefreshCw size={12} />Apply Style Changes
+          </button>
+        )}
+
+        {hasResult && onResetLook && (
+          <button
+            onClick={onResetLook}
+            disabled={isGenerating}
+            className="w-full text-center transition-colors hover:opacity-70 disabled:opacity-30"
+            style={{ fontSize: 9, color: '#b8b3a8', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+          >
+            Reset Look
           </button>
         )}
 

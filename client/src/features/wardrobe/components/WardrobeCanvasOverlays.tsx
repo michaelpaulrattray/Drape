@@ -5,7 +5,7 @@
  * when the active tool is "wardrobe". Keeps wardrobe-specific rendering
  * logic co-located with the wardrobe feature.
  */
-import { Download, Bookmark } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { GarmentOverlay } from "./GarmentOverlay";
 import type { DetectedItem } from "../types";
 
@@ -19,7 +19,6 @@ const SHORTCUT_HINTS = [
 
 const SHORTCUT_HINTS_WITH_COMPARE = [
   ...SHORTCUT_HINTS,
-  { key: "R", label: "Reset Look" },
   { key: "Hold", label: "Compare" },
 ];
 
@@ -28,11 +27,9 @@ interface ShortcutsBarProps {
   isGenerating: boolean;
   controlsVisible: boolean;
   onDownload?: () => void;
-  onSaveLook?: () => void;
-  isSavingLook?: boolean;
 }
 
-export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible, onDownload, onSaveLook, isSavingLook }: ShortcutsBarProps) {
+export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible, onDownload }: ShortcutsBarProps) {
   if (isGenerating) return null;
   return (
     <div
@@ -66,37 +63,21 @@ export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible,
         </div>
       ))}
 
-      {/* Download + Save Look buttons — only shown when a VTO result exists */}
-      {hasResult && (onDownload || onSaveLook) && (
+      {/* Download button — only shown when a VTO result exists */}
+      {hasResult && onDownload && (
         <>
           <div style={{ width: 1, height: 12, background: 'rgba(0,0,0,0.08)' }} />
-          {onSaveLook && (
-            <button
-              onClick={onSaveLook}
-              disabled={isSavingLook}
-              className="flex items-center gap-1 pointer-events-auto rounded-md px-2 py-0.5 transition-colors"
-              style={{ background: 'transparent', cursor: isSavingLook ? 'not-allowed' : 'pointer', opacity: isSavingLook ? 0.5 : 1 }}
-              onMouseEnter={(e) => { if (!isSavingLook) e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-              title="Save this look to gallery"
-            >
-              <Bookmark className="w-3 h-3" style={{ color: '#999' }} />
-              <span style={{ fontSize: 9, color: '#999', fontWeight: 500 }}>{isSavingLook ? 'Saving...' : 'Keep'}</span>
-            </button>
-          )}
-          {onDownload && (
-            <button
-              onClick={onDownload}
-              className="flex items-center gap-1 pointer-events-auto rounded-md px-2 py-0.5 transition-colors"
-              style={{ background: 'transparent', cursor: 'pointer' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-              title="Download image"
-            >
-              <Download className="w-3 h-3" style={{ color: '#999' }} />
-              <span style={{ fontSize: 9, color: '#999', fontWeight: 500 }}>Save</span>
-            </button>
-          )}
+          <button
+            onClick={onDownload}
+            className="flex items-center gap-1 pointer-events-auto rounded-md px-2 py-0.5 transition-colors"
+            style={{ background: 'transparent', cursor: 'pointer' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            title="Download image"
+          >
+            <Download className="w-3 h-3" style={{ color: '#999' }} />
+            <span style={{ fontSize: 9, color: '#999', fontWeight: 500 }}>Save</span>
+          </button>
         </>
       )}
     </div>
