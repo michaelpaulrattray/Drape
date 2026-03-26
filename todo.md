@@ -28,3 +28,5 @@
 - [x] Handle uploaded model state in Casting — show "not cast" message with Cast New Model CTA
 - [x] Move reset confirmation to "New Model" button inside Casting read-only footer
 - [x] Fix: Gallery-loaded models show empty "Ready to Cast" in Casting overview — hydrate casting generation store with model assets from DB
+- [x] Audit and unify panel designs between Casting and Wardrobe (widths, rounded edges, spacing)
+- [x] Decide on shared StudioSidePanel shell component — used by both Casting and Wardrobe

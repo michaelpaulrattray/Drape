@@ -115,16 +115,12 @@ export function ControlPanel({
   };
 
   return (
-    <aside className={`
-      ${showMobilePanel ? 'fixed inset-0 z-50 pt-11 flex flex-col' : 'hidden'}
+    <div className={`
+      ${showMobilePanel ? 'fixed inset-0 z-50 pt-11' : 'hidden'}
       lg:relative lg:flex lg:flex-col lg:pt-0
-      h-full flex-shrink-0 z-20
+      h-full flex flex-col
     `}
-      style={{
-        width: 300, background: '#faf8f5',
-        borderRadius: '0 18px 18px 0',
-        boxShadow: '8px 0 40px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)',
-      }}
+      style={{ background: '#faf8f5' }}
     >
       {/* Header */}
       <div className="p-4 pb-3">
@@ -479,6 +475,6 @@ export function ControlPanel({
           </>
         )}
       </div>
-    </aside>
+    </div>
   );
 }

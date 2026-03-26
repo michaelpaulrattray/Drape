@@ -1,0 +1,55 @@
+/**
+ * StudioSidePanel — Shared shell for left/right side panels across all tools.
+ *
+ * Provides consistent styling: 18px rounded corners, soft shadow, warm
+ * background. Each tool renders its own content inside this shell.
+ *
+ * Usage:
+ *   <StudioSidePanel side="left" width={280}>
+ *     <ControlPanel />
+ *   </StudioSidePanel>
+ */
+import type { ReactNode, CSSProperties } from 'react';
+
+interface StudioSidePanelProps {
+  /** Which edge this panel sits on */
+  side: 'left' | 'right';
+  /** Panel width in pixels */
+  width: number;
+  /** Panel content */
+  children: ReactNode;
+  /** Additional className for the wrapper */
+  className?: string;
+  /** Override background color (default: left=#faf8f5, right=#fff) */
+  background?: string;
+}
+
+const SHADOW_LEFT = '8px 0 40px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)';
+const SHADOW_RIGHT = '-8px 0 40px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)';
+
+export function StudioSidePanel({
+  side,
+  width,
+  children,
+  className = '',
+  background,
+}: StudioSidePanelProps) {
+  const isLeft = side === 'left';
+  const bg = background ?? (isLeft ? '#faf8f5' : '#fff');
+
+  const style: CSSProperties = {
+    width,
+    background: bg,
+    borderRadius: isLeft ? '0 18px 18px 0' : '18px 0 0 18px',
+    boxShadow: isLeft ? SHADOW_LEFT : SHADOW_RIGHT,
+  };
+
+  return (
+    <aside
+      className={`h-full flex flex-col overflow-hidden flex-shrink-0 z-20 ${className}`}
+      style={style}
+    >
+      {children}
+    </aside>
+  );
+}

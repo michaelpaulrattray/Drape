@@ -11,6 +11,7 @@ import { ToolRail } from '@/features/studio/components/ToolRail';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
 import { StudioLobby } from '@/features/studio/components/StudioLobby';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
+import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition';
 import type { StudioTool } from '@/features/studio/types';
 
@@ -338,7 +339,6 @@ export default function DrapeStudio() {
             </div>
           )}
 
-          {/* Casting workspace — panels slide in from edges */}
           {activeTool === 'casting' && isUploadedModel && (
             <div
               className="flex-1 flex items-center justify-center"
@@ -384,16 +384,18 @@ export default function DrapeStudio() {
                 duration={500}
                 className="w-full lg:w-auto flex-shrink-0"
               >
-                <ControlPanel
-                  user={user}
-                  isFormValid={isFormValid}
-                  genState={genState}
-                  currentAssets={currentAssets}
-                  handleGenerate={handleGenerate}
-                  isReadOnly={isReadOnly}
-                  onNewModel={handleNewModel}
-                  modelName={modelName}
-                />
+                <StudioSidePanel side="left" width={280}>
+                  <ControlPanel
+                    user={user}
+                    isFormValid={isFormValid}
+                    genState={genState}
+                    currentAssets={currentAssets}
+                    handleGenerate={handleGenerate}
+                    isReadOnly={isReadOnly}
+                    onNewModel={handleNewModel}
+                    modelName={modelName}
+                  />
+                </StudioSidePanel>
               </AnimatedPanel>
 
               {/* Center — Image Viewer (scales up) */}
@@ -441,7 +443,9 @@ export default function DrapeStudio() {
                 duration={500}
                 className="hidden lg:block flex-shrink-0"
               >
-                <MasterPromptPanel />
+                <StudioSidePanel side="right" width={260}>
+                  <MasterPromptPanel />
+                </StudioSidePanel>
               </AnimatedPanel>
             </>
           )}
@@ -457,7 +461,6 @@ export default function DrapeStudio() {
             />
           )}
 
-          {/* Export placeholder */}
           {activeTool === 'export' && (
             <div
               className="flex-1 flex items-center justify-center"
@@ -475,7 +478,6 @@ export default function DrapeStudio() {
         </div>
       </div>
 
-      {/* Cast Model Modal — gate before wardrobe for draft models */}
       <CastModelModal
         isOpen={showCastModal}
         onClose={() => setShowCastModal(false)}
@@ -486,7 +488,6 @@ export default function DrapeStudio() {
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
       />
 
-      {/* Credit Top-up Modal */}
       <CreditTopupModal
         isOpen={isTopupOpen}
         onClose={() => setIsTopupOpen(false)}

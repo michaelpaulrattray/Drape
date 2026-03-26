@@ -8,6 +8,7 @@
 import { useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
+import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { StudioCanvas } from '@/features/studio/components/StudioCanvas';
 import {
   RackPanel,
@@ -147,10 +148,13 @@ export function WardrobeWorkspaceSection({
         from="left"
         offset={60}
         duration={500}
-        className="hidden lg:block w-[200px] xl:w-[220px] flex-shrink-0 overflow-y-auto border-r"
-        style={{ borderColor: '#e5e0d8' }}
+        className="hidden lg:block flex-shrink-0"
       >
-        <RackPanel />
+        <StudioSidePanel side="left" width={280}>
+          <div className="h-full overflow-y-auto">
+            <RackPanel />
+          </div>
+        </StudioSidePanel>
       </AnimatedPanel>
 
       {/* Center — Canvas */}
@@ -197,19 +201,20 @@ export function WardrobeWorkspaceSection({
         from="right"
         offset={60}
         duration={500}
-        className="hidden lg:block w-[240px] xl:w-[260px] flex-shrink-0 overflow-y-auto border-l"
-        style={{ borderColor: '#e5e0d8' }}
+        className="hidden lg:block flex-shrink-0"
       >
-        <LayersPanel
-          isGenerating={gen.isGenerating}
-          hasResult={hasResult}
-          onGenerate={gen.generate}
-          currentResultUrl={gen.currentResult}
-          onRefine={gen.refineResult}
-          isRefining={gen.isGenerating}
-          hasDirtyStyles={gen.hasDirtyStyles}
-          onApplyStyleChanges={gen.handleApplyStyleChanges}
-        />
+        <StudioSidePanel side="right" width={260}>
+          <LayersPanel
+            isGenerating={gen.isGenerating}
+            hasResult={hasResult}
+            onGenerate={gen.generate}
+            currentResultUrl={gen.currentResult}
+            onRefine={gen.refineResult}
+            isRefining={gen.isGenerating}
+            hasDirtyStyles={gen.hasDirtyStyles}
+            onApplyStyleChanges={gen.handleApplyStyleChanges}
+          />
+        </StudioSidePanel>
       </AnimatedPanel>
 
       {/* Decomposition Drawer */}

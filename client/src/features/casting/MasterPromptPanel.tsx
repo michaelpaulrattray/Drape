@@ -154,13 +154,10 @@ export function MasterPromptPanel() {
   const viewCount = currentAssets.length;
 
   return (
-    <aside
-      className="h-full flex flex-col overflow-hidden flex-shrink-0 z-20 hidden lg:flex"
+    <div
+      className="h-full flex flex-col overflow-hidden"
       style={{
-        width: isCollapsed ? 40 : 280,
         background: '#fff',
-        borderRadius: '18px 0 0 18px',
-        boxShadow: '-8px 0 40px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)',
         transition: 'width 0.22s ease',
       }}
     >
@@ -427,6 +424,6 @@ export function MasterPromptPanel() {
           </button>
         </div>
       )}
-    </aside>
+    </div>
   );
 }
