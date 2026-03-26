@@ -64,6 +64,10 @@ export function WardrobeWorkspaceSection({
       if (categoryGarments.length === 0) {
         const fallbackId = selectedArr[0];
         if (!fallbackId) return;
+        // Accumulate the style note for fallback garment
+        const fallbackNote = useWardrobeStore.getState().styleNotes[String(fallbackId)] || '';
+        const updatedFallback = fallbackNote ? `${fallbackNote}; ${note.instruction}` : note.instruction;
+        useWardrobeStore.getState().setStyleNote(fallbackId, updatedFallback);
         gen.refineResult(fallbackId, note.instruction);
         return;
       }
@@ -85,6 +89,12 @@ export function WardrobeWorkspaceSection({
         }
       }
 
+      // Accumulate the style note (semicolon-separated, matching SOT pattern)
+      const currentNote = useWardrobeStore.getState().styleNotes[String(bestMatch.id)] || '';
+      const updatedNote = currentNote ? `${currentNote}; ${note.instruction}` : note.instruction;
+      useWardrobeStore.getState().setStyleNote(bestMatch.id, updatedNote);
+
+      // Then trigger refinement
       gen.refineResult(bestMatch.id, note.instruction);
     },
     [gen, garments, selectedGarmentIds]

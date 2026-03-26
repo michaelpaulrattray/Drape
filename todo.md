@@ -30,3 +30,4 @@
 - [x] Fix: Gallery-loaded models show empty "Ready to Cast" in Casting overview — hydrate casting generation store with model assets from DB
 - [x] Audit and unify panel designs between Casting and Wardrobe (widths, rounded edges, spacing)
 - [x] Decide on shared StudioSidePanel shell component — used by both Casting and Wardrobe
+- [x] Fix 1: Accumulate style notes from overlay clicks in store before calling refineResult
