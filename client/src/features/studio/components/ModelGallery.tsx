@@ -93,12 +93,20 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
         {models.map((model) => {
           const isHovered = hoveredId === model.id;
           return (
-            <button
+            <div
               key={model.id}
               onClick={() => onSelectModel(model)}
               onMouseEnter={() => setHoveredId(model.id)}
               onMouseLeave={() => setHoveredId(null)}
-              className="flex-shrink-0 rounded-xl overflow-hidden relative group"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectModel(model);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              className="flex-shrink-0 rounded-xl overflow-hidden relative group cursor-pointer"
               style={{
                 width: 120,
                 height: 160,
@@ -193,7 +201,7 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
                   Load Model
                 </span>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

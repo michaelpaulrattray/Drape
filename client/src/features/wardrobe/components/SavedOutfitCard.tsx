@@ -59,11 +59,18 @@ export function SavedOutfitCard({
       : createdAt.toLocaleDateString();
 
   return (
-    <button
-      onClick={handleLoad}
-      disabled={isDeleting}
-      className="group relative rounded-2xl overflow-hidden transition-all hover:ring-2 hover:ring-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#1a1a1a] text-left w-full disabled:opacity-40"
-      style={{ background: "#f0ebe3" }}
+    <div
+      onClick={isDeleting ? undefined : handleLoad}
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && !isDeleting) {
+          e.preventDefault();
+          handleLoad();
+        }
+      }}
+      role="button"
+      tabIndex={isDeleting ? -1 : 0}
+      className="group relative rounded-2xl overflow-hidden transition-all hover:ring-2 hover:ring-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#1a1a1a] text-left w-full cursor-pointer"
+      style={{ background: "#f0ebe3", opacity: isDeleting ? 0.4 : 1 }}
     >
       {/* Thumbnail */}
       <div className="aspect-[3/4] relative overflow-hidden">
@@ -125,6 +132,6 @@ export function SavedOutfitCard({
           {formattedDate}
         </p>
       </div>
-    </button>
+    </div>
   );
 }

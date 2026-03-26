@@ -122,3 +122,4 @@
 - [x] Cap Draft Casts display to 3 most recent in lobby — preserve all drafts in DB, no auto-deletion of paid content
 - [x] Bug: Duplicate save to gallery possible after session resume — lastSavedUrlRef resets on re-mount, needs server-side tracking
 - [x] Bug: Camera icon active state (black button + green tick) is jarring — replace with subtle checkmark animation that fades back to camera icon
+- [x] Bug: Nested button HTML error on /studio page — button inside button causing React DOM validation warning
