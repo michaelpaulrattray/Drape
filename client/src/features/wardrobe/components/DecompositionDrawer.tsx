@@ -156,26 +156,30 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
     if (selected.length === 0) return;
 
     setIsImporting(true);
-    let imported = 0;
 
     try {
-      for (const item of selected) {
-        try {
-          await importMutation.mutateAsync({
+      const results = await Promise.allSettled(
+        selected.map((item) =>
+          importMutation.mutateAsync({
             sourceImageUrl,
             label: item.label,
             slotType: item.category as "tops" | "bottoms" | "shoes" | "accessories" | "full_look",
-          });
-          imported++;
-        } catch {
-          toast.error(`Failed to import: ${item.label}`);
-        }
-      }
+          }),
+        ),
+      );
+
+      const imported = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
 
       if (imported > 0) {
         await utils.wardrobe.garments.list.invalidate();
-        toast.success(`Imported ${imported} garment${imported > 1 ? "s" : ""}`);
+        const msg = failed > 0
+          ? `Imported ${imported} garment${imported > 1 ? "s" : ""} (${failed} failed)`
+          : `Imported ${imported} garment${imported > 1 ? "s" : ""}`;
+        toast.success(msg);
         onClose();
+      } else {
+        toast.error("Failed to import garments");
       }
     } finally {
       setIsImporting(false);
@@ -268,14 +272,12 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
             style={{ background: "#faf9f7" }}
           >
             {previewUrl ? (
-              <div className="relative inline-block max-h-full">
+              <div className="relative w-full h-full flex items-center justify-center">
                 <img
                   src={previewUrl}
                   alt="Source outfit"
-                  className="transition-opacity duration-500"
+                  className="max-h-full max-w-full transition-opacity duration-500"
                   style={{
-                    maxHeight: "calc(85vh - 160px)",
-                    maxWidth: "100%",
                     objectFit: "contain",
                     borderRadius: 12,
                     boxShadow: "0 8px 32px rgba(0,0,0,0.06)",

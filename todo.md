@@ -75,3 +75,6 @@
 - [x] Add delete button to each session card on the lobby to remove old/unwanted sessions
 - [x] Bug: Clicking 'Cast a Model' from lobby loads stale session — now resets casting, wardrobe, and canvas state before entering casting
 - [x] Fix: Delete X button on compact session cards overlaps the Resume button — moved to top-left over thumbnail
+- [x] Bug: Decomp modal image cutoff — full-body image is cropped, legs are missing
+- [x] Bug: Slow garment import — importing selected garments from decomp takes too long
+- [x] UX: Improve wardrobe item loading — garment cards feel janky/delayed when appearing

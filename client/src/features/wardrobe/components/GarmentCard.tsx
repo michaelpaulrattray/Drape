@@ -5,6 +5,7 @@
  * state, selection indicator, quality badge, name, tags, and style note.
  * Matches the SOT's warm minimalist aesthetic.
  */
+import { useEffect, useState } from "react";
 import { QualityBadge } from "./QualityBadge";
 import type { QualityIssue, GarmentSlotType } from "../types";
 
@@ -44,6 +45,12 @@ export function GarmentCard({
   const displayUrl = isolatedImageUrl || imageUrl;
   const displayName =
     shortName || description?.split(" ").slice(0, 3).join(" ") || "Garment";
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Reset load state when the image URL changes (e.g., processing → ready)
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [displayUrl]);
 
   return (
     <div
@@ -61,13 +68,19 @@ export function GarmentCard({
         style={{ background: "#f0ebe3" }}
         onClick={() => !isProcessing && onToggleSelect(id, slotType)}
       >
+        {/* Skeleton placeholder */}
+        {displayUrl && !imageLoaded && !isProcessing && (
+          <div className="absolute inset-0 animate-pulse" style={{ background: "#ece8e0" }} />
+        )}
+
         {displayUrl && (
           <img
             src={displayUrl}
             alt={displayName}
+            onLoad={() => setImageLoaded(true)}
             className={`
-              w-full h-full object-contain p-2 transition-all duration-700
-              ${isProcessing ? "blur-sm scale-90 opacity-50" : "scale-100 opacity-100"}
+              w-full h-full object-contain p-2 transition-all duration-500
+              ${isProcessing ? "blur-sm scale-90 opacity-50" : imageLoaded ? "scale-100 opacity-100" : "scale-100 opacity-0"}
             `}
           />
         )}
