@@ -20,6 +20,7 @@ import { useWardrobeStore } from "../stores/useWardrobeStore";
 import { SLOT_DISPLAY_NAMES } from "../constants";
 import type { GarmentSlotType } from "../types";
 import { parseStyleNote, buildStyleNote, extractColors } from "./layerHelpers";
+import { buildHierarchy } from "../layerUtils";
 
 interface LayersPanelProps {
   isGenerating: boolean;
@@ -45,8 +46,11 @@ interface GarmentRowProps {
     isolatedImageUrl: string | null;
     originalImageUrl: string;
     suggestedActions?: string[];
+    tags?: string[] | unknown;
+    description?: string | null;
   };
   isExpanded: boolean;
+  isChild?: boolean;
   onToggle: () => void;
   onRemove: () => void;
   styleNote: string;
@@ -56,6 +60,7 @@ interface GarmentRowProps {
 function GarmentRow({
   garment,
   isExpanded,
+  isChild = false,
   onToggle,
   onRemove,
   styleNote,
@@ -120,10 +125,22 @@ function GarmentRow({
       <div
         onClick={onToggle}
         className="flex items-center gap-2.5 rounded-xl transition-colors cursor-pointer"
-        style={{ padding: "8px 10px" }}
+        style={{ padding: isChild ? "5px 8px 5px 26px" : "8px 10px" }}
         onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.015)")}
         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
       >
+        {/* Tree-line connector for child garments */}
+        {isChild && (
+          <div className="relative" style={{ width: 0 }}>
+            <div style={{
+              position: "absolute", left: -14, top: -8,
+              width: 8, height: 20,
+              borderLeft: "1px solid rgba(0,0,0,0.06)",
+              borderBottom: "1px solid rgba(0,0,0,0.06)",
+              borderRadius: "0 0 0 4px",
+            }} />
+          </div>
+        )}
         {/* Remove button */}
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
@@ -138,7 +155,12 @@ function GarmentRow({
         {/* Thumbnail */}
         <div
           className="flex-shrink-0 rounded-lg overflow-hidden"
-          style={{ width: 56, height: 68, background: "#eae7e1", border: "1px solid rgba(0,0,0,0.04)" }}
+          style={{
+            width: isChild ? 32 : 56,
+            height: isChild ? 40 : 68,
+            background: "#eae7e1",
+            border: "1px solid rgba(0,0,0,0.04)",
+          }}
         >
           {imgUrl && <img src={imgUrl} alt="" className="w-full h-full object-contain" />}
         </div>
@@ -157,7 +179,11 @@ function GarmentRow({
                 ))}
               </div>
             )}
-            <span className="block truncate" style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a" }}>
+            <span className="block truncate" style={{
+              fontSize: isChild ? 10 : 13,
+              fontWeight: isChild ? 500 : 600,
+              color: isChild ? "#999" : "#1a1a1a",
+            }}>
               {garment.shortName || "Untitled"}
             </span>
           </div>
@@ -179,7 +205,7 @@ function GarmentRow({
 
       {/* Expanded section */}
       {isExpanded && (
-        <div style={{ padding: "0 8px 8px 82px" }}>
+        <div style={{ padding: isChild ? "0 8px 8px 68px" : "0 8px 8px 82px" }}>
           {/* Color swatches */}
           {colors.length > 0 && (
             <div className="flex items-center gap-1.5" style={{ marginBottom: 6, paddingBottom: 4, borderBottom: "1px solid rgba(0,0,0,0.03)" }}>
@@ -387,18 +413,31 @@ export function LayersPanel({
         </div>
       </div>
 
-      {/* Garment Stack */}
+      {/* Garment Stack — hierarchical inner/outer nesting */}
       <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: "4px 6px" }}>
-        {selectedGarments.map((garment) => (
-          <GarmentRow
-            key={garment.id}
-            garment={garment as GarmentRowProps["garment"]}
-            isExpanded={expandedGarmentId === garment.id}
-            onToggle={() => setExpandedGarmentId((prev) => (prev === garment.id ? null : garment.id))}
-            onRemove={() => toggleGarmentSelection(garment.id)}
-            styleNote={styleNotes[String(garment.id)] || ""}
-            onUpdateNote={(note) => setStyleNote(garment.id, note)}
-          />
+        {buildHierarchy(selectedGarments as (typeof selectedGarments[number] & { tags?: string[] | unknown; description?: string | null })[]).map((group) => (
+          <div key={group.garment.id}>
+            <GarmentRow
+              garment={group.garment as GarmentRowProps["garment"]}
+              isExpanded={expandedGarmentId === group.garment.id}
+              onToggle={() => setExpandedGarmentId((prev) => (prev === group.garment.id ? null : group.garment.id))}
+              onRemove={() => toggleGarmentSelection(group.garment.id)}
+              styleNote={styleNotes[String(group.garment.id)] || ""}
+              onUpdateNote={(note) => setStyleNote(group.garment.id, note)}
+            />
+            {group.children.map((child) => (
+              <GarmentRow
+                key={child.id}
+                garment={child as GarmentRowProps["garment"]}
+                isChild
+                isExpanded={expandedGarmentId === child.id}
+                onToggle={() => setExpandedGarmentId((prev) => (prev === child.id ? null : child.id))}
+                onRemove={() => toggleGarmentSelection(child.id)}
+                styleNote={styleNotes[String(child.id)] || ""}
+                onUpdateNote={(note) => setStyleNote(child.id, note)}
+              />
+            ))}
+          </div>
         ))}
       </div>
 
