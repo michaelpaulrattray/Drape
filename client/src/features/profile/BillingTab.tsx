@@ -207,6 +207,7 @@ export function BillingTab({
                   {invoice.pdfUrl ? (
                     <a
                       href={invoice.pdfUrl}
+                      download={`invoice-${invoice.id}.pdf`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"

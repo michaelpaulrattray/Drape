@@ -141,3 +141,5 @@
 - [x] Add visual layer hierarchy to LayersPanel — inner/outer garment nesting with tree-line connectors
 - [x] Issue #14: Investigate refine missing allGarmentIds + tattooMap in useWardrobeGeneration.ts
 - [x] Issue #16: Investigate changedSlots hardcoded empty in incremental/applyStyleChanges in useWardrobeGeneration.ts
+- [x] Fix all download/save buttons across studio to trigger direct file downloads instead of navigating to URL strings
+- [x] Bug: Export panel individual image download shows "Failed to download image" toast — CORS fix via server proxy

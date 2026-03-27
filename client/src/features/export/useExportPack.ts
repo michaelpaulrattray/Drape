@@ -15,6 +15,7 @@ import { useState, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import JSZip from "jszip";
+import { triggerDownload } from "@/lib/triggerDownload";
 import type { GeneratedAsset } from "@/features/casting/constants";
 
 /** Human-readable labels for each view type */
@@ -132,39 +133,26 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
   // ── Download single image ──────────────────────────────────
   const downloadImage = useCallback(async (asset: GeneratedAsset) => {
     try {
-      const res = await fetch(asset.storageUrl);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = VIEW_FILENAMES[asset.viewType] || `${asset.viewType}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const proxy = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
+      if (!proxy.success || !proxy.base64) throw new Error("Proxy failed");
+      const filename = VIEW_FILENAMES[asset.viewType] || `${asset.viewType}.png`;
+      triggerDownload(proxy.base64, filename);
     } catch {
       toast.error("Failed to download image");
     }
-  }, []);
+  }, [proxyImageMutation]);
 
   // ── Download single look image ────────────────────────────
   const downloadLookImage = useCallback(async (look: SavedLook) => {
     try {
-      const res = await fetch(look.imageUrl);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
+      const proxy = await proxyImageMutation.mutateAsync({ imageUrl: look.imageUrl });
+      if (!proxy.success || !proxy.base64) throw new Error("Proxy failed");
       const safeName = (look.name || `Look_${look.id}`).replace(/[^a-zA-Z0-9]/g, "_");
-      a.download = `${safeName}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      triggerDownload(proxy.base64, `${safeName}.png`);
     } catch {
       toast.error("Failed to download look");
     }
-  }, []);
+  }, [proxyImageMutation]);
 
   // ── Delete a saved look ───────────────────────────────────
   const deleteSavedLook = useCallback(async (lookId: number) => {

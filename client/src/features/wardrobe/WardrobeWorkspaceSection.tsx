@@ -8,6 +8,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Camera } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import { triggerDownload } from '@/lib/triggerDownload';
 import { toast } from 'sonner';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
 import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
@@ -164,24 +165,18 @@ export function WardrobeWorkspaceSection({
   }, [gen.currentResult, modelId, selectedGarmentIds, saveLookMutation, utils]);
 
   // Download current VTO result image
+  const proxyImageMutation = trpc.generation.proxyImage.useMutation();
   const handleDownloadResult = useCallback(async () => {
     const imageUrl = gen.currentResult;
     if (!imageUrl) return;
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `wardrobe-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const proxy = await proxyImageMutation.mutateAsync({ imageUrl });
+      if (!proxy.success || !proxy.base64) throw new Error('Proxy failed');
+      triggerDownload(proxy.base64, `wardrobe-${Date.now()}.png`);
     } catch {
-      window.open(imageUrl, '_blank');
+      toast.error('Failed to download image');
     }
-  }, [gen.currentResult]);
+  }, [gen.currentResult, proxyImageMutation]);
 
   // Reset Look — clears VTO state, reverts canvas to original model
   const resetToOriginal = useWardrobeStore((s) => s.resetToOriginal);
