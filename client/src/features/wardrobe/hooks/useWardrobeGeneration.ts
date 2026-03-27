@@ -343,6 +343,17 @@ export function useWardrobeGeneration({
     const added = currentIds.filter((id) => !prevIds.has(id));
     const removed = Array.from(prevIds).filter((id) => !selectedGarmentIds.has(id));
 
+    // Compute changed slot names from added garment IDs
+    const changedSlots: string[] = [];
+    const seenSlots = new Set<string>();
+    for (const id of added) {
+      const g = garments.find((g) => g.id === id);
+      if (g?.slotType && !seenSlots.has(g.slotType)) {
+        seenSlots.add(g.slotType);
+        changedSlots.push(g.slotType);
+      }
+    }
+
     // If too many changes or removals, do full generation
     if (added.length === 0 && removed.length === 0) {
       return generateVTO();
@@ -370,7 +381,7 @@ export function useWardrobeGeneration({
         previousResultUrl: currentResult,
         modelImageUrl,
         changedGarmentIds: added,
-        changedSlots: [],
+        changedSlots,
         allGarmentIds: currentIds,
         styleNotes: Object.keys(notes).length > 0 ? notes : undefined,
         tattooMap: tattooMap ?? undefined,
@@ -411,7 +422,7 @@ export function useWardrobeGeneration({
     }
   }, [
     currentVTOResultFn, modelImageUrl, selectedGarmentIds, styleNotes,
-    tattooMap, ensureSession, incrementalMutation, pushVTOResult,
+    tattooMap, garments, ensureSession, incrementalMutation, pushVTOResult,
     snapshotSelection, startCooldown, generateVTO, setErrorMessage,
     seedChatMutation, activeSessionId,
   ]);
@@ -466,6 +477,8 @@ export function useWardrobeGeneration({
         modelImageUrl,
         garmentId,
         instruction,
+        allGarmentIds: Array.from(selectedGarmentIds),
+        tattooMap: tattooMap ?? undefined,
         sessionId: sessionId ?? undefined,
       });
 
@@ -514,7 +527,7 @@ export function useWardrobeGeneration({
         setGeneratingMessage(null);
       }
     }
-  }, [currentVTOResultFn, modelImageUrl, ensureSession, refineMutation, classifyMutation, identityMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage, clearChatMutation, activeSessionId]);
+  }, [currentVTOResultFn, modelImageUrl, selectedGarmentIds, tattooMap, ensureSession, refineMutation, classifyMutation, identityMutation, generateVTO, pushVTOResult, snapshotSelection, startCooldown, setErrorMessage, clearChatMutation, activeSessionId]);
 
   // ── Retry Last Operation ───────────────────────────────────
 
@@ -561,6 +574,17 @@ export function useWardrobeGeneration({
     }
     if (dirtyIds.length === 0) return;
 
+    // Compute changed slot names from dirty garment IDs
+    const dirtySlots: string[] = [];
+    const seenDirtySlots = new Set<string>();
+    for (const id of dirtyIds) {
+      const g = garments.find((g) => g.id === id);
+      if (g?.slotType && !seenDirtySlots.has(g.slotType)) {
+        seenDirtySlots.add(g.slotType);
+        dirtySlots.push(g.slotType);
+      }
+    }
+
     setIsGenerating(true);
     setGeneratingMessage("Applying style changes...");
     setResultOverlayItems([]);
@@ -576,7 +600,7 @@ export function useWardrobeGeneration({
         previousResultUrl: result,
         allGarmentIds: Array.from(state.selectedGarmentIds),
         changedGarmentIds: dirtyIds,
-        changedSlots: [],
+        changedSlots: dirtySlots,
         styleNotes: Object.keys(state.styleNotes).length > 0 ? state.styleNotes : undefined,
         tattooMap: tattooMap ?? undefined,
         sessionId: sessionId ?? undefined,
@@ -614,7 +638,7 @@ export function useWardrobeGeneration({
       }
     }
   }, [
-    currentVTOResultFn, modelImageUrl, isGenerating, tattooMap,
+    currentVTOResultFn, modelImageUrl, isGenerating, tattooMap, garments,
     ensureSession, incrementalMutation, pushVTOResult, snapshotSelection,
     startCooldown, setErrorMessage, setLastGenStyleNotes, setResultOverlayItems,
     scanResultOverlay, seedChatMutation, activeSessionId,

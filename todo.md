@@ -139,3 +139,5 @@
 - [x] Remove "Load Model" hover overlay text from MY MODELS cards — click behavior is implied
 - [x] Bug: Delete operations (sessions, models, drafts) have noticeable UI delay — should feel instant with optimistic updates
 - [x] Add visual layer hierarchy to LayersPanel — inner/outer garment nesting with tree-line connectors
+- [x] Issue #14: Investigate refine missing allGarmentIds + tattooMap in useWardrobeGeneration.ts
+- [x] Issue #16: Investigate changedSlots hardcoded empty in incremental/applyStyleChanges in useWardrobeGeneration.ts
