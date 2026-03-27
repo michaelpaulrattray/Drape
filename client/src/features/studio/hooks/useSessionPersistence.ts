@@ -9,6 +9,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useStudioStore } from '../stores/useStudioStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
+import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import type { ActiveTool } from '../types';
 import type { GeneratedAsset } from '@/features/casting/constants';
 
@@ -137,6 +138,16 @@ export function useSessionRestore(isAuthenticated: boolean) {
       // Fix #2: hydrate masterPrompt so MasterPromptPanel shows data after restore
       if (model.masterPrompt) {
         genStore.setCurrentMasterPrompt(model.masterPrompt);
+      }
+      // Restore technicalSchema so Spec tab is populated after refresh
+      if (model.technicalSchema) {
+        genStore.setCurrentTechnicalSchema(model.technicalSchema as Record<string, unknown>);
+      }
+      // Restore form preferences so ControlPanel shows actual model settings
+      if (model.preferences) {
+        const formStore = useCastingFormStore.getState();
+        formStore.setPrefs(model.preferences as any);
+        formStore.setModelName(model.name || '');
       }
     }
 

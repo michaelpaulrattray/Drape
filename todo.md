@@ -146,3 +146,4 @@
 - [x] Bug: vto.incremental route doesn't persist results to DB session — incremental garment swaps lost on resume
 - [x] Bug: vto.refine route doesn't persist results to DB session — refinements lost on resume
 - [x] Add styleNotes to sessions.update input schema for independent persistence
+- [x] Bug: useSessionRestore missing technicalSchema + preferences — Spec tab empty and ControlPanel shows defaults after page refresh
