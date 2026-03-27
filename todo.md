@@ -147,3 +147,4 @@
 - [x] Bug: vto.refine route doesn't persist results to DB session — refinements lost on resume
 - [x] Add styleNotes to sessions.update input schema for independent persistence
 - [x] Bug: useSessionRestore missing technicalSchema + preferences — Spec tab empty and ControlPanel shows defaults after page refresh
+- [x] Bug: Gallery model load (MY MODELS) doesn't hydrate casting generation store — Spec tab shows null when switching to Casting after loading a minted model

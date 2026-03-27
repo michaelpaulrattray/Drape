@@ -18,6 +18,9 @@ import { useSessionReset } from '../hooks/useSessionReset';
 import { ModelGallery, type MintedModel } from './ModelGallery';
 import { RecentSessionsRow, type SessionData } from './ContinueSessionCard';
 import { DraftCastsRow, type DraftModel } from './DraftCastsRow';
+import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
+import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
+import type { GeneratedAsset } from '@/features/casting/constants';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -150,12 +153,42 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
       // Load into wardrobe with identity data
       loadGalleryModel(model.id, model.thumbnailUrl, model.masterPrompt);
       toast.success(`${model.name || 'Model'} loaded — Wardrobe ready`);
+
+      // Background: hydrate casting generation store so Spec tab works when switching to Casting
+      utils.models.get.fetch({ modelId: model.id }).then((fullModel) => {
+        const genStore = useCastingGenerationStore.getState();
+        genStore.setCurrentModelId(fullModel.id);
+        if (fullModel.masterPrompt) {
+          genStore.setCurrentMasterPrompt(fullModel.masterPrompt);
+        }
+        if (fullModel.technicalSchema) {
+          genStore.setCurrentTechnicalSchema(fullModel.technicalSchema as Record<string, unknown>);
+        }
+        // Restore assets into casting store
+        const restoredAssets: GeneratedAsset[] = (fullModel.assets || []).map((a: { id: number; viewType: string; storageUrl: string }) => ({
+          id: a.id,
+          viewType: a.viewType as GeneratedAsset['viewType'],
+          storageUrl: a.storageUrl,
+        }));
+        if (restoredAssets.length > 0) {
+          genStore.setCurrentAssets(restoredAssets);
+          genStore.pushHistory(restoredAssets);
+        }
+        // Restore form preferences
+        if (fullModel.preferences) {
+          const formStore = useCastingFormStore.getState();
+          formStore.setPrefs(fullModel.preferences as any);
+          formStore.setModelName(fullModel.name || '');
+        }
+      }).catch(() => {
+        // Non-critical — casting store hydration is best-effort
+      });
     } catch {
       toast.error('Failed to load model');
     } finally {
       setLoadingModelId(null);
     }
-  }, [isUploading, loadingModelId, preloadImage, loadGalleryModel]);
+  }, [isUploading, loadingModelId, preloadImage, loadGalleryModel, utils]);
 
   const processFile = useCallback(async (file: File) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
