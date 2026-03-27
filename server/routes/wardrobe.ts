@@ -394,6 +394,22 @@ const vtoRouter = router({
         },
       );
 
+      // Persist incremental result to DB session
+      if (input.sessionId) {
+        const session = await getSessionById(input.sessionId);
+        if (session && session.userId === ctx.user.id) {
+          const history = (session.history as string[] || []);
+          history.push(result.resultUrl);
+          await updateSession(input.sessionId, {
+            history,
+            historyIndex: history.length - 1,
+            activeGarmentIds: input.allGarmentIds,
+            ...(input.tattooMap ? { tattooMapData: input.tattooMap } : {}),
+            ...(input.styleNotes ? { styleNotes: input.styleNotes } : {}),
+          });
+        }
+      }
+
       return { resultUrl: result.resultUrl };
     }),
 
@@ -482,6 +498,19 @@ const vtoRouter = router({
           });
         },
       );
+
+      // Persist refinement result to DB session
+      if (input.sessionId) {
+        const session = await getSessionById(input.sessionId);
+        if (session && session.userId === ctx.user.id) {
+          const history = (session.history as string[] || []);
+          history.push(result.resultUrl);
+          await updateSession(input.sessionId, {
+            history,
+            historyIndex: history.length - 1,
+          });
+        }
+      }
 
       return { resultUrl: result.resultUrl };
     }),
@@ -670,6 +699,7 @@ const sessionRouter = router({
       historyIndex: z.number().optional(),
       activeGarmentIds: z.array(z.number()).optional(),
       tattooMapData: z.any().optional(),
+      styleNotes: z.record(z.string(), z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const session = await getSessionById(input.sessionId);

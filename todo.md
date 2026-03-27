@@ -143,3 +143,6 @@
 - [x] Issue #16: Investigate changedSlots hardcoded empty in incremental/applyStyleChanges in useWardrobeGeneration.ts
 - [x] Fix all download/save buttons across studio to trigger direct file downloads instead of navigating to URL strings
 - [x] Bug: Export panel individual image download shows "Failed to download image" toast — CORS fix via server proxy
+- [x] Bug: vto.incremental route doesn't persist results to DB session — incremental garment swaps lost on resume
+- [x] Bug: vto.refine route doesn't persist results to DB session — refinements lost on resume
+- [x] Add styleNotes to sessions.update input schema for independent persistence
