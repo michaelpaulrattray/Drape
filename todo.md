@@ -223,3 +223,8 @@
 - [x] StudioHeader: Add "Beta Access" badge next to Drape logo
 - [x] StudioHeader: Increase header height and enlarge logo to avoid pixelation
 - [x] Casting Panels: Overhaul button borders, colors, and component styling for better visual clarity
+- [x] Image Overlay: Add action icons (download, copy, triple-dot menu) to all tool images — top-right corner
+- [x] Image Overlay: Add heart/like icon on wardrobe and export images only (not casting)
+- [x] Image Overlay: Remove top middle bar ("Headshot · final" etc), move undo/redo to image overlay
+- [x] Image Overlay: Convert keyboard shortcut labels and view labels to overlay pills on image
+- [x] Image Overlay: Preserve all existing overlays (chat bubbles, badges, surgical tools)

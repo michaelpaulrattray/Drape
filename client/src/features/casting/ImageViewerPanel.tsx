@@ -6,6 +6,7 @@ import { useCastingGenerationStore } from "@/features/casting/stores/useCastingG
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { type GeneratedAsset, type GenerationState } from "@/features/casting/constants";
 import { StudioCanvas } from "@/features/studio/components/StudioCanvas";
+import { ImageActionBar } from "@/features/studio/components/ImageActionBar";
 
 // ============ View Labels ============
 
@@ -392,10 +393,10 @@ export function ImageViewerPanel({
           />
         )}
 
-        {/* Shortcuts Bar + Next Step Chip */}
-        {!genState.isGenerating && (
+        {/* Next step chip — contextual guidance (shortcuts moved to triple-dot menu) */}
+        {!genState.isGenerating && nextStage && (
           <div
-            className="mt-2 flex items-center justify-center gap-3"
+            className="mt-2 flex items-center justify-center"
             style={{
               padding: '5px 14px', borderRadius: 10,
               background: 'rgba(255,255,255,0.7)',
@@ -404,41 +405,7 @@ export function ImageViewerPanel({
               width: 'fit-content', margin: '8px auto 0',
             }}
           >
-            {/* Keyboard hints — simplified in read-only (only compare) */}
-            <div className="flex items-center gap-3 pointer-events-none">
-              {(isReadOnly
-                ? [
-                    ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
-                  ]
-                : [
-                    { key: 'Z', label: 'Undo' },
-                    { key: '⇧Z', label: 'Redo' },
-                    { key: '/', label: 'Refine' },
-                    ...(prefs.referenceImage ? [{ key: 'F', label: 'Ref' }] : []),
-                    ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
-                  ]
-              ).map(s => (
-                <div key={s.key} className="flex items-center gap-1.5">
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, color: '#71716A',
-                    padding: '1px 4px', borderRadius: 3,
-                    background: 'rgba(0,0,0,0.04)',
-                    fontFamily: 'monospace',
-                  }}>
-                    {s.key}
-                  </span>
-                  <span style={{ fontSize: 11, color: '#71716A' }}>{s.label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Next step chip — contextual guidance */}
-            {nextStage && (
-              <>
-                <div style={{ width: 1, height: 12, background: 'rgba(0,0,0,0.08)' }} />
-                <NextStepChip nextStage={nextStage} />
-              </>
-            )}
+            <NextStepChip nextStage={nextStage} />
           </div>
         )}
 
@@ -496,6 +463,27 @@ export function ImageViewerPanel({
       sideOverlay={sideOverlay}
       statusOverlay={statusOverlay}
       bottomOverlay={bottomOverlay}
+      actionBar={
+        hasAssets && !genState.isGenerating ? (
+          <ImageActionBar
+            visible={imageAreaHovered}
+            showHeart={false}
+            imageUrl={currentImageUrl ?? null}
+            onRetry={isReadOnly ? undefined : handleRetry}
+            isGenerating={genState.isGenerating}
+            shortcuts={isReadOnly
+              ? [...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : [])]
+              : [
+                  { key: 'Z', label: 'Undo' },
+                  { key: '⇧Z', label: 'Redo' },
+                  { key: '/', label: 'Refine' },
+                  ...(prefs.referenceImage ? [{ key: 'F', label: 'Toggle Ref' }] : []),
+                  ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
+                ]
+            }
+          />
+        ) : undefined
+      }
       extraKeyHandler={castingKeyHandler}
       onHoverChange={setImageAreaHovered}
       onImageLoad={(e) => (e.target as HTMLImageElement).classList.add('loaded')}

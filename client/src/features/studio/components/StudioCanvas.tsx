@@ -7,21 +7,22 @@
  *
  * Shared features:
  *   - Canvas background (warm off-white #FAFAF8 with subtle warm dot grid)
- *   - Persistent toolbar (undo/redo + status pill)
+ *   - Undo/redo floating pill (bottom-left of image, Higgsfield-style)
+ *   - ImageActionBar slot (top-right of image — download, copy, menu, optional heart)
  *   - Error banner (inline, dismiss + retry)
  *   - Image display with shadow, border-radius, generating effects
  *   - Hold-to-compare with badge
- *   - Retry button (auto-hides on hover)
  *   - LoadingOverlay (scan line + contextual tips)
  *   - Keyboard shortcuts (Z / ⇧Z)
  *
  * Tool-specific features are injected via overlay slots:
  *   - imageOverlay: GarmentOverlay (wardrobe), MaskCanvas (casting)
  *   - topOverlay: ViewTabs, identity warnings (casting)
- *   - bottomOverlay: RefinePanel, shortcuts bar, suggestions (casting)
+ *   - bottomOverlay: RefinePanel, suggestions (casting)
  *   - sideOverlay: Tool buttons, next stage CTA (casting)
  *   - statusOverlay: Locked source, active tool pills (casting)
  *   - floatingOverlay: Floating reference image (casting)
+ *   - actionBar: ImageActionBar (all tools)
  */
 import { useCallback, useEffect, useRef, useState, type RefObject, type ReactNode } from "react";
 import { Undo2, Redo2 } from "lucide-react";
@@ -89,6 +90,8 @@ export interface StudioCanvasProps {
   statusOverlay?: ReactNode;
   /** Rendered as floating elements (reference image) */
   floatingOverlay?: ReactNode;
+  /** ImageActionBar rendered in top-right of image (download, copy, menu, optional heart) */
+  actionBar?: ReactNode;
 
   // ── Keyboard ──
   /** Extra keyboard handler; return true if the event was consumed */
@@ -100,7 +103,7 @@ export interface StudioCanvasProps {
   onImageMouseUp?: (e: React.MouseEvent) => void;
 
   // ── Toolbar visibility ──
-  /** Whether to show the toolbar. Defaults to true when displayUrl is set */
+  /** Whether to show the undo/redo pill. Defaults to true when displayUrl is set */
   showToolbar?: boolean;
 
   // ── Hover state ──
@@ -141,6 +144,7 @@ export function StudioCanvas({
   sideOverlay,
   statusOverlay,
   floatingOverlay,
+  actionBar,
   extraKeyHandler,
   onImageLoad,
   onImageMouseDown,
@@ -257,68 +261,6 @@ export function StudioCanvas({
       {/* ── Top overlay slot (ViewTabs, identity warnings) ── */}
       {topOverlay}
 
-      {/* ── Persistent Toolbar ── */}
-      {toolbarVisible && (
-        <div
-          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 pointer-events-auto"
-          style={{
-            padding: "3px 4px",
-            borderRadius: 14,
-            background: "rgba(255,255,255,0.85)",
-            boxShadow: "0 2px 14px rgba(0,0,0,0.05)",
-            backdropFilter: "blur(12px)",
-          }}
-        >
-          {/* Undo */}
-          <button
-            onClick={onUndo}
-            disabled={!canUndo || isGenerating}
-            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
-            style={{ color: "#888" }}
-            title="Undo (Z)"
-          >
-            <Undo2 size={14} />
-          </button>
-
-          <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
-
-          {/* Status label with fade transition */}
-          <div className="flex items-center gap-1.5 px-2.5 relative" style={{ minWidth: 60, height: 20, overflow: 'hidden' }}>
-            {isGenerating && (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ color: '#52524B', flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
-                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-            )}
-            <span
-              key={isComparing ? '__comparing__' : statusLabel}
-              className="studio-status-fade-in"
-              style={{
-                fontSize: 12,
-                fontWeight: isGenerating ? 400 : 500,
-                color: isGenerating ? '#aaa' : '#888',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {isComparing ? "Comparing" : statusLabel}
-            </span>
-          </div>
-
-          <div style={{ width: 1, height: 14, background: "rgba(0,0,0,0.06)" }} />
-
-          {/* Redo */}
-          <button
-            onClick={onRedo}
-            disabled={!canRedo || isGenerating}
-            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-20"
-            style={{ color: "#888" }}
-            title="Redo (⇧Z)"
-          >
-            <Redo2 size={14} />
-          </button>
-        </div>
-      )}
-
       {/* ── Error banner ── */}
       {errorMessage && !isGenerating && (
         <div
@@ -413,36 +355,54 @@ export function StudioCanvas({
                 </div>
               )}
 
-              {/* Retry button — auto-hides on hover */}
-              {!isGenerating && !isComparing && hasResult && (
-                <button
-                  onClick={onRetry}
-                  className="absolute top-3 right-3 z-10 flex items-center gap-1.5 transition-opacity duration-200"
+              {/* ── ImageActionBar slot (top-right, Higgsfield-style) ── */}
+              {actionBar}
+
+              {/* ── Undo/Redo floating pill (bottom-left of image) ── */}
+              {toolbarVisible && !isGenerating && !isComparing && (
+                <div
+                  className="absolute bottom-3 left-3 z-20 flex items-center gap-0.5 pointer-events-auto transition-all duration-200"
                   style={{
-                    padding: "5px 10px",
-                    borderRadius: 8,
-                    background: "rgba(255,255,255,0.88)",
-                    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+                    padding: "2px 3px",
+                    borderRadius: 10,
+                    background: "rgba(0,0,0,0.45)",
                     backdropFilter: "blur(12px)",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#777",
                     opacity: imageAreaHovered ? 1 : 0,
+                    transform: imageAreaHovered ? "translateY(0)" : "translateY(4px)",
                     pointerEvents: imageAreaHovered ? "auto" : "none",
                   }}
-                  title="Regenerate"
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 4v6h6" />
-                    <path d="M3.51 15a9 9 0 105.69-11.49L1 10" />
-                  </svg>
-                  Retry
-                </button>
+                  <button
+                    onClick={onUndo}
+                    disabled={!canUndo}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-20"
+                    style={{ color: "rgba(255,255,255,0.9)" }}
+                    title="Undo (Z)"
+                    onMouseEnter={(e) => { if (canUndo) e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <Undo2 size={14} strokeWidth={2.5} />
+                  </button>
+
+                  <div style={{ width: 1, height: 12, background: "rgba(255,255,255,0.15)" }} />
+
+                  <button
+                    onClick={onRedo}
+                    disabled={!canRedo}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-20"
+                    style={{ color: "rgba(255,255,255,0.9)" }}
+                    title="Redo (⇧Z)"
+                    onMouseEnter={(e) => { if (canRedo) e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <Redo2 size={14} strokeWidth={2.5} />
+                  </button>
+                </div>
               )}
             </div>
           )}
 
-          {/* Bottom overlay slot (RefinePanel, shortcuts, suggestions) */}
+          {/* Bottom overlay slot (RefinePanel, suggestions) */}
           {bottomOverlay}
 
           {/* Generation overlay — isFirstGeneration is always false here because an image is behind the overlay */}

@@ -6,14 +6,14 @@
  * decomposition drawer.
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Camera } from 'lucide-react';
+// Camera icon replaced by ImageActionBar heart
 import { trpc } from '@/lib/trpc';
 import { triggerDownload } from '@/lib/triggerDownload';
 import { toast } from 'sonner';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
 import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { StudioCanvas } from '@/features/studio/components/StudioCanvas';
-import { ToolButton } from '@/features/casting/components/ImageViewer';
+import { ImageActionBar } from '@/features/studio/components/ImageActionBar';
 import {
   RackPanel,
   LayersPanel,
@@ -23,7 +23,6 @@ import {
   useWardrobeStore,
   WardrobeEmptyState,
   WardrobeImageOverlay,
-  WardrobeShortcutsBar,
 } from '@/features/wardrobe';
 
 interface WardrobeWorkspaceSectionProps {
@@ -307,51 +306,24 @@ export function WardrobeWorkspaceSection({
             />
           }
           onHoverChange={setImageAreaHovered}
-          sideOverlay={
+          actionBar={
             hasResult && !gen.isGenerating ? (
-              <div
-                className="absolute top-1/2 -translate-y-1/2 right-4 flex flex-col gap-2 z-30 transition-opacity duration-200"
-                style={{ opacity: imageAreaHovered ? 1 : 0, pointerEvents: imageAreaHovered ? 'auto' : 'none' }}
-              >
-                <ToolButton
-                  active={false}
-                  onClick={cameraButtonDisabled ? () => {} : handleSaveLook}
-                  icon={
-                    showCheckmark ? (
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        style={{ animation: 'checkFadeIn 300ms ease-out forwards' }}
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : (
-                      <Camera
-                        size={18}
-                        style={{
-                          opacity: cameraButtonDisabled ? 0.4 : 1,
-                          transition: 'opacity 200ms ease',
-                        }}
-                      />
-                    )
-                  }
-                />
-              </div>
+              <ImageActionBar
+                visible={imageAreaHovered}
+                showHeart={true}
+                isLiked={isAlreadySaved || showCheckmark}
+                onLike={cameraButtonDisabled ? undefined : handleSaveLook}
+                imageUrl={gen.currentResult}
+                onRetry={gen.handleRetry}
+                isGenerating={gen.isGenerating}
+                shortcuts={[
+                  { key: 'Space', label: 'Generate' },
+                  { key: 'Z', label: 'Undo' },
+                  { key: '⇧Z', label: 'Redo' },
+                  ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),
+                ]}
+              />
             ) : undefined
-          }
-          bottomOverlay={
-            <WardrobeShortcutsBar
-              hasResult={hasResult}
-              isGenerating={gen.isGenerating}
-              controlsVisible={imageAreaHovered}
-              onDownload={handleDownloadResult}
-            />
           }
         />
       </div>
