@@ -163,3 +163,6 @@
 - [x] Fix: Match all component styling exactly to celestial-horizon reference
 - [x] Fix: Proxy hero video through server route to bypass preview iframe URL safety check
 - [ ] Pre-launch: Switch hero video back to direct CDN URL before publishing
+- [x] Change navbar CTA from "Join Waitlist" to "Claim a Spot"
+- [x] Replace text "drape" logo in navbar with user's logo image
+- [x] Verify Klaviyo waitlist email integration is wired correctly — added newsletterSignup call to waitlist.join

@@ -3,6 +3,10 @@ import { addToWaitlist, getWaitlistCount } from "../db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
+import { newsletterSignup } from "../klaviyo";
+import { createModuleLogger } from "../logging/logger";
+
+const log = createModuleLogger("waitlist");
 
 export const waitlistRouter = router({
   // Join the waitlist
@@ -42,6 +46,11 @@ export const waitlistRouter = router({
           message: result.error || "Failed to join waitlist",
         });
       }
+
+      // Sync to Klaviyo (fire-and-forget — don't block the response)
+      newsletterSignup(input.email.toLowerCase().trim(), "waitlist_hero").catch((err) => {
+        log.warn({ err: err?.message }, "[Waitlist] Klaviyo sync failed (non-blocking)");
+      });
 
       return {
         success: true,

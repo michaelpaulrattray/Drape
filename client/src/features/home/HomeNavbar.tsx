@@ -16,10 +16,12 @@ export function HomeNavbar() {
   return (
     <nav className="fixed top-4 left-0 right-0 z-50 px-6 lg:px-16">
       <div className="flex items-center justify-between">
-        {/* Logo / Wordmark */}
-        <span className="font-geist font-semibold text-xl text-white tracking-tight">
-          drape
-        </span>
+        {/* Logo */}
+        <img
+          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/drape-logo-tight_067d1d7d.png"
+          alt="drape"
+          className="h-6 w-auto"
+        />
 
         {/* Desktop nav — glass pill */}
         <div className="hidden md:flex items-center liquid-glass rounded-full px-2 py-1.5 gap-1">
@@ -33,7 +35,7 @@ export function HomeNavbar() {
             </a>
           ))}
           <button className="bg-white text-slate-900 rounded-full px-3.5 py-1.5 text-sm font-medium font-body flex items-center gap-1 hover:opacity-90 transition-opacity">
-            Join Waitlist
+            Claim a Spot
             <ArrowUpRight className="h-4 w-4" />
           </button>
         </div>
@@ -68,7 +70,7 @@ export function HomeNavbar() {
               </a>
             ))}
             <button className="bg-white text-slate-900 rounded-full px-4 py-2 text-sm font-medium font-body flex items-center justify-center gap-1 hover:opacity-90 transition-opacity mt-1">
-              Join Waitlist
+              Claim a Spot
               <ArrowUpRight className="h-4 w-4" />
             </button>
           </motion.div>
