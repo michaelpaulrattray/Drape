@@ -14,7 +14,7 @@ const log = createModuleLogger("heroProxy");
 
 const router = Router();
 
-const HERO_VIDEO_KEY = "homepage/hero-bg-video.mp4";
+const HERO_VIDEO_KEY = "hero/drape-ai-fashion-studio-hero.mp4";
 
 /* ── Video proxy (must be first) ────────────────────────────── */
 
