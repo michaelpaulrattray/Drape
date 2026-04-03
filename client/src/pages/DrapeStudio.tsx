@@ -354,11 +354,10 @@ export default function DrapeStudio() {
           {/* Lobby — fades in/out */}
           {isLobby && (
             <div
-              className="absolute inset-0 z-10"
+              className="flex-1 min-h-0"
               style={{
                 opacity: transition.lobbyVisible ? 1 : 0,
                 transition: 'opacity 300ms cubic-bezier(0.16, 1, 0.3, 1)',
-                pointerEvents: transition.lobbyVisible ? 'auto' : 'none',
               }}
             >
               <StudioLobby

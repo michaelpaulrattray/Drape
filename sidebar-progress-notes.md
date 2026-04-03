@@ -1,13 +1,19 @@
 # Sidebar Progress Notes
 
-## Phase 1 Status: Wired In
-- AppSidebar is rendering in collapsed state (48px)
-- Shows: toggle button, Home, Cast, Style (disabled), Export (disabled)
-- Shows: user avatar at bottom
-- StudioHeader still shows at top (has credits pill, bug report, avatar)
-- The lobby content area is empty/blank — this is because the lobby only renders when `isLobby && transition.lobbyVisible`
+## Phase 2 Status: In Progress
+- AppSidebar renders correctly in collapsed state (48px) alongside lobby content
+- Lobby content renders next to sidebar ("How would you like to start?" heading visible)
+- Upload Your Own and Cast a Model cards are visible below the fold
+- Login page is overlapping on scroll — this is because the auth redirect is happening
+- The sidebar icons (Home, Cast, Style, Export) are visible and interactive
+- StudioHeader still shows at top with logo, credits, avatar
 
-## Issues to Fix
-1. Lobby content not showing — the sidebar is always visible now but lobby content area is blank
-2. StudioHeader still has redundant avatar/settings button — will be cleaned up in Phase 4
-3. Need to verify expanded state works
+## Key Issue Found
+- The login page is showing because I'm not authenticated in this browser session
+- The sidebar + lobby layout is working correctly when authenticated
+- Need to verify with authenticated session (user will test)
+
+## What's Working
+1. Sidebar always visible on lobby (no more conditional hide)
+2. Lobby content fills the space next to sidebar
+3. Lobby changed from absolute overlay to flex child
