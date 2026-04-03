@@ -251,7 +251,7 @@ export function WardrobeWorkspaceSection({
         from="left"
         offset={60}
         duration={500}
-        className="hidden lg:block flex-shrink-0"
+        className="hidden lg:block flex-shrink-0 relative z-10"
       >
         <StudioSidePanel side="left" width={320}>
           <div className="h-full overflow-y-auto">

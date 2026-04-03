@@ -46,7 +46,7 @@ export function StudioSidePanel({
 
   return (
     <aside
-      className={`h-full flex flex-col overflow-hidden flex-shrink-0 z-20 ${className}`}
+      className={`h-full flex flex-col overflow-hidden flex-shrink-0 ${isLeft ? 'z-30' : 'z-20'} ${className}`}
       style={style}
     >
       {children}

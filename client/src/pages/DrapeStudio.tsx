@@ -462,7 +462,7 @@ export default function DrapeStudio() {
                 from="left"
                 offset={60}
                 duration={500}
-                className="w-full lg:w-auto flex-shrink-0"
+                className="w-full lg:w-auto flex-shrink-0 relative z-10"
               >
                 <StudioSidePanel side="left" width={320}>
                   <ControlPanel
