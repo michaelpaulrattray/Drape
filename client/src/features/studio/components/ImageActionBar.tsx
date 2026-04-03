@@ -97,31 +97,36 @@ function ActionMenu({
   onRetry,
   shortcuts,
   extraItems,
+  toggleRef,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onRetry?: () => void;
   shortcuts?: { key: string; label: string }[];
   extraItems?: { label: string; onClick: () => void }[];
+  toggleRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      const target = e.target as Node;
+      // Skip if click is inside the menu itself
+      if (menuRef.current && menuRef.current.contains(target)) return;
+      // Skip if click is on the toggle button (let the button's own toggle handle it)
+      if (toggleRef.current && toggleRef.current.contains(target)) return;
+      onClose();
     };
-    // Use setTimeout to avoid the click that opened the menu from immediately closing it
-    const timer = setTimeout(() => {
+    // Attach on next frame to avoid the opening click from triggering close
+    const raf = requestAnimationFrame(() => {
       document.addEventListener("mousedown", handleClickOutside);
-    }, 10);
+    });
     return () => {
-      clearTimeout(timer);
+      cancelAnimationFrame(raf);
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, toggleRef]);
 
   if (!isOpen) return null;
 
@@ -226,6 +231,7 @@ export function ImageActionBar({
   shortcuts,
 }: ImageActionBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const toggleBtnRef = useRef<HTMLDivElement>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
@@ -329,7 +335,7 @@ export function ImageActionBar({
         )}
       </ActionButton>
 
-      <div className="relative">
+      <div className="relative" ref={toggleBtnRef}>
         <ActionButton
           onClick={() => setMenuOpen((prev) => !prev)}
           title="More options"
@@ -344,6 +350,7 @@ export function ImageActionBar({
           onRetry={onRetry}
           shortcuts={shortcuts}
           extraItems={extraMenuItems}
+          toggleRef={toggleBtnRef}
         />
       </div>
     </div>

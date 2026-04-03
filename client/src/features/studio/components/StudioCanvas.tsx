@@ -304,7 +304,7 @@ export function StudioCanvas({
       <div className="flex-1 relative min-h-0 flex items-center justify-center bg-transparent">
         {/* Image + overlays hover container */}
         <div
-          className="relative h-full max-w-full flex items-center justify-center select-none"
+          className="relative max-w-full max-h-full flex items-center justify-center select-none"
           onMouseEnter={() => { setImageAreaHovered(true); onHoverChange?.(true); }}
           onMouseLeave={() => { setImageAreaHovered(false); onHoverChange?.(false); }}
         >

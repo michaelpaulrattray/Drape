@@ -239,3 +239,6 @@
 - [x] Fix download button via server proxy
 - [x] Fix copy button via server proxy
 - [x] Change undo/redo pill from dark to white frosted glass
+- [x] Bug: Triple-dot menu still doesn't close on re-click — fixed with toggleRef exclusion in outside-click handler
+- [x] Bug: Bottom overlay (refine panel + tip) shifted down off image — fixed by removing h-full from hover container
+- [x] Bug: Quick Ideas suggestions not appearing — no code change needed, suggestions only appear after first generation/refinement
