@@ -206,3 +206,4 @@
 - [x] Studio Canvas: Widen both left and right side panels from 280/260px to 320px
 - [x] Studio Canvas: Change canvas background from cream to white with subtle dot grid pattern
 - [x] Studio Panels: Change panel backgrounds to #F4F4F5
+- [x] Bug: Background layer visible behind studio panel slide-outs (was #f0ebe3 cream on DrapeStudio wrapper)
