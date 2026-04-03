@@ -278,3 +278,7 @@
 - [x] Remove category selection from bug report popout
 - [x] Make Feedback its own separate report type (distinct from bug reports)
 - [x] Wire "Feedback" header link to open a dedicated feedback popout
+- [x] Polish sidebar icons: swap to more distinctive Lucide icons (ScanFace, Palette, PackageCheck, Compass)
+- [x] Reduce icon stroke weight from 2.0 to 1.5 for lighter, more refined feel
+- [x] Lighten active state: replace solid black bg with subtle tint (like hover), darken text color on selection
+- [x] Increase sidebar logo size — bumped from 18px to 24px height

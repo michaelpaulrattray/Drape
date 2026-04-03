@@ -11,10 +11,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Link } from 'wouter';
 import {
-  Camera,
-  Shirt,
-  Download,
-  Home,
+  ScanFace,
+  Palette,
+  PackageCheck,
+  Compass,
   ChevronLeft,
   ChevronRight,
   Settings,
@@ -44,9 +44,9 @@ const TOOL_ICONS: Record<
   StudioTool,
   React.ComponentType<{ className?: string; strokeWidth?: number }>
 > = {
-  casting: Camera,
-  wardrobe: Shirt,
-  export: Download,
+  casting: ScanFace,
+  wardrobe: Palette,
+  export: PackageCheck,
 };
 
 /** Labels for tools + home */
@@ -250,7 +250,7 @@ export function AppSidebar({
                 <img
                   src="/drape-logo.svg"
                   alt="Drape"
-                  style={{ height: 18, flexShrink: 0 }}
+                  style={{ height: 24, flexShrink: 0 }}
                 />
                 <span
                   className="px-1.5 py-0.5 rounded-full uppercase flex-shrink-0"
@@ -307,7 +307,7 @@ export function AppSidebar({
         >
           {/* Home button */}
           <SidebarItem
-            icon={Home}
+            icon={Compass}
             label="Home"
             active={activeTool === null}
             expanded={expanded}
@@ -471,17 +471,17 @@ function SidebarItem({
         padding: expanded ? '0 12px' : '0',
         justifyContent: expanded ? 'flex-start' : 'center',
         background: active
-          ? '#1a1a1a'
+          ? 'rgba(0,0,0,0.06)'
           : glowing
             ? 'rgba(0,0,0,0.04)'
             : 'transparent',
         color: active
-          ? '#fff'
+          ? '#1a1a1a'
           : glowing
             ? '#1a1a1a'
             : disabled
               ? '#d4d4d4'
-              : '#666',
+              : '#888',
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.45 : 1,
         animation: glowing ? 'toolGlow 1.5s ease-in-out 3' : 'none',
@@ -497,32 +497,32 @@ function SidebarItem({
       onMouseLeave={(e) => {
         if (!active && !disabled && !glowing) {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = disabled ? '#d4d4d4' : '#666';
+          e.currentTarget.style.color = disabled ? '#d4d4d4' : '#888';
         }
       }}
     >
       <Icon
         className="w-5 h-5 flex-shrink-0"
-        strokeWidth={active ? 2.5 : 2}
+        strokeWidth={active ? 1.8 : 1.5}
       />
       {expanded && (
-        <span
-          className="truncate"
-          style={{
-            fontSize: 14,
-            fontWeight: active ? 600 : 500,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {label}
-        </span>
+          <span
+            className="truncate"
+            style={{
+              fontSize: 14,
+              fontWeight: active ? 600 : 450,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {label}
+          </span>
       )}
 
       {/* Active indicator bar (collapsed only) */}
       {active && !expanded && (
         <div
           className="absolute left-0 top-1/2 -translate-y-1/2 rounded-r-full"
-          style={{ width: 3, height: 16, background: '#1a1a1a' }}
+          style={{ width: 3, height: 16, background: '#333' }}
         />
       )}
 
@@ -567,7 +567,7 @@ function SidebarLinkItem({
           gap: expanded ? 12 : 0,
           padding: expanded ? '0 12px' : '0',
           justifyContent: expanded ? 'flex-start' : 'center',
-          color: '#666',
+          color: '#888',
           width: expanded ? '100%' : 40,
           margin: expanded ? 0 : '0 auto',
         }}
@@ -577,17 +577,17 @@ function SidebarLinkItem({
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = '#666';
+          e.currentTarget.style.color = '#888';
         }}
       >
         <Icon
           className="w-5 h-5 flex-shrink-0"
-          strokeWidth={2}
+          strokeWidth={1.5}
         />
         {expanded && (
           <span
             className="truncate"
-            style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}
+            style={{ fontSize: 14, fontWeight: 450, whiteSpace: 'nowrap' }}
           >
             {label}
           </span>
