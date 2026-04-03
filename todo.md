@@ -269,3 +269,4 @@
 - [x] Phase 4: Cleanup dead Dashboard code and unused imports
 - [x] Widen sidebar: collapsed 56→64px, expanded 240→260px to match ElevenLabs proportions
 - [x] Add premium sparkle icon next to breadcrumb text in StudioHeader
+- [x] Remove credits pill from StudioHeader top bar

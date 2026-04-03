@@ -10,12 +10,7 @@ const TOOL_BREADCRUMBS: Record<string, string> = {
   export: 'Export',
 };
 
-interface StudioHeaderProps {
-  creditsBalance: number;
-  planTier: string;
-}
-
-export function StudioHeader({ creditsBalance }: StudioHeaderProps) {
+export function StudioHeader() {
   const { showMobilePanel, setShowMobilePanel } = useCastingUIStore();
   const activeTool = useStudioStore((s) => s.activeTool);
 
@@ -49,40 +44,8 @@ export function StudioHeader({ creditsBalance }: StudioHeaderProps) {
         </span>
       </div>
 
-      {/* Right: Credits + Bug Report + Mobile Toggle */}
+      {/* Right: Bug Report + Mobile Toggle */}
       <div className="flex items-center gap-3">
-        {/* Credits Pill */}
-        <button
-          onClick={() => useCastingUIStore.getState().setIsTopupOpen(true)}
-          className="flex items-center gap-1.5 rounded-full px-3 py-1 transition-colors"
-          style={{ background: '#F5F3F0' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#EBE7E2';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#F5F3F0';
-          }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="11"
-            height="11"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ color: '#1a1a1a' }}
-          >
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
-            {creditsBalance}
-          </span>
-        </button>
-
-        {/* Bug Report */}
         <BugReportTrigger />
 
         {/* Mobile Panel Toggle */}

@@ -325,10 +325,7 @@ export default function DrapeStudio() {
       {/* Right side: Header + Content */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0">
         {/* Studio Header — spans content area only */}
-        <StudioHeader
-          creditsBalance={creditsData?.balance || 0}
-          planTier={creditsData?.planTier || 'free'}
-        />
+        <StudioHeader />
 
         {/* Stage Lock Modal */}
         <StageLockModal
