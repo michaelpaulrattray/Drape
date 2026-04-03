@@ -204,3 +204,4 @@
 - [x] Email Verification: Upgrade email template to match Drape brand aesthetic
 - [x] AUTH CLEANUP: Audit and remove all remaining Manus OAuth references (getLoginUrl, sdk.exchangeToken, OAuth callback)
 - [x] Studio Canvas: Widen both left and right side panels from 280/260px to 320px
+- [x] Studio Canvas: Change canvas background from cream to white with subtle dot grid pattern

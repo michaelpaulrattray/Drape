@@ -6,7 +6,7 @@
  * slots and props change per tool, giving a seamless, flicker-free experience.
  *
  * Shared features:
- *   - Canvas background (#f0ebe3)
+ *   - Canvas background (white with subtle dot grid)
  *   - Persistent toolbar (undo/redo + status pill)
  *   - Error banner (inline, dismiss + retry)
  *   - Image display with shadow, border-radius, generating effects
@@ -212,7 +212,11 @@ export function StudioCanvas({
     return (
       <div
         className="flex-1 h-full flex items-center justify-center"
-        style={{ background: "#f0ebe3" }}
+        style={{
+          background: "#ffffff",
+          backgroundImage: "radial-gradient(circle, #d0d0d0 0.8px, transparent 0.8px)",
+          backgroundSize: "20px 20px",
+        }}
       >
         {emptyState}
       </div>
@@ -224,7 +228,11 @@ export function StudioCanvas({
     return (
       <div
         className="flex-1 h-full flex flex-col relative overflow-hidden"
-        style={{ background: "#f0ebe3" }}
+        style={{
+          background: "#ffffff",
+          backgroundImage: "radial-gradient(circle, #d0d0d0 0.8px, transparent 0.8px)",
+          backgroundSize: "20px 20px",
+        }}
       >
         {topOverlay}
         <div className="flex-1 relative">
@@ -240,7 +248,11 @@ export function StudioCanvas({
   return (
     <div
       className="flex-1 h-full flex flex-col relative overflow-hidden"
-      style={{ background: "#f0ebe3" }}
+      style={{
+        background: "#ffffff",
+        backgroundImage: "radial-gradient(circle, #d0d0d0 0.8px, transparent 0.8px)",
+        backgroundSize: "20px 20px",
+      }}
     >
       {/* ── Top overlay slot (ViewTabs, identity warnings) ── */}
       {topOverlay}
