@@ -6,7 +6,7 @@
  * slots and props change per tool, giving a seamless, flicker-free experience.
  *
  * Shared features:
- *   - Canvas background (white with subtle dot grid)
+ *   - Canvas background (warm off-white #FAFAF8 with subtle warm dot grid)
  *   - Persistent toolbar (undo/redo + status pill)
  *   - Error banner (inline, dismiss + retry)
  *   - Image display with shadow, border-radius, generating effects
@@ -213,8 +213,8 @@ export function StudioCanvas({
       <div
         className="flex-1 h-full flex items-center justify-center"
         style={{
-          background: "#ffffff",
-          backgroundImage: "radial-gradient(circle, #d0d0d0 0.8px, transparent 0.8px)",
+          background: "#FAFAF8",
+          backgroundImage: "radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)",
           backgroundSize: "20px 20px",
         }}
       >
@@ -229,8 +229,8 @@ export function StudioCanvas({
       <div
         className="flex-1 h-full flex flex-col relative overflow-hidden"
         style={{
-          background: "#ffffff",
-          backgroundImage: "radial-gradient(circle, #d0d0d0 0.8px, transparent 0.8px)",
+          background: "#FAFAF8",
+          backgroundImage: "radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)",
           backgroundSize: "20px 20px",
         }}
       >
@@ -249,8 +249,8 @@ export function StudioCanvas({
     <div
       className="flex-1 h-full flex flex-col relative overflow-hidden"
       style={{
-        background: "#ffffff",
-        backgroundImage: "radial-gradient(circle, #d0d0d0 0.8px, transparent 0.8px)",
+        background: "#FAFAF8",
+        backgroundImage: "radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)",
         backgroundSize: "20px 20px",
       }}
     >

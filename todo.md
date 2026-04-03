@@ -213,3 +213,4 @@
 - [x] Studio Panels: Add visual separation (border/shadow) between side panels and white canvas
 - [x] Bug: Left panel shadow not applying correctly — right panel shadow looks good
 - [x] Studio Panels: Warm up palette from cool zinc to warm stone tones (align with homepage editorial aesthetic)
+- [x] Studio Canvas: Warm up canvas background from pure #ffffff to subtle warm tone with faint dot grid
