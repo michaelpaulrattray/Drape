@@ -176,3 +176,4 @@
 - [x] Add view transition animations (fade/slide) between login page views (choose, code, oauth, waitlist, returning-user)
 - [x] Auto-detect returning users via cookie/localStorage and skip to "Welcome back" sign-in view
 - [x] Replace login page right panel (branded text) with full-height hero image
+- [x] Audit and align login page styles with homepage (logo, nav, card styling, colors, typography consistency)

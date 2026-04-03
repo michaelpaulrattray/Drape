@@ -137,7 +137,7 @@ function OAuthButton({ href, disabled, children, onClick }: { href: string; disa
     <a
       href={href}
       onClick={onClick}
-      className="group w-full h-12 inline-flex items-center justify-center rounded-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] hover:border-[#0A0A0A]/30 transition-all duration-300 text-sm font-medium"
+      className="group w-full h-12 inline-flex items-center justify-center rounded-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] hover:border-[#0A0A0A]/30 transition-all duration-300 text-sm font-medium font-body"
     >
       {children}
     </a>
@@ -190,7 +190,7 @@ function WaitlistForm() {
       <button
         type="submit"
         disabled={joinWaitlist.isPending}
-        className="h-12 px-6 rounded-full bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-60 flex items-center gap-2"
+        className="h-12 px-6 rounded-full bg-[#0A0A0A] text-white text-sm font-medium font-body hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-60 flex items-center gap-2"
       >
         {joinWaitlist.isPending ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -374,12 +374,12 @@ export default function Login() {
         <div className="flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2">
             <img
-              src="/drape-logo.svg"
-              alt="Drape"
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/drape-logo-tight_067d1d7d.png"
+              alt="drape"
               className="h-6 w-auto"
             />
           </Link>
-          <Link href="/" className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300">
+          <Link href="/" className="text-sm font-medium font-body text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300">
             ← Back to home
           </Link>
         </div>
@@ -399,10 +399,10 @@ export default function Login() {
             {view === "choose" && (
               <motion.div key="choose" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-8">
-                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A] font-geist">
                     Welcome to Drape
                   </h1>
-                  <p className="text-[#757575] text-sm mt-2 font-medium">
+                  <p className="text-[#757575] text-sm mt-2 font-medium font-body">
                     Choose how to get started.
                   </p>
                 </div>
@@ -410,14 +410,14 @@ export default function Login() {
                 <div className="space-y-3">
                   <button
                     onClick={() => setView("new-user-code")}
-                    className="w-full flex items-center justify-center gap-2 h-12 rounded-full bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 h-12 rounded-full bg-[#0A0A0A] text-white text-sm font-medium font-body hover:bg-[#0A0A0A]/90 transition-colors"
                   >
                     <KeyRound className="w-4 h-4" />
                     I have an access code
                   </button>
                   <button
                     onClick={() => setView("returning-user")}
-                    className="w-full flex items-center justify-center gap-2 h-12 rounded-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] text-sm font-medium hover:border-[#0A0A0A]/30 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 h-12 rounded-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] text-sm font-medium font-body hover:border-[#0A0A0A]/30 transition-colors"
                   >
                     <LogIn className="w-4 h-4" />
                     I already have an account
@@ -439,10 +439,10 @@ export default function Login() {
             {view === "waitlist" && (
               <motion.div key="waitlist" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-6">
-                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A] font-geist">
                     Join the waitlist
                   </h1>
-                  <p className="text-[#757575] text-sm mt-2 font-medium">
+                  <p className="text-[#757575] text-sm mt-2 font-medium font-body">
                     We're launching soon. Get early access to studio-grade AI model creation.
                   </p>
                 </div>
@@ -483,10 +483,10 @@ export default function Login() {
             {view === "new-user-code" && (
               <motion.div key="new-user-code" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-8">
-                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A] font-geist">
                     Enter access code
                   </h1>
-                  <p className="text-[#757575] text-sm mt-2 font-medium">
+                  <p className="text-[#757575] text-sm mt-2 font-medium font-body">
                     A valid beta key is required to create your account.
                   </p>
                 </div>
@@ -509,7 +509,7 @@ export default function Login() {
                   <button
                     type="submit"
                     disabled={validateMutation.isPending || !accessCode.trim()}
-                    className="w-full h-12 rounded-full bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                    className="w-full h-12 rounded-full bg-[#0A0A0A] text-white text-sm font-medium font-body hover:bg-[#0A0A0A]/90 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {validateMutation.isPending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -559,10 +559,10 @@ export default function Login() {
                 </div>
 
                 <div className="mb-4">
-                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A] font-geist">
                     Create your account
                   </h1>
-                  <p className="text-[#757575] text-sm mt-2 font-medium">
+                  <p className="text-[#757575] text-sm mt-2 font-medium font-body">
                     Choose how you'd like to sign up.
                   </p>
                 </div>
@@ -590,10 +590,10 @@ export default function Login() {
             {view === "returning-user" && (
               <motion.div key="returning-user" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-4">
-                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A] font-geist">
                     Welcome back
                   </h1>
-                  <p className="text-[#757575] text-sm mt-2 font-medium">
+                  <p className="text-[#757575] text-sm mt-2 font-medium font-body">
                     Sign in to your existing account.
                   </p>
                 </div>
