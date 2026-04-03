@@ -21,6 +21,7 @@ export { getDb, withTransaction } from "./connection";
 export {
   upsertUser,
   getUserByOpenId,
+  getUserByEmail,
   getUserById,
   getUserStorageInfo,
   updateUserStorageUsed,

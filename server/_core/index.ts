@@ -168,6 +168,10 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "15mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Email/password auth routes
+  const { emailAuthRouter } = await import("../routes/emailAuth");
+  app.use("/api/auth", emailAuthRouter);
   
   // Stripe webhook endpoint (must use raw body)
   app.post(
