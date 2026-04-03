@@ -266,9 +266,10 @@ export async function getUserDraftModelsWithThumbnail(
 
   // Build thumbnail map — prefer frontClose (headshot), fallback to any asset
   const thumbMap = new Map<number, string>();
-  const assetCountMap = new Map<number, number>();
+  const assetViewTypes = new Map<number, Set<string>>();
   for (const asset of assets) {
-    assetCountMap.set(asset.modelId, (assetCountMap.get(asset.modelId) ?? 0) + 1);
+    if (!assetViewTypes.has(asset.modelId)) assetViewTypes.set(asset.modelId, new Set());
+    assetViewTypes.get(asset.modelId)!.add(asset.viewType);
     if (asset.viewType === "frontClose") {
       thumbMap.set(asset.modelId, asset.storageUrl);
     } else if (!thumbMap.has(asset.modelId)) {
@@ -286,7 +287,7 @@ export async function getUserDraftModelsWithThumbnail(
       preferences: m.preferences,
       technicalSchema: m.technicalSchema,
       thumbnailUrl: thumbMap.get(m.id)!,
-      assetCount: assetCountMap.get(m.id) ?? 0,
+      assetCount: assetViewTypes.get(m.id)?.size ?? 0,
       createdAt: m.createdAt,
     }));
 }

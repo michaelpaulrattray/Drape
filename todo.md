@@ -256,3 +256,4 @@
 - [x] Remove edit log section from casting right side panel (MasterPromptPanel)
 - [x] Bug: Undo history lost when resuming a draft — added buildHistoryFromAssets utility to reconstruct history stack from DB assets across all 4 restore paths
 - [x] Bug: View count shows incorrect number — changed viewCount from currentAssets.length to unique viewTypes count
+- [x] Bug: Lobby draft cast view count still showing total asset rows — fixed getDraftModels server query to count unique viewTypes instead of all rows
