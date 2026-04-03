@@ -341,6 +341,7 @@ export default function DrapeStudio() {
               <StudioLobby
                 onSelectCasting={() => {
                   useCastingGenerationStore.getState().resetGeneration();
+                  useCastingFormStore.getState().resetForm();
                   useWardrobeStore.getState().resetWardrobe();
                   setCanvas({ castModelId: null, castFullBodyUrl: null, castMasterPrompt: null, hasModel: false, hasFullBody: false, hasAllViews: false, modelSource: null, uploadedModelUrl: null, isMinted: false });
                   setActiveTool('casting');

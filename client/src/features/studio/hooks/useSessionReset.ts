@@ -15,6 +15,7 @@ import { useCallback } from 'react';
 import { useStudioStore } from '../stores/useStudioStore';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
+import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { persistSession } from './useSessionPersistence';
 import type { StudioTool } from '../types';
 
@@ -26,6 +27,7 @@ export function useSessionReset() {
   const loadModelFromCast = useStudioStore((s) => s.loadModelFromCast);
   const resetWardrobe = useWardrobeStore((s) => s.resetWardrobe);
   const resetCasting = useCastingGenerationStore((s) => s.resetGeneration);
+  const resetCastingForm = useCastingFormStore((s) => s.resetForm);
 
   /**
    * Full reset — clears everything and returns to lobby.
@@ -34,8 +36,9 @@ export function useSessionReset() {
   const resetToLobby = useCallback(() => {
     resetWardrobe();
     resetCasting();
+    resetCastingForm();
     resetStudio();
-  }, [resetWardrobe, resetCasting, resetStudio]);
+  }, [resetWardrobe, resetCasting, resetCastingForm, resetStudio]);
 
   /**
    * Switch tool with reset — clears model + wardrobe, then navigates
@@ -57,8 +60,9 @@ export function useSessionReset() {
   const loadUploadedModel = useCallback((imageUrl: string) => {
     resetWardrobe();
     resetCasting();
+    resetCastingForm();
     loadModelFromUpload(imageUrl);
-  }, [resetWardrobe, resetCasting, loadModelFromUpload]);
+  }, [resetWardrobe, resetCasting, resetCastingForm, loadModelFromUpload]);
 
   /**
    * Load a gallery cast model — clears old wardrobe + casting state first.
@@ -71,8 +75,9 @@ export function useSessionReset() {
   ) => {
     resetWardrobe();
     resetCasting();
+    resetCastingForm();
     loadModelFromCast(modelId, fullBodyUrl, masterPrompt);
-  }, [resetWardrobe, resetCasting, loadModelFromCast]);
+  }, [resetWardrobe, resetCasting, resetCastingForm, loadModelFromCast]);
 
   /**
    * Resume a wardrobe session from the DB — restores canvas, wardrobe
@@ -91,9 +96,10 @@ export function useSessionReset() {
     tattooMapData?: unknown;
     styleNotes?: Record<string, string> | null;
   }) => {
-    // Clear ALL stale state — wardrobe + casting
+    // Clear ALL stale state — wardrobe + casting + form
     resetWardrobe();
     resetCasting();
+    resetCastingForm();
 
     // Set canvas state based on whether this is a cast or uploaded model.
     if (session.modelId) {
