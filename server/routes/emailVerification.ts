@@ -365,8 +365,8 @@ emailVerificationRouter.get("/verify-email", async (req: Request, res: Response)
       userAgent,
     });
 
-    // Redirect to dashboard
-    res.redirect("/dashboard");
+    // Redirect to studio
+    res.redirect("/studio");
   } catch (error) {
     log.error({ err: error }, "[EmailVerification] Verification failed");
     res.redirect("/login?error=server_error");

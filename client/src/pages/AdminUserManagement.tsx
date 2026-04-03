@@ -144,7 +144,7 @@ export default function AdminUserManagement() {
     return <div className="min-h-screen bg-[#EBEBEB] flex items-center justify-center"><RefreshCw className="w-8 h-8 text-[#CCC] animate-spin" /></div>;
   }
   if (!isAuthenticated) return <Redirect to="/" />;
-  if (user?.role !== "admin") { toast.error("Access denied. Admin privileges required."); return <Redirect to="/dashboard" />; }
+  if (user?.role !== "admin") { toast.error("Access denied. Admin privileges required."); return <Redirect to="/studio" />; }
 
   const totalPages = Math.ceil((usersQuery.data?.total || 0) / ITEMS_PER_PAGE);
 

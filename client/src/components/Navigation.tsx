@@ -112,7 +112,7 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
                       </div>
                       <DropdownMenuSeparator className="bg-white/10" />
                       <DropdownMenuItem asChild>
-                        <Link href="/dashboard">
+                        <Link href="/studio">
                           <span className="flex items-center cursor-pointer w-full">
                             <User className="mr-2 h-4 w-4" />
                             Dashboard
@@ -195,7 +195,7 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
                         <span className="font-medium">{creditsData?.balance ?? 0}</span>
                       </div>
                     </div>
-                    <Link href="/dashboard">
+                    <Link href="/studio">
                       <span
                         className="block text-lg font-medium py-2 cursor-pointer"
                         onClick={() => setMobileMenuOpen(false)}

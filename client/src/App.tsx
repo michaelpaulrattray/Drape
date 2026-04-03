@@ -25,6 +25,11 @@ function CastingStudioRedirect() {
   return <Redirect to="/studio?tool=casting" />;
 }
 
+/** Legacy redirect: /dashboard → /studio */
+function DashboardRedirect() {
+  return <Redirect to="/studio" />;
+}
+
 function Router() {
   const [location] = useLocation();
 
@@ -37,8 +42,8 @@ function Router() {
           <Route path="/login" component={Login} />
           <Route path="/verify-email" component={VerifyEmail} />
 
-          {/* Dashboard */}
-          <Route path="/dashboard" component={Dashboard} />
+          {/* Dashboard → redirect to Studio */}
+          <Route path="/dashboard" component={DashboardRedirect} />
 
           {/* Unified Drape Studio */}
           <Route path="/studio" component={DrapeStudio} />

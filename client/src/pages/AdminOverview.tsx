@@ -60,7 +60,7 @@ export default function AdminOverview() {
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (user?.role !== "admin") {
     toast.error("Access denied. Admin privileges required.");
-    return <Redirect to="/dashboard" />;
+    return <Redirect to="/studio" />;
   }
 
   const data = overviewQuery.data;

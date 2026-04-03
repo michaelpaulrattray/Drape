@@ -9,7 +9,7 @@
  * 2. Server generates state token (with betaCode if provided), redirects to Google
  * 3. Google redirects back to /api/auth/google/callback with code + state
  * 4. Server exchanges code for tokens, verifies ID token, creates/links user
- * 5. Sets session cookie and redirects to /dashboard or /login?error=...
+ * 5. Sets session cookie and redirects to /studio or /login?error=...
  */
 import { Router, type Request, type Response } from "express";
 import { OAuth2Client } from "google-auth-library";
@@ -239,7 +239,7 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
         userAgent,
       });
 
-      res.redirect("/dashboard");
+      res.redirect("/studio");
     } else {
       // --- NEW USER ---
 
@@ -306,7 +306,7 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
         userAgent,
       });
 
-      res.redirect("/dashboard");
+      res.redirect("/studio");
     }
   } catch (error) {
     console.error("[GoogleAuth] Callback failed:", error);

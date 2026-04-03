@@ -43,10 +43,10 @@ export function AdminHeader({ title, refreshControls, actions }: AdminHeaderProp
         <div className="flex items-center justify-between">
           {/* Left: Dashboard link + title */}
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
+            <Link href="/studio">
               <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A]">
                 <LayoutDashboard className="w-4 h-4 mr-2" />
-                Dashboard
+                Studio
               </Button>
             </Link>
             <div className="h-5 w-px bg-[#D5D5D5]" />

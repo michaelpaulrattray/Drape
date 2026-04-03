@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { ChevronLeft, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import ProfileSettingsModal from '@/components/ProfileSettingsModal';
@@ -8,7 +7,7 @@ import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { BugReportTrigger } from '@/components/BugReportButton';
 import { useStudioStore } from '../stores/useStudioStore';
 
-const LOGO_URL = '/drape-logo-white.svg';
+
 const DEFAULT_AVATAR =
   'https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lkbGgJQVyIVaJXfM.png';
 const DEFAULT_BANNER =
@@ -20,7 +19,7 @@ interface StudioHeaderProps {
 }
 
 export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
-  const [, navigate] = useLocation();
+
   const { user } = useAuth();
   const { showMobilePanel, setShowMobilePanel } = useCastingUIStore();
   const activeTool = useStudioStore((s) => s.activeTool);
@@ -49,46 +48,34 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
           borderBottom: '1px solid rgba(0,0,0,0.06)',
         }}
       >
-        {/* Left: Logo + Back + Studio Name */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1.5 transition-colors group"
-            style={{ color: '#52524B' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#1a1a1a';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#999';
+        {/* Left: Logo + Studio label */}
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/drape-logo.svg"
+            alt="Drape"
+            style={{ height: 20 }}
+          />
+          <span
+            className="px-1.5 py-0.5 rounded-full uppercase"
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              color: '#8B7355',
+              background: 'rgba(139,115,85,0.08)',
+              border: '1px solid rgba(139,115,85,0.15)',
             }}
           >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            <img src={LOGO_URL} alt="Drape" className="w-7 h-7" />
-          </button>
-          <div
-            className="hidden sm:block h-5 w-px"
-            style={{ background: 'rgba(0,0,0,0.08)' }}
-          />
-          <div className="hidden sm:flex items-center gap-2">
-            <img
-              src="/drape-logo.svg"
-              alt="Drape"
-              style={{ height: 20 }}
-            />
-            <span
-              className="px-1.5 py-0.5 rounded-full uppercase"
-              style={{
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                color: '#8B7355',
-                background: 'rgba(139,115,85,0.08)',
-                border: '1px solid rgba(139,115,85,0.15)',
-              }}
-            >
-              Beta
-            </span>
-          </div>
+            Beta
+          </span>
+          {activeTool && (
+            <>
+              <div className="h-4 w-px" style={{ background: 'rgba(0,0,0,0.1)' }} />
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#666' }}>
+                {activeTool === 'casting' ? 'Casting Studio' : activeTool === 'wardrobe' ? 'Wardrobe' : activeTool === 'export' ? 'Export' : 'Studio'}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Right: Credits + Avatar + Mobile Toggle */}

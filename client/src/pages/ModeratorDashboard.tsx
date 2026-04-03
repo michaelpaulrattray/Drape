@@ -243,7 +243,7 @@ export default function ModeratorDashboard() {
     );
   }
   if (!isAuthenticated) return <Redirect to="/login" />;
-  if (isUnauthorized) return <Redirect to="/dashboard" />;
+  if (isUnauthorized) return <Redirect to="/studio" />;
 
   const totalPages = Math.ceil((logsQuery.data?.total || 0) / PAGE_SIZE);
   const userTotalPages = Math.ceil((usersQuery.data?.total || 0) / PAGE_SIZE);

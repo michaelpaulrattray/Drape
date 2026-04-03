@@ -322,7 +322,7 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
       userAgent,
     });
 
-    res.json({ success: true, redirect: "/dashboard" });
+    res.json({ success: true, redirect: "/studio" });
   } catch (error) {
     console.error("[EmailAuth] Login failed:", error);
     await logAuditEvent({

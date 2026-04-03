@@ -30,12 +30,12 @@ export function ModeratorHeader({
     <header className="border-b border-[#D5D5D5] bg-white/80 backdrop-blur sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
-          {/* Left: Back to dashboard + title */}
+          {/* Left: Back to studio + title */}
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
+            <Link href="/studio">
               <Button variant="ghost" size="sm" className="text-[#999] hover:text-[#0A0A0A]">
                 <LayoutDashboard className="w-4 h-4 mr-2" />
-                Dashboard
+                Studio
               </Button>
             </Link>
             <div className="h-5 w-px bg-[#D5D5D5]" />
