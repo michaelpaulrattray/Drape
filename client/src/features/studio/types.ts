@@ -56,7 +56,7 @@ export function getToolAvailability(
     case 'casting':
       // Cast/saved models — switch seamlessly to read-only Casting overview
       // No confirmation needed; "New Model" button inside Casting handles reset
-      return { enabled: true, tooltip: 'Casting Studio' };
+      return { enabled: true, tooltip: 'Cast' };
 
     case 'wardrobe':
       if (!canvas.hasModel) {
@@ -65,7 +65,7 @@ export function getToolAvailability(
       if (!canvas.hasFullBody) {
         return { enabled: false, tooltip: 'Generate full body first' };
       }
-      return { enabled: true, tooltip: 'Wardrobe Studio' };
+      return { enabled: true, tooltip: 'Style' };
 
     case 'export':
       if (!canvas.hasFullBody) {
@@ -75,7 +75,7 @@ export function getToolAvailability(
       if (canvas.modelSource !== 'cast') {
         return { enabled: false, tooltip: 'Export requires a cast model' };
       }
-      return { enabled: true, tooltip: 'Export Identity Pack' };
+      return { enabled: true, tooltip: 'Export' };
 
     default:
       return { enabled: false, tooltip: '' };

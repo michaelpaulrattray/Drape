@@ -7,7 +7,6 @@ import ProfileSettingsModal from '@/components/ProfileSettingsModal';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { BugReportTrigger } from '@/components/BugReportButton';
 import { useStudioStore } from '../stores/useStudioStore';
-import { STUDIO_TOOLS } from '../types';
 
 const LOGO_URL = '/drape-logo-white.svg';
 const DEFAULT_AVATAR =
@@ -39,9 +38,7 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
 
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || '?';
 
-  // Derive the studio label from the active tool
-  const activeToolMeta = STUDIO_TOOLS.find((t) => t.id === activeTool);
-  const studioLabel = activeToolMeta?.label || 'Drape Studio';
+  // Logo is consistent across all tools — no tool-specific label
 
   return (
     <>
@@ -72,17 +69,12 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
             className="hidden sm:block h-4 w-px"
             style={{ background: 'rgba(0,0,0,0.08)' }}
           />
-          <span
+          <img
+            src="/drape-logo.svg"
+            alt="Drape"
             className="hidden sm:block"
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: '#1a1a1a',
-              letterSpacing: '0.04em',
-            }}
-          >
-            {studioLabel}
-          </span>
+            style={{ height: 16 }}
+          />
         </div>
 
         {/* Right: Credits + Avatar + Mobile Toggle */}

@@ -218,3 +218,5 @@
 - [x] Wardrobe: Rename "Btms" category label to "Legs"
 - [x] Wardrobe: Add shadow/border to unselected garment cards for definition
 - [x] StudioHeader: Make the studio name text bolder to match icon weight
+- [x] StudioHeader: Replace tool-specific text label with Drape logo (consistent across all tools)
+- [x] ToolRail: Shorten tooltips from "Casting Studio" to "Cast", "Wardrobe Studio" to "Style", etc.

@@ -19,9 +19,9 @@ const TOOL_ICONS: Record<StudioTool, React.ComponentType<{ className?: string; s
 
 /** Human-readable labels for confirmation dialog */
 const TOOL_LABELS: Record<string, string> = {
-  casting: 'Casting Studio',
-  wardrobe: 'Wardrobe Studio',
-  export: 'Export Pack',
+  casting: 'Cast',
+  wardrobe: 'Style',
+  export: 'Export',
   home: 'Start',
 };
 
