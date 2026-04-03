@@ -161,3 +161,5 @@
 - [x] Fix: PartnersBar doesn't match reference design — needs liquid-glass pill container with exact styling
 - [x] Fix: Powered by Gemini badge doesn't match reference — needs liquid-glass pill with Gemini sparkle icon
 - [x] Fix: Match all component styling exactly to celestial-horizon reference
+- [x] Fix: Proxy hero video through server route to bypass preview iframe URL safety check
+- [ ] Pre-launch: Switch hero video back to direct CDN URL before publishing

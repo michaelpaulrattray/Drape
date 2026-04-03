@@ -8,8 +8,9 @@ import { HomeNavbar } from "@/features/home/HomeNavbar";
 import { HeroContent } from "@/features/home/HeroContent";
 import { PartnersBar } from "@/features/home/PartnersBar";
 
-const VIDEO_URL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/grok-video-ea2ef111-e404-446b-a3ec-d88cfb8a1f7a_544bff93.mp4";
+// Proxied through /api/hero/video to bypass preview iframe URL safety check.
+// TODO: Switch back to direct CDN URL before launch for better performance.
+const VIDEO_URL = "/api/hero/video";
 
 export default function Home() {
   return (
@@ -22,8 +23,9 @@ export default function Home() {
           muted
           playsInline
           className="w-full h-full object-cover"
-          src={VIDEO_URL}
-        />
+        >
+          <source src={VIDEO_URL} type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-black/20 z-0" />
       </div>
 
