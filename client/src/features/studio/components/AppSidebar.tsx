@@ -372,9 +372,12 @@ export function AppSidebar({
 
       {/* Sidebar item styles + glow keyframes */}
       <style>{`
+        .sidebar-item-hoverable {
+          transition: background 150ms ease, color 150ms ease;
+        }
         .sidebar-item-hoverable:hover {
-          background: rgba(0,0,0,0.04);
-          color: #1a1a1a;
+          background: rgba(0,0,0,0.04) !important;
+          color: #1a1a1a !important;
         }
         .sidebar-user-menu-item {
           color: #888;
@@ -476,7 +479,7 @@ function SidebarItem({
       onClick={onClick}
       disabled={disabled}
       title={!expanded ? (tooltip || label) : undefined}
-      className={`relative flex items-center rounded-lg transition-colors duration-150 group ${hoverClass}`}
+      className={`relative flex items-center rounded-lg group ${hoverClass}`}
       style={{
         height: 40,
         gap: expanded ? 12 : 0,
@@ -486,7 +489,7 @@ function SidebarItem({
           ? 'rgba(0,0,0,0.06)'
           : glowing
             ? 'rgba(0,0,0,0.04)'
-            : undefined,
+            : 'transparent',
         color: active
           ? '#1a1a1a'
           : glowing
@@ -561,7 +564,7 @@ function SidebarLinkItem({
   return (
     <Link href={href}>
       <div
-        className="relative flex items-center rounded-lg transition-colors duration-150 group cursor-pointer sidebar-item-hoverable"
+        className="relative flex items-center rounded-lg group cursor-pointer sidebar-item-hoverable"
         style={{
           height: 40,
           gap: expanded ? 12 : 0,
