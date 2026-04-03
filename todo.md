@@ -168,3 +168,4 @@
 - [x] Verify Klaviyo waitlist email integration is wired correctly — added newsletterSignup call to waitlist.join
 - [x] Wire "Claim a Spot" navbar button to open a beta invite modal with compelling copy and email capture
 - [x] Replace hero background video with new higher-quality version, optimized for fast loading with SEO-friendly filename
+- [x] Add subtle "Log in" link in navbar for beta users, positioned before "Claim a Spot"
