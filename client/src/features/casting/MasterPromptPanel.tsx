@@ -18,7 +18,7 @@ export function MasterPromptPanel() {
   const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
   const currentMasterPrompt = useCastingGenerationStore((s) => s.currentMasterPrompt);
   const currentTechnicalSchema = useCastingGenerationStore((s) => s.currentTechnicalSchema);
-  const amendments = useCastingGenerationStore((s) => s.amendments);
+
 
   const [activeTab, setActiveTab] = useState<'profile' | 'spec'>('profile');
   const [specMode, setSpecMode] = useState<'natural' | 'json'>('natural');
@@ -234,30 +234,7 @@ export function MasterPromptPanel() {
                   </div>
                 )}
 
-                {/* Amendment Log */}
-                {amendments.length > 0 && (
-                  <div className="rounded-lg overflow-hidden" style={{ background: 'rgba(92,173,92,0.06)', border: '1px solid rgba(92,173,92,0.12)' }}>
-                    <div className="px-2.5 py-1.5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(92,173,92,0.08)' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#52524B', letterSpacing: '0.05em' }}>EDIT LOG</span>
-                      <span style={{ fontSize: 11, color: '#71716A' }}>{amendments.length} edit{amendments.length !== 1 ? 's' : ''}</span>
-                    </div>
-                    <div className="custom-scrollbar" style={{ maxHeight: 140, overflowY: 'auto', padding: '4px 0' }}>
-                      {[...amendments].reverse().map((a, i) => (
-                        <div key={i} className="flex items-start gap-2 px-2.5 py-1.5" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: '#5cad5c', fontFamily: 'ui-monospace, monospace', flexShrink: 0, minWidth: 20 }}>
-                            v{a.version}
-                          </span>
-                          <span style={{ color: '#52524B', flex: 1 }}>{a.text}</span>
-                          {a.view !== 'frontClose' && (
-                            <span style={{ fontSize: 10, fontWeight: 600, color: '#71716A', padding: '1px 4px', borderRadius: 3, background: 'rgba(0,0,0,0.04)', flexShrink: 0 }}>
-                              {a.view === 'frontFull' ? 'BODY' : a.view === 'sideClose' ? 'SIDE' : a.view.toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
 
                 {/* Reference Image Section */}
                 <div>
