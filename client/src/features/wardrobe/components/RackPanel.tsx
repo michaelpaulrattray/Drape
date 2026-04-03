@@ -182,7 +182,7 @@ export function RackPanel() {
             </button>
             <span
               className="font-mono"
-              style={{ fontSize: 11, color: "#52525B" }}
+              style={{ fontSize: 11, color: "#52524B" }}
             >
               {slotCounts[activeSlot]}/{MAX_GARMENTS_PER_SLOT}
             </span>
@@ -328,17 +328,17 @@ export function RackPanel() {
             <div className="flex items-center gap-2 mb-2">
               <div
                 className="flex-1 h-px"
-                style={{ background: "#E4E4E7" }}
+                style={{ background: "#E8E4DF" }}
               />
               <span
                 className="font-mono uppercase"
-                style={{ fontSize: 10, color: "#52525B", letterSpacing: "0.05em" }}
+                style={{ fontSize: 10, color: "#52524B", letterSpacing: "0.05em" }}
               >
                 Saved Outfits
               </span>
               <div
                 className="flex-1 h-px"
-                style={{ background: "#E4E4E7" }}
+                style={{ background: "#E8E4DF" }}
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -452,7 +452,7 @@ function EmptySlot({
       </p>
       <p
         className="text-center mb-4"
-        style={{ fontSize: 11, color: "#52525B" }}
+        style={{ fontSize: 11, color: "#52524B" }}
       >
         Upload a photo or drag & drop
       </p>

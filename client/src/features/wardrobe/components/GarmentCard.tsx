@@ -59,7 +59,7 @@ export function GarmentCard({
         boxShadow: isSelected
           ? "0 0 0 2.5px #1a1a1a, 0 4px 14px rgba(0,0,0,0.08)"
           : "0 1px 4px rgba(0,0,0,0.06)",
-        background: "#F4F4F5",
+        background: "#F5F3F0",
       }}
     >
       {/* Image Area */}

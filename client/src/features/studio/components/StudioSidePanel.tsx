@@ -20,7 +20,7 @@ interface StudioSidePanelProps {
   children: ReactNode;
   /** Additional className for the wrapper */
   className?: string;
-  /** Override background color (default: #F4F4F5) */
+  /** Override background color (default: #F5F3F0) */
   background?: string;
 }
 
@@ -35,7 +35,7 @@ export function StudioSidePanel({
   background,
 }: StudioSidePanelProps) {
   const isLeft = side === 'left';
-  const bg = background ?? '#F4F4F5';
+  const bg = background ?? '#F5F3F0';
 
   const style: CSSProperties = {
     width,

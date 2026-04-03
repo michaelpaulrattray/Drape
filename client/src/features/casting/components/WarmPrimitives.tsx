@@ -27,7 +27,7 @@ const ReqDot = ({ filled }: { filled: boolean }) => (
 );
 
 export const FieldLabel = ({ children, filled = true }: { children: React.ReactNode; filled?: boolean }) => (
-  <div style={{ fontSize: 11, fontWeight: 500, color: '#52525B', marginBottom: 6 }}>
+  <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 6 }}>
     {children}<ReqDot filled={filled} />
   </div>
 );
@@ -47,7 +47,7 @@ export const ChipRow = ({ options, selected, onSelect, allowDeselect = false }: 
           className="py-2 rounded-xl text-center transition-all hover:shadow-sm"
           style={{
             fontSize: 12, fontWeight: selected === opt ? 600 : 400,
-            background: selected === opt ? '#1a1a1a' : '#F4F4F5',
+            background: selected === opt ? '#1a1a1a' : '#F5F3F0',
             color: selected === opt ? '#fff' : '#888',
             boxShadow: selected === opt ? '0 0 0 2px rgba(26,26,26,0.15)' : undefined,
             transform: selected === opt ? 'scale(1.02)' : undefined,
@@ -77,7 +77,7 @@ export const OptionGrid = ({ options, selected, onSelect, cols = 3, showAutoRese
             className="py-2.5 rounded-xl text-center transition-all hover:shadow-sm"
             style={{
               fontSize: 12, fontWeight: selected === opt ? 600 : 400,
-              background: selected === opt ? '#1a1a1a' : '#F4F4F5',
+              background: selected === opt ? '#1a1a1a' : '#F5F3F0',
               color: selected === opt ? '#fff' : '#888',
               boxShadow: selected === opt ? '0 0 0 2px rgba(26,26,26,0.15)' : undefined,
               transform: selected === opt ? 'scale(1.02)' : undefined,
@@ -92,8 +92,8 @@ export const OptionGrid = ({ options, selected, onSelect, cols = 3, showAutoRese
           {!isAuto ? (
             <button
               onClick={() => onSelect('Auto')}
-              className="flex items-center gap-1 transition-colors hover:text-[#52525B]"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: '#71717A' }}
+              className="flex items-center gap-1 transition-colors hover:text-[#52524B]"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: '#71716A' }}
             >
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -116,18 +116,18 @@ export const WarmSelectControl = ({ label, options, value, onChange }: {
   label: string; options: string[]; value: string; onChange: (v: string) => void;
 }) => (
   <div>
-    <div style={{ fontSize: 11, fontWeight: 500, color: '#52525B', marginBottom: 4 }}>{label}</div>
+    <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 4 }}>{label}</div>
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full py-2 px-2.5 rounded-xl outline-none cursor-pointer appearance-none"
-        style={{ background: '#F4F4F5', border: '1px solid rgba(0,0,0,0.04)', fontSize: 13, color: value ? '#1a1a1a' : '#bbb' }}
+        style={{ background: '#F5F3F0', border: '1px solid rgba(0,0,0,0.04)', fontSize: 13, color: value ? '#1a1a1a' : '#bbb' }}
       >
         <option value="">—</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#71717A' }}>
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#71716A' }}>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
       </div>
     </div>
@@ -230,7 +230,7 @@ export const EthnicityBlender = ({ selected, onChange }: {
           return (
             <button key={eth} onClick={() => toggleEth(eth)}
               className="py-2.5 rounded-xl text-center transition-all"
-              style={{ fontSize: 12, fontWeight: active ? 600 : 400, background: active ? '#1a1a1a' : '#F4F4F5', color: active ? '#fff' : '#888' }}
+              style={{ fontSize: 12, fontWeight: active ? 600 : 400, background: active ? '#1a1a1a' : '#F5F3F0', color: active ? '#fff' : '#888' }}
             >{eth}</button>
           );
         })}
@@ -266,7 +266,7 @@ export const EthnicityBlender = ({ selected, onChange }: {
         </div>
       )}
       {selected.length === 1 && (
-        <div style={{ fontSize: 11, color: '#52525B', paddingLeft: 2, marginTop: 2 }}>Tap a second ethnicity to create a blend</div>
+        <div style={{ fontSize: 11, color: '#52524B', paddingLeft: 2, marginTop: 2 }}>Tap a second ethnicity to create a blend</div>
       )}
     </div>
   );
@@ -310,7 +310,7 @@ export const CollapsibleSection = ({ id, title, icon, isOpen, onToggle, completi
             <polyline points="9 18 15 12 9 6" />
           </svg>
           {icon && <span style={{ color: isOpen ? '#1a1a1a' : '#bbb', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}>{icon}</span>}
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#52525B', letterSpacing: '0.06em' }}>{title.toUpperCase()}</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#52524B', letterSpacing: '0.06em' }}>{title.toUpperCase()}</span>
         </div>
         <div className="flex items-center gap-1">
           {Array.from({ length: dots }).map((_, i) => (
@@ -452,7 +452,7 @@ export const SummaryStrip = ({ prefs, ethnicityBlend }: {
               background: 'rgba(0,0,0,0.04)',
               fontSize: 11,
               fontWeight: 500,
-              color: '#52525B',
+              color: '#52524B',
               whiteSpace: 'nowrap',
               letterSpacing: '0.01em',
             }}

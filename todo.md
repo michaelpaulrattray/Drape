@@ -212,3 +212,4 @@
 - [x] Studio Panels: Increase text sizes and darken grey text colors for better readability
 - [x] Studio Panels: Add visual separation (border/shadow) between side panels and white canvas
 - [x] Bug: Left panel shadow not applying correctly — right panel shadow looks good
+- [x] Studio Panels: Warm up palette from cool zinc to warm stone tones (align with homepage editorial aesthetic)

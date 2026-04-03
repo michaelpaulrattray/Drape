@@ -272,7 +272,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[#F4F4F5]"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[#F5F3F0]"
             style={{ color: "#aaa", fontSize: 18 }}
           >
             &times;
@@ -306,7 +306,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                   <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
                     <div
                       className="w-5 h-5 rounded-full border-2 animate-spin mb-2"
-                      style={{ borderColor: "#E4E4E7", borderTopColor: "#1a1a1a" }}
+                      style={{ borderColor: "#E8E4DF", borderTopColor: "#1a1a1a" }}
                     />
                     <span style={{ fontSize: 12, fontWeight: 500, color: "#999" }}>Detecting...</span>
                   </div>
@@ -384,7 +384,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
               {isScanning ? (
                 <div className="space-y-2 p-2">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "#F4F4F5" }} />
+                    <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "#F5F3F0" }} />
                   ))}
                 </div>
               ) : (
@@ -399,7 +399,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                       className="rounded-xl transition-all cursor-pointer"
                       style={{
                         padding: "10px 12px",
-                        background: isHovered ? "#F4F4F5" : isSelected ? "#faf9f7" : "transparent",
+                        background: isHovered ? "#F5F3F0" : isSelected ? "#faf9f7" : "transparent",
                         border: isHovered ? "1.5px solid rgba(0,0,0,0.08)" : "1.5px solid transparent",
                       }}
                       onMouseEnter={() => setHoveredItemId(item.id)}
@@ -549,7 +549,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                 <button
                   onClick={handleKeepAsFullLook}
                   disabled={isScanning || isImporting}
-                  className="w-full py-2.5 rounded-xl transition-colors hover:bg-[#F4F4F5]"
+                  className="w-full py-2.5 rounded-xl transition-colors hover:bg-[#F5F3F0]"
                   style={{ fontSize: 12, fontWeight: 500, color: "#999", background: "transparent" }}
                 >
                   Keep as Full Look Instead

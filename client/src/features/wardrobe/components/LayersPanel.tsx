@@ -187,7 +187,7 @@ function GarmentRow({
               {garment.shortName || "Untitled"}
             </span>
           </div>
-          <span className="block" style={{ fontSize: 11, color: "#52525B", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 1 }}>
+          <span className="block" style={{ fontSize: 11, color: "#52524B", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 1 }}>
             {slotLabel}
           </span>
         </div>
@@ -288,7 +288,7 @@ function GarmentRow({
           {!showInput ? (
             <div
               onClick={(e) => { e.stopPropagation(); setShowInput(true); }}
-              style={{ marginTop: 5, fontSize: 11, color: "#D4D4D8", cursor: "text", padding: "3px 0" }}
+              style={{ marginTop: 5, fontSize: 11, color: "#D9D4CE", cursor: "text", padding: "3px 0" }}
             >
               + custom edit
             </div>
@@ -389,7 +389,7 @@ export function LayersPanel({
                 <polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" />
               </svg>
             </div>
-            <p style={{ fontSize: 12, color: "#52525B" }}>Select garments from the rack to build your look</p>
+            <p style={{ fontSize: 12, color: "#52524B" }}>Select garments from the rack to build your look</p>
           </div>
         </div>
       </div>
@@ -403,7 +403,7 @@ export function LayersPanel({
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold" style={{ fontSize: 15, color: "#1a1a1a", letterSpacing: "-0.02em" }}>Layers</h3>
           <div className="flex items-center gap-2">
-            <span className="font-mono" style={{ fontSize: 11, color: "#52525B" }}>
+            <span className="font-mono" style={{ fontSize: 11, color: "#52524B" }}>
               {selectedGarments.length} item{selectedGarments.length !== 1 ? "s" : ""}
             </span>
             <button onClick={clearSelection} className="p-1 rounded hover:bg-[#ffffff] transition-colors" title="Clear all">
@@ -442,7 +442,7 @@ export function LayersPanel({
       </div>
 
       {/* Action Buttons */}
-      <div className="px-4 py-3 flex flex-col gap-2" style={{ borderTop: "1px solid #E4E4E7" }}>
+      <div className="px-4 py-3 flex flex-col gap-2" style={{ borderTop: "1px solid #E8E4DF" }}>
         <button
           onClick={onGenerate}
           disabled={isGenerating || selectedGarments.length === 0 || !!hasProcessingSelected}
@@ -474,7 +474,7 @@ export function LayersPanel({
             onClick={onResetLook}
             disabled={isGenerating}
             className="w-full text-center transition-colors hover:opacity-70 disabled:opacity-30"
-            style={{ fontSize: 11, color: '#52525B', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+            style={{ fontSize: 11, color: '#52524B', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
           >
             Reset Look
           </button>

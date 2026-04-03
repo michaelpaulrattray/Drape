@@ -432,12 +432,12 @@ export default function DrapeStudio() {
                   className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                   style={{ background: 'rgba(0,0,0,0.04)' }}
                 >
-                  <Camera className="w-6 h-6" style={{ color: '#71717A' }} />
+                  <Camera className="w-6 h-6" style={{ color: '#71716A' }} />
                 </div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
                   This model was not cast
                 </p>
-                <p style={{ fontSize: 12, color: '#71717A', lineHeight: 1.5, marginBottom: 20 }}>
+                <p style={{ fontSize: 12, color: '#71716A', lineHeight: 1.5, marginBottom: 20 }}>
                   This model was loaded without casting data. To use the Casting Studio,
                   start a new model from scratch.
                 </p>

@@ -57,7 +57,7 @@ export function ToolSwitchConfirmDialog({
 
         {/* Message */}
         <div className="px-5 pb-4">
-          <p style={{ fontSize: 14, color: '#52525B', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 14, color: '#52524B', lineHeight: 1.6 }}>
             {message}
           </p>
         </div>
@@ -70,7 +70,7 @@ export function ToolSwitchConfirmDialog({
           <button
             onClick={onCancel}
             className="flex-1 py-2 rounded-lg font-medium transition-all hover:bg-gray-50"
-            style={{ fontSize: 14, color: '#52525B', background: 'transparent' }}
+            style={{ fontSize: 14, color: '#52524B', background: 'transparent' }}
           >
             Cancel
           </button>

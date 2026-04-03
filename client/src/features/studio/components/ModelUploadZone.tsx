@@ -142,18 +142,18 @@ export function ModelUploadZone() {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 transition-opacity group-hover:opacity-80">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ background: '#F4F4F5' }}
+              style={{ background: '#F5F3F0' }}
             >
-              <ImagePlus className="w-6 h-6" style={{ color: '#52525B' }} />
+              <ImagePlus className="w-6 h-6" style={{ color: '#52524B' }} />
             </div>
             <div className="text-center">
               <p style={{ fontSize: 15, fontWeight: 500, color: '#1a1a1a' }}>
                 Upload Your Model
               </p>
-              <p style={{ fontSize: 13, color: '#52525B', marginTop: 2 }}>
+              <p style={{ fontSize: 13, color: '#52524B', marginTop: 2 }}>
                 Drag & drop or click to browse
               </p>
-              <p style={{ fontSize: 12, color: '#71717A', marginTop: 6 }}>
+              <p style={{ fontSize: 12, color: '#71716A', marginTop: 6 }}>
                 Full-body photo recommended · JPEG, PNG, WebP · Max 10 MB
               </p>
             </div>
@@ -184,7 +184,7 @@ export function ModelUploadZone() {
       {/* Divider */}
       <div className="flex items-center gap-3 w-full">
         <div className="flex-1 h-px" style={{ background: 'rgba(0,0,0,0.08)' }} />
-        <span style={{ fontSize: 12, color: '#71717A', fontWeight: 500, letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: 12, color: '#71716A', fontWeight: 500, letterSpacing: '0.05em' }}>
           OR
         </span>
         <div className="flex-1 h-px" style={{ background: 'rgba(0,0,0,0.08)' }} />

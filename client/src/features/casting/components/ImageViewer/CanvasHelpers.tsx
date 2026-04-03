@@ -39,7 +39,7 @@ export function SlotChip({ slotIdeas, intervalMs, onSelect }: { slotIdeas: strin
         background: 'rgba(255,255,255,0.8)',
         backdropFilter: 'blur(8px)',
         boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
-        fontSize: 12, color: '#52525B',
+        fontSize: 12, color: '#52524B',
         border: '1px solid rgba(0,0,0,0.04)',
         maxWidth: 200, overflow: 'hidden',
         textOverflow: 'ellipsis', whiteSpace: 'nowrap',

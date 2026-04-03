@@ -75,8 +75,8 @@ export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible,
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             title="Download image"
           >
-            <Download className="w-3 h-3" style={{ color: '#52525B' }} />
-            <span style={{ fontSize: 11, color: '#52525B', fontWeight: 500 }}>Save</span>
+            <Download className="w-3 h-3" style={{ color: '#52524B' }} />
+            <span style={{ fontSize: 11, color: '#52524B', fontWeight: 500 }}>Save</span>
           </button>
         </>
       )}
@@ -99,7 +99,7 @@ export function WardrobeEmptyState() {
         </svg>
       </div>
       <p style={{ fontSize: 14, fontWeight: 500, color: "#1a1a1a" }}>No model on canvas</p>
-      <p style={{ fontSize: 12, color: "#52525B", marginTop: 4 }}>Cast a model first, then switch to Wardrobe</p>
+      <p style={{ fontSize: 12, color: "#52524B", marginTop: 4 }}>Cast a model first, then switch to Wardrobe</p>
     </div>
   );
 }

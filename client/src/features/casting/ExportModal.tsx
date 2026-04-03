@@ -54,7 +54,7 @@ export const ExportModal = ({
             {viewCount !== undefined && (
               <div
                 className="absolute bottom-3 right-4 flex items-center gap-1"
-                style={{ fontSize: 11, color: '#52525B' }}
+                style={{ fontSize: 11, color: '#52524B' }}
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -71,13 +71,13 @@ export const ExportModal = ({
           <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
             Export Casting Pack
           </div>
-          <div style={{ fontSize: 13, color: '#52525B', lineHeight: 1.5, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: '#52524B', lineHeight: 1.5, marginBottom: 16 }}>
             Assign a name to finalize this casting session.
           </div>
 
           {/* Name input */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#71717A', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
               MODEL NAME
             </label>
             <input
@@ -103,7 +103,7 @@ export const ExportModal = ({
           </div>
 
           {/* Resolution footnote */}
-          <div style={{ fontSize: 11, color: '#71717A', marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: '#71716A', marginBottom: 16 }}>
             All exports are rendered at 2K resolution.
           </div>
 
@@ -111,7 +111,7 @@ export const ExportModal = ({
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              style={{ fontSize: 13, fontWeight: 500, color: '#52525B' }}
+              style={{ fontSize: 13, fontWeight: 500, color: '#52524B' }}
             >
               Cancel
             </button>

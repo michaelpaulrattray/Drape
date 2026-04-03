@@ -238,16 +238,16 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
     <div className="w-full flex flex-col space-y-4 select-none">
       {/* Tabs */}
       <div className="flex justify-center">
-        <div className="bg-[#F4F4F5] border border-[rgba(0,0,0,0.05)] p-0.5 rounded-full flex relative">
+        <div className="bg-[#F5F3F0] border border-[rgba(0,0,0,0.05)] p-0.5 rounded-full flex relative">
           <button
             onClick={() => setActiveTab('Dyed')}
-            className={`px-8 py-2 rounded-full text-[12px] font-medium tracking-wide transition-all duration-300 ${activeTab === 'Dyed' ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52525B] hover:text-[#555]'}`}
+            className={`px-8 py-2 rounded-full text-[12px] font-medium tracking-wide transition-all duration-300 ${activeTab === 'Dyed' ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52524B] hover:text-[#555]'}`}
           >
             Dyed
           </button>
           <button
             onClick={() => setActiveTab('Natural')}
-            className={`px-8 py-2 rounded-full text-[12px] font-medium tracking-wide transition-all duration-300 ${activeTab === 'Natural' ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52525B] hover:text-[#555]'}`}
+            className={`px-8 py-2 rounded-full text-[12px] font-medium tracking-wide transition-all duration-300 ${activeTab === 'Natural' ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52524B] hover:text-[#555]'}`}
           >
             Natural
           </button>
@@ -266,17 +266,17 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
       {/* Tone Controls */}
       <div className="space-y-3 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
         <div className="flex items-center">
-          <span style={{ fontSize: 11, fontWeight: 500, color: '#52525B' }}>
+          <span style={{ fontSize: 11, fontWeight: 500, color: '#52524B' }}>
             Tone
           </span>
         </div>
 
-        <div className="flex bg-[#F4F4F5] p-0.5 rounded border border-[rgba(0,0,0,0.05)]">
+        <div className="flex bg-[#F5F3F0] p-0.5 rounded border border-[rgba(0,0,0,0.05)]">
           {['Warm', 'Neutral', 'Cool'].map((t) => (
             <button
               key={t}
               onClick={() => setTone(t as 'Warm' | 'Neutral' | 'Cool')}
-              className={`flex-1 py-1.5 rounded-sm text-[11px] font-medium tracking-wide transition-all ${tone === t ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52525B] hover:text-[#555]'}`}
+              className={`flex-1 py-1.5 rounded-sm text-[11px] font-medium tracking-wide transition-all ${tone === t ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52524B] hover:text-[#555]'}`}
             >
               {t === 'Cool' ? 'Cool / Ash' : t}
             </button>

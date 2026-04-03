@@ -126,10 +126,10 @@ function FeaturedCard({ session, onContinue, onDelete }: CardProps) {
           <div className="flex-1 min-w-0">
             <p className="truncate" style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', lineHeight: 1.3 }}>{displayName}</p>
             <div className="flex items-center gap-2.5 mt-1">
-              <span className="flex items-center gap-1" style={{ fontSize: 12, color: '#52525B' }}>
+              <span className="flex items-center gap-1" style={{ fontSize: 12, color: '#52524B' }}>
                 <Layers className="w-3 h-3" />{session.savedLookCount} {session.savedLookCount === 1 ? 'look' : 'looks'}
               </span>
-              <span className="flex items-center gap-1" style={{ fontSize: 12, color: '#71717A' }}>
+              <span className="flex items-center gap-1" style={{ fontSize: 12, color: '#71716A' }}>
                 <Clock className="w-3 h-3" />{timeAgo(new Date(session.updatedAt))}
               </span>
             </div>
@@ -140,7 +140,7 @@ function FeaturedCard({ session, onContinue, onDelete }: CardProps) {
           <div
             className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full transition-all"
             style={{
-              background: isHovered ? '#1a1a1a' : '#F4F4F5',
+              background: isHovered ? '#1a1a1a' : '#F5F3F0',
               color: isHovered ? '#fff' : '#777',
               fontSize: 12,
               fontWeight: 600,
@@ -205,10 +205,10 @@ function CompactCard({ session, onContinue, onDelete }: CardProps) {
         </div>
         <div className="flex-1 flex items-center px-3 gap-2 min-w-0">
           <p className="truncate flex-1" style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>{displayName}</p>
-          <span className="flex items-center gap-1 flex-shrink-0" style={{ fontSize: 12, color: '#71717A' }}>
+          <span className="flex items-center gap-1 flex-shrink-0" style={{ fontSize: 12, color: '#71716A' }}>
             <Layers className="w-2.5 h-2.5" />{session.savedLookCount}
           </span>
-          <span className="flex-shrink-0" style={{ fontSize: 12, color: '#71717A' }}>
+          <span className="flex-shrink-0" style={{ fontSize: 12, color: '#71716A' }}>
             {timeAgo(new Date(session.updatedAt))}
           </span>
           <DeleteOverlayButton
@@ -267,8 +267,8 @@ export function RecentSessionsRow({ sessions, onContinue }: RecentSessionsRowPro
   return (
     <div className="w-full">
       <div className="flex items-center gap-2 mb-3 px-1">
-        <Play className="w-3.5 h-3.5" style={{ color: '#52525B' }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#52525B', letterSpacing: '0.05em' }}>
+        <Play className="w-3.5 h-3.5" style={{ color: '#52524B' }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#52524B', letterSpacing: '0.05em' }}>
           {sessions.length === 1 ? 'CONTINUE WHERE YOU LEFT OFF' : 'RECENT SESSIONS'}
         </span>
       </div>

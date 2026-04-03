@@ -124,7 +124,7 @@ export function SavedOutfitCard({
         </p>
         <p
           className="font-mono"
-          style={{ fontSize: 9, color: "#52525B" }}
+          style={{ fontSize: 9, color: "#52524B" }}
         >
           {formattedDate}
         </p>

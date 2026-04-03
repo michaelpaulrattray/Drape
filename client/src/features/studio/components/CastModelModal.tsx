@@ -76,13 +76,13 @@ export function CastModelModal({
         <div style={{ padding: '16px 24px 20px' }}>
           {/* Header */}
           <div className="flex items-center gap-2 mb-3">
-            <Camera className="w-4 h-4" style={{ color: '#52525B' }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#52525B', letterSpacing: '0.06em' }}>
+            <Camera className="w-4 h-4" style={{ color: '#52524B' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#52524B', letterSpacing: '0.06em' }}>
               CAST THIS MODEL
             </span>
           </div>
 
-          <p style={{ fontSize: 14, color: '#52525B', lineHeight: 1.5, marginBottom: 16 }}>
+          <p style={{ fontSize: 14, color: '#52524B', lineHeight: 1.5, marginBottom: 16 }}>
             Save this model as a character in your gallery before dressing them.
             This only takes a moment.
           </p>
@@ -93,7 +93,7 @@ export function CastModelModal({
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#71717A',
+                color: '#71716A',
                 letterSpacing: '0.06em',
                 display: 'block',
                 marginBottom: 6,
@@ -135,7 +135,7 @@ export function CastModelModal({
               style={{
                 padding: '10px 12px',
                 borderRadius: 10,
-                background: generateSide ? '#F4F4F5' : '#fafafa',
+                background: generateSide ? '#F5F3F0' : '#fafafa',
                 border: generateSide ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)',
                 cursor: isCasting ? 'not-allowed' : 'pointer',
                 opacity: isCasting ? 0.5 : 1,
@@ -153,13 +153,13 @@ export function CastModelModal({
                 {generateSide && <Check className="w-3 h-3 text-white" />}
               </div>
               <div className="text-left">
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#52525B' }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#52524B' }}>
                   Generate side view
                 </span>
                 <span
                   style={{
                     fontSize: 12,
-                    color: '#71717A',
+                    color: '#71716A',
                     marginLeft: 6,
                   }}
                 >
@@ -176,9 +176,9 @@ export function CastModelModal({
               style={{
                 padding: '8px 12px',
                 borderRadius: 10,
-                background: '#F4F4F5',
+                background: '#F5F3F0',
                 fontSize: 13,
-                color: '#52525B',
+                color: '#52524B',
               }}
             >
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -194,7 +194,7 @@ export function CastModelModal({
               style={{
                 fontSize: 13,
                 fontWeight: 500,
-                color: '#52525B',
+                color: '#52524B',
                 opacity: isCasting ? 0.4 : 1,
               }}
             >

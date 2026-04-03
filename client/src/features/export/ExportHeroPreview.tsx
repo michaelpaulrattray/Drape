@@ -52,7 +52,7 @@ export function ExportHeroPreview({ assets, modelId, centerReady }: ExportHeroPr
       {latestLook && (
         <p
           className="mt-3 text-center"
-          style={{ fontSize: 12, color: "#52525B", fontWeight: 500 }}
+          style={{ fontSize: 12, color: "#52524B", fontWeight: 500 }}
         >
           {heroLabel}
         </p>
