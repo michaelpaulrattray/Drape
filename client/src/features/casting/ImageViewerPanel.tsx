@@ -337,18 +337,6 @@ export function ImageViewerPanel({
   // ── Bottom overlay: Contextual tip + Refine panel + Shortcuts + Suggestions ──
   const bottomOverlay = hasAssets ? (
     <>
-      {/* Contextual Tip for New Model — hidden in read-only */}
-      {!isReadOnly && historyIndex <= 0 && !genState.isGenerating && (!suggestions || suggestions.length === 0) && !isLoadingSuggestions && (
-        <div className="absolute bottom-32 left-1/2 z-10 px-3 py-2 rounded-lg pointer-events-none transition-all duration-300 ease-out"
-          style={{
-            background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', fontSize: 12, color: '#52524B', maxWidth: 280, textAlign: 'center',
-            opacity: imageAreaHovered ? 1 : 0,
-            transform: imageAreaHovered ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(8px)',
-          }}>
-          Type a change below, or use Quick Ideas. Hold the image to compare with previous versions.
-        </div>
-      )}
-
       {/* Bottom Controls */}
       <div
         className="absolute bottom-6 left-1/2 w-full max-w-lg z-30 transition-all duration-300 ease-out"
@@ -374,6 +362,18 @@ export function ImageViewerPanel({
                   : (activeTool === 'eraser' ? "Click Erase Button" : "Describe Edit & Apply")
                 }
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* Contextual Tip for New Model — sits just above refine panel */}
+        {!isReadOnly && historyIndex <= 0 && !genState.isGenerating && (!suggestions || suggestions.length === 0) && !isLoadingSuggestions && (
+          <div className="flex justify-center mb-2 pointer-events-none transition-all duration-300 ease-out">
+            <div className="px-3 py-2 rounded-lg"
+              style={{
+                background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', fontSize: 12, color: '#52524B', maxWidth: 280, textAlign: 'center',
+              }}>
+              Type a change below, or use Quick Ideas. Hold the image to compare with previous versions.
             </div>
           </div>
         )}
