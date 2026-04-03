@@ -54,6 +54,8 @@ interface ImageViewerPanelProps {
   isReadOnly?: boolean;
 }
 
+const CASTING_TIP_DISMISSED_KEY = 'drape_casting_tip_dismissed';
+
 // ============ Main Component ============
 
 export function ImageViewerPanel({
@@ -100,6 +102,18 @@ export function ImageViewerPanel({
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
+
+  // Contextual tip: auto-dismiss after first refinement, persist in localStorage
+  const [tipDismissed, setTipDismissed] = useState(() => {
+    try { return localStorage.getItem(CASTING_TIP_DISMISSED_KEY) === '1'; } catch { return false; }
+  });
+
+  useEffect(() => {
+    if (!tipDismissed && historyIndex > 0) {
+      setTipDismissed(true);
+      try { localStorage.setItem(CASTING_TIP_DISMISSED_KEY, '1'); } catch {}
+    }
+  }, [historyIndex, tipDismissed]);
 
   // Floating Reference State
   const [refVisible, setRefVisible] = useState(true);
@@ -366,8 +380,8 @@ export function ImageViewerPanel({
           </div>
         )}
 
-        {/* Contextual Tip for New Model — sits just above refine panel */}
-        {!isReadOnly && historyIndex <= 0 && !genState.isGenerating && (!suggestions || suggestions.length === 0) && !isLoadingSuggestions && (
+        {/* Contextual Tip for New Model — sits just above refine panel, auto-dismissed after first refinement */}
+        {!isReadOnly && !tipDismissed && historyIndex <= 0 && !genState.isGenerating && (!suggestions || suggestions.length === 0) && !isLoadingSuggestions && (
           <div className="flex justify-center mb-2 pointer-events-none transition-all duration-300 ease-out">
             <div className="px-3 py-2 rounded-lg"
               style={{
