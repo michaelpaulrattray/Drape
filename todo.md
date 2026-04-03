@@ -148,3 +148,4 @@
 - [x] Add styleNotes to sessions.update input schema for independent persistence
 - [x] Bug: useSessionRestore missing technicalSchema + preferences — Spec tab empty and ControlPanel shows defaults after page refresh
 - [x] Bug: Gallery model load (MY MODELS) doesn't hydrate casting generation store — Spec tab shows null when switching to Casting after loading a minted model
+- [x] Rename localStorage key from formastudio_active_session to drape_active_session

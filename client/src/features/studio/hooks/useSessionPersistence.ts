@@ -13,7 +13,7 @@ import { useCastingFormStore } from '@/features/casting/stores/useCastingFormSto
 import type { ActiveTool } from '../types';
 import type { GeneratedAsset } from '@/features/casting/constants';
 
-const STORAGE_KEY = 'formastudio_active_session';
+const STORAGE_KEY = 'drape_active_session';
 
 interface PersistedSession {
   modelId: number;
