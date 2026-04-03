@@ -6,7 +6,6 @@
  * CTA triggers the WaitlistModal via onClaimSpot callback.
  */
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import { getLoginUrl } from "@/const";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -46,7 +45,7 @@ export function HomeNavbar({ onClaimSpot }: HomeNavbarProps) {
             </a>
           ))}
           <a
-            href={getLoginUrl()}
+            href="/login"
             className="px-3 py-2 text-sm font-medium text-white/60 font-body hover:text-white transition-colors"
           >
             Log in
@@ -90,7 +89,7 @@ export function HomeNavbar({ onClaimSpot }: HomeNavbarProps) {
               </a>
             ))}
             <a
-              href={getLoginUrl()}
+              href="/login"
               className="text-sm font-medium text-white/60 font-body hover:text-white transition-colors py-1"
             >
               Log in

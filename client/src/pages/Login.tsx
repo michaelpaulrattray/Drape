@@ -68,7 +68,7 @@ const BRAND_LOGOS = [
 ];
 
 // ─── View states ──────────────────────────────────────────────────────────
-type LoginView = "waitlist" | "new-user-code" | "new-user-oauth" | "returning-user";
+type LoginView = "choose" | "waitlist" | "new-user-code" | "new-user-oauth" | "returning-user";
 
 // ─── Sub-components ────────────────────────────────────────────────────────
 
@@ -296,7 +296,7 @@ function OAuthButtonsBlock({ loginUrl, isSuspended }: { loginUrl: string; isSusp
 export default function Login() {
   const loginUrl = getLoginUrl();
   const [location] = useLocation();
-  const [view, setView] = useState<LoginView>("waitlist");
+  const [view, setView] = useState<LoginView>("choose");
   const [accessCode, setAccessCode] = useState("");
   const [codeValidated, setCodeValidated] = useState(false);
 
@@ -368,7 +368,47 @@ export default function Login() {
             {/* Error Banner */}
             {errorType && <ErrorBanner errorType={errorType} lockMinutes={lockMinutes} />}
 
-            {/* ─── VIEW: Waitlist (default) ─── */}
+            {/* ─── VIEW: Choose (default) ─── */}
+            {view === "choose" && (
+              <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
+                <div className="mb-8">
+                  <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
+                    Welcome to Drape
+                  </h1>
+                  <p className="text-[#757575] text-sm mt-2 font-medium">
+                    Choose how to get started.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setView("new-user-code")}
+                    className="w-full flex items-center justify-center gap-2 h-12 rounded-full bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors"
+                  >
+                    <KeyRound className="w-4 h-4" />
+                    I have an access code
+                  </button>
+                  <button
+                    onClick={() => setView("returning-user")}
+                    className="w-full flex items-center justify-center gap-2 h-12 rounded-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] text-sm font-medium hover:border-[#0A0A0A]/30 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    I already have an account
+                  </button>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5 text-center">
+                  <button
+                    onClick={() => setView("waitlist")}
+                    className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
+                  >
+                    Don't have a code? <span className="underline underline-offset-2">Join the waitlist</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ─── VIEW: Waitlist ─── */}
             {view === "waitlist" && (
               <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-6">
@@ -400,21 +440,13 @@ export default function Login() {
                   </div>
                 </div>
 
-                {/* Two paths */}
-                <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5 space-y-3">
+                {/* Back to choose */}
+                <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5 text-center">
                   <button
-                    onClick={() => setView("new-user-code")}
-                    className="w-full flex items-center justify-center gap-2 h-11 rounded-full bg-[#0A0A0A] text-white text-sm font-medium hover:bg-[#0A0A0A]/90 transition-colors"
+                    onClick={() => setView("choose")}
+                    className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
                   >
-                    <KeyRound className="w-4 h-4" />
-                    I have an access code
-                  </button>
-                  <button
-                    onClick={() => setView("returning-user")}
-                    className="w-full flex items-center justify-center gap-2 h-11 rounded-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] text-sm font-medium hover:border-[#0A0A0A]/30 transition-colors"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    I already have an account
+                    <span className="underline underline-offset-2">← Back</span>
                   </button>
                 </div>
               </div>
@@ -475,18 +507,12 @@ export default function Login() {
                   </p>
                 )}
 
-                <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5 flex flex-col items-center gap-3">
+                <div className="mt-8 pt-6 border-t border-[#0A0A0A]/5 text-center">
                   <button
-                    onClick={() => setView("returning-user")}
+                    onClick={() => { setView("choose"); setAccessCode(""); validateMutation.reset(); }}
                     className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
                   >
-                    I already have an account — <span className="underline underline-offset-2">sign in</span>
-                  </button>
-                  <button
-                    onClick={() => { setView("waitlist"); setAccessCode(""); validateMutation.reset(); }}
-                    className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
-                  >
-                    Don't have a code? <span className="underline underline-offset-2">Join the waitlist</span>
+                    <span className="underline underline-offset-2">← Back</span>
                   </button>
                 </div>
               </div>
@@ -547,19 +573,13 @@ export default function Login() {
 
                 <OAuthButtonsBlock loginUrl={loginUrl} isSuspended={isSuspended} />
 
-                {/* Switch to new user flow */}
-                <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5 flex flex-col items-center gap-3">
+                {/* Back to choose */}
+                <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5 text-center">
                   <button
-                    onClick={() => setView("new-user-code")}
+                    onClick={() => setView("choose")}
                     className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
                   >
-                    New user? <span className="underline underline-offset-2">Enter access code</span>
-                  </button>
-                  <button
-                    onClick={() => setView("waitlist")}
-                    className="text-sm font-medium text-[#757575] hover:text-[#0A0A0A] transition-colors duration-300"
-                  >
-                    Don't have an account? <span className="underline underline-offset-2">Join the waitlist</span>
+                    <span className="underline underline-offset-2">← Back</span>
                   </button>
                 </div>
               </div>

@@ -170,3 +170,6 @@
 - [x] Replace hero background video with new higher-quality version, optimized for fast loading with SEO-friendly filename
 - [x] Add subtle "Log in" link in navbar for beta users, positioned before "Claim a Spot"
 - [x] Update PartnersBar: change label to "Built for teams on" and names to Shopify, Instagram, Meta, TikTok, Pinterest
+- [x] Simplify /login page default view: show "I have an access code" / "I already have an account" as landing state instead of waitlist
+- [x] Change homepage "Log in" navbar link to redirect to /login instead of Manus OAuth portal
+- [ ] Future: Replace Manus OAuth with direct Google OAuth + email/password auth system
