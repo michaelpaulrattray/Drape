@@ -190,3 +190,7 @@
 - [x] AUTH MIGRATION: Implement Google OAuth direct integration
 - [x] AUTH MIGRATION: Update Login.tsx UI to use new auth endpoints
 - [ ] AUTH MIGRATION: Test all auth flows end-to-end
+- [x] AUTH MIGRATION: Configure Google OAuth credentials (GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET)
+- [x] AUTH MIGRATION: Write vitest tests for email auth routes (register + login)
+- [x] AUTH MIGRATION: Write vitest tests for Google OAuth routes (initiate + callback)
+- [x] Bug: upsertUser silently drops passwordHash and authProvider fields — add handling for both

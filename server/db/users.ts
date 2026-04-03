@@ -62,6 +62,16 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.lastSignedIn = new Date();
     }
 
+    // Auth provider fields
+    if (user.passwordHash !== undefined) {
+      values.passwordHash = user.passwordHash;
+      updateSet.passwordHash = user.passwordHash;
+    }
+    if (user.authProvider !== undefined) {
+      values.authProvider = user.authProvider;
+      updateSet.authProvider = user.authProvider;
+    }
+
     if (Object.keys(updateSet).length === 0) {
       updateSet.lastSignedIn = new Date();
     }
