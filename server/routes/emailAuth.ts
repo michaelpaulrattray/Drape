@@ -20,6 +20,7 @@ import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { getUserByEmail } from "../db/users";
+import { generateVerificationToken, sendVerificationEmail, storeVerificationToken } from "./emailVerification";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -132,19 +133,21 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
       return;
     }
 
-    // Create session
-    const sessionToken = await sdk.createSessionToken(openId, {
-      name,
-      expiresInMs: SESSION_MAX_AGE_MS,
-    });
+    // Generate and store verification token
+    const verificationToken = generateVerificationToken();
+    await storeVerificationToken(newUser.id, verificationToken);
 
-    const cookieOptions = getSessionCookieOptions(req);
-    res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+    // Send verification email
+    const emailResult = await sendVerificationEmail(req, email, name, verificationToken);
+    if (!emailResult.success) {
+      console.error("[EmailAuth] Failed to send verification email:", emailResult.error);
+      // Account is created but email failed — they can resend from the verify page
+    }
 
     // Audit log
     await logAuditEvent({
       userId: newUser.id,
-      action: AUDIT_ACTIONS.LOGIN_SUCCESS,
+      action: AUDIT_ACTIONS.EMAIL_VERIFICATION_SENT,
       resourceType: "auth",
       resourceId: openId,
       metadata: {
@@ -158,7 +161,8 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
       userAgent,
     });
 
-    res.status(201).json({ success: true, redirect: "/dashboard" });
+    // Redirect to verify-email page instead of dashboard
+    res.status(201).json({ success: true, redirect: "/verify-email", email, needsVerification: true });
   } catch (error) {
     console.error("[EmailAuth] Registration failed:", error);
     await logAuditEvent({
@@ -269,6 +273,16 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
       });
 
       res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // Check if email is verified (email/password users only)
+    if (user.authProvider === "email" && !user.emailVerified) {
+      res.status(403).json({
+        error: "email_not_verified",
+        email: user.email,
+        message: "Please verify your email address before signing in.",
+      });
       return;
     }
 

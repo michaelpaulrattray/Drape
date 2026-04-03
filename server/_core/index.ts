@@ -176,6 +176,10 @@ async function startServer() {
   // Google OAuth routes
   const { googleAuthRouter } = await import("../routes/googleAuth");
   app.use("/api/auth", googleAuthRouter);
+
+  // Email verification routes
+  const { emailVerificationRouter } = await import("../routes/emailVerification");
+  app.use("/api/auth", emailVerificationRouter);
   
   // Stripe webhook endpoint (must use raw body)
   app.post(

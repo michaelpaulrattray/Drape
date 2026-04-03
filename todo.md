@@ -194,3 +194,10 @@
 - [x] AUTH MIGRATION: Write vitest tests for email auth routes (register + login)
 - [x] AUTH MIGRATION: Write vitest tests for Google OAuth routes (initiate + callback)
 - [x] Bug: upsertUser silently drops passwordHash and authProvider fields — add handling for both
+- [x] Email Verification: Add emailVerified + verificationToken fields to schema
+- [x] Email Verification: Implement server-side email sending via Resend
+- [x] Email Verification: Create verify-email endpoint with auto-login
+- [x] Email Verification: Update email auth register to send verification email
+- [x] Email Verification: Update email auth login to block unverified users
+- [x] Email Verification: Build "Check Your Email" client page with resend
+- [x] Email Verification: Write vitest tests for verification flow

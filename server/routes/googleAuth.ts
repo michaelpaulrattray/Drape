@@ -33,7 +33,12 @@ const STATE_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
 export const googleAuthRouter = Router();
 
 function getGoogleClient(req: Request): OAuth2Client {
-  const origin = `${req.protocol}://${req.get("host")}`;
+  // Detect actual protocol — proxy terminates SSL so req.protocol may be "http"
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const proto = forwardedProto
+    ? (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto.split(",")[0]).trim()
+    : req.protocol;
+  const origin = `${proto}://${req.get("host")}`;
   return new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -74,12 +79,16 @@ googleAuthRouter.get("/google", async (req: Request, res: Response) => {
     .sign(secretKey);
 
   const client = getGoogleClient(req);
+  const origin = `${req.protocol}://${req.get("host")}`;
+  console.log(`[GoogleAuth] Origin detected: ${origin}`);
+  console.log(`[GoogleAuth] Redirect URI: ${origin}/api/auth/google/callback`);
   const authUrl = client.generateAuthUrl({
     access_type: "offline",
     scope: ["openid", "email", "profile"],
     state: stateToken,
     prompt: "select_account",
   });
+  console.log(`[GoogleAuth] Full auth URL: ${authUrl}`);
 
   res.redirect(authUrl);
 });

@@ -8,6 +8,7 @@ import { PageTransition } from "./components/PageTransition";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import VerifyEmail from "./pages/VerifyEmail";
 import Dashboard from "./pages/Dashboard";
 import DrapeStudio from "./pages/DrapeStudio";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
@@ -34,6 +35,7 @@ function Router() {
           {/* Public */}
           <Route path="/" component={Home} />
           <Route path="/login" component={Login} />
+          <Route path="/verify-email" component={VerifyEmail} />
 
           {/* Dashboard */}
           <Route path="/dashboard" component={Dashboard} />

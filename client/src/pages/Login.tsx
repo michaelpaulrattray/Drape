@@ -337,7 +337,13 @@ function EmailSignUpForm({ betaCode }: { betaCode: string }) {
       }
 
       markHasAccount();
-      window.location.href = data.redirect || "/dashboard";
+
+      // Handle email verification redirect
+      if (data.needsVerification) {
+        window.location.href = `/verify-email?email=${encodeURIComponent(email.trim())}`;
+      } else {
+        window.location.href = data.redirect || "/dashboard";
+      }
     } catch {
       setError("Network error. Please check your connection and try again.");
       setLoading(false);
@@ -429,6 +435,10 @@ function EmailSignInForm() {
           setError("Your account has been suspended. Please contact support.");
         } else if (data.error === "locked") {
           setError(`Account temporarily locked. Try again in ${data.minutes || 15} minutes.`);
+        } else if (data.error === "email_not_verified") {
+          // Redirect to verify-email page
+          window.location.href = `/verify-email?email=${encodeURIComponent(data.email || email.trim())}`;
+          return;
         } else {
           setError(data.error || "Login failed. Please try again.");
         }

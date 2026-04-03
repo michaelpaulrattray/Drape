@@ -38,6 +38,10 @@ export const users = mysqlTable("users", {
   // Auth provider tracking
   passwordHash: text("passwordHash"), // bcrypt hash for email/password users (null for Google/legacy users)
   authProvider: varchar("authProvider", { length: 32 }).default("manus_legacy"), // 'email', 'google', 'manus_legacy'
+  // Email verification (email/password signups only — Google users auto-verified)
+  emailVerified: boolean("emailVerified").default(false).notNull(),
+  emailVerificationToken: varchar("emailVerificationToken", { length: 128 }),
+  emailVerificationExpiresAt: timestamp("emailVerificationExpiresAt"),
   // Account lockout fields (for failed login protection)
   failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
   lockedUntil: timestamp("lockedUntil"), // Temporary lockout expiry
@@ -351,6 +355,12 @@ export const AUDIT_ACTIONS = {
   
   // GDPR data export
   DATA_EXPORT_REQUESTED: "account.data_export_requested",
+
+  // Email verification events
+  EMAIL_VERIFICATION_SENT: "auth.email_verification_sent",
+  EMAIL_VERIFICATION_RESENT: "auth.email_verification_resent",
+  EMAIL_VERIFIED: "auth.email_verified",
+  EMAIL_VERIFICATION_FAILED: "auth.email_verification_failed",
 
   // Announcement / banner events
   BANNER_CREATED: "admin.banner_created",
