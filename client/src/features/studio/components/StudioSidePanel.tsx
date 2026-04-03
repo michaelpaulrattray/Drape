@@ -24,8 +24,8 @@ interface StudioSidePanelProps {
   background?: string;
 }
 
-const SHADOW_LEFT = '8px 0 40px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)';
-const SHADOW_RIGHT = '-8px 0 40px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)';
+const SHADOW_LEFT = '2px 0 8px rgba(0,0,0,0.08), 8px 0 40px rgba(0,0,0,0.10)';
+const SHADOW_RIGHT = '-2px 0 8px rgba(0,0,0,0.08), -8px 0 40px rgba(0,0,0,0.10)';
 
 export function StudioSidePanel({
   side,
