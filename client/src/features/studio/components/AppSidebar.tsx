@@ -2,21 +2,21 @@
  * AppSidebar — ElevenLabs-style collapsible sidebar navigation.
  *
  * Two states:
- *   - Collapsed (~48px): icons only, tooltips on hover
- *   - Expanded (~220px): icons + labels + sections + user card
+ *   - Collapsed (~56px): icons only, tooltips on hover
+ *   - Expanded (~240px): icons + labels + sections + user card
  *
- * Replaces the old ToolRail. Always visible (lobby + tools).
+ * Extends full viewport height (logo inside sidebar, no header above).
  * Pushes content — not an overlay.
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'wouter';
+import { Link } from 'wouter';
 import {
   Camera,
   Shirt,
   Download,
   Home,
-  PanelLeftClose,
-  PanelLeftOpen,
+  ChevronLeft,
+  ChevronRight,
   Settings,
   LogOut,
   CreditCard,
@@ -36,8 +36,8 @@ import type { CanvasState } from '../types';
 import { ToolSwitchConfirmDialog } from './ToolSwitchConfirmDialog';
 
 const SIDEBAR_STORAGE_KEY = 'drape_sidebar_expanded';
-const COLLAPSED_WIDTH = 48;
-const EXPANDED_WIDTH = 220;
+const COLLAPSED_WIDTH = 56;
+const EXPANDED_WIDTH = 240;
 
 /** Icon mapping for each tool */
 const TOOL_ICONS: Record<
@@ -224,72 +224,87 @@ export function AppSidebar({
   return (
     <>
       <aside
-        className="hidden lg:flex flex-col flex-shrink-0 h-full select-none"
+        className="hidden lg:flex flex-col flex-shrink-0 select-none"
         style={{
           width: sidebarWidth,
           minWidth: sidebarWidth,
+          height: '100vh',
           background: '#fff',
           borderRight: '1px solid rgba(0,0,0,0.06)',
           transition: 'width 200ms cubic-bezier(0.16, 1, 0.3, 1)',
           overflow: 'hidden',
         }}
       >
-        {/* Toggle button */}
+        {/* Logo + Toggle area */}
         <div
-          className="flex items-center px-1 py-3 flex-shrink-0"
-          style={{ height: 52 }}
+          className="flex items-center flex-shrink-0"
+          style={{
+            height: 52,
+            padding: expanded ? '0 12px' : '0',
+            justifyContent: expanded ? 'space-between' : 'center',
+          }}
         >
-          <button
-            onClick={toggleExpanded}
-            className="w-10 h-10 flex items-center justify-center rounded-lg transition-colors mx-auto"
-            style={{ color: '#999' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#F5F3F0';
-              e.currentTarget.style.color = '#1a1a1a';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#999';
-            }}
-          >
-            {expanded ? (
-              <PanelLeftClose className="w-5 h-5" strokeWidth={2} />
-            ) : (
-              <PanelLeftOpen className="w-5 h-5" strokeWidth={2} />
-            )}
-          </button>
-          {expanded && (
-            <div className="flex items-center gap-2 pr-3 overflow-hidden">
-              <img
-                src="/drape-logo.svg"
-                alt="Drape"
-                style={{ height: 18, flexShrink: 0 }}
-              />
-              <span
-                className="px-1.5 py-0.5 rounded-full uppercase flex-shrink-0"
-                style={{
-                  fontSize: 8,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  color: '#8B7355',
-                  background: 'rgba(139,115,85,0.08)',
-                  border: '1px solid rgba(139,115,85,0.15)',
+          {expanded ? (
+            <>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/drape-logo.svg"
+                  alt="Drape"
+                  style={{ height: 18, flexShrink: 0 }}
+                />
+                <span
+                  className="px-1.5 py-0.5 rounded-full uppercase flex-shrink-0"
+                  style={{
+                    fontSize: 8,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    color: '#8B7355',
+                    background: 'rgba(139,115,85,0.08)',
+                    border: '1px solid rgba(139,115,85,0.15)',
+                  }}
+                >
+                  Beta
+                </span>
+              </div>
+              <button
+                onClick={toggleExpanded}
+                className="w-8 h-8 flex items-center justify-center rounded-md transition-colors"
+                style={{ color: '#bbb' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+                  e.currentTarget.style.color = '#666';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#bbb';
                 }}
               >
-                Beta
-              </span>
-            </div>
+                <ChevronLeft className="w-4 h-4" strokeWidth={2} />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={toggleExpanded}
+              className="w-10 h-10 flex items-center justify-center rounded-md transition-colors"
+              style={{ color: '#bbb' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+                e.currentTarget.style.color = '#666';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#bbb';
+              }}
+            >
+              <ChevronRight className="w-4 h-4" strokeWidth={2} />
+            </button>
           )}
         </div>
 
-        {/* Divider */}
-        <div
-          className="mx-3 h-px flex-shrink-0"
-          style={{ background: 'rgba(0,0,0,0.06)' }}
-        />
-
         {/* Navigation items */}
-        <nav className="flex-1 flex flex-col gap-0.5 py-2 px-1 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 flex flex-col gap-0.5 py-1 overflow-y-auto overflow-x-hidden"
+          style={{ padding: expanded ? '4px 8px' : '4px 8px' }}
+        >
           {/* Home button */}
           <SidebarItem
             icon={Home}
@@ -299,27 +314,8 @@ export function AppSidebar({
             onClick={handleHomeClick}
           />
 
-          {/* Divider */}
-          <div
-            className="mx-3 h-px my-1"
-            style={{ background: 'rgba(0,0,0,0.06)' }}
-          />
-
-          {/* Section label */}
-          {expanded && (
-            <div
-              className="px-3 pt-2 pb-1 overflow-hidden whitespace-nowrap"
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                color: '#999',
-                textTransform: 'uppercase',
-              }}
-            >
-              Tools
-            </div>
-          )}
+          {/* Section divider + label */}
+          <SectionDivider expanded={expanded} label="Tools" />
 
           {/* Tool buttons */}
           {STUDIO_TOOLS.map((tool) => {
@@ -346,24 +342,7 @@ export function AppSidebar({
           {/* Admin / Moderator links */}
           {(user?.role === 'admin' || user?.role === 'moderator') && (
             <>
-              <div
-                className="mx-3 h-px my-1"
-                style={{ background: 'rgba(0,0,0,0.06)' }}
-              />
-              {expanded && (
-                <div
-                  className="px-3 pt-2 pb-1 overflow-hidden whitespace-nowrap"
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: '0.08em',
-                    color: '#999',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Admin
-                </div>
-              )}
+              <SectionDivider expanded={expanded} label="Admin" />
               {user?.role === 'admin' && (
                 <SidebarLinkItem
                   icon={LayoutDashboard}
@@ -384,8 +363,8 @@ export function AppSidebar({
 
         {/* Bottom section — user card */}
         <div
-          className="flex-shrink-0 border-t px-1 py-2"
-          style={{ borderColor: 'rgba(0,0,0,0.06)' }}
+          className="flex-shrink-0 px-2 py-2"
+          style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}
         >
           {expanded ? (
             <ExpandedUserCard
@@ -432,6 +411,33 @@ export function AppSidebar({
 
 /* ─── Sub-components ──────────────────────────────────────────── */
 
+/** Section divider with optional label */
+function SectionDivider({ expanded, label }: { expanded: boolean; label: string }) {
+  return (
+    <div className="pt-3 pb-1">
+      {expanded ? (
+        <div
+          className="px-3 overflow-hidden whitespace-nowrap"
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            color: '#aaa',
+            textTransform: 'uppercase',
+          }}
+        >
+          {label}
+        </div>
+      ) : (
+        <div
+          className="mx-3 h-px"
+          style={{ background: 'rgba(0,0,0,0.06)' }}
+        />
+      )}
+    </div>
+  );
+}
+
 interface SidebarItemProps {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
@@ -458,15 +464,16 @@ function SidebarItem({
       onClick={onClick}
       disabled={disabled}
       title={!expanded ? (tooltip || label) : undefined}
-      className="relative flex items-center gap-3 rounded-lg transition-all duration-200 group"
+      className="relative flex items-center rounded-lg transition-all duration-150 group"
       style={{
         height: 40,
+        gap: expanded ? 12 : 0,
         padding: expanded ? '0 12px' : '0',
         justifyContent: expanded ? 'flex-start' : 'center',
         background: active
           ? '#1a1a1a'
           : glowing
-            ? '#F5F3F0'
+            ? 'rgba(0,0,0,0.04)'
             : 'transparent',
         color: active
           ? '#fff'
@@ -474,34 +481,38 @@ function SidebarItem({
             ? '#1a1a1a'
             : disabled
               ? '#d4d4d4'
-              : '#999',
+              : '#666',
         cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 0.5 : 1,
+        opacity: disabled ? 0.45 : 1,
         animation: glowing ? 'toolGlow 1.5s ease-in-out 3' : 'none',
         width: expanded ? '100%' : 40,
         margin: expanded ? 0 : '0 auto',
       }}
       onMouseEnter={(e) => {
         if (!active && !disabled) {
-          e.currentTarget.style.background = '#F5F3F0';
+          e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
           e.currentTarget.style.color = '#1a1a1a';
         }
       }}
       onMouseLeave={(e) => {
         if (!active && !disabled && !glowing) {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = disabled ? '#d4d4d4' : '#999';
+          e.currentTarget.style.color = disabled ? '#d4d4d4' : '#666';
         }
       }}
     >
       <Icon
         className="w-5 h-5 flex-shrink-0"
-        strokeWidth={2.5}
+        strokeWidth={active ? 2.5 : 2}
       />
       {expanded && (
         <span
-          className="text-sm font-medium truncate"
-          style={{ whiteSpace: 'nowrap' }}
+          className="truncate"
+          style={{
+            fontSize: 14,
+            fontWeight: active ? 600 : 500,
+            whiteSpace: 'nowrap',
+          }}
         >
           {label}
         </span>
@@ -510,16 +521,22 @@ function SidebarItem({
       {/* Active indicator bar (collapsed only) */}
       {active && !expanded && (
         <div
-          className="absolute -left-px top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full"
-          style={{ background: '#1a1a1a' }}
+          className="absolute left-0 top-1/2 -translate-y-1/2 rounded-r-full"
+          style={{ width: 3, height: 16, background: '#1a1a1a' }}
         />
       )}
 
       {/* Tooltip (collapsed only) */}
       {!expanded && (
         <div
-          className="absolute left-full ml-2 px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
-          style={{ background: '#1a1a1a', color: '#fff', fontSize: 12 }}
+          className="absolute left-full ml-3 px-2.5 py-1 rounded-md whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
+          style={{
+            background: '#1a1a1a',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 500,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
         >
           {tooltip || label}
         </div>
@@ -544,37 +561,47 @@ function SidebarLinkItem({
   return (
     <Link href={href}>
       <div
-        className="relative flex items-center gap-3 rounded-lg transition-all duration-200 group cursor-pointer"
+        className="relative flex items-center rounded-lg transition-all duration-150 group cursor-pointer"
         style={{
           height: 40,
+          gap: expanded ? 12 : 0,
           padding: expanded ? '0 12px' : '0',
           justifyContent: expanded ? 'flex-start' : 'center',
-          color: '#999',
+          color: '#666',
           width: expanded ? '100%' : 40,
           margin: expanded ? 0 : '0 auto',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = '#F5F3F0';
+          e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
           e.currentTarget.style.color = '#1a1a1a';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = '#999';
+          e.currentTarget.style.color = '#666';
         }}
       >
-        <Icon className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
+        <Icon
+          className="w-5 h-5 flex-shrink-0"
+          strokeWidth={2}
+        />
         {expanded && (
           <span
-            className="text-sm font-medium truncate"
-            style={{ whiteSpace: 'nowrap' }}
+            className="truncate"
+            style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}
           >
             {label}
           </span>
         )}
         {!expanded && (
           <div
-            className="absolute left-full ml-2 px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
-            style={{ background: '#1a1a1a', color: '#fff', fontSize: 12 }}
+            className="absolute left-full ml-3 px-2.5 py-1 rounded-md whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
+            style={{
+              background: '#1a1a1a',
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 500,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
           >
             {label}
           </div>
@@ -610,7 +637,7 @@ function ExpandedUserCard({
   return (
     <div className="space-y-1">
       {/* User info row */}
-      <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
+      <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
         <div
           className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
           style={{ border: '1.5px solid rgba(0,0,0,0.08)' }}
@@ -649,7 +676,7 @@ function ExpandedUserCard({
       </div>
 
       {/* Quick action buttons */}
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col">
         <UserMenuItem
           icon={Settings}
           label="Settings"
@@ -687,15 +714,15 @@ function UserMenuItem({ icon: Icon, label, onClick, danger }: UserMenuItemProps)
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg w-full transition-colors"
-      style={{ color: danger ? '#999' : '#999' }}
+      className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg w-full transition-colors"
+      style={{ color: '#888' }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = '#F5F3F0';
+        e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
         e.currentTarget.style.color = danger ? '#dc2626' : '#1a1a1a';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = 'transparent';
-        e.currentTarget.style.color = '#999';
+        e.currentTarget.style.color = '#888';
       }}
     >
       <Icon className="w-4 h-4 flex-shrink-0" />
@@ -745,8 +772,14 @@ function CollapsedUserButton({
       )}
       {/* Tooltip */}
       <div
-        className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
-        style={{ background: '#1a1a1a', color: '#fff', fontSize: 12 }}
+        className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
+        style={{
+          background: '#1a1a1a',
+          color: '#fff',
+          fontSize: 12,
+          fontWeight: 500,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}
       >
         Settings
       </div>

@@ -307,46 +307,46 @@ export default function DrapeStudio() {
   const isLobby = activeTool === null;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden" style={{ background: '#FAFAF8' }}>
-      {/* Studio Header */}
-      <StudioHeader
+    <div className="h-screen flex overflow-hidden" style={{ background: '#FAFAF8' }}>
+      {/* App Sidebar — full viewport height */}
+      <AppSidebar
+        canvas={canvas}
+        onWardrobeGate={() => setShowCastModal(true)}
+        user={user}
+        profileImage={profileImage}
         creditsBalance={creditsData?.balance || 0}
         planTier={creditsData?.planTier || 'free'}
+        onOpenSettings={() => setShowSettings(true)}
+        onOpenBilling={() => setIsBillingOpen(true)}
+        onOpenReferral={() => setIsReferralOpen(true)}
+        onLogout={logout}
       />
 
-      {/* Stage Lock Modal */}
-      <StageLockModal
-        isOpen={lockModal.isOpen}
-        title={lockModal.title}
-        message={lockModal.message}
-        onConfirm={lockModal.onConfirm}
-        onCancel={closeLockModal}
-      />
-
-      {/* Export Modal */}
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        onExport={handleExport}
-        previewImage={
-          currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl ?? undefined
-        }
-      />
-
-      {/* Main workspace: Tool Rail + Tool Content */}
-      <div className="flex-1 flex min-h-0">
-        {/* App Sidebar — always visible, expand/collapse */}
-        <AppSidebar
-          canvas={canvas}
-          onWardrobeGate={() => setShowCastModal(true)}
-          user={user}
-          profileImage={profileImage}
+      {/* Right side: Header + Content */}
+      <div className="flex-1 flex flex-col min-h-0 min-w-0">
+        {/* Studio Header — spans content area only */}
+        <StudioHeader
           creditsBalance={creditsData?.balance || 0}
           planTier={creditsData?.planTier || 'free'}
-          onOpenSettings={() => setShowSettings(true)}
-          onOpenBilling={() => setIsBillingOpen(true)}
-          onOpenReferral={() => setIsReferralOpen(true)}
-          onLogout={logout}
+        />
+
+        {/* Stage Lock Modal */}
+        <StageLockModal
+          isOpen={lockModal.isOpen}
+          title={lockModal.title}
+          message={lockModal.message}
+          onConfirm={lockModal.onConfirm}
+          onCancel={closeLockModal}
+        />
+
+        {/* Export Modal */}
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExport}
+          previewImage={
+            currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl ?? undefined
+          }
         />
 
         {/* Tool Content Area */}

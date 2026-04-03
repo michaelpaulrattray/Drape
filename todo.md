@@ -262,4 +262,8 @@
 - [x] Phase 1: Wire AppSidebar into DrapeStudio replacing ToolRail
 - [x] Phase 2: Make sidebar always visible including lobby state
 - [x] Phase 3: Absorb Dashboard into Studio, change login redirect to /studio
-- [ ] Phase 4: Polish top bar with breadcrumb, cleanup dead Dashboard code
+- [x] Phase 4: Make sidebar full-height (extend into header area, logo inside sidebar)
+- [x] Phase 4: Widen collapsed (48→56px) and expanded (220→240px) sidebar
+- [x] Phase 4: Polish sidebar icons, spacing, section labels (TOOLS, ADMIN)
+- [x] Phase 4: Refine toggle button styling
+- [x] Phase 4: Cleanup dead Dashboard code and unused imports
