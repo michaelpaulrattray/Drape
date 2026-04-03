@@ -222,3 +222,4 @@
 - [x] ToolRail: Shorten tooltips from "Casting Studio" to "Cast", "Wardrobe Studio" to "Style", etc.
 - [x] StudioHeader: Add "Beta Access" badge next to Drape logo
 - [x] StudioHeader: Increase header height and enlarge logo to avoid pixelation
+- [x] Casting Panels: Overhaul button borders, colors, and component styling for better visual clarity

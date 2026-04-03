@@ -139,8 +139,8 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
   return (
     <div
       style={{
-        background: '#F5F3F0',
-        border: '1px solid rgba(0,0,0,0.06)',
+        background: '#FAFAF8',
+        border: '1px solid #E8E4DF',
         borderRadius: 14,
         padding: '14px 14px 12px',
       }}
@@ -299,12 +299,16 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                 onClick={() => onChange(edgeHeatToWeights(p.edge, p.heat))}
                 className="py-2.5 rounded-xl text-center transition-all"
                 style={{
-                  background: isActive ? '#1a1a1a' : '#F5F3F0',
-                  color: isActive ? '#fff' : '#888',
-                  fontSize: 12, fontWeight: isActive ? 600 : 400,
-                  border: 'none', cursor: 'pointer', lineHeight: 1.2,
+                  background: isActive ? '#1a1a1a' : '#ffffff',
+                  color: isActive ? '#fff' : '#52524B',
+                  fontSize: 12, fontWeight: isActive ? 600 : 500,
+                  border: isActive ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
+                  boxShadow: isActive ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
+                  cursor: 'pointer', lineHeight: 1.2,
                   fontFamily: 'inherit',
                 }}
+                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
+                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
               >
                 {p.label}
               </button>

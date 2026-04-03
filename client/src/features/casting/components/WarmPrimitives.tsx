@@ -44,14 +44,16 @@ export const ChipRow = ({ options, selected, onSelect, allowDeselect = false }: 
         <button
           key={opt}
           onClick={() => allowDeselect && selected === opt ? onSelect('') : onSelect(opt)}
-          className="py-2 rounded-xl text-center transition-all hover:shadow-sm"
+          className="py-2 rounded-xl text-center transition-all"
           style={{
-            fontSize: 12, fontWeight: selected === opt ? 600 : 400,
-            background: selected === opt ? '#1a1a1a' : '#F5F3F0',
-            color: selected === opt ? '#fff' : '#888',
-            boxShadow: selected === opt ? '0 0 0 2px rgba(26,26,26,0.15)' : undefined,
-            transform: selected === opt ? 'scale(1.02)' : undefined,
+            fontSize: 12, fontWeight: selected === opt ? 600 : 500,
+            background: selected === opt ? '#1a1a1a' : '#ffffff',
+            color: selected === opt ? '#fff' : '#52524B',
+            border: selected === opt ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
+            boxShadow: selected === opt ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
           }}
+          onMouseEnter={(e) => { if (selected !== opt) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
+          onMouseLeave={(e) => { if (selected !== opt) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
         >
           {opt}
         </button>
@@ -74,14 +76,16 @@ export const OptionGrid = ({ options, selected, onSelect, cols = 3, showAutoRese
           <button
             key={opt}
             onClick={() => showAutoReset && selected === opt ? onSelect('Auto') : onSelect(opt)}
-            className="py-2.5 rounded-xl text-center transition-all hover:shadow-sm"
+            className="py-2.5 rounded-xl text-center transition-all"
             style={{
-              fontSize: 12, fontWeight: selected === opt ? 600 : 400,
-              background: selected === opt ? '#1a1a1a' : '#F5F3F0',
-              color: selected === opt ? '#fff' : '#888',
-              boxShadow: selected === opt ? '0 0 0 2px rgba(26,26,26,0.15)' : undefined,
-              transform: selected === opt ? 'scale(1.02)' : undefined,
+              fontSize: 12, fontWeight: selected === opt ? 600 : 500,
+              background: selected === opt ? '#1a1a1a' : '#ffffff',
+              color: selected === opt ? '#fff' : '#52524B',
+              border: selected === opt ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
+              boxShadow: selected === opt ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
             }}
+            onMouseEnter={(e) => { if (selected !== opt) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
+            onMouseLeave={(e) => { if (selected !== opt) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
           >
             {opt}
           </button>
@@ -122,7 +126,7 @@ export const WarmSelectControl = ({ label, options, value, onChange }: {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full py-2 px-2.5 rounded-xl outline-none cursor-pointer appearance-none"
-        style={{ background: '#F5F3F0', border: '1px solid rgba(0,0,0,0.04)', fontSize: 13, color: value ? '#1a1a1a' : '#bbb' }}
+        style={{ background: '#ffffff', border: '1px solid #E8E4DF', fontSize: 13, color: value ? '#1a1a1a' : '#999' }}
       >
         <option value="">—</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -230,7 +234,15 @@ export const EthnicityBlender = ({ selected, onChange }: {
           return (
             <button key={eth} onClick={() => toggleEth(eth)}
               className="py-2.5 rounded-xl text-center transition-all"
-              style={{ fontSize: 12, fontWeight: active ? 600 : 400, background: active ? '#1a1a1a' : '#F5F3F0', color: active ? '#fff' : '#888' }}
+              style={{
+                fontSize: 12, fontWeight: active ? 600 : 500,
+                background: active ? '#1a1a1a' : '#ffffff',
+                color: active ? '#fff' : '#52524B',
+                border: active ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
+                boxShadow: active ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
+              }}
+              onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
+              onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
             >{eth}</button>
           );
         })}

@@ -197,8 +197,9 @@ export function MasterPromptPanel() {
                   style={{
                     fontSize: 11,
                     fontWeight: activeTab === tab ? 600 : 400,
-                    background: activeTab === tab ? '#1a1a1a' : '#F5F3F0',
-                    color: activeTab === tab ? '#fff' : '#999',
+                    background: activeTab === tab ? '#1a1a1a' : '#ffffff',
+                    color: activeTab === tab ? '#fff' : '#52524B',
+                    border: activeTab === tab ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
                   }}
                 >
                   {tab === 'profile' ? 'Profile' : 'Spec'}
@@ -358,8 +359,9 @@ export function MasterPromptPanel() {
                       style={{
                         fontSize: 10,
                         fontWeight: specMode === mode ? 600 : 400,
-                        background: specMode === mode ? '#F5F3F0' : 'transparent',
-                        color: specMode === mode ? '#555' : '#ccc',
+                        background: specMode === mode ? '#ffffff' : 'transparent',
+                        color: specMode === mode ? '#52524B' : '#999',
+                        border: specMode === mode ? '1px solid #E8E4DF' : '1px solid transparent',
                       }}
                     >
                       {mode === 'natural' ? 'Description' : 'JSON'}

@@ -171,7 +171,17 @@ export function ControlPanel({
                   return (
                     <button key={b.value} onClick={() => updatePref('castingBrand', b.value)}
                       className="rounded-xl text-center transition-all"
-                      style={{ padding: '8px 4px 7px', background: sel ? '#1a1a1a' : '#F5F3F0', color: sel ? '#fff' : '#888', fontSize: 12, fontWeight: sel ? 600 : 400 }}>
+                      style={{
+                        padding: '8px 4px 7px',
+                        background: sel ? '#1a1a1a' : '#ffffff',
+                        color: sel ? '#fff' : '#52524B',
+                        fontSize: 12, fontWeight: sel ? 600 : 500,
+                        border: sel ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
+                        boxShadow: sel ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
+                      }}
+                      onMouseEnter={(e) => { if (!sel) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
+                      onMouseLeave={(e) => { if (!sel) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
+                    >
                       <div>{b.value}</div>
                       <div style={{ fontSize: 10, fontWeight: 400, marginTop: 1, color: sel ? 'rgba(255,255,255,0.5)' : '#71716A' }}>{b.desc}</div>
                     </button>
@@ -451,7 +461,7 @@ export function ControlPanel({
                 <div className="mt-2 flex gap-2">
                   <button onClick={handleDebugFill} disabled={genState.isGenerating}
                     className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
-                    style={{ background: '#F5F3F0', fontSize: 11, fontWeight: 500, color: '#52524B', cursor: 'pointer', border: 'none' }}>
+                    style={{ background: '#ffffff', fontSize: 11, fontWeight: 500, color: '#52524B', cursor: 'pointer', border: '1px solid #E8E4DF' }}>
                     Random Fill
                   </button>
                   <button
@@ -466,7 +476,7 @@ export function ControlPanel({
                     }}
                     disabled={genState.isGenerating}
                     className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
-                    style={{ background: '#F5F3F0', fontSize: 11, fontWeight: 500, color: '#52524B', cursor: 'pointer', border: 'none' }}>
+                    style={{ background: '#ffffff', fontSize: 11, fontWeight: 500, color: '#52524B', cursor: 'pointer', border: '1px solid #E8E4DF' }}>
                     Auto Generate
                   </button>
                 </div>
