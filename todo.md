@@ -274,3 +274,4 @@
 - [x] Keep bug report icon AND add polished text-based "Feedback" link
 - [x] Add "Docs" text link (placeholder for future guides)
 - [x] Add bell icon with news/updates dropdown panel
+- [x] Fix studio lobby content width being too narrow — maxWidth 680→960

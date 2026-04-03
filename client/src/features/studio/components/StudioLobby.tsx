@@ -270,7 +270,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
   if (!dataReady) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10">
-        <div className="w-full" style={{ maxWidth: 680 }}>
+        <div className="w-full" style={{ maxWidth: 960 }}>
           {/* Title skeleton */}
           <div className="flex flex-col items-center gap-3 mb-10">
             <div
@@ -377,7 +377,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
       <div
         className="w-full mb-6"
         style={{
-          maxWidth: 680,
+          maxWidth: 960,
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(12px)',
           transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.03s',
@@ -399,7 +399,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
         <div
           className="w-full mb-6"
           style={{
-            maxWidth: 680,
+            maxWidth: 960,
             opacity: mounted ? 1 : 0,
             transform: mounted ? 'translateY(0)' : 'translateY(12px)',
             transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.04s',
@@ -418,7 +418,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
       <div
         className="w-full mb-8"
         style={{
-          maxWidth: 680,
+          maxWidth: 960,
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(12px)',
           transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s',
@@ -435,7 +435,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
       {/* Two CTA cards */}
       <div
         className="flex flex-col sm:flex-row items-stretch gap-5 sm:gap-6 w-full"
-        style={{ maxWidth: 680 }}
+        style={{ maxWidth: 960 }}
       >
         {/* Card 1: Upload Your Own */}
         <div
