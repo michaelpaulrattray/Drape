@@ -293,11 +293,12 @@ export function ImageActionBar({
         pointerEvents: visible ? "auto" : "none",
       }}
     >
-      {showHeart && onLike && (
+      {showHeart && (
         <ActionButton
-          onClick={onLike}
-          title={isLiked ? "Remove from gallery" : "Save to gallery"}
+          onClick={() => onLike?.()}
+          title={isLiked ? "Saved to gallery" : "Save to gallery"}
           active={isLiked}
+          disabled={!onLike || isLiked}
         >
           <Heart
             size={ICON_SIZE}

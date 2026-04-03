@@ -312,7 +312,7 @@ export function WardrobeWorkspaceSection({
                 visible={imageAreaHovered}
                 showHeart={true}
                 isLiked={isAlreadySaved || showCheckmark}
-                onLike={cameraButtonDisabled ? undefined : handleSaveLook}
+                onLike={handleSaveLook}
                 imageUrl={gen.currentResult}
                 onRetry={gen.handleRetry}
                 isGenerating={gen.isGenerating}

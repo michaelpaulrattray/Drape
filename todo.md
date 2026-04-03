@@ -245,3 +245,5 @@
 - [x] Redesign NextStepChip as dark floating badge with animated arrow (Option C)
 - [x] Bug: Triple-dot menu shows empty/nothing on locked casts — hide triple-dot when menu would be empty
 - [x] Bug: Surgical tool icons have no hover state — added scale, shadow lift, and color change on hover
+- [x] Wire heart icon in wardrobe to save/unsave result image to export gallery (pipeline was already built, icon visibility fixed)
+- [x] Bug: Heart icon not appearing in wardrobe ImageActionBar — was hidden when onLike=undefined (disabled state), now always renders when showHeart=true
