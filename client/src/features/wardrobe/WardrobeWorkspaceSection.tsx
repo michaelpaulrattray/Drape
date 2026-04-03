@@ -253,7 +253,7 @@ export function WardrobeWorkspaceSection({
         duration={500}
         className="hidden lg:block flex-shrink-0"
       >
-        <StudioSidePanel side="left" width={280}>
+        <StudioSidePanel side="left" width={320}>
           <div className="h-full overflow-y-auto">
             <RackPanel />
           </div>
@@ -364,7 +364,7 @@ export function WardrobeWorkspaceSection({
         duration={500}
         className="hidden lg:block flex-shrink-0"
       >
-        <StudioSidePanel side="right" width={260}>
+        <StudioSidePanel side="right" width={320}>
           <LayersPanel
             isGenerating={gen.isGenerating}
             hasResult={hasResult}

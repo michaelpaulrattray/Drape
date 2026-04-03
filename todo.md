@@ -203,3 +203,4 @@
 - [x] Email Verification: Write vitest tests for verification flow
 - [x] Email Verification: Upgrade email template to match Drape brand aesthetic
 - [x] AUTH CLEANUP: Audit and remove all remaining Manus OAuth references (getLoginUrl, sdk.exchangeToken, OAuth callback)
+- [x] Studio Canvas: Widen both left and right side panels from 280/260px to 320px

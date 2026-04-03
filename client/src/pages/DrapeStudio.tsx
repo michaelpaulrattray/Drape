@@ -464,7 +464,7 @@ export default function DrapeStudio() {
                 duration={500}
                 className="w-full lg:w-auto flex-shrink-0"
               >
-                <StudioSidePanel side="left" width={280}>
+                <StudioSidePanel side="left" width={320}>
                   <ControlPanel
                     user={user}
                     isFormValid={isFormValid}
@@ -516,7 +516,7 @@ export default function DrapeStudio() {
                 duration={500}
                 className="hidden lg:block flex-shrink-0"
               >
-                <StudioSidePanel side="right" width={260}>
+                <StudioSidePanel side="right" width={320}>
                   <MasterPromptPanel />
                 </StudioSidePanel>
               </AnimatedPanel>
@@ -551,7 +551,7 @@ export default function DrapeStudio() {
                 duration={500}
                 className="hidden lg:block flex-shrink-0"
               >
-                <StudioSidePanel side="right" width={280}>
+                <StudioSidePanel side="right" width={320}>
                   <ExportPanel modelId={canvas.castModelId || currentModelId} assets={currentAssets} />
                 </StudioSidePanel>
               </AnimatedPanel>

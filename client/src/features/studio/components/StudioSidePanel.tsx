@@ -5,7 +5,7 @@
  * background. Each tool renders its own content inside this shell.
  *
  * Usage:
- *   <StudioSidePanel side="left" width={280}>
+ *   <StudioSidePanel side="left" width={320}>
  *     <ControlPanel />
  *   </StudioSidePanel>
  */
