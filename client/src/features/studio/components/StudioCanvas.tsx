@@ -364,15 +364,10 @@ export function StudioCanvas({
               {/* ── NextStep chip (bottom-right of image) ── */}
               {nextStepOverlay && !isGenerating && !isComparing && (
                 <div
-                  className="absolute bottom-3 right-3 z-20 pointer-events-auto transition-all duration-200"
+                  className="absolute bottom-3 right-3 z-20 pointer-events-auto transition-all duration-300 ease-out"
                   style={{
-                    padding: '5px 14px',
-                    borderRadius: 10,
-                    background: 'rgba(255,255,255,0.85)',
-                    backdropFilter: 'blur(8px)',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
                     opacity: imageAreaHovered ? 1 : 0,
-                    transform: imageAreaHovered ? 'translateY(0)' : 'translateY(4px)',
+                    transform: imageAreaHovered ? 'translateY(0) scale(1)' : 'translateY(6px) scale(0.95)',
                     pointerEvents: imageAreaHovered ? 'auto' : 'none',
                   }}
                 >

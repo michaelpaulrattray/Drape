@@ -242,3 +242,4 @@
 - [x] Bug: Triple-dot menu still doesn't close on re-click — fixed with toggleRef exclusion in outside-click handler
 - [x] Bug: Bottom overlay (refine panel + tip) shifted down off image — fixed by removing h-full from hover container
 - [x] Bug: Quick Ideas suggestions not appearing — no code change needed, suggestions only appear after first generation/refinement
+- [x] Redesign NextStepChip as dark floating badge with animated arrow (Option C)

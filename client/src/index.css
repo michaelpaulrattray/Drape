@@ -695,6 +695,12 @@ input[type="range"].slider-obsidian::-moz-range-thumb:hover {
 
 /* ============ UX ENHANCEMENTS ============ */
 
+/* NextStepChip arrow nudge */
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+
 /* Skeleton Shimmer Effect */
 @keyframes shimmer {
   0% {

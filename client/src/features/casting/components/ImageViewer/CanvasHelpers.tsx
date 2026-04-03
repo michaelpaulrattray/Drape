@@ -4,7 +4,7 @@
  * Extracted to keep ImageViewerPanel under the 500-line limit.
  */
 import { useState, useEffect, useMemo } from "react";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useStudioStore } from "@/features/studio/stores/useStudioStore";
 
 // ============ SlotChip + RotatingSuggestions ============
@@ -92,11 +92,10 @@ export function ToolButton({ active, onClick, icon }: { active: boolean; onClick
 
 // ============ NextStepChip ============
 
-/** Contextual next-step nudge that lives inside the shortcuts bar. */
+/** Contextual next-step nudge — dark floating badge with animated arrow. */
 export function NextStepChip({ nextStage }: {
   nextStage: { label: string; action: () => void; step: number; total: number };
 }) {
-  // Derive a short, vibe-appropriate label
   const chipLabel = (() => {
     switch (nextStage.step) {
       case 2: return 'Full Body';
@@ -106,7 +105,6 @@ export function NextStepChip({ nextStage }: {
     }
   })();
 
-  // Step 4 (all views done) = switch to export tool; otherwise run nextStage action
   const handleClick = () => {
     if (nextStage.step === 4) {
       useStudioStore.getState().setActiveTool('export');
@@ -118,13 +116,32 @@ export function NextStepChip({ nextStage }: {
   return (
     <button
       onClick={handleClick}
-      className="flex items-center gap-1 pointer-events-auto transition-colors"
-      style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a', whiteSpace: 'nowrap' }}
-      onMouseEnter={e => { e.currentTarget.style.color = '#555'; }}
-      onMouseLeave={e => { e.currentTarget.style.color = '#1a1a1a'; }}
+      className="group flex items-center gap-2 pointer-events-auto transition-all duration-200"
+      style={{
+        padding: '7px 14px 7px 16px',
+        borderRadius: 12,
+        background: '#1a1a1a',
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 600,
+        letterSpacing: '0.01em',
+        whiteSpace: 'nowrap',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.08) inset',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = '#333';
+        e.currentTarget.style.transform = 'scale(1.03)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = '#1a1a1a';
+        e.currentTarget.style.transform = 'scale(1)';
+      }}
     >
       {chipLabel}
-      <ChevronRight size={10} strokeWidth={2.5} />
+      <span className="inline-flex animate-[nudge_1.8s_ease-in-out_infinite]">
+        <ArrowRight size={13} strokeWidth={2.5} />
+      </span>
     </button>
   );
 }
