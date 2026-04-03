@@ -376,7 +376,7 @@ export function StudioCanvas({
               )}
 
               {/* ── Undo/Redo floating pill (bottom-left of image) ── */}
-              {toolbarVisible && !isGenerating && !isComparing && (
+              {toolbarVisible && !isGenerating && !isComparing && (canUndo || canRedo) && (
                 <div
                   className="absolute bottom-3 left-3 z-20 flex items-center gap-0.5 pointer-events-auto transition-all duration-200"
                   style={{

@@ -249,3 +249,4 @@
 - [x] Bug: Heart icon not appearing in wardrobe ImageActionBar — was hidden when onLike=undefined (disabled state), now always renders when showHeart=true
 - [x] Apply hero serif italic accent font (Instrument Serif) to studio empty state headings for brand consistency
 - [x] Bug: Contextual tip text floating too high above refine chatbox — moved from absolute bottom-32 to flow layout inside bottom controls container
+- [x] Bug: Undo/redo pill visible when there's no edit history — added (canUndo || canRedo) guard to hide pill until first edit
