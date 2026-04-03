@@ -250,3 +250,4 @@
 - [x] Apply hero serif italic accent font (Instrument Serif) to studio empty state headings for brand consistency
 - [x] Bug: Contextual tip text floating too high above refine chatbox — moved from absolute bottom-32 to flow layout inside bottom controls container
 - [x] Bug: Undo/redo pill visible when there's no edit history — added (canUndo || canRedo) guard to hide pill until first edit
+- [x] Bug: Undo/redo pill on initial model view — fixed duplicate pushHistory in 4 restore flows (DrapeStudio x2, StudioLobby, useSessionPersistence) by using setHistory+setHistoryIndex instead

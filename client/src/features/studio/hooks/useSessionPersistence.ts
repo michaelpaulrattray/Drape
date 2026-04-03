@@ -134,7 +134,10 @@ export function useSessionRestore(isAuthenticated: boolean) {
       const genStore = useCastingGenerationStore.getState();
       genStore.setCurrentModelId(model.id);
       genStore.setCurrentAssets(restoredAssets);
-      genStore.pushHistory(restoredAssets);
+      // Reset history cleanly for restore — avoid duplicate entries
+      genStore.setHistory([restoredAssets]);
+      genStore.setHistoryIndex(0);
+      useCastingGenerationStore.setState({ historyAmendments: [[]] });
       // Fix #2: hydrate masterPrompt so MasterPromptPanel shows data after restore
       if (model.masterPrompt) {
         genStore.setCurrentMasterPrompt(model.masterPrompt);

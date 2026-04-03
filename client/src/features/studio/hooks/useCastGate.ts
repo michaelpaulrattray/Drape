@@ -64,8 +64,10 @@ export function useCastGate({
               ...currentAssets.filter((a) => a.viewType !== 'sideClose'),
               newAsset,
             ];
-            useCastingGenerationStore.getState().setCurrentAssets(newAssets);
-            useCastingGenerationStore.getState().pushHistory(newAssets);
+            const castStore = useCastingGenerationStore.getState();
+            castStore.setCurrentAssets(newAssets);
+            // Append to history properly — this IS a user action (side view gen)
+            castStore.pushHistory(newAssets);
           }
         }
 

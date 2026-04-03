@@ -172,7 +172,10 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
         }));
         if (restoredAssets.length > 0) {
           genStore.setCurrentAssets(restoredAssets);
-          genStore.pushHistory(restoredAssets);
+          // Reset history cleanly for restore — avoid duplicate entries
+          genStore.setHistory([restoredAssets]);
+          genStore.setHistoryIndex(0);
+          useCastingGenerationStore.setState({ historyAmendments: [[]] });
         }
         // Restore form preferences
         if (fullModel.preferences) {

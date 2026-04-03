@@ -217,7 +217,10 @@ export default function DrapeStudio() {
     if (mapped.length > 0) {
       genStore.setCurrentModelId(model.id);
       genStore.setCurrentAssets(mapped);
-      genStore.pushHistory(mapped);
+      // Reset history cleanly for restore — avoid duplicate pushHistory entries
+      genStore.setHistory([mapped]);
+      genStore.setHistoryIndex(0);
+      useCastingGenerationStore.setState({ historyAmendments: [[]] });
       if (model.masterPrompt) {
         genStore.setCurrentMasterPrompt(model.masterPrompt);
       }
@@ -394,7 +397,10 @@ export default function DrapeStudio() {
                         storageUrl: a.storageUrl,
                       }));
                       currentGenStore.setCurrentAssets(restoredAssets);
-                      currentGenStore.pushHistory(restoredAssets);
+                      // Reset history cleanly for restore — avoid duplicate entries
+                      currentGenStore.setHistory([restoredAssets]);
+                      currentGenStore.setHistoryIndex(0);
+                      useCastingGenerationStore.setState({ historyAmendments: [[]] });
 
                       const fullBody = model.assets.find((a: { viewType: string }) => a.viewType === 'frontFull');
                       const sideView = model.assets.find((a: { viewType: string }) => a.viewType === 'sideClose');
