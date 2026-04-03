@@ -47,7 +47,13 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
   const [glowingTools, setGlowingTools] = useState<Set<StudioTool>>(new Set());
   const prevEnabledRef = useRef<ToolEnabledMap | null>(null);
 
-  // Detect when any tool transitions from disabled → enabled
+  // Track active tool via ref so glow detection only fires on canvas changes
+  const activeToolRef = useRef(activeTool);
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+  }, [activeTool]);
+
+  // Detect when any tool transitions from disabled → enabled (canvas changes only)
   useEffect(() => {
     const currentEnabled: ToolEnabledMap = {} as ToolEnabledMap;
     for (const tool of STUDIO_TOOLS) {
@@ -56,9 +62,10 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
 
     const prev = prevEnabledRef.current;
     if (prev) {
+      const currentActive = activeToolRef.current;
       const newlyUnlocked: StudioTool[] = [];
       for (const tool of STUDIO_TOOLS) {
-        if (!prev[tool.id] && currentEnabled[tool.id] && activeTool !== tool.id) {
+        if (!prev[tool.id] && currentEnabled[tool.id] && currentActive !== tool.id) {
           newlyUnlocked.push(tool.id);
         }
       }
@@ -81,7 +88,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
     }
 
     prevEnabledRef.current = currentEnabled;
-  }, [canvas, activeTool]);
+  }, [canvas]); // Only react to canvas changes, not activeTool
 
   // Clear glow when user clicks a glowing tool
   const clearGlow = useCallback((toolId: StudioTool) => {

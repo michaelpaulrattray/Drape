@@ -123,7 +123,13 @@ export function AppSidebar({
   const [glowingTools, setGlowingTools] = useState<Set<StudioTool>>(new Set());
   const prevEnabledRef = useRef<ToolEnabledMap | null>(null);
 
-  // Detect tool unlock transitions
+  // Track the active tool separately so glow detection only fires on canvas changes
+  const activeToolRef = useRef(activeTool);
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+  }, [activeTool]);
+
+  // Detect tool unlock transitions — only when canvas changes, NOT on activeTool change
   useEffect(() => {
     const currentEnabled: ToolEnabledMap = {} as ToolEnabledMap;
     for (const tool of STUDIO_TOOLS) {
@@ -131,9 +137,10 @@ export function AppSidebar({
     }
     const prev = prevEnabledRef.current;
     if (prev) {
+      const currentActive = activeToolRef.current;
       const newlyUnlocked: StudioTool[] = [];
       for (const tool of STUDIO_TOOLS) {
-        if (!prev[tool.id] && currentEnabled[tool.id] && activeTool !== tool.id) {
+        if (!prev[tool.id] && currentEnabled[tool.id] && currentActive !== tool.id) {
           newlyUnlocked.push(tool.id);
         }
       }
@@ -154,7 +161,7 @@ export function AppSidebar({
       }
     }
     prevEnabledRef.current = currentEnabled;
-  }, [canvas, activeTool]);
+  }, [canvas]); // Only react to canvas changes, not activeTool
 
   const clearGlow = useCallback(
     (toolId: StudioTool) => {

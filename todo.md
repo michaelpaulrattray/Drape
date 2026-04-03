@@ -282,4 +282,4 @@
 - [x] Reduce icon stroke weight from 2.0 to 1.5 for lighter, more refined feel
 - [x] Lighten active state: replace solid black bg with subtle tint (like hover), darken text color on selection
 - [x] Increase sidebar logo size — bumped from 18px to 24px height
-- [x] Bug: Sidebar highlight bleeds — fixed: removed transition from button element entirely (active changes are now instant), transition only lives on .sidebar-item-hoverable CSS class for hover fade, explicit 'transparent' background for non-active state prevents CSS bleed
+- [x] Bug: Sidebar highlight bleeds — fixed: root cause was glow detection useEffect firing on activeTool changes (not just canvas changes), causing false-positive "newly unlocked" glow on sibling tools for 4.5s. Removed activeTool from useEffect deps in both AppSidebar and ToolRail, using ref instead. Also removed CSS transitions from active state changes.
