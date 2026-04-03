@@ -7,7 +7,7 @@ import { Camera, Loader2 } from 'lucide-react';
 
 // Studio infrastructure
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
-import { ToolRail } from '@/features/studio/components/ToolRail';
+import { AppSidebar } from '@/features/studio/components/AppSidebar';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
 import { StudioLobby } from '@/features/studio/components/StudioLobby';
 import type { DraftModel } from '@/features/studio/components/DraftCastsRow';
@@ -26,6 +26,9 @@ import { ExportPanel, ExportHeroPreview } from '@/features/export';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
+import { BillingModal } from '@/features/billing/BillingModal';
+import { ReferralModal } from '@/features/referral/ReferralModal';
+import ProfileSettingsModal from '@/components/ProfileSettingsModal';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
@@ -50,13 +53,28 @@ const VALID_TOOLS: StudioTool[] = ['casting', 'wardrobe', 'export'];
 export default function DrapeStudio() {
   const [, navigate] = useLocation();
   const searchString = useSearch();
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
 
   // Studio store
   const { activeTool, setActiveTool, canvas, setCanvas } = useStudioStore();
 
   // tRPC utils for imperative fetching (draft resume)
   const trpcUtils = trpc.useUtils();
+
+  // Sidebar: profile, billing, referral modals
+  const [showSettings, setShowSettings] = useState(false);
+  const [isBillingOpen, setIsBillingOpen] = useState(false);
+  const [isReferralOpen, setIsReferralOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const { data: profileData, refetch: refetchProfile } = trpc.profile.get.useQuery(
+    undefined,
+    { enabled: isAuthenticated },
+  );
+  useEffect(() => {
+    if (profileData?.avatarUrl) setProfileImage(profileData.avatarUrl);
+    if (profileData?.bannerUrl) setBannerImage(profileData.bannerUrl);
+  }, [profileData?.avatarUrl, profileData?.bannerUrl]);
 
   // Orchestrated transition phases
   const baseTransition = useStudioTransition(activeTool);
@@ -317,18 +335,19 @@ export default function DrapeStudio() {
 
       {/* Main workspace: Tool Rail + Tool Content */}
       <div className="flex-1 flex min-h-0">
-        {/* Tool Rail — slides in from left */}
-        {!isLobby && (
-          <div
-            style={{
-              opacity: transition.railReady ? 1 : 0,
-              transform: transition.railReady ? 'translateX(0)' : 'translateX(-48px)',
-              transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-          >
-            <ToolRail canvas={canvas} onWardrobeGate={() => setShowCastModal(true)} />
-          </div>
-        )}
+        {/* App Sidebar — always visible, expand/collapse */}
+        <AppSidebar
+          canvas={canvas}
+          onWardrobeGate={() => setShowCastModal(true)}
+          user={user}
+          profileImage={profileImage}
+          creditsBalance={creditsData?.balance || 0}
+          planTier={creditsData?.planTier || 'free'}
+          onOpenSettings={() => setShowSettings(true)}
+          onOpenBilling={() => setIsBillingOpen(true)}
+          onOpenReferral={() => setIsReferralOpen(true)}
+          onLogout={logout}
+        />
 
         {/* Tool Content Area */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
@@ -582,6 +601,35 @@ export default function DrapeStudio() {
         isOpen={isTopupOpen}
         onClose={() => setIsTopupOpen(false)}
         currentBalance={creditsData?.balance || 0}
+      />
+
+      {/* Sidebar modals — settings, billing, referral */}
+      <ProfileSettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        onProfileUpdate={() => refetchProfile()}
+        user={user}
+        profileImage={profileImage}
+        bannerImage={bannerImage}
+        onProfileImageChange={setProfileImage}
+        onBannerImageChange={setBannerImage}
+        creditsBalance={creditsData?.balance || 0}
+        planTier={creditsData?.planTier || 'free'}
+        onOpenBilling={() => { setShowSettings(false); setIsBillingOpen(true); }}
+        onOpenTopup={() => { setShowSettings(false); setIsTopupOpen(true); }}
+        defaultAvatar=""
+        defaultBanner=""
+      />
+
+      <BillingModal
+        isOpen={isBillingOpen}
+        onClose={() => setIsBillingOpen(false)}
+        onOpenTopup={() => { setIsBillingOpen(false); setIsTopupOpen(true); }}
+      />
+
+      <ReferralModal
+        open={isReferralOpen}
+        onClose={() => setIsReferralOpen(false)}
       />
     </div>
   );

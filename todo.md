@@ -258,3 +258,8 @@
 - [x] Bug: View count shows incorrect number — changed viewCount from currentAssets.length to unique viewTypes count
 - [x] Bug: Lobby draft cast view count still showing total asset rows — fixed getDraftModels server query to count unique viewTypes instead of all rows
 - [x] Auto-dismiss contextual tip after user's first refinement, with localStorage persistence
+- [x] Phase 1: Build AppSidebar component with expand/collapse (ElevenLabs pattern)
+- [x] Phase 1: Wire AppSidebar into DrapeStudio replacing ToolRail
+- [ ] Phase 2: Make sidebar always visible including lobby state
+- [ ] Phase 3: Absorb Dashboard into Studio, change login redirect to /studio
+- [ ] Phase 4: Polish top bar with breadcrumb, cleanup dead Dashboard code
