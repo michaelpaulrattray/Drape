@@ -35,6 +35,9 @@ export const users = mysqlTable("users", {
   approved: boolean("approved").default(false).notNull(), // Whether user has been approved for access (false = waitlisted)
   accessCode: varchar("accessCode", { length: 64 }), // Invite code used to gain access
   approvedAt: timestamp("approvedAt"), // When user was approved
+  // Auth provider tracking
+  passwordHash: text("passwordHash"), // bcrypt hash for email/password users (null for Google/legacy users)
+  authProvider: varchar("authProvider", { length: 32 }).default("manus_legacy"), // 'email', 'google', 'manus_legacy'
   // Account lockout fields (for failed login protection)
   failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
   lockedUntil: timestamp("lockedUntil"), // Temporary lockout expiry

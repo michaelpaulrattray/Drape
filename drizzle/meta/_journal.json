@@ -246,6 +246,13 @@
       "when": 1774514963141,
       "tag": "0034_silent_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1775207167828,
+      "tag": "0035_aberrant_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

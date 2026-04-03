@@ -184,3 +184,9 @@
 - [x] Strip homepage nav to just "Log In" and "Claim a Spot" — remove Product, Pricing, About links
 - [x] Verify Klaviyo waitlist integration sends emails and names correctly (both hero input and Claim a Spot modal)
 - [x] Fix Klaviyo integration to pass name (first_name) along with email from waitlist signups
+- [ ] AUTH MIGRATION: Audit current Manus OAuth system — map all files, flows, dependencies
+- [ ] AUTH MIGRATION: Design new auth schema (email/password + Google OAuth)
+- [ ] AUTH MIGRATION: Implement email/password registration + login backend
+- [ ] AUTH MIGRATION: Implement Google OAuth direct integration
+- [ ] AUTH MIGRATION: Update Login.tsx UI to use new auth endpoints
+- [ ] AUTH MIGRATION: Test all auth flows end-to-end
