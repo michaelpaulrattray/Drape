@@ -268,16 +268,7 @@ export function AppSidebar({
               </div>
               <button
                 onClick={toggleExpanded}
-                className="w-8 h-8 flex items-center justify-center rounded-md transition-colors"
-                style={{ color: '#bbb' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-                  e.currentTarget.style.color = '#666';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#bbb';
-                }}
+                className="w-8 h-8 flex items-center justify-center rounded-md transition-colors sidebar-toggle-btn"
               >
                 <ChevronLeft className="w-4 h-4" strokeWidth={2} />
               </button>
@@ -285,16 +276,7 @@ export function AppSidebar({
           ) : (
             <button
               onClick={toggleExpanded}
-              className="w-10 h-10 flex items-center justify-center rounded-md transition-colors"
-              style={{ color: '#bbb' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-                e.currentTarget.style.color = '#666';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#bbb';
-              }}
+              className="w-10 h-10 flex items-center justify-center rounded-md transition-colors sidebar-toggle-btn"
             >
               <ChevronRight className="w-4 h-4" strokeWidth={2} />
             </button>
@@ -388,8 +370,52 @@ export function AppSidebar({
         </div>
       </aside>
 
-      {/* Glow keyframes */}
+      {/* Sidebar item styles + glow keyframes */}
       <style>{`
+        .sidebar-item {
+          background: transparent;
+          color: #888;
+        }
+        .sidebar-item-active {
+          background: rgba(0,0,0,0.06) !important;
+          color: #1a1a1a !important;
+        }
+        .sidebar-item-glowing {
+          background: rgba(0,0,0,0.04);
+          color: #1a1a1a;
+        }
+        .sidebar-item-disabled {
+          color: #d4d4d4;
+        }
+        .sidebar-item-hoverable:hover {
+          background: rgba(0,0,0,0.04);
+          color: #1a1a1a;
+        }
+        .sidebar-user-menu-item {
+          color: #888;
+          background: transparent;
+        }
+        .sidebar-user-menu-item:hover {
+          background: rgba(0,0,0,0.04);
+          color: #1a1a1a;
+        }
+        .sidebar-user-menu-item-danger:hover {
+          color: #dc2626;
+        }
+        .sidebar-toggle-btn {
+          color: #bbb;
+          background: transparent;
+        }
+        .sidebar-toggle-btn:hover {
+          background: rgba(0,0,0,0.04);
+          color: #666;
+        }
+        .sidebar-avatar-btn {
+          border: 1.5px solid rgba(0,0,0,0.08);
+        }
+        .sidebar-avatar-btn:hover {
+          border-color: rgba(0,0,0,0.2);
+        }
         @keyframes toolGlow {
           0% { box-shadow: 0 0 0 0 rgba(26, 26, 26, 0); }
           50% { box-shadow: 0 0 10px 2px rgba(26, 26, 26, 0.15); }
@@ -459,46 +485,29 @@ function SidebarItem({
   tooltip,
   onClick,
 }: SidebarItemProps) {
+  // Build className for CSS-only hover (no imperative style manipulation)
+  const baseClasses = 'relative flex items-center rounded-lg transition-all duration-150 group sidebar-item';
+  const hoverClass = !active && !disabled ? 'sidebar-item-hoverable' : '';
+  const activeClass = active ? 'sidebar-item-active' : '';
+  const glowClass = glowing ? 'sidebar-item-glowing' : '';
+  const disabledClass = disabled ? 'sidebar-item-disabled' : '';
+
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       title={!expanded ? (tooltip || label) : undefined}
-      className="relative flex items-center rounded-lg transition-all duration-150 group"
+      className={`${baseClasses} ${hoverClass} ${activeClass} ${glowClass} ${disabledClass}`}
       style={{
         height: 40,
         gap: expanded ? 12 : 0,
         padding: expanded ? '0 12px' : '0',
         justifyContent: expanded ? 'flex-start' : 'center',
-        background: active
-          ? 'rgba(0,0,0,0.06)'
-          : glowing
-            ? 'rgba(0,0,0,0.04)'
-            : 'transparent',
-        color: active
-          ? '#1a1a1a'
-          : glowing
-            ? '#1a1a1a'
-            : disabled
-              ? '#d4d4d4'
-              : '#888',
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.45 : 1,
         animation: glowing ? 'toolGlow 1.5s ease-in-out 3' : 'none',
         width: expanded ? '100%' : 40,
         margin: expanded ? 0 : '0 auto',
-      }}
-      onMouseEnter={(e) => {
-        if (!active && !disabled) {
-          e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-          e.currentTarget.style.color = '#1a1a1a';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active && !disabled && !glowing) {
-          e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = disabled ? '#d4d4d4' : '#888';
-        }
       }}
     >
       <Icon
@@ -561,23 +570,14 @@ function SidebarLinkItem({
   return (
     <Link href={href}>
       <div
-        className="relative flex items-center rounded-lg transition-all duration-150 group cursor-pointer"
+        className="relative flex items-center rounded-lg transition-all duration-150 group cursor-pointer sidebar-item sidebar-item-hoverable"
         style={{
           height: 40,
           gap: expanded ? 12 : 0,
           padding: expanded ? '0 12px' : '0',
           justifyContent: expanded ? 'flex-start' : 'center',
-          color: '#888',
           width: expanded ? '100%' : 40,
           margin: expanded ? 0 : '0 auto',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-          e.currentTarget.style.color = '#1a1a1a';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = '#888';
         }}
       >
         <Icon
@@ -714,16 +714,7 @@ function UserMenuItem({ icon: Icon, label, onClick, danger }: UserMenuItemProps)
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg w-full transition-colors"
-      style={{ color: '#888' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-        e.currentTarget.style.color = danger ? '#dc2626' : '#1a1a1a';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'transparent';
-        e.currentTarget.style.color = '#888';
-      }}
+      className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg w-full transition-colors sidebar-user-menu-item ${danger ? 'sidebar-user-menu-item-danger' : ''}`}
     >
       <Icon className="w-4 h-4 flex-shrink-0" />
       <span style={{ fontSize: 13, fontWeight: 500 }}>{label}</span>
@@ -745,14 +736,7 @@ function CollapsedUserButton({
   return (
     <button
       onClick={onOpenSettings}
-      className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 transition-all mx-auto block group relative"
-      style={{ border: '1.5px solid rgba(0,0,0,0.08)' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.2)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
-      }}
+      className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 transition-all mx-auto block group relative sidebar-avatar-btn"
     >
       {profileImage ? (
         <img

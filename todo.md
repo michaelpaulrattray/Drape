@@ -282,3 +282,4 @@
 - [x] Reduce icon stroke weight from 2.0 to 1.5 for lighter, more refined feel
 - [x] Lighten active state: replace solid black bg with subtle tint (like hover), darken text color on selection
 - [x] Increase sidebar logo size — bumped from 18px to 24px height
+- [x] Bug: Sidebar highlight bleeds — fixed by replacing imperative onMouseEnter/Leave with CSS-only hover classes
