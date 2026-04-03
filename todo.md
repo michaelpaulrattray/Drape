@@ -270,3 +270,7 @@
 - [x] Widen sidebar: collapsed 56→64px, expanded 240→260px to match ElevenLabs proportions
 - [x] Add premium sparkle icon next to breadcrumb text in StudioHeader
 - [x] Remove credits pill from StudioHeader top bar
+- [x] Redesign StudioHeader top bar: add Feedback, Docs, bell notifications dropdown like ElevenLabs
+- [x] Keep bug report icon AND add polished text-based "Feedback" link
+- [x] Add "Docs" text link (placeholder for future guides)
+- [x] Add bell icon with news/updates dropdown panel
