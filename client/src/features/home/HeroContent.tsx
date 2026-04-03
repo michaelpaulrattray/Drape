@@ -82,33 +82,50 @@ export function HeroContent({ onPlayDemo }: HeroContentProps) {
         </motion.p>
 
         {/* Email Input Block */}
-        <motion.div {...fadeUp(0.5)} className="flex flex-col items-center gap-4 w-full max-w-[480px]">
+        <motion.div {...fadeUp(0.5)} className="flex flex-col items-center gap-4 w-full max-w-[640px]">
           {!submitted ? (
             <>
-              <div className="liquid-glass flex items-center w-full rounded-[40px] px-2 py-2">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                  placeholder="Enter your email"
-                  className="flex-1 bg-transparent px-5 py-3 text-sm font-body text-white placeholder:text-white/40 outline-none"
-                  disabled={isLoading}
-                />
-                <button
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 rounded-[32px] px-6 py-3 text-sm font-geist font-medium bg-white text-slate-900 transition-opacity hover:opacity-90 disabled:opacity-60"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      Join Waitlist
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
+              <div className="flex items-center gap-3 w-full">
+                <div className="liquid-glass flex items-center flex-1 rounded-[40px] px-2 py-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                    placeholder="Enter your email"
+                    className="flex-1 bg-transparent px-5 py-3 text-sm font-body text-white placeholder:text-white/40 outline-none"
+                    disabled={isLoading}
+                  />
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 rounded-[32px] px-6 py-3 text-sm font-geist font-medium bg-white text-slate-900 transition-opacity hover:opacity-90 disabled:opacity-60 whitespace-nowrap"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        Join Waitlist
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* See it in action — inline secondary CTA */}
+                {onPlayDemo && (
+                  <button
+                    onClick={onPlayDemo}
+                    className="hidden sm:flex items-center gap-2 group whitespace-nowrap"
+                  >
+                    <span className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors shrink-0">
+                      <Play className="h-3.5 w-3.5 text-white ml-0.5" />
+                    </span>
+                    <span className="font-body text-sm text-white/60 group-hover:text-white/90 transition-colors">
+                      See it in action
+                    </span>
+                  </button>
+                )}
               </div>
 
               {/* Social Proof */}
@@ -119,11 +136,11 @@ export function HeroContent({ onPlayDemo }: HeroContentProps) {
                 </span>
               </div>
 
-              {/* See it in action */}
+              {/* See it in action — mobile only (below social proof) */}
               {onPlayDemo && (
                 <button
                   onClick={onPlayDemo}
-                  className="flex items-center gap-2 mt-2 group"
+                  className="flex sm:hidden items-center gap-2 group"
                 >
                   <span className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors">
                     <Play className="h-3.5 w-3.5 text-white ml-0.5" />

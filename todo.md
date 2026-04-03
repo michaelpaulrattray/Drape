@@ -180,3 +180,4 @@
 - [x] Add smooth page transition animation between homepage and login page (shared layout with AnimatePresence)
 - [x] Update homepage platform section copy from "Built for teams on" to "Where the best campaigns begin"
 - [x] Add "See it in action" button to hero → cinematic auto-play video modal (placeholder video for now)
+- [x] Move "See it in action" button inline with Join Waitlist CTA (primary/secondary pair on same row)
