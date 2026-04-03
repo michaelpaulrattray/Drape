@@ -149,3 +149,11 @@
 - [x] Bug: useSessionRestore missing technicalSchema + preferences — Spec tab empty and ControlPanel shows defaults after page refresh
 - [x] Bug: Gallery model load (MY MODELS) doesn't hydrate casting generation store — Spec tab shows null when switching to Casting after loading a minted model
 - [x] Rename localStorage key from formastudio_active_session to drape_active_session
+- [x] Homepage redesign: Replace current multi-section landing page with hero-only page
+- [x] Homepage redesign: Add liquid-glass CSS + Instrument Serif/Barlow/Geist fonts
+- [x] Homepage redesign: New glassmorphism floating navbar
+- [x] Homepage redesign: New HeroContent with headline, subtitle, email waitlist CTA
+- [x] Homepage redesign: New PartnersBar with text-based brand names (Instrument Serif italic)
+- [x] Homepage redesign: Mux video background with gradient fade
+- [x] Homepage redesign: Powered by Gemini fixed badge
+- [x] Homepage redesign: Remove unused sections (About, Blog, FAQ, Footer, Process, Services, WhyUs, Work)

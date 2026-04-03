@@ -1,15 +1,8 @@
 /**
  * Home page feature barrel export.
- * Import the default Home component for routing.
+ * Hero-only landing page components.
  */
-export { Header } from "./Header";
-export { HeroSection } from "./HeroSection";
-export { AboutSection } from "./AboutSection";
-export { WorkSection } from "./WorkSection";
-export { WhyUsSection } from "./WhyUsSection";
-export { ServicesSection } from "./ServicesSection";
-export { ProcessSection } from "./ProcessSection";
-export { FAQSection } from "./FAQSection";
-export { BlogSection } from "./BlogSection";
-export { Footer } from "./Footer";
+export { HomeNavbar } from "./HomeNavbar";
+export { HeroContent } from "./HeroContent";
+export { PartnersBar } from "./PartnersBar";
 export { WaitlistModal } from "./WaitlistModal";

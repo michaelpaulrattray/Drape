@@ -1,49 +1,50 @@
 /**
- * Home page — thin shell that composes feature sub-components.
- * All section implementations live in @/features/home/.
+ * Home page — hero-only landing with fullscreen video background,
+ * glassmorphism navbar, headline + waitlist CTA, and partner marquee.
  */
-import { useState, useCallback } from "react";
-import {
-  Header,
-  HeroSection,
-  AboutSection,
-  WorkSection,
-  WhyUsSection,
-  ServicesSection,
-  ProcessSection,
-  FAQSection,
-  BlogSection,
-  Footer,
-  WaitlistModal,
-} from "@/features/home";
+import { HomeNavbar } from "@/features/home/HomeNavbar";
+import { HeroContent } from "@/features/home/HeroContent";
+import { PartnersBar } from "@/features/home/PartnersBar";
+
+const MUX_VIDEO_SRC =
+  "https://stream.mux.com/jxEf6XiJs00yfbQgSHjypHNMCZDsNjSo/high.mp4";
 
 export default function Home() {
-  const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const openWaitlist = useCallback(() => setWaitlistOpen(true), []);
-  const closeWaitlist = useCallback(() => setWaitlistOpen(false), []);
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Skip to main content link for accessibility */}
-      <a 
-        href="#main-content" 
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-white focus:px-4 focus:py-2 focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]"
-      >
-        Skip to main content
-      </a>
-      <Header onOpenWaitlist={openWaitlist} />
-      <main id="main-content">
-        <HeroSection />
-        <AboutSection />
-        <WorkSection />
-        <WhyUsSection />
-        <ServicesSection onOpenWaitlist={openWaitlist} />
-        <ProcessSection onOpenWaitlist={openWaitlist} />
-        <FAQSection />
-        <BlogSection />
-      </main>
-      <Footer />
-      <WaitlistModal open={waitlistOpen} onClose={closeWaitlist} />
+    <div className="relative min-h-screen w-full overflow-hidden bg-black">
+      {/* ── Fullscreen Video Background ── */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        src={MUX_VIDEO_SRC}
+      />
+
+      {/* ── Dark overlay + bottom gradient fade ── */}
+      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
+
+      {/* ── Content layer ── */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <HomeNavbar />
+
+        {/* Hero — vertically centered */}
+        <div className="flex-1 flex items-center justify-center">
+          <HeroContent />
+        </div>
+
+        {/* Partners marquee at bottom */}
+        <PartnersBar />
+
+        {/* Powered by badge — bottom right */}
+        <div className="absolute bottom-6 right-6 flex items-center gap-2 opacity-60">
+          <span className="font-body text-xs text-white/70 tracking-wider uppercase">
+            Powered by Gemini
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
