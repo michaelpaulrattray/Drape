@@ -243,3 +243,5 @@
 - [x] Bug: Bottom overlay (refine panel + tip) shifted down off image — fixed by removing h-full from hover container
 - [x] Bug: Quick Ideas suggestions not appearing — no code change needed, suggestions only appear after first generation/refinement
 - [x] Redesign NextStepChip as dark floating badge with animated arrow (Option C)
+- [x] Bug: Triple-dot menu shows empty/nothing on locked casts — hide triple-dot when menu would be empty
+- [x] Bug: Surgical tool icons have no hover state — added scale, shadow lift, and color change on hover

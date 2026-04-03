@@ -335,24 +335,27 @@ export function ImageActionBar({
         )}
       </ActionButton>
 
-      <div className="relative" ref={toggleBtnRef}>
-        <ActionButton
-          onClick={() => setMenuOpen((prev) => !prev)}
-          title="More options"
-          active={menuOpen}
-        >
-          <MoreVertical size={ICON_SIZE} strokeWidth={2} />
-        </ActionButton>
+      {/* Only render triple-dot if menu would have content */}
+      {(onRetry || (extraMenuItems && extraMenuItems.length > 0) || (shortcuts && shortcuts.length > 0)) && (
+        <div className="relative" ref={toggleBtnRef}>
+          <ActionButton
+            onClick={() => setMenuOpen((prev) => !prev)}
+            title="More options"
+            active={menuOpen}
+          >
+            <MoreVertical size={ICON_SIZE} strokeWidth={2} />
+          </ActionButton>
 
-        <ActionMenu
-          isOpen={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          onRetry={onRetry}
-          shortcuts={shortcuts}
-          extraItems={extraMenuItems}
-          toggleRef={toggleBtnRef}
-        />
-      </div>
+          <ActionMenu
+            isOpen={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            onRetry={onRetry}
+            shortcuts={shortcuts}
+            extraItems={extraMenuItems}
+            toggleRef={toggleBtnRef}
+          />
+        </div>
+      )}
     </div>
   );
 }

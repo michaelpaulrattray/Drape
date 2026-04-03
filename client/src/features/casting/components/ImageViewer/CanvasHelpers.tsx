@@ -80,9 +80,26 @@ export function ToolButton({ active, onClick, icon }: { active: boolean; onClick
       className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
       style={{
         background: active ? '#1a1a1a' : 'rgba(255,255,255,0.85)',
-        color: active ? '#fff' : '#888',
+        color: active ? '#fff' : '#71716A',
         boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
         backdropFilter: 'blur(8px)',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
+          e.currentTarget.style.color = '#1a1a1a';
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)';
+          e.currentTarget.style.transform = 'scale(1.06)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.85)';
+          e.currentTarget.style.color = '#71716A';
+          e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.06)';
+          e.currentTarget.style.transform = 'scale(1)';
+        }
       }}
     >
       {icon}
