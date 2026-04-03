@@ -175,3 +175,4 @@
 - [ ] Future: Replace Manus OAuth with direct Google OAuth + email/password auth system
 - [x] Add view transition animations (fade/slide) between login page views (choose, code, oauth, waitlist, returning-user)
 - [x] Auto-detect returning users via cookie/localStorage and skip to "Welcome back" sign-in view
+- [x] Replace login page right panel (branded text) with full-height hero image

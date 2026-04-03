@@ -202,35 +202,32 @@ function WaitlistForm() {
   );
 }
 
-function AspirationPanel() {
+const LOGIN_HERO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/login-hero_98682e27.webp";
+
+function HeroImagePanel() {
   return (
-    <div className="hidden lg:flex flex-col items-center justify-center px-12 xl:px-16">
-      <div className="text-center max-w-md">
-        <div className="w-16 h-16 rounded-2xl bg-[#0A0A0A] flex items-center justify-center mx-auto mb-8">
-          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-          </svg>
-        </div>
-        <h2 className="text-xl font-medium tracking-tight text-[#0A0A0A] mb-3">
-          Studio-grade AI creation.
-        </h2>
-        <p className="text-sm text-[#757575] leading-relaxed mb-8">
-          Cast models, lock identity, and produce campaign-ready assets — all without writing a single prompt.
+    <div className="hidden lg:block relative rounded-3xl overflow-hidden min-h-[calc(100vh-120px)]">
+      <img
+        src={LOGIN_HERO_URL}
+        alt="Fashion model in studio"
+        className="absolute inset-0 w-full h-full object-cover object-center"
+      />
+      {/* Gradient overlay at bottom for brand logos */}
+      <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/50 to-transparent" />
+      <div className="absolute bottom-6 inset-x-0 flex flex-col items-center gap-4">
+        <p className="text-[10px] text-white/60 uppercase tracking-widest">
+          Trusted by top creatives working for
         </p>
-      </div>
-      <div className="w-16 h-px bg-[#D4D4D4] my-8" />
-      <p className="text-xs text-[#757575] uppercase tracking-widest mb-6">
-        Trusted by top creatives working for
-      </p>
-      <div className="flex flex-wrap justify-center items-center gap-6 max-w-sm">
-        {BRAND_LOGOS.map((brand) => (
-          <img
-            key={brand.name}
-            src={brand.logo}
-            alt={brand.name}
-            className="h-6 w-auto object-contain opacity-30"
-          />
-        ))}
+        <div className="flex items-center gap-5">
+          {BRAND_LOGOS.map((brand) => (
+            <img
+              key={brand.name}
+              src={brand.logo}
+              alt={brand.name}
+              className="h-5 w-auto object-contain brightness-0 invert opacity-50"
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -390,10 +387,10 @@ export default function Login() {
 
       {/* Main Content — Two Column */}
       <div className="min-h-[calc(100vh-56px)] flex items-center justify-center px-4 sm:px-6 lg:px-12 py-8 sm:py-12 relative">
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-0 items-center">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-8 items-stretch">
 
-          {/* ─── Left Column ─────────────────────────────────────────── */}
-          <div className="w-full max-w-md mx-auto lg:mx-0">
+          {/* ─── Left Column: Login Card ───────────────────────────────── */}
+          <div className="w-full max-w-md mx-auto lg:mx-0 flex flex-col justify-center">
             {/* Error Banner */}
             {errorType && <ErrorBanner errorType={errorType} lockMinutes={lockMinutes} />}
 
@@ -625,8 +622,8 @@ export default function Login() {
             </Link>
           </div>
 
-          {/* ─── Right Column: Aspiration Panel ─────────────────────── */}
-          <AspirationPanel />
+          {/* ─── Right Column: Hero Image ──────────────────────────── */}
+          <HeroImagePanel />
         </div>
       </div>
     </div>
