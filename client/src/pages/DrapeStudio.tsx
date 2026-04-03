@@ -225,6 +225,12 @@ export default function DrapeStudio() {
         genStore.setCurrentMasterPrompt(model.masterPrompt);
       }
     }
+    // Restore form preferences so ControlPanel shows actual model identity
+    if ((model as any).preferences) {
+      const formStore = useCastingFormStore.getState();
+      formStore.setPrefs((model as any).preferences as any);
+      formStore.setModelName(model.name || '');
+    }
   }, [modelAssetsQuery.data, currentAssets.length]);
 
   // Read-only: locked only for minted models (drafts remain editable)

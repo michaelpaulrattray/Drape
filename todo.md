@@ -252,3 +252,4 @@
 - [x] Bug: Undo/redo pill visible when there's no edit history — added (canUndo || canRedo) guard to hide pill until first edit
 - [x] Bug: Undo/redo pill on initial model view — fixed duplicate pushHistory in 4 restore flows (DrapeStudio x2, StudioLobby, useSessionPersistence) by using setHistory+setHistoryIndex instead
 - [x] Bug: Starting a new cast doesn't reset form preferences — added resetForm() to onSelectCasting in DrapeStudio + all 5 reset paths in useSessionReset
+- [x] Bug: Saved cast shows default identity — added preferences re-hydration to DrapeStudio modelAssetsQuery useEffect (was missing after resetForm was added)
