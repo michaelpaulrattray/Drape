@@ -334,7 +334,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
             style={{ background: 'rgba(255,255,255,0.95)', boxShadow: '0 8px 40px rgba(0,0,0,0.1)' }}
           >
             <Upload className="w-8 h-8" style={{ color: '#1a1a1a' }} />
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>Drop your model photo</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a' }}>Drop your model photo</span>
           </div>
         </div>
       )}
@@ -361,8 +361,8 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
         </h1>
         <p
           style={{
-            fontSize: 13,
-            color: '#71717A',
+            fontSize: 15,
+            color: '#52525B',
             marginTop: 8,
             maxWidth: 400,
             lineHeight: 1.5,
@@ -486,7 +486,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
               ) : (
                 <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1a1a1a' }} />
               )}
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
                 {PHASE_LABELS[uploadPhase!]}
               </span>
               <div className="w-40 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
@@ -506,15 +506,15 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
                 style={{ background: '#F4F4F5' }}
               >
-                <ImagePlus className="w-6 h-6" style={{ color: '#71717A' }} />
+                <ImagePlus className="w-6 h-6" style={{ color: '#52525B' }} />
               </div>
-              <span style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
+              <span style={{ fontSize: 17, fontWeight: 600, color: '#1a1a1a' }}>
                 Upload Your Own
               </span>
               <span
                 style={{
-                  fontSize: 12,
-                  color: '#71717A',
+                  fontSize: 14,
+                  color: '#52525B',
                   marginTop: 5,
                   textAlign: 'center',
                   lineHeight: 1.5,
@@ -523,7 +523,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
               >
                 Drag & drop or click to upload a full-body photo
               </span>
-              <span style={{ fontSize: 10, color: '#A1A1AA', marginTop: 8, letterSpacing: '0.02em' }}>
+              <span style={{ fontSize: 12, color: '#71717A', marginTop: 8, letterSpacing: '0.02em' }}>
                 JPEG, PNG, WebP · Max 10 MB
               </span>
             </div>
@@ -577,12 +577,12 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
             >
               <Camera className="w-6 h-6" style={{ color: '#fff' }} />
             </div>
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>
+            <span style={{ fontSize: 17, fontWeight: 600, color: '#fff' }}>
               Cast a Model
             </span>
             <span
               style={{
-                fontSize: 12,
+                fontSize: 14,
                 color: 'rgba(255,255,255,0.45)',
                 marginTop: 5,
                 textAlign: 'center',
@@ -597,7 +597,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
               style={{ background: 'rgba(255,255,255,0.08)' }}
             >
               <Sparkles className="w-3 h-3" style={{ color: 'rgba(255,255,255,0.5)' }} />
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
                 AI-Powered
               </span>
             </div>
@@ -609,8 +609,8 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
       <p
         className="mt-8 sm:mt-10 text-center"
         style={{
-          fontSize: 11,
-          color: '#A1A1AA',
+          fontSize: 13,
+          color: '#71717A',
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(8px)',
           transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s',

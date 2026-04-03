@@ -187,7 +187,7 @@ function GarmentRow({
               {garment.shortName || "Untitled"}
             </span>
           </div>
-          <span className="block" style={{ fontSize: 9, color: "#71717A", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 1 }}>
+          <span className="block" style={{ fontSize: 11, color: "#52525B", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 1 }}>
             {slotLabel}
           </span>
         </div>
@@ -196,7 +196,7 @@ function GarmentRow({
         {editCount > 0 && !isExpanded && (
           <div className="flex-shrink-0 rounded-full flex items-center justify-center" style={{
             minWidth: 16, height: 16, padding: "0 5px",
-            background: "#1a1a1a", color: "#fff", fontSize: 9, fontWeight: 700,
+            background: "#1a1a1a", color: "#fff", fontSize: 11, fontWeight: 700,
           }}>
             {editCount}
           </div>
@@ -243,7 +243,7 @@ function GarmentRow({
                     onClick={(e) => { e.stopPropagation(); toggleChip(label); }}
                     className="flex-shrink-0 transition-all"
                     style={{
-                      fontSize: 9, fontWeight: isActive ? 600 : 400,
+                      fontSize: 11, fontWeight: isActive ? 600 : 400,
                       padding: "3px 9px", borderRadius: 20,
                       background: isActive ? "#1a1a1a" : "transparent",
                       color: isActive ? "#FAFAFA" : "#bbb",
@@ -259,7 +259,7 @@ function GarmentRow({
           )}
 
           {allActions.length === 0 && (
-            <div style={{ fontSize: 9, color: "#ddd", padding: "2px 0" }}>No suggested actions</div>
+            <div style={{ fontSize: 11, color: "#ddd", padding: "2px 0" }}>No suggested actions</div>
           )}
 
           {/* Freeform overlay edits */}
@@ -271,7 +271,7 @@ function GarmentRow({
                   onClick={(e) => { e.stopPropagation(); removeFreeform(text); }}
                   className="cursor-pointer transition-colors"
                   style={{
-                    fontSize: 9, color: "#aaa", fontStyle: "italic",
+                    fontSize: 11, color: "#aaa", fontStyle: "italic",
                     borderBottom: "1px dashed rgba(0,0,0,0.1)", lineHeight: 1.6,
                   }}
                   onMouseEnter={(e) => { (e.target as HTMLElement).style.color = "#c33"; }}
@@ -288,7 +288,7 @@ function GarmentRow({
           {!showInput ? (
             <div
               onClick={(e) => { e.stopPropagation(); setShowInput(true); }}
-              style={{ marginTop: 5, fontSize: 9, color: "#D4D4D8", cursor: "text", padding: "3px 0" }}
+              style={{ marginTop: 5, fontSize: 11, color: "#D4D4D8", cursor: "text", padding: "3px 0" }}
             >
               + custom edit
             </div>
@@ -307,7 +307,7 @@ function GarmentRow({
               placeholder="describe a change..."
               className="outline-none"
               style={{
-                marginTop: 4, width: "100%", fontSize: 9, padding: "4px 0",
+                marginTop: 4, width: "100%", fontSize: 11, padding: "4px 0",
                 border: "none", borderBottom: "1px solid rgba(0,0,0,0.08)",
                 background: "transparent", color: "#1a1a1a", boxSizing: "border-box",
               }}
@@ -380,7 +380,7 @@ export function LayersPanel({
     return (
       <div className="flex flex-col h-full" style={{ background: "#FAFAFA" }}>
         <div className="px-4 pt-4 pb-2">
-          <h3 className="font-semibold" style={{ fontSize: 13, color: "#1a1a1a", letterSpacing: "-0.02em" }}>Layers</h3>
+          <h3 className="font-semibold" style={{ fontSize: 15, color: "#1a1a1a", letterSpacing: "-0.02em" }}>Layers</h3>
         </div>
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="text-center">
@@ -389,7 +389,7 @@ export function LayersPanel({
                 <polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" />
               </svg>
             </div>
-            <p style={{ fontSize: 10, color: "#71717A" }}>Select garments from the rack to build your look</p>
+            <p style={{ fontSize: 12, color: "#52525B" }}>Select garments from the rack to build your look</p>
           </div>
         </div>
       </div>
@@ -401,9 +401,9 @@ export function LayersPanel({
       {/* Header */}
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold" style={{ fontSize: 13, color: "#1a1a1a", letterSpacing: "-0.02em" }}>Layers</h3>
+          <h3 className="font-semibold" style={{ fontSize: 15, color: "#1a1a1a", letterSpacing: "-0.02em" }}>Layers</h3>
           <div className="flex items-center gap-2">
-            <span className="font-mono" style={{ fontSize: 9, color: "#71717A" }}>
+            <span className="font-mono" style={{ fontSize: 11, color: "#52525B" }}>
               {selectedGarments.length} item{selectedGarments.length !== 1 ? "s" : ""}
             </span>
             <button onClick={clearSelection} className="p-1 rounded hover:bg-[#ffffff] transition-colors" title="Clear all">
@@ -447,7 +447,7 @@ export function LayersPanel({
           onClick={onGenerate}
           disabled={isGenerating || selectedGarments.length === 0 || !!hasProcessingSelected}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full font-medium transition-all hover:opacity-90 disabled:opacity-30"
-          style={{ background: "#1a1a1a", color: "#fff", fontSize: 10 }}
+          style={{ background: "#1a1a1a", color: "#fff", fontSize: 12 }}
         >
           {isGenerating ? (
             <><Loader2 size={12} className="animate-spin" />Generating...</>
@@ -463,7 +463,7 @@ export function LayersPanel({
             onClick={onApplyStyleChanges}
             disabled={isGenerating}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium transition-all hover:opacity-90 disabled:opacity-30"
-            style={{ background: "transparent", color: "#1a1a1a", fontSize: 10, border: "1px solid #d4cfc7" }}
+            style={{ background: "transparent", color: "#1a1a1a", fontSize: 12, border: "1px solid #d4cfc7" }}
           >
             <RefreshCw size={12} />Apply Style Changes
           </button>
@@ -474,7 +474,7 @@ export function LayersPanel({
             onClick={onResetLook}
             disabled={isGenerating}
             className="w-full text-center transition-colors hover:opacity-70 disabled:opacity-30"
-            style={{ fontSize: 9, color: '#71717A', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+            style={{ fontSize: 11, color: '#52525B', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
           >
             Reset Look
           </button>
@@ -488,14 +488,14 @@ export function LayersPanel({
               onChange={(e) => setOutfitName(e.target.value)}
               placeholder="Outfit name..."
               className="flex-1 px-3 py-1.5 rounded-lg border-none outline-none"
-              style={{ background: "#ffffff", fontSize: 9, color: "#1a1a1a" }}
+              style={{ background: "#ffffff", fontSize: 11, color: "#1a1a1a" }}
               maxLength={128}
             />
             <button
               onClick={handleSaveOutfit}
               disabled={isSaving || !outfitName.trim()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all hover:opacity-80 disabled:opacity-30"
-              style={{ background: "#ffffff", color: "#1a1a1a", fontSize: 9 }}
+              style={{ background: "#ffffff", color: "#1a1a1a", fontSize: 11 }}
             >
               <Save size={10} />Save
             </button>

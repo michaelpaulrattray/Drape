@@ -62,7 +62,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#71717A" }} />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#52525B" }} />
       </div>
     );
   }
@@ -72,8 +72,8 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
       <div className="h-full flex items-center justify-center p-6">
         <div className="text-center" style={{ color: "#999" }}>
           <Package className="w-8 h-8 mx-auto mb-3" style={{ color: "#ccc" }} />
-          <p style={{ fontSize: 12, fontWeight: 500 }}>No model loaded</p>
-          <p style={{ fontSize: 11, marginTop: 4 }}>Cast and generate views first</p>
+          <p style={{ fontSize: 14, fontWeight: 500 }}>No model loaded</p>
+          <p style={{ fontSize: 13, marginTop: 4 }}>Cast and generate views first</p>
         </div>
       </div>
     );
@@ -84,24 +84,24 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
       {/* Header */}
       <div className="flex-shrink-0 px-5 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
         <div className="flex items-center justify-between mb-1">
-          <span style={{ fontSize: 9, fontWeight: 600, color: "#71717A", letterSpacing: "0.08em" }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#52525B", letterSpacing: "0.08em" }}>
             EXPORT PACK
           </span>
           {isMinted && (
             <span
               className="flex items-center gap-1 px-2 py-0.5 rounded-full"
-              style={{ fontSize: 9, fontWeight: 600, color: "#1a1a1a", background: "#eae7e1" }}
+              style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", background: "#eae7e1" }}
             >
               <Shield className="w-2.5 h-2.5" />
               CASTED
             </span>
           )}
         </div>
-        <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 2 }}>
+        <p style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a", marginBottom: 2 }}>
           {modelName}
         </p>
         {agencyId && (
-          <p style={{ fontSize: 10, color: "#71717A", fontFamily: "monospace" }}>{agencyId}</p>
+          <p style={{ fontSize: 12, color: "#52525B", fontFamily: "monospace" }}>{agencyId}</p>
         )}
       </div>
 
@@ -160,7 +160,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
             <div className="rounded-xl p-3" style={{ background: "#F4F4F5" }}>
               <div className="flex items-center gap-2 mb-2">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "#1a1a1a" }} />
-                <span style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a" }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: "#1a1a1a" }}>
                   {STEP_LABELS[step]}
                 </span>
               </div>
@@ -210,7 +210,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
           iconSpin={isExporting}
         />
 
-        <p className="text-center mt-2" style={{ fontSize: 9, color: "#71717A" }}>
+        <p className="text-center mt-2" style={{ fontSize: 11, color: "#52525B" }}>
           {savedLooks.length > 0
             ? `${viewAssets.length} views + ${savedLooks.length} looks · 2K resolution`
             : "All exports rendered at 2K resolution"}
@@ -233,14 +233,14 @@ function SectionLabel({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <Icon className="w-3 h-3" style={{ color: "#71717A" }} />
-      <span style={{ fontSize: 9, fontWeight: 600, color: "#71717A", letterSpacing: "0.08em" }}>
+      <Icon className="w-3 h-3" style={{ color: "#52525B" }} />
+      <span style={{ fontSize: 11, fontWeight: 600, color: "#52525B", letterSpacing: "0.08em" }}>
         {label}
       </span>
       {count !== undefined && (
         <span
           className="ml-auto px-1.5 py-0.5 rounded-full"
-          style={{ fontSize: 8, fontWeight: 600, color: "#999", background: "rgba(0,0,0,0.04)" }}
+          style={{ fontSize: 10, fontWeight: 600, color: "#999", background: "rgba(0,0,0,0.04)" }}
         >
           {count}
         </span>
@@ -281,7 +281,7 @@ function ViewThumbnail({
         className="absolute bottom-0 left-0 right-0 px-2 py-1.5"
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}
       >
-        <span style={{ fontSize: 9, fontWeight: 500, color: "#fff" }}>{asset.label}</span>
+        <span style={{ fontSize: 11, fontWeight: 500, color: "#fff" }}>{asset.label}</span>
       </div>
     </div>
   );
@@ -336,7 +336,7 @@ function LookThumbnail({
         className="absolute bottom-0 left-0 right-0 px-2 py-1.5"
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}
       >
-        <span style={{ fontSize: 9, fontWeight: 500, color: "#fff" }}>{displayName}</span>
+        <span style={{ fontSize: 11, fontWeight: 500, color: "#fff" }}>{displayName}</span>
       </div>
     </div>
   );
@@ -369,7 +369,7 @@ function ActionButton({
         background: isPrimary ? "#1a1a1a" : "transparent",
         border: isPrimary ? "none" : "1.5px solid rgba(0,0,0,0.1)",
         color: isPrimary ? "#fff" : "#1a1a1a",
-        fontSize: 11,
+        fontSize: 13,
         fontWeight: 600,
         opacity: disabled ? (isPrimary ? 0.7 : 0.5) : 1,
         cursor: disabled ? "not-allowed" : "pointer",
@@ -397,7 +397,7 @@ function AttributeGrid({ preferences }: { preferences: Record<string, string | u
   );
 
   if (entries.length === 0) {
-    return <p style={{ fontSize: 10, color: "#999" }}>No attributes recorded</p>;
+    return <p style={{ fontSize: 12, color: "#999" }}>No attributes recorded</p>;
   }
 
   return (
@@ -411,9 +411,9 @@ function AttributeGrid({ preferences }: { preferences: Record<string, string | u
           <span
             className="flex-shrink-0"
             style={{
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: 600,
-              color: "#71717A",
+              color: "#52525B",
               letterSpacing: "0.04em",
               textTransform: "uppercase",
               minWidth: 70,
@@ -423,7 +423,7 @@ function AttributeGrid({ preferences }: { preferences: Record<string, string | u
           </span>
           <p
             className="text-right"
-            style={{ fontSize: 10, color: "#1a1a1a", fontWeight: 500, lineHeight: 1.4 }}
+            style={{ fontSize: 12, color: "#1a1a1a", fontWeight: 500, lineHeight: 1.4 }}
           >
             {String(value)}
           </p>

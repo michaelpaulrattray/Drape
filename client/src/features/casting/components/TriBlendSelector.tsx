@@ -149,11 +149,11 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
       {/* Header */}
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
         <div className="flex items-center gap-1.5">
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a' }}>Tone & Energy</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>Tone & Energy</span>
           <Tooltip content="Drag the sliders or type a value (0-1000). Tap a preset to snap to a known vibe." />
         </div>
         <span style={{
-          fontSize: 10, fontWeight: 400, color: '#71717A',
+          fontSize: 12, fontWeight: 400, color: '#52525B',
           fontStyle: 'italic', opacity: activePreset ? 1 : 0.5,
         }}>
           {activePreset ? activePreset.label : 'Custom'}
@@ -163,7 +163,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
       {/* EDGE SLIDER */}
       <div style={{ marginBottom: 16 }}>
         <div className="flex items-baseline justify-between" style={{ marginBottom: 8 }}>
-          <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.06em', color: '#777168', textTransform: 'lowercase' }}>
+          <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', color: '#777168', textTransform: 'lowercase' }}>
             <span style={{ color: '#d4d0c9', marginRight: 1 }}>--</span>edge
           </span>
           <input
@@ -175,7 +175,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
             className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             style={{
               width: 42, textAlign: 'right', fontFamily: 'inherit',
-              fontSize: 11, fontWeight: 600, color: '#1a1a1a',
+              fontSize: 13, fontWeight: 600, color: '#1a1a1a',
               background: 'none', border: 'none', borderBottom: '1px solid transparent',
               outline: 'none', padding: '0 0 1px 0',
             }}
@@ -191,7 +191,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
             <div style={{ position: 'absolute', inset: 0, borderRadius: 2, background: '#FAFAFA' }} />
             <div style={{
               position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 2,
-              background: 'linear-gradient(to right, #A1A1AA, #888580, #4a4846, #1a1a1a)',
+              background: 'linear-gradient(to right, #71717A, #888580, #4a4846, #1a1a1a)',
               width: `${pctEdge}%`, transition: 'width 0.12s ease-out',
             }} />
           </div>
@@ -204,15 +204,15 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
           }} />
         </div>
         <div className="flex justify-between" style={{ marginTop: 5 }}>
-          <span style={{ fontSize: 8, color: '#d4d0c9' }}>safe</span>
-          <span style={{ fontSize: 8, color: '#d4d0c9' }}>bold</span>
+          <span style={{ fontSize: 10, color: '#d4d0c9' }}>safe</span>
+          <span style={{ fontSize: 10, color: '#d4d0c9' }}>bold</span>
         </div>
       </div>
 
       {/* HEAT SLIDER */}
       <div>
         <div className="flex items-baseline justify-between" style={{ marginBottom: 8 }}>
-          <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.06em', color: '#777168', textTransform: 'lowercase' }}>
+          <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', color: '#777168', textTransform: 'lowercase' }}>
             <span style={{ color: '#d4d0c9', marginRight: 1 }}>--</span>heat
           </span>
           <input
@@ -224,7 +224,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
             className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             style={{
               width: 42, textAlign: 'right', fontFamily: 'inherit',
-              fontSize: 11, fontWeight: 600, color: '#1a1a1a',
+              fontSize: 13, fontWeight: 600, color: '#1a1a1a',
               background: 'none', border: 'none', borderBottom: '1px solid transparent',
               outline: 'none', padding: '0 0 1px 0',
             }}
@@ -253,13 +253,13 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
           }} />
         </div>
         <div className="flex justify-between" style={{ marginTop: 5 }}>
-          <span style={{ fontSize: 8, color: '#d4d0c9' }}>narrative</span>
-          <span style={{ fontSize: 8, color: '#d4d0c9' }}>commanding</span>
+          <span style={{ fontSize: 10, color: '#d4d0c9' }}>narrative</span>
+          <span style={{ fontSize: 10, color: '#d4d0c9' }}>commanding</span>
         </div>
       </div>
 
       {/* Description */}
-      <div style={{ fontSize: 9, color: '#71717A', marginTop: 12, paddingLeft: 2, lineHeight: 1.4, minHeight: 13 }}>
+      <div style={{ fontSize: 11, color: '#52525B', marginTop: 12, paddingLeft: 2, lineHeight: 1.4, minHeight: 13 }}>
         {activePreset ? activePreset.desc : getCustomDesc(edge, heat)}
       </div>
 
@@ -269,8 +269,8 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
         className="flex items-center gap-1.5 transition-colors"
         style={{
           marginTop: 10, padding: 0, background: 'none', border: 'none', cursor: 'pointer',
-          fontFamily: 'inherit', fontSize: 8, fontWeight: 600,
-          letterSpacing: '0.06em', color: '#71717A',
+          fontFamily: 'inherit', fontSize: 10, fontWeight: 600,
+          letterSpacing: '0.06em', color: '#52525B',
         }}
       >
         <svg
@@ -301,7 +301,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                 style={{
                   background: isActive ? '#1a1a1a' : '#F4F4F5',
                   color: isActive ? '#fff' : '#888',
-                  fontSize: 10, fontWeight: isActive ? 600 : 400,
+                  fontSize: 12, fontWeight: isActive ? 600 : 400,
                   border: 'none', cursor: 'pointer', lineHeight: 1.2,
                   fontFamily: 'inherit',
                 }}

@@ -27,20 +27,20 @@ export const StageLockModal = ({
           padding: 24,
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
+        <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
           {title}
         </div>
-        <div style={{ fontSize: 11, color: '#71717A', lineHeight: 1.5, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: '#52525B', lineHeight: 1.5, marginBottom: 20 }}>
           {message}
         </div>
         <div className="flex justify-end gap-3">
-          <button onClick={onCancel} style={{ fontSize: 11, fontWeight: 500, color: '#71717A' }}>
+          <button onClick={onCancel} style={{ fontSize: 13, fontWeight: 500, color: '#52525B' }}>
             Cancel
           </button>
           <button
             onClick={onConfirm}
             className="px-5 py-2 rounded-xl"
-            style={{ background: '#1a1a1a', color: '#fff', fontSize: 11, fontWeight: 600 }}
+            style={{ background: '#1a1a1a', color: '#fff', fontSize: 13, fontWeight: 600 }}
           >
             Confirm
           </button>

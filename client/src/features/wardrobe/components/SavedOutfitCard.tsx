@@ -98,7 +98,7 @@ export function SavedOutfitCard({
         >
           <span
             className="font-mono uppercase"
-            style={{ fontSize: 7, color: "#fff", letterSpacing: "0.05em" }}
+            style={{ fontSize: 9, color: "#fff", letterSpacing: "0.05em" }}
           >
             Outfit · {garmentIds.length}
           </span>
@@ -118,13 +118,13 @@ export function SavedOutfitCard({
       <div className="px-2 py-1.5">
         <p
           className="font-medium truncate"
-          style={{ fontSize: 10, color: "#1a1a1a" }}
+          style={{ fontSize: 12, color: "#1a1a1a" }}
         >
           {name}
         </p>
         <p
           className="font-mono"
-          style={{ fontSize: 7, color: "#71717A" }}
+          style={{ fontSize: 9, color: "#52525B" }}
         >
           {formattedDate}
         </p>

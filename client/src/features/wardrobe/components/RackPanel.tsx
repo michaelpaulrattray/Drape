@@ -164,7 +164,7 @@ export function RackPanel() {
           <h2
             className="font-semibold"
             style={{
-              fontSize: 13,
+              fontSize: 15,
               color: "#1a1a1a",
               letterSpacing: "-0.02em",
             }}
@@ -182,7 +182,7 @@ export function RackPanel() {
             </button>
             <span
               className="font-mono"
-              style={{ fontSize: 9, color: "#71717A" }}
+              style={{ fontSize: 11, color: "#52525B" }}
             >
               {slotCounts[activeSlot]}/{MAX_GARMENTS_PER_SLOT}
             </span>
@@ -202,7 +202,7 @@ export function RackPanel() {
                 style={{
                   background: isActive ? "#1a1a1a" : "transparent",
                   color: isActive ? "#fff" : "#999",
-                  fontSize: 9,
+                  fontSize: 11,
                 }}
               >
                 <tab.icon size={14} strokeWidth={1.5} />
@@ -216,7 +216,7 @@ export function RackPanel() {
                   <span
                     className="font-mono"
                     style={{
-                      fontSize: 7,
+                      fontSize: 9,
                       opacity: 0.6,
                     }}
                   >
@@ -239,7 +239,7 @@ export function RackPanel() {
           className="w-full px-3 py-1.5 rounded-lg border-none outline-none"
           style={{
             background: "#ffffff",
-            fontSize: 10,
+            fontSize: 12,
             color: "#1a1a1a",
           }}
         />
@@ -314,7 +314,7 @@ export function RackPanel() {
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                <span className="font-mono" style={{ fontSize: 8 }}>
+                <span className="font-mono" style={{ fontSize: 10 }}>
                   {isUploading ? "UPLOADING..." : "ADD"}
                 </span>
               </button>
@@ -332,7 +332,7 @@ export function RackPanel() {
               />
               <span
                 className="font-mono uppercase"
-                style={{ fontSize: 8, color: "#71717A", letterSpacing: "0.05em" }}
+                style={{ fontSize: 10, color: "#52525B", letterSpacing: "0.05em" }}
               >
                 Saved Outfits
               </span>
@@ -385,7 +385,7 @@ export function RackPanel() {
               </svg>
               <span
                 className="font-mono uppercase"
-                style={{ fontSize: 10, color: "#fff" }}
+                style={{ fontSize: 12, color: "#fff" }}
               >
                 Drop to add garment
               </span>
@@ -446,13 +446,13 @@ function EmptySlot({
       </div>
       <p
         className="text-center mb-1"
-        style={{ fontSize: 11, color: "#1a1a1a", fontWeight: 500 }}
+        style={{ fontSize: 13, color: "#1a1a1a", fontWeight: 500 }}
       >
         No {labels[slotType]} yet
       </p>
       <p
         className="text-center mb-4"
-        style={{ fontSize: 9, color: "#71717A" }}
+        style={{ fontSize: 11, color: "#52525B" }}
       >
         Upload a photo or drag & drop
       </p>
@@ -463,7 +463,7 @@ function EmptySlot({
         style={{
           background: "#1a1a1a",
           color: "#fff",
-          fontSize: 10,
+          fontSize: 12,
         }}
       >
         {isUploading ? "Uploading..." : "Upload Garment"}

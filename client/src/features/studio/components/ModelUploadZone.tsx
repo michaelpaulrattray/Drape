@@ -134,7 +134,7 @@ export function ModelUploadZone() {
               className="w-8 h-8 animate-spin"
               style={{ color: '#1a1a1a' }}
             />
-            <span style={{ fontSize: 12, color: '#1a1a1a', fontWeight: 500 }}>
+            <span style={{ fontSize: 14, color: '#1a1a1a', fontWeight: 500 }}>
               Uploading...
             </span>
           </div>
@@ -144,16 +144,16 @@ export function ModelUploadZone() {
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
               style={{ background: '#F4F4F5' }}
             >
-              <ImagePlus className="w-6 h-6" style={{ color: '#71717A' }} />
+              <ImagePlus className="w-6 h-6" style={{ color: '#52525B' }} />
             </div>
             <div className="text-center">
-              <p style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>
+              <p style={{ fontSize: 15, fontWeight: 500, color: '#1a1a1a' }}>
                 Upload Your Model
               </p>
-              <p style={{ fontSize: 11, color: '#71717A', marginTop: 2 }}>
+              <p style={{ fontSize: 13, color: '#52525B', marginTop: 2 }}>
                 Drag & drop or click to browse
               </p>
-              <p style={{ fontSize: 10, color: '#A1A1AA', marginTop: 6 }}>
+              <p style={{ fontSize: 12, color: '#71717A', marginTop: 6 }}>
                 Full-body photo recommended · JPEG, PNG, WebP · Max 10 MB
               </p>
             </div>
@@ -184,7 +184,7 @@ export function ModelUploadZone() {
       {/* Divider */}
       <div className="flex items-center gap-3 w-full">
         <div className="flex-1 h-px" style={{ background: 'rgba(0,0,0,0.08)' }} />
-        <span style={{ fontSize: 10, color: '#A1A1AA', fontWeight: 500, letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: 12, color: '#71717A', fontWeight: 500, letterSpacing: '0.05em' }}>
           OR
         </span>
         <div className="flex-1 h-px" style={{ background: 'rgba(0,0,0,0.08)' }} />

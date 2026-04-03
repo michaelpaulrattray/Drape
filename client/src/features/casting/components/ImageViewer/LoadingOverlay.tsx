@@ -157,7 +157,7 @@ export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: Loa
         {/* Cycling contextual tip */}
         <p
           style={{
-            fontSize: 10,
+            fontSize: 12,
             color: tipColor,
             lineHeight: 1.5,
             fontStyle: 'italic',

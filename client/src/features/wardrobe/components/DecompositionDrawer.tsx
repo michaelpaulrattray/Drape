@@ -260,7 +260,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                 boxShadow: isScanning ? "0 0 6px rgba(232,168,62,0.4)" : "none",
               }}
             />
-            <span style={{ fontSize: 11, fontWeight: 500, color: "#888" }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#888" }}>
               {isScanning
                 ? "Detecting garments..."
                 : isImporting
@@ -308,7 +308,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                       className="w-5 h-5 rounded-full border-2 animate-spin mb-2"
                       style={{ borderColor: "#E4E4E7", borderTopColor: "#1a1a1a" }}
                     />
-                    <span style={{ fontSize: 10, fontWeight: 500, color: "#999" }}>Detecting...</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "#999" }}>Detecting...</span>
                   </div>
                 )}
 
@@ -331,7 +331,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                           left: `${centerX}%`,
                           transform: `translate(-50%, -50%) scale(${isHovered ? 1.08 : 1})`,
                           borderRadius: 20,
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: 600,
                           backgroundColor: isSelected ? color : "rgba(255,255,255,0.85)",
                           color: isSelected ? "#fff" : color,
@@ -359,7 +359,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Scissors size={28} strokeWidth={1.5} style={{ color: "#999" }} />
-                <span style={{ fontSize: 12, fontWeight: 500, color: "#999" }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#999" }}>
                   Drop an outfit photo or click to browse
                 </span>
               </div>
@@ -440,14 +440,14 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                               style={{
                                 background: "#FAFAFA",
                                 border: "1px solid rgba(0,0,0,0.08)",
-                                fontSize: 12,
+                                fontSize: 14,
                                 color: "#1a1a1a",
                               }}
                             />
                           ) : (
                             <div
                               className="cursor-text group/label"
-                              style={{ fontSize: 12, fontWeight: 500, color: "#1a1a1a" }}
+                              style={{ fontSize: 14, fontWeight: 500, color: "#1a1a1a" }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setEditingId(item.id);
@@ -457,7 +457,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                               {item.label}
                               <span
                                 className="ml-1 opacity-0 group-hover/label:opacity-100 transition-opacity"
-                                style={{ fontSize: 9, color: "#bbb" }}
+                                style={{ fontSize: 11, color: "#bbb" }}
                               >
                                 edit
                               </span>
@@ -469,7 +469,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                             <span
                               className="inline-block px-2 py-0.5 rounded-full"
                               style={{
-                                fontSize: 9,
+                                fontSize: 11,
                                 fontWeight: 600,
                                 backgroundColor: color + "12",
                                 color: color,
@@ -490,7 +490,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                                     background: "rgba(139,115,85,0.2)",
                                   }}
                                 >
-                                  <span style={{ fontSize: 7, color: "#8B7355", fontWeight: 700, lineHeight: 1 }}>!</span>
+                                  <span style={{ fontSize: 9, color: "#8B7355", fontWeight: 700, lineHeight: 1 }}>!</span>
                                 </span>
                                 <span
                                   className="absolute bottom-full left-0 mb-1 px-2 py-1 rounded-lg opacity-0 group-hover/vis:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
@@ -498,7 +498,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                                     background: "rgba(26,26,26,0.9)",
                                     backdropFilter: "blur(8px)",
                                     color: "#e8e4de",
-                                    fontSize: 9,
+                                    fontSize: 11,
                                     lineHeight: 1.4,
                                     zIndex: 20,
                                   }}
@@ -517,13 +517,13 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
 
               {!isScanning && items.length === 0 && !previewUrl && (
                 <div className="py-12 text-center">
-                  <span style={{ fontSize: 11, color: "#bbb" }}>Select a photo to get started</span>
+                  <span style={{ fontSize: 13, color: "#bbb" }}>Select a photo to get started</span>
                 </div>
               )}
 
               {!isScanning && items.length === 0 && previewUrl && (
                 <div className="py-12 text-center">
-                  <span style={{ fontSize: 11, color: "#bbb" }}>No garments detected</span>
+                  <span style={{ fontSize: 13, color: "#bbb" }}>No garments detected</span>
                 </div>
               )}
             </div>
@@ -537,7 +537,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                 style={{
                   background: "#1a1a1a",
                   color: "#FAFAFA",
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: 700,
                   letterSpacing: "0.06em",
                 }}
@@ -550,7 +550,7 @@ export function DecompositionDrawer({ open, onClose }: DecompositionDrawerProps)
                   onClick={handleKeepAsFullLook}
                   disabled={isScanning || isImporting}
                   className="w-full py-2.5 rounded-xl transition-colors hover:bg-[#F4F4F5]"
-                  style={{ fontSize: 10, fontWeight: 500, color: "#999", background: "transparent" }}
+                  style={{ fontSize: 12, fontWeight: 500, color: "#999", background: "transparent" }}
                 >
                   Keep as Full Look Instead
                 </button>

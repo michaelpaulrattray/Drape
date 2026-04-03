@@ -94,7 +94,7 @@ export function GarmentCard({
             />
             <span
               className="font-mono uppercase"
-              style={{ fontSize: 8, color: "#999" }}
+              style={{ fontSize: 10, color: "#999" }}
             >
               Analyzing
             </span>
@@ -137,7 +137,7 @@ export function GarmentCard({
           rounded-full transition-all
           ${isProcessing ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
         `}
-        style={{ background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 12 }}
+        style={{ background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 14 }}
       >
         &times;
       </button>
@@ -151,7 +151,7 @@ export function GarmentCard({
         <div
           className="font-semibold truncate"
           style={{
-            fontSize: 10,
+            fontSize: 12,
             color: "#1a1a1a",
             letterSpacing: "-0.01em",
           }}
@@ -167,7 +167,7 @@ export function GarmentCard({
                 key={i}
                 className="px-1.5 py-px rounded-full flex-shrink-0"
                 style={{
-                  fontSize: 7,
+                  fontSize: 9,
                   background: "rgba(0,0,0,0.04)",
                   color: "#999",
                 }}
@@ -178,7 +178,7 @@ export function GarmentCard({
             {tags.length > 2 && (
               <span
                 className="flex-shrink-0"
-                style={{ fontSize: 7, color: "#ccc" }}
+                style={{ fontSize: 9, color: "#ccc" }}
               >
                 +{tags.length - 2}
               </span>
@@ -195,7 +195,7 @@ export function GarmentCard({
             />
             <span
               className="italic truncate"
-              style={{ fontSize: 7, color: "#bbb" }}
+              style={{ fontSize: 9, color: "#bbb" }}
               title={styleNote}
             >
               {styleNote}

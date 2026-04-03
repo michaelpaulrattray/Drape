@@ -285,7 +285,7 @@ export function StudioCanvas({
           {/* Status label with fade transition */}
           <div className="flex items-center gap-1.5 px-2.5 relative" style={{ minWidth: 60, height: 20, overflow: 'hidden' }}>
             {isGenerating && (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ color: '#71717A', flexShrink: 0 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ color: '#52525B', flexShrink: 0 }}>
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
@@ -294,7 +294,7 @@ export function StudioCanvas({
               key={isComparing ? '__comparing__' : statusLabel}
               className="studio-status-fade-in"
               style={{
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: isGenerating ? 400 : 500,
                 color: isGenerating ? '#aaa' : '#888',
                 whiteSpace: 'nowrap',
@@ -329,19 +329,19 @@ export function StudioCanvas({
             backdropFilter: "blur(8px)",
           }}
         >
-          <span style={{ fontSize: 11, color: "#c33", fontWeight: 500 }}>{errorMessage}</span>
+          <span style={{ fontSize: 13, color: "#c33", fontWeight: 500 }}>{errorMessage}</span>
           <div className="flex items-center gap-2">
             {onClearError && (
               <button
                 onClick={onClearError}
-                style={{ fontSize: 10, fontWeight: 500, color: "#999" }}
+                style={{ fontSize: 12, fontWeight: 500, color: "#999" }}
               >
                 Dismiss
               </button>
             )}
             <button
               onClick={onRetry}
-              style={{ fontSize: 10, fontWeight: 600, color: "#1a1a1a", textDecoration: "underline" }}
+              style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", textDecoration: "underline" }}
             >
               Retry
             </button>
@@ -403,7 +403,7 @@ export function StudioCanvas({
                   style={{
                     background: "rgba(124,138,239,0.85)",
                     backdropFilter: "blur(8px)",
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: "#fff",
                     letterSpacing: "0.02em",
@@ -424,7 +424,7 @@ export function StudioCanvas({
                     background: "rgba(255,255,255,0.88)",
                     boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
                     backdropFilter: "blur(12px)",
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: "#777",
                     opacity: imageAreaHovered ? 1 : 0,

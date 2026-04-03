@@ -42,7 +42,7 @@ export function QueueStatusBar({ isGenerating }: QueueStatusBarProps) {
     <div
       className="flex items-center justify-center gap-1.5"
       style={{
-        fontSize: 9,
+        fontSize: 11,
         color: "rgba(255,255,255,0.35)",
         fontFamily: "ui-monospace, monospace",
         letterSpacing: "0.06em",

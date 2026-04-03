@@ -57,7 +57,7 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
           <button
             onClick={() => navigate('/dashboard')}
             className="flex items-center gap-1.5 transition-colors group"
-            style={{ color: '#71717A' }}
+            style={{ color: '#52525B' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = '#1a1a1a';
             }}
@@ -75,9 +75,9 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
           <span
             className="hidden sm:block"
             style={{
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: 500,
-              color: '#71717A',
+              color: '#52525B',
               letterSpacing: '0.04em',
             }}
           >
@@ -113,7 +113,7 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
             >
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
               {creditsBalance}
             </span>
           </button>
@@ -144,7 +144,7 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
                 className="w-full h-full flex items-center justify-center"
                 style={{ background: '#1a1a1a' }}
               >
-                <span style={{ fontSize: 10, fontWeight: 600, color: '#fff' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>
                   {userInitial}
                 </span>
               </div>

@@ -181,7 +181,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
           <Home className="w-4 h-4" />
           <div
             className="absolute left-full ml-2 px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
-            style={{ background: '#1a1a1a', color: '#fff', fontSize: 10 }}
+            style={{ background: '#1a1a1a', color: '#fff', fontSize: 12 }}
           >
             Start
           </div>
@@ -250,7 +250,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
                 style={{
                   background: '#1a1a1a',
                   color: '#fff',
-                  fontSize: 10,
+                  fontSize: 12,
                 }}
               >
                 {availability.tooltip}

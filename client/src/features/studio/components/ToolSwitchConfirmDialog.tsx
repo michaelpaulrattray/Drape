@@ -49,7 +49,7 @@ export function ToolSwitchConfirmDialog({
             <AlertTriangle className="w-4 h-4" style={{ color: '#d97706' }} />
           </div>
           <div>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a' }}>
               Switch to {targetToolLabel}?
             </h3>
           </div>
@@ -57,7 +57,7 @@ export function ToolSwitchConfirmDialog({
 
         {/* Message */}
         <div className="px-5 pb-4">
-          <p style={{ fontSize: 12, color: '#52525B', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 14, color: '#52525B', lineHeight: 1.6 }}>
             {message}
           </p>
         </div>
@@ -70,14 +70,14 @@ export function ToolSwitchConfirmDialog({
           <button
             onClick={onCancel}
             className="flex-1 py-2 rounded-lg font-medium transition-all hover:bg-gray-50"
-            style={{ fontSize: 12, color: '#52525B', background: 'transparent' }}
+            style={{ fontSize: 14, color: '#52525B', background: 'transparent' }}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 py-2 rounded-lg font-medium transition-all hover:opacity-90"
-            style={{ fontSize: 12, color: '#fff', background: '#1a1a1a' }}
+            style={{ fontSize: 14, color: '#fff', background: '#1a1a1a' }}
           >
             Switch & Reset
           </button>

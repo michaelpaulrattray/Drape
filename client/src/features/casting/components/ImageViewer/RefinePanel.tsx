@@ -93,14 +93,14 @@ export function RefinePanel({
           className="flex items-center justify-center gap-2 p-2 rounded-2xl"
           style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
         >
-          <span style={{ fontSize: 11, color: '#7c6bef', fontWeight: 500 }}>
+          <span style={{ fontSize: 13, color: '#7c6bef', fontWeight: 500 }}>
             {hasMask ? 'Ready to Erase' : 'Paint Area to Erase'}
           </span>
           {hasMask && (
             <button
               onClick={handleSubmit}
               className="px-4 py-1.5 rounded-lg transition-all"
-              style={{ background: '#7c6bef', color: '#fff', fontSize: 10, fontWeight: 600 }}
+              style={{ background: '#7c6bef', color: '#fff', fontSize: 12, fontWeight: 600 }}
             >
               Erase
             </button>
@@ -119,7 +119,7 @@ export function RefinePanel({
           style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-          <span style={{ fontSize: 11, color: '#71717A' }}>{iterationDisabledReason}</span>
+          <span style={{ fontSize: 13, color: '#52525B' }}>{iterationDisabledReason}</span>
         </div>
       </div>
     );
@@ -135,11 +135,11 @@ export function RefinePanel({
         >
           <div className="flex items-center gap-2">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-            <span style={{ fontSize: 11, color: '#71717A' }}>View Locked</span>
+            <span style={{ fontSize: 13, color: '#52525B' }}>View Locked</span>
           </div>
           <button
             onClick={() => setUnlockMode(true)}
-            style={{ fontSize: 10, fontWeight: 600, color: '#1a1a1a', textDecoration: 'underline' }}
+            style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', textDecoration: 'underline' }}
           >
             Unlock
           </button>
@@ -205,8 +205,8 @@ export function RefinePanel({
           placeholder={getPlaceholder()}
           rows={1}
           disabled={!isIterationAllowed}
-          className="flex-1 outline-none resize-none bg-transparent placeholder-[#71717A]"
-          style={{ border: 'none', fontSize: 12, color: '#1a1a1a', lineHeight: 1.5, padding: '8px 8px', minHeight: 34, maxHeight: 80 }}
+          className="flex-1 outline-none resize-none bg-transparent placeholder-[#52525B]"
+          style={{ border: 'none', fontSize: 14, color: '#1a1a1a', lineHeight: 1.5, padding: '8px 8px', minHeight: 34, maxHeight: 80 }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -223,7 +223,7 @@ export function RefinePanel({
           style={{
             background: refineInput.trim() ? '#1a1a1a' : '#E4E4E7',
             color: refineInput.trim() ? '#fff' : '#aaa',
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: 600,
           }}
         >

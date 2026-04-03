@@ -72,7 +72,7 @@ function ViewThumbnail({
         className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-center"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)' }}
       >
-        <span style={{ fontSize: 8, fontWeight: 600, color: '#fff', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textTransform: 'uppercase' }}>
           {label}
         </span>
       </div>
@@ -94,9 +94,9 @@ function AddViewButton({ onClick, visible }: { onClick: () => void; visible: boo
         border: '2px dashed rgba(0,0,0,0.1)',
         background: 'rgba(255,255,255,0.5)',
         backdropFilter: 'blur(8px)',
-        fontSize: 8,
+        fontSize: 10,
         fontWeight: 600,
-        color: '#71717A',
+        color: '#52525B',
         opacity: visible ? 1 : 0,
         transform: visible ? 'scale(1)' : 'scale(0.9)',
         transition: 'all 0.2s ease',

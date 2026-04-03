@@ -47,13 +47,13 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
       {/* Header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
-          <Crown className="w-3.5 h-3.5" style={{ color: '#71717A' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#71717A', letterSpacing: '0.05em' }}>
+          <Crown className="w-3.5 h-3.5" style={{ color: '#52525B' }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#52525B', letterSpacing: '0.05em' }}>
             MY MODELS
           </span>
           <span
             className="px-1.5 py-0.5 rounded-full"
-            style={{ fontSize: 9, fontWeight: 600, color: '#71717A', background: '#F4F4F5' }}
+            style={{ fontSize: 11, fontWeight: 600, color: '#52525B', background: '#F4F4F5' }}
           >
             {models.length}
           </span>
@@ -65,14 +65,14 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
             <button
               onClick={() => scroll('left')}
               className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-gray-100"
-              style={{ color: '#71717A' }}
+              style={{ color: '#52525B' }}
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => scroll('right')}
               className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-gray-100"
-              style={{ color: '#71717A' }}
+              style={{ color: '#52525B' }}
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -140,7 +140,7 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
                 <p
                   className="truncate"
                   style={{
-                    fontSize: 11,
+                    fontSize: 13,
                     fontWeight: 600,
                     color: '#fff',
                     lineHeight: 1.2,
@@ -152,7 +152,7 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
                   <p
                     className="truncate mt-0.5"
                     style={{
-                      fontSize: 9,
+                      fontSize: 11,
                       color: 'rgba(255,255,255,0.7)',
                       fontFamily: 'monospace',
                     }}

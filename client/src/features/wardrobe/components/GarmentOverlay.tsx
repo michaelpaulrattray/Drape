@@ -189,11 +189,11 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
               backdropFilter: "blur(12px)",
             }}
           >
-            <span style={{ fontSize: 10, fontWeight: 500, color: "#555" }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: "#555" }}>
               {cursorLabel}
             </span>
             {hitCount > 1 && (
-              <span style={{ fontSize: 8, color: "#bbb" }}>
+              <span style={{ fontSize: 10, color: "#bbb" }}>
                 +{hitCount - 1}
               </span>
             )}
@@ -231,7 +231,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                 >
                   <span
                     style={{
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: 600,
                       color: "#999",
                       letterSpacing: "0.06em",
@@ -242,7 +242,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                   <button
                     onClick={dismissAll}
                     className="w-5 h-5 flex items-center justify-center transition-colors"
-                    style={{ color: "#bbb", fontSize: 14 }}
+                    style={{ color: "#bbb", fontSize: 16 }}
                   >
                     ×
                   </button>
@@ -265,7 +265,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                         <div
                           className="truncate"
                           style={{
-                            fontSize: 11,
+                            fontSize: 13,
                             fontWeight: 500,
                             color: "#1a1a1a",
                           }}
@@ -274,7 +274,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                         </div>
                         <div
                           style={{
-                            fontSize: 8,
+                            fontSize: 10,
                             color: "#bbb",
                             letterSpacing: "0.06em",
                             marginTop: 2,
@@ -317,7 +317,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                         style={{
                           background: "#F4F4F5",
                           color: "#999",
-                          fontSize: 11,
+                          fontSize: 13,
                         }}
                       >
                         ←
@@ -325,7 +325,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                     )}
                     <span
                       style={{
-                        fontSize: 11,
+                        fontSize: 13,
                         fontWeight: 500,
                         color: "#1a1a1a",
                       }}
@@ -339,7 +339,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                     style={{
                       background: "#F4F4F5",
                       color: "#bbb",
-                      fontSize: 14,
+                      fontSize: 16,
                     }}
                   >
                     ×
@@ -360,7 +360,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                     style={{
                       background: "#F4F4F5",
                       border: "1px solid rgba(0,0,0,0.06)",
-                      fontSize: 12,
+                      fontSize: 14,
                       color: "#1a1a1a",
                     }}
                   />
@@ -369,7 +369,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                     disabled={!styleInput.trim()}
                     className="rounded-xl px-4 py-2 whitespace-nowrap transition-all"
                     style={{
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: 700,
                       letterSpacing: "0.04em",
                       background: styleInput.trim() ? "#1a1a1a" : "#F4F4F5",

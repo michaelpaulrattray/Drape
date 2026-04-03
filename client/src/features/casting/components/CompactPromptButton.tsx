@@ -31,14 +31,14 @@ export function CompactPromptButton({ onCompact, isCompacting }: CompactPromptBu
         className="w-full flex items-center justify-between group"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#757575]">
+          <span className="text-[12px] font-semibold uppercase tracking-wider text-[#757575]">
             Master Prompt
           </span>
-          <span className="text-[9px] font-medium text-[#757575]/60 bg-[#EBEBEB] px-1.5 py-0.5 rounded-full">
+          <span className="text-[11px] font-medium text-[#757575]/60 bg-[#EBEBEB] px-1.5 py-0.5 rounded-full">
             {charCount.toLocaleString()} chars
           </span>
           {amendments.length > 0 && (
-            <span className="text-[9px] font-medium text-amber-600/80 bg-amber-50 px-1.5 py-0.5 rounded-full">
+            <span className="text-[11px] font-medium text-amber-600/80 bg-amber-50 px-1.5 py-0.5 rounded-full">
               {amendments.length} {amendments.length === 1 ? 'amendment' : 'amendments'}
             </span>
           )}
@@ -55,20 +55,20 @@ export function CompactPromptButton({ onCompact, isCompacting }: CompactPromptBu
           {identityWarning && (
             <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200/50 rounded-lg">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-              <p className="text-[10px] text-amber-700 leading-relaxed">{identityWarning}</p>
+              <p className="text-[12px] text-amber-700 leading-relaxed">{identityWarning}</p>
             </div>
           )}
 
           {/* Prompt Text */}
           <div className="relative">
-            <pre className="text-[10px] leading-relaxed text-[#0A0A0A]/70 font-mono bg-[#F5F5F5] rounded-lg p-3 max-h-[200px] overflow-y-auto custom-scrollbar whitespace-pre-wrap break-words">
+            <pre className="text-[12px] leading-relaxed text-[#0A0A0A]/70 font-mono bg-[#F5F5F5] rounded-lg p-3 max-h-[200px] overflow-y-auto custom-scrollbar whitespace-pre-wrap break-words">
               {masterPrompt}
             </pre>
           </div>
 
           {/* Compact Button */}
           <div className="flex items-center justify-between">
-            <p className="text-[9px] text-[#757575]/60">
+            <p className="text-[11px] text-[#757575]/60">
               {canCompact
                 ? 'Prompt has accumulated amendments — compaction recommended'
                 : 'Compaction available after 2+ amendments'}
@@ -77,7 +77,7 @@ export function CompactPromptButton({ onCompact, isCompacting }: CompactPromptBu
               onClick={onCompact}
               disabled={!canCompact || isCompacting}
               className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold
+                flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold
                 transition-all duration-200
                 ${canCompact && !isCompacting
                   ? 'bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/80'

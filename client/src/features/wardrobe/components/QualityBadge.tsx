@@ -21,7 +21,7 @@ export function QualityBadge({ issues }: QualityBadgeProps) {
         className="w-2.5 h-2.5 rounded-full flex items-center justify-center"
         style={{ background: "rgba(139,115,85,0.35)" }}
       >
-        <span style={{ fontSize: 7, color: "#8B7355", fontWeight: 700, lineHeight: 1 }}>!</span>
+        <span style={{ fontSize: 9, color: "#8B7355", fontWeight: 700, lineHeight: 1 }}>!</span>
       </div>
       {/* Tooltip on hover */}
       <div
@@ -30,7 +30,7 @@ export function QualityBadge({ issues }: QualityBadgeProps) {
           background: "rgba(26,26,26,0.9)",
           backdropFilter: "blur(8px)",
           color: "#e8e4de",
-          fontSize: 9,
+          fontSize: 11,
           maxWidth: 200,
           lineHeight: 1.4,
         }}

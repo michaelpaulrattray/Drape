@@ -48,7 +48,7 @@ export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible,
         <div key={s.key} className="flex items-center gap-1.5">
           <span
             style={{
-              fontSize: 9,
+              fontSize: 11,
               fontWeight: 700,
               color: "#bbb",
               padding: "1px 4px",
@@ -59,7 +59,7 @@ export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible,
           >
             {s.key}
           </span>
-          <span style={{ fontSize: 9, color: "#bbb" }}>{s.label}</span>
+          <span style={{ fontSize: 11, color: "#bbb" }}>{s.label}</span>
         </div>
       ))}
 
@@ -75,8 +75,8 @@ export function WardrobeShortcutsBar({ hasResult, isGenerating, controlsVisible,
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             title="Download image"
           >
-            <Download className="w-3 h-3" style={{ color: '#71717A' }} />
-            <span style={{ fontSize: 9, color: '#71717A', fontWeight: 500 }}>Save</span>
+            <Download className="w-3 h-3" style={{ color: '#52525B' }} />
+            <span style={{ fontSize: 11, color: '#52525B', fontWeight: 500 }}>Save</span>
           </button>
         </>
       )}
@@ -98,8 +98,8 @@ export function WardrobeEmptyState() {
           <circle cx="12" cy="7" r="4" />
         </svg>
       </div>
-      <p style={{ fontSize: 12, fontWeight: 500, color: "#1a1a1a" }}>No model on canvas</p>
-      <p style={{ fontSize: 10, color: "#71717A", marginTop: 4 }}>Cast a model first, then switch to Wardrobe</p>
+      <p style={{ fontSize: 14, fontWeight: 500, color: "#1a1a1a" }}>No model on canvas</p>
+      <p style={{ fontSize: 12, color: "#52525B", marginTop: 4 }}>Cast a model first, then switch to Wardrobe</p>
     </div>
   );
 }
