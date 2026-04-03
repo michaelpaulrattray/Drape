@@ -3,6 +3,7 @@ import { Menu, X, Sparkles, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { BugReportTrigger } from '@/components/BugReportButton';
+import { FeedbackPopout } from './FeedbackPopout';
 import { useStudioStore } from '../stores/useStudioStore';
 
 /** Tool label mapping for breadcrumb */
@@ -284,12 +285,7 @@ export function StudioHeader() {
 
       {/* Right: Feedback · Docs · Bug · Bell · Mobile Toggle */}
       <div className="flex items-center gap-4">
-        <HeaderLink
-          label="Feedback"
-          onClick={() => {
-            toast.info('Use the bug icon to submit feedback.');
-          }}
-        />
+        <FeedbackPopout />
         <HeaderLink
           label="Docs"
           onClick={() => {

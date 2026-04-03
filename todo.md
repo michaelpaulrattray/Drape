@@ -275,3 +275,6 @@
 - [x] Add "Docs" text link (placeholder for future guides)
 - [x] Add bell icon with news/updates dropdown panel
 - [x] Fix studio lobby content width being too narrow — maxWidth 680→960
+- [x] Remove category selection from bug report popout
+- [x] Make Feedback its own separate report type (distinct from bug reports)
+- [x] Wire "Feedback" header link to open a dedicated feedback popout

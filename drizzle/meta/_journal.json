@@ -260,6 +260,13 @@
       "when": 1775211732813,
       "tag": "0036_misty_gideon",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1775232520120,
+      "tag": "0037_wide_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }

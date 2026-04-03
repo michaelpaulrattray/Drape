@@ -14,7 +14,7 @@ export const bugReportsRouter = router({
   submit: protectedProcedure
     .input(z.object({
       description: z.string().min(10, "Please describe the issue in at least 10 characters").max(2000),
-      category: z.enum(["casting", "export", "billing", "ui", "other"]).default("other"),
+      category: z.enum(["casting", "export", "billing", "ui", "other", "feedback"]).default("other"),
       page: z.string().max(256).optional(),
       modelId: z.number().int().positive().optional(),
       viewport: z.string().max(32).optional(),
@@ -43,9 +43,11 @@ export const bugReportsRouter = router({
       });
 
       // Send Slack notification (non-blocking)
+      const isFeedback = input.category === "feedback";
+
       dispatch({
         type: "bug_report",
-        title: "Bug Report Submitted",
+        title: isFeedback ? "User Feedback Received" : "Bug Report Submitted",
         description: input.description,
         severity: "info",
         channels: ["system-alerts"],

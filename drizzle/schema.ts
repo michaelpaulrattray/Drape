@@ -609,7 +609,7 @@ export const bugReports = mysqlTable("bug_reports", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   description: text("description").notNull(),
-  category: mysqlEnum("category", ["casting", "wardrobe", "export", "billing", "ui", "other"]).default("other").notNull(),
+  category: mysqlEnum("category", ["casting", "wardrobe", "export", "billing", "ui", "other", "feedback"]).default("other").notNull(),
   page: varchar("page", { length: 256 }), // URL/route where bug was reported
   modelId: int("modelId"), // Model ID if applicable
   userAgent: varchar("userAgent", { length: 512 }),

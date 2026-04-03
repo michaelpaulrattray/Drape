@@ -2,14 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
-import { Bug, X, Send } from "lucide-react";
+import { X, Send, MessageSquare } from "lucide-react";
 
 /**
- * Inline bug report trigger — place inside any nav bar.
- * Renders just the icon button + the popout modal.
- * Category is hardcoded to "other" (no chips).
+ * FeedbackPopout — dedicated feedback form, distinct from bug reports.
+ * Submits with category="feedback" so it's easily filterable in the DB and Slack.
  */
-export function BugReportTrigger() {
+export function FeedbackPopout() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -19,7 +18,7 @@ export function BugReportTrigger() {
 
   const submitMutation = trpc.bugReports.submit.useMutation({
     onSuccess: () => {
-      toast.success("Bug report submitted. Thank you!");
+      toast.success("Feedback submitted. Thank you!");
       setDescription("");
       setOpen(false);
     },
@@ -55,12 +54,12 @@ export function BugReportTrigger() {
 
   const handleSubmit = () => {
     if (description.trim().length < 10) {
-      toast.error("Please describe the issue in at least 10 characters.");
+      toast.error("Please share at least 10 characters of feedback.");
       return;
     }
     submitMutation.mutate({
       description: description.trim(),
-      category: "other",
+      category: "feedback",
       page: window.location.pathname,
       viewport: `${window.innerWidth}x${window.innerHeight}`,
     });
@@ -75,36 +74,28 @@ export function BugReportTrigger() {
 
   return (
     <div className="relative">
-      {/* Trigger icon */}
+      {/* Trigger — text link */}
       <button
         ref={triggerRef}
         onClick={() => setOpen(!open)}
-        className="flex h-7 w-7 items-center justify-center rounded-full transition-all"
+        className="flex items-center gap-1.5 transition-colors"
         style={{
-          background: open ? 'rgba(0,0,0,0.06)' : 'transparent',
-          color: open ? '#1a1a1a' : '#999',
+          fontSize: 13,
+          fontWeight: 500,
+          color: open ? '#1a1a1a' : '#888',
+          letterSpacing: '-0.01em',
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(0,0,0,0.06)';
-          e.currentTarget.style.color = '#1a1a1a';
-        }}
-        onMouseLeave={(e) => {
-          if (!open) {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = '#999';
-          }
-        }}
-        aria-label="Report a bug"
-        title="Report a bug"
+        onMouseEnter={(e) => { e.currentTarget.style.color = '#1a1a1a'; }}
+        onMouseLeave={(e) => { if (!open) e.currentTarget.style.color = '#888'; }}
       >
-        <Bug className="h-3.5 w-3.5" />
+        Feedback
       </button>
 
       {/* Popout card */}
       {open && (
         <div
           ref={popoutRef}
-          className="absolute top-full right-0 mt-2 w-[320px] rounded-xl shadow-lg z-[9999]"
+          className="absolute top-full right-0 mt-2 w-[340px] rounded-xl shadow-lg z-[9999]"
           style={{
             background: '#fff',
             border: '1px solid rgba(0,0,0,0.08)',
@@ -112,9 +103,12 @@ export function BugReportTrigger() {
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', letterSpacing: '-0.01em' }}>
-              Report a Bug
-            </h3>
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-3.5 w-3.5" style={{ color: '#1a1a1a' }} />
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', letterSpacing: '-0.01em' }}>
+                Share Feedback
+              </h3>
+            </div>
             <button
               onClick={() => setOpen(false)}
               className="flex h-6 w-6 items-center justify-center rounded-md transition-colors"
@@ -126,6 +120,13 @@ export function BugReportTrigger() {
             </button>
           </div>
 
+          {/* Hint text */}
+          <div className="px-4 pb-2">
+            <p style={{ fontSize: 12, color: '#999', lineHeight: 1.5 }}>
+              Help us improve Drape. Share ideas, feature requests, or anything you'd like to see.
+            </p>
+          </div>
+
           {/* Textarea */}
           <div className="px-4 pb-2">
             <textarea
@@ -133,7 +134,7 @@ export function BugReportTrigger() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Tell us what went wrong..."
+              placeholder="What would you like to see improved?"
               rows={4}
               maxLength={2000}
               className="w-full resize-none rounded-lg px-3 py-2 focus:outline-none"
@@ -174,12 +175,4 @@ export function BugReportTrigger() {
       )}
     </div>
   );
-}
-
-/**
- * @deprecated Use BugReportTrigger inside nav bars instead.
- * Kept for backwards compatibility — renders nothing.
- */
-export default function BugReportButton() {
-  return null;
 }
