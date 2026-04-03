@@ -202,3 +202,4 @@
 - [x] Email Verification: Build "Check Your Email" client page with resend
 - [x] Email Verification: Write vitest tests for verification flow
 - [x] Email Verification: Upgrade email template to match Drape brand aesthetic
+- [x] AUTH CLEANUP: Audit and remove all remaining Manus OAuth references (getLoginUrl, sdk.exchangeToken, OAuth callback)

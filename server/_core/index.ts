@@ -3,7 +3,6 @@ import express from "express";
 import { createServer, type Server as HttpServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -166,8 +165,6 @@ async function startServer() {
   // Configure body parser with size limit for file uploads (15MB covers base64 images + JSON metadata)
   app.use(express.json({ limit: "15mb" }));
   app.use(express.urlencoded({ limit: "15mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
 
   // Email/password auth routes
   const { emailAuthRouter } = await import("../routes/emailAuth");
