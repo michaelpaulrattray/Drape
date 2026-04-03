@@ -372,28 +372,12 @@ export function AppSidebar({
 
       {/* Sidebar item styles + glow keyframes */}
       <style>{`
-        .sidebar-item {
-          background: transparent;
-          color: #888;
-        }
-        .sidebar-item-active {
-          background: rgba(0,0,0,0.06) !important;
-          color: #1a1a1a !important;
-        }
-        .sidebar-item-glowing {
-          background: rgba(0,0,0,0.04);
-          color: #1a1a1a;
-        }
-        .sidebar-item-disabled {
-          color: #d4d4d4;
-        }
         .sidebar-item-hoverable:hover {
           background: rgba(0,0,0,0.04);
           color: #1a1a1a;
         }
         .sidebar-user-menu-item {
           color: #888;
-          background: transparent;
         }
         .sidebar-user-menu-item:hover {
           background: rgba(0,0,0,0.04);
@@ -404,7 +388,6 @@ export function AppSidebar({
         }
         .sidebar-toggle-btn {
           color: #bbb;
-          background: transparent;
         }
         .sidebar-toggle-btn:hover {
           background: rgba(0,0,0,0.04);
@@ -485,24 +468,32 @@ function SidebarItem({
   tooltip,
   onClick,
 }: SidebarItemProps) {
-  // Build className for CSS-only hover (no imperative style manipulation)
-  const baseClasses = 'relative flex items-center rounded-lg transition-all duration-150 group sidebar-item';
+  // CSS-only hover via class; active/disabled/glowing via inline style (React-controlled, no flash)
   const hoverClass = !active && !disabled ? 'sidebar-item-hoverable' : '';
-  const activeClass = active ? 'sidebar-item-active' : '';
-  const glowClass = glowing ? 'sidebar-item-glowing' : '';
-  const disabledClass = disabled ? 'sidebar-item-disabled' : '';
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       title={!expanded ? (tooltip || label) : undefined}
-      className={`${baseClasses} ${hoverClass} ${activeClass} ${glowClass} ${disabledClass}`}
+      className={`relative flex items-center rounded-lg transition-colors duration-150 group ${hoverClass}`}
       style={{
         height: 40,
         gap: expanded ? 12 : 0,
         padding: expanded ? '0 12px' : '0',
         justifyContent: expanded ? 'flex-start' : 'center',
+        background: active
+          ? 'rgba(0,0,0,0.06)'
+          : glowing
+            ? 'rgba(0,0,0,0.04)'
+            : undefined,
+        color: active
+          ? '#1a1a1a'
+          : glowing
+            ? '#1a1a1a'
+            : disabled
+              ? '#d4d4d4'
+              : '#888',
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.45 : 1,
         animation: glowing ? 'toolGlow 1.5s ease-in-out 3' : 'none',
@@ -570,12 +561,13 @@ function SidebarLinkItem({
   return (
     <Link href={href}>
       <div
-        className="relative flex items-center rounded-lg transition-all duration-150 group cursor-pointer sidebar-item sidebar-item-hoverable"
+        className="relative flex items-center rounded-lg transition-colors duration-150 group cursor-pointer sidebar-item-hoverable"
         style={{
           height: 40,
           gap: expanded ? 12 : 0,
           padding: expanded ? '0 12px' : '0',
           justifyContent: expanded ? 'flex-start' : 'center',
+          color: '#888',
           width: expanded ? '100%' : 40,
           margin: expanded ? 0 : '0 auto',
         }}
