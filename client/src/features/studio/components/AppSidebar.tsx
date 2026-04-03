@@ -36,8 +36,8 @@ import type { CanvasState } from '../types';
 import { ToolSwitchConfirmDialog } from './ToolSwitchConfirmDialog';
 
 const SIDEBAR_STORAGE_KEY = 'drape_sidebar_expanded';
-const COLLAPSED_WIDTH = 56;
-const EXPANDED_WIDTH = 240;
+const COLLAPSED_WIDTH = 64;
+const EXPANDED_WIDTH = 260;
 
 /** Icon mapping for each tool */
 const TOOL_ICONS: Record<

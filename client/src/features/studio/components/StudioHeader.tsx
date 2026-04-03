@@ -1,4 +1,4 @@
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Sparkles } from 'lucide-react';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { BugReportTrigger } from '@/components/BugReportButton';
 import { useStudioStore } from '../stores/useStudioStore';
@@ -31,8 +31,12 @@ export function StudioHeader({ creditsBalance }: StudioHeaderProps) {
         borderBottom: '1px solid rgba(0,0,0,0.06)',
       }}
     >
-      {/* Left: Breadcrumb */}
-      <div className="flex items-center">
+      {/* Left: Icon + Breadcrumb */}
+      <div className="flex items-center gap-2">
+        <Sparkles
+          className="flex-shrink-0"
+          style={{ width: 15, height: 15, color: '#8B7355', opacity: 0.7 }}
+        />
         <span
           style={{
             fontSize: 14,

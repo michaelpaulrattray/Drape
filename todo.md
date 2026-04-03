@@ -267,3 +267,5 @@
 - [x] Phase 4: Polish sidebar icons, spacing, section labels (TOOLS, ADMIN)
 - [x] Phase 4: Refine toggle button styling
 - [x] Phase 4: Cleanup dead Dashboard code and unused imports
+- [x] Widen sidebar: collapsed 56→64px, expanded 240→260px to match ElevenLabs proportions
+- [x] Add premium sparkle icon next to breadcrumb text in StudioHeader
