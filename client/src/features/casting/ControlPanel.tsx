@@ -120,7 +120,7 @@ export function ControlPanel({
       lg:relative lg:flex lg:flex-col lg:pt-0
       h-full flex flex-col
     `}
-      style={{ background: '#faf8f5' }}
+      style={{ background: '#F4F4F5' }}
     >
       {/* Header */}
       <div className="p-4 pb-3">
