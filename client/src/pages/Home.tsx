@@ -9,6 +9,7 @@ import { HomeNavbar } from "@/features/home/HomeNavbar";
 import { HeroContent } from "@/features/home/HeroContent";
 import { PartnersBar } from "@/features/home/PartnersBar";
 import { WaitlistModal } from "@/features/home/WaitlistModal";
+import { VideoPreviewModal } from "@/features/home/VideoPreviewModal";
 
 // Proxied through /api/hero/video to bypass preview iframe URL safety check.
 // TODO: Switch back to direct CDN URL before launch for better performance.
@@ -16,6 +17,7 @@ const VIDEO_URL = "/api/hero/video";
 
 export default function Home() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden">
@@ -30,7 +32,7 @@ export default function Home() {
         >
           <source src={VIDEO_URL} type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-black/20 z-0" />
+        <div className="absolute inset-0 bg-black/35 z-0" />
       </div>
 
       {/* ── Gradient fade to white ── */}
@@ -43,7 +45,7 @@ export default function Home() {
       <div className="relative z-10 flex flex-col">
         <HomeNavbar onClaimSpot={() => setWaitlistOpen(true)} />
         <div className="min-h-screen flex flex-col justify-center">
-          <HeroContent />
+          <HeroContent onPlayDemo={() => setDemoOpen(true)} />
           <PartnersBar />
         </div>
       </div>
@@ -74,6 +76,12 @@ export default function Home() {
       <WaitlistModal
         open={waitlistOpen}
         onClose={() => setWaitlistOpen(false)}
+      />
+
+      {/* ── Video Preview Modal (triggered by "See it in action") ── */}
+      <VideoPreviewModal
+        open={demoOpen}
+        onClose={() => setDemoOpen(false)}
       />
     </div>
   );

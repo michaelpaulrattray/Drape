@@ -6,7 +6,7 @@
  * Email validation + submission via tRPC waitlist.join mutation.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Users, Check, Loader2 } from "lucide-react";
+import { ArrowRight, Users, Check, Loader2, Play } from "lucide-react";
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -19,7 +19,11 @@ const fadeUp = (delay: number) => ({
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function HeroContent() {
+interface HeroContentProps {
+  onPlayDemo?: () => void;
+}
+
+export function HeroContent({ onPlayDemo }: HeroContentProps) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -114,6 +118,21 @@ export function HeroContent() {
                   Join 500+ creatives on the waitlist
                 </span>
               </div>
+
+              {/* See it in action */}
+              {onPlayDemo && (
+                <button
+                  onClick={onPlayDemo}
+                  className="flex items-center gap-2 mt-2 group"
+                >
+                  <span className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/25 transition-colors">
+                    <Play className="h-3.5 w-3.5 text-white ml-0.5" />
+                  </span>
+                  <span className="font-body text-sm text-white/60 group-hover:text-white/90 transition-colors">
+                    See it in action
+                  </span>
+                </button>
+              )}
             </>
           ) : (
             <div className="flex items-center gap-2 text-white/90 font-body text-sm font-medium">
