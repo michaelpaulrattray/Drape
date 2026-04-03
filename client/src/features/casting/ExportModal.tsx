@@ -54,7 +54,7 @@ export const ExportModal = ({
             {viewCount !== undefined && (
               <div
                 className="absolute bottom-3 right-4 flex items-center gap-1"
-                style={{ fontSize: 9, color: '#999' }}
+                style={{ fontSize: 9, color: '#71717A' }}
               >
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -71,13 +71,13 @@ export const ExportModal = ({
           <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
             Export Casting Pack
           </div>
-          <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5, marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: '#71717A', lineHeight: 1.5, marginBottom: 16 }}>
             Assign a name to finalize this casting session.
           </div>
 
           {/* Name input */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 9, fontWeight: 600, color: '#bbb', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+            <label style={{ fontSize: 9, fontWeight: 600, color: '#A1A1AA', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
               MODEL NAME
             </label>
             <input
@@ -103,7 +103,7 @@ export const ExportModal = ({
           </div>
 
           {/* Resolution footnote */}
-          <div style={{ fontSize: 9, color: '#bbb', marginBottom: 16 }}>
+          <div style={{ fontSize: 9, color: '#A1A1AA', marginBottom: 16 }}>
             All exports are rendered at 2K resolution.
           </div>
 
@@ -111,7 +111,7 @@ export const ExportModal = ({
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              style={{ fontSize: 11, fontWeight: 500, color: '#999' }}
+              style={{ fontSize: 11, fontWeight: 500, color: '#71717A' }}
             >
               Cancel
             </button>

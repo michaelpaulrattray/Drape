@@ -162,12 +162,12 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
           title="Back to start"
           className="relative w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 group mb-1"
           style={{
-            background: activeTool === null ? '#f5f3ef' : 'transparent',
+            background: activeTool === null ? '#F4F4F5' : 'transparent',
             color: activeTool === null ? '#1a1a1a' : '#bbb',
           }}
           onMouseEnter={(e) => {
             if (activeTool !== null) {
-              e.currentTarget.style.background = '#f5f3ef';
+              e.currentTarget.style.background = '#F4F4F5';
               e.currentTarget.style.color = '#1a1a1a';
             }
           }}
@@ -208,7 +208,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
                 background: isActive
                   ? '#1a1a1a'
                   : isGlowing
-                    ? '#f5f3ef'
+                    ? '#F4F4F5'
                     : 'transparent',
                 color: isActive
                   ? '#fff'
@@ -223,7 +223,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
               }}
               onMouseEnter={(e) => {
                 if (!isActive && availability.enabled) {
-                  e.currentTarget.style.background = '#f5f3ef';
+                  e.currentTarget.style.background = '#F4F4F5';
                   e.currentTarget.style.color = '#1a1a1a';
                 }
               }}

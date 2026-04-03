@@ -57,7 +57,7 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
           <button
             onClick={() => navigate('/dashboard')}
             className="flex items-center gap-1.5 transition-colors group"
-            style={{ color: '#999' }}
+            style={{ color: '#71717A' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = '#1a1a1a';
             }}
@@ -77,7 +77,7 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
             style={{
               fontSize: 11,
               fontWeight: 500,
-              color: '#999',
+              color: '#71717A',
               letterSpacing: '0.04em',
             }}
           >
@@ -91,12 +91,12 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
           <button
             onClick={() => useCastingUIStore.getState().setIsTopupOpen(true)}
             className="flex items-center gap-1.5 rounded-full px-3 py-1 transition-colors"
-            style={{ background: '#f5f3ef' }}
+            style={{ background: '#F4F4F5' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = '#eae7e1';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#f5f3ef';
+              e.currentTarget.style.background = '#F4F4F5';
             }}
           >
             <svg

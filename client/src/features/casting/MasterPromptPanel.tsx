@@ -179,7 +179,7 @@ export function MasterPromptPanel() {
                   onClick={() => setIsCollapsed(true)}
                   title="Collapse panel"
                   className="hover:text-black transition-colors"
-                  style={{ color: '#ccc', display: 'flex', alignItems: 'center', padding: 2 }}
+                  style={{ color: '#A1A1AA', display: 'flex', alignItems: 'center', padding: 2 }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="9 18 15 12 9 6" />
@@ -197,7 +197,7 @@ export function MasterPromptPanel() {
                   style={{
                     fontSize: 9,
                     fontWeight: activeTab === tab ? 600 : 400,
-                    background: activeTab === tab ? '#1a1a1a' : '#f5f3ef',
+                    background: activeTab === tab ? '#1a1a1a' : '#F4F4F5',
                     color: activeTab === tab ? '#fff' : '#999',
                   }}
                 >
@@ -225,7 +225,7 @@ export function MasterPromptPanel() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#5cad5c' }} />
-                        <span style={{ fontSize: 9, color: '#999' }}>
+                        <span style={{ fontSize: 9, color: '#71717A' }}>
                           {viewCount} view{viewCount !== 1 ? 's' : ''}
                         </span>
                       </div>
@@ -237,8 +237,8 @@ export function MasterPromptPanel() {
                 {amendments.length > 0 && (
                   <div className="rounded-lg overflow-hidden" style={{ background: 'rgba(92,173,92,0.06)', border: '1px solid rgba(92,173,92,0.12)' }}>
                     <div className="px-2.5 py-1.5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(92,173,92,0.08)' }}>
-                      <span style={{ fontSize: 9, fontWeight: 600, color: '#999', letterSpacing: '0.05em' }}>EDIT LOG</span>
-                      <span style={{ fontSize: 9, color: '#bbb' }}>{amendments.length} edit{amendments.length !== 1 ? 's' : ''}</span>
+                      <span style={{ fontSize: 9, fontWeight: 600, color: '#71717A', letterSpacing: '0.05em' }}>EDIT LOG</span>
+                      <span style={{ fontSize: 9, color: '#A1A1AA' }}>{amendments.length} edit{amendments.length !== 1 ? 's' : ''}</span>
                     </div>
                     <div className="custom-scrollbar" style={{ maxHeight: 140, overflowY: 'auto', padding: '4px 0' }}>
                       {[...amendments].reverse().map((a, i) => (
@@ -246,9 +246,9 @@ export function MasterPromptPanel() {
                           <span style={{ fontSize: 9, fontWeight: 700, color: '#5cad5c', fontFamily: 'ui-monospace, monospace', flexShrink: 0, minWidth: 20 }}>
                             v{a.version}
                           </span>
-                          <span style={{ color: '#666', flex: 1 }}>{a.text}</span>
+                          <span style={{ color: '#52525B', flex: 1 }}>{a.text}</span>
                           {a.view !== 'frontClose' && (
-                            <span style={{ fontSize: 8, fontWeight: 600, color: '#bbb', padding: '1px 4px', borderRadius: 3, background: 'rgba(0,0,0,0.04)', flexShrink: 0 }}>
+                            <span style={{ fontSize: 8, fontWeight: 600, color: '#A1A1AA', padding: '1px 4px', borderRadius: 3, background: 'rgba(0,0,0,0.04)', flexShrink: 0 }}>
                               {a.view === 'frontFull' ? 'BODY' : a.view === 'sideClose' ? 'SIDE' : a.view.toUpperCase()}
                             </span>
                           )}
@@ -260,22 +260,22 @@ export function MasterPromptPanel() {
 
                 {/* Reference Image Section */}
                 <div>
-                  <div style={{ fontSize: 9, fontWeight: 600, color: '#bbb', letterSpacing: '0.06em', marginBottom: 6 }}>REFERENCE</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: '#A1A1AA', letterSpacing: '0.06em', marginBottom: 6 }}>REFERENCE</div>
                   {prefs.referenceImage ? (
                     <div className="relative group">
                       <div className="rounded-xl overflow-hidden" style={{ border: '1.5px solid rgba(0,0,0,0.06)' }}>
                         <img src={prefs.referenceImage} alt="Reference" className="w-full object-cover" style={{ maxHeight: 120 }} />
                       </div>
-                      <div className="mt-2 px-2.5 py-2 rounded-lg" style={{ background: '#f9f8f5', fontSize: 9, color: '#b8b3a8', lineHeight: 1.5 }}>
-                        <span style={{ fontWeight: 600, color: '#999' }}>How to use:</span> describe what to transfer in the refine bar — e.g. "use hairstyle from reference" or "apply eye makeup from reference image"
-                        <div style={{ marginTop: 4, color: '#ccc' }}>
+                      <div className="mt-2 px-2.5 py-2 rounded-lg" style={{ background: '#F4F4F5', fontSize: 9, color: '#71717A', lineHeight: 1.5 }}>
+                        <span style={{ fontWeight: 600, color: '#71717A' }}>How to use:</span> describe what to transfer in the refine bar — e.g. "use hairstyle from reference" or "apply eye makeup from reference image"
+                        <div style={{ marginTop: 4, color: '#A1A1AA' }}>
                           Press <span style={{ fontFamily: 'monospace', fontWeight: 700, background: 'rgba(0,0,0,0.04)', padding: '0 3px', borderRadius: 2 }}>F</span> to toggle on canvas · Drag to reposition · Corner to resize
                         </div>
                       </div>
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ padding: '3px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', fontSize: 9, fontWeight: 600, color: '#777', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                        style={{ padding: '3px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', fontSize: 9, fontWeight: 600, color: '#71717A', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
                       >
                         Replace
                       </button>
@@ -299,7 +299,7 @@ export function MasterPromptPanel() {
                           padding: '14px 12px',
                           borderRadius: 12,
                           border: isDragging ? '1.5px dashed #1a1a1a' : '1.5px dashed rgba(0,0,0,0.1)',
-                          background: isDragging ? 'rgba(26,26,26,0.03)' : '#f9f8f5',
+                          background: isDragging ? 'rgba(26,26,26,0.03)' : '#F4F4F5',
                           textAlign: 'center',
                         }}
                       >
@@ -310,10 +310,10 @@ export function MasterPromptPanel() {
                             <circle cx="8.5" cy="8.5" r="1.5" />
                           </svg>
                         </div>
-                        <div style={{ fontSize: 10, fontWeight: 500, color: '#999' }}>{isDragging ? 'Drop image' : 'Add Reference'}</div>
-                        <div style={{ fontSize: 9, color: '#ccc', marginTop: 2 }}>Drop or click to browse</div>
+                        <div style={{ fontSize: 10, fontWeight: 500, color: '#71717A' }}>{isDragging ? 'Drop image' : 'Add Reference'}</div>
+                        <div style={{ fontSize: 9, color: '#A1A1AA', marginTop: 2 }}>Drop or click to browse</div>
                       </div>
-                      <div className="mt-2 px-2.5 py-2 rounded-lg" style={{ background: '#f9f8f5', fontSize: 9, color: '#b8b3a8', lineHeight: 1.5 }}>
+                      <div className="mt-2 px-2.5 py-2 rounded-lg" style={{ background: '#F4F4F5', fontSize: 9, color: '#71717A', lineHeight: 1.5 }}>
                         Upload a photo of a hairstyle, tattoo, accessory, or look you want to transfer to your model. Then describe what to use in the refine bar — the AI will visually reference this image during iteration.
                       </div>
                     </>
@@ -324,12 +324,12 @@ export function MasterPromptPanel() {
                 {/* Parameter Sections */}
                 {profileSections.map((section) => (
                   <div key={section.label}>
-                    <div style={{ fontSize: 9, fontWeight: 600, color: '#bbb', letterSpacing: '0.06em', marginBottom: 6 }}>{section.label}</div>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: '#A1A1AA', letterSpacing: '0.06em', marginBottom: 6 }}>{section.label}</div>
                     <div className="space-y-0.5">
                       {section.items.map((item) => (
-                        <div key={item.key} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg" style={{ background: '#f9f8f5' }}>
-                          <span style={{ fontSize: 10, color: '#999' }}>{item.key}</span>
-                          <span style={{ fontSize: 10, fontWeight: 500, color: '#555' }}>{item.value}</span>
+                        <div key={item.key} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg" style={{ background: '#F4F4F5' }}>
+                          <span style={{ fontSize: 10, color: '#71717A' }}>{item.key}</span>
+                          <span style={{ fontSize: 10, fontWeight: 500, color: '#52525B' }}>{item.value}</span>
                         </div>
                       ))}
                     </div>
@@ -339,8 +339,8 @@ export function MasterPromptPanel() {
                 {/* Casting Notes */}
                 {prefs.features && (
                   <div>
-                    <div style={{ fontSize: 9, fontWeight: 600, color: '#bbb', letterSpacing: '0.06em', marginBottom: 6 }}>NOTES</div>
-                    <div className="px-2.5 py-2 rounded-lg" style={{ background: '#f9f8f5', fontSize: 10, color: '#777', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: '#A1A1AA', letterSpacing: '0.06em', marginBottom: 6 }}>NOTES</div>
+                    <div className="px-2.5 py-2 rounded-lg" style={{ background: '#F4F4F5', fontSize: 10, color: '#71717A', lineHeight: 1.5 }}>
                       {prefs.features}
                     </div>
                   </div>
@@ -358,7 +358,7 @@ export function MasterPromptPanel() {
                       style={{
                         fontSize: 8,
                         fontWeight: specMode === mode ? 600 : 400,
-                        background: specMode === mode ? '#f5f3ef' : 'transparent',
+                        background: specMode === mode ? '#F4F4F5' : 'transparent',
                         color: specMode === mode ? '#555' : '#ccc',
                       }}
                     >
@@ -368,7 +368,7 @@ export function MasterPromptPanel() {
                 </div>
 
                 {specMode === 'natural' ? (
-                  <div style={{ fontSize: 11, lineHeight: 1.6, color: '#777' }} className="whitespace-pre-wrap select-text">
+                  <div style={{ fontSize: 11, lineHeight: 1.6, color: '#71717A' }} className="whitespace-pre-wrap select-text">
                     {currentMasterPrompt}
                   </div>
                 ) : (
@@ -383,13 +383,13 @@ export function MasterPromptPanel() {
           {/* Footer */}
           <div className="p-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
             <div className="flex items-center justify-between">
-              <span style={{ fontSize: 9, color: '#ccc' }}>
+              <span style={{ fontSize: 9, color: '#A1A1AA' }}>
                 {activeTab === 'profile'
                   ? `${profileSections.reduce((n, s) => n + s.items.length, 0)} parameters set`
                   : 'Reproducible casting spec'}
               </span>
               {activeTab === 'profile' && (
-                <button onClick={() => setActiveTab('spec')} style={{ fontSize: 9, fontWeight: 500, color: '#bbb' }}>
+                <button onClick={() => setActiveTab('spec')} style={{ fontSize: 9, fontWeight: 500, color: '#A1A1AA' }}>
                   View Spec →
                 </button>
               )}
@@ -403,7 +403,7 @@ export function MasterPromptPanel() {
             onClick={() => setIsCollapsed(false)}
             title="Expand panel"
             className="hover:text-black transition-colors"
-            style={{ color: '#ccc', display: 'flex', alignItems: 'center', padding: 4 }}
+            style={{ color: '#A1A1AA', display: 'flex', alignItems: 'center', padding: 4 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -414,7 +414,7 @@ export function MasterPromptPanel() {
             onClick={() => { setIsCollapsed(false); setActiveTab('profile'); setTimeout(() => fileInputRef.current?.click(), 240); }}
             title="Add reference image"
             className="hover:text-black transition-colors"
-            style={{ color: '#ccc', display: 'flex', alignItems: 'center', padding: 4 }}
+            style={{ color: '#A1A1AA', display: 'flex', alignItems: 'center', padding: 4 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" />

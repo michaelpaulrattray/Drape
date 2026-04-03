@@ -157,7 +157,7 @@ export function RackPanel() {
   const slotIsFull = slotCounts[activeSlot] >= MAX_GARMENTS_PER_SLOT;
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "#faf8f5" }}>
+    <div className="flex flex-col h-full" style={{ background: "#FAFAFA" }}>
       {/* ── Header ──────────────────────────────────────── */}
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between mb-3">
@@ -174,7 +174,7 @@ export function RackPanel() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setDecomposeOpen(true)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-[#f0ede8]"
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-[#FAFAFA]"
               title="Import from outfit photo"
               style={{ color: "#999" }}
             >
@@ -182,7 +182,7 @@ export function RackPanel() {
             </button>
             <span
               className="font-mono"
-              style={{ fontSize: 9, color: "#b8b3a8" }}
+              style={{ fontSize: 9, color: "#71717A" }}
             >
               {slotCounts[activeSlot]}/{MAX_GARMENTS_PER_SLOT}
             </span>
@@ -238,7 +238,7 @@ export function RackPanel() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-3 py-1.5 rounded-lg border-none outline-none"
           style={{
-            background: "#f0ebe3",
+            background: "#ffffff",
             fontSize: 10,
             color: "#1a1a1a",
           }}
@@ -297,7 +297,7 @@ export function RackPanel() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="aspect-[3/4] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all hover:border-[#1a1a1a] hover:bg-[#f0ebe3]"
+                className="aspect-[3/4] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all hover:border-[#1a1a1a] hover:bg-[#ffffff]"
                 style={{
                   borderColor: "#ddd",
                   color: "#999",
@@ -328,17 +328,17 @@ export function RackPanel() {
             <div className="flex items-center gap-2 mb-2">
               <div
                 className="flex-1 h-px"
-                style={{ background: "#e5e0d8" }}
+                style={{ background: "#E4E4E7" }}
               />
               <span
                 className="font-mono uppercase"
-                style={{ fontSize: 8, color: "#b8b3a8", letterSpacing: "0.05em" }}
+                style={{ fontSize: 8, color: "#71717A", letterSpacing: "0.05em" }}
               >
                 Saved Outfits
               </span>
               <div
                 className="flex-1 h-px"
-                style={{ background: "#e5e0d8" }}
+                style={{ background: "#E4E4E7" }}
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -429,7 +429,7 @@ function EmptySlot({
     <div className="flex flex-col items-center justify-center h-full py-12">
       <div
         className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-        style={{ background: "#f0ebe3" }}
+        style={{ background: "#ffffff" }}
       >
         <svg
           width="24"
@@ -452,7 +452,7 @@ function EmptySlot({
       </p>
       <p
         className="text-center mb-4"
-        style={{ fontSize: 9, color: "#b8b3a8" }}
+        style={{ fontSize: 9, color: "#71717A" }}
       >
         Upload a photo or drag & drop
       </p>
@@ -479,11 +479,11 @@ function LoadingSkeleton() {
         <div key={i} className="animate-pulse">
           <div
             className="aspect-[3/4] rounded-2xl"
-            style={{ background: "#f0ebe3" }}
+            style={{ background: "#ffffff" }}
           />
           <div
             className="h-2 rounded mt-2 w-2/3"
-            style={{ background: "#f0ebe3" }}
+            style={{ background: "#ffffff" }}
           />
         </div>
       ))}

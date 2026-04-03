@@ -30,11 +30,11 @@ export const StageLockModal = ({
         <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
           {title}
         </div>
-        <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5, marginBottom: 20 }}>
+        <div style={{ fontSize: 11, color: '#71717A', lineHeight: 1.5, marginBottom: 20 }}>
           {message}
         </div>
         <div className="flex justify-end gap-3">
-          <button onClick={onCancel} style={{ fontSize: 11, fontWeight: 500, color: '#999' }}>
+          <button onClick={onCancel} style={{ fontSize: 11, fontWeight: 500, color: '#71717A' }}>
             Cancel
           </button>
           <button

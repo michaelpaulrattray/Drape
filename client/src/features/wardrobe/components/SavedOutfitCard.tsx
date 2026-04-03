@@ -71,7 +71,7 @@ export function SavedOutfitCard({
       role="button"
       tabIndex={isDeleting ? -1 : 0}
       className="group relative rounded-2xl overflow-hidden transition-all hover:ring-2 hover:ring-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#1a1a1a] text-left w-full cursor-pointer"
-      style={{ background: "#f0ebe3", opacity: isDeleting ? 0.4 : 1 }}
+      style={{ background: "#ffffff", opacity: isDeleting ? 0.4 : 1 }}
     >
       {/* Thumbnail */}
       <div className="aspect-[3/4] relative overflow-hidden">
@@ -124,7 +124,7 @@ export function SavedOutfitCard({
         </p>
         <p
           className="font-mono"
-          style={{ fontSize: 7, color: "#b8b3a8" }}
+          style={{ fontSize: 7, color: "#71717A" }}
         >
           {formattedDate}
         </p>

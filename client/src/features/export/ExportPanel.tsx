@@ -62,7 +62,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#b8b3a8" }} />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#71717A" }} />
       </div>
     );
   }
@@ -84,7 +84,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
       {/* Header */}
       <div className="flex-shrink-0 px-5 pt-5 pb-3" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
         <div className="flex items-center justify-between mb-1">
-          <span style={{ fontSize: 9, fontWeight: 600, color: "#b8b3a8", letterSpacing: "0.08em" }}>
+          <span style={{ fontSize: 9, fontWeight: 600, color: "#71717A", letterSpacing: "0.08em" }}>
             EXPORT PACK
           </span>
           {isMinted && (
@@ -101,7 +101,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
           {modelName}
         </p>
         {agencyId && (
-          <p style={{ fontSize: 10, color: "#b8b3a8", fontFamily: "monospace" }}>{agencyId}</p>
+          <p style={{ fontSize: 10, color: "#71717A", fontFamily: "monospace" }}>{agencyId}</p>
         )}
       </div>
 
@@ -148,7 +148,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
         {preferences && (
           <section className="mb-5">
             <SectionLabel icon={Shield} label="IDENTITY" />
-            <div className="mt-2 rounded-xl p-3" style={{ background: "#f5f3ef" }}>
+            <div className="mt-2 rounded-xl p-3" style={{ background: "#F4F4F5" }}>
               <AttributeGrid preferences={preferences} />
             </div>
           </section>
@@ -157,7 +157,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
         {/* ── Export Progress ─────────────────────────────── */}
         {isExporting && (
           <section className="mb-5">
-            <div className="rounded-xl p-3" style={{ background: "#f5f3ef" }}>
+            <div className="rounded-xl p-3" style={{ background: "#F4F4F5" }}>
               <div className="flex items-center gap-2 mb-2">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "#1a1a1a" }} />
                 <span style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a" }}>
@@ -210,7 +210,7 @@ export function ExportPanel({ modelId, assets }: ExportPanelProps) {
           iconSpin={isExporting}
         />
 
-        <p className="text-center mt-2" style={{ fontSize: 9, color: "#b8b3a8" }}>
+        <p className="text-center mt-2" style={{ fontSize: 9, color: "#71717A" }}>
           {savedLooks.length > 0
             ? `${viewAssets.length} views + ${savedLooks.length} looks · 2K resolution`
             : "All exports rendered at 2K resolution"}
@@ -233,8 +233,8 @@ function SectionLabel({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <Icon className="w-3 h-3" style={{ color: "#b8b3a8" }} />
-      <span style={{ fontSize: 9, fontWeight: 600, color: "#b8b3a8", letterSpacing: "0.08em" }}>
+      <Icon className="w-3 h-3" style={{ color: "#71717A" }} />
+      <span style={{ fontSize: 9, fontWeight: 600, color: "#71717A", letterSpacing: "0.08em" }}>
         {label}
       </span>
       {count !== undefined && (
@@ -265,7 +265,7 @@ function ViewThumbnail({
   return (
     <div
       className="relative rounded-xl overflow-hidden cursor-pointer group"
-      style={{ background: "#f5f3ef", aspectRatio: "1" }}
+      style={{ background: "#F4F4F5", aspectRatio: "1" }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onClick={onDownload}
@@ -307,7 +307,7 @@ function LookThumbnail({
   return (
     <div
       className="relative rounded-xl overflow-hidden cursor-pointer group"
-      style={{ background: "#f5f3ef", aspectRatio: "1" }}
+      style={{ background: "#F4F4F5", aspectRatio: "1" }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onClick={onDownload}
@@ -413,7 +413,7 @@ function AttributeGrid({ preferences }: { preferences: Record<string, string | u
             style={{
               fontSize: 9,
               fontWeight: 600,
-              color: "#b8b3a8",
+              color: "#71717A",
               letterSpacing: "0.04em",
               textTransform: "uppercase",
               minWidth: 70,

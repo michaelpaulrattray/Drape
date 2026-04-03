@@ -255,7 +255,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                       className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-left transition-colors group rounded-lg mx-1"
                       style={{ width: "calc(100% - 8px)" }}
                       onMouseEnter={(e) =>
-                        (e.currentTarget.style.background = "#f5f3ef")
+                        (e.currentTarget.style.background = "#F4F4F5")
                       }
                       onMouseLeave={(e) =>
                         (e.currentTarget.style.background = "transparent")
@@ -315,7 +315,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                         onClick={() => setSelectedItem(null)}
                         className="w-6 h-6 rounded-lg flex items-center justify-center mr-1 transition-colors"
                         style={{
-                          background: "#f5f3ef",
+                          background: "#F4F4F5",
                           color: "#999",
                           fontSize: 11,
                         }}
@@ -337,7 +337,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                     onClick={dismissAll}
                     className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors"
                     style={{
-                      background: "#f5f3ef",
+                      background: "#F4F4F5",
                       color: "#bbb",
                       fontSize: 14,
                     }}
@@ -358,7 +358,7 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                     placeholder="e.g. unzip halfway, roll sleeves..."
                     className="flex-1 rounded-xl px-3 py-2 outline-none"
                     style={{
-                      background: "#f5f3ef",
+                      background: "#F4F4F5",
                       border: "1px solid rgba(0,0,0,0.06)",
                       fontSize: 12,
                       color: "#1a1a1a",
@@ -372,8 +372,8 @@ export const GarmentOverlay: React.FC<GarmentOverlayProps> = ({
                       fontSize: 10,
                       fontWeight: 700,
                       letterSpacing: "0.04em",
-                      background: styleInput.trim() ? "#1a1a1a" : "#f5f3ef",
-                      color: styleInput.trim() ? "#f0ede8" : "#ccc",
+                      background: styleInput.trim() ? "#1a1a1a" : "#F4F4F5",
+                      color: styleInput.trim() ? "#FAFAFA" : "#ccc",
                       cursor: styleInput.trim() ? "pointer" : "not-allowed",
                     }}
                   >

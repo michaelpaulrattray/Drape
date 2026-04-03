@@ -362,7 +362,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
         <p
           style={{
             fontSize: 13,
-            color: '#999',
+            color: '#71717A',
             marginTop: 8,
             maxWidth: 400,
             lineHeight: 1.5,
@@ -504,9 +504,9 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
             <div className="relative z-10 flex flex-col items-center px-6 py-8">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
-                style={{ background: '#f5f3ef' }}
+                style={{ background: '#F4F4F5' }}
               >
-                <ImagePlus className="w-6 h-6" style={{ color: '#999' }} />
+                <ImagePlus className="w-6 h-6" style={{ color: '#71717A' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
                 Upload Your Own
@@ -514,7 +514,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
               <span
                 style={{
                   fontSize: 12,
-                  color: '#999',
+                  color: '#71717A',
                   marginTop: 5,
                   textAlign: 'center',
                   lineHeight: 1.5,
@@ -523,7 +523,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
               >
                 Drag & drop or click to upload a full-body photo
               </span>
-              <span style={{ fontSize: 10, color: '#ccc', marginTop: 8, letterSpacing: '0.02em' }}>
+              <span style={{ fontSize: 10, color: '#A1A1AA', marginTop: 8, letterSpacing: '0.02em' }}>
                 JPEG, PNG, WebP · Max 10 MB
               </span>
             </div>
@@ -610,7 +610,7 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
         className="mt-8 sm:mt-10 text-center"
         style={{
           fontSize: 11,
-          color: '#bbb',
+          color: '#A1A1AA',
           opacity: mounted ? 1 : 0,
           transform: mounted ? 'translateY(0)' : 'translateY(8px)',
           transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s',

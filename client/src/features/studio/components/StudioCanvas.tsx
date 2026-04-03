@@ -285,7 +285,7 @@ export function StudioCanvas({
           {/* Status label with fade transition */}
           <div className="flex items-center gap-1.5 px-2.5 relative" style={{ minWidth: 60, height: 20, overflow: 'hidden' }}>
             {isGenerating && (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ color: '#999', flexShrink: 0 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="animate-spin" style={{ color: '#71717A', flexShrink: 0 }}>
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" opacity="0.2" />
                 <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
               </svg>

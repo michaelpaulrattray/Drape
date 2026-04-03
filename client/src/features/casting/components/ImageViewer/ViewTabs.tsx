@@ -96,7 +96,7 @@ function AddViewButton({ onClick, visible }: { onClick: () => void; visible: boo
         backdropFilter: 'blur(8px)',
         fontSize: 8,
         fontWeight: 600,
-        color: '#999',
+        color: '#71717A',
         opacity: visible ? 1 : 0,
         transform: visible ? 'scale(1)' : 'scale(0.9)',
         transition: 'all 0.2s ease',

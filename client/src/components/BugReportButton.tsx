@@ -129,7 +129,7 @@ export function BugReportTrigger() {
             <button
               onClick={() => setOpen(false)}
               className="flex h-6 w-6 items-center justify-center rounded-md transition-colors"
-              style={{ color: '#999' }}
+              style={{ color: '#71717A' }}
               onMouseEnter={(e) => { e.currentTarget.style.color = '#1a1a1a'; e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = '#999'; e.currentTarget.style.background = 'transparent'; }}
             >
@@ -149,7 +149,7 @@ export function BugReportTrigger() {
                     fontSize: 11,
                     fontWeight: 500,
                     letterSpacing: '0.02em',
-                    background: category === cat.value ? '#1a1a1a' : '#f5f3ef',
+                    background: category === cat.value ? '#1a1a1a' : '#F4F4F5',
                     color: category === cat.value ? '#fff' : '#999',
                   }}
                   onMouseEnter={(e) => {
@@ -187,7 +187,7 @@ export function BugReportTrigger() {
 
           {/* Footer */}
           <div className="flex items-center justify-between px-4 pb-4">
-            <span style={{ fontSize: 10, color: '#ccc' }}>
+            <span style={{ fontSize: 10, color: '#A1A1AA' }}>
               {description.length}/2000
             </span>
             <button

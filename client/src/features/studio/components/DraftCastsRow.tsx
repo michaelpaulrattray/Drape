@@ -47,13 +47,13 @@ export function DraftCastsRow({ drafts, onResume, onDelete, isDeletingId }: Draf
     <div className="w-full">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3 px-1">
-        <Pencil className="w-3.5 h-3.5" style={{ color: '#999' }} />
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#999', letterSpacing: '0.05em' }}>
+        <Pencil className="w-3.5 h-3.5" style={{ color: '#71717A' }} />
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#71717A', letterSpacing: '0.05em' }}>
           DRAFT CASTS
         </span>
         <span
           className="px-1.5 py-0.5 rounded-full"
-          style={{ fontSize: 9, fontWeight: 600, color: '#999', background: '#f5f3ef' }}
+          style={{ fontSize: 9, fontWeight: 600, color: '#71717A', background: '#F4F4F5' }}
         >
           {drafts.length}
         </span>
@@ -91,7 +91,7 @@ export function DraftCastsRow({ drafts, onResume, onDelete, isDeletingId }: Draf
               {/* Thumbnail */}
               <div
                 className="flex-shrink-0 rounded-lg overflow-hidden"
-                style={{ width: 40, height: 48, background: '#f5f3ef' }}
+                style={{ width: 40, height: 48, background: '#F4F4F5' }}
               >
                 <img
                   src={draft.thumbnailUrl}
@@ -109,7 +109,7 @@ export function DraftCastsRow({ drafts, onResume, onDelete, isDeletingId }: Draf
                 >
                   {draft.name || 'Draft Model'}
                 </p>
-                <p style={{ fontSize: 11, color: '#999', marginTop: 1 }}>
+                <p style={{ fontSize: 11, color: '#71717A', marginTop: 1 }}>
                   {draft.assetCount} {draft.assetCount === 1 ? 'view' : 'views'} · {ago}
                 </p>
               </div>
@@ -134,7 +134,7 @@ export function DraftCastsRow({ drafts, onResume, onDelete, isDeletingId }: Draf
                     fontSize: 10,
                     fontWeight: 600,
                     color: isHovered ? '#fff' : '#1a1a1a',
-                    background: isHovered ? '#1a1a1a' : '#f5f3ef',
+                    background: isHovered ? '#1a1a1a' : '#F4F4F5',
                     transition: 'all 0.2s ease',
                   }}
                 >

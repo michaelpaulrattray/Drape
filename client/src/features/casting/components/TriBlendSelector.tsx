@@ -139,7 +139,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
   return (
     <div
       style={{
-        background: '#f5f3ef',
+        background: '#F4F4F5',
         border: '1px solid rgba(0,0,0,0.06)',
         borderRadius: 14,
         padding: '14px 14px 12px',
@@ -153,7 +153,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
           <Tooltip content="Drag the sliders or type a value (0-1000). Tap a preset to snap to a known vibe." />
         </div>
         <span style={{
-          fontSize: 10, fontWeight: 400, color: '#b8b3a8',
+          fontSize: 10, fontWeight: 400, color: '#71717A',
           fontStyle: 'italic', opacity: activePreset ? 1 : 0.5,
         }}>
           {activePreset ? activePreset.label : 'Custom'}
@@ -188,10 +188,10 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
           style={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
         >
           <div style={{ width: '100%', height: 3, borderRadius: 2, position: 'relative' }}>
-            <div style={{ position: 'absolute', inset: 0, borderRadius: 2, background: '#f0ede8' }} />
+            <div style={{ position: 'absolute', inset: 0, borderRadius: 2, background: '#FAFAFA' }} />
             <div style={{
               position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 2,
-              background: 'linear-gradient(to right, #c4c0b8, #888580, #4a4846, #1a1a1a)',
+              background: 'linear-gradient(to right, #A1A1AA, #888580, #4a4846, #1a1a1a)',
               width: `${pctEdge}%`, transition: 'width 0.12s ease-out',
             }} />
           </div>
@@ -237,7 +237,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
           style={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
         >
           <div style={{ width: '100%', height: 3, borderRadius: 2, position: 'relative' }}>
-            <div style={{ position: 'absolute', inset: 0, borderRadius: 2, background: '#f0ede8' }} />
+            <div style={{ position: 'absolute', inset: 0, borderRadius: 2, background: '#FAFAFA' }} />
             <div style={{
               position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 2,
               background: 'linear-gradient(to right, #8a9aa8, #b8a088, #c4956a, #d4784a)',
@@ -259,7 +259,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
       </div>
 
       {/* Description */}
-      <div style={{ fontSize: 9, color: '#b8b3a8', marginTop: 12, paddingLeft: 2, lineHeight: 1.4, minHeight: 13 }}>
+      <div style={{ fontSize: 9, color: '#71717A', marginTop: 12, paddingLeft: 2, lineHeight: 1.4, minHeight: 13 }}>
         {activePreset ? activePreset.desc : getCustomDesc(edge, heat)}
       </div>
 
@@ -270,7 +270,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
         style={{
           marginTop: 10, padding: 0, background: 'none', border: 'none', cursor: 'pointer',
           fontFamily: 'inherit', fontSize: 8, fontWeight: 600,
-          letterSpacing: '0.06em', color: '#b8b3a8',
+          letterSpacing: '0.06em', color: '#71717A',
         }}
       >
         <svg
@@ -299,7 +299,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
                 onClick={() => onChange(edgeHeatToWeights(p.edge, p.heat))}
                 className="py-2.5 rounded-xl text-center transition-all"
                 style={{
-                  background: isActive ? '#1a1a1a' : '#f5f3ef',
+                  background: isActive ? '#1a1a1a' : '#F4F4F5',
                   color: isActive ? '#fff' : '#888',
                   fontSize: 10, fontWeight: isActive ? 600 : 400,
                   border: 'none', cursor: 'pointer', lineHeight: 1.2,

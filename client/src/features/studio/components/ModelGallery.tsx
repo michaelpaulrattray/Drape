@@ -47,13 +47,13 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
       {/* Header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
-          <Crown className="w-3.5 h-3.5" style={{ color: '#999' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#999', letterSpacing: '0.05em' }}>
+          <Crown className="w-3.5 h-3.5" style={{ color: '#71717A' }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#71717A', letterSpacing: '0.05em' }}>
             MY MODELS
           </span>
           <span
             className="px-1.5 py-0.5 rounded-full"
-            style={{ fontSize: 9, fontWeight: 600, color: '#999', background: '#f5f3ef' }}
+            style={{ fontSize: 9, fontWeight: 600, color: '#71717A', background: '#F4F4F5' }}
           >
             {models.length}
           </span>
@@ -65,14 +65,14 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
             <button
               onClick={() => scroll('left')}
               className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-gray-100"
-              style={{ color: '#999' }}
+              style={{ color: '#71717A' }}
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => scroll('right')}
               className="w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-gray-100"
-              style={{ color: '#999' }}
+              style={{ color: '#71717A' }}
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -110,7 +110,7 @@ export function ModelGallery({ models, onSelectModel, onDeleteModel, deletingMod
               style={{
                 width: 120,
                 height: 160,
-                background: '#f5f3ef',
+                background: '#F4F4F5',
                 transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease',
                 transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
                 boxShadow: isHovered

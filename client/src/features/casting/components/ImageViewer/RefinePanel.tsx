@@ -119,7 +119,7 @@ export function RefinePanel({
           style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-          <span style={{ fontSize: 11, color: '#999' }}>{iterationDisabledReason}</span>
+          <span style={{ fontSize: 11, color: '#71717A' }}>{iterationDisabledReason}</span>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export function RefinePanel({
         >
           <div className="flex items-center gap-2">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-            <span style={{ fontSize: 11, color: '#999' }}>View Locked</span>
+            <span style={{ fontSize: 11, color: '#71717A' }}>View Locked</span>
           </div>
           <button
             onClick={() => setUnlockMode(true)}
@@ -205,7 +205,7 @@ export function RefinePanel({
           placeholder={getPlaceholder()}
           rows={1}
           disabled={!isIterationAllowed}
-          className="flex-1 outline-none resize-none bg-transparent placeholder-[#b8b3a8]"
+          className="flex-1 outline-none resize-none bg-transparent placeholder-[#71717A]"
           style={{ border: 'none', fontSize: 12, color: '#1a1a1a', lineHeight: 1.5, padding: '8px 8px', minHeight: 34, maxHeight: 80 }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -221,7 +221,7 @@ export function RefinePanel({
           disabled={!refineInput.trim()}
           className="flex-shrink-0 px-4 py-2 rounded-lg transition-all mb-0.5 flex items-center gap-1.5"
           style={{
-            background: refineInput.trim() ? '#1a1a1a' : '#e8e5df',
+            background: refineInput.trim() ? '#1a1a1a' : '#E4E4E7',
             color: refineInput.trim() ? '#fff' : '#aaa',
             fontSize: 10,
             fontWeight: 600,

@@ -42,7 +42,7 @@ function CastingProgressRing({ completions }: { completions: Record<string, numb
         <circle cx="20" cy="20" r={r} fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="3" />
         <circle
           cx="20" cy="20" r={r} fill="none"
-          stroke={pct === 100 ? '#1a1a1a' : '#c4c0b8'}
+          stroke={pct === 100 ? '#1a1a1a' : '#A1A1AA'}
           strokeWidth="3" strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -54,7 +54,7 @@ function CastingProgressRing({ completions }: { completions: Record<string, numb
         style={{
           fontSize: 9,
           fontWeight: 600,
-          color: pct === 100 ? '#1a1a1a' : '#b8b3a8',
+          color: pct === 100 ? '#1a1a1a' : '#71717A',
           fontFamily: 'ui-monospace, monospace',
           transition: 'color 0.3s',
         }}
@@ -129,13 +129,13 @@ export function ControlPanel({
             <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
               {isReadOnly ? (modelName || 'Cast Model') : 'Casting'}
             </div>
-            <div style={{ fontSize: 10, color: '#b8b3a8' }}>
+            <div style={{ fontSize: 10, color: '#71717A' }}>
               {isReadOnly ? 'Identity locked' : 'Build your model from scratch'}
             </div>
           </div>
           {isReadOnly ? (
             <div className="flex items-center justify-center" style={{ width: 40, height: 40 }}>
-              <Lock size={16} strokeWidth={1.5} style={{ color: '#c4c0b8' }} />
+              <Lock size={16} strokeWidth={1.5} style={{ color: '#A1A1AA' }} />
             </div>
           ) : (
             <CastingProgressRing completions={completions} />
@@ -148,7 +148,7 @@ export function ControlPanel({
       {/* Read-only banner */}
       {isReadOnly && (
         <div className="mx-4 mb-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(26,26,26,0.04)', border: '1px solid rgba(26,26,26,0.06)' }}>
-          <p style={{ fontSize: 10, fontWeight: 500, color: '#999', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 10, fontWeight: 500, color: '#71717A', lineHeight: 1.5 }}>
             This model has been cast and their identity is locked. You can still export or dress them.
           </p>
         </div>
@@ -171,9 +171,9 @@ export function ControlPanel({
                   return (
                     <button key={b.value} onClick={() => updatePref('castingBrand', b.value)}
                       className="rounded-xl text-center transition-all"
-                      style={{ padding: '8px 4px 7px', background: sel ? '#1a1a1a' : '#f5f3ef', color: sel ? '#fff' : '#888', fontSize: 10, fontWeight: sel ? 600 : 400 }}>
+                      style={{ padding: '8px 4px 7px', background: sel ? '#1a1a1a' : '#F4F4F5', color: sel ? '#fff' : '#888', fontSize: 10, fontWeight: sel ? 600 : 400 }}>
                       <div>{b.value}</div>
-                      <div style={{ fontSize: 8, fontWeight: 400, marginTop: 1, color: sel ? 'rgba(255,255,255,0.5)' : '#c4c0b8' }}>{b.desc}</div>
+                      <div style={{ fontSize: 8, fontWeight: 400, marginTop: 1, color: sel ? 'rgba(255,255,255,0.5)' : '#A1A1AA' }}>{b.desc}</div>
                     </button>
                   );
                 })}
@@ -197,13 +197,13 @@ export function ControlPanel({
               />
               <div className="space-y-2">
                 <div className="flex justify-between items-end">
-                  <span style={{ fontSize: 10, fontWeight: 500, color: '#999' }}>Age</span>
+                  <span style={{ fontSize: 10, fontWeight: 500, color: '#71717A' }}>Age</span>
                   <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a' }}>{prefs.age || 23}</span>
                 </div>
                 <input type="range" min="18" max="85" step="1" value={prefs.age || "23"}
                   onChange={(e) => updatePref('age', e.target.value)}
                   className="w-full h-1 rounded-full appearance-none cursor-pointer"
-                  style={{ background: '#e8e5df', accentColor: '#1a1a1a' }}
+                  style={{ background: '#E4E4E7', accentColor: '#1a1a1a' }}
                 />
               </div>
             </div>
@@ -236,7 +236,7 @@ export function ControlPanel({
             </div>
             <button onClick={() => setShowAdvancedFace(!showAdvancedFace)}
               className="flex items-center gap-1.5 transition-colors"
-              style={{ fontSize: 9, fontWeight: 600, color: '#bbb', letterSpacing: '0.04em', background: 'none', border: 'none', cursor: 'pointer' }}>
+              style={{ fontSize: 9, fontWeight: 600, color: '#A1A1AA', letterSpacing: '0.04em', background: 'none', border: 'none', cursor: 'pointer' }}>
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
                 style={{ transform: showAdvancedFace ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
                 <polyline points="9 18 15 12 9 6" />
@@ -281,7 +281,7 @@ export function ControlPanel({
             <div className="space-y-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
               <div className="flex justify-between items-center mb-2">
                 <FieldLabel filled={!!prefs.hairColor}>Hair Color</FieldLabel>
-                <span style={{ fontSize: 9, fontWeight: 500, color: '#555' }}>{prefs.hairColor || ""}</span>
+                <span style={{ fontSize: 9, fontWeight: 500, color: '#52525B' }}>{prefs.hairColor || ""}</span>
               </div>
               <HairColorWheel currentColor={prefs.hairColor || "Natural"} onColorSelect={(c) => updatePref('hairColor', c)} />
             </div>
@@ -306,19 +306,19 @@ export function ControlPanel({
                 <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
                   {activeHairConfig.lengths && (
                     <div>
-                      <div style={{ fontSize: 9, fontWeight: 500, color: '#999', marginBottom: 5 }}>Length</div>
+                      <div style={{ fontSize: 9, fontWeight: 500, color: '#71717A', marginBottom: 5 }}>Length</div>
                       <ChipRow options={activeHairConfig.lengths} selected={prefs.hairLength || ''} onSelect={v => updatePref('hairLength', v)} />
                     </div>
                   )}
                   {activeHairConfig.textures && (
                     <div>
-                      <div style={{ fontSize: 9, fontWeight: 500, color: '#999', marginBottom: 5 }}>Texture</div>
+                      <div style={{ fontSize: 9, fontWeight: 500, color: '#71717A', marginBottom: 5 }}>Texture</div>
                       <ChipRow options={activeHairConfig.textures} selected={prefs.hairTexture || ''} onSelect={v => updatePref('hairTexture', v)} />
                     </div>
                   )}
                   {activeHairConfig.fringes && (
                     <div>
-                      <div style={{ fontSize: 9, fontWeight: 500, color: '#999', marginBottom: 5 }}>Bangs</div>
+                      <div style={{ fontSize: 9, fontWeight: 500, color: '#71717A', marginBottom: 5 }}>Bangs</div>
                       <ChipRow options={activeHairConfig.fringes} selected={prefs.hairFringe || ''} onSelect={v => updatePref('hairFringe', v)} />
                     </div>
                   )}
@@ -327,7 +327,7 @@ export function ControlPanel({
                     <>
                       <button onClick={() => setShowAdvancedHair(!showAdvancedHair)}
                         className="flex items-center gap-1.5 transition-colors"
-                        style={{ fontSize: 9, fontWeight: 600, color: '#bbb', letterSpacing: '0.04em', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        style={{ fontSize: 9, fontWeight: 600, color: '#A1A1AA', letterSpacing: '0.04em', background: 'none', border: 'none', cursor: 'pointer' }}>
                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
                           style={{ transform: showAdvancedHair ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
                           <polyline points="9 18 15 12 9 6" />
@@ -338,13 +338,13 @@ export function ControlPanel({
                         <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
                           {activeHairConfig.partings && (
                             <div>
-                              <div style={{ fontSize: 9, fontWeight: 500, color: '#999', marginBottom: 5 }}>Parting</div>
+                              <div style={{ fontSize: 9, fontWeight: 500, color: '#71717A', marginBottom: 5 }}>Parting</div>
                               <ChipRow options={activeHairConfig.partings} selected={prefs.hairParting || ''} onSelect={v => updatePref('hairParting', v)} />
                             </div>
                           )}
                           {activeHairConfig.volumes && (
                             <div>
-                              <div style={{ fontSize: 9, fontWeight: 500, color: '#999', marginBottom: 5 }}>Volume</div>
+                              <div style={{ fontSize: 9, fontWeight: 500, color: '#71717A', marginBottom: 5 }}>Volume</div>
                               <ChipRow options={activeHairConfig.volumes} selected={prefs.hairVolume || ''} onSelect={v => updatePref('hairVolume', v)} />
                             </div>
                           )}
@@ -376,7 +376,7 @@ export function ControlPanel({
             className="w-full py-3.5 rounded-xl transition-all duration-300"
             style={{
               background: '#1a1a1a',
-              color: '#f0ede8',
+              color: '#FAFAFA',
               fontSize: 13, fontWeight: 600,
               cursor: 'pointer',
               boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
@@ -389,7 +389,7 @@ export function ControlPanel({
         ) : (
           <>
             {prefs.referenceImage && (
-              <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: '#f9f8f5', fontSize: 10, color: '#b8b3a8', lineHeight: 1.5 }}>
+              <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: '#F4F4F5', fontSize: 10, color: '#71717A', lineHeight: 1.5 }}>
                 Reference will be used for feature transfer on next iteration. Press F to toggle visibility.
               </div>
             )}
@@ -400,8 +400,8 @@ export function ControlPanel({
               disabled={genState.isGenerating || !isFormValid}
               className="w-full py-3.5 rounded-xl transition-all duration-300"
               style={{
-                background: !genState.isGenerating && isFormValid ? '#1a1a1a' : '#e8e5df',
-                color: !genState.isGenerating && isFormValid ? '#f0ede8' : '#aaa',
+                background: !genState.isGenerating && isFormValid ? '#1a1a1a' : '#E4E4E7',
+                color: !genState.isGenerating && isFormValid ? '#FAFAFA' : '#aaa',
                 fontSize: 13, fontWeight: 600,
                 cursor: !genState.isGenerating && isFormValid ? 'pointer' : 'not-allowed',
                 boxShadow: !genState.isGenerating && isFormValid ? '0 4px 24px rgba(0,0,0,0.12)' : 'none',
@@ -435,7 +435,7 @@ export function ControlPanel({
               }}
               disabled={genState.isGenerating}
               className="w-full mt-2 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-30"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 9, fontWeight: 500, color: '#c4c0b8', letterSpacing: '0.02em' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 9, fontWeight: 500, color: '#A1A1AA', letterSpacing: '0.02em' }}
             >
               <Dices size={10} strokeWidth={1.8} style={{ opacity: 0.6 }} />
               Randomize
@@ -443,7 +443,7 @@ export function ControlPanel({
 
             {user?.role === 'admin' && (
               <details className="mt-3 pt-3 border-t border-[rgba(0,0,0,0.05)] group">
-                <summary className="text-[9px] text-[#b8b3a8] cursor-pointer hover:text-[#1a1a1a] transition-colors flex items-center gap-1.5 select-none">
+                <summary className="text-[9px] text-[#71717A] cursor-pointer hover:text-[#1a1a1a] transition-colors flex items-center gap-1.5 select-none">
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
                     className="transition-transform group-open:rotate-90"><polyline points="9 18 15 12 9 6" /></svg>
                   Admin Tools
@@ -451,7 +451,7 @@ export function ControlPanel({
                 <div className="mt-2 flex gap-2">
                   <button onClick={handleDebugFill} disabled={genState.isGenerating}
                     className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
-                    style={{ background: '#f5f3ef', fontSize: 9, fontWeight: 500, color: '#999', cursor: 'pointer', border: 'none' }}>
+                    style={{ background: '#F4F4F5', fontSize: 9, fontWeight: 500, color: '#71717A', cursor: 'pointer', border: 'none' }}>
                     Random Fill
                   </button>
                   <button
@@ -466,7 +466,7 @@ export function ControlPanel({
                     }}
                     disabled={genState.isGenerating}
                     className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
-                    style={{ background: '#f5f3ef', fontSize: 9, fontWeight: 500, color: '#999', cursor: 'pointer', border: 'none' }}>
+                    style={{ background: '#F4F4F5', fontSize: 9, fontWeight: 500, color: '#71717A', cursor: 'pointer', border: 'none' }}>
                     Auto Generate
                   </button>
                 </div>
