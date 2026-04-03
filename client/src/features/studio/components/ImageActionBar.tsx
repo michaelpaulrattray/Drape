@@ -1,18 +1,21 @@
 /**
  * ImageActionBar — Higgsfield-style floating action icons for images.
  *
- * Renders a vertical stack of frosted-glass icon buttons in the top-right
- * corner of the image. Shows on hover, fades out when not hovered.
+ * White frosted glass style (matching surgical ToolButton aesthetic).
+ * Renders a vertical stack of icon buttons in the top-right corner.
+ * Shows on hover, fades out when not hovered.
  *
  * Icons (top to bottom):
  *   - Heart/Like (wardrobe/export only, NOT casting)
- *   - Download
- *   - Copy to clipboard
- *   - Triple-dot menu (Retry, Keyboard Shortcuts, etc.)
+ *   - Download (via server proxy for CORS)
+ *   - Copy to clipboard (via server proxy for CORS)
+ *   - Triple-dot menu (opens to the LEFT, toggles on click)
  */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Heart, Download, Copy, MoreVertical, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
+import { triggerDownload } from "@/lib/triggerDownload";
 
 // ── Types ──
 
@@ -37,9 +40,9 @@ export interface ImageActionBarProps {
   shortcuts?: { key: string; label: string }[];
 }
 
-// ── Shared icon button style ──
+// ── Shared icon button style (white frosted glass — matches surgical ToolButton) ──
 
-const ICON_SIZE = 18;
+const ICON_SIZE = 17;
 
 function ActionButton({
   onClick,
@@ -59,22 +62,25 @@ function ActionButton({
       onClick={(e) => { e.stopPropagation(); if (!disabled) onClick(); }}
       disabled={disabled}
       title={title}
-      className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
+      className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
       style={{
-        background: active ? "#1a1a1a" : "rgba(0,0,0,0.45)",
-        color: active ? "#fff" : "rgba(255,255,255,0.9)",
-        backdropFilter: "blur(12px)",
+        background: active ? "#1a1a1a" : "rgba(255,255,255,0.85)",
+        color: active ? "#fff" : "#71716A",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+        backdropFilter: "blur(8px)",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
       }}
       onMouseEnter={(e) => {
         if (!disabled && !active) {
-          e.currentTarget.style.background = "rgba(0,0,0,0.65)";
+          e.currentTarget.style.background = "rgba(255,255,255,0.95)";
+          e.currentTarget.style.color = "#1a1a1a";
         }
       }}
       onMouseLeave={(e) => {
         if (!active) {
-          e.currentTarget.style.background = active ? "#1a1a1a" : "rgba(0,0,0,0.45)";
+          e.currentTarget.style.background = "rgba(255,255,255,0.85)";
+          e.currentTarget.style.color = "#71716A";
         }
       }}
     >
@@ -83,7 +89,7 @@ function ActionButton({
   );
 }
 
-// ── Menu dropdown ──
+// ── Menu dropdown (opens to the LEFT of the triple-dot button) ──
 
 function ActionMenu({
   isOpen,
@@ -107,8 +113,14 @@ function ActionMenu({
         onClose();
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    // Use setTimeout to avoid the click that opened the menu from immediately closing it
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -118,12 +130,12 @@ function ActionMenu({
       ref={menuRef}
       className="absolute top-0 right-full mr-2 z-50"
       style={{
-        minWidth: 160,
-        background: "rgba(0,0,0,0.75)",
+        minWidth: 170,
+        background: "rgba(255,255,255,0.92)",
         backdropFilter: "blur(16px)",
         borderRadius: 12,
         padding: "6px 0",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)",
       }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -145,15 +157,15 @@ function ActionMenu({
 
       {shortcuts && shortcuts.length > 0 && (
         <>
-          <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "4px 0" }} />
-          <div style={{ padding: "6px 12px 4px", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          <div style={{ height: 1, background: "rgba(0,0,0,0.06)", margin: "4px 0" }} />
+          <div style={{ padding: "6px 12px 4px", fontSize: 10, fontWeight: 600, color: "#A09E96", letterSpacing: "0.05em", textTransform: "uppercase" }}>
             Shortcuts
           </div>
           {shortcuts.map((s) => (
             <div
               key={s.key}
               className="flex items-center justify-between px-3 py-1.5"
-              style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}
+              style={{ fontSize: 12, color: "#52524B" }}
             >
               <span>{s.label}</span>
               <span
@@ -163,8 +175,8 @@ function ActionMenu({
                   fontFamily: "monospace",
                   padding: "1px 5px",
                   borderRadius: 4,
-                  background: "rgba(255,255,255,0.1)",
-                  color: "rgba(255,255,255,0.5)",
+                  background: "rgba(0,0,0,0.05)",
+                  color: "#A09E96",
                 }}
               >
                 {s.key}
@@ -190,8 +202,8 @@ function MenuButton({
     <button
       onClick={onClick}
       className="w-full flex items-center gap-2 px-3 py-2 transition-colors"
-      style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", background: "transparent" }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+      style={{ fontSize: 13, color: "#52524B", background: "transparent" }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
     >
       {icon}
@@ -215,41 +227,56 @@ export function ImageActionBar({
 }: ImageActionBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
 
-  const handleDownload = async () => {
-    if (!imageUrl) return;
+  const proxyImageMutation = trpc.generation.proxyImage.useMutation();
+
+  const handleDownload = useCallback(async () => {
+    if (!imageUrl || isDownloading) return;
+    setIsDownloading(true);
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `drape-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const proxy = await proxyImageMutation.mutateAsync({ imageUrl });
+      triggerDownload(proxy.base64, `drape-${Date.now()}.png`);
       toast.success("Image saved to your device");
     } catch {
       toast.error("Could not download the image");
+    } finally {
+      setIsDownloading(false);
     }
-  };
+  }, [imageUrl, isDownloading, proxyImageMutation]);
 
-  const handleCopy = async () => {
-    if (!imageUrl) return;
+  const handleCopy = useCallback(async () => {
+    if (!imageUrl || isCopying) return;
+    setIsCopying(true);
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
+      const proxy = await proxyImageMutation.mutateAsync({ imageUrl });
+      // Convert base64 data URL to blob
+      const [header, b64] = proxy.base64.split(",");
+      const mime = header?.match(/:(.*?);/)?.[1] || "image/png";
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mime });
       await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob }),
+        new ClipboardItem({ [mime]: blob }),
       ]);
       setCopyFeedback(true);
       setTimeout(() => setCopyFeedback(false), 1500);
       toast.success("Image copied to clipboard");
     } catch {
       toast.error("Could not copy the image");
+    } finally {
+      setIsCopying(false);
     }
-  };
+  }, [imageUrl, isCopying, proxyImageMutation]);
+
+  // Close menu when bar hides
+  useEffect(() => {
+    if (!visible) setMenuOpen(false);
+  }, [visible]);
 
   return (
     <div
@@ -277,20 +304,26 @@ export function ImageActionBar({
       <ActionButton
         onClick={handleDownload}
         title="Download"
-        disabled={!imageUrl || isGenerating}
+        disabled={!imageUrl || isGenerating || isDownloading}
       >
-        <Download size={ICON_SIZE} strokeWidth={2} />
+        {isDownloading ? (
+          <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#E8E4DF", borderTopColor: "#71716A" }} />
+        ) : (
+          <Download size={ICON_SIZE} strokeWidth={2} />
+        )}
       </ActionButton>
 
       <ActionButton
         onClick={handleCopy}
         title="Copy to clipboard"
-        disabled={!imageUrl || isGenerating}
+        disabled={!imageUrl || isGenerating || isCopying}
       >
         {copyFeedback ? (
           <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
+        ) : isCopying ? (
+          <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#E8E4DF", borderTopColor: "#71716A" }} />
         ) : (
           <Copy size={ICON_SIZE} strokeWidth={2} />
         )}
@@ -298,7 +331,7 @@ export function ImageActionBar({
 
       <div className="relative">
         <ActionButton
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => setMenuOpen((prev) => !prev)}
           title="More options"
           active={menuOpen}
         >

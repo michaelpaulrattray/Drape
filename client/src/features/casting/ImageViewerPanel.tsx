@@ -393,21 +393,7 @@ export function ImageViewerPanel({
           />
         )}
 
-        {/* Next step chip — contextual guidance (shortcuts moved to triple-dot menu) */}
-        {!genState.isGenerating && nextStage && (
-          <div
-            className="mt-2 flex items-center justify-center"
-            style={{
-              padding: '5px 14px', borderRadius: 10,
-              background: 'rgba(255,255,255,0.7)',
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
-              width: 'fit-content', margin: '8px auto 0',
-            }}
-          >
-            <NextStepChip nextStage={nextStage} />
-          </div>
-        )}
+
 
         {/* Quick Ideas — hidden in read-only */}
         {!isReadOnly && !genState.isGenerating && activeTool === 'none' && (isLoadingSuggestions || (suggestions && suggestions.length > 0)) && (
@@ -463,6 +449,11 @@ export function ImageViewerPanel({
       sideOverlay={sideOverlay}
       statusOverlay={statusOverlay}
       bottomOverlay={bottomOverlay}
+      nextStepOverlay={
+        !genState.isGenerating && nextStage ? (
+          <NextStepChip nextStage={nextStage} />
+        ) : undefined
+      }
       actionBar={
         hasAssets && !genState.isGenerating ? (
           <ImageActionBar

@@ -92,6 +92,8 @@ export interface StudioCanvasProps {
   floatingOverlay?: ReactNode;
   /** ImageActionBar rendered in top-right of image (download, copy, menu, optional heart) */
   actionBar?: ReactNode;
+  /** NextStepChip rendered at bottom-right of image (contextual next step CTA) */
+  nextStepOverlay?: ReactNode;
 
   // ── Keyboard ──
   /** Extra keyboard handler; return true if the event was consumed */
@@ -145,6 +147,7 @@ export function StudioCanvas({
   statusOverlay,
   floatingOverlay,
   actionBar,
+  nextStepOverlay,
   extraKeyHandler,
   onImageLoad,
   onImageMouseDown,
@@ -358,6 +361,25 @@ export function StudioCanvas({
               {/* ── ImageActionBar slot (top-right, Higgsfield-style) ── */}
               {actionBar}
 
+              {/* ── NextStep chip (bottom-right of image) ── */}
+              {nextStepOverlay && !isGenerating && !isComparing && (
+                <div
+                  className="absolute bottom-3 right-3 z-20 pointer-events-auto transition-all duration-200"
+                  style={{
+                    padding: '5px 14px',
+                    borderRadius: 10,
+                    background: 'rgba(255,255,255,0.85)',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                    opacity: imageAreaHovered ? 1 : 0,
+                    transform: imageAreaHovered ? 'translateY(0)' : 'translateY(4px)',
+                    pointerEvents: imageAreaHovered ? 'auto' : 'none',
+                  }}
+                >
+                  {nextStepOverlay}
+                </div>
+              )}
+
               {/* ── Undo/Redo floating pill (bottom-left of image) ── */}
               {toolbarVisible && !isGenerating && !isComparing && (
                 <div
@@ -365,8 +387,9 @@ export function StudioCanvas({
                   style={{
                     padding: "2px 3px",
                     borderRadius: 10,
-                    background: "rgba(0,0,0,0.45)",
-                    backdropFilter: "blur(12px)",
+                    background: "rgba(255,255,255,0.85)",
+                    backdropFilter: "blur(8px)",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
                     opacity: imageAreaHovered ? 1 : 0,
                     transform: imageAreaHovered ? "translateY(0)" : "translateY(4px)",
                     pointerEvents: imageAreaHovered ? "auto" : "none",
@@ -376,24 +399,24 @@ export function StudioCanvas({
                     onClick={onUndo}
                     disabled={!canUndo}
                     className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-20"
-                    style={{ color: "rgba(255,255,255,0.9)" }}
+                    style={{ color: "#71716A" }}
                     title="Undo (Z)"
-                    onMouseEnter={(e) => { if (canUndo) e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    onMouseEnter={(e) => { if (canUndo) { e.currentTarget.style.background = "rgba(0,0,0,0.04)"; e.currentTarget.style.color = "#1a1a1a"; } }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#71716A"; }}
                   >
                     <Undo2 size={14} strokeWidth={2.5} />
                   </button>
 
-                  <div style={{ width: 1, height: 12, background: "rgba(255,255,255,0.15)" }} />
+                  <div style={{ width: 1, height: 12, background: "rgba(0,0,0,0.08)" }} />
 
                   <button
                     onClick={onRedo}
                     disabled={!canRedo}
                     className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-20"
-                    style={{ color: "rgba(255,255,255,0.9)" }}
+                    style={{ color: "#71716A" }}
                     title="Redo (⇧Z)"
-                    onMouseEnter={(e) => { if (canRedo) e.currentTarget.style.background = "rgba(255,255,255,0.15)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    onMouseEnter={(e) => { if (canRedo) { e.currentTarget.style.background = "rgba(0,0,0,0.04)"; e.currentTarget.style.color = "#1a1a1a"; } }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#71716A"; }}
                   >
                     <Redo2 size={14} strokeWidth={2.5} />
                   </button>

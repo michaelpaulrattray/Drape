@@ -228,3 +228,14 @@
 - [x] Image Overlay: Remove top middle bar ("Headshot · final" etc), move undo/redo to image overlay
 - [x] Image Overlay: Convert keyboard shortcut labels and view labels to overlay pills on image
 - [x] Image Overlay: Preserve all existing overlays (chat bubbles, badges, surgical tools)
+- [x] Fix: Move next-step chip (Side View/Export) onto the image bottom-right instead of below
+- [x] Fix: Switch ImageActionBar + undo/redo from dark frosted glass to white frosted glass (match surgical tools)
+- [x] Fix: Triple-dot menu sometimes doesn't open — make it toggle (click to open/close)
+- [x] Fix: Triple-dot menu opens to the left — should open to the right
+- [x] Fix: Download button doesn't work — needs server proxy for CORS
+- [x] Fix: Copy button doesn't work — needs server proxy for CORS
+- [x] Move NextStepChip to bottom-right of image as overlay
+- [x] Fix triple-dot menu toggle (click to open/close)
+- [x] Fix download button via server proxy
+- [x] Fix copy button via server proxy
+- [x] Change undo/redo pill from dark to white frosted glass
