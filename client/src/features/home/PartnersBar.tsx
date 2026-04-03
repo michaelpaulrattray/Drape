@@ -1,42 +1,39 @@
 /**
- * PartnersBar — animated scrolling partner names in Instrument Serif italic.
+ * PartnersBar — static partner names with staggered blur-in animations.
  *
- * Infinite marquee of brand names separated by dots.
- * Sits at the bottom of the hero section.
+ * Matches celestial-horizon reference exactly:
+ * - Liquid-glass label pill at top
+ * - Static row of brand names in Instrument Serif italic
+ * - Staggered fade + blur entrance animations
  */
 import { motion } from "framer-motion";
 
 const PARTNERS = ["Gucci", "Prada", "Balenciaga", "Zara", "Versace"];
 
-function PartnerRow() {
-  return (
-    <>
-      {PARTNERS.map((name, i) => (
-        <span key={`${name}-${i}`} className="flex items-center gap-8 shrink-0">
-          <span className="font-heading italic text-2xl text-white/60 tracking-wide">
-            {name}
-          </span>
-          <span className="text-white/30 text-xs">●</span>
-        </span>
-      ))}
-    </>
-  );
-}
-
 export function PartnersBar() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8, delay: 0.9 }}
-      className="w-full overflow-hidden py-6"
-    >
-      <div className="flex gap-8 animate-marquee whitespace-nowrap">
-        <PartnerRow />
-        <PartnerRow />
-        <PartnerRow />
-        <PartnerRow />
+    <div className="flex flex-col items-center gap-4 pt-20 pb-8">
+      <motion.span
+        initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: 0.6, delay: 0.8, ease: "easeOut" }}
+        className="liquid-glass rounded-full px-3.5 py-1 text-xs font-medium text-white font-body"
+      >
+        Trusted by leading fashion &amp; creative teams
+      </motion.span>
+      <div className="flex items-center gap-8 md:gap-16 flex-wrap justify-center">
+        {PARTNERS.map((name, i) => (
+          <motion.span
+            key={name}
+            initial={{ opacity: 0, filter: "blur(8px)" }}
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+            transition={{ duration: 0.5, delay: 1.0 + i * 0.1, ease: "easeOut" }}
+            className="text-2xl md:text-3xl font-heading italic text-white tracking-tight"
+          >
+            {name}
+          </motion.span>
+        ))}
       </div>
-    </motion.div>
+    </div>
   );
 }

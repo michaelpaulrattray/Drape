@@ -1,49 +1,67 @@
 /**
  * Home page — hero-only landing with fullscreen video background,
- * glassmorphism navbar, headline + waitlist CTA, and partner marquee.
+ * glassmorphism navbar, headline + waitlist CTA, and partner names.
+ *
+ * Layout matches celestial-horizon reference exactly.
  */
 import { HomeNavbar } from "@/features/home/HomeNavbar";
 import { HeroContent } from "@/features/home/HeroContent";
 import { PartnersBar } from "@/features/home/PartnersBar";
 
-const MUX_VIDEO_SRC =
-  "https://stream.mux.com/jxEf6XiJs00yfbQgSHjypHNMCZDsNjSo/high.mp4";
+const VIDEO_URL =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/grok-video-ea2ef111-e404-446b-a3ec-d88cfb8a1f7a_544bff93.mp4";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-black">
-      {/* ── Fullscreen Video Background ── */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-        src={MUX_VIDEO_SRC}
+    <div className="relative min-h-screen flex flex-col overflow-hidden">
+      {/* ── Background Video — hero only ── */}
+      <div className="absolute inset-0 z-0" style={{ height: "100vh" }}>
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          src={VIDEO_URL}
+        />
+        <div className="absolute inset-0 bg-black/20 z-0" />
+      </div>
+
+      {/* ── Gradient fade to white ── */}
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-transparent to-white z-[1] pointer-events-none"
+        style={{ top: "60vh", height: "40vh" }}
       />
 
-      {/* ── Dark overlay + bottom gradient fade ── */}
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
-
-      {/* ── Content layer ── */}
-      <div className="relative z-10 flex flex-col min-h-screen">
+      {/* ── Content ── */}
+      <div className="relative z-10 flex flex-col">
         <HomeNavbar />
-
-        {/* Hero — vertically centered */}
-        <div className="flex-1 flex items-center justify-center">
+        <div className="min-h-screen flex flex-col justify-center">
           <HeroContent />
+          <PartnersBar />
         </div>
+      </div>
 
-        {/* Partners marquee at bottom */}
-        <PartnersBar />
-
-        {/* Powered by badge — bottom right */}
-        <div className="absolute bottom-6 right-6 flex items-center gap-2 opacity-60">
-          <span className="font-body text-xs text-white/70 tracking-wider uppercase">
-            Powered by Gemini
-          </span>
-        </div>
+      {/* ── Powered by Gemini badge ── */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <a
+          href="https://deepmind.google/technologies/gemini/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-geist font-medium text-white/90 hover:text-white transition-colors bg-black/40 backdrop-blur-md border border-white/10 shadow-lg"
+        >
+          <svg width="16" height="16" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 0C14 7.732 7.732 14 0 14C7.732 14 14 20.268 14 28C14 20.268 20.268 14 28 14C20.268 14 14 7.732 14 0Z" fill="url(#gemini-gradient)"/>
+            <defs>
+              <linearGradient id="gemini-gradient" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#4285F4"/>
+                <stop offset="0.5" stopColor="#9B72CB"/>
+                <stop offset="1" stopColor="#D96570"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          Powered by Gemini
+        </a>
       </div>
     </div>
   );

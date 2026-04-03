@@ -157,3 +157,7 @@
 - [x] Homepage redesign: Mux video background with gradient fade
 - [x] Homepage redesign: Powered by Gemini fixed badge
 - [x] Homepage redesign: Remove unused sections (About, Blog, FAQ, Footer, Process, Services, WhyUs, Work)
+- [x] Fix: Upload user's video to CDN and replace Mux video source
+- [x] Fix: PartnersBar doesn't match reference design — needs liquid-glass pill container with exact styling
+- [x] Fix: Powered by Gemini badge doesn't match reference — needs liquid-glass pill with Gemini sparkle icon
+- [x] Fix: Match all component styling exactly to celestial-horizon reference
