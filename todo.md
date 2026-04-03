@@ -220,3 +220,5 @@
 - [x] StudioHeader: Make the studio name text bolder to match icon weight
 - [x] StudioHeader: Replace tool-specific text label with Drape logo (consistent across all tools)
 - [x] ToolRail: Shorten tooltips from "Casting Studio" to "Cast", "Wardrobe Studio" to "Style", etc.
+- [x] StudioHeader: Add "Beta Access" badge next to Drape logo
+- [x] StudioHeader: Increase header height and enlarge logo to avoid pixelation

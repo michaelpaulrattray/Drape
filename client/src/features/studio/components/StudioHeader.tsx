@@ -43,7 +43,7 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
   return (
     <>
       <header
-        className="h-11 flex-shrink-0 flex items-center justify-between px-4 z-30"
+        className="h-13 flex-shrink-0 flex items-center justify-between px-4 z-30"
         style={{
           background: '#fff',
           borderBottom: '1px solid rgba(0,0,0,0.06)',
@@ -62,19 +62,33 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
               e.currentTarget.style.color = '#999';
             }}
           >
-            <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            <img src={LOGO_URL} alt="Drape" className="w-6 h-6" />
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            <img src={LOGO_URL} alt="Drape" className="w-7 h-7" />
           </button>
           <div
-            className="hidden sm:block h-4 w-px"
+            className="hidden sm:block h-5 w-px"
             style={{ background: 'rgba(0,0,0,0.08)' }}
           />
-          <img
-            src="/drape-logo.svg"
-            alt="Drape"
-            className="hidden sm:block"
-            style={{ height: 16 }}
-          />
+          <div className="hidden sm:flex items-center gap-2">
+            <img
+              src="/drape-logo.svg"
+              alt="Drape"
+              style={{ height: 20 }}
+            />
+            <span
+              className="px-1.5 py-0.5 rounded-full uppercase"
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                color: '#8B7355',
+                background: 'rgba(139,115,85,0.08)',
+                border: '1px solid rgba(139,115,85,0.15)',
+              }}
+            >
+              Beta
+            </span>
+          </div>
         </div>
 
         {/* Right: Credits + Avatar + Mobile Toggle */}
