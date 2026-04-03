@@ -151,7 +151,7 @@ export function MasterPromptPanel() {
   ].filter((s) => s.items.length > 0);
 
   const headAsset = currentAssets.find((a) => a.viewType === 'frontClose');
-  const viewCount = currentAssets.length;
+  const viewCount = new Set(currentAssets.map((a) => a.viewType)).size;
 
   return (
     <div

@@ -1,0 +1,78 @@
+/**
+ * buildHistoryFromAssets — Reconstructs undo/redo history from DB assets.
+ *
+ * The model_assets table stores ALL iterations (old + new) for each viewType.
+ * getModelAssets returns them ordered by createdAt DESC (newest first).
+ *
+ * Strategy:
+ * - Group assets by viewType
+ * - For each viewType, the assets are ordered newest→oldest (from DB)
+ * - Build history entries: entry 0 = oldest per viewType, entry N = newest per viewType
+ * - Each history entry is a snapshot of all viewTypes at that point in time
+ *
+ * Example: 2 frontClose iterations + 1 frontFull
+ *   DB returns: [frontClose(new), frontClose(old), frontFull]
+ *   History[0] = [frontClose(old), frontFull]     ← initial state
+ *   History[1] = [frontClose(new), frontFull]     ← after iteration
+ *   currentAssets = History[1], historyIndex = 1
+ */
+
+import type { GeneratedAsset } from '../constants';
+
+interface AssetWithMeta {
+  id: number;
+  viewType: string;
+  storageUrl: string;
+  createdAt?: string | Date | null;
+}
+
+export function buildHistoryFromAssets(
+  allAssets: AssetWithMeta[]
+): { history: GeneratedAsset[][]; historyIndex: number; currentAssets: GeneratedAsset[] } {
+  // Group by viewType — DB returns newest first
+  const byViewType = new Map<string, AssetWithMeta[]>();
+  for (const asset of allAssets) {
+    if (!['frontClose', 'frontFull', 'sideClose'].includes(asset.viewType)) continue;
+    const existing = byViewType.get(asset.viewType) || [];
+    existing.push(asset);
+    byViewType.set(asset.viewType, existing);
+  }
+
+  // Find the max number of iterations across any viewType
+  let maxIterations = 0;
+  for (const assets of Array.from(byViewType.values())) {
+    maxIterations = Math.max(maxIterations, assets.length);
+  }
+
+  if (maxIterations === 0) {
+    return { history: [], historyIndex: -1, currentAssets: [] };
+  }
+
+  // Build history entries from oldest to newest
+  // DB order is newest first, so reverse each group
+  const reversedByViewType = new Map<string, AssetWithMeta[]>();
+  for (const [viewType, assets] of Array.from(byViewType.entries())) {
+    reversedByViewType.set(viewType, [...assets].reverse()); // oldest first
+  }
+
+  const history: GeneratedAsset[][] = [];
+
+  for (let i = 0; i < maxIterations; i++) {
+    const snapshot: GeneratedAsset[] = [];
+    for (const [viewType, assets] of Array.from(reversedByViewType.entries())) {
+      // Use the asset at index i, or the latest available if this viewType has fewer iterations
+      const asset = assets[Math.min(i, assets.length - 1)];
+      snapshot.push({
+        id: asset.id,
+        viewType: asset.viewType,
+        storageUrl: asset.storageUrl,
+      });
+    }
+    history.push(snapshot);
+  }
+
+  const historyIndex = history.length - 1;
+  const currentAssets = history[historyIndex];
+
+  return { history, historyIndex, currentAssets };
+}

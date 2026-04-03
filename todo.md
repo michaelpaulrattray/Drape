@@ -254,3 +254,5 @@
 - [x] Bug: Starting a new cast doesn't reset form preferences — added resetForm() to onSelectCasting in DrapeStudio + all 5 reset paths in useSessionReset
 - [x] Bug: Saved cast shows default identity — added preferences re-hydration to DrapeStudio modelAssetsQuery useEffect (was missing after resetForm was added)
 - [x] Remove edit log section from casting right side panel (MasterPromptPanel)
+- [x] Bug: Undo history lost when resuming a draft — added buildHistoryFromAssets utility to reconstruct history stack from DB assets across all 4 restore paths
+- [x] Bug: View count shows incorrect number — changed viewCount from currentAssets.length to unique viewTypes count

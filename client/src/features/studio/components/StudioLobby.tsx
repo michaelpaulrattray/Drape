@@ -21,6 +21,7 @@ import { DraftCastsRow, type DraftModel } from './DraftCastsRow';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import type { GeneratedAsset } from '@/features/casting/constants';
+import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -164,18 +165,14 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
         if (fullModel.technicalSchema) {
           genStore.setCurrentTechnicalSchema(fullModel.technicalSchema as Record<string, unknown>);
         }
-        // Restore assets into casting store
-        const restoredAssets: GeneratedAsset[] = (fullModel.assets || []).map((a: { id: number; viewType: string; storageUrl: string }) => ({
-          id: a.id,
-          viewType: a.viewType as GeneratedAsset['viewType'],
-          storageUrl: a.storageUrl,
-        }));
-        if (restoredAssets.length > 0) {
-          genStore.setCurrentAssets(restoredAssets);
-          // Reset history cleanly for restore — avoid duplicate entries
-          genStore.setHistory([restoredAssets]);
-          genStore.setHistoryIndex(0);
-          useCastingGenerationStore.setState({ historyAmendments: [[]] });
+        // Restore assets with full history reconstruction
+        const allAssets = (fullModel.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
+        const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(allAssets);
+        if (rebuilt.length > 0) {
+          genStore.setCurrentAssets(rebuilt);
+          genStore.setHistory(history);
+          genStore.setHistoryIndex(historyIndex);
+          useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
         }
         // Restore form preferences
         if (fullModel.preferences) {

@@ -11,6 +11,7 @@ import { ToolRail } from '@/features/studio/components/ToolRail';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
 import { StudioLobby } from '@/features/studio/components/StudioLobby';
 import type { DraftModel } from '@/features/studio/components/DraftCastsRow';
+import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
 import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition';
@@ -210,17 +211,14 @@ export default function DrapeStudio() {
     const assets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
     const genStore = useCastingGenerationStore.getState();
 
-    const mapped = assets
-      .filter((a) => ['frontClose', 'frontFull', 'sideClose'].includes(a.viewType))
-      .map((a) => ({ id: a.id, viewType: a.viewType, storageUrl: a.storageUrl }));
+    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(assets);
 
-    if (mapped.length > 0) {
+    if (rebuilt.length > 0) {
       genStore.setCurrentModelId(model.id);
-      genStore.setCurrentAssets(mapped);
-      // Reset history cleanly for restore — avoid duplicate pushHistory entries
-      genStore.setHistory([mapped]);
-      genStore.setHistoryIndex(0);
-      useCastingGenerationStore.setState({ historyAmendments: [[]] });
+      genStore.setCurrentAssets(rebuilt);
+      genStore.setHistory(history);
+      genStore.setHistoryIndex(historyIndex);
+      useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
       if (model.masterPrompt) {
         genStore.setCurrentMasterPrompt(model.masterPrompt);
       }
@@ -398,16 +396,13 @@ export default function DrapeStudio() {
                       // Only update if we're still on this draft (user didn't navigate away)
                       if (currentGenStore.currentModelId !== draft.id) return;
 
-                      const restoredAssets = model.assets.map((a: { id: number; viewType: string; storageUrl: string }) => ({
-                        id: a.id,
-                        viewType: a.viewType,
-                        storageUrl: a.storageUrl,
-                      }));
-                      currentGenStore.setCurrentAssets(restoredAssets);
-                      // Reset history cleanly for restore — avoid duplicate entries
-                      currentGenStore.setHistory([restoredAssets]);
-                      currentGenStore.setHistoryIndex(0);
-                      useCastingGenerationStore.setState({ historyAmendments: [[]] });
+                      const { history: rebuiltHistory, historyIndex: rebuiltIndex, currentAssets: rebuiltAssets } = buildHistoryFromAssets(
+                        model.assets as Array<{ id: number; viewType: string; storageUrl: string }>
+                      );
+                      currentGenStore.setCurrentAssets(rebuiltAssets);
+                      currentGenStore.setHistory(rebuiltHistory);
+                      currentGenStore.setHistoryIndex(rebuiltIndex);
+                      useCastingGenerationStore.setState({ historyAmendments: rebuiltHistory.map(() => []) });
 
                       const fullBody = model.assets.find((a: { viewType: string }) => a.viewType === 'frontFull');
                       const sideView = model.assets.find((a: { viewType: string }) => a.viewType === 'sideClose');

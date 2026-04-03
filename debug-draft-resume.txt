@@ -1,0 +1,33 @@
+Draft Resume Bugs Analysis
+===========================
+
+BUG 1: Undo history lost on draft resume
+-----------------------------------------
+Root cause: Casting does NOT persist iteration history to the DB.
+Unlike wardrobe (which has wardrobe_sessions table with history[] and historyIndex),
+casting only stores the LATEST assets in model_assets table.
+
+When iterating (e.g., changing eye color), a NEW model_asset row is created
+for the same viewType (frontClose), but the OLD one is NOT deleted.
+So getModelAssets returns ALL assets ordered by createdAt DESC.
+
+On draft resume, the code does:
+  genStore.setHistory([restoredAssets]);  // Single entry — no undo possible
+  genStore.setHistoryIndex(0);
+
+This means ALL iteration history is lost. The user can't undo.
+
+FIX: On draft resume, build the history array from all assets grouped by viewType.
+Each unique timestamp group represents a history entry.
+OR: Deduplicate assets by viewType (keep only latest) to show correct view count,
+and accept that undo history is not persisted for casting (it's in-memory only).
+
+BUG 2: View count shows 2 when only 1 view exists
+---------------------------------------------------
+Root cause: viewCount = currentAssets.length
+After iteration, there are 2 frontClose assets in the DB (original + iterated).
+getModelAssets returns ALL of them, so currentAssets has 2 entries.
+The view count should count UNIQUE viewTypes, not total assets.
+
+FIX: Change viewCount to count unique viewTypes:
+  const viewCount = new Set(currentAssets.map(a => a.viewType)).size;

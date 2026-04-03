@@ -12,6 +12,7 @@ import { useCastingGenerationStore } from '@/features/casting/stores/useCastingG
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import type { ActiveTool } from '../types';
 import type { GeneratedAsset } from '@/features/casting/constants';
+import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
 
 const STORAGE_KEY = 'drape_active_session';
 
@@ -106,38 +107,17 @@ export function useSessionRestore(isAuthenticated: boolean) {
       isMinted,
     });
 
-    // Restore generation store assets
-    const restoredAssets: GeneratedAsset[] = [];
-    if (headshot) {
-      restoredAssets.push({
-        id: headshot.id,
-        viewType: 'frontClose',
-        storageUrl: headshot.storageUrl,
-      });
-    }
-    if (fullBody) {
-      restoredAssets.push({
-        id: fullBody.id,
-        viewType: 'frontFull',
-        storageUrl: fullBody.storageUrl,
-      });
-    }
-    if (sideView) {
-      restoredAssets.push({
-        id: sideView.id,
-        viewType: 'sideClose',
-        storageUrl: sideView.storageUrl,
-      });
-    }
+    // Restore generation store assets with full history reconstruction
+    const allAssets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
+    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(allAssets);
 
-    if (restoredAssets.length > 0) {
+    if (rebuilt.length > 0) {
       const genStore = useCastingGenerationStore.getState();
       genStore.setCurrentModelId(model.id);
-      genStore.setCurrentAssets(restoredAssets);
-      // Reset history cleanly for restore — avoid duplicate entries
-      genStore.setHistory([restoredAssets]);
-      genStore.setHistoryIndex(0);
-      useCastingGenerationStore.setState({ historyAmendments: [[]] });
+      genStore.setCurrentAssets(rebuilt);
+      genStore.setHistory(history);
+      genStore.setHistoryIndex(historyIndex);
+      useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
       // Fix #2: hydrate masterPrompt so MasterPromptPanel shows data after restore
       if (model.masterPrompt) {
         genStore.setCurrentMasterPrompt(model.masterPrompt);
