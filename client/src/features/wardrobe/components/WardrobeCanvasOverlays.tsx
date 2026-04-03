@@ -98,7 +98,7 @@ export function WardrobeEmptyState() {
           <circle cx="12" cy="7" r="4" />
         </svg>
       </div>
-      <p style={{ fontSize: 14, fontWeight: 500, color: "#1a1a1a" }}>No model on canvas</p>
+      <p style={{ fontSize: 14, fontWeight: 500, color: "#1a1a1a" }}>No model on <span className="font-heading italic" style={{ fontWeight: 400 }}>canvas</span></p>
       <p style={{ fontSize: 12, color: "#52524B", marginTop: 4 }}>Cast a model first, then switch to Wardrobe</p>
     </div>
   );

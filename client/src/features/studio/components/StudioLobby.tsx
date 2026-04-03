@@ -357,7 +357,8 @@ export function StudioLobby({ onSelectCasting, onResumeDraft }: StudioLobbyProps
             lineHeight: 1.2,
           }}
         >
-          How would you like to start?
+          How would you like to{' '}
+          <span className="font-heading italic" style={{ fontWeight: 400 }}>start?</span>
         </h1>
         <p
           style={{

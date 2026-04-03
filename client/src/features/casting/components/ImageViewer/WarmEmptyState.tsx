@@ -63,7 +63,11 @@ export function WarmEmptyState({ canGenerate, onGenerate }: WarmEmptyStateProps)
               </svg>
             </div>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#52524B', marginTop: 16 }}>
-              {canGenerate ? 'Ready to Cast' : 'New Model'}
+              {canGenerate ? (
+                <>Ready to <span className="font-heading italic" style={{ fontWeight: 400 }}>Cast</span></>
+              ) : (
+                <>New <span className="font-heading italic" style={{ fontWeight: 400 }}>Model</span></>
+              )}
             </div>
             <div
               style={{
