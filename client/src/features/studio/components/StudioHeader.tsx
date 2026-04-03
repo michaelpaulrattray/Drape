@@ -76,8 +76,8 @@ export function StudioHeader({ creditsBalance, planTier }: StudioHeaderProps) {
             className="hidden sm:block"
             style={{
               fontSize: 13,
-              fontWeight: 500,
-              color: '#52524B',
+              fontWeight: 700,
+              color: '#1a1a1a',
               letterSpacing: '0.04em',
             }}
           >

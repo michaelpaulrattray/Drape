@@ -11,7 +11,7 @@ import type { CanvasState } from '../types';
 import { ToolSwitchConfirmDialog } from './ToolSwitchConfirmDialog';
 
 /** Icon mapping for each tool */
-const TOOL_ICONS: Record<StudioTool, React.ComponentType<{ className?: string }>> = {
+const TOOL_ICONS: Record<StudioTool, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   casting: Camera,
   wardrobe: Shirt,
   export: Download,
@@ -178,7 +178,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
             }
           }}
         >
-          <Home className="w-4 h-4" />
+          <Home className="w-5 h-5" strokeWidth={2.5} />
           <div
             className="absolute left-full ml-2 px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
             style={{ background: '#1a1a1a', color: '#fff', fontSize: 12 }}
@@ -234,7 +234,7 @@ export function ToolRail({ canvas, onWardrobeGate }: ToolRailProps) {
                 }
               }}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-5 h-5" strokeWidth={2.5} />
 
               {/* Active indicator dot */}
               {isActive && (

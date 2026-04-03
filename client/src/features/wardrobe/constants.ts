@@ -8,7 +8,7 @@ import type { SlotTab, GarmentSlotType } from "./types";
 export const SLOT_TABS: SlotTab[] = [
   { id: "full_look", label: "Full Looks", shortLabel: "Looks", icon: Sparkles },
   { id: "tops", label: "Tops", shortLabel: "Tops", icon: Shirt },
-  { id: "bottoms", label: "Bottoms", shortLabel: "Btms", icon: Layers },
+  { id: "bottoms", label: "Bottoms", shortLabel: "Legs", icon: Layers },
   { id: "shoes", label: "Shoes", shortLabel: "Shoes", icon: Footprints },
   { id: "accessories", label: "Accessories", shortLabel: "Acc", icon: Watch },
 ];

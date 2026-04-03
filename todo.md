@@ -214,3 +214,7 @@
 - [x] Bug: Left panel shadow not applying correctly — right panel shadow looks good
 - [x] Studio Panels: Warm up palette from cool zinc to warm stone tones (align with homepage editorial aesthetic)
 - [x] Studio Canvas: Warm up canvas background from pure #ffffff to subtle warm tone with faint dot grid
+- [x] ToolRail: Make icons bolder/thicker so they stand out more
+- [x] Wardrobe: Rename "Btms" category label to "Legs"
+- [x] Wardrobe: Add shadow/border to unselected garment cards for definition
+- [x] StudioHeader: Make the studio name text bolder to match icon weight
