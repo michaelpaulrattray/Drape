@@ -1,8 +1,10 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, Redirect } from "wouter";
+import { Route, Switch, Redirect, useLocation } from "wouter";
+import { AnimatePresence } from "framer-motion";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { PageTransition } from "./components/PageTransition";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -23,33 +25,39 @@ function CastingStudioRedirect() {
 }
 
 function Router() {
+  const [location] = useLocation();
+
   return (
-    <Switch>
-      {/* Public */}
-      <Route path="/" component={Home} />
-      <Route path="/login" component={Login} />
+    <AnimatePresence mode="wait">
+      <PageTransition key={location}>
+        <Switch location={location}>
+          {/* Public */}
+          <Route path="/" component={Home} />
+          <Route path="/login" component={Login} />
 
-      {/* Dashboard */}
-      <Route path="/dashboard" component={Dashboard} />
+          {/* Dashboard */}
+          <Route path="/dashboard" component={Dashboard} />
 
-      {/* Unified Drape Studio */}
-      <Route path="/studio" component={DrapeStudio} />
+          {/* Unified Drape Studio */}
+          <Route path="/studio" component={DrapeStudio} />
 
-      {/* Legacy redirect */}
-      <Route path="/casting-studio" component={CastingStudioRedirect} />
+          {/* Legacy redirect */}
+          <Route path="/casting-studio" component={CastingStudioRedirect} />
 
-      {/* Admin */}
-      <Route path="/admin/overview" component={AdminOverview} />
-      <Route path="/admin/audit-logs" component={AdminAuditLogs} />
-      <Route path="/admin/users" component={AdminUserManagement} />
-      <Route path="/admin/change-requests" component={AdminChangeRequests} />
-      <Route path="/admin/invite-codes" component={AdminInviteCodes} />
-      <Route path="/moderator" component={ModeratorDashboard} />
+          {/* Admin */}
+          <Route path="/admin/overview" component={AdminOverview} />
+          <Route path="/admin/audit-logs" component={AdminAuditLogs} />
+          <Route path="/admin/users" component={AdminUserManagement} />
+          <Route path="/admin/change-requests" component={AdminChangeRequests} />
+          <Route path="/admin/invite-codes" component={AdminInviteCodes} />
+          <Route path="/moderator" component={ModeratorDashboard} />
 
-      {/* 404 */}
-      <Route path="/404" component={NotFound} />
-      <Route component={NotFound} />
-    </Switch>
+          {/* 404 */}
+          <Route path="/404" component={NotFound} />
+          <Route component={NotFound} />
+        </Switch>
+      </PageTransition>
+    </AnimatePresence>
   );
 }
 

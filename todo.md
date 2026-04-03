@@ -177,3 +177,5 @@
 - [x] Auto-detect returning users via cookie/localStorage and skip to "Welcome back" sign-in view
 - [x] Replace login page right panel (branded text) with full-height hero image
 - [x] Audit and align login page styles with homepage (logo, nav, card styling, colors, typography consistency)
+- [x] Add smooth page transition animation between homepage and login page (shared layout with AnimatePresence)
+- [x] Update homepage platform section copy from "Built for teams on" to "Where the best campaigns begin"

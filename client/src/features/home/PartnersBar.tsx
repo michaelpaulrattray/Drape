@@ -19,7 +19,7 @@ export function PartnersBar() {
         transition={{ duration: 0.6, delay: 0.8, ease: "easeOut" }}
         className="liquid-glass rounded-full px-3.5 py-1 text-xs font-medium text-white font-body"
       >
-        Built for teams on
+        Where the best campaigns begin
       </motion.span>
       <div className="flex items-center gap-8 md:gap-16 flex-wrap justify-center">
         {PARTNERS.map((name, i) => (
