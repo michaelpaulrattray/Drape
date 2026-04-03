@@ -43,9 +43,9 @@ function ViewThumbnail({
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className="relative overflow-hidden transition-all duration-200"
       style={{
-        width: 56,
-        height: 70,
-        borderRadius: 10,
+        width: 72,
+        height: 90,
+        borderRadius: 12,
         border: isActive ? '2px solid #1a1a1a' : '2px solid rgba(255,255,255,0.6)',
         boxShadow: isActive
           ? '0 4px 16px rgba(0,0,0,0.15)'
@@ -72,7 +72,7 @@ function ViewThumbnail({
         className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-center"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)' }}
       >
-        <span style={{ fontSize: 7, fontWeight: 600, color: '#fff', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 8, fontWeight: 600, color: '#fff', textTransform: 'uppercase' }}>
           {label}
         </span>
       </div>
@@ -88,9 +88,9 @@ function AddViewButton({ onClick, visible }: { onClick: () => void; visible: boo
       onClick={onClick}
       className="flex items-center justify-center gap-1.5"
       style={{
-        width: 56,
-        height: 70,
-        borderRadius: 10,
+        width: 72,
+        height: 90,
+        borderRadius: 12,
         border: '2px dashed rgba(0,0,0,0.1)',
         background: 'rgba(255,255,255,0.5)',
         backdropFilter: 'blur(8px)',

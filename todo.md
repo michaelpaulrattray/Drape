@@ -208,3 +208,4 @@
 - [x] Studio Panels: Change panel backgrounds to #F4F4F5
 - [x] Bug: Background layer visible behind studio panel slide-outs (was #f0ebe3 cream on DrapeStudio wrapper)
 - [x] Studio Panels: Migrate all warm beige colors to cool zinc neutral palette (ElevenLabs-inspired)
+- [x] Casting Tool: Increase preview thumbnail sizes from 56×70 to 72×90
