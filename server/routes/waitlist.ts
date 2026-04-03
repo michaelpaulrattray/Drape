@@ -48,7 +48,7 @@ export const waitlistRouter = router({
       }
 
       // Sync to Klaviyo (fire-and-forget — don't block the response)
-      newsletterSignup(input.email.toLowerCase().trim(), "waitlist_hero").catch((err) => {
+      newsletterSignup(input.email.toLowerCase().trim(), input.source || "landing_page", input.name || undefined).catch((err) => {
         log.warn({ err: err?.message }, "[Waitlist] Klaviyo sync failed (non-blocking)");
       });
 

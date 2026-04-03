@@ -10,7 +10,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 
-const navLinks = ["Product", "Pricing", "About"];
+// Nav stripped to essentials for launch — only Log In + Claim a Spot
 
 interface HomeNavbarProps {
   onClaimSpot: () => void;
@@ -36,15 +36,6 @@ export function HomeNavbar({ onClaimSpot }: HomeNavbarProps) {
 
         {/* Desktop nav — glass pill */}
         <div className="hidden md:flex items-center liquid-glass rounded-full px-2 py-1.5 gap-1">
-          {navLinks.map((link) => (
-            <a
-              key={link}
-              href="#"
-              className="px-3 py-2 text-sm font-medium text-white/90 font-body hover:text-white transition-colors"
-            >
-              {link}
-            </a>
-          ))}
           <Link
             href="/login"
             className="px-3 py-2 text-sm font-medium text-white/60 font-body hover:text-white transition-colors"
@@ -80,15 +71,6 @@ export function HomeNavbar({ onClaimSpot }: HomeNavbarProps) {
             transition={{ duration: 0.2 }}
             className="md:hidden mt-3 liquid-glass rounded-2xl p-4 flex flex-col gap-3"
           >
-            {navLinks.map((link) => (
-              <a
-                key={link}
-                href="#"
-                className="text-sm font-medium text-white/90 font-body hover:text-white transition-colors py-1"
-              >
-                {link}
-              </a>
-            ))}
             <Link
               href="/login"
               className="text-sm font-medium text-white/60 font-body hover:text-white transition-colors py-1"

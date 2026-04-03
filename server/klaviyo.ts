@@ -105,7 +105,8 @@ export async function createOrUpdateProfile(
  */
 export async function newsletterSignup(
   email: string,
-  source: string = "website_footer"
+  source: string = "website_footer",
+  firstName?: string
 ): Promise<CreateProfileResponse> {
   try {
     // Use the profiles endpoint with subscription data
@@ -117,6 +118,7 @@ export async function newsletterSignup(
           type: "profile",
           attributes: {
             email: email,
+            ...(firstName ? { first_name: firstName } : {}),
             properties: {
               signup_source: source,
               signup_date: new Date().toISOString(),

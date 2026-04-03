@@ -181,3 +181,6 @@
 - [x] Update homepage platform section copy from "Built for teams on" to "Where the best campaigns begin"
 - [x] Add "See it in action" button to hero → cinematic auto-play video modal (placeholder video for now)
 - [x] Move "See it in action" button inline with Join Waitlist CTA (primary/secondary pair on same row)
+- [x] Strip homepage nav to just "Log In" and "Claim a Spot" — remove Product, Pricing, About links
+- [x] Verify Klaviyo waitlist integration sends emails and names correctly (both hero input and Claim a Spot modal)
+- [x] Fix Klaviyo integration to pass name (first_name) along with email from waitlist signups
