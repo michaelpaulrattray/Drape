@@ -3,7 +3,8 @@ import { Button as DSButton } from "@/components/design-system";
 import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX, Check, Loader2, KeyRound, LogIn } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Error configurations ──────────────────────────────────────────────────
 const ERROR_MESSAGES = {
@@ -121,7 +122,7 @@ function AppleIcon({ disabled }: { disabled?: boolean }) {
   );
 }
 
-function OAuthButton({ href, disabled, children }: { href: string; disabled: boolean; children: React.ReactNode }) {
+function OAuthButton({ href, disabled, children, onClick }: { href: string; disabled: boolean; children: React.ReactNode; onClick?: () => void }) {
   if (disabled) {
     return (
       <button
@@ -135,6 +136,7 @@ function OAuthButton({ href, disabled, children }: { href: string; disabled: boo
   return (
     <a
       href={href}
+      onClick={onClick}
       className="group w-full h-12 inline-flex items-center justify-center rounded-full bg-white border border-[#0A0A0A]/10 text-[#0A0A0A] hover:border-[#0A0A0A]/30 transition-all duration-300 text-sm font-medium"
     >
       {children}
@@ -244,14 +246,14 @@ function clearBetaCodeCookie() {
 }
 
 // ─── OAuth buttons block (shared between new-user-oauth and returning-user) ──
-function OAuthButtonsBlock({ loginUrl, isSuspended }: { loginUrl: string; isSuspended: boolean }) {
+function OAuthButtonsBlock({ loginUrl, isSuspended, onOAuthClick }: { loginUrl: string; isSuspended: boolean; onOAuthClick?: () => void }) {
   return (
     <>
       <div className="space-y-3">
-        <OAuthButton href={loginUrl} disabled={isSuspended}>
+        <OAuthButton href={loginUrl} disabled={isSuspended} onClick={onOAuthClick}>
           <GoogleIcon disabled={isSuspended} /> Continue with Google
         </OAuthButton>
-        <OAuthButton href={loginUrl} disabled={isSuspended}>
+        <OAuthButton href={loginUrl} disabled={isSuspended} onClick={onOAuthClick}>
           <AppleIcon disabled={isSuspended} /> Continue with Apple
         </OAuthButton>
       </div>
@@ -273,7 +275,7 @@ function OAuthButtonsBlock({ loginUrl, isSuspended }: { loginUrl: string; isSusp
           Continue with Email
         </button>
       ) : (
-        <DSButton href={loginUrl} variant="primary" size="lg" fullWidth>
+        <DSButton href={loginUrl} variant="primary" size="lg" fullWidth onClick={onOAuthClick}>
           Continue with Email
         </DSButton>
       )}
@@ -292,11 +294,41 @@ function OAuthButtonsBlock({ loginUrl, isSuspended }: { loginUrl: string; isSusp
   );
 }
 
+// ─── Animation variants ───────────────────────────────────────────────────
+const viewVariants = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0, 0, 0.2, 1] as const } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: [0.4, 0, 1, 1] as const } },
+};
+
+// ─── Returning user detection ─────────────────────────────────────────────
+const HAS_ACCOUNT_KEY = "drape_has_account";
+
+function getInitialView(errorType: string | null): LoginView {
+  // Error params take priority
+  if (errorType) return "choose";
+  // Check if user has logged in before
+  try {
+    if (localStorage.getItem(HAS_ACCOUNT_KEY) === "1") return "returning-user";
+  } catch { /* localStorage unavailable */ }
+  return "choose";
+}
+
+function markHasAccount() {
+  try { localStorage.setItem(HAS_ACCOUNT_KEY, "1"); } catch { /* noop */ }
+}
+
 // ─── Main component ────────────────────────────────────────────────────────
 export default function Login() {
   const loginUrl = getLoginUrl();
   const [location] = useLocation();
-  const [view, setView] = useState<LoginView>("choose");
+
+  const searchParams = new URLSearchParams(location.split("?")[1] || "");
+  const errorType = searchParams.get("error");
+  const lockMinutes = searchParams.get("minutes");
+  const isSuspended = errorType === "suspended";
+
+  const [view, setView] = useState<LoginView>(() => getInitialView(errorType));
   const [accessCode, setAccessCode] = useState("");
   const [codeValidated, setCodeValidated] = useState(false);
 
@@ -310,29 +342,26 @@ export default function Login() {
     },
   });
 
-  const searchParams = new URLSearchParams(location.split("?")[1] || "");
-  const errorType = searchParams.get("error");
-  const lockMinutes = searchParams.get("minutes");
-  const isSuspended = errorType === "suspended";
-
   // Auto-navigate to correct view based on error
   useEffect(() => {
     if (!errorType) return;
     if (errorType === "no_code") {
-      // They tried to sign in without a code — show code entry
       setView("new-user-code");
       setCodeValidated(false);
       clearBetaCodeCookie();
     } else if (errorType === "invalid_code") {
-      // Code was invalid — show code entry
       setView("new-user-code");
       setCodeValidated(false);
       clearBetaCodeCookie();
     } else {
-      // Other errors (suspended, locked, etc.) — show returning user view
       setView("returning-user");
     }
   }, [errorType]);
+
+  // Mark account existence when user clicks any OAuth link
+  const handleOAuthClick = useCallback(() => {
+    markHasAccount();
+  }, []);
 
   const handleValidateCode = (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,9 +397,10 @@ export default function Login() {
             {/* Error Banner */}
             {errorType && <ErrorBanner errorType={errorType} lockMinutes={lockMinutes} />}
 
+            <AnimatePresence mode="wait">
             {/* ─── VIEW: Choose (default) ─── */}
             {view === "choose" && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
+              <motion.div key="choose" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-8">
                   <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
                     Welcome to Drape
@@ -405,12 +435,12 @@ export default function Login() {
                     Don't have a code? <span className="underline underline-offset-2">Join the waitlist</span>
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* ─── VIEW: Waitlist ─── */}
             {view === "waitlist" && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
+              <motion.div key="waitlist" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-6">
                   <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
                     Join the waitlist
@@ -449,12 +479,12 @@ export default function Login() {
                     <span className="underline underline-offset-2">← Back</span>
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* ─── VIEW: New user — enter access code ─── */}
             {view === "new-user-code" && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
+              <motion.div key="new-user-code" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-8">
                   <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
                     Enter access code
@@ -515,12 +545,12 @@ export default function Login() {
                     <span className="underline underline-offset-2">← Back</span>
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* ─── VIEW: New user — code validated, show OAuth ─── */}
             {view === "new-user-oauth" && codeValidated && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
+              <motion.div key="new-user-oauth" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 {/* Code validated badge */}
                 <div className="flex items-center gap-2 mb-6 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
                   <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
@@ -540,7 +570,7 @@ export default function Login() {
                   </p>
                 </div>
 
-                <OAuthButtonsBlock loginUrl={loginUrl} isSuspended={isSuspended} />
+                <OAuthButtonsBlock loginUrl={loginUrl} isSuspended={isSuspended} onOAuthClick={handleOAuthClick} />
 
                 {/* Use a different code */}
                 <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5 text-center">
@@ -556,12 +586,12 @@ export default function Login() {
                     Use a different code
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* ─── VIEW: Returning user — direct OAuth sign-in ─── */}
             {view === "returning-user" && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
+              <motion.div key="returning-user" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-4">
                   <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A]">
                     Welcome back
@@ -571,7 +601,7 @@ export default function Login() {
                   </p>
                 </div>
 
-                <OAuthButtonsBlock loginUrl={loginUrl} isSuspended={isSuspended} />
+                <OAuthButtonsBlock loginUrl={loginUrl} isSuspended={isSuspended} onOAuthClick={handleOAuthClick} />
 
                 {/* Back to choose */}
                 <div className="mt-6 pt-6 border-t border-[#0A0A0A]/5 text-center">
@@ -582,8 +612,9 @@ export default function Login() {
                     <span className="underline underline-offset-2">← Back</span>
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
           </div>
 
           {/* ─── Mobile: Back to home ────────────────────────────────── */}
