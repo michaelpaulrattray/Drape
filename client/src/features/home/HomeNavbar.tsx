@@ -1,8 +1,9 @@
 /**
  * HomeNavbar — floating glassmorphism navigation bar for the hero landing page.
- * 
+ *
  * Fixed at top, transparent over video background with liquid-glass pill nav.
- * Drape wordmark left, nav links + CTA right.
+ * Drape logo left, nav links + "Claim a Spot" CTA right.
+ * CTA triggers the WaitlistModal via onClaimSpot callback.
  */
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { useState } from "react";
@@ -10,8 +11,17 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = ["Product", "Pricing", "About"];
 
-export function HomeNavbar() {
+interface HomeNavbarProps {
+  onClaimSpot: () => void;
+}
+
+export function HomeNavbar({ onClaimSpot }: HomeNavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleClaimSpot = () => {
+    setMobileOpen(false);
+    onClaimSpot();
+  };
 
   return (
     <nav className="fixed top-4 left-0 right-0 z-50 px-6 lg:px-16">
@@ -34,7 +44,10 @@ export function HomeNavbar() {
               {link}
             </a>
           ))}
-          <button className="bg-white text-slate-900 rounded-full px-3.5 py-1.5 text-sm font-medium font-body flex items-center gap-1 hover:opacity-90 transition-opacity">
+          <button
+            onClick={handleClaimSpot}
+            className="bg-white text-slate-900 rounded-full px-3.5 py-1.5 text-sm font-medium font-body flex items-center gap-1 hover:opacity-90 transition-opacity"
+          >
             Claim a Spot
             <ArrowUpRight className="h-4 w-4" />
           </button>
@@ -69,7 +82,10 @@ export function HomeNavbar() {
                 {link}
               </a>
             ))}
-            <button className="bg-white text-slate-900 rounded-full px-4 py-2 text-sm font-medium font-body flex items-center justify-center gap-1 hover:opacity-90 transition-opacity mt-1">
+            <button
+              onClick={handleClaimSpot}
+              className="bg-white text-slate-900 rounded-full px-4 py-2 text-sm font-medium font-body flex items-center justify-center gap-1 hover:opacity-90 transition-opacity mt-1"
+            >
               Claim a Spot
               <ArrowUpRight className="h-4 w-4" />
             </button>

@@ -166,3 +166,4 @@
 - [x] Change navbar CTA from "Join Waitlist" to "Claim a Spot"
 - [x] Replace text "drape" logo in navbar with user's logo image
 - [x] Verify Klaviyo waitlist email integration is wired correctly — added newsletterSignup call to waitlist.join
+- [x] Wire "Claim a Spot" navbar button to open a beta invite modal with compelling copy and email capture

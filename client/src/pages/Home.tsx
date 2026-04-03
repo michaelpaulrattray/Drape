@@ -4,15 +4,19 @@
  *
  * Layout matches celestial-horizon reference exactly.
  */
+import { useState } from "react";
 import { HomeNavbar } from "@/features/home/HomeNavbar";
 import { HeroContent } from "@/features/home/HeroContent";
 import { PartnersBar } from "@/features/home/PartnersBar";
+import { WaitlistModal } from "@/features/home/WaitlistModal";
 
 // Proxied through /api/hero/video to bypass preview iframe URL safety check.
 // TODO: Switch back to direct CDN URL before launch for better performance.
 const VIDEO_URL = "/api/hero/video";
 
 export default function Home() {
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden">
       {/* ── Background Video — hero only ── */}
@@ -37,7 +41,7 @@ export default function Home() {
 
       {/* ── Content ── */}
       <div className="relative z-10 flex flex-col">
-        <HomeNavbar />
+        <HomeNavbar onClaimSpot={() => setWaitlistOpen(true)} />
         <div className="min-h-screen flex flex-col justify-center">
           <HeroContent />
           <PartnersBar />
@@ -65,6 +69,12 @@ export default function Home() {
           Powered by Gemini
         </a>
       </div>
+
+      {/* ── Waitlist Modal (triggered by "Claim a Spot" CTA) ── */}
+      <WaitlistModal
+        open={waitlistOpen}
+        onClose={() => setWaitlistOpen(false)}
+      />
     </div>
   );
 }
