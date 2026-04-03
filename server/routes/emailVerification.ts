@@ -69,29 +69,100 @@ export async function sendVerificationEmail(
   const verifyUrl = buildVerifyUrl(req, token);
   const resend = getResendClient();
 
+  const logoUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/drape-logo-tight_067d1d7d.png";
+  const firstName = name ? name.split(" ")[0] : "there";
+
   const { error } = await resend.emails.send({
     from: "Drape <onboarding@resend.dev>", // Uses Resend's shared domain for now
     to: email,
-    subject: "Verify your email for Drape",
+    subject: "Verify your email — Drape",
     html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="font-size: 24px; font-weight: 600; color: #111; margin-bottom: 8px;">Verify your email</h1>
-        <p style="font-size: 16px; color: #555; line-height: 1.5; margin-bottom: 24px;">
-          Hi ${name || "there"},<br><br>
-          Thanks for signing up for Drape. Please verify your email address to complete your account setup.
-        </p>
-        <a href="${verifyUrl}" 
-           style="display: inline-block; background: #111; color: #fff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">
-          Verify Email
-        </a>
-        <p style="font-size: 13px; color: #999; margin-top: 24px; line-height: 1.5;">
-          This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
-        </p>
-        <p style="font-size: 13px; color: #999; margin-top: 16px;">
-          Or copy and paste this URL into your browser:<br>
-          <span style="color: #666; word-break: break-all;">${verifyUrl}</span>
-        </p>
-      </div>
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 0; background-color: #EBEBEB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #EBEBEB; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
+          <!-- Logo -->
+          <tr>
+            <td style="padding: 32px 32px 0 32px;">
+              <img src="${logoUrl}" alt="Drape" height="24" style="display: block; height: 24px; width: auto;" />
+            </td>
+          </tr>
+          <!-- Heading -->
+          <tr>
+            <td style="padding: 28px 32px 0 32px;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 600; color: #0A0A0A; letter-spacing: -0.02em; line-height: 1.3;">
+                Verify your email
+              </h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding: 12px 32px 0 32px;">
+              <p style="margin: 0; font-size: 15px; color: #555555; line-height: 1.6;">
+                Hi ${firstName},
+              </p>
+              <p style="margin: 12px 0 0 0; font-size: 15px; color: #555555; line-height: 1.6;">
+                You're one step away from studio-grade AI model creation. Verify your email to activate your account.
+              </p>
+            </td>
+          </tr>
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 28px 32px 0 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
+                <tr>
+                  <td align="center">
+                    <a href="${verifyUrl}" target="_blank" style="display: inline-block; background-color: #0A0A0A; color: #ffffff; padding: 14px 40px; border-radius: 100px; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.01em;">
+                      Verify Email
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Expiry note -->
+          <tr>
+            <td style="padding: 24px 32px 0 32px;">
+              <p style="margin: 0; font-size: 13px; color: #999999; line-height: 1.5;">
+                This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+          <!-- Fallback URL -->
+          <tr>
+            <td style="padding: 16px 32px 0 32px;">
+              <p style="margin: 0; font-size: 12px; color: #BFBFBF; line-height: 1.5;">
+                Or copy and paste this URL into your browser:
+              </p>
+              <p style="margin: 4px 0 0 0; font-size: 12px; color: #999999; line-height: 1.5; word-break: break-all;">
+                ${verifyUrl}
+              </p>
+            </td>
+          </tr>
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 28px 32px 0 32px;">
+              <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 0;" />
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 20px 32px 32px 32px;">
+              <p style="margin: 0; font-size: 12px; color: #BFBFBF; line-height: 1.5; letter-spacing: 0.02em;">
+                Drape — Your next campaign, cast in minutes.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
     `,
   });
 

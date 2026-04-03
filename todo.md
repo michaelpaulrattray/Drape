@@ -201,3 +201,4 @@
 - [x] Email Verification: Update email auth login to block unverified users
 - [x] Email Verification: Build "Check Your Email" client page with resend
 - [x] Email Verification: Write vitest tests for verification flow
+- [x] Email Verification: Upgrade email template to match Drape brand aesthetic
