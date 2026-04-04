@@ -311,3 +311,7 @@
 - [x] ControlPanel polish: inline field pairs (age+ethnicity, texture+finish)
 - [x] ControlPanel polish: sticky generate button pinned to panel bottom
 - [x] ControlPanel polish: softer field styling matching warm beige aesthetic
+
+### Step 6 Bug Fixes
+- [x] Bug: Model card not appearing on canvas after casting in board (no card during generation or after success)
+- [x] Bug: Unwanted prompt dialog when loading into board canvas (asks to cast or style)

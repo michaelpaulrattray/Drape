@@ -281,8 +281,8 @@ export function BoardPage() {
             className="absolute inset-0"
           />
 
-          {/* Empty state overlay */}
-          {canvasItems.length === 0 && (
+          {/* Empty state overlay — only show after data has loaded, hide when panel is open */}
+          {canvasItems.length === 0 && !itemsLoading && !boardLoading && !activePanel && (
             <div
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
               style={{ zIndex: 5 }}

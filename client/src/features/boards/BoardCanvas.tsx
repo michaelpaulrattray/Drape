@@ -3,8 +3,10 @@
  *
  * Renders board items as draggable cards with pan/zoom/drag.
  * Converts board_items DB records into React Flow nodes.
+ * Syncs external item changes (insertions, deletions, image updates)
+ * into React Flow state via useEffect.
  */
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -97,14 +99,16 @@ export function BoardCanvas({
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<BoardItemFlowNode> | null>(null);
 
-  // Convert DB items → React Flow nodes
-  const initialNodes = useMemo(
-    () => items.map((item) => itemToNode(item, onItemDelete, onItemRename)),
-    [items, onItemDelete, onItemRename],
-  );
-
-  const [nodes, setNodes, onNodesChange] = useNodesState<BoardItemFlowNode>(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState<BoardItemFlowNode>([]);
   const [edges] = useEdgesState<Edge>([]);
+
+  // Sync items prop → React Flow nodes whenever items change
+  useEffect(() => {
+    const nextNodes = items.map((item) =>
+      itemToNode(item, onItemDelete, onItemRename),
+    );
+    setNodes(nextNodes);
+  }, [items, onItemDelete, onItemRename, setNodes]);
 
   // Handle node drag end → persist position
   const handleNodesChange: OnNodesChange<BoardItemFlowNode> = useCallback(
