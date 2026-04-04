@@ -51,6 +51,9 @@ export function BoardPage() {
   // Viewport center getter exposed by BoardCanvas
   const viewportCenterGetterRef = useRef<(() => { x: number; y: number }) | null>(null);
 
+  // Placement mode: 'note' or 'frame' — cursor becomes crosshair, next pane click places the node
+  const [placementMode, setPlacementMode] = useState<'note' | 'frame' | null>(null);
+
   const utils = trpc.useUtils();
 
   // ── Queries ────────────────────────────────────────────────
@@ -168,9 +171,15 @@ export function BoardPage() {
     }
   }, [items]);
 
-  // ── Keyboard Delete ───────────────────────────────────────
+  // ── Keyboard shortcuts ───────────────────────────────────
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // Escape cancels placement mode
+      if (e.key === 'Escape' && placementMode) {
+        setPlacementMode(null);
+        setActiveTool('select');
+        return;
+      }
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       // Don't delete while typing in an input/textarea
       const tag = (e.target as HTMLElement)?.tagName;
@@ -185,7 +194,41 @@ export function BoardPage() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedItemId, editorItemId, handleItemDelete]);
+  }, [selectedItemId, editorItemId, handleItemDelete, placementMode]);
+
+  // ── Placement mode click handler ───────────────────────
+  const handlePlacementClick = useCallback(
+    (flowPos: { x: number; y: number }) => {
+      if (!placementMode || !boardId) return;
+
+      if (placementMode === 'note') {
+        addItemMutation.mutate({
+          boardId,
+          type: 'note',
+          label: '',
+          width: 280,
+          height: 200,
+          positionX: flowPos.x,
+          positionY: flowPos.y,
+        });
+      } else if (placementMode === 'frame') {
+        addItemMutation.mutate({
+          boardId,
+          type: 'frame',
+          label: 'Untitled Frame',
+          width: 600,
+          height: 400,
+          positionX: flowPos.x,
+          positionY: flowPos.y,
+        });
+      }
+
+      setPlacementMode(null);
+      setActiveTool('select');
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [placementMode, boardId],
+  );
 
   const handleModelGenerated = useCallback((_itemId: number) => {
     // Model card was inserted onto the canvas
@@ -202,36 +245,14 @@ export function BoardPage() {
           setActivePanel('wardrobe');
           setActiveTool('wardrobe');
           break;
-        case 'frame': {
-          if (boardId) {
-            const center = viewportCenterGetterRef.current?.() ?? { x: 200, y: 200 };
-            addItemMutation.mutate({
-              boardId,
-              type: 'frame',
-              label: 'Untitled Frame',
-              width: 600,
-              height: 400,
-              positionX: center.x - 300,
-              positionY: center.y - 200,
-            });
-          }
+        case 'frame':
+          setPlacementMode('frame');
+          setActiveTool('frame');
           break;
-        }
-        case 'note': {
-          if (boardId) {
-            const center = viewportCenterGetterRef.current?.() ?? { x: 200, y: 200 };
-            addItemMutation.mutate({
-              boardId,
-              type: 'note',
-              label: '',
-              width: 280,
-              height: 200,
-              positionX: center.x - 140,
-              positionY: center.y - 100,
-            });
-          }
+        case 'note':
+          setPlacementMode('note');
+          setActiveTool('note');
           break;
-        }
         case 'upload':
         case 'reference':
           toast.info('Feature coming soon');
@@ -239,13 +260,16 @@ export function BoardPage() {
       }
       setAddNodeMenu(null);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [boardId],
+    [],
   );
 
   const handleToolSelect = useCallback(
     (tool: CanvasToolId) => {
       setActiveTool(tool);
+      // Clear placement mode when switching to a non-placement tool
+      if (tool !== 'note' && tool !== 'frame') {
+        setPlacementMode(null);
+      }
       switch (tool) {
         case 'select':
           setActivePanel(null);
@@ -260,42 +284,15 @@ export function BoardPage() {
         case 'upload':
           toast.info('Feature coming soon');
           break;
-        case 'note': {
-          if (boardId) {
-            const center = viewportCenterGetterRef.current?.() ?? { x: 200, y: 200 };
-            addItemMutation.mutate({
-              boardId,
-              type: 'note',
-              label: '',
-              width: 280,
-              height: 200,
-              positionX: center.x - 140,
-              positionY: center.y - 100,
-            });
-          }
-          setActiveTool('select');
+        case 'note':
+          setPlacementMode('note');
           break;
-        }
-        case 'frame': {
-          if (boardId) {
-            const center = viewportCenterGetterRef.current?.() ?? { x: 200, y: 200 };
-            addItemMutation.mutate({
-              boardId,
-              type: 'frame',
-              label: 'Untitled Frame',
-              width: 600,
-              height: 400,
-              positionX: center.x - 300,
-              positionY: center.y - 200,
-            });
-          }
-          setActiveTool('select');
+        case 'frame':
+          setPlacementMode('frame');
           break;
-        }
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [boardId],
+    [],
   );
 
   const handleCanvasContextMenu = useCallback(
@@ -488,6 +485,8 @@ export function BoardPage() {
               setAddNodeMenu(null);
               setNodeContextMenu(null);
             }}
+            onPaneClickWithPosition={placementMode ? handlePlacementClick : undefined}
+            crosshairCursor={!!placementMode}
             onViewportCenterRef={(getter) => {
               viewportCenterGetterRef.current = getter;
             }}

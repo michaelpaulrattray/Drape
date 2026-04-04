@@ -58,11 +58,15 @@ type BoardCanvasProps = {
   onNodeDoubleClick?: (itemId: number) => void;
   onNodeContextMenu?: (itemId: number, event: React.MouseEvent) => void;
   onPaneClick?: () => void;
+  /** Called with flow-coordinates when the empty pane is clicked */
+  onPaneClickWithPosition?: (flowPos: { x: number; y: number }) => void;
   className?: string;
   /** Rendered inside ReactFlow — has access to useReactFlow() context */
   children?: ReactNode;
   /** Expose a way for parent to read viewport center */
   onViewportCenterRef?: (getter: () => { x: number; y: number }) => void;
+  /** When true, sets cursor to crosshair on the canvas pane */
+  crosshairCursor?: boolean;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -163,9 +167,11 @@ export function BoardCanvas({
   onNodeDoubleClick,
   onNodeContextMenu,
   onPaneClick,
+  onPaneClickWithPosition,
   className,
   children,
   onViewportCenterRef,
+  crosshairCursor,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -272,7 +278,11 @@ export function BoardCanvas({
   return (
     <div
       className={className}
-      style={{ width: '100%', height: '100%' }}
+      style={{
+        width: '100%',
+        height: '100%',
+        ...(crosshairCursor ? { cursor: 'crosshair' } : {}),
+      }}
     >
       <ReactFlow
         nodes={nodes}
@@ -293,7 +303,19 @@ export function BoardCanvas({
           }
         }}
         onMoveEnd={handleMoveEnd}
-        onPaneClick={onPaneClick}
+        onPaneClick={(event) => {
+          onPaneClick?.();
+          // Convert screen click to flow coordinates for placement mode
+          if (onPaneClickWithPosition && rfInstance.current) {
+            const bounds = (event.target as HTMLElement).closest('.react-flow')?.getBoundingClientRect();
+            if (bounds) {
+              const vp = rfInstance.current.getViewport();
+              const flowX = Math.round(((event as unknown as MouseEvent).clientX - bounds.left - vp.x) / vp.zoom);
+              const flowY = Math.round(((event as unknown as MouseEvent).clientY - bounds.top - vp.y) / vp.zoom);
+              onPaneClickWithPosition({ x: flowX, y: flowY });
+            }
+          }
+        }}
         onInit={(instance) => {
           rfInstance.current = instance as ReactFlowInstance<AnyFlowNode>;
           // Expose viewport center getter to parent

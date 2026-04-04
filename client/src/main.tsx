@@ -8,6 +8,27 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
+// Suppress benign ResizeObserver loop warnings (common with React Flow's NodeResizer)
+const RO_MSG = 'ResizeObserver loop';
+window.addEventListener('error', (e) => {
+  if (e.message?.includes(RO_MSG)) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    return false;
+  }
+});
+window.addEventListener('unhandledrejection', (e) => {
+  if (String(e.reason)?.includes(RO_MSG)) {
+    e.preventDefault();
+  }
+});
+// Also patch the global onerror for environments that fire it before addEventListener
+const _origOnError = window.onerror;
+window.onerror = function (msg, ...rest) {
+  if (typeof msg === 'string' && msg.includes(RO_MSG)) return true;
+  return _origOnError?.call(this, msg, ...rest) ?? false;
+};
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
