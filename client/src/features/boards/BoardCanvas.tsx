@@ -10,7 +10,7 @@
  *
  * Background: CSS radial-gradient dots matching the original StudioCanvas.
  */
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ReactFlow,
   Background,
@@ -61,6 +61,8 @@ type BoardCanvasProps = {
   className?: string;
   /** Rendered inside ReactFlow — has access to useReactFlow() context */
   children?: ReactNode;
+  /** Expose a way for parent to read viewport center */
+  onViewportCenterRef?: (getter: () => { x: number; y: number }) => void;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -163,6 +165,7 @@ export function BoardCanvas({
   onPaneClick,
   className,
   children,
+  onViewportCenterRef,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -293,12 +296,27 @@ export function BoardCanvas({
         onPaneClick={onPaneClick}
         onInit={(instance) => {
           rfInstance.current = instance as ReactFlowInstance<AnyFlowNode>;
+          // Expose viewport center getter to parent
+          if (onViewportCenterRef) {
+            onViewportCenterRef(() => {
+              const vp = instance.getViewport();
+              const container = document.querySelector('.react-flow');
+              const w = container?.clientWidth ?? window.innerWidth;
+              const h = container?.clientHeight ?? window.innerHeight;
+              // Convert screen center to flow coordinates
+              return {
+                x: Math.round((-vp.x + w / 2) / vp.zoom),
+                y: Math.round((-vp.y + h / 2) / vp.zoom),
+              };
+            });
+          }
         }}
         defaultViewport={defaultViewport}
         fitView={items.length > 0 && !viewport}
         fitViewOptions={{ padding: 0.3, maxZoom: 1.2 }}
         minZoom={0.1}
         maxZoom={3}
+        deleteKeyCode={null}
         panOnScroll
         selectionOnDrag={false}
         selectNodesOnDrag={false}

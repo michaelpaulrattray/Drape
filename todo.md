@@ -427,3 +427,9 @@
 - [x] Add "Note" node type to canvas for writing text
 - [x] Notes are editable inline with warm sticky-note style (double-click to edit, Ctrl+Enter to save)
 - [x] Add "Add Note" option to AddNodeMenu and toolbar
+
+### Canvas UX Improvements — Keyboard Delete, Note Size, Toolbar Wiring
+- [x] Keyboard Delete: pressing Delete/Backspace on selected node deletes it (guard against text editing)
+- [x] Note text size: increase from 13px to 16px, bump default note dimensions to 280×200
+- [x] Wire Frame creation into toolbar (add 'frame' to CanvasToolId, replace PlusCircle with Frame icon)
+- [x] Wire Note + Frame toolbar clicks to create nodes at viewport center (not random position)

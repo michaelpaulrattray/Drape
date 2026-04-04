@@ -110,7 +110,7 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
         <div
           style={{
             flex: 1,
-            padding: '10px 12px',
+            padding: '14px 16px',
             display: 'flex',
             flexDirection: 'column' as const,
           }}
@@ -134,8 +134,8 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
               }}
               style={{
                 flex: 1,
-                fontSize: 13,
-                lineHeight: 1.5,
+                fontSize: 16,
+                lineHeight: 1.6,
                 color: '#4a4a4a',
                 background: 'transparent',
                 border: 'none',
@@ -154,8 +154,8 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
               }}
               style={{
                 flex: 1,
-                fontSize: 13,
-                lineHeight: 1.5,
+                fontSize: 16,
+                lineHeight: 1.6,
                 color: data.label ? '#4a4a4a' : '#aaa',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',

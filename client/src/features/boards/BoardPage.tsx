@@ -5,7 +5,7 @@
  * and hosts a collapsible tool panel on the right side.
  * Bottom-of-canvas UI: centered toolbar, zoom controls (left), AI chat (right).
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
@@ -47,6 +47,9 @@ export function BoardPage() {
   } | null>(null);
   const [infoPanel, setInfoPanel] = useState<{ itemId: number; position: { x: number; y: number } } | null>(null);
   const [versionHistoryItemId, setVersionHistoryItemId] = useState<number | null>(null);
+
+  // Viewport center getter exposed by BoardCanvas
+  const viewportCenterGetterRef = useRef<(() => { x: number; y: number }) | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -165,6 +168,25 @@ export function BoardPage() {
     }
   }, [items]);
 
+  // ── Keyboard Delete ───────────────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      // Don't delete while typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+      // Don't delete while editor overlay or context menu is open
+      if (editorItemId !== null) return;
+      if (selectedItemId !== null) {
+        e.preventDefault();
+        handleItemDelete(selectedItemId);
+        setSelectedItemId(null);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedItemId, editorItemId, handleItemDelete]);
+
   const handleModelGenerated = useCallback((_itemId: number) => {
     // Model card was inserted onto the canvas
   }, []);
@@ -180,32 +202,36 @@ export function BoardPage() {
           setActivePanel('wardrobe');
           setActiveTool('wardrobe');
           break;
-        case 'frame':
+        case 'frame': {
           if (boardId) {
+            const center = viewportCenterGetterRef.current?.() ?? { x: 200, y: 200 };
             addItemMutation.mutate({
               boardId,
               type: 'frame',
               label: 'Untitled Frame',
               width: 600,
               height: 400,
-              positionX: Math.round(Math.random() * 200),
-              positionY: Math.round(Math.random() * 200),
+              positionX: center.x - 300,
+              positionY: center.y - 200,
             });
           }
           break;
-        case 'note':
+        }
+        case 'note': {
           if (boardId) {
+            const center = viewportCenterGetterRef.current?.() ?? { x: 200, y: 200 };
             addItemMutation.mutate({
               boardId,
               type: 'note',
               label: '',
-              width: 240,
-              height: 160,
-              positionX: Math.round(Math.random() * 200),
-              positionY: Math.round(Math.random() * 200),
+              width: 280,
+              height: 200,
+              positionX: center.x - 140,
+              positionY: center.y - 100,
             });
           }
           break;
+        }
         case 'upload':
         case 'reference':
           toast.info('Feature coming soon');
@@ -234,19 +260,38 @@ export function BoardPage() {
         case 'upload':
           toast.info('Feature coming soon');
           break;
-        case 'note':
+        case 'note': {
           if (boardId) {
+            const center = viewportCenterGetterRef.current?.() ?? { x: 200, y: 200 };
             addItemMutation.mutate({
               boardId,
               type: 'note',
               label: '',
-              width: 240,
-              height: 160,
-              positionX: Math.round(Math.random() * 200),
-              positionY: Math.round(Math.random() * 200),
+              width: 280,
+              height: 200,
+              positionX: center.x - 140,
+              positionY: center.y - 100,
             });
           }
+          setActiveTool('select');
           break;
+        }
+        case 'frame': {
+          if (boardId) {
+            const center = viewportCenterGetterRef.current?.() ?? { x: 200, y: 200 };
+            addItemMutation.mutate({
+              boardId,
+              type: 'frame',
+              label: 'Untitled Frame',
+              width: 600,
+              height: 400,
+              positionX: center.x - 300,
+              positionY: center.y - 200,
+            });
+          }
+          setActiveTool('select');
+          break;
+        }
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -442,6 +487,9 @@ export function BoardPage() {
             onPaneClick={() => {
               setAddNodeMenu(null);
               setNodeContextMenu(null);
+            }}
+            onViewportCenterRef={(getter) => {
+              viewportCenterGetterRef.current = getter;
             }}
             className="absolute inset-0"
           >

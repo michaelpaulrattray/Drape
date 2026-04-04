@@ -16,11 +16,11 @@ import {
   Upload,
   StickyNote,
   ImagePlus,
-  PlusCircle,
+  Frame,
   type LucideIcon,
 } from 'lucide-react';
 
-export type CanvasToolId = 'select' | 'cast' | 'wardrobe' | 'reference' | 'upload' | 'note';
+export type CanvasToolId = 'select' | 'cast' | 'wardrobe' | 'reference' | 'upload' | 'note' | 'frame';
 
 type ToolDef = {
   id: CanvasToolId;
@@ -35,6 +35,7 @@ const tools: ToolDef[] = [
   { id: 'reference', icon: ImagePlus, label: 'Add Reference' },
   { id: 'upload', icon: Upload, label: 'Upload Media' },
   { id: 'note', icon: StickyNote, label: 'Add Note' },
+  { id: 'frame', icon: Frame, label: 'Add Frame' },
 ];
 
 type CanvasToolbarProps = {
@@ -72,84 +73,61 @@ export function CanvasToolbar({ activeTool, onToolSelect }: CanvasToolbarProps) 
         gap: 2,
       }}
     >
-      {tools.map((tool) => {
+      {tools.map((tool, index) => {
         const isActive = activeTool === tool.id;
         const Icon = tool.icon;
+        // Add divider before Note/Frame group (after Upload)
+        const showDivider = index === 5; // before 'note'
 
         return (
-          <button
-            key={tool.id}
-            onClick={() => handleClick(tool.id)}
-            className="relative flex items-center justify-center"
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 21,
-              border: 'none',
-              background: isActive ? '#ffffff' : 'transparent',
-              boxShadow: isActive
-                ? '0 1px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04)'
-                : 'none',
-              color: isActive ? '#1a1a1a' : '#71716a',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.color = '#3a3a3a';
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.color = '#71716a';
-                e.currentTarget.style.background = 'transparent';
-              }
-            }}
-            title={tool.label}
-          >
-            <Icon size={18} strokeWidth={isActive ? 2 : 1.75} {...crispSvgProps} />
-          </button>
+          <div key={tool.id} className="flex items-center" style={{ gap: 0 }}>
+            {showDivider && (
+              <div
+                style={{
+                  width: 1,
+                  height: 24,
+                  background: 'rgba(0, 0, 0, 0.06)',
+                  margin: '0 4px',
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            <button
+              onClick={() => handleClick(tool.id)}
+              className="relative flex items-center justify-center"
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                border: 'none',
+                background: isActive ? '#ffffff' : 'transparent',
+                boxShadow: isActive
+                  ? '0 1px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04)'
+                  : 'none',
+                color: isActive ? '#1a1a1a' : '#71716a',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.color = '#3a3a3a';
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.color = '#71716a';
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}
+              title={tool.label}
+            >
+              <Icon size={18} strokeWidth={isActive ? 2 : 1.75} {...crispSvgProps} />
+            </button>
+          </div>
         );
       })}
-
-      {/* Plus button — outlined style like reference */}
-      <div
-        style={{
-          width: 1,
-          height: 24,
-          background: 'rgba(0, 0, 0, 0.06)',
-          margin: '0 4px',
-          flexShrink: 0,
-        }}
-      />
-      <button
-        onClick={() => handleClick('note')}
-        className="flex items-center justify-center"
-        style={{
-          width: 42,
-          height: 42,
-          borderRadius: 21,
-          border: 'none',
-          background: 'transparent',
-          color: '#71716a',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          flexShrink: 0,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#3a3a3a';
-          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = '#71716a';
-          e.currentTarget.style.background = 'transparent';
-        }}
-        title="Add to canvas"
-      >
-        <PlusCircle size={18} strokeWidth={1.75} {...crispSvgProps} />
-      </button>
     </div>
   );
 }
