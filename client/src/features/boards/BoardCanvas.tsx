@@ -50,6 +50,7 @@ type BoardCanvasProps = {
   onViewportChange?: (viewport: Viewport) => void;
   onNodeSelect?: (itemId: number | null) => void;
   onNodeDoubleClick?: (itemId: number) => void;
+  onNodeContextMenu?: (itemId: number, event: React.MouseEvent) => void;
   onPaneClick?: () => void;
   className?: string;
   /** Rendered inside ReactFlow — has access to useReactFlow() context */
@@ -104,6 +105,7 @@ export function BoardCanvas({
   onViewportChange,
   onNodeSelect,
   onNodeDoubleClick,
+  onNodeContextMenu,
   onPaneClick,
   className,
   children,
@@ -215,6 +217,17 @@ export function BoardCanvas({
         onNodesChange={handleNodesChange}
         onSelectionChange={handleSelectionChange}
         onNodeDoubleClick={handleNodeDoubleClick}
+        onNodeContextMenu={(event, node) => {
+          // Prevent the canvas-level context menu from also firing
+          event.preventDefault();
+          event.stopPropagation();
+          if (onNodeContextMenu) {
+            const itemId = parseInt(node.id.replace('item-', ''), 10);
+            if (!isNaN(itemId)) {
+              onNodeContextMenu(itemId, event as unknown as React.MouseEvent);
+            }
+          }
+        }}
         onMoveEnd={handleMoveEnd}
         onPaneClick={onPaneClick}
         onInit={(instance) => {

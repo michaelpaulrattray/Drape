@@ -364,3 +364,8 @@
 - [x] Fix toolbar icons not looking crisp — use geometricPrecision SVG rendering, consistent stroke weights
 - [x] Zoom controls: step 25% at a time, more pill-shaped capsule (borderRadius 20)
 - [x] Chat toggle: remove "AI" text, icon-only circular button
+
+### Canvas Context Menus
+- [x] Build NodeContextMenu — right-click on image/node shows image-specific actions (Style Outfit, Remove Background, Download, Copy, Open in New Tab, Delete, etc.)
+- [x] Differentiate node right-click from canvas right-click — canvas shows AddNodeMenu, node shows NodeContextMenu
+- [x] Wire node right-click event from BoardCanvas into BoardPage (with stopPropagation)

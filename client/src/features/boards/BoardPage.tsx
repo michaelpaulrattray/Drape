@@ -18,6 +18,7 @@ import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 import { CanvasToolbar, type CanvasToolId } from './components/CanvasToolbar';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
+import { NodeContextMenu, type NodeContextAction } from './components/NodeContextMenu';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -35,6 +36,12 @@ export function BoardPage() {
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [editorItemId, setEditorItemId] = useState<number | null>(null);
   const [addNodeMenu, setAddNodeMenu] = useState<{ x: number; y: number } | null>(null);
+  const [nodeContextMenu, setNodeContextMenu] = useState<{
+    x: number;
+    y: number;
+    nodeId: number;
+    imageUrl: string | null;
+  } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -190,9 +197,54 @@ export function BoardPage() {
   const handleCanvasContextMenu = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
+      setNodeContextMenu(null);
       setAddNodeMenu({ x: e.clientX, y: e.clientY });
     },
     [],
+  );
+
+  const handleNodeContextMenu = useCallback(
+    (itemId: number, e: React.MouseEvent) => {
+      e.preventDefault();
+      setAddNodeMenu(null);
+      const item = items?.find((i) => i.id === itemId);
+      setNodeContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        nodeId: itemId,
+        imageUrl: item?.imageUrl ?? null,
+      });
+    },
+    [items],
+  );
+
+  const handleNodeContextAction = useCallback(
+    (action: NodeContextAction, nodeId: number) => {
+      switch (action) {
+        case 'style_outfit':
+          setSelectedItemId(nodeId);
+          setActivePanel('wardrobe');
+          setActiveTool('wardrobe');
+          break;
+        case 'rename': {
+          // Trigger inline rename — for now toast
+          toast.info('Double-click the node label to rename');
+          break;
+        }
+        case 'delete':
+          handleItemDelete(nodeId);
+          break;
+        case 'remove_bg':
+        case 'upscale':
+        case 'duplicate':
+          toast.info('Feature coming soon');
+          break;
+        // open_new_tab, download, copy_url handled inline by NodeContextMenu
+        default:
+          break;
+      }
+    },
+    [handleItemDelete],
   );
 
   // ── Derived state ──────────────────────────────────────────
@@ -291,7 +343,10 @@ export function BoardPage() {
         <div
           className="flex-1 relative"
           onContextMenu={handleCanvasContextMenu}
-          onClick={() => addNodeMenu && setAddNodeMenu(null)}
+          onClick={() => {
+            if (addNodeMenu) setAddNodeMenu(null);
+            if (nodeContextMenu) setNodeContextMenu(null);
+          }}
         >
           <BoardCanvas
             items={canvasItems}
@@ -302,7 +357,11 @@ export function BoardPage() {
             onViewportChange={handleViewportChange}
             onNodeSelect={handleNodeSelect}
             onNodeDoubleClick={handleNodeDoubleClick}
-            onPaneClick={() => setAddNodeMenu(null)}
+            onNodeContextMenu={handleNodeContextMenu}
+            onPaneClick={() => {
+              setAddNodeMenu(null);
+              setNodeContextMenu(null);
+            }}
             className="absolute inset-0"
           >
             {/* Bottom canvas UI — rendered inside ReactFlow for context access */}
@@ -423,6 +482,17 @@ export function BoardPage() {
           position={addNodeMenu}
           onSelect={handleAddNodeAction}
           onClose={() => setAddNodeMenu(null)}
+        />
+      )}
+
+      {/* Node Context Menu — appears on right-click on a node */}
+      {nodeContextMenu && (
+        <NodeContextMenu
+          position={{ x: nodeContextMenu.x, y: nodeContextMenu.y }}
+          nodeId={nodeContextMenu.nodeId}
+          imageUrl={nodeContextMenu.imageUrl}
+          onAction={handleNodeContextAction}
+          onClose={() => setNodeContextMenu(null)}
         />
       )}
 
