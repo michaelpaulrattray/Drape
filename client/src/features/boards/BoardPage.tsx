@@ -226,13 +226,30 @@ export function BoardPage() {
         case 'modify_iterate':
           setEditorItemId(nodeId);
           break;
-        case 'style_outfit':
+        case 'wardrobe':
           setSelectedItemId(nodeId);
           setActivePanel('wardrobe');
           setActiveTool('wardrobe');
           break;
         case 'rename': {
-          toast.info('Double-click the node label to rename');
+          // Dispatch a custom event that BoardItemNode listens for
+          window.dispatchEvent(new CustomEvent('board-rename-node', { detail: { itemId: nodeId } }));
+          break;
+        }
+        case 'info': {
+          const item = items?.find((i) => i.id === nodeId);
+          const meta = item?.metadata as Record<string, unknown> | null;
+          const infoLines = [
+            `Type: ${item?.type ?? 'unknown'}`,
+            `Label: ${item?.label ?? 'Untitled'}`,
+            item?.imageUrl ? `Image: ${item.imageUrl.substring(0, 60)}...` : null,
+            meta?.ethnicity ? `Ethnicity: ${meta.ethnicity}` : null,
+            meta?.gender ? `Gender: ${meta.gender}` : null,
+            meta?.age ? `Age: ${meta.age}` : null,
+            meta?.bodyType ? `Body: ${meta.bodyType}` : null,
+            meta?.hair ? `Hair: ${meta.hair}` : null,
+          ].filter(Boolean).join('\n');
+          toast.info(infoLines, { duration: 6000 });
           break;
         }
         case 'delete':
@@ -240,14 +257,14 @@ export function BoardPage() {
           break;
         case 'remove_bg':
         case 'upscale':
-        case 'duplicate':
+        case 'extract_palette':
           toast.info('Feature coming soon');
           break;
         default:
           break;
       }
     },
-    [handleItemDelete],
+    [handleItemDelete, items],
   );
 
   const handleViewGenerate = useCallback(
@@ -505,6 +522,9 @@ export function BoardPage() {
           imageUrl={nodeContextMenu.imageUrl}
           onAction={handleNodeContextAction}
           onViewGenerate={handleViewGenerate}
+          onPromptSubmit={(nId, prompt) => {
+            toast.info(`Iterating with: "${prompt}" — coming soon`);
+          }}
           onClose={() => setNodeContextMenu(null)}
         />
       )}

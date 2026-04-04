@@ -3,8 +3,10 @@
  *
  * Renders a draggable card with image, label, type badge, and selection ring.
  * Used as the single custom node type for React Flow.
+ * 3-dot menu removed — right-click context menu replaces it.
+ * Listens for 'board-rename-node' custom event to trigger inline rename.
  */
-import { memo, useState } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 import {
   ScanFace,
@@ -13,9 +15,6 @@ import {
   Layers,
   StickyNote,
   GitBranch,
-  MoreHorizontal,
-  Trash2,
-  Pencil,
 } from 'lucide-react';
 
 /* ── Types ────────────────────────────────────────────────── */
@@ -57,20 +56,43 @@ const TYPE_LABELS: Record<BoardItemNodeData['type'], string> = {
 /* ── Component ────────────────────────────────────────────── */
 
 function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
-  const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(data.label ?? '');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const Icon = TYPE_ICONS[data.type];
   const typeLabel = TYPE_LABELS[data.type];
   const isNote = data.type === 'note';
+
+  // Listen for rename trigger from context menu
+  useEffect(() => {
+    function handleRenameEvent(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.itemId === data.itemId) {
+        setEditLabel(data.label ?? '');
+        setIsEditing(true);
+      }
+    }
+    window.addEventListener('board-rename-node', handleRenameEvent);
+    return () => window.removeEventListener('board-rename-node', handleRenameEvent);
+  }, [data.itemId, data.label]);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 30);
+      return () => clearTimeout(timer);
+    }
+  }, [isEditing]);
 
   const handleRename = () => {
     if (data.onRename && editLabel.trim()) {
       data.onRename(data.itemId, editLabel.trim());
     }
     setIsEditing(false);
-    setShowMenu(false);
   };
 
   return (
@@ -195,14 +217,16 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
               {typeLabel}
             </span>
 
-            {/* Label */}
+            {/* Label — editable or static */}
             {isEditing ? (
               <input
+                ref={inputRef}
                 autoFocus
                 value={editLabel}
                 onChange={(e) => setEditLabel(e.target.value)}
                 onBlur={handleRename}
                 onKeyDown={(e) => {
+                  e.stopPropagation();
                   if (e.key === 'Enter') handleRename();
                   if (e.key === 'Escape') {
                     setIsEditing(false);
@@ -214,15 +238,20 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
                   fontSize: 12,
                   fontWeight: 500,
                   color: '#1a1a1a',
-                  background: 'transparent',
-                  border: 'none',
+                  background: 'rgba(0,0,0,0.04)',
+                  border: '1px solid rgba(0,0,0,0.12)',
+                  borderRadius: 4,
                   outline: 'none',
-                  padding: 0,
+                  padding: '2px 6px',
                   minWidth: 0,
                 }}
               />
             ) : (
               <span
+                onDoubleClick={() => {
+                  setEditLabel(data.label ?? '');
+                  setIsEditing(true);
+                }}
                 style={{
                   flex: 1,
                   fontSize: 12,
@@ -231,117 +260,16 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  cursor: 'text',
                 }}
+                title="Double-click to rename"
               >
                 {data.label}
               </span>
             )}
-
-            {/* Context menu trigger */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMenu(!showMenu);
-              }}
-              style={{
-                opacity: 0,
-                transition: 'opacity 150ms',
-                background: 'none',
-                border: 'none',
-                padding: 2,
-                cursor: 'pointer',
-                color: '#888',
-                flexShrink: 0,
-              }}
-              className="group-hover:!opacity-100"
-            >
-              <MoreHorizontal size={14} />
-            </button>
           </div>
         )}
       </div>
-
-      {/* Context menu */}
-      {showMenu && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '100%',
-            right: 4,
-            marginTop: 4,
-            background: '#fff',
-            borderRadius: 8,
-            border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-            padding: 4,
-            zIndex: 50,
-            minWidth: 120,
-          }}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditing(true);
-              setShowMenu(false);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              width: '100%',
-              padding: '6px 8px',
-              fontSize: 12,
-              color: '#444',
-              background: 'none',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'none';
-            }}
-          >
-            <Pencil size={12} />
-            Rename
-          </button>
-          {data.onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                data.onDelete?.(data.itemId);
-                setShowMenu(false);
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                width: '100%',
-                padding: '6px 8px',
-                fontSize: 12,
-                color: '#dc2626',
-                background: 'none',
-                border: 'none',
-                borderRadius: 4,
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(220,38,38,0.06)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'none';
-              }}
-            >
-              <Trash2 size={12} />
-              Delete
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }

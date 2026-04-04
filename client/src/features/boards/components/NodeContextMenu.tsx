@@ -1,29 +1,31 @@
 /**
- * NodeContextMenu — Right-click context menu for canvas nodes (images/models).
+ * NodeContextMenu — Right-click context menu for canvas nodes.
  *
- * Shows context-aware actions grouped by category:
+ * Features:
+ *  - Inline prompt input for quick iteration ("Start typing...")
  *  - Model actions: Modify / Iterate, Generate Views (expanding submenu)
- *  - AI Tools: Style Outfit, Remove Background, Upscale
- *  - Edit: Rename, Duplicate
- *  - File: Open in New Tab, Download, Copy URL
+ *  - AI Tools: Wardrobe, Remove Background, Upscale, Extract Palette
+ *  - Edit: Rename (triggers inline rename on node)
+ *  - File: Open in New Tab, Download Image (fetch+blob), Copy Image (clipboard)
+ *  - Info: Shows cast image details
  *  - Danger: Delete
- *
- * Styled as frosted-glass dropdown matching AddNodeMenu's visual language.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Shirt,
   Eraser,
   ArrowUpRight,
   Pencil,
-  Copy,
   ExternalLink,
   Download,
-  Link,
+  ClipboardCopy,
   Trash2,
   ChevronRight,
   RotateCcw,
   Camera,
+  Info,
+  Palette,
+  Send,
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,14 +37,15 @@ export type ViewAngle = 'front' | 'side' | 'back' | 'three_quarter' | 'all';
 export type NodeContextAction =
   | 'modify_iterate'
   | 'generate_views'
-  | 'style_outfit'
+  | 'wardrobe'
   | 'remove_bg'
   | 'upscale'
+  | 'extract_palette'
   | 'rename'
-  | 'duplicate'
   | 'open_new_tab'
   | 'download'
-  | 'copy_url'
+  | 'copy_image'
+  | 'info'
   | 'delete';
 
 type MenuItem = {
@@ -50,23 +53,22 @@ type MenuItem = {
   label: string;
   icon: LucideIcon;
   group: 'model' | 'ai' | 'edit' | 'file' | 'danger';
-  /** Show a chevron indicating a submenu */
   hasSubmenu?: boolean;
-  /** Only show for model-type nodes */
   modelOnly?: boolean;
 };
 
 const MENU_ITEMS: MenuItem[] = [
   { action: 'modify_iterate', label: 'Modify / Iterate', icon: RotateCcw, group: 'model', modelOnly: true },
   { action: 'generate_views', label: 'Generate Views', icon: Camera, group: 'model', hasSubmenu: true, modelOnly: true },
-  { action: 'style_outfit', label: 'Style Outfit', icon: Shirt, group: 'ai', hasSubmenu: true },
+  { action: 'wardrobe', label: 'Wardrobe', icon: Shirt, group: 'ai', hasSubmenu: true },
   { action: 'remove_bg', label: 'Remove Background', icon: Eraser, group: 'ai' },
   { action: 'upscale', label: 'Upscale Image', icon: ArrowUpRight, group: 'ai' },
+  { action: 'extract_palette', label: 'Extract Palette', icon: Palette, group: 'ai' },
   { action: 'rename', label: 'Rename', icon: Pencil, group: 'edit' },
-  { action: 'duplicate', label: 'Duplicate', icon: Copy, group: 'edit' },
+  { action: 'info', label: 'Info', icon: Info, group: 'edit' },
   { action: 'open_new_tab', label: 'Open in New Tab', icon: ExternalLink, group: 'file' },
   { action: 'download', label: 'Download Image', icon: Download, group: 'file' },
-  { action: 'copy_url', label: 'Copy Image URL', icon: Link, group: 'file' },
+  { action: 'copy_image', label: 'Copy Image', icon: ClipboardCopy, group: 'file' },
   { action: 'delete', label: 'Delete', icon: Trash2, group: 'danger' },
 ];
 
@@ -78,6 +80,74 @@ const VIEW_OPTIONS: { id: ViewAngle; label: string }[] = [
   { id: 'all', label: 'All Views' },
 ];
 
+/* ── Helpers ──────────────────────────────────────────────── */
+
+async function downloadImage(url: string, filename: string) {
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error('Fetch failed');
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+    toast.success('Image downloaded');
+  } catch {
+    // Fallback: open in new tab
+    window.open(url, '_blank');
+    toast.info('Opened image in new tab');
+  }
+}
+
+async function copyImageToClipboard(url: string) {
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error('Fetch failed');
+    const blob = await res.blob();
+    // Convert to PNG for clipboard compatibility
+    const pngBlob = blob.type === 'image/png'
+      ? blob
+      : await convertToPng(blob);
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': pngBlob }),
+    ]);
+    toast.success('Image copied to clipboard');
+  } catch {
+    // Fallback: copy URL
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Image URL copied (image copy not supported in this browser)');
+    } catch {
+      toast.error('Failed to copy image');
+    }
+  }
+}
+
+function convertToPng(blob: Blob): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('No canvas context'));
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob((b) => {
+        if (b) resolve(b);
+        else reject(new Error('toBlob failed'));
+      }, 'image/png');
+    };
+    img.onerror = reject;
+    img.crossOrigin = 'anonymous';
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
 /* ── Props ────────────────────────────────────────────────── */
 
 type NodeContextMenuProps = {
@@ -87,6 +157,7 @@ type NodeContextMenuProps = {
   imageUrl: string | null;
   onAction: (action: NodeContextAction, nodeId: number) => void;
   onViewGenerate: (nodeId: number, angle: ViewAngle) => void;
+  onPromptSubmit: (nodeId: number, prompt: string) => void;
   onClose: () => void;
 };
 
@@ -99,10 +170,13 @@ export function NodeContextMenu({
   imageUrl,
   onAction,
   onViewGenerate,
+  onPromptSubmit,
   onClose,
 }: NodeContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const promptRef = useRef<HTMLInputElement>(null);
   const [expandedSubmenu, setExpandedSubmenu] = useState<NodeContextAction | null>(null);
+  const [promptText, setPromptText] = useState('');
 
   const isModel = nodeType === 'model';
 
@@ -129,10 +203,16 @@ export function NodeContextMenu({
     };
   }, [onClose]);
 
+  // Focus prompt input on mount
+  useEffect(() => {
+    const timer = setTimeout(() => promptRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Clamp position to viewport
   const adjustedPosition = (() => {
-    const menuW = 240;
-    const menuH = 480;
+    const menuW = 248;
+    const menuH = 520;
     const pad = 12;
     let x = position.x;
     let y = position.y;
@@ -147,10 +227,8 @@ export function NodeContextMenu({
 
   // Filter items based on node type and image availability
   const visibleItems = MENU_ITEMS.filter((item) => {
-    // Hide model-only items for non-model nodes
     if (item.modelOnly && !isModel) return false;
-    // Hide image-dependent actions when there's no image
-    if (!imageUrl && ['open_new_tab', 'download', 'copy_url', 'remove_bg', 'upscale', 'style_outfit'].includes(item.action)) {
+    if (!imageUrl && ['open_new_tab', 'download', 'copy_image', 'remove_bg', 'upscale', 'wardrobe', 'extract_palette'].includes(item.action)) {
       return false;
     }
     return true;
@@ -158,8 +236,14 @@ export function NodeContextMenu({
 
   const groups = ['model', 'ai', 'edit', 'file', 'danger'] as const;
 
+  const handlePromptSubmit = useCallback(() => {
+    const text = promptText.trim();
+    if (!text) return;
+    onPromptSubmit(nodeId, text);
+    onClose();
+  }, [promptText, nodeId, onPromptSubmit, onClose]);
+
   const handleItemClick = (item: MenuItem) => {
-    // Items with submenus toggle the submenu instead of firing action
     if (item.action === 'generate_views') {
       setExpandedSubmenu((prev) => (prev === 'generate_views' ? null : 'generate_views'));
       return;
@@ -172,20 +256,12 @@ export function NodeContextMenu({
       return;
     }
     if (item.action === 'download' && imageUrl) {
-      const a = document.createElement('a');
-      a.href = imageUrl;
-      a.download = `image-${nodeId}.png`;
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success('Download started');
+      downloadImage(imageUrl, `drape-${nodeId}.png`);
       onClose();
       return;
     }
-    if (item.action === 'copy_url' && imageUrl) {
-      navigator.clipboard.writeText(imageUrl);
-      toast.success('Image URL copied');
+    if (item.action === 'copy_image' && imageUrl) {
+      copyImageToClipboard(imageUrl);
       onClose();
       return;
     }
@@ -218,7 +294,7 @@ export function NodeContextMenu({
       <div
         className="overflow-visible"
         style={{
-          width: 240,
+          width: 248,
           borderRadius: 12,
           background: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(20px) saturate(1.3)',
@@ -227,27 +303,77 @@ export function NodeContextMenu({
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06)',
         }}
       >
-        <div style={{ padding: '4px 0' }}>
+        {/* Prompt input at top */}
+        <div style={{ padding: '8px 8px 4px 8px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'rgba(0, 0, 0, 0.04)',
+              borderRadius: 8,
+              padding: '0 10px',
+              height: 36,
+            }}
+          >
+            <input
+              ref={promptRef}
+              type="text"
+              placeholder="Start typing..."
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') handlePromptSubmit();
+              }}
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontSize: 13,
+                color: '#2a2a2a',
+                padding: 0,
+              }}
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePromptSubmit();
+              }}
+              disabled={!promptText.trim()}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: promptText.trim() ? 'pointer' : 'default',
+                color: promptText.trim() ? '#1a1a1a' : 'rgba(0, 0, 0, 0.2)',
+                display: 'flex',
+                transition: 'color 0.15s ease',
+              }}
+            >
+              <Send className="w-[14px] h-[14px]" />
+            </button>
+          </div>
+        </div>
+
+        {/* Divider after prompt */}
+        <div style={{ height: 1, margin: '4px 14px', background: 'rgba(0, 0, 0, 0.06)' }} />
+
+        {/* Menu items */}
+        <div style={{ padding: '0 0 4px 0' }}>
           {groups.map((group, gi) => {
             const groupItems = visibleItems.filter((i) => i.group === group);
             if (groupItems.length === 0) return null;
 
-            // Check if any previous group had visible items for divider logic
             const prevGroupsHaveItems = groups
               .slice(0, gi)
               .some((g) => visibleItems.some((i) => i.group === g));
 
             return (
               <div key={group}>
-                {/* Divider between groups */}
                 {prevGroupsHaveItems && (
-                  <div
-                    style={{
-                      height: 1,
-                      margin: '4px 14px',
-                      background: 'rgba(0, 0, 0, 0.06)',
-                    }}
-                  />
+                  <div style={{ height: 1, margin: '4px 14px', background: 'rgba(0, 0, 0, 0.06)' }} />
                 )}
 
                 <div style={{ padding: '0 4px' }}>
@@ -305,7 +431,7 @@ export function NodeContextMenu({
                           )}
                         </button>
 
-                        {/* Generate Views submenu — inline expansion */}
+                        {/* Generate Views submenu */}
                         {item.action === 'generate_views' && isExpanded && (
                           <div
                             style={{

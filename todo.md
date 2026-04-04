@@ -374,3 +374,14 @@
 - [x] Add "Modify / Iterate" action to NodeContextMenu that opens ModelEditorOverlay (same as double-click)
 - [x] Add "Generate Views" action with expanding submenu (Front, Side, Back, 3/4, All)
 - [x] Wire both actions in BoardPage (modify opens editor overlay, views show toast placeholder)
+
+### Node Context Menu — Enhancements Round 2
+- [x] Add inline "Start typing..." prompt input at top of context menu for quick iteration
+- [x] Add Info button showing cast image specs/details (toast with metadata)
+- [x] Add Extract Palette action (placeholder)
+- [x] Remove the Duplicate action (was placeholder)
+- [x] Fix Download Image to actually work (proper fetch+blob download)
+- [x] Change "Copy Image URL" to "Copy Image" (copies image to clipboard via canvas conversion)
+- [x] Rename "Style Outfit" to "Wardrobe"
+- [x] Make Rename action work (custom event dispatches to BoardItemNode inline edit)
+- [x] Remove 3-dot menu from BoardItemNode (right-click replaces it)
