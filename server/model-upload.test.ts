@@ -23,7 +23,7 @@ describe("getToolAvailability — uploaded model", () => {
     expect(result.enabled).toBe(true);
     // Uploaded models switch seamlessly — DrapeStudio shows a 'not cast' placeholder
     expect(result.needsConfirm).toBeFalsy();
-    expect(result.tooltip).toBe("Casting Studio");
+    expect(result.tooltip).toBe("Cast");
   });
 
   it("does not require confirmation for Casting on empty canvas", () => {
@@ -61,7 +61,7 @@ describe("getToolAvailability — uploaded model", () => {
   it("enables Wardrobe when uploaded model has full body", () => {
     const result = getToolAvailability("wardrobe", uploadedCanvas);
     expect(result.enabled).toBe(true);
-    expect(result.tooltip).toBe("Wardrobe Studio");
+    expect(result.tooltip).toBe("Style");
   });
 
   it("disables Export for uploaded models (not a cast model)", () => {

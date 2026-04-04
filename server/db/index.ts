@@ -195,3 +195,22 @@ export {
   renameLook,
   deleteLook,
 } from "./wardrobe";
+
+// Boards (Canvas Board System)
+export {
+  createBoard,
+  getBoardById,
+  getUserBoards,
+  updateBoard,
+  archiveBoard,
+  deleteBoard,
+  getUserBoardCount,
+  addBoardItem,
+  addBoardItems,
+  getBoardItems,
+  getBoardItemById,
+  updateBoardItem,
+  batchUpdateBoardItemPositions,
+  deleteBoardItem,
+  deleteBoardItems,
+} from "./boards";
