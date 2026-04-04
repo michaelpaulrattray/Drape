@@ -17,6 +17,7 @@ import AdminChangeRequests from "./pages/AdminChangeRequests";
 import AdminOverview from "./pages/AdminOverview";
 import AdminInviteCodes from "./pages/AdminInviteCodes";
 import AppLobby from "./pages/AppLobby";
+import { BoardPage } from "./features/boards/BoardPage";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import BugReportButton from "./components/BugReportButton";
 
@@ -35,7 +36,7 @@ function Router() {
 
           {/* Board-based canvas */}
           <Route path="/app" component={AppLobby} />
-          <Route path="/app/board/:id" component={NotFound} />{/* Step 5: replace with BoardPage */}
+          <Route path="/app/board/:id" component={BoardPage} />
 
           {/* Classic Drape Studio (fallback) */}
           <Route path="/studio" component={DrapeStudio} />
