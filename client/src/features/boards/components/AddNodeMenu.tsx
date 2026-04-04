@@ -1,9 +1,9 @@
 /**
- * AddNodeMenu — Dark glassmorphic context menu for adding nodes to the board canvas.
+ * AddNodeMenu — Light frosted glass context menu for adding nodes to the board canvas.
  *
- * Inspired by ElevenLabs/Luma-style menus:
- *  - Dark frosted glass background with backdrop blur
- *  - Clean icon + label rows with hover highlights
+ * Light theme matching the app's warm/clean aesthetic:
+ *  - White frosted glass background with subtle shadow
+ *  - Clean icon + label rows with soft hover highlights
  *  - Subtle dividers between groups
  *  - Appears on "+" click or right-click on canvas
  */
@@ -144,33 +144,29 @@ export function AddNodeMenu({ position, onSelect, onClose }: AddNodeMenuProps) {
         className="overflow-hidden"
         style={{
           width: 220,
-          borderRadius: 14,
-          background: 'rgba(28, 28, 30, 0.88)',
-          backdropFilter: 'blur(24px) saturate(1.4)',
-          WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: 12,
+          background: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(20px) saturate(1.3)',
+          WebkitBackdropFilter: 'blur(20px) saturate(1.3)',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
           boxShadow:
-            '0 8px 40px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 0.5px 0 rgba(255, 255, 255, 0.06)',
+            '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06)',
         }}
       >
         {/* Search input */}
-        <div
-          style={{
-            padding: '10px 10px 6px',
-          }}
-        >
+        <div style={{ padding: '8px 8px 4px' }}>
           <div
             className="flex items-center gap-2"
             style={{
-              height: 34,
-              borderRadius: 10,
-              background: 'rgba(255, 255, 255, 0.07)',
+              height: 32,
+              borderRadius: 8,
+              background: 'rgba(0, 0, 0, 0.04)',
               padding: '0 10px',
             }}
           >
             <Search
               className="flex-shrink-0"
-              style={{ width: 13, height: 13, color: 'rgba(255, 255, 255, 0.35)' }}
+              style={{ width: 13, height: 13, color: 'rgba(0, 0, 0, 0.3)' }}
             />
             <input
               ref={inputRef}
@@ -181,12 +177,28 @@ export function AddNodeMenu({ position, onSelect, onClose }: AddNodeMenuProps) {
               className="flex-1 bg-transparent border-none outline-none"
               style={{
                 fontSize: 13,
-                color: 'rgba(255, 255, 255, 0.9)',
-                caretColor: 'rgba(255, 255, 255, 0.6)',
+                color: '#1a1a1a',
+                caretColor: '#1a1a1a',
               }}
             />
           </div>
         </div>
+
+        {/* Section label */}
+        {createItems.length > 0 && (
+          <div
+            style={{
+              padding: '6px 18px 2px',
+              fontSize: 11,
+              fontWeight: 500,
+              color: 'rgba(0, 0, 0, 0.35)',
+              letterSpacing: '0.02em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Create
+          </div>
+        )}
 
         {/* Create group */}
         {createItems.length > 0 && (
@@ -201,23 +213,23 @@ export function AddNodeMenu({ position, onSelect, onClose }: AddNodeMenuProps) {
                 className="w-full flex items-center gap-2.5 cursor-pointer"
                 style={{
                   height: 34,
-                  padding: '0 10px',
+                  padding: '0 12px',
                   borderRadius: 8,
                   fontSize: 13,
                   fontWeight: 500,
-                  color: 'rgba(255, 255, 255, 0.85)',
+                  color: '#2a2a2a',
                   background: 'transparent',
                   border: 'none',
                   transition: 'background 0.1s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
                 }}
               >
-                <span style={{ color: 'rgba(255, 255, 255, 0.5)', display: 'flex' }}>
+                <span style={{ color: 'rgba(0, 0, 0, 0.4)', display: 'flex' }}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
@@ -231,15 +243,15 @@ export function AddNodeMenu({ position, onSelect, onClose }: AddNodeMenuProps) {
           <div
             style={{
               height: 1,
-              margin: '4px 16px',
-              background: 'rgba(255, 255, 255, 0.08)',
+              margin: '4px 14px',
+              background: 'rgba(0, 0, 0, 0.06)',
             }}
           />
         )}
 
         {/* Media group */}
         {mediaItems.length > 0 && (
-          <div style={{ padding: '2px 6px 6px' }}>
+          <div style={{ padding: '2px 6px 8px' }}>
             {mediaItems.map((item) => (
               <button
                 key={item.action}
@@ -250,23 +262,23 @@ export function AddNodeMenu({ position, onSelect, onClose }: AddNodeMenuProps) {
                 className="w-full flex items-center gap-2.5 cursor-pointer"
                 style={{
                   height: 34,
-                  padding: '0 10px',
+                  padding: '0 12px',
                   borderRadius: 8,
                   fontSize: 13,
                   fontWeight: 500,
-                  color: 'rgba(255, 255, 255, 0.85)',
+                  color: '#2a2a2a',
                   background: 'transparent',
                   border: 'none',
                   transition: 'background 0.1s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
                 }}
               >
-                <span style={{ color: 'rgba(255, 255, 255, 0.5)', display: 'flex' }}>
+                <span style={{ color: 'rgba(0, 0, 0, 0.4)', display: 'flex' }}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
@@ -282,7 +294,7 @@ export function AddNodeMenu({ position, onSelect, onClose }: AddNodeMenuProps) {
               padding: '16px 16px 20px',
               textAlign: 'center',
               fontSize: 13,
-              color: 'rgba(255, 255, 255, 0.35)',
+              color: 'rgba(0, 0, 0, 0.35)',
             }}
           >
             No matching tools
