@@ -754,13 +754,13 @@ export type InsertBoard = typeof boards.$inferInsert;
  * Each item represents a model, garment, VTO result, reference image, or iteration.
  * Items link back to their source records via optional foreign keys.
  */
-export const BOARD_ITEM_TYPES = ["model", "garment", "vto_result", "reference", "iteration", "note"] as const;
+export const BOARD_ITEM_TYPES = ["model", "garment", "vto_result", "reference", "iteration", "note", "frame"] as const;
 export type BoardItemType = typeof BOARD_ITEM_TYPES[number];
 
 export const boardItems = mysqlTable("board_items", {
   id: int("id").autoincrement().primaryKey(),
   boardId: int("boardId").notNull(),
-  type: mysqlEnum("type", ["model", "garment", "vto_result", "reference", "iteration", "note"]).notNull(),
+  type: mysqlEnum("type", ["model", "garment", "vto_result", "reference", "iteration", "note", "frame"]).notNull(),
   label: varchar("label", { length: 256 }),
   imageUrl: text("imageUrl"), // S3 URL of the visual (null for notes)
   imageKey: varchar("imageKey", { length: 256 }),

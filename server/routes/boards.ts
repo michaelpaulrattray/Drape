@@ -60,7 +60,7 @@ const boardItemPositionSchema = z.object({
 });
 
 const boardItemTypeSchema = z.enum([
-  "model", "garment", "vto_result", "reference", "iteration", "note",
+  "model", "garment", "vto_result", "reference", "iteration", "note", "frame",
 ]);
 
 // ── Router ───────────────────────────────────────────────────────────────

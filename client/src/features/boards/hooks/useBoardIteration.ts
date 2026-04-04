@@ -54,9 +54,10 @@ export function useBoardIteration({ boardId }: UseBoardIterationParams) {
       currentAssetId: number;
       prompt: string;
       maskBase64?: string;
+      referenceImage?: string;
       tool?: "chat" | "surgical" | "eraser";
     }) => {
-      const { itemId, sourceModelId, currentAssetId, prompt, maskBase64, tool = "chat" } = params;
+      const { itemId, sourceModelId, currentAssetId, prompt, maskBase64, referenceImage, tool = "chat" } = params;
 
       setState({
         isGenerating: true,
@@ -72,6 +73,7 @@ export function useBoardIteration({ boardId }: UseBoardIterationParams) {
           feedback: prompt,
           assetId: currentAssetId,
           maskBase64,
+          referenceImage,
         });
 
         if (!result.success || !result.imageUrl) {

@@ -99,6 +99,11 @@ export function BoardPage() {
 
   const iterateMutation = trpc.generation.iterate.useMutation();
   const addVersionMutation = trpc.boards.addItemVersion.useMutation();
+  const addItemMutation = trpc.boards.addItem.useMutation({
+    onSuccess: () => {
+      if (boardId) utils.boards.getItems.invalidate({ boardId });
+    },
+  });
 
   // ── Handlers ───────────────────────────────────────────────
 
@@ -112,6 +117,13 @@ export function BoardPage() {
   const handleItemMove = useCallback(
     (itemId: number, x: number, y: number) => {
       updateItemMutation.mutate({ itemId, positionX: x, positionY: y });
+    },
+    [updateItemMutation],
+  );
+
+  const handleItemResize = useCallback(
+    (itemId: number, width: number, height: number) => {
+      updateItemMutation.mutate({ itemId, width, height });
     },
     [updateItemMutation],
   );
@@ -168,15 +180,41 @@ export function BoardPage() {
           setActivePanel('wardrobe');
           setActiveTool('wardrobe');
           break;
+        case 'frame':
+          if (boardId) {
+            addItemMutation.mutate({
+              boardId,
+              type: 'frame',
+              label: 'Untitled Frame',
+              width: 600,
+              height: 400,
+              positionX: Math.round(Math.random() * 200),
+              positionY: Math.round(Math.random() * 200),
+            });
+          }
+          break;
+        case 'note':
+          if (boardId) {
+            addItemMutation.mutate({
+              boardId,
+              type: 'note',
+              label: '',
+              width: 240,
+              height: 160,
+              positionX: Math.round(Math.random() * 200),
+              positionY: Math.round(Math.random() * 200),
+            });
+          }
+          break;
         case 'upload':
         case 'reference':
-        case 'note':
           toast.info('Feature coming soon');
           break;
       }
       setAddNodeMenu(null);
     },
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [boardId],
   );
 
   const handleToolSelect = useCallback(
@@ -194,12 +232,25 @@ export function BoardPage() {
           break;
         case 'reference':
         case 'upload':
-        case 'note':
           toast.info('Feature coming soon');
+          break;
+        case 'note':
+          if (boardId) {
+            addItemMutation.mutate({
+              boardId,
+              type: 'note',
+              label: '',
+              width: 240,
+              height: 160,
+              positionX: Math.round(Math.random() * 200),
+              positionY: Math.round(Math.random() * 200),
+            });
+          }
           break;
       }
     },
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [boardId],
   );
 
   const handleCanvasContextMenu = useCallback(
@@ -380,6 +431,7 @@ export function BoardPage() {
             items={canvasItems}
             viewport={viewport}
             onItemMove={handleItemMove}
+            onItemResize={handleItemResize}
             onItemDelete={handleItemDelete}
             onItemRename={handleItemRename}
             onVersionHistory={(itemId) => setVersionHistoryItemId(itemId)}

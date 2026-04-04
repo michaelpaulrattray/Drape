@@ -7,7 +7,7 @@
  * Listens for 'board-rename-node' custom event to trigger inline rename.
  */
 import { memo, useState, useEffect, useRef } from 'react';
-import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
+import { Handle, Position, NodeResizer, type NodeProps, type Node } from '@xyflow/react';
 import {
   ScanFace,
   Shirt,
@@ -31,6 +31,7 @@ export type BoardItemNodeData = {
   onDelete?: (itemId: number) => void;
   onRename?: (itemId: number, label: string) => void;
   onVersionHistory?: (itemId: number) => void;
+  onResize?: (itemId: number, width: number, height: number) => void;
 };
 
 export type BoardItemFlowNode = Node<BoardItemNodeData, 'boardItem'>;
@@ -101,10 +102,32 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
     <div
       className="group relative"
       style={{
-        width: data.width,
+        width: '100%',
+        height: '100%',
         minHeight: isNote ? 120 : undefined,
       }}
     >
+      {/* Resize handle — visible on selection */}
+      <NodeResizer
+        isVisible={selected}
+        minWidth={120}
+        minHeight={isNote ? 80 : 160}
+        handleStyle={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          background: '#1a1a1a',
+          border: '2px solid #fff',
+        }}
+        lineStyle={{
+          borderColor: 'transparent',
+          borderWidth: 1,
+        }}
+        onResizeEnd={(_event, params) => {
+          data.onResize?.(data.itemId, params.width, params.height);
+        }}
+      />
+
       {/* Connection handles (hidden but functional) */}
       <Handle
         type="target"
@@ -131,6 +154,10 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
           overflow: 'hidden',
           transition: 'box-shadow 150ms ease, border-color 150ms ease',
           cursor: 'grab',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column' as const,
         }}
       >
         {/* Image area */}
@@ -138,7 +165,7 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
           <div
             style={{
               width: '100%',
-              aspectRatio: '3/4',
+              flex: 1,
               background: '#f5f3ef',
               overflow: 'hidden',
               position: 'relative',
@@ -168,7 +195,7 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
           <div
             style={{
               width: '100%',
-              aspectRatio: '3/4',
+              flex: 1,
               background: '#f5f3ef',
               display: 'flex',
               alignItems: 'center',

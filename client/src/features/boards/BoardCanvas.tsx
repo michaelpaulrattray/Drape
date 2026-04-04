@@ -25,12 +25,14 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { BoardItemNode, type BoardItemNodeData, type BoardItemFlowNode } from './nodes/BoardItemNode';
+import { FrameNode, type FrameFlowNode } from './nodes/FrameNode';
+import { NoteNode, type NoteFlowNode } from './nodes/NoteNode';
 
 /* ── Types ────────────────────────────────────────────────── */
 
 export type BoardItemRecord = {
   id: number;
-  type: 'model' | 'garment' | 'vto_result' | 'reference' | 'iteration' | 'note';
+  type: 'model' | 'garment' | 'vto_result' | 'reference' | 'iteration' | 'note' | 'frame';
   label: string | null;
   imageUrl: string | null;
   positionX: number;
@@ -47,6 +49,7 @@ type BoardCanvasProps = {
   items: BoardItemRecord[];
   viewport?: { x: number; y: number; zoom: number };
   onItemMove?: (itemId: number, x: number, y: number) => void;
+  onItemResize?: (itemId: number, width: number, height: number) => void;
   onItemDelete?: (itemId: number) => void;
   onItemRename?: (itemId: number, label: string) => void;
   onVersionHistory?: (itemId: number) => void;
@@ -64,21 +67,64 @@ type BoardCanvasProps = {
 
 const nodeTypes: NodeTypes = {
   boardItem: BoardItemNode,
+  frame: FrameNode,
+  note: NoteNode,
 };
 
 /* ── Helpers ──────────────────────────────────────────────── */
+
+type AnyFlowNode = BoardItemFlowNode | FrameFlowNode | NoteFlowNode;
 
 function itemToNode(
   item: BoardItemRecord,
   onDelete?: (id: number) => void,
   onRename?: (id: number, label: string) => void,
   onVersionHistory?: (id: number) => void,
-): BoardItemFlowNode {
+  onResize?: (id: number, width: number, height: number) => void,
+): AnyFlowNode {
+  // Frame nodes
+  if (item.type === 'frame') {
+    return {
+      id: `item-${item.id}`,
+      type: 'frame',
+      position: { x: item.positionX, y: item.positionY },
+      zIndex: item.zIndex,
+      style: { width: item.width, height: item.height },
+      data: {
+        itemId: item.id,
+        label: item.label,
+        onRename,
+        onDelete,
+        onResize,
+      },
+    } as FrameFlowNode;
+  }
+
+  // Note nodes
+  if (item.type === 'note') {
+    return {
+      id: `item-${item.id}`,
+      type: 'note',
+      position: { x: item.positionX, y: item.positionY },
+      zIndex: item.zIndex,
+      style: { width: item.width, height: item.height },
+      data: {
+        itemId: item.id,
+        label: item.label,
+        onRename,
+        onDelete,
+        onResize,
+      },
+    } as NoteFlowNode;
+  }
+
+  // Default: image-based nodes (model, garment, vto_result, reference, iteration)
   return {
     id: `item-${item.id}`,
     type: 'boardItem',
     position: { x: item.positionX, y: item.positionY },
     zIndex: item.zIndex,
+    style: { width: item.width, height: item.height },
     data: {
       itemId: item.id,
       type: item.type,
@@ -90,6 +136,7 @@ function itemToNode(
       onDelete,
       onRename,
       onVersionHistory,
+      onResize,
     },
   };
 }
@@ -105,6 +152,7 @@ export function BoardCanvas({
   items,
   viewport,
   onItemMove,
+  onItemResize,
   onItemDelete,
   onItemRename,
   onVersionHistory,
@@ -116,11 +164,11 @@ export function BoardCanvas({
   className,
   children,
 }: BoardCanvasProps) {
-  const rfInstance = useRef<ReactFlowInstance<BoardItemFlowNode> | null>(null);
+  const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
   const isDraggingRef = useRef(false);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<BoardItemFlowNode>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>([]);
   const [edges] = useEdgesState<Edge>([]);
 
   /**
@@ -143,13 +191,13 @@ export function BoardCanvas({
     if (isDraggingRef.current) return;
 
     const nextNodes = items.map((item) =>
-      itemToNode(item, onItemDelete, onItemRename, onVersionHistory),
+      itemToNode(item, onItemDelete, onItemRename, onVersionHistory, onItemResize),
     );
     setNodes(nextNodes);
-  }, [items, onItemDelete, onItemRename, onVersionHistory, setNodes]);
+  }, [items, onItemDelete, onItemRename, onVersionHistory, onItemResize, setNodes]);
 
   // Handle node drag + position persistence
-  const handleNodesChange: OnNodesChange<BoardItemFlowNode> = useCallback(
+  const handleNodesChange: OnNodesChange<AnyFlowNode> = useCallback(
     (changes) => {
       onNodesChange(changes);
 
@@ -165,9 +213,16 @@ export function BoardCanvas({
             }
           }
         }
+        // Handle resize dimension changes
+        if (change.type === 'dimensions' && change.dimensions) {
+          const itemId = parseInt(change.id.replace('item-', ''), 10);
+          if (!isNaN(itemId) && onItemResize) {
+            onItemResize(itemId, Math.round(change.dimensions.width), Math.round(change.dimensions.height));
+          }
+        }
       }
     },
-    [onNodesChange, onItemMove],
+    [onNodesChange, onItemMove, onItemResize],
   );
 
   // Handle node double-click
@@ -237,7 +292,7 @@ export function BoardCanvas({
         onMoveEnd={handleMoveEnd}
         onPaneClick={onPaneClick}
         onInit={(instance) => {
-          rfInstance.current = instance as ReactFlowInstance<BoardItemFlowNode>;
+          rfInstance.current = instance as ReactFlowInstance<AnyFlowNode>;
         }}
         defaultViewport={defaultViewport}
         fitView={items.length > 0 && !viewport}

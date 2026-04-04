@@ -25,6 +25,8 @@ import {
   Scissors,
   Eraser,
   Sparkles,
+  Paperclip,
+  ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBoardIteration } from '../hooks/useBoardIteration';
@@ -159,6 +161,11 @@ export function ModelEditorOverlay({
   const [activeTool, setActiveTool] = useState<ActiveTool>('none');
   const getMaskDataUrl = useRef<(() => string | null) | null>(null);
 
+  // Reference image state
+  const [referenceImage, setReferenceImage] = useState<{ url: string; preview: string } | null>(null);
+  const [isUploadingRef, setIsUploadingRef] = useState(false);
+  const refFileInputRef = useRef<HTMLInputElement>(null);
+
   // Iteration hook
   const { isGenerating, currentStep, iterate } = useBoardIteration({ boardId });
 
@@ -245,6 +252,43 @@ export function ModelEditorOverlay({
     }
   }, [currentImageUrl, label, itemId]);
 
+  // Reference image upload
+  const handleRefImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be under 10MB');
+      return;
+    }
+    setIsUploadingRef(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const preview = URL.createObjectURL(file);
+      const base64Data = base64.split(',')[1];
+      setReferenceImage({ url: base64Data, preview });
+      toast.success('Reference image attached');
+    } catch {
+      toast.error('Failed to load reference image');
+    } finally {
+      setIsUploadingRef(false);
+      if (refFileInputRef.current) refFileInputRef.current.value = '';
+    }
+  }, []);
+
+  const removeReferenceImage = useCallback(() => {
+    if (referenceImage?.preview) URL.revokeObjectURL(referenceImage.preview);
+    setReferenceImage(null);
+  }, [referenceImage]);
+
   // Submit refinement
   const handleRefineSubmit = useCallback(async () => {
     if (!sourceModelId || !currentImageUrl) {
@@ -267,6 +311,7 @@ export function ModelEditorOverlay({
         currentAssetId: currentAssetId || 0,
         prompt: 'FIX ARTIFACT: Remove the content in the masked area. Inpaint with surrounding skin texture, lighting, and noise. Restore the background if needed. Do not add new objects.',
         maskBase64: maskData,
+        referenceImage: referenceImage?.url,
         tool: 'eraser',
       });
       if (result.success && result.imageUrl) {
@@ -294,6 +339,7 @@ export function ModelEditorOverlay({
         currentAssetId: currentAssetId || 0,
         prompt: refineInput,
         maskBase64: maskData,
+        referenceImage: referenceImage?.url,
         tool: 'surgical',
       });
       if (result.success && result.imageUrl) {
@@ -312,6 +358,7 @@ export function ModelEditorOverlay({
       sourceModelId,
       currentAssetId: currentAssetId || 0,
       prompt: refineInput,
+      referenceImage: referenceImage?.url,
       tool: 'chat',
     });
     if (result.success && result.imageUrl) {
@@ -319,7 +366,8 @@ export function ModelEditorOverlay({
       toast.success('Iteration complete!');
     }
     setRefineInput('');
-  }, [sourceModelId, currentImageUrl, activeTool, refineInput, itemId, currentAssetId, iterate]);
+    removeReferenceImage();
+  }, [sourceModelId, currentImageUrl, activeTool, refineInput, itemId, currentAssetId, iterate, referenceImage, removeReferenceImage]);
 
   // Handle Enter key in refine input
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -511,17 +559,48 @@ export function ModelEditorOverlay({
           )}
         </div>
 
+        {/* Hidden file input for reference images */}
+        <input
+          ref={refFileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleRefImageSelect}
+          className="hidden"
+        />
+
         {/* Bottom refine bar */}
         {canIterate ? (
           <div
-            className="flex items-center gap-3 px-5 flex-shrink-0"
+            className="flex flex-col flex-shrink-0"
             style={{
-              height: 60,
               borderTop: '1px solid rgba(0,0,0,0.06)',
               background: 'rgba(255,255,255,0.9)',
               backdropFilter: 'blur(8px)',
             }}
           >
+            {/* Reference image preview */}
+            {referenceImage && (
+              <div className="flex items-center gap-2 px-5 pt-2">
+                <div className="relative group">
+                  <img
+                    src={referenceImage.preview}
+                    alt="Reference"
+                    className="rounded-lg object-cover"
+                    style={{ width: 40, height: 40, border: '1px solid rgba(0,0,0,0.08)' }}
+                  />
+                  <button
+                    onClick={removeReferenceImage}
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: '#1a1a1a', color: '#fff', fontSize: 10 }}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+                <span style={{ fontSize: 11, color: '#71716A', fontWeight: 500 }}>Reference attached</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 px-5" style={{ height: 60 }}>
             {/* Tool indicator */}
             {activeTool !== 'none' && (
               <div
@@ -541,6 +620,26 @@ export function ModelEditorOverlay({
                 </span>
               </div>
             )}
+
+            {/* Reference image button */}
+            <button
+              onClick={() => refFileInputRef.current?.click()}
+              disabled={isGenerating || isUploadingRef}
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
+              style={{
+                background: referenceImage ? 'rgba(59,130,246,0.1)' : 'rgba(0,0,0,0.03)',
+                color: referenceImage ? '#3b82f6' : '#71716A',
+                border: `1px solid ${referenceImage ? 'rgba(59,130,246,0.2)' : 'rgba(0,0,0,0.06)'}`,
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+              }}
+              title="Attach reference image"
+            >
+              {isUploadingRef ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <ImageIcon size={15} strokeWidth={1.5} />
+              )}
+            </button>
 
             {/* Text input */}
             <div className="flex-1 relative">
@@ -588,6 +687,7 @@ export function ModelEditorOverlay({
                 <Send size={15} strokeWidth={1.5} />
               )}
             </button>
+            </div>
           </div>
         ) : (
           /* Non-model items — keyboard hints */

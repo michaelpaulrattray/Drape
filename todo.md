@@ -403,3 +403,27 @@
 - [x] Wire context menu "Modify / Iterate" to open upgraded ModelEditorOverlay
 - [x] After each iteration (overlay or context menu), save version + replace node imageUrl in-place
 - [x] Tests: 11 board version endpoint tests (add, get, count, revert, auth checks)
+
+### Iteration Overlay — UX Improvements
+- [x] Add reference image upload to ModelEditorOverlay (like casting studio RefinePanel)
+- [ ] Make surgical/eraser tools more prominent and obvious in the overlay toolbar
+- [ ] Add right-click context menu inside the iteration overlay (download, copy, info, etc.)
+
+### Iteration Overlay — Reference Image Upload
+- [x] Add reference image upload button (image icon) next to refine input
+- [x] Show thumbnail preview in refine bar with remove button
+- [x] Pass referenceImage base64 to iterate call, clear after submit
+
+### Canvas — Drag-to-Resize Images
+- [x] Enable resize handles on image nodes (React Flow NodeResizer)
+- [x] Persist resized dimensions to board item (width/height)
+
+### Canvas — Frame/Group Boxes
+- [x] Add "Frame" node type to canvas for grouping images
+- [x] Frame nodes are resizable containers with labeled headers
+- [x] Add "Add Frame" option to AddNodeMenu and toolbar
+
+### Canvas — Text Notes
+- [x] Add "Note" node type to canvas for writing text
+- [x] Notes are editable inline with warm sticky-note style (double-click to edit, Ctrl+Enter to save)
+- [x] Add "Add Note" option to AddNodeMenu and toolbar

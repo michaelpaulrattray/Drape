@@ -1,0 +1,1 @@
+ALTER TABLE `board_items` MODIFY COLUMN `type` enum('model','garment','vto_result','reference','iteration','note','frame') NOT NULL;
