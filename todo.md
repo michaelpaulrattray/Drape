@@ -390,3 +390,16 @@
 - [x] Fix Download Image: server proxy endpoint with Content-Disposition: attachment
 - [x] Fix Copy Image: proxy fetch bypasses CORS, PNG blob written to clipboard
 - [x] Redesign Info as NodeInfoPanel popout modal — shows model specs, master prompt, preferences, metadata
+
+### Board Canvas Iteration System
+- [x] DB: Create board_item_versions table (itemId, version, imageUrl, prompt, createdAt)
+- [x] Server: Add boards.addItemVersion and boards.getItemVersions tRPC procedures
+- [x] Server: Add boards.revertItemVersion procedure (swap node imageUrl to selected version)
+- [x] Hook: Build useBoardIteration hook bridging board items to casting iterate endpoint
+- [x] Upgrade ModelEditorOverlay with refine bar (chat input), surgical/eraser tools, loading overlay
+- [x] Build VersionHistoryBadge — clean layers icon on upper-left of node (only shows if versions exist)
+- [x] Build VersionHistoryModal — horizontal scrollable thumbnail strip with select/revert
+- [x] Wire context menu "Start typing..." prompt to fire-and-forget iteration with version save
+- [x] Wire context menu "Modify / Iterate" to open upgraded ModelEditorOverlay
+- [x] After each iteration (overlay or context menu), save version + replace node imageUrl in-place
+- [x] Tests: 11 board version endpoint tests (add, get, count, revert, auth checks)

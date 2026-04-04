@@ -274,6 +274,13 @@
       "when": 1775281043800,
       "tag": "0038_loose_joystick",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1775298743951,
+      "tag": "0039_mixed_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }

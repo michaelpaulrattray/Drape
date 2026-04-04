@@ -133,3 +133,48 @@ export async function deleteBoardItems(itemIds: number[]) {
   const db = (await getDb())!;
   await db.delete(boardItems).where(inArray(boardItems.id, itemIds));
 }
+
+// ── Board Item Versions ──────────────────────────────────────────────────
+
+import {
+  boardItemVersions,
+  type InsertBoardItemVersion,
+} from "../../drizzle/schema";
+
+export async function addBoardItemVersion(data: InsertBoardItemVersion) {
+  const db = (await getDb())!;
+  const [result] = await db.insert(boardItemVersions).values(data).$returningId();
+  return result.id;
+}
+
+export async function getBoardItemVersions(itemId: number) {
+  const db = (await getDb())!;
+  return db
+    .select()
+    .from(boardItemVersions)
+    .where(eq(boardItemVersions.itemId, itemId))
+    .orderBy(asc(boardItemVersions.version));
+}
+
+export async function getLatestVersionNumber(itemId: number): Promise<number> {
+  const db = (await getDb())!;
+  const [result] = await db
+    .select({ maxVersion: sql<number>`COALESCE(MAX(${boardItemVersions.version}), 0)` })
+    .from(boardItemVersions)
+    .where(eq(boardItemVersions.itemId, itemId));
+  return result?.maxVersion ?? 0;
+}
+
+export async function getVersionCount(itemId: number): Promise<number> {
+  const db = (await getDb())!;
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(boardItemVersions)
+    .where(eq(boardItemVersions.itemId, itemId));
+  return result?.count ?? 0;
+}
+
+export async function deleteBoardItemVersions(itemId: number) {
+  const db = (await getDb())!;
+  await db.delete(boardItemVersions).where(eq(boardItemVersions.itemId, itemId));
+}

@@ -785,3 +785,22 @@ export const boardItems = mysqlTable("board_items", {
 
 export type BoardItem = typeof boardItems.$inferSelect;
 export type InsertBoardItem = typeof boardItems.$inferInsert;
+
+/**
+ * Version history for board items — stores each iteration snapshot.
+ * Enables "layers" icon on nodes to browse and revert to past versions.
+ */
+export const boardItemVersions = mysqlTable("board_item_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  itemId: int("itemId").notNull(), // FK → board_items
+  version: int("version").notNull(), // 1-based sequential version number
+  imageUrl: text("imageUrl").notNull(), // S3 URL of this version's image
+  prompt: text("prompt"), // The iteration prompt that produced this version (null for initial)
+  tool: varchar("tool", { length: 32 }), // 'chat' | 'surgical' | 'eraser' | 'initial'
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  index("idx_biv_item").on(table.itemId, table.version),
+]));
+
+export type BoardItemVersion = typeof boardItemVersions.$inferSelect;
+export type InsertBoardItemVersion = typeof boardItemVersions.$inferInsert;

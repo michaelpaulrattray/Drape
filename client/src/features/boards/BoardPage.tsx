@@ -20,6 +20,7 @@ import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
 import { NodeContextMenu, type NodeContextAction, type ViewAngle } from './components/NodeContextMenu';
 import { NodeInfoPanel } from './components/NodeInfoPanel';
+import { VersionHistoryModal } from './components/VersionHistoryModal';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -45,6 +46,7 @@ export function BoardPage() {
     imageUrl: string | null;
   } | null>(null);
   const [infoPanel, setInfoPanel] = useState<{ itemId: number; position: { x: number; y: number } } | null>(null);
+  const [versionHistoryItemId, setVersionHistoryItemId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -94,6 +96,9 @@ export function BoardPage() {
     },
     onSettled: () => utils.boards.getItems.invalidate({ boardId }),
   });
+
+  const iterateMutation = trpc.generation.iterate.useMutation();
+  const addVersionMutation = trpc.boards.addItemVersion.useMutation();
 
   // ── Handlers ───────────────────────────────────────────────
 
@@ -293,6 +298,7 @@ export function BoardPage() {
         height: item.height,
         zIndex: item.zIndex,
         metadata: item.metadata as Record<string, unknown> | null,
+        sourceModelId: item.sourceModelId,
       })),
     [items],
   );
@@ -376,6 +382,7 @@ export function BoardPage() {
             onItemMove={handleItemMove}
             onItemDelete={handleItemDelete}
             onItemRename={handleItemRename}
+            onVersionHistory={(itemId) => setVersionHistoryItemId(itemId)}
             onViewportChange={handleViewportChange}
             onNodeSelect={handleNodeSelect}
             onNodeDoubleClick={handleNodeDoubleClick}
@@ -516,8 +523,59 @@ export function BoardPage() {
           imageUrl={nodeContextMenu.imageUrl}
           onAction={handleNodeContextAction}
           onViewGenerate={handleViewGenerate}
-          onPromptSubmit={(nId, prompt) => {
-            toast.info(`Iterating with: "${prompt}" — coming soon`);
+          onPromptSubmit={async (nId, prompt) => {
+            const item = items?.find((i) => i.id === nId);
+            if (!item?.sourceModelId) {
+              toast.error('This item has no linked model for iteration');
+              return;
+            }
+            // Get model info to find the latest asset ID
+            const modelInfo = await utils.boards.getItemModelInfo.fetch({ itemId: nId });
+            const assetId = modelInfo?.latestAssetId;
+            if (!assetId) {
+              toast.error('No asset found for this model');
+              return;
+            }
+            setNodeContextMenu(null);
+            const toastId = toast.loading(`Iterating: "${prompt}"...`);
+            try {
+              // Save current image as a version before iterating
+              if (item.imageUrl) {
+                await addVersionMutation.mutateAsync({
+                  itemId: nId,
+                  imageUrl: item.imageUrl,
+                  prompt: 'Original',
+                  tool: 'initial',
+                });
+              }
+              // Call iterate
+              const result = await iterateMutation.mutateAsync({
+                modelId: item.sourceModelId,
+                feedback: prompt,
+                assetId,
+              });
+              if (result.success && result.imageUrl) {
+                // Update the board item image
+                await updateItemMutation.mutateAsync({
+                  itemId: nId,
+                  imageUrl: result.imageUrl,
+                });
+                // Save new version
+                await addVersionMutation.mutateAsync({
+                  itemId: nId,
+                  imageUrl: result.imageUrl,
+                  prompt,
+                  tool: 'chat',
+                });
+                utils.boards.getItemVersionCount.invalidate({ itemId: nId });
+                toast.success('Iteration complete', { id: toastId });
+              } else {
+                toast.error('Iteration failed — no image returned', { id: toastId });
+              }
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : 'Iteration failed';
+              toast.error(msg, { id: toastId });
+            }
           }}
           onClose={() => setNodeContextMenu(null)}
         />
@@ -538,9 +596,24 @@ export function BoardPage() {
         return (
           <ModelEditorOverlay
             itemId={editorItemId}
+            boardId={boardId}
             imageUrl={editorItem?.imageUrl ?? null}
             label={editorItem?.label}
+            sourceModelId={editorItem?.sourceModelId ?? null}
             onClose={() => setEditorItemId(null)}
+          />
+        );
+      })()}
+
+      {/* Version history modal */}
+      {versionHistoryItemId !== null && (() => {
+        const vhItem = canvasItems.find((i) => i.id === versionHistoryItemId);
+        return (
+          <VersionHistoryModal
+            itemId={versionHistoryItemId}
+            boardId={boardId}
+            currentImageUrl={vhItem?.imageUrl ?? null}
+            onClose={() => setVersionHistoryItemId(null)}
           />
         );
       })()}

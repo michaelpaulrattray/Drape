@@ -23,6 +23,10 @@ import {
   deleteBoardItems,
   getModelById,
   getModelAssets,
+  addBoardItemVersion,
+  getBoardItemVersions,
+  getLatestVersionNumber,
+  getVersionCount,
 } from "../db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -312,6 +316,77 @@ export const boardsRouter = router({
       return { success: true };
     }),
 
+  // ── Board Item Versions ────────────────────────────────────────────────
+
+  /** Save a new version snapshot for a board item */
+  addItemVersion: protectedProcedure
+    .input(z.object({
+      itemId: z.number().int().positive(),
+      imageUrl: z.string(),
+      prompt: z.string().max(2000).optional(),
+      tool: z.enum(["chat", "surgical", "eraser", "initial"]).default("initial"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const item = await getBoardItemById(input.itemId);
+      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+      await requireBoardOwnership(item.boardId, ctx.user.id);
+
+      const latestVersion = await getLatestVersionNumber(input.itemId);
+      const versionId = await addBoardItemVersion({
+        itemId: input.itemId,
+        version: latestVersion + 1,
+        imageUrl: input.imageUrl,
+        prompt: input.prompt ?? null,
+        tool: input.tool,
+      });
+
+      log.info({ userId: ctx.user.id, itemId: input.itemId, version: latestVersion + 1 }, "Item version saved");
+      return { id: versionId, version: latestVersion + 1 };
+    }),
+
+  /** Get all versions for a board item */
+  getItemVersions: protectedProcedure
+    .input(z.object({ itemId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      const item = await getBoardItemById(input.itemId);
+      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+      await requireBoardOwnership(item.boardId, ctx.user.id);
+
+      const versions = await getBoardItemVersions(input.itemId);
+      return { versions, currentImageUrl: item.imageUrl };
+    }),
+
+  /** Revert a board item to a specific version */
+  revertItemVersion: protectedProcedure
+    .input(z.object({
+      itemId: z.number().int().positive(),
+      versionId: z.number().int().positive(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const item = await getBoardItemById(input.itemId);
+      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+      await requireBoardOwnership(item.boardId, ctx.user.id);
+
+      const versions = await getBoardItemVersions(input.itemId);
+      const target = versions.find(v => v.id === input.versionId);
+      if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "Version not found" });
+
+      await updateBoardItem(input.itemId, { imageUrl: target.imageUrl });
+      log.info({ userId: ctx.user.id, itemId: input.itemId, versionId: input.versionId }, "Item reverted to version");
+      return { success: true, imageUrl: target.imageUrl };
+    }),
+
+  /** Get version count for a board item (used by VersionHistoryBadge) */
+  getItemVersionCount: protectedProcedure
+    .input(z.object({ itemId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      const item = await getBoardItemById(input.itemId);
+      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+      await requireBoardOwnership(item.boardId, ctx.user.id);
+      const count = await getVersionCount(input.itemId);
+      return { count };
+    }),
+
   /** Get linked model info for a board item (specs, master prompt, assets) */
   getItemModelInfo: protectedProcedure
     .input(z.object({ itemId: z.number().int().positive() }))
@@ -361,6 +436,7 @@ export const boardsRouter = router({
             }
           : null,
         assetCount: assets.length,
+        latestAssetId: assets.length > 0 ? assets[0].id : null,
       };
     }),
 });

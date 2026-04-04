@@ -16,6 +16,7 @@ import {
   StickyNote,
   GitBranch,
 } from 'lucide-react';
+import { VersionHistoryBadge } from '../components/VersionHistoryBadge';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -29,6 +30,7 @@ export type BoardItemNodeData = {
   metadata: Record<string, unknown> | null;
   onDelete?: (itemId: number) => void;
   onRename?: (itemId: number, label: string) => void;
+  onVersionHistory?: (itemId: number) => void;
 };
 
 export type BoardItemFlowNode = Node<BoardItemNodeData, 'boardItem'>;
@@ -152,6 +154,11 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
                 objectFit: 'cover',
                 display: 'block',
               }}
+            />
+            {/* Version history badge — layers icon */}
+            <VersionHistoryBadge
+              itemId={data.itemId}
+              onClick={() => data.onVersionHistory?.(data.itemId)}
             />
           </div>
         )}

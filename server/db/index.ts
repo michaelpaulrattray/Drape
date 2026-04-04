@@ -213,4 +213,10 @@ export {
   batchUpdateBoardItemPositions,
   deleteBoardItem,
   deleteBoardItems,
+  // Board Item Versions
+  addBoardItemVersion,
+  getBoardItemVersions,
+  getLatestVersionNumber,
+  getVersionCount,
+  deleteBoardItemVersions,
 } from "./boards";

@@ -39,6 +39,8 @@ export type BoardItemRecord = {
   height: number;
   zIndex: number;
   metadata: Record<string, unknown> | null;
+  sourceModelId?: number | null;
+  sourceAssetId?: number | null;
 };
 
 type BoardCanvasProps = {
@@ -47,6 +49,7 @@ type BoardCanvasProps = {
   onItemMove?: (itemId: number, x: number, y: number) => void;
   onItemDelete?: (itemId: number) => void;
   onItemRename?: (itemId: number, label: string) => void;
+  onVersionHistory?: (itemId: number) => void;
   onViewportChange?: (viewport: Viewport) => void;
   onNodeSelect?: (itemId: number | null) => void;
   onNodeDoubleClick?: (itemId: number) => void;
@@ -69,6 +72,7 @@ function itemToNode(
   item: BoardItemRecord,
   onDelete?: (id: number) => void,
   onRename?: (id: number, label: string) => void,
+  onVersionHistory?: (id: number) => void,
 ): BoardItemFlowNode {
   return {
     id: `item-${item.id}`,
@@ -85,6 +89,7 @@ function itemToNode(
       metadata: item.metadata,
       onDelete,
       onRename,
+      onVersionHistory,
     },
   };
 }
@@ -102,6 +107,7 @@ export function BoardCanvas({
   onItemMove,
   onItemDelete,
   onItemRename,
+  onVersionHistory,
   onViewportChange,
   onNodeSelect,
   onNodeDoubleClick,
@@ -137,10 +143,10 @@ export function BoardCanvas({
     if (isDraggingRef.current) return;
 
     const nextNodes = items.map((item) =>
-      itemToNode(item, onItemDelete, onItemRename),
+      itemToNode(item, onItemDelete, onItemRename, onVersionHistory),
     );
     setNodes(nextNodes);
-  }, [items, onItemDelete, onItemRename, setNodes]);
+  }, [items, onItemDelete, onItemRename, onVersionHistory, setNodes]);
 
   // Handle node drag + position persistence
   const handleNodesChange: OnNodesChange<BoardItemFlowNode> = useCallback(

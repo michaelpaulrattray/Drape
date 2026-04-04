@@ -1,0 +1,77 @@
+BOARD CANVAS ITERATION PLAN — ANALYSIS NOTES
+==============================================
+
+EXISTING INFRASTRUCTURE (already built in /features/casting/):
+1. useCastingGeneration hook — handles:
+   - performIteration(prompt, maskBase64?) — calls trpc.generation.iterate
+   - handleRefineSubmit() — orchestrates surgical/eraser/text refinement
+   - handleEnhance() — AI prompt enhancement
+   - handleUndo/handleRedo — history navigation
+   - fetchSuggestions() — auto-generates next-step suggestions
+   - handleCompactPrompt() — auto-compacts after 5+ amendments
+   - handleAnalyzeReference() — reference image transfer
+   - handleClearSession() — clears Gemini chat context
+
+2. RefinePanel component — the chat input bar with:
+   - Text input with auto-resize
+   - Enhance button (sparkles)
+   - Reference image thumbnail
+   - Submit button
+   - Eraser mode UI
+   - Surgical mode UI (mask + describe)
+   - View lock awareness
+
+3. MaskCanvas — SVG path drawing for surgical/eraser tools
+
+4. ImageViewerPanel — full viewer with:
+   - ViewTabs (headshot/full body/side)
+   - ToolButtons (surgical, eraser)
+   - Suggestions (rotating chips)
+   - NextStepChip (guided workflow)
+   - Undo/Redo
+   - Loading overlay
+
+5. Server endpoints:
+   - generation.iterate — accepts modelId, feedback, assetId, maskBase64, referenceImage
+   - generation.enhance — AI prompt enhancement
+   - generation.suggestions — auto-suggestions
+   - generation.reconcile — schema reconciliation
+   - generation.compactPrompt — prompt compaction
+   - generation.clearSession — clear Gemini session
+   - generation.analyzeReference — reference image analysis
+
+CURRENT STATE OF ModelEditorOverlay:
+- Just a read-only image viewer with zoom/pan
+- No refinement tools
+- No chat input
+- No surgical/eraser tools
+- No undo/redo
+- No suggestions
+
+WHAT NEEDS TO BE BUILT:
+The ModelEditorOverlay needs to be upgraded from a simple image viewer to a full
+iteration workspace. The key question is: reuse the casting hooks/stores or create
+board-specific versions?
+
+APPROACH: Reuse existing casting infrastructure
+- The iterate endpoint already works with modelId + assetId
+- Board items have sourceModelId linking to the models table
+- We need to:
+  1. Load the model's state (assets, masterPrompt, technicalSchema) when opening the overlay
+  2. Initialize the casting generation store with this data
+  3. Render the RefinePanel + MaskCanvas inside the overlay
+  4. Handle iteration results → update the board item's imageUrl
+
+COMPONENTS TO ADD TO ModelEditorOverlay:
+1. Chat/refine input bar (reuse RefinePanel or build lightweight version)
+2. Surgical tool (mask painting + describe change)
+3. Eraser tool (mask painting + auto-erase prompt)
+4. Undo/Redo for iteration history
+5. AI suggestions (rotating chips)
+6. Reference image attachment
+7. Loading overlay during generation
+
+CONTEXT MENU PROMPT INPUT:
+- The "Start typing..." input in the context menu should trigger a quick iteration
+  without opening the overlay — fire-and-forget with a loading toast
+- The overlay is for more involved editing with surgical tools etc.
