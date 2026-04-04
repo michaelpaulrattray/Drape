@@ -66,7 +66,9 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
   const Icon = TYPE_ICONS[data.type];
   const typeLabel = TYPE_LABELS[data.type];
   const isNote = data.type === 'note';
-  const isGenerating = !!(data.metadata as Record<string, unknown> | null)?.isGenerating && !data.imageUrl;
+  const meta = data.metadata as Record<string, unknown> | null;
+  const isGenerating = !!meta?.isGenerating && !data.imageUrl;
+  const generatingStep = (meta?.generatingStep as string) || 'Generating...';
 
   // Listen for rename trigger from context menu
   useEffect(() => {
@@ -209,8 +211,8 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
           >
             <Icon size={32} strokeWidth={1.2} color={isGenerating ? '#999' : '#bbb'} />
             {isGenerating && (
-              <span style={{ fontSize: 11, color: '#999', fontWeight: 500, letterSpacing: '0.02em' }}>
-                Generating...
+              <span style={{ fontSize: 11, color: '#999', fontWeight: 500, letterSpacing: '0.02em', textAlign: 'center', maxWidth: '80%' }}>
+                {generatingStep}
               </span>
             )}
           </div>

@@ -67,6 +67,8 @@ type BoardCanvasProps = {
   onViewportCenterRef?: (getter: () => { x: number; y: number }) => void;
   /** When true, sets cursor to crosshair on the canvas pane */
   crosshairCursor?: boolean;
+  /** Expose a way for parent to smoothly scroll to a node by item ID */
+  onScrollToNodeRef?: (scroller: (itemId: number) => void) => void;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -172,6 +174,7 @@ export function BoardCanvas({
   children,
   onViewportCenterRef,
   crosshairCursor,
+  onScrollToNodeRef,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -324,11 +327,24 @@ export function BoardCanvas({
               const container = document.querySelector('.react-flow');
               const w = container?.clientWidth ?? window.innerWidth;
               const h = container?.clientHeight ?? window.innerHeight;
-              // Convert screen center to flow coordinates
               return {
                 x: Math.round((-vp.x + w / 2) / vp.zoom),
                 y: Math.round((-vp.y + h / 2) / vp.zoom),
               };
+            });
+          }
+          // Expose smooth scroll-to-node for parent
+          if (onScrollToNodeRef) {
+            onScrollToNodeRef((itemId: number) => {
+              const nodeId = `item-${itemId}`;
+              const node = instance.getNode(nodeId);
+              if (!node) return;
+              const vp = instance.getViewport();
+              instance.setCenter(
+                node.position.x + (node.measured?.width ?? 400) / 2,
+                node.position.y + (node.measured?.height ?? 500) / 2,
+                { zoom: vp.zoom, duration: 800 },
+              );
             });
           }
         }}

@@ -50,6 +50,8 @@ export function BoardPage() {
 
   // Viewport center getter exposed by BoardCanvas
   const viewportCenterGetterRef = useRef<(() => { x: number; y: number }) | null>(null);
+  // Smooth scroll-to-node function exposed by BoardCanvas
+  const scrollToNodeRef = useRef<((itemId: number) => void) | null>(null);
 
   // Placement mode: 'note' or 'frame' — cursor becomes crosshair, next pane click places the node
   const [placementMode, setPlacementMode] = useState<'note' | 'frame' | null>(null);
@@ -490,6 +492,9 @@ export function BoardPage() {
             onViewportCenterRef={(getter) => {
               viewportCenterGetterRef.current = getter;
             }}
+            onScrollToNodeRef={(scroller) => {
+              scrollToNodeRef.current = scroller;
+            }}
             className="absolute inset-0"
           >
             {/* Bottom canvas UI — rendered inside ReactFlow for context access */}
@@ -587,6 +592,7 @@ export function BoardPage() {
                 boardId={boardId}
                 onModelGenerated={handleModelGenerated}
                 getViewportCenter={viewportCenterGetterRef.current ?? undefined}
+                scrollToNode={scrollToNodeRef.current ?? undefined}
               />
             ) : (
               <div className="flex-1 flex items-center justify-center p-6">

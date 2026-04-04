@@ -442,3 +442,6 @@
 - [x] Bug: No skeleton/loading node on canvas during image generation — should show placeholder immediately
 - [x] Bug: Generated image not full-sized on canvas — has to be manually dragged to resize
 - [x] Bug: New generated nodes appear at canvas origin instead of current viewport center
+- [x] Auto-scroll to node after generation completes — smooth pan canvas to center on the new node
+- [x] Batch generation grid layout — place sequential generations in a horizontal row with wrapping
+- [x] Progress indicator on skeleton — show genState.currentStep text on the generating node

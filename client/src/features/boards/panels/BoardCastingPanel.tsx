@@ -33,11 +33,12 @@ interface BoardCastingPanelProps {
   boardId: number;
   onModelGenerated?: (itemId: number) => void;
   getViewportCenter?: () => { x: number; y: number };
+  scrollToNode?: (itemId: number) => void;
 }
 
 /* ── Component ────────────────────────────────────────────── */
 
-export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter }: BoardCastingPanelProps) {
+export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter, scrollToNode }: BoardCastingPanelProps) {
   const { user, isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
 
@@ -125,8 +126,13 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
   const insertedModelRef = useRef<number | null>(null);
   // Track previous genState.isGenerating to detect transition to true
   const wasGeneratingRef = useRef(false);
+  // Batch generation counter — used to offset each new skeleton in a grid
+  const batchIndexRef = useRef(0);
+  // Anchor position for the first node in a batch (set on first skeleton)
+  const batchAnchorRef = useRef<{ x: number; y: number } | null>(null);
 
   // Step 1: When generation STARTS, insert a skeleton node (no image) at viewport center
+  // Uses grid layout for batch generations: each new skeleton is placed next to the previous one
   useEffect(() => {
     const justStarted = genState.isGenerating && !wasGeneratingRef.current;
     wasGeneratingRef.current = genState.isGenerating;
@@ -135,32 +141,47 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
     // Don't insert skeleton if we already have a model card for this generation
     if (insertedModelRef.current !== null) return;
 
+    const GAP = 24;
+    const COLS = 4;
     const center = getViewportCenter?.() ?? { x: 200, y: 200 };
+
+    // Set anchor on first generation in a batch
+    if (!batchAnchorRef.current) {
+      batchAnchorRef.current = {
+        x: center.x - MODEL_NODE_WIDTH / 2,
+        y: center.y - MODEL_NODE_HEIGHT / 2,
+      };
+    }
+
+    const col = batchIndexRef.current % COLS;
+    const row = Math.floor(batchIndexRef.current / COLS);
+    const posX = Math.round(batchAnchorRef.current.x + col * (MODEL_NODE_WIDTH + GAP));
+    const posY = Math.round(batchAnchorRef.current.y + row * (MODEL_NODE_HEIGHT + GAP));
+    batchIndexRef.current += 1;
 
     addItemMutation.mutate(
       {
         boardId,
         type: 'model',
         label: modelName || 'Generating...',
-        positionX: Math.round(center.x - MODEL_NODE_WIDTH / 2),
-        positionY: Math.round(center.y - MODEL_NODE_HEIGHT / 2),
+        positionX: posX,
+        positionY: posY,
         width: MODEL_NODE_WIDTH,
         height: MODEL_NODE_HEIGHT,
-        metadata: { viewType: 'frontClose', isGenerating: true },
+        metadata: { viewType: 'frontClose', isGenerating: true, generatingStep: genState.currentStep || 'Starting...' },
       },
       {
         onSuccess: (result) => {
           skeletonItemIdRef.current = result.id;
         },
         onError: () => {
-          // Skeleton insert failed — the real image will still be inserted later
           skeletonItemIdRef.current = null;
         },
       },
     );
   }, [genState.isGenerating, boardId, modelName, getViewportCenter]);
 
-  // Step 2: When headshot arrives, update the skeleton node with the real image
+  // Step 2: When headshot arrives, update the skeleton node with the real image + auto-scroll
   useEffect(() => {
     if (!currentModelId) return;
     if (insertedModelRef.current === currentModelId) return;
@@ -172,7 +193,6 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
     insertedModelRef.current = currentModelId;
 
     if (skeletonItemIdRef.current) {
-      // Update the existing skeleton with the real image + model reference
       const itemId = skeletonItemIdRef.current;
       updateItemMutation.mutate(
         {
@@ -184,6 +204,8 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
         {
           onSuccess: () => {
             onModelGenerated?.(itemId);
+            // Auto-scroll to the completed node after a brief delay for render
+            setTimeout(() => scrollToNode?.(itemId), 300);
           },
           onError: () => {
             toast.error('Failed to update model on canvas');
@@ -210,6 +232,7 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
         {
           onSuccess: (result) => {
             onModelGenerated?.(result.id);
+            setTimeout(() => scrollToNode?.(result.id), 300);
           },
           onError: () => {
             toast.error('Failed to add model to canvas');
@@ -218,7 +241,7 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
         },
       );
     }
-  }, [currentModelId, currentAssets, boardId, modelName, getViewportCenter]);
+  }, [currentModelId, currentAssets, boardId, modelName, getViewportCenter, scrollToNode]);
 
   // Update the board item image when a new view is generated (full body, side)
   const prevAssetCountRef = useRef(0);
@@ -250,6 +273,20 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
     }
   }, [currentAssets, currentModelId, boardId]);
 
+  // Step 2b: Update skeleton node's progress text as genState.currentStep changes
+  useEffect(() => {
+    if (!genState.isGenerating || !skeletonItemIdRef.current) return;
+    const step = genState.currentStep || 'Generating...';
+    // Optimistic cache update — no server round-trip
+    utils.boards.getItems.setData({ boardId }, (old) =>
+      old?.map((i) =>
+        i.id === skeletonItemIdRef.current
+          ? { ...i, metadata: { ...((i.metadata as Record<string, unknown>) || {}), generatingStep: step } }
+          : i,
+      ),
+    );
+  }, [genState.currentStep, genState.isGenerating, boardId]);
+
   // Handle new model — reset stores
   const handleNewModel = useCallback(() => {
     useCastingGenerationStore.getState().resetGeneration();
@@ -257,6 +294,7 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
     insertedModelRef.current = null;
     skeletonItemIdRef.current = null;
     wasGeneratingRef.current = false;
+    // Don't reset batch refs — allow grid to continue across models
     toast.success('Starting fresh model');
   }, []);
 
