@@ -225,15 +225,15 @@ export function BoardCanvas({
         selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{
-          '--xy-background-color': '#f5f5f4',
-          '--xy-background-color-props': '#f5f5f4',
+          '--xy-background-color': '#f0ebe3',
+          '--xy-background-color-props': '#f0ebe3',
         } as React.CSSProperties}
       >
         <Background
           variant={"dots" as any}
           gap={20}
-          size={1}
-          color="#c8c5c0"
+          size={1.3}
+          color="#c5c0b8"
         />
         <Controls
           showInteractive={false}

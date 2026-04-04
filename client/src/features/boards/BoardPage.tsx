@@ -14,6 +14,7 @@ import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
 import { BoardCastingPanel } from './panels/BoardCastingPanel';
 import { ModelEditorOverlay } from './overlays/ModelEditorOverlay';
+import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -29,6 +30,7 @@ export function BoardPage() {
   const [activePanel, setActivePanel] = useState<ToolPanelId>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [editorItemId, setEditorItemId] = useState<number | null>(null);
+  const [addNodeMenu, setAddNodeMenu] = useState<{ x: number; y: number } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -136,6 +138,34 @@ export function BoardPage() {
   const handleModelGenerated = useCallback((_itemId: number) => {
     // Model card was inserted onto the canvas — could scroll to it, etc.
   }, []);
+
+  const handleAddNodeAction = useCallback(
+    (action: AddNodeAction) => {
+      switch (action) {
+        case 'cast':
+          setActivePanel('casting');
+          break;
+        case 'wardrobe':
+          setActivePanel('wardrobe');
+          break;
+        case 'upload':
+        case 'reference':
+        case 'note':
+          toast.info('Feature coming soon');
+          break;
+      }
+      setAddNodeMenu(null);
+    },
+    [],
+  );
+
+  const handleCanvasContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setAddNodeMenu({ x: e.clientX, y: e.clientY });
+    },
+    [],
+  );
 
   // ── Derived state ──────────────────────────────────────────
 
@@ -268,7 +298,7 @@ export function BoardPage() {
         </div>
 
         {/* Canvas area */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" onContextMenu={handleCanvasContextMenu}>
           <BoardCanvas
             items={canvasItems}
             viewport={viewport}
@@ -288,7 +318,10 @@ export function BoardPage() {
               style={{ zIndex: 5 }}
             >
               <button
-                onClick={() => setActivePanel('casting')}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setAddNodeMenu({ x: rect.right + 8, y: rect.top });
+                }}
                 className="pointer-events-auto flex items-center justify-center rounded-full transition-all duration-200"
                 style={{
                   width: 40,
@@ -386,6 +419,15 @@ export function BoardPage() {
           </div>
         )}
       </div>
+
+      {/* Add Node Menu — appears on + click or right-click */}
+      {addNodeMenu && (
+        <AddNodeMenu
+          position={addNodeMenu}
+          onSelect={handleAddNodeAction}
+          onClose={() => setAddNodeMenu(null)}
+        />
+      )}
 
       {/* Model Editor Overlay — popout, triggered by double-clicking a model card */}
       {editorItemId !== null && (() => {

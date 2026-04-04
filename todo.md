@@ -335,3 +335,8 @@
 
 ### Step 6 Bug Fixes (Round 6)
 - [x] Fix: Canvas dots still not visible — React Flow pane likely covering container background
+
+### Step 6 Improvements (Round 7)
+- [x] Fix: Canvas background too white/blinding — warm it up
+- [x] Fix: Canvas dots too small — increase size
+- [x] Feature: Add node dropdown menu on + click and right-click (Luma/ElevenLabs style)
