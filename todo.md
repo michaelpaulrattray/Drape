@@ -284,3 +284,5 @@
 - [x] Increase sidebar logo size — bumped from 18px to 24px height
 - [x] Bug: Sidebar highlight bleeds — fixed: root cause was glow detection useEffect firing on activeTool changes (not just canvas changes), causing false-positive "newly unlocked" glow on sibling tools for 4.5s. Removed activeTool from useEffect deps in both AppSidebar and ToolRail, using ref instead. Also removed CSS transitions from active state changes.
 - [x] Remove /dashboard page and all traces — deleted Dashboard.tsx, removed import+route from App.tsx, renamed nav labels to Studio
+- [x] Clean up unused DashboardLayout + DashboardLayoutSkeleton + AccountFrozenBanner + features/dashboard/ directory — all orphaned, deleted
+- [x] Audit and remove legacy routes — deleted /casting-studio redirect + CastingStudioRedirect component, cleaned up Redirect import

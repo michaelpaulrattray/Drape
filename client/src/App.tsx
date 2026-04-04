@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, Redirect, useLocation } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import { AnimatePresence } from "framer-motion";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { PageTransition } from "./components/PageTransition";
@@ -19,11 +19,6 @@ import AdminInviteCodes from "./pages/AdminInviteCodes";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import BugReportButton from "./components/BugReportButton";
 
-/** Legacy redirect: /casting-studio → /studio?tool=casting */
-function CastingStudioRedirect() {
-  return <Redirect to="/studio?tool=casting" />;
-}
-
 
 function Router() {
   const [location] = useLocation();
@@ -39,9 +34,6 @@ function Router() {
 
           {/* Unified Drape Studio */}
           <Route path="/studio" component={DrapeStudio} />
-
-          {/* Legacy redirect */}
-          <Route path="/casting-studio" component={CastingStudioRedirect} />
 
           {/* Admin */}
           <Route path="/admin/overview" component={AdminOverview} />
