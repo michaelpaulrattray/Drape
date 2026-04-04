@@ -4,6 +4,9 @@
  * Matches the Luma Labs toolbar pattern: wide capsule pill, large white
  * circle highlight on the active tool, generous icon spacing, no dividers.
  * Rendered in white frosted glass to match FormaStudio's light theme.
+ *
+ * Icons use integer pixel sizes and shapeRendering="geometricPrecision"
+ * for crisp rendering at all zoom levels.
  */
 import { useCallback } from 'react';
 import {
@@ -37,6 +40,12 @@ const tools: ToolDef[] = [
 type CanvasToolbarProps = {
   activeTool: CanvasToolId;
   onToolSelect: (tool: CanvasToolId) => void;
+};
+
+/** Shared SVG props for crisp icon rendering */
+const crispSvgProps = {
+  shapeRendering: 'geometricPrecision' as const,
+  style: { willChange: 'auto' as const },
 };
 
 export function CanvasToolbar({ activeTool, onToolSelect }: CanvasToolbarProps) {
@@ -81,26 +90,26 @@ export function CanvasToolbar({ activeTool, onToolSelect }: CanvasToolbarProps) 
               boxShadow: isActive
                 ? '0 1px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04)'
                 : 'none',
-              color: isActive ? '#1a1a1a' : '#8a8a8a',
+              color: isActive ? '#1a1a1a' : '#71716a',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               flexShrink: 0,
             }}
             onMouseEnter={(e) => {
               if (!isActive) {
-                e.currentTarget.style.color = '#4a4a4a';
+                e.currentTarget.style.color = '#3a3a3a';
                 e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
               }
             }}
             onMouseLeave={(e) => {
               if (!isActive) {
-                e.currentTarget.style.color = '#8a8a8a';
+                e.currentTarget.style.color = '#71716a';
                 e.currentTarget.style.background = 'transparent';
               }
             }}
             title={tool.label}
           >
-            <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+            <Icon size={18} strokeWidth={isActive ? 2 : 1.75} {...crispSvgProps} />
           </button>
         );
       })}
@@ -124,22 +133,22 @@ export function CanvasToolbar({ activeTool, onToolSelect }: CanvasToolbarProps) 
           borderRadius: 21,
           border: 'none',
           background: 'transparent',
-          color: '#8a8a8a',
+          color: '#71716a',
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           flexShrink: 0,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#4a4a4a';
+          e.currentTarget.style.color = '#3a3a3a';
           e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = '#8a8a8a';
+          e.currentTarget.style.color = '#71716a';
           e.currentTarget.style.background = 'transparent';
         }}
         title="Add to canvas"
       >
-        <PlusCircle size={20} strokeWidth={1.5} />
+        <PlusCircle size={18} strokeWidth={1.75} {...crispSvgProps} />
       </button>
     </div>
   );

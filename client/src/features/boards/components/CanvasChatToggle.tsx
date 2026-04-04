@@ -3,6 +3,7 @@
  *
  * Placeholder for future AI assistant integration.
  * Opens a chat panel where users can ask the AI to perform canvas actions.
+ * Icon-only toggle — no text label.
  */
 import { useState } from 'react';
 import { MessageSquare, X } from 'lucide-react';
@@ -49,7 +50,7 @@ export function CanvasChatToggle() {
                 <MessageSquare size={13} strokeWidth={1.5} style={{ color: '#52524B' }} />
               </div>
               <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
-                Canvas AI
+                Chat
               </span>
               <span
                 style={{
@@ -98,13 +99,13 @@ export function CanvasChatToggle() {
               <MessageSquare size={20} strokeWidth={1.5} style={{ color: '#a1a19a' }} />
             </div>
             <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
-              AI Canvas Assistant
+              Canvas Assistant
             </p>
             <p
               className="text-center"
               style={{ fontSize: 12, color: '#a1a19a', lineHeight: 1.5, maxWidth: 220 }}
             >
-              Ask the AI to cast models, style outfits, arrange your board, or answer creative questions.
+              Ask the assistant to cast models, style outfits, arrange your board, or answer creative questions.
             </p>
           </div>
 
@@ -136,35 +137,32 @@ export function CanvasChatToggle() {
         </div>
       )}
 
-      {/* Toggle button */}
+      {/* Toggle button — icon only, pill shape */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center gap-1.5"
+        className="flex items-center justify-center"
         style={{
-          height: 36,
-          padding: '0 12px',
-          background: isOpen ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.88)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderRadius: 10,
-          border: '1px solid rgba(0, 0, 0, 0.08)',
-          boxShadow: '0 1px 6px rgba(0, 0, 0, 0.06)',
+          width: 40,
+          height: 40,
+          background: isOpen ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRadius: 20,
+          border: '1px solid rgba(0, 0, 0, 0.06)',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.07)',
           color: isOpen ? '#1a1a1a' : '#52524B',
           cursor: 'pointer',
           transition: 'all 0.15s ease',
-          fontSize: 12,
-          fontWeight: 500,
         }}
         onMouseEnter={(e) => {
-          if (!isOpen) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+          if (!isOpen) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.98)';
         }}
         onMouseLeave={(e) => {
-          if (!isOpen) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.88)';
+          if (!isOpen) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.92)';
         }}
-        title="Canvas AI Assistant"
+        title="Canvas Assistant"
       >
-        <MessageSquare size={14} strokeWidth={1.5} />
-        <span>AI</span>
+        <MessageSquare size={16} strokeWidth={1.75} />
       </button>
 
       <style>{`

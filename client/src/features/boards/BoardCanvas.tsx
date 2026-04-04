@@ -230,15 +230,15 @@ export function BoardCanvas({
         selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{
-          '--xy-background-color': '#f7f7f7',
-          '--xy-background-color-props': '#f7f7f7',
+          '--xy-background-color': '#DFDFDF',
+          '--xy-background-color-props': '#DFDFDF',
         } as React.CSSProperties}
       >
         <Background
           variant={"dots" as any}
           gap={20}
           size={1.3}
-          color="#d0d0d0"
+          color="#c4c4c4"
         />
         {children}
       </ReactFlow>

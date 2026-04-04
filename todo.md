@@ -358,3 +358,9 @@
 
 ### Canvas Bottom UI — Toolbar Redesign
 - [x] Redesign CanvasToolbar to match Luma Labs reference: larger pill, bigger icons, prominent white circle highlight on active tool (cursor), more generous spacing between icons, white frosted glass style
+
+### Canvas Bottom UI — Polish Round 2
+- [x] Change canvas background color to #DFDFDF
+- [x] Fix toolbar icons not looking crisp — use geometricPrecision SVG rendering, consistent stroke weights
+- [x] Zoom controls: step 25% at a time, more pill-shaped capsule (borderRadius 20)
+- [x] Chat toggle: remove "AI" text, icon-only circular button
