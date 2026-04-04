@@ -18,7 +18,7 @@ import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 import { CanvasToolbar, type CanvasToolId } from './components/CanvasToolbar';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
-import { NodeContextMenu, type NodeContextAction } from './components/NodeContextMenu';
+import { NodeContextMenu, type NodeContextAction, type ViewAngle } from './components/NodeContextMenu';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -40,6 +40,7 @@ export function BoardPage() {
     x: number;
     y: number;
     nodeId: number;
+    nodeType: string;
     imageUrl: string | null;
   } | null>(null);
 
@@ -212,6 +213,7 @@ export function BoardPage() {
         x: e.clientX,
         y: e.clientY,
         nodeId: itemId,
+        nodeType: item?.type ?? 'reference',
         imageUrl: item?.imageUrl ?? null,
       });
     },
@@ -221,13 +223,15 @@ export function BoardPage() {
   const handleNodeContextAction = useCallback(
     (action: NodeContextAction, nodeId: number) => {
       switch (action) {
+        case 'modify_iterate':
+          setEditorItemId(nodeId);
+          break;
         case 'style_outfit':
           setSelectedItemId(nodeId);
           setActivePanel('wardrobe');
           setActiveTool('wardrobe');
           break;
         case 'rename': {
-          // Trigger inline rename — for now toast
           toast.info('Double-click the node label to rename');
           break;
         }
@@ -239,12 +243,19 @@ export function BoardPage() {
         case 'duplicate':
           toast.info('Feature coming soon');
           break;
-        // open_new_tab, download, copy_url handled inline by NodeContextMenu
         default:
           break;
       }
     },
     [handleItemDelete],
+  );
+
+  const handleViewGenerate = useCallback(
+    (nodeId: number, angle: ViewAngle) => {
+      const angleName = angle === 'three_quarter' ? '3/4' : angle;
+      toast.info(`Generating ${angleName} view — coming soon`);
+    },
+    [],
   );
 
   // ── Derived state ──────────────────────────────────────────
@@ -490,8 +501,10 @@ export function BoardPage() {
         <NodeContextMenu
           position={{ x: nodeContextMenu.x, y: nodeContextMenu.y }}
           nodeId={nodeContextMenu.nodeId}
+          nodeType={nodeContextMenu.nodeType}
           imageUrl={nodeContextMenu.imageUrl}
           onAction={handleNodeContextAction}
+          onViewGenerate={handleViewGenerate}
           onClose={() => setNodeContextMenu(null)}
         />
       )}

@@ -369,3 +369,8 @@
 - [x] Build NodeContextMenu — right-click on image/node shows image-specific actions (Style Outfit, Remove Background, Download, Copy, Open in New Tab, Delete, etc.)
 - [x] Differentiate node right-click from canvas right-click — canvas shows AddNodeMenu, node shows NodeContextMenu
 - [x] Wire node right-click event from BoardCanvas into BoardPage (with stopPropagation)
+
+### Node Context Menu — Modify & Generate Views
+- [x] Add "Modify / Iterate" action to NodeContextMenu that opens ModelEditorOverlay (same as double-click)
+- [x] Add "Generate Views" action with expanding submenu (Front, Side, Back, 3/4, All)
+- [x] Wire both actions in BoardPage (modify opens editor overlay, views show toast placeholder)
