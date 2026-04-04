@@ -298,7 +298,11 @@ export function BoardPage() {
         </div>
 
         {/* Canvas area */}
-        <div className="flex-1 relative" onContextMenu={handleCanvasContextMenu}>
+        <div
+          className="flex-1 relative"
+          onContextMenu={handleCanvasContextMenu}
+          onClick={() => addNodeMenu && setAddNodeMenu(null)}
+        >
           <BoardCanvas
             items={canvasItems}
             viewport={viewport}
@@ -308,6 +312,7 @@ export function BoardPage() {
             onViewportChange={handleViewportChange}
             onNodeSelect={handleNodeSelect}
             onNodeDoubleClick={handleNodeDoubleClick}
+            onPaneClick={() => setAddNodeMenu(null)}
             className="absolute inset-0"
           />
 

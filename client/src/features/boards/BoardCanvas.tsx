@@ -51,6 +51,7 @@ type BoardCanvasProps = {
   onViewportChange?: (viewport: Viewport) => void;
   onNodeSelect?: (itemId: number | null) => void;
   onNodeDoubleClick?: (itemId: number) => void;
+  onPaneClick?: () => void;
   className?: string;
 };
 
@@ -102,6 +103,7 @@ export function BoardCanvas({
   onViewportChange,
   onNodeSelect,
   onNodeDoubleClick,
+  onPaneClick,
   className,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<BoardItemFlowNode> | null>(null);
@@ -212,6 +214,7 @@ export function BoardCanvas({
         onSelectionChange={handleSelectionChange}
         onNodeDoubleClick={handleNodeDoubleClick}
         onMoveEnd={handleMoveEnd}
+        onPaneClick={onPaneClick}
         onInit={(instance) => {
           rfInstance.current = instance as ReactFlowInstance<BoardItemFlowNode>;
         }}
