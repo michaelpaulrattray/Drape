@@ -46,6 +46,7 @@ type BoardCanvasProps = {
   onItemRename?: (itemId: number, label: string) => void;
   onViewportChange?: (viewport: Viewport) => void;
   onNodeSelect?: (itemId: number | null) => void;
+  onNodeDoubleClick?: (itemId: number) => void;
   className?: string;
 };
 
@@ -91,6 +92,7 @@ export function BoardCanvas({
   onItemRename,
   onViewportChange,
   onNodeSelect,
+  onNodeDoubleClick,
   className,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<BoardItemFlowNode> | null>(null);
@@ -121,6 +123,16 @@ export function BoardCanvas({
       }
     },
     [onNodesChange, onItemMove],
+  );
+
+  // Handle node double-click
+  const handleNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (!onNodeDoubleClick) return;
+      const itemId = parseInt(node.id.replace('item-', ''), 10);
+      if (!isNaN(itemId)) onNodeDoubleClick(itemId);
+    },
+    [onNodeDoubleClick],
   );
 
   // Handle selection
@@ -160,7 +172,7 @@ export function BoardCanvas({
       style={{
         width: '100%',
         height: '100%',
-        background: '#faf9f6',
+        background: '#FAFAF8',
       }}
     >
       <ReactFlow
@@ -169,6 +181,7 @@ export function BoardCanvas({
         nodeTypes={nodeTypes}
         onNodesChange={handleNodesChange}
         onSelectionChange={handleSelectionChange}
+        onNodeDoubleClick={handleNodeDoubleClick}
         onMoveEnd={handleMoveEnd}
         onInit={(instance) => {
           rfInstance.current = instance as ReactFlowInstance<BoardItemFlowNode>;
@@ -188,9 +201,9 @@ export function BoardCanvas({
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={24}
-          size={1}
-          color="rgba(0,0,0,0.06)"
+          gap={20}
+          size={0.8}
+          color="#d4d0cb"
         />
         <Controls
           showInteractive={false}

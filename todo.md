@@ -293,8 +293,21 @@
 - [x] Step 3: Board lobby page (/app) — BoardLobby, BoardCard, AppLobby page, /app route wired
 - [x] Step 4: Canvas engine (React Flow integration) — @xyflow/react installed, BoardItemNode + BoardCanvas built, zero TS errors
 - [x] Step 5: Board page shell (/app/board/:id) — BoardPage + BoardHeader built, route wired, tool rail + canvas + right panel layout
-- [ ] Step 6: Wire casting tool into board
+- [x] Step 6: Wire casting tool into board
 - [ ] Step 7: Wire wardrobe tool into board
 - [ ] Step 8: Wire export into board
 - [ ] Step 9: Board auto-save + resume
 - [ ] Step 10: Polish + lobby toggle
+
+### Step 6 Sub-tasks
+- [x] Canvas dotted background (match old studio dot pattern)
+- [x] BoardCanvas: forward onNodeDoubleClick event
+- [x] BoardCastingPanel: right panel wrapping ControlPanel + generation hooks + board item insertion
+- [x] Skeleton card on canvas when casting starts
+- [x] Auto-insert model card on successful generation
+- [x] ModelEditorOverlay: fullscreen overlay wrapping ImageViewerPanel for refinement on double-click
+- [x] Wire BoardCastingPanel and ModelEditorOverlay into BoardPage
+- [x] ControlPanel polish: grouped sections with subtle dividers
+- [x] ControlPanel polish: inline field pairs (age+ethnicity, texture+finish)
+- [x] ControlPanel polish: sticky generate button pinned to panel bottom
+- [x] ControlPanel polish: softer field styling matching warm beige aesthetic

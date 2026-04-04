@@ -3,6 +3,7 @@
  *
  * Loads a board from DB, renders items on the infinite canvas,
  * and hosts a collapsible tool panel on the right side.
+ * Casting panel is wired; double-click a model card to open the editor overlay.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
@@ -11,6 +12,8 @@ import { Loader2, ScanFace, Palette, PackageCheck } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
+import { BoardCastingPanel } from './panels/BoardCastingPanel';
+import { ModelEditorOverlay } from './overlays/ModelEditorOverlay';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -25,6 +28,7 @@ export function BoardPage() {
 
   const [activePanel, setActivePanel] = useState<ToolPanelId>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [editorItemId, setEditorItemId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -121,6 +125,18 @@ export function BoardPage() {
     setSelectedItemId(itemId);
   }, []);
 
+  const handleNodeDoubleClick = useCallback((itemId: number) => {
+    // Find the item to check if it's a model type
+    const item = items?.find((i) => i.id === itemId);
+    if (item?.type === 'model') {
+      setEditorItemId(itemId);
+    }
+  }, [items]);
+
+  const handleModelGenerated = useCallback((_itemId: number) => {
+    // Model card was inserted onto the canvas — could scroll to it, etc.
+  }, []);
+
   // ── Derived state ──────────────────────────────────────────
 
   const viewport = useMemo(() => {
@@ -158,7 +174,7 @@ export function BoardPage() {
 
   if (isNaN(boardId)) {
     return (
-      <div className="flex-1 flex items-center justify-center" style={{ background: '#faf9f6' }}>
+      <div className="flex-1 flex items-center justify-center" style={{ background: '#FAFAF8' }}>
         <p style={{ color: '#71716A', fontSize: 15 }}>Invalid board ID</p>
       </div>
     );
@@ -166,7 +182,7 @@ export function BoardPage() {
 
   if (boardLoading || itemsLoading) {
     return (
-      <div className="flex-1 flex flex-col" style={{ background: '#faf9f6' }}>
+      <div className="flex-1 flex flex-col" style={{ background: '#FAFAF8' }}>
         <div
           className="flex items-center gap-3 px-4 flex-shrink-0"
           style={{ height: 52, borderBottom: '1px solid rgba(0,0,0,0.06)' }}
@@ -182,7 +198,7 @@ export function BoardPage() {
 
   if (boardError || !board) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4" style={{ background: '#faf9f6' }}>
+      <div className="flex-1 flex flex-col items-center justify-center gap-4" style={{ background: '#FAFAF8' }}>
         <p style={{ color: '#71716A', fontSize: 15 }}>
           {boardError?.message === 'Board not found'
             ? "This board doesn't exist or was deleted."
@@ -213,7 +229,7 @@ export function BoardPage() {
   ];
 
   return (
-    <div className="flex flex-col" style={{ height: '100vh', background: '#faf9f6' }}>
+    <div className="flex flex-col" style={{ height: '100vh', background: '#FAFAF8' }}>
       <BoardHeader
         name={board.name}
         onRename={handleRename}
@@ -226,7 +242,7 @@ export function BoardPage() {
           className="flex flex-col items-center gap-1 py-3 flex-shrink-0"
           style={{
             width: 52,
-            background: '#faf9f6',
+            background: '#FAFAF8',
             borderRight: '1px solid rgba(0,0,0,0.06)',
           }}
         >
@@ -261,6 +277,7 @@ export function BoardPage() {
             onItemRename={handleItemRename}
             onViewportChange={handleViewportChange}
             onNodeSelect={handleNodeSelect}
+            onNodeDoubleClick={handleNodeDoubleClick}
             className="absolute inset-0"
           />
 
@@ -328,7 +345,7 @@ export function BoardPage() {
           )}
         </div>
 
-        {/* Right tool panel (placeholder — tools wired in Steps 6-8) */}
+        {/* Right tool panel */}
         {activePanel && (
           <div
             className="flex flex-col flex-shrink-0 overflow-y-auto"
@@ -366,30 +383,43 @@ export function BoardPage() {
               </button>
             </div>
 
-            {/* Panel body — placeholder until Steps 6-8 */}
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: '#F5F3F0' }}
-                >
-                  {activePanel === 'casting' && <ScanFace className="w-5 h-5" style={{ color: '#52524B' }} strokeWidth={1.5} />}
-                  {activePanel === 'wardrobe' && <Palette className="w-5 h-5" style={{ color: '#52524B' }} strokeWidth={1.5} />}
-                  {activePanel === 'export' && <PackageCheck className="w-5 h-5" style={{ color: '#52524B' }} strokeWidth={1.5} />}
+            {/* Panel body */}
+            {activePanel === 'casting' ? (
+              <BoardCastingPanel
+                boardId={boardId}
+                onModelGenerated={handleModelGenerated}
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center p-6">
+                <div className="text-center">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+                    style={{ background: '#F5F3F0' }}
+                  >
+                    {activePanel === 'wardrobe' && <Palette className="w-5 h-5" style={{ color: '#52524B' }} strokeWidth={1.5} />}
+                    {activePanel === 'export' && <PackageCheck className="w-5 h-5" style={{ color: '#52524B' }} strokeWidth={1.5} />}
+                  </div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+                    {activePanel === 'wardrobe' && 'Wardrobe Panel'}
+                    {activePanel === 'export' && 'Export Panel'}
+                  </p>
+                  <p style={{ fontSize: 13, color: '#a1a19a' }}>
+                    Tool integration coming soon.
+                  </p>
                 </div>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
-                  {activePanel === 'casting' && 'Casting Panel'}
-                  {activePanel === 'wardrobe' && 'Wardrobe Panel'}
-                  {activePanel === 'export' && 'Export Panel'}
-                </p>
-                <p style={{ fontSize: 13, color: '#a1a19a' }}>
-                  Tool integration coming in the next step.
-                </p>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Model Editor Overlay — fullscreen, triggered by double-clicking a model card */}
+      {editorItemId !== null && (
+        <ModelEditorOverlay
+          itemId={editorItemId}
+          onClose={() => setEditorItemId(null)}
+        />
+      )}
     </div>
   );
 }

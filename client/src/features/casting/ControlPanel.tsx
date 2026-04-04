@@ -273,7 +273,7 @@ export function ControlPanel({
               <FieldLabel filled={!!prefs.skinTone}>Skin Tone</FieldLabel>
               <SkinToneGrid selected={prefs.skinTone || ''} onSelect={(v) => updatePref('skinTone', v)} />
             </div>
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <WarmSelectControl label="Texture" options={SKIN_TEXTURES} value={prefs.skinTexture || 'Raw / Standard'} onChange={v => updatePref('skinTexture', v)} />
               <WarmSelectControl label="Finish" options={SKIN_FINISHES} value={prefs.skinFinish || 'Natural'} onChange={v => updatePref('skinFinish', v)} />
             </div>
@@ -379,7 +379,7 @@ export function ControlPanel({
       </div>
 
       {/* ═══ FOOTER ═══ */}
-      <div className="px-4 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+      <div className="px-4 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 -4px 16px rgba(0,0,0,0.03)' }}>
         {isReadOnly ? (
           <button
             onClick={onNewModel}
