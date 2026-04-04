@@ -8,7 +8,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { toast } from 'sonner';
-import { Loader2, ScanFace, Palette, PackageCheck } from 'lucide-react';
+import { Loader2, ScanFace, Palette, PackageCheck, Plus } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
@@ -281,66 +281,40 @@ export function BoardPage() {
             className="absolute inset-0"
           />
 
-          {/* Empty state overlay — only show after data has loaded, hide when panel is open */}
+          {/* Empty state — minimal "+" button matching reference */}
           {canvasItems.length === 0 && !itemsLoading && !boardLoading && !activePanel && (
             <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
               style={{ zIndex: 5 }}
             >
-              <div
-                className="flex flex-col items-center gap-4 pointer-events-auto"
+              <button
+                onClick={() => setActivePanel('casting')}
+                className="pointer-events-auto flex items-center justify-center rounded-full transition-all duration-200"
                 style={{
-                  background: 'rgba(255,255,255,0.85)',
-                  backdropFilter: 'blur(12px)',
-                  borderRadius: 16,
-                  padding: '32px 40px',
-                  border: '1px solid rgba(0,0,0,0.06)',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                  width: 40,
+                  height: 40,
+                  background: 'rgba(0,0,0,0.05)',
+                  color: '#52524B',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(0,0,0,0.1)';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
+                  e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
-                <p
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: '#1a1a1a',
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  Your canvas is empty
-                </p>
-                <p style={{ fontSize: 13, color: '#71716A', textAlign: 'center', maxWidth: 280 }}>
-                  Select a tool from the left rail to start creating, or drag assets onto the canvas.
-                </p>
-                <div className="flex gap-3 mt-2">
-                  <button
-                    onClick={() => setActivePanel('casting')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: '#fff',
-                      background: '#1a1a1a',
-                    }}
-                  >
-                    <ScanFace className="w-4 h-4" strokeWidth={1.5} />
-                    Cast a Model
-                  </button>
-                  <button
-                    onClick={() => setActivePanel('wardrobe')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg"
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: '#1a1a1a',
-                      background: 'rgba(0,0,0,0.04)',
-                      border: '1px solid rgba(0,0,0,0.08)',
-                    }}
-                  >
-                    <Palette className="w-4 h-4" strokeWidth={1.5} />
-                    Style an Outfit
-                  </button>
-                </div>
-              </div>
+                <Plus size={18} strokeWidth={2} />
+              </button>
+              <p
+                className="pointer-events-none mt-2.5"
+                style={{ fontSize: 12, color: '#a1a19a', fontWeight: 400 }}
+              >
+                Click to add a node
+              </p>
             </div>
           )}
         </div>

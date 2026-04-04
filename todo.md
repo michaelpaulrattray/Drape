@@ -324,3 +324,7 @@
 ### Step 6 Bug Fixes (Round 3)
 - [x] Bug: Canvas background still doesn't match old studio exactly
 - [x] Bug: Double-click editor overlay shows empty 'ready to cast' instead of the casted image
+
+### Step 6 Bug Fixes (Round 4)
+- [x] Fix: Canvas background should match reference — subtle light cross-hatch dot grid, not bold dots
+- [x] Fix: Empty canvas state should be minimal "+" button with "Click to add a node" text, not two-button overlay

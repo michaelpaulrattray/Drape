@@ -205,9 +205,9 @@ export function BoardCanvas({
       style={{
         width: '100%',
         height: '100%',
-        background: '#FAFAF8',
-        backgroundImage: 'radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)',
-        backgroundSize: '20px 20px',
+        background: '#f5f5f4',
+        backgroundImage: 'radial-gradient(circle, #d6d3d1 0.5px, transparent 0.5px)',
+        backgroundSize: '24px 24px',
       }}
     >
       <ReactFlow
