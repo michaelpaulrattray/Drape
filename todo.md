@@ -435,3 +435,10 @@
 - [x] Wire Note + Frame toolbar clicks to create nodes at viewport center (not random position)
 - [x] Click-to-place mode for Note/Frame: cursor changes to crosshair, click canvas to place, then revert to Select
 - [x] Bug: Placement mode crosshair cursor overridden by React Flow's grab cursor — needs CSS specificity fix
+- [ ] Frame visual redesign: solid white background, no opacity, clear border to stand out on canvas
+- [ ] Frame drag-into/out-of: detect when images are dropped inside a frame, set parentItemId relationship
+- [ ] Frame auto-organize: button/action to auto-layout images inside a frame in a grid
+- [ ] Frame z-index layering: ensure frames render behind child nodes so images are draggable on top
+- [x] Bug: No skeleton/loading node on canvas during image generation — should show placeholder immediately
+- [x] Bug: Generated image not full-sized on canvas — has to be manually dragged to resize
+- [x] Bug: New generated nodes appear at canvas origin instead of current viewport center

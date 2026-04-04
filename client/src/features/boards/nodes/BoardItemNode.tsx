@@ -66,6 +66,7 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
   const Icon = TYPE_ICONS[data.type];
   const typeLabel = TYPE_LABELS[data.type];
   const isNote = data.type === 'note';
+  const isGenerating = !!(data.metadata as Record<string, unknown> | null)?.isGenerating && !data.imageUrl;
 
   // Listen for rename trigger from context menu
   useEffect(() => {
@@ -190,19 +191,28 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
           </div>
         )}
 
-        {/* No image placeholder */}
+        {/* No image placeholder / generating skeleton */}
         {!data.imageUrl && !isNote && (
           <div
             style={{
               width: '100%',
               flex: 1,
-              background: '#f5f3ef',
+              background: isGenerating ? 'linear-gradient(110deg, #f5f3ef 30%, #ede9e3 50%, #f5f3ef 70%)' : '#f5f3ef',
+              backgroundSize: isGenerating ? '200% 100%' : undefined,
+              animation: isGenerating ? 'shimmer 1.5s ease-in-out infinite' : undefined,
               display: 'flex',
+              flexDirection: 'column' as const,
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 8,
             }}
           >
-            <Icon size={32} strokeWidth={1.2} color="#bbb" />
+            <Icon size={32} strokeWidth={1.2} color={isGenerating ? '#999' : '#bbb'} />
+            {isGenerating && (
+              <span style={{ fontSize: 11, color: '#999', fontWeight: 500, letterSpacing: '0.02em' }}>
+                Generating...
+              </span>
+            )}
           </div>
         )}
 

@@ -2,8 +2,9 @@
  * BoardCastingPanel — Right-side panel for casting a model from the board canvas.
  *
  * Wraps the existing ControlPanel and hooks from the casting feature.
- * On successful headshot generation, inserts a board_item (type: 'model')
- * onto the canvas. Subsequent view generations update the card image.
+ * On generation start, inserts a skeleton board_item (no image) at the viewport center.
+ * When the headshot arrives, updates the skeleton with the real image.
+ * Subsequent view generations update the card image.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
@@ -21,16 +22,22 @@ import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingVie
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
 
+/* ── Constants ───────────────────────────────────────────── */
+
+const MODEL_NODE_WIDTH = 400;
+const MODEL_NODE_HEIGHT = 500;
+
 /* ── Types ────────────────────────────────────────────────── */
 
 interface BoardCastingPanelProps {
   boardId: number;
   onModelGenerated?: (itemId: number) => void;
+  getViewportCenter?: () => { x: number; y: number };
 }
 
 /* ── Component ────────────────────────────────────────────── */
 
-export function BoardCastingPanel({ boardId, onModelGenerated }: BoardCastingPanelProps) {
+export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter }: BoardCastingPanelProps) {
   const { user, isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
 
@@ -103,15 +110,57 @@ export function BoardCastingPanel({ boardId, onModelGenerated }: BoardCastingPan
     setShowExportModal,
   });
 
-  // Board item insertion mutation
+  // Board item mutations
   const addItemMutation = trpc.boards.addItem.useMutation({
     onSuccess: () => utils.boards.getItems.invalidate({ boardId }),
   });
 
-  // Track whether we've already inserted a card for this model
-  const insertedModelRef = useRef<number | null>(null);
+  const updateItemMutation = trpc.boards.updateItem.useMutation({
+    onSuccess: () => utils.boards.getItems.invalidate({ boardId }),
+  });
 
-  // After headshot generation succeeds, insert a board_item
+  // Track the skeleton board item ID we created for the current generation
+  const skeletonItemIdRef = useRef<number | null>(null);
+  // Track whether we've already handled this model (to avoid duplicate inserts)
+  const insertedModelRef = useRef<number | null>(null);
+  // Track previous genState.isGenerating to detect transition to true
+  const wasGeneratingRef = useRef(false);
+
+  // Step 1: When generation STARTS, insert a skeleton node (no image) at viewport center
+  useEffect(() => {
+    const justStarted = genState.isGenerating && !wasGeneratingRef.current;
+    wasGeneratingRef.current = genState.isGenerating;
+
+    if (!justStarted) return;
+    // Don't insert skeleton if we already have a model card for this generation
+    if (insertedModelRef.current !== null) return;
+
+    const center = getViewportCenter?.() ?? { x: 200, y: 200 };
+
+    addItemMutation.mutate(
+      {
+        boardId,
+        type: 'model',
+        label: modelName || 'Generating...',
+        positionX: Math.round(center.x - MODEL_NODE_WIDTH / 2),
+        positionY: Math.round(center.y - MODEL_NODE_HEIGHT / 2),
+        width: MODEL_NODE_WIDTH,
+        height: MODEL_NODE_HEIGHT,
+        metadata: { viewType: 'frontClose', isGenerating: true },
+      },
+      {
+        onSuccess: (result) => {
+          skeletonItemIdRef.current = result.id;
+        },
+        onError: () => {
+          // Skeleton insert failed — the real image will still be inserted later
+          skeletonItemIdRef.current = null;
+        },
+      },
+    );
+  }, [genState.isGenerating, boardId, modelName, getViewportCenter]);
+
+  // Step 2: When headshot arrives, update the skeleton node with the real image
   useEffect(() => {
     if (!currentModelId) return;
     if (insertedModelRef.current === currentModelId) return;
@@ -119,33 +168,57 @@ export function BoardCastingPanel({ boardId, onModelGenerated }: BoardCastingPan
     const headshot = currentAssets.find((a) => a.viewType === 'frontClose');
     if (!headshot) return;
 
-    // Mark as inserted before the mutation fires
+    // Mark as handled
     insertedModelRef.current = currentModelId;
 
-    addItemMutation.mutate(
-      {
-        boardId,
-        type: 'model',
-        label: modelName || `Model ${currentModelId}`,
-        imageUrl: headshot.storageUrl,
-        sourceModelId: currentModelId,
-        positionX: 100 + Math.floor(Math.random() * 200),
-        positionY: 100 + Math.floor(Math.random() * 200),
-        width: 280,
-        height: 280,
-        metadata: { viewType: 'frontClose' },
-      },
-      {
-        onSuccess: (result) => {
-          onModelGenerated?.(result.id);
+    if (skeletonItemIdRef.current) {
+      // Update the existing skeleton with the real image + model reference
+      const itemId = skeletonItemIdRef.current;
+      updateItemMutation.mutate(
+        {
+          itemId,
+          label: modelName || `Model ${currentModelId}`,
+          imageUrl: headshot.storageUrl,
+          metadata: { viewType: 'frontClose' },
         },
-        onError: () => {
-          toast.error('Failed to add model to canvas');
-          insertedModelRef.current = null;
+        {
+          onSuccess: () => {
+            onModelGenerated?.(itemId);
+          },
+          onError: () => {
+            toast.error('Failed to update model on canvas');
+          },
         },
-      },
-    );
-  }, [currentModelId, currentAssets, boardId, modelName]);
+      );
+      skeletonItemIdRef.current = null;
+    } else {
+      // Fallback: skeleton wasn't created, insert full item at viewport center
+      const center = getViewportCenter?.() ?? { x: 200, y: 200 };
+      addItemMutation.mutate(
+        {
+          boardId,
+          type: 'model',
+          label: modelName || `Model ${currentModelId}`,
+          imageUrl: headshot.storageUrl,
+          sourceModelId: currentModelId,
+          positionX: Math.round(center.x - MODEL_NODE_WIDTH / 2),
+          positionY: Math.round(center.y - MODEL_NODE_HEIGHT / 2),
+          width: MODEL_NODE_WIDTH,
+          height: MODEL_NODE_HEIGHT,
+          metadata: { viewType: 'frontClose' },
+        },
+        {
+          onSuccess: (result) => {
+            onModelGenerated?.(result.id);
+          },
+          onError: () => {
+            toast.error('Failed to add model to canvas');
+            insertedModelRef.current = null;
+          },
+        },
+      );
+    }
+  }, [currentModelId, currentAssets, boardId, modelName, getViewportCenter]);
 
   // Update the board item image when a new view is generated (full body, side)
   const prevAssetCountRef = useRef(0);
@@ -182,6 +255,8 @@ export function BoardCastingPanel({ boardId, onModelGenerated }: BoardCastingPan
     useCastingGenerationStore.getState().resetGeneration();
     useCastingFormStore.getState().resetForm();
     insertedModelRef.current = null;
+    skeletonItemIdRef.current = null;
+    wasGeneratingRef.current = false;
     toast.success('Starting fresh model');
   }, []);
 

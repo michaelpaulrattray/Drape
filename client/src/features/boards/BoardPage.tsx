@@ -586,6 +586,7 @@ export function BoardPage() {
               <BoardCastingPanel
                 boardId={boardId}
                 onModelGenerated={handleModelGenerated}
+                getViewportCenter={viewportCenterGetterRef.current ?? undefined}
               />
             ) : (
               <div className="flex-1 flex items-center justify-center p-6">
