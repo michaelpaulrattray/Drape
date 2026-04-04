@@ -347,3 +347,11 @@
 ### Step 6 Improvements (Round 9)
 - [x] Fix: Canvas background too cream — switch to cleaner white
 - [x] Fix: AddNodeMenu should be light frosted glass, not dark (we are light theme)
+
+### Canvas Bottom UI (Luma-style)
+- [x] Remove left-side tool rail from BoardPage
+- [x] Remove React Flow Controls component from BoardCanvas
+- [x] Create CanvasZoomControls: polished pill with −/zoom%/+ (bottom-left)
+- [x] Create CanvasToolbar: centered floating pill with tool icons (bottom-center)
+- [x] Create CanvasChatToggle: chat button placeholder (bottom-right)
+- [x] Wire all three into BoardPage as children of BoardCanvas (ReactFlow context access)

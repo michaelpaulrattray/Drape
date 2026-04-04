@@ -10,10 +10,9 @@
  *
  * Background: CSS radial-gradient dots matching the original StudioCanvas.
  */
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
   ReactFlow,
-  Controls,
   Background,
   useNodesState,
   useEdgesState,
@@ -53,6 +52,8 @@ type BoardCanvasProps = {
   onNodeDoubleClick?: (itemId: number) => void;
   onPaneClick?: () => void;
   className?: string;
+  /** Rendered inside ReactFlow — has access to useReactFlow() context */
+  children?: ReactNode;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -105,6 +106,7 @@ export function BoardCanvas({
   onNodeDoubleClick,
   onPaneClick,
   className,
+  children,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<BoardItemFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -238,15 +240,7 @@ export function BoardCanvas({
           size={1.3}
           color="#d0d0d0"
         />
-        <Controls
-          showInteractive={false}
-          style={{
-            background: '#fff',
-            borderRadius: 8,
-            border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-          }}
-        />
+        {children}
       </ReactFlow>
     </div>
   );

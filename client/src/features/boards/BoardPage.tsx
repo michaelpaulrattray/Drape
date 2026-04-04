@@ -3,18 +3,21 @@
  *
  * Loads a board from DB, renders items on the infinite canvas,
  * and hosts a collapsible tool panel on the right side.
- * Casting panel is wired; double-click a model card to open the editor overlay.
+ * Bottom-of-canvas UI: centered toolbar, zoom controls (left), AI chat (right).
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { toast } from 'sonner';
-import { Loader2, ScanFace, Palette, PackageCheck, Plus } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
 import { BoardCastingPanel } from './panels/BoardCastingPanel';
 import { ModelEditorOverlay } from './overlays/ModelEditorOverlay';
 import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
+import { CanvasToolbar, type CanvasToolId } from './components/CanvasToolbar';
+import { CanvasZoomControls } from './components/CanvasZoomControls';
+import { CanvasChatToggle } from './components/CanvasChatToggle';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -28,6 +31,7 @@ export function BoardPage() {
   const boardId = params?.id ? parseInt(params.id, 10) : NaN;
 
   const [activePanel, setActivePanel] = useState<ToolPanelId>(null);
+  const [activeTool, setActiveTool] = useState<CanvasToolId>('select');
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [editorItemId, setEditorItemId] = useState<number | null>(null);
   const [addNodeMenu, setAddNodeMenu] = useState<{ x: number; y: number } | null>(null);
@@ -128,7 +132,6 @@ export function BoardPage() {
   }, []);
 
   const handleNodeDoubleClick = useCallback((itemId: number) => {
-    // Find the item to check if it's a model type
     const item = items?.find((i) => i.id === itemId);
     if (item?.type === 'model') {
       setEditorItemId(itemId);
@@ -136,7 +139,7 @@ export function BoardPage() {
   }, [items]);
 
   const handleModelGenerated = useCallback((_itemId: number) => {
-    // Model card was inserted onto the canvas — could scroll to it, etc.
+    // Model card was inserted onto the canvas
   }, []);
 
   const handleAddNodeAction = useCallback(
@@ -144,9 +147,11 @@ export function BoardPage() {
       switch (action) {
         case 'cast':
           setActivePanel('casting');
+          setActiveTool('cast');
           break;
         case 'wardrobe':
           setActivePanel('wardrobe');
+          setActiveTool('wardrobe');
           break;
         case 'upload':
         case 'reference':
@@ -155,6 +160,29 @@ export function BoardPage() {
           break;
       }
       setAddNodeMenu(null);
+    },
+    [],
+  );
+
+  const handleToolSelect = useCallback(
+    (tool: CanvasToolId) => {
+      setActiveTool(tool);
+      switch (tool) {
+        case 'select':
+          setActivePanel(null);
+          break;
+        case 'cast':
+          setActivePanel('casting');
+          break;
+        case 'wardrobe':
+          setActivePanel('wardrobe');
+          break;
+        case 'reference':
+        case 'upload':
+        case 'note':
+          toast.info('Feature coming soon');
+          break;
+      }
     },
     [],
   );
@@ -250,14 +278,6 @@ export function BoardPage() {
     );
   }
 
-  // ── Tool panel buttons ─────────────────────────────────────
-
-  const toolButtons: { id: ToolPanelId; icon: typeof ScanFace; label: string }[] = [
-    { id: 'casting', icon: ScanFace, label: 'Cast' },
-    { id: 'wardrobe', icon: Palette, label: 'Style' },
-    { id: 'export', icon: PackageCheck, label: 'Export' },
-  ];
-
   return (
     <div className="flex flex-col" style={{ height: '100vh', background: '#FAFAF8' }}>
       <BoardHeader
@@ -267,37 +287,7 @@ export function BoardPage() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Tool rail (left edge) */}
-        <div
-          className="flex flex-col items-center gap-1 py-3 flex-shrink-0"
-          style={{
-            width: 52,
-            background: '#FAFAF8',
-            borderRight: '1px solid rgba(0,0,0,0.06)',
-          }}
-        >
-          {toolButtons.map(({ id, icon: Icon, label }) => {
-            const isActive = activePanel === id;
-            return (
-              <button
-                key={id}
-                onClick={() => setActivePanel(isActive ? null : id)}
-                className="w-10 h-10 rounded-lg flex flex-col items-center justify-center gap-0.5"
-                style={{
-                  background: isActive ? 'rgba(0,0,0,0.06)' : 'transparent',
-                  color: isActive ? '#1a1a1a' : '#888',
-                  transition: 'background 0.15s ease, color 0.15s ease',
-                }}
-                title={label}
-              >
-                <Icon className="w-4.5 h-4.5" strokeWidth={1.5} />
-                <span style={{ fontSize: 9, fontWeight: 500, lineHeight: 1 }}>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Canvas area */}
+        {/* Canvas area — full width, no left rail */}
         <div
           className="flex-1 relative"
           onContextMenu={handleCanvasContextMenu}
@@ -314,9 +304,14 @@ export function BoardPage() {
             onNodeDoubleClick={handleNodeDoubleClick}
             onPaneClick={() => setAddNodeMenu(null)}
             className="absolute inset-0"
-          />
+          >
+            {/* Bottom canvas UI — rendered inside ReactFlow for context access */}
+            <CanvasZoomControls />
+            <CanvasToolbar activeTool={activeTool} onToolSelect={handleToolSelect} />
+            <CanvasChatToggle />
+          </BoardCanvas>
 
-          {/* Empty state — minimal "+" button matching reference */}
+          {/* Empty state — minimal "+" button */}
           {canvasItems.length === 0 && !itemsLoading && !boardLoading && !activePanel && (
             <div
               className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
@@ -355,6 +350,7 @@ export function BoardPage() {
               </p>
             </div>
           )}
+
         </div>
 
         {/* Right tool panel */}
@@ -381,7 +377,10 @@ export function BoardPage() {
                 {activePanel === 'export' && 'Export'}
               </span>
               <button
-                onClick={() => setActivePanel(null)}
+                onClick={() => {
+                  setActivePanel(null);
+                  setActiveTool('select');
+                }}
                 className="w-7 h-7 rounded-md flex items-center justify-center"
                 style={{
                   color: '#71716A',
@@ -404,13 +403,6 @@ export function BoardPage() {
             ) : (
               <div className="flex-1 flex items-center justify-center p-6">
                 <div className="text-center">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-                    style={{ background: '#F5F3F0' }}
-                  >
-                    {activePanel === 'wardrobe' && <Palette className="w-5 h-5" style={{ color: '#52524B' }} strokeWidth={1.5} />}
-                    {activePanel === 'export' && <PackageCheck className="w-5 h-5" style={{ color: '#52524B' }} strokeWidth={1.5} />}
-                  </div>
                   <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
                     {activePanel === 'wardrobe' && 'Wardrobe Panel'}
                     {activePanel === 'export' && 'Export Panel'}
