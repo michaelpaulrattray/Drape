@@ -355,3 +355,6 @@
 - [x] Create CanvasToolbar: centered floating pill with tool icons (bottom-center)
 - [x] Create CanvasChatToggle: chat button placeholder (bottom-right)
 - [x] Wire all three into BoardPage as children of BoardCanvas (ReactFlow context access)
+
+### Canvas Bottom UI — Toolbar Redesign
+- [x] Redesign CanvasToolbar to match Luma Labs reference: larger pill, bigger icons, prominent white circle highlight on active tool (cursor), more generous spacing between icons, white frosted glass style

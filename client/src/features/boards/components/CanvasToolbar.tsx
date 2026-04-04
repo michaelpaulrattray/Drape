@@ -1,8 +1,9 @@
 /**
  * CanvasToolbar — Floating tool pill pinned bottom-center of canvas.
  *
- * Luma-style icon toolbar for selecting tools.
- * Each icon triggers a tool action (open panel, etc.).
+ * Matches the Luma Labs toolbar pattern: wide capsule pill, large white
+ * circle highlight on the active tool, generous icon spacing, no dividers.
+ * Rendered in white frosted glass to match FormaStudio's light theme.
  */
 import { useCallback } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
   Upload,
   StickyNote,
   ImagePlus,
+  PlusCircle,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -47,71 +49,98 @@ export function CanvasToolbar({ activeTool, onToolSelect }: CanvasToolbarProps) 
 
   return (
     <div
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-0.5 select-none"
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center select-none"
       style={{
         zIndex: 10,
-        background: 'rgba(255, 255, 255, 0.88)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderRadius: 14,
-        border: '1px solid rgba(0, 0, 0, 0.08)',
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-        height: 44,
-        padding: '0 4px',
+        background: 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: 26,
+        border: '1px solid rgba(0, 0, 0, 0.06)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+        height: 52,
+        padding: '0 6px',
+        gap: 2,
       }}
     >
-      {tools.map((tool, index) => {
+      {tools.map((tool) => {
         const isActive = activeTool === tool.id;
         const Icon = tool.icon;
-        const isFirstGroup = index === 0;
-        const showDivider = index === 1; // divider after Select
 
         return (
-          <div key={tool.id} className="flex items-center">
-            {showDivider && (
-              <div
-                style={{
-                  width: 1,
-                  height: 20,
-                  background: 'rgba(0, 0, 0, 0.08)',
-                  marginLeft: 2,
-                  marginRight: 2,
-                  flexShrink: 0,
-                }}
-              />
-            )}
-            <button
-              onClick={() => handleClick(tool.id)}
-              className="relative flex items-center justify-center"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                border: 'none',
-                background: isActive ? 'rgba(0, 0, 0, 0.08)' : 'transparent',
-                color: isActive ? '#1a1a1a' : '#71716A',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
-                  e.currentTarget.style.color = '#1a1a1a';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#71716A';
-                }
-              }}
-              title={tool.label}
-            >
-              <Icon size={18} strokeWidth={isFirstGroup ? 2 : 1.5} />
-            </button>
-          </div>
+          <button
+            key={tool.id}
+            onClick={() => handleClick(tool.id)}
+            className="relative flex items-center justify-center"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              border: 'none',
+              background: isActive ? '#ffffff' : 'transparent',
+              boxShadow: isActive
+                ? '0 1px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04)'
+                : 'none',
+              color: isActive ? '#1a1a1a' : '#8a8a8a',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.color = '#4a4a4a';
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.color = '#8a8a8a';
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
+            title={tool.label}
+          >
+            <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+          </button>
         );
       })}
+
+      {/* Plus button — outlined style like reference */}
+      <div
+        style={{
+          width: 1,
+          height: 24,
+          background: 'rgba(0, 0, 0, 0.06)',
+          margin: '0 4px',
+          flexShrink: 0,
+        }}
+      />
+      <button
+        onClick={() => handleClick('note')}
+        className="flex items-center justify-center"
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 21,
+          border: 'none',
+          background: 'transparent',
+          color: '#8a8a8a',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = '#4a4a4a';
+          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = '#8a8a8a';
+          e.currentTarget.style.background = 'transparent';
+        }}
+        title="Add to canvas"
+      >
+        <PlusCircle size={20} strokeWidth={1.5} />
+      </button>
     </div>
   );
 }

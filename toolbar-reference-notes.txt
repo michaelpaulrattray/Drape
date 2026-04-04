@@ -1,0 +1,27 @@
+Luma Labs Toolbar Reference Analysis
+=====================================
+
+Key design elements from the screenshot:
+
+1. SHAPE: Wide rounded pill, very generous horizontal padding, tall height (~52-56px)
+2. ACTIVE STATE (cursor): The cursor/select tool has a LARGE white filled circle behind it (~44px diameter), making it extremely prominent. The cursor icon itself is dark/black on the white circle.
+3. INACTIVE ICONS: Gray/muted icons (~20-22px), evenly spaced with generous gaps (~12-16px between each)
+4. ICON COUNT: ~10 icons total — cursor, image, video, equalizer, crop/frame, wave/path, text (Aa), grid/table, record, plus/add
+5. BACKGROUND: Dark frosted glass in reference — we need WHITE frosted glass version
+6. BORDER RADIUS: Very rounded, almost capsule-shaped (~24-28px radius)
+7. NO DIVIDERS: No visible dividers between icons — just spacing
+8. SHADOW: Subtle shadow for depth
+9. POSITION: Centered at bottom of canvas, floating above content
+10. The "+" button at the far right is slightly different — outlined circle with plus
+
+For our white frosted glass version:
+- Background: rgba(255, 255, 255, 0.92) with blur(20px)
+- Border: 1px solid rgba(0, 0, 0, 0.06)
+- Shadow: 0 4px 20px rgba(0, 0, 0, 0.08)
+- Active circle: solid white (#fff) with subtle shadow
+- Inactive icons: #8a8a8a
+- Active icon: #1a1a1a on white circle
+- Height: ~52px
+- Border radius: 26px (full capsule)
+- Icon size: 20px
+- Active circle: 42px diameter
