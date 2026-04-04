@@ -3,13 +3,16 @@
  *
  * Renders board items as draggable cards with pan/zoom/drag.
  * Converts board_items DB records into React Flow nodes.
- * Syncs external item changes (insertions, deletions, image updates)
- * into React Flow state via useEffect.
+ *
+ * Drag smoothness: React Flow manages node positions natively during drag.
+ * We only sync external item changes (additions, deletions, image/label updates)
+ * without overwriting positions that React Flow is actively managing.
+ *
+ * Background: CSS radial-gradient dots matching the original StudioCanvas.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ReactFlow,
-  Background,
   Controls,
   MiniMap,
   useNodesState,
@@ -20,7 +23,6 @@ import {
   type Viewport,
   type NodeTypes,
   type ReactFlowInstance,
-  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { BoardItemNode, type BoardItemNodeData, type BoardItemFlowNode } from './nodes/BoardItemNode';
@@ -84,6 +86,11 @@ function itemToNode(
   };
 }
 
+/** Build a fingerprint of item data (excluding position) for change detection */
+function itemFingerprint(item: BoardItemRecord): string {
+  return `${item.id}|${item.type}|${item.label ?? ''}|${item.imageUrl ?? ''}|${item.width}|${item.height}|${item.zIndex}`;
+}
+
 /* ── Component ────────────────────────────────────────────── */
 
 export function BoardCanvas({
@@ -98,30 +105,52 @@ export function BoardCanvas({
   className,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<BoardItemFlowNode> | null>(null);
+  const prevFingerprintRef = useRef<string>('');
+  const isDraggingRef = useRef(false);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<BoardItemFlowNode>([]);
   const [edges] = useEdgesState<Edge>([]);
 
-  // Sync items prop → React Flow nodes whenever items change
+  /**
+   * Smart sync: only update React Flow nodes when the item LIST actually changes
+   * (additions, deletions, image/label/type updates) — NOT on position-only changes
+   * that come back from the server after a drag-end save.
+   *
+   * This prevents the "snap back" jank where React Flow's smooth drag position
+   * gets overwritten by the server's rounded position.
+   */
   useEffect(() => {
+    // Build a fingerprint that excludes position
+    const currentFingerprint = items.map(itemFingerprint).join('::');
+
+    // Skip if nothing meaningful changed (position-only updates from drag save)
+    if (currentFingerprint === prevFingerprintRef.current) return;
+    prevFingerprintRef.current = currentFingerprint;
+
+    // Don't reset nodes while user is actively dragging
+    if (isDraggingRef.current) return;
+
     const nextNodes = items.map((item) =>
       itemToNode(item, onItemDelete, onItemRename),
     );
     setNodes(nextNodes);
   }, [items, onItemDelete, onItemRename, setNodes]);
 
-  // Handle node drag end → persist position
+  // Handle node drag + position persistence
   const handleNodesChange: OnNodesChange<BoardItemFlowNode> = useCallback(
     (changes) => {
       onNodesChange(changes);
 
-      // Persist position after drag
       for (const change of changes) {
-        if (change.type === 'position' && !change.dragging && change.position) {
-          const nodeId = change.id;
-          const itemId = parseInt(nodeId.replace('item-', ''), 10);
-          if (!isNaN(itemId) && onItemMove) {
-            onItemMove(itemId, Math.round(change.position.x), Math.round(change.position.y));
+        if (change.type === 'position') {
+          if (change.dragging) {
+            isDraggingRef.current = true;
+          } else if (!change.dragging && change.position) {
+            isDraggingRef.current = false;
+            const itemId = parseInt(change.id.replace('item-', ''), 10);
+            if (!isNaN(itemId) && onItemMove) {
+              onItemMove(itemId, Math.round(change.position.x), Math.round(change.position.y));
+            }
           }
         }
       }
@@ -177,6 +206,8 @@ export function BoardCanvas({
         width: '100%',
         height: '100%',
         background: '#FAFAF8',
+        backgroundImage: 'radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)',
+        backgroundSize: '20px 20px',
       }}
     >
       <ReactFlow
@@ -195,20 +226,12 @@ export function BoardCanvas({
         fitViewOptions={{ padding: 0.3, maxZoom: 1.2 }}
         minZoom={0.1}
         maxZoom={3}
-        snapToGrid
-        snapGrid={[20, 20]}
         panOnScroll
         selectionOnDrag={false}
         selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'transparent' }}
       >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={0.8}
-          color="#d4d0cb"
-        />
         <Controls
           showInteractive={false}
           style={{

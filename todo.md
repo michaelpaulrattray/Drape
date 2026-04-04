@@ -315,3 +315,8 @@
 ### Step 6 Bug Fixes
 - [x] Bug: Model card not appearing on canvas after casting in board (no card during generation or after success)
 - [x] Bug: Unwanted prompt dialog when loading into board canvas (asks to cast or style)
+
+### Step 6 Bug Fixes (Round 2)
+- [x] Bug: Dragging model cards on canvas feels janky/unsmooth
+- [x] Bug: Double-click editor overlay UX needs to be a popout, not current implementation
+- [x] Bug: Canvas background doesn't match original studio background

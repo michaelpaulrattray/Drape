@@ -1,7 +1,10 @@
 /**
- * ModelEditorOverlay — Fullscreen overlay for refining a model from the board canvas.
+ * ModelEditorOverlay — Popout modal for refining a model from the board canvas.
  *
  * Opened by double-clicking a model node on the canvas.
+ * Floats as a centered dialog (~90% viewport) with a frosted backdrop,
+ * so the canvas context remains visible behind it.
+ *
  * Wraps ImageViewerPanel + MasterPromptPanel from the casting feature,
  * providing the full refinement workflow (surgical edit, eraser, undo/redo, views).
  */
@@ -121,100 +124,138 @@ export function ModelEditorOverlay({ itemId, onClose }: ModelEditorOverlayProps)
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, lockModal.isOpen]);
 
+  // Prevent body scroll while overlay is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   return (
-    <div
-      className="fixed inset-0 z-[90] flex flex-col"
-      style={{ background: '#FAFAF8' }}
-    >
-      {/* Header bar */}
+    <>
+      {/* Frosted backdrop — click to close */}
       <div
-        className="flex items-center justify-between px-5 flex-shrink-0"
+        className="fixed inset-0 z-[85]"
         style={{
-          height: 52,
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
-          background: '#fff',
+          background: 'rgba(250, 250, 248, 0.6)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+        onClick={onClose}
+      />
+
+      {/* Popout dialog */}
+      <div
+        className="fixed z-[90] flex flex-col"
+        style={{
+          top: '4%',
+          left: '4%',
+          width: '92%',
+          height: '92%',
+          background: '#FAFAF8',
+          borderRadius: 16,
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.06)',
+          overflow: 'hidden',
+          animation: 'popout-enter 0.2s ease-out',
         }}
       >
-        <div className="flex items-center gap-3">
-          <Maximize2 size={16} style={{ color: '#71716A' }} />
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
-            Model Editor
-          </span>
-          {currentAssets.length > 0 && (
-            <span
-              style={{
-                fontSize: 11,
-                color: '#71716A',
-                background: 'rgba(0,0,0,0.04)',
-                padding: '2px 8px',
-                borderRadius: 6,
-              }}
-            >
-              {currentAssets.length} view{currentAssets.length !== 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
-
-        <button
-          onClick={onClose}
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{
-            color: '#71716A',
-            transition: 'background 0.15s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          title="Close (Esc)"
-        >
-          <X size={18} strokeWidth={1.5} />
-        </button>
-      </div>
-
-      {/* Content area — ImageViewer + MasterPromptPanel */}
-      <div className="flex-1 flex min-h-0">
-        {/* Center — Image Viewer */}
-        <div className="flex-1 min-w-0 h-full relative">
-          <ImageViewerPanel
-            currentImageUrl={currentImageUrl ?? undefined}
-            currentAssets={currentAssets}
-            genState={genState}
-            isViewLocked={isViewLocked}
-            hasDownstreamDependencies={hasDownstreamDependencies}
-            isIterationAllowed={isIterationAllowed}
-            isMasking={isMasking}
-            maskPathsCount={maskPaths.length}
-            formProgress={formProgress}
-            nextStage={nextStage}
-            canvasRef={canvasRef}
-            imageRef={imageRef}
-            handlePointerDown={handlePointerDown}
-            handlePointerMove={handlePointerMove}
-            handlePointerUp={handlePointerUp}
-            handleUndo={handleUndo}
-            handleRedo={handleRedo}
-            handleRetry={handleRetry}
-            handleGenerate={handleGenerate}
-            handleEnhance={handleEnhance}
-            handleRefineSubmit={handleRefineSubmit}
-            canUndo={canUndo}
-            canRedo={canRedo}
-          />
-        </div>
-
-        {/* Right — Master Prompt Panel */}
+        {/* Header bar */}
         <div
-          className="hidden lg:flex flex-col flex-shrink-0"
+          className="flex items-center justify-between px-5 flex-shrink-0"
           style={{
-            width: 320,
-            borderLeft: '1px solid rgba(0,0,0,0.06)',
-            background: '#fff',
+            height: 48,
+            borderBottom: '1px solid rgba(0,0,0,0.06)',
+            background: 'rgba(255,255,255,0.9)',
+            backdropFilter: 'blur(8px)',
           }}
         >
-          <MasterPromptPanel />
+          <div className="flex items-center gap-3">
+            <Maximize2 size={14} style={{ color: '#71716A' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+              Model Editor
+            </span>
+            {currentAssets.length > 0 && (
+              <span
+                style={{
+                  fontSize: 11,
+                  color: '#71716A',
+                  background: 'rgba(0,0,0,0.04)',
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                }}
+              >
+                {currentAssets.length} view{currentAssets.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{
+              color: '#71716A',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.06)';
+              e.currentTarget.style.color = '#1a1a1a';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#71716A';
+            }}
+            title="Close (Esc)"
+          >
+            <X size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {/* Content area — ImageViewer + MasterPromptPanel */}
+        <div className="flex-1 flex min-h-0">
+          {/* Center — Image Viewer */}
+          <div className="flex-1 min-w-0 h-full relative">
+            <ImageViewerPanel
+              currentImageUrl={currentImageUrl ?? undefined}
+              currentAssets={currentAssets}
+              genState={genState}
+              isViewLocked={isViewLocked}
+              hasDownstreamDependencies={hasDownstreamDependencies}
+              isIterationAllowed={isIterationAllowed}
+              isMasking={isMasking}
+              maskPathsCount={maskPaths.length}
+              formProgress={formProgress}
+              nextStage={nextStage}
+              canvasRef={canvasRef}
+              imageRef={imageRef}
+              handlePointerDown={handlePointerDown}
+              handlePointerMove={handlePointerMove}
+              handlePointerUp={handlePointerUp}
+              handleUndo={handleUndo}
+              handleRedo={handleRedo}
+              handleRetry={handleRetry}
+              handleGenerate={handleGenerate}
+              handleEnhance={handleEnhance}
+              handleRefineSubmit={handleRefineSubmit}
+              canUndo={canUndo}
+              canRedo={canRedo}
+            />
+          </div>
+
+          {/* Right — Master Prompt Panel */}
+          <div
+            className="hidden lg:flex flex-col flex-shrink-0"
+            style={{
+              width: 300,
+              borderLeft: '1px solid rgba(0,0,0,0.06)',
+              background: '#fff',
+            }}
+          >
+            <MasterPromptPanel />
+          </div>
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals (above the popout) */}
       <StageLockModal
         isOpen={lockModal.isOpen}
         title={lockModal.title}
@@ -227,6 +268,20 @@ export function ModelEditorOverlay({ itemId, onClose }: ModelEditorOverlayProps)
         onClose={() => setIsTopupOpen(false)}
         currentBalance={creditsData?.balance || 0}
       />
-    </div>
+
+      {/* Popout animation keyframes */}
+      <style>{`
+        @keyframes popout-enter {
+          from {
+            opacity: 0;
+            transform: scale(0.96) translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
+    </>
   );
 }
