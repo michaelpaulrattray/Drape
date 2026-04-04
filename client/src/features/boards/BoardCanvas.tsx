@@ -230,7 +230,12 @@ export function BoardCanvas({
         selectionOnDrag={false}
         selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}
-        style={{ background: 'transparent' }}
+        style={{
+          background: 'transparent',
+          // Override React Flow's internal CSS vars to ensure our container bg shows through
+          '--xy-background-color': 'transparent',
+          '--xy-background-color-props': 'transparent',
+        } as React.CSSProperties}
       >
         <Controls
           showInteractive={false}

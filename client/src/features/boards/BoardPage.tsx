@@ -413,13 +413,18 @@ export function BoardPage() {
         )}
       </div>
 
-      {/* Model Editor Overlay — fullscreen, triggered by double-clicking a model card */}
-      {editorItemId !== null && (
-        <ModelEditorOverlay
-          itemId={editorItemId}
-          onClose={() => setEditorItemId(null)}
-        />
-      )}
+      {/* Model Editor Overlay — popout, triggered by double-clicking a model card */}
+      {editorItemId !== null && (() => {
+        const editorItem = canvasItems.find((i) => i.id === editorItemId);
+        return (
+          <ModelEditorOverlay
+            itemId={editorItemId}
+            imageUrl={editorItem?.imageUrl ?? null}
+            label={editorItem?.label}
+            onClose={() => setEditorItemId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -320,3 +320,7 @@
 - [x] Bug: Dragging model cards on canvas feels janky/unsmooth
 - [x] Bug: Double-click editor overlay UX needs to be a popout, not current implementation
 - [x] Bug: Canvas background doesn't match original studio background
+
+### Step 6 Bug Fixes (Round 3)
+- [x] Bug: Canvas background still doesn't match old studio exactly
+- [x] Bug: Double-click editor overlay shows empty 'ready to cast' instead of the casted image

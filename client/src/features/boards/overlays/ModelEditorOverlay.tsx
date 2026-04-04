@@ -1,134 +1,118 @@
 /**
- * ModelEditorOverlay — Popout modal for refining a model from the board canvas.
+ * ModelEditorOverlay — Popout modal for viewing/refining a model from the board canvas.
  *
  * Opened by double-clicking a model node on the canvas.
  * Floats as a centered dialog (~90% viewport) with a frosted backdrop,
  * so the canvas context remains visible behind it.
  *
- * Wraps ImageViewerPanel + MasterPromptPanel from the casting feature,
- * providing the full refinement workflow (surgical edit, eraser, undo/redo, views).
+ * Shows the board item's image directly. If the casting stores have an
+ * active session for this model, the full refinement tools are available.
+ * Otherwise, a clean read-only viewer is shown.
  */
-import { useCallback, useEffect, useMemo } from 'react';
-import { X, Maximize2 } from 'lucide-react';
-import { useAuth } from '@/_core/hooks/useAuth';
-import { ImageViewerPanel } from '@/features/casting/ImageViewerPanel';
-import { MasterPromptPanel } from '@/features/casting/MasterPromptPanel';
-import { StageLockModal } from '@/features/casting/StageLockModal';
-import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
-import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
-import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
-import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
-import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
-import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingViewGeneration';
-import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { X, Maximize2, Download, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
 
 /* ── Types ────────────────────────────────────────────────── */
 
 interface ModelEditorOverlayProps {
   /** The board item being edited */
   itemId: number;
+  /** The image URL from the board item */
+  imageUrl: string | null;
+  /** The label from the board item */
+  label?: string | null;
   /** Close the overlay */
   onClose: () => void;
 }
 
 /* ── Component ────────────────────────────────────────────── */
 
-export function ModelEditorOverlay({ itemId, onClose }: ModelEditorOverlayProps) {
-  const { isAuthenticated } = useAuth();
-
-  // Casting stores
-  const prefs = useCastingFormStore((s) => s.prefs);
-  const {
-    genState,
-    currentAssets,
-  } = useCastingGenerationStore();
-  const {
-    activeView,
-    activeTool: castingActiveTool,
-    lockModal,
-    closeLockModal,
-    isTopupOpen,
-    setIsTopupOpen,
-  } = useCastingUIStore();
-
-  // Canvas hook (masking)
-  const {
-    canvasRef,
-    imageRef,
-    maskPaths,
-    isMasking,
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    getGuideOverlayDataUrl,
-    clearMask,
-  } = useCastingCanvas(castingActiveTool, activeView, currentAssets);
-
-  // Generation hook
-  const {
-    creditsData,
-    refetchCreditsWithWarning,
-    isFormValid,
-    currentImageUrl,
-    isViewLocked,
-    hasDownstreamDependencies,
-    isIterationAllowed,
-    handleGenerate,
-    handleRefineSubmit,
-    handleEnhance,
-    handleRetry,
-    handleUndo,
-    handleRedo,
-    canUndo,
-    canRedo,
-  } = useCastingGeneration({
-    isAuthenticated,
-    activeTool: castingActiveTool,
-    isMasking,
-    getGuideOverlayDataUrl,
-    clearMask,
-  });
-
-  // View generation hook
-  const { nextStage } = useCastingViewGeneration({
-    isAuthenticated,
-    creditsData,
-    refetchCreditsWithWarning,
-  });
-
-  // Form progress
-  const formProgress = useMemo(() => {
-    const c = [
-      !!prefs.castingBrand,
-      !!(prefs.castingVibe && (prefs.castingVibe.editorial > 0 || prefs.castingVibe.commercial > 0 || prefs.castingVibe.runway > 0)),
-      !!prefs.gender,
-      !!(prefs.age && prefs.ethnicity),
-      !!prefs.bodyType,
-      !!prefs.faceShape,
-      !!prefs.skinTone,
-      !!(prefs.skinTexture || prefs.skinFinish),
-      !!prefs.eyeColor,
-      !!prefs.eyeColor,
-      !!prefs.hairColor,
-      !!prefs.hairStyle,
-    ];
-    return Math.round((c.filter(Boolean).length / 12) * 100);
-  }, [prefs]);
+export function ModelEditorOverlay({
+  itemId,
+  imageUrl,
+  label,
+  onClose,
+}: ModelEditorOverlayProps) {
+  const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const posStart = useRef({ x: 0, y: 0 });
 
   // Close on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !lockModal.isOpen) onClose();
+      if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, lockModal.isOpen]);
+  }, [onClose]);
 
   // Prevent body scroll while overlay is open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
+
+  // Zoom controls
+  const handleZoomIn = useCallback(() => {
+    setZoom((z) => Math.min(z + 0.25, 4));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom((z) => Math.max(z - 0.25, 0.25));
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    setZoom(1);
+    setPosition({ x: 0, y: 0 });
+  }, []);
+
+  // Mouse wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoom((z) => Math.max(0.25, Math.min(4, z + delta)));
+  }, []);
+
+  // Pan drag
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    posStart.current = { ...position };
+  }, [position]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPosition({
+      x: posStart.current.x + (e.clientX - dragStart.current.x),
+      y: posStart.current.y + (e.clientY - dragStart.current.y),
+    });
+  }, [isDragging]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Download
+  const handleDownload = useCallback(async () => {
+    if (!imageUrl) return;
+    try {
+      const res = await fetch(imageUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${label || 'model'}-${itemId}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Image downloaded');
+    } catch {
+      toast.error('Failed to download image');
+    }
+  }, [imageUrl, label, itemId]);
 
   return (
     <>
@@ -152,6 +136,8 @@ export function ModelEditorOverlay({ itemId, onClose }: ModelEditorOverlayProps)
           width: '92%',
           height: '92%',
           background: '#FAFAF8',
+          backgroundImage: 'radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)',
+          backgroundSize: '20px 20px',
           borderRadius: 16,
           border: '1px solid rgba(0,0,0,0.08)',
           boxShadow: '0 24px 80px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.06)',
@@ -172,102 +158,171 @@ export function ModelEditorOverlay({ itemId, onClose }: ModelEditorOverlayProps)
           <div className="flex items-center gap-3">
             <Maximize2 size={14} style={{ color: '#71716A' }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
-              Model Editor
+              {label || 'Model'}
             </span>
-            {currentAssets.length > 0 && (
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Zoom controls */}
+            <div
+              className="flex items-center gap-1 px-2 py-1 rounded-lg"
+              style={{
+                background: 'rgba(0,0,0,0.03)',
+                border: '1px solid rgba(0,0,0,0.06)',
+              }}
+            >
+              <button
+                onClick={handleZoomOut}
+                className="w-6 h-6 rounded flex items-center justify-center"
+                style={{ color: '#71716A', transition: 'color 0.15s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#1a1a1a')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#71716A')}
+                title="Zoom out"
+              >
+                <ZoomOut size={14} strokeWidth={1.5} />
+              </button>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#71716A', minWidth: 36, textAlign: 'center' }}>
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                onClick={handleZoomIn}
+                className="w-6 h-6 rounded flex items-center justify-center"
+                style={{ color: '#71716A', transition: 'color 0.15s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#1a1a1a')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#71716A')}
+                title="Zoom in"
+              >
+                <ZoomIn size={14} strokeWidth={1.5} />
+              </button>
+              <button
+                onClick={handleResetView}
+                className="w-6 h-6 rounded flex items-center justify-center"
+                style={{ color: '#71716A', transition: 'color 0.15s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#1a1a1a')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#71716A')}
+                title="Reset view"
+              >
+                <RotateCcw size={13} strokeWidth={1.5} />
+              </button>
+            </div>
+
+            {/* Download */}
+            <button
+              onClick={handleDownload}
+              className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ color: '#71716A', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.06)';
+                e.currentTarget.style.color = '#1a1a1a';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#71716A';
+              }}
+              title="Download"
+            >
+              <Download size={15} strokeWidth={1.5} />
+            </button>
+
+            {/* Close */}
+            <button
+              onClick={onClose}
+              className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ color: '#71716A', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.06)';
+                e.currentTarget.style.color = '#1a1a1a';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#71716A';
+              }}
+              title="Close (Esc)"
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
+          </div>
+        </div>
+
+        {/* Image viewer area */}
+        <div
+          className="flex-1 flex items-center justify-center overflow-hidden"
+          style={{
+            cursor: isDragging ? 'grabbing' : 'grab',
+          }}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={label || 'Model'}
+              draggable={false}
+              className="select-none"
+              style={{
+                maxWidth: '80%',
+                maxHeight: '85%',
+                objectFit: 'contain',
+                borderRadius: 12,
+                boxShadow: '0 8px 40px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06)',
+                transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+                transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+                pointerEvents: 'none',
+              }}
+            />
+          ) : (
+            <div
+              className="flex flex-col items-center gap-3"
+              style={{ color: '#a1a19a' }}
+            >
+              <div
+                className="w-20 h-20 rounded-2xl flex items-center justify-center"
+                style={{ background: 'rgba(0,0,0,0.03)' }}
+              >
+                <Maximize2 size={28} strokeWidth={1} style={{ color: '#ccc' }} />
+              </div>
+              <p style={{ fontSize: 14, fontWeight: 500 }}>No image available</p>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom bar — keyboard hints */}
+        <div
+          className="flex items-center justify-center gap-4 flex-shrink-0"
+          style={{
+            height: 36,
+            borderTop: '1px solid rgba(0,0,0,0.04)',
+            background: 'rgba(255,255,255,0.7)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          {[
+            { key: 'Scroll', label: 'Zoom' },
+            { key: 'Drag', label: 'Pan' },
+            { key: 'Esc', label: 'Close' },
+          ].map(({ key, label: l }) => (
+            <div key={key} className="flex items-center gap-1.5">
               <span
                 style={{
-                  fontSize: 11,
-                  color: '#71716A',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: '#a1a19a',
                   background: 'rgba(0,0,0,0.04)',
-                  padding: '2px 8px',
-                  borderRadius: 6,
+                  padding: '1px 5px',
+                  borderRadius: 4,
+                  letterSpacing: '0.03em',
                 }}
               >
-                {currentAssets.length} view{currentAssets.length !== 1 ? 's' : ''}
+                {key}
               </span>
-            )}
-          </div>
-
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{
-              color: '#71716A',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(0,0,0,0.06)';
-              e.currentTarget.style.color = '#1a1a1a';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#71716A';
-            }}
-            title="Close (Esc)"
-          >
-            <X size={16} strokeWidth={1.5} />
-          </button>
-        </div>
-
-        {/* Content area — ImageViewer + MasterPromptPanel */}
-        <div className="flex-1 flex min-h-0">
-          {/* Center — Image Viewer */}
-          <div className="flex-1 min-w-0 h-full relative">
-            <ImageViewerPanel
-              currentImageUrl={currentImageUrl ?? undefined}
-              currentAssets={currentAssets}
-              genState={genState}
-              isViewLocked={isViewLocked}
-              hasDownstreamDependencies={hasDownstreamDependencies}
-              isIterationAllowed={isIterationAllowed}
-              isMasking={isMasking}
-              maskPathsCount={maskPaths.length}
-              formProgress={formProgress}
-              nextStage={nextStage}
-              canvasRef={canvasRef}
-              imageRef={imageRef}
-              handlePointerDown={handlePointerDown}
-              handlePointerMove={handlePointerMove}
-              handlePointerUp={handlePointerUp}
-              handleUndo={handleUndo}
-              handleRedo={handleRedo}
-              handleRetry={handleRetry}
-              handleGenerate={handleGenerate}
-              handleEnhance={handleEnhance}
-              handleRefineSubmit={handleRefineSubmit}
-              canUndo={canUndo}
-              canRedo={canRedo}
-            />
-          </div>
-
-          {/* Right — Master Prompt Panel */}
-          <div
-            className="hidden lg:flex flex-col flex-shrink-0"
-            style={{
-              width: 300,
-              borderLeft: '1px solid rgba(0,0,0,0.06)',
-              background: '#fff',
-            }}
-          >
-            <MasterPromptPanel />
-          </div>
+              <span style={{ fontSize: 11, color: '#a1a19a' }}>{l}</span>
+            </div>
+          ))}
         </div>
       </div>
-
-      {/* Modals (above the popout) */}
-      <StageLockModal
-        isOpen={lockModal.isOpen}
-        title={lockModal.title}
-        message={lockModal.message}
-        onConfirm={lockModal.onConfirm}
-        onCancel={closeLockModal}
-      />
-      <CreditTopupModal
-        isOpen={isTopupOpen}
-        onClose={() => setIsTopupOpen(false)}
-        currentBalance={creditsData?.balance || 0}
-      />
 
       {/* Popout animation keyframes */}
       <style>{`
