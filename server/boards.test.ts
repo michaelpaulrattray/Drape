@@ -118,7 +118,7 @@ describe("boards", () => {
       const caller = appRouter.createCaller(createAuthContext(107));
       const { id } = await caller.boards.create({ startedWith: "casting" });
 
-      await caller.boards.update({ id, name: "Renamed Board", description: "New desc" });
+      await caller.boards.update({ boardId: id, name: "Renamed Board", description: "New desc" });
 
       const board = await caller.boards.get({ id });
       expect(board.name).toBe("Renamed Board");
@@ -150,7 +150,7 @@ describe("boards", () => {
       const caller = appRouter.createCaller(createAuthContext(109));
       const { id } = await caller.boards.create({ startedWith: "casting", name: "ToDelete" });
 
-      await caller.boards.delete({ id });
+      await caller.boards.delete({ boardId: id });
 
       await expect(caller.boards.get({ id })).rejects.toThrow(TRPCError);
     });

@@ -16,6 +16,7 @@ import ModeratorDashboard from "./pages/ModeratorDashboard";
 import AdminChangeRequests from "./pages/AdminChangeRequests";
 import AdminOverview from "./pages/AdminOverview";
 import AdminInviteCodes from "./pages/AdminInviteCodes";
+import AppLobby from "./pages/AppLobby";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import BugReportButton from "./components/BugReportButton";
 
@@ -32,7 +33,11 @@ function Router() {
           <Route path="/login" component={Login} />
           <Route path="/verify-email" component={VerifyEmail} />
 
-          {/* Unified Drape Studio */}
+          {/* Board-based canvas */}
+          <Route path="/app" component={AppLobby} />
+          <Route path="/app/board/:id" component={NotFound} />{/* Step 5: replace with BoardPage */}
+
+          {/* Classic Drape Studio (fallback) */}
           <Route path="/studio" component={DrapeStudio} />
 
           {/* Admin */}

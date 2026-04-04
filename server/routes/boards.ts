@@ -109,21 +109,22 @@ export const boardsRouter = router({
   /** Update board metadata (name, description, viewport) */
   update: protectedProcedure
     .input(z.object({
-      id: z.number().int().positive(),
+      boardId: z.number().int().positive(),
       name: z.string().max(128).optional(),
       description: z.string().max(1000).optional(),
+      status: z.enum(["active", "archived"]).optional(),
       thumbnailUrl: z.string().url().optional(),
       thumbnailKey: z.string().max(256).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      await requireBoardOwnership(input.id, ctx.user.id);
-      const { id, ...data } = input;
+      await requireBoardOwnership(input.boardId, ctx.user.id);
+      const { boardId, ...data } = input;
       // Filter out undefined values
       const cleanData = Object.fromEntries(
         Object.entries(data).filter(([_, v]) => v !== undefined)
       );
       if (Object.keys(cleanData).length > 0) {
-        await updateBoard(id, cleanData);
+        await updateBoard(boardId, cleanData);
       }
       return { success: true };
     }),
@@ -158,11 +159,11 @@ export const boardsRouter = router({
 
   /** Permanently delete a board and all its items */
   delete: protectedProcedure
-    .input(z.object({ id: z.number().int().positive() }))
+    .input(z.object({ boardId: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
-      await requireBoardOwnership(input.id, ctx.user.id);
-      await deleteBoard(input.id);
-      log.info({ userId: ctx.user.id, boardId: input.id }, "Board deleted");
+      await requireBoardOwnership(input.boardId, ctx.user.id);
+      await deleteBoard(input.boardId);
+      log.info({ userId: ctx.user.id, boardId: input.boardId }, "Board deleted");
       return { success: true };
     }),
 

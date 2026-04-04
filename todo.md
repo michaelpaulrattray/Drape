@@ -290,7 +290,7 @@
 ## Canvas Board System — Phase 1
 - [x] Step 1: Add boards + board_items tables to schema, push migration
 - [x] Step 2: Server procedures (CRUD for boards + items) + vitest tests (all 1538 passing)
-- [ ] Step 3: Board lobby page (/app)
+- [x] Step 3: Board lobby page (/app) — BoardLobby, BoardCard, AppLobby page, /app route wired
 - [ ] Step 4: Canvas engine (React Flow integration)
 - [ ] Step 5: Board page shell (/app/board/:id)
 - [ ] Step 6: Wire casting tool into board
