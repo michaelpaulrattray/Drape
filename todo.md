@@ -291,7 +291,7 @@
 - [x] Step 1: Add boards + board_items tables to schema, push migration
 - [x] Step 2: Server procedures (CRUD for boards + items) + vitest tests (all 1538 passing)
 - [x] Step 3: Board lobby page (/app) — BoardLobby, BoardCard, AppLobby page, /app route wired
-- [ ] Step 4: Canvas engine (React Flow integration)
+- [x] Step 4: Canvas engine (React Flow integration) — @xyflow/react installed, BoardItemNode + BoardCanvas built, zero TS errors
 - [ ] Step 5: Board page shell (/app/board/:id)
 - [ ] Step 6: Wire casting tool into board
 - [ ] Step 7: Wire wardrobe tool into board
