@@ -277,11 +277,10 @@ export function BoardCanvas({
 
   return (
     <div
-      className={className}
+      className={`${className ?? ''} ${crosshairCursor ? 'placement-mode' : ''}`}
       style={{
         width: '100%',
         height: '100%',
-        ...(crosshairCursor ? { cursor: 'crosshair' } : {}),
       }}
     >
       <ReactFlow

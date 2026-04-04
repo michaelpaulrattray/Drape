@@ -434,3 +434,4 @@
 - [x] Wire Frame creation into toolbar (add 'frame' to CanvasToolId, replace PlusCircle with Frame icon)
 - [x] Wire Note + Frame toolbar clicks to create nodes at viewport center (not random position)
 - [x] Click-to-place mode for Note/Frame: cursor changes to crosshair, click canvas to place, then revert to Select
+- [x] Bug: Placement mode crosshair cursor overridden by React Flow's grab cursor — needs CSS specificity fix

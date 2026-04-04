@@ -950,3 +950,11 @@ input[type="range"].slider-obsidian::-moz-range-thumb:hover {
 .group:hover .video-play-icon {
   transform: scale(1.1);
 }
+
+/* Placement mode — override React Flow's grab cursor with crosshair */
+.placement-mode .react-flow__pane,
+.placement-mode .react-flow__node,
+.placement-mode .react-flow__renderer,
+.placement-mode .react-flow {
+  cursor: crosshair !important;
+}
