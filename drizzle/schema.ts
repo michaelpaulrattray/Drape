@@ -718,3 +718,70 @@ export const wardrobeLooks = mysqlTable("wardrobe_looks", {
 
 export type WardrobeLook = typeof wardrobeLooks.$inferSelect;
 export type InsertWardrobeLook = typeof wardrobeLooks.$inferInsert;
+
+// ============================================================================
+// CANVAS BOARDS (Phase 1 — persistent project workspaces)
+// ============================================================================
+
+/**
+ * Boards — persistent project workspaces that group assets across tools.
+ * Each board is a canvas where models, garments, and VTO results live together.
+ */
+export const boards = mysqlTable("boards", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 128 }).notNull().default("Untitled Board"),
+  description: text("description"),
+  thumbnailUrl: text("thumbnailUrl"), // S3 URL — auto-generated from first asset
+  thumbnailKey: varchar("thumbnailKey", { length: 256 }),
+  startedWith: mysqlEnum("startedWith", ["casting", "wardrobe"]).notNull(),
+  status: mysqlEnum("status", ["active", "archived"]).default("active").notNull(),
+  // Canvas viewport state (for resume)
+  viewportX: int("viewportX").default(0),
+  viewportY: int("viewportY").default(0),
+  viewportZoom: int("viewportZoom").default(100), // stored as percentage (100 = 1.0x)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ([
+  index("idx_boards_user_status").on(table.userId, table.status),
+]));
+
+export type Board = typeof boards.$inferSelect;
+export type InsertBoard = typeof boards.$inferInsert;
+
+/**
+ * Board items — individual assets placed on a board canvas.
+ * Each item represents a model, garment, VTO result, reference image, or iteration.
+ * Items link back to their source records via optional foreign keys.
+ */
+export const BOARD_ITEM_TYPES = ["model", "garment", "vto_result", "reference", "iteration", "note"] as const;
+export type BoardItemType = typeof BOARD_ITEM_TYPES[number];
+
+export const boardItems = mysqlTable("board_items", {
+  id: int("id").autoincrement().primaryKey(),
+  boardId: int("boardId").notNull(),
+  type: mysqlEnum("type", ["model", "garment", "vto_result", "reference", "iteration", "note"]).notNull(),
+  label: varchar("label", { length: 256 }),
+  imageUrl: text("imageUrl"), // S3 URL of the visual (null for notes)
+  imageKey: varchar("imageKey", { length: 256 }),
+  // Canvas positioning
+  positionX: int("positionX").default(0).notNull(),
+  positionY: int("positionY").default(0).notNull(),
+  width: int("width").default(280).notNull(),
+  height: int("height").default(280).notNull(),
+  zIndex: int("zIndex").default(0).notNull(),
+  // Relationships — optional back-references to source records
+  parentItemId: int("parentItemId"), // Self-ref: links iteration → parent, VTO → model
+  sourceModelId: int("sourceModelId"), // FK → models (if this item is a cast model)
+  sourceGarmentId: int("sourceGarmentId"), // FK → wardrobe_garments (if this item is a garment)
+  sourceSessionId: int("sourceSessionId"), // FK → wardrobe_sessions (if this item is a VTO result)
+  sourceLookId: int("sourceLookId"), // FK → wardrobe_looks (if this item is a saved look)
+  // Tool-specific metadata (casting preferences, style notes, etc.)
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  index("idx_board_items_board").on(table.boardId, table.type),
+]));
+
+export type BoardItem = typeof boardItems.$inferSelect;
+export type InsertBoardItem = typeof boardItems.$inferInsert;

@@ -267,6 +267,13 @@
       "when": 1775232520120,
       "tag": "0037_wide_scarlet_spider",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1775281043800,
+      "tag": "0038_loose_joystick",
+      "breakpoints": true
     }
   ]
 }

@@ -286,3 +286,15 @@
 - [x] Remove /dashboard page and all traces — deleted Dashboard.tsx, removed import+route from App.tsx, renamed nav labels to Studio
 - [x] Clean up unused DashboardLayout + DashboardLayoutSkeleton + AccountFrozenBanner + features/dashboard/ directory — all orphaned, deleted
 - [x] Audit and remove legacy routes — deleted /casting-studio redirect + CastingStudioRedirect component, cleaned up Redirect import
+
+## Canvas Board System — Phase 1
+- [x] Step 1: Add boards + board_items tables to schema, push migration
+- [ ] Step 2: Server procedures (CRUD for boards + items)
+- [ ] Step 3: Board lobby page (/app)
+- [ ] Step 4: Canvas engine (React Flow integration)
+- [ ] Step 5: Board page shell (/app/board/:id)
+- [ ] Step 6: Wire casting tool into board
+- [ ] Step 7: Wire wardrobe tool into board
+- [ ] Step 8: Wire export into board
+- [ ] Step 9: Board auto-save + resume
+- [ ] Step 10: Polish + lobby toggle
