@@ -115,7 +115,7 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
                         <Link href="/studio">
                           <span className="flex items-center cursor-pointer w-full">
                             <User className="mr-2 h-4 w-4" />
-                            Dashboard
+                            Studio
                           </span>
                         </Link>
                       </DropdownMenuItem>
@@ -200,7 +200,7 @@ export default function Navigation({ variant = "default" }: NavigationProps) {
                         className="block text-lg font-medium py-2 cursor-pointer"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        Dashboard
+                        Studio
                       </span>
                     </Link>
                     <button

@@ -283,3 +283,4 @@
 - [x] Lighten active state: replace solid black bg with subtle tint (like hover), darken text color on selection
 - [x] Increase sidebar logo size — bumped from 18px to 24px height
 - [x] Bug: Sidebar highlight bleeds — fixed: root cause was glow detection useEffect firing on activeTool changes (not just canvas changes), causing false-positive "newly unlocked" glow on sibling tools for 4.5s. Removed activeTool from useEffect deps in both AppSidebar and ToolRail, using ref instead. Also removed CSS transitions from active state changes.
+- [x] Remove /dashboard page and all traces — deleted Dashboard.tsx, removed import+route from App.tsx, renamed nav labels to Studio

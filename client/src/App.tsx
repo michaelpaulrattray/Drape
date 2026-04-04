@@ -9,7 +9,6 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import VerifyEmail from "./pages/VerifyEmail";
-import Dashboard from "./pages/Dashboard";
 import DrapeStudio from "./pages/DrapeStudio";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -25,10 +24,6 @@ function CastingStudioRedirect() {
   return <Redirect to="/studio?tool=casting" />;
 }
 
-/** Legacy redirect: /dashboard → /studio */
-function DashboardRedirect() {
-  return <Redirect to="/studio" />;
-}
 
 function Router() {
   const [location] = useLocation();
@@ -41,9 +36,6 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/login" component={Login} />
           <Route path="/verify-email" component={VerifyEmail} />
-
-          {/* Dashboard → redirect to Studio */}
-          <Route path="/dashboard" component={DashboardRedirect} />
 
           {/* Unified Drape Studio */}
           <Route path="/studio" component={DrapeStudio} />
