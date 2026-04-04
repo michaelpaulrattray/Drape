@@ -340,3 +340,6 @@
 - [x] Fix: Canvas background too white/blinding — warm it up
 - [x] Fix: Canvas dots too small — increase size
 - [x] Feature: Add node dropdown menu on + click and right-click (Luma/ElevenLabs style)
+
+### Step 6 Improvements (Round 8)
+- [x] Redesign AddNodeMenu: dark glassmorphic style matching ElevenLabs reference
