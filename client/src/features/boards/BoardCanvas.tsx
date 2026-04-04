@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   Controls,
+  Background,
   useNodesState,
   useEdgesState,
   type Node,
@@ -201,13 +202,7 @@ export function BoardCanvas({
   return (
     <div
       className={className}
-      style={{
-        width: '100%',
-        height: '100%',
-        background: '#f5f5f4',
-        backgroundImage: 'radial-gradient(circle, #c8c5c0 0.7px, transparent 0.7px)',
-        backgroundSize: '20px 20px',
-      }}
+      style={{ width: '100%', height: '100%' }}
     >
       <ReactFlow
         nodes={nodes}
@@ -230,12 +225,16 @@ export function BoardCanvas({
         selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}
         style={{
-          background: 'transparent',
-          // Override React Flow's internal CSS vars to ensure our container bg shows through
-          '--xy-background-color': 'transparent',
-          '--xy-background-color-props': 'transparent',
+          '--xy-background-color': '#f5f5f4',
+          '--xy-background-color-props': '#f5f5f4',
         } as React.CSSProperties}
       >
+        <Background
+          variant={"dots" as any}
+          gap={20}
+          size={1}
+          color="#c8c5c0"
+        />
         <Controls
           showInteractive={false}
           style={{
@@ -245,7 +244,6 @@ export function BoardCanvas({
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
           }}
         />
-
       </ReactFlow>
     </div>
   );

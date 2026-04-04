@@ -332,3 +332,6 @@
 ### Step 6 Bug Fixes (Round 5)
 - [x] Fix: Remove MiniMap from bottom-right corner of canvas
 - [x] Fix: Canvas dots are invisible — increase size/contrast to match reference
+
+### Step 6 Bug Fixes (Round 6)
+- [x] Fix: Canvas dots still not visible — React Flow pane likely covering container background
