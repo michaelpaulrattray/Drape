@@ -14,7 +14,6 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   type Node,
@@ -206,8 +205,8 @@ export function BoardCanvas({
         width: '100%',
         height: '100%',
         background: '#f5f5f4',
-        backgroundImage: 'radial-gradient(circle, #d6d3d1 0.5px, transparent 0.5px)',
-        backgroundSize: '24px 24px',
+        backgroundImage: 'radial-gradient(circle, #c8c5c0 0.7px, transparent 0.7px)',
+        backgroundSize: '20px 20px',
       }}
     >
       <ReactFlow
@@ -246,15 +245,7 @@ export function BoardCanvas({
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
           }}
         />
-        <MiniMap
-          nodeColor={() => '#e5e0d8'}
-          maskColor="rgba(250,249,246,0.7)"
-          style={{
-            background: '#fff',
-            borderRadius: 8,
-            border: '1px solid rgba(0,0,0,0.08)',
-          }}
-        />
+
       </ReactFlow>
     </div>
   );

@@ -328,3 +328,7 @@
 ### Step 6 Bug Fixes (Round 4)
 - [x] Fix: Canvas background should match reference — subtle light cross-hatch dot grid, not bold dots
 - [x] Fix: Empty canvas state should be minimal "+" button with "Click to add a node" text, not two-button overlay
+
+### Step 6 Bug Fixes (Round 5)
+- [x] Fix: Remove MiniMap from bottom-right corner of canvas
+- [x] Fix: Canvas dots are invisible — increase size/contrast to match reference
