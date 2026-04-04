@@ -385,3 +385,8 @@
 - [x] Rename "Style Outfit" to "Wardrobe"
 - [x] Make Rename action work (custom event dispatches to BoardItemNode inline edit)
 - [x] Remove 3-dot menu from BoardItemNode (right-click replaces it)
+
+### Node Context Menu — Bug Fixes Round 3
+- [x] Fix Download Image: server proxy endpoint with Content-Disposition: attachment
+- [x] Fix Copy Image: proxy fetch bypasses CORS, PNG blob written to clipboard
+- [x] Redesign Info as NodeInfoPanel popout modal — shows model specs, master prompt, preferences, metadata

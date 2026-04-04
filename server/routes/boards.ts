@@ -21,6 +21,8 @@ import {
   batchUpdateBoardItemPositions,
   deleteBoardItem,
   deleteBoardItems,
+  getModelById,
+  getModelAssets,
 } from "../db";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -308,5 +310,57 @@ export const boardsRouter = router({
       await requireBoardOwnership(input.boardId, ctx.user.id);
       await deleteBoardItems(input.itemIds);
       return { success: true };
+    }),
+
+  /** Get linked model info for a board item (specs, master prompt, assets) */
+  getItemModelInfo: protectedProcedure
+    .input(z.object({ itemId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      const item = await getBoardItemById(input.itemId);
+      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+
+      // Verify board ownership
+      await requireBoardOwnership(item.boardId, ctx.user.id);
+
+      if (!item.sourceModelId) {
+        return {
+          item: {
+            id: item.id,
+            type: item.type,
+            label: item.label,
+            imageUrl: item.imageUrl,
+            metadata: item.metadata,
+            createdAt: item.createdAt,
+          },
+          model: null,
+        };
+      }
+
+      const model = await getModelById(item.sourceModelId);
+      const assets = model ? await getModelAssets(item.sourceModelId) : [];
+
+      return {
+        item: {
+          id: item.id,
+          type: item.type,
+          label: item.label,
+          imageUrl: item.imageUrl,
+          metadata: item.metadata,
+          createdAt: item.createdAt,
+        },
+        model: model
+          ? {
+              id: model.id,
+              name: model.name,
+              agencyId: model.agencyId,
+              masterPrompt: model.masterPrompt,
+              technicalSchema: model.technicalSchema,
+              preferences: model.preferences,
+              status: model.status,
+              createdAt: model.createdAt,
+            }
+          : null,
+        assetCount: assets.length,
+      };
     }),
 });

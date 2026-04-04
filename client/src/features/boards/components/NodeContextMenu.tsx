@@ -82,22 +82,24 @@ const VIEW_OPTIONS: { id: ViewAngle; label: string }[] = [
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
+/** Build a same-origin proxy URL to bypass CORS for S3 images */
+function proxyUrl(originalUrl: string, download = false): string {
+  const params = new URLSearchParams({ url: originalUrl });
+  if (download) params.set('download', '1');
+  return `/api/image-proxy?${params.toString()}`;
+}
+
 async function downloadImage(url: string, filename: string) {
   try {
-    const res = await fetch(url, { mode: 'cors' });
-    if (!res.ok) throw new Error('Fetch failed');
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
+    // Use server proxy — sets Content-Disposition: attachment
     const a = document.createElement('a');
-    a.href = blobUrl;
+    a.href = proxyUrl(url, true);
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
-    toast.success('Image downloaded');
+    toast.success('Image downloading...');
   } catch {
-    // Fallback: open in new tab
     window.open(url, '_blank');
     toast.info('Opened image in new tab');
   }
@@ -105,8 +107,9 @@ async function downloadImage(url: string, filename: string) {
 
 async function copyImageToClipboard(url: string) {
   try {
-    const res = await fetch(url, { mode: 'cors' });
-    if (!res.ok) throw new Error('Fetch failed');
+    // Fetch through our proxy (same-origin, no CORS issues)
+    const res = await fetch(proxyUrl(url));
+    if (!res.ok) throw new Error('Proxy fetch failed');
     const blob = await res.blob();
     // Convert to PNG for clipboard compatibility
     const pngBlob = blob.type === 'image/png'

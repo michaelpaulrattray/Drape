@@ -11,6 +11,7 @@ import { securityHeaders } from "../security/securityHeaders";
 import { correlationIdMiddleware } from "../security/correlationId";
 import { requestContextMiddleware } from "../logging/requestContextMiddleware";
 import heroProxyRouter from "../heroProxy";
+import imageProxyRouter from "../routes/imageProxy";
 import { healthHandler } from "../health";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("server");
@@ -220,6 +221,9 @@ async function startServer() {
 
   // Hero texture proxy (serves S3 images with CORS headers)
   app.use(heroProxyRouter);
+
+  // Image proxy for download/clipboard (bypasses CORS for S3 images)
+  app.use(imageProxyRouter);
 
   // tRPC API with centralized error logging
   app.use(

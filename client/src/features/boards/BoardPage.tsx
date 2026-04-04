@@ -19,6 +19,7 @@ import { CanvasToolbar, type CanvasToolId } from './components/CanvasToolbar';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
 import { NodeContextMenu, type NodeContextAction, type ViewAngle } from './components/NodeContextMenu';
+import { NodeInfoPanel } from './components/NodeInfoPanel';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -43,6 +44,7 @@ export function BoardPage() {
     nodeType: string;
     imageUrl: string | null;
   } | null>(null);
+  const [infoPanel, setInfoPanel] = useState<{ itemId: number; position: { x: number; y: number } } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -237,19 +239,11 @@ export function BoardPage() {
           break;
         }
         case 'info': {
-          const item = items?.find((i) => i.id === nodeId);
-          const meta = item?.metadata as Record<string, unknown> | null;
-          const infoLines = [
-            `Type: ${item?.type ?? 'unknown'}`,
-            `Label: ${item?.label ?? 'Untitled'}`,
-            item?.imageUrl ? `Image: ${item.imageUrl.substring(0, 60)}...` : null,
-            meta?.ethnicity ? `Ethnicity: ${meta.ethnicity}` : null,
-            meta?.gender ? `Gender: ${meta.gender}` : null,
-            meta?.age ? `Age: ${meta.age}` : null,
-            meta?.bodyType ? `Body: ${meta.bodyType}` : null,
-            meta?.hair ? `Hair: ${meta.hair}` : null,
-          ].filter(Boolean).join('\n');
-          toast.info(infoLines, { duration: 6000 });
+          // Open info panel near the context menu position
+          const pos = nodeContextMenu
+            ? { x: nodeContextMenu.x, y: nodeContextMenu.y }
+            : { x: 400, y: 300 };
+          setInfoPanel({ itemId: nodeId, position: pos });
           break;
         }
         case 'delete':
@@ -264,7 +258,7 @@ export function BoardPage() {
           break;
       }
     },
-    [handleItemDelete, items],
+    [handleItemDelete, items, nodeContextMenu],
   );
 
   const handleViewGenerate = useCallback(
@@ -526,6 +520,15 @@ export function BoardPage() {
             toast.info(`Iterating with: "${prompt}" — coming soon`);
           }}
           onClose={() => setNodeContextMenu(null)}
+        />
+      )}
+
+      {/* Node Info Panel — popout near the right-clicked image */}
+      {infoPanel && (
+        <NodeInfoPanel
+          itemId={infoPanel.itemId}
+          position={infoPanel.position}
+          onClose={() => setInfoPanel(null)}
         />
       )}
 
