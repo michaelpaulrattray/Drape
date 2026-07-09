@@ -12,18 +12,21 @@ import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("imageProxy");
 const router = Router();
 
-/** Only allow proxying from our own S3 bucket */
-const ALLOWED_HOSTS = [
-  "manus-storage.s3",
-  "manus-storage-",
-  ".amazonaws.com",
-  ".r2.cloudflarestorage.com",
-];
+/**
+ * Only allow proxying from our storage providers (S3 / R2 presigned URLs).
+ * Matched as exact hostname or dot-boundary suffix — never substring, which
+ * would let e.g. "s3.amazonaws.com.attacker.com" through.
+ */
+const ALLOWED_HOST_SUFFIXES = ["amazonaws.com", "r2.cloudflarestorage.com"];
 
-function isAllowedUrl(url: string): boolean {
+export function isAllowedUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return ALLOWED_HOSTS.some((h) => parsed.hostname.includes(h));
+    if (parsed.protocol !== "https:") return false;
+    const hostname = parsed.hostname.toLowerCase();
+    return ALLOWED_HOST_SUFFIXES.some(
+      (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`)
+    );
   } catch {
     return false;
   }
