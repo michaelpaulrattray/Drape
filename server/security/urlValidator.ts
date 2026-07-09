@@ -18,6 +18,25 @@ const ALLOWED_DOMAINS = [
 ];
 
 /**
+ * Exact hostnames that are also allowed. The R2 public bucket host is matched
+ * exactly (not as a `.r2.dev` suffix) so the proxy cannot be pointed at
+ * arbitrary third-party R2 buckets.
+ */
+function getR2PublicHost(): string | null {
+  const publicUrl = process.env.R2_PUBLIC_URL;
+  if (!publicUrl) return null;
+  try {
+    return new URL(publicUrl).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+const ALLOWED_HOSTNAMES = [getR2PublicHost()].filter(
+  (host): host is string => host !== null
+);
+
+/**
  * RFC 1918 / RFC 5735 private and reserved IP ranges.
  * These must never be fetched by the proxy to prevent SSRF.
  */
@@ -89,9 +108,9 @@ export function validateProxyUrl(urlString: string): UrlValidationResult {
   }
 
   // Check against allowed domain list
-  const isAllowed = ALLOWED_DOMAINS.some(domain =>
-    hostname.endsWith(domain)
-  );
+  const isAllowed =
+    ALLOWED_HOSTNAMES.includes(hostname) ||
+    ALLOWED_DOMAINS.some(domain => hostname.endsWith(domain));
 
   if (!isAllowed) {
     return {

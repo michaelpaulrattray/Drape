@@ -11,13 +11,19 @@ import type { Request, Response, NextFunction } from "express";
 
 const isDev = process.env.NODE_ENV === "development";
 
+// Public origin of the R2 storage bucket (e.g. https://pub-<hash>.r2.dev or a
+// custom domain). Derived from env so dev/prod buckets don't need code changes.
+const r2PublicOrigin = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
+
 /**
  * Content Security Policy directives.
  * 
  * Allows:
  * - Self-hosted resources
  * - Google Fonts (fonts.googleapis.com, fonts.gstatic.com)
- * - S3/CDN for images and media (*.amazonaws.com, *.manus.storage)
+ * - R2 public bucket for images (R2_PUBLIC_URL)
+ * - S3/CDN for images and media (*.amazonaws.com, *.manus.storage) — legacy
+ *   Manus-era content still references these
  * - Stripe.js for payment processing (js.stripe.com, *.stripe.com)
  * - Inline styles (required by Tailwind CSS and style attributes)
  * - Data URIs for images (used by some components)
@@ -38,7 +44,7 @@ const CSP_DIRECTIVES = [
   scriptSrc,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: blob: https://*.amazonaws.com https://*.manus.storage https://api.manus.im https://images.unsplash.com https://files.manuscdn.com https://*.cloudfront.net",
+  `img-src 'self' data: blob: ${r2PublicOrigin} https://*.amazonaws.com https://*.manus.storage https://api.manus.im https://images.unsplash.com https://files.manuscdn.com https://*.cloudfront.net`.replace(/\s{2,}/g, " "),
   "media-src 'self' blob: https://*.amazonaws.com https://*.manus.storage https://commondatastorage.googleapis.com",
   connectSrc,
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
