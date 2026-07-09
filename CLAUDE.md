@@ -34,6 +34,7 @@ Single Express server serves both the tRPC API and the client (Vite middleware i
   - `db/` — Drizzle ORM queries per domain; shared pool in `connection.ts` (MySQL via mysql2)
   - `casting/` — Gemini image-generation pipeline (queue, circuit breaker, prompts)
   - `wardrobe/` — garment digitization / VTO pipeline
+  - `storage.ts` — file storage on Cloudflare R2 via the S3 SDK (`storagePut`/`storageGet`/`storageDelete`; callers pass relative keys). Served URLs are public bucket URLs (`R2_PUBLIC_URL`), **not** presigned — they are persisted in DB records, so they must never expire. Static app assets (logos, swatches) live under `assets/` in the bucket, referenced via `ASSETS_BASE_URL` in `shared/const.ts`.
   - `stripe/`, `slack/`, `security/`, `logging/` (pino), `monitoring/`
 - `shared/` — constants and types shared client/server
 - `drizzle/` — schema (`schema.ts`) + migrations
@@ -74,6 +75,8 @@ Two login paths, both ending in a JWT (jose, HS256, signed with `JWT_SECRET`) se
 - `VITE_APP_ID` — any non-empty string; embedded in the session JWT and required by `verifySession` (empty value = every login silently rejected)
 - `GEMINI_API_KEY` — Google AI Studio key (all image generation)
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — Stripe (test-mode keys fine locally)
+- `R2_ENDPOINT`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` — Cloudflare R2 (S3 API) for all file storage (generated images, garments, avatars)
+- `R2_PUBLIC_URL` — the bucket's public URL (`https://pub-….r2.dev` or a custom domain); used to build served image URLs, the CSP `img-src`, and the image-proxy SSRF allowlist
 
 ### Optional .env vars (feature-gated)
 
@@ -88,7 +91,7 @@ Two login paths, both ending in a JWT (jose, HS256, signed with `JWT_SECRET`) se
 ### Manus-legacy vars (not needed locally)
 
 - `OAUTH_SERVER_URL` — Manus OAuth server (legacy login path in `sdk.ts`)
-- `BUILT_IN_FORGE_API_URL`, `BUILT_IN_FORGE_API_KEY` — Manus "Forge" proxy used by `server/storage.ts` (file storage), `_core/map.ts`, `_core/voiceTranscription.ts`; these features error without a replacement backend
+- `BUILT_IN_FORGE_API_URL`, `BUILT_IN_FORGE_API_KEY` — Manus "Forge" proxy, still referenced by `_core/map.ts` and `_core/voiceTranscription.ts` (those two features error without a replacement backend). File storage no longer uses Forge — `server/storage.ts` runs on R2.
 
 ### Windows notes
 
@@ -100,3 +103,4 @@ Two login paths, both ending in a JWT (jose, HS256, signed with `JWT_SECRET`) se
 - `vitePluginManusRuntime` was removed from `vite.config.ts` (hangs outside Manus). Don't re-add it; `vite-plugin-manus-runtime` may still appear in package.json devDependencies.
 - Session cookie: `sameSite` must be `lax` (not `none`) on plain-HTTP localhost — handled in `server/_core/cookies.ts`.
 - `VITE_APP_ID` empty → `verifySession` rejects every session with no visible error. Keep it set.
+- Forge file storage (resolved): `server/storage.ts` was rewritten against Cloudflare R2, so uploads/generation persistence work locally. Old content in the DB still points at `files.manuscdn.com` / cloudfront URLs — those stay in the CSP/SSRF allowlists until `scripts/migrate-storage-urls.ts` is run against production at cutover.
