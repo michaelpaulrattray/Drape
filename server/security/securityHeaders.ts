@@ -22,8 +22,9 @@ const r2PublicOrigin = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
  * - Self-hosted resources
  * - Google Fonts (fonts.googleapis.com, fonts.gstatic.com)
  * - R2 public bucket for images (R2_PUBLIC_URL)
- * - S3/CDN for images and media (*.amazonaws.com, *.manus.storage) — legacy
- *   Manus-era content still references these
+ * - S3/CDN for images and media (*.amazonaws.com, files.manuscdn.com,
+ *   *.cloudfront.net) — old DB records still reference these; drop at final
+ *   storage cutover (scripts/migrate-storage-urls.ts)
  * - Stripe.js for payment processing (js.stripe.com, *.stripe.com)
  * - Inline styles (required by Tailwind CSS and style attributes)
  * - Data URIs for images (used by some components)
@@ -36,16 +37,16 @@ const scriptSrc = isDev
 
 // In dev: allow WebSocket connections for Vite HMR
 const connectSrc = isDev
-  ? "connect-src 'self' https://api.stripe.com https://api.manus.im https://*.manus.storage ws://localhost:* ws://127.0.0.1:* https://manus-analytics.com"
-  : "connect-src 'self' https://api.stripe.com https://api.manus.im https://*.manus.storage https://manus-analytics.com";
+  ? "connect-src 'self' https://api.stripe.com ws://localhost:* ws://127.0.0.1:*"
+  : "connect-src 'self' https://api.stripe.com";
 
 const CSP_DIRECTIVES = [
   "default-src 'self'",
   scriptSrc,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  `img-src 'self' data: blob: ${r2PublicOrigin} https://*.amazonaws.com https://*.manus.storage https://api.manus.im https://images.unsplash.com https://files.manuscdn.com https://*.cloudfront.net`.replace(/\s{2,}/g, " "),
-  "media-src 'self' blob: https://*.amazonaws.com https://*.manus.storage https://commondatastorage.googleapis.com",
+  `img-src 'self' data: blob: ${r2PublicOrigin} https://*.amazonaws.com https://images.unsplash.com https://files.manuscdn.com https://*.cloudfront.net`.replace(/\s{2,}/g, " "),
+  "media-src 'self' blob: https://*.amazonaws.com https://commondatastorage.googleapis.com",
   connectSrc,
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
   "object-src 'none'",
@@ -78,8 +79,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   // CSP: Restrict resource loading to trusted origins
   res.setHeader("Content-Security-Policy", CSP_DIRECTIVES);
 
-  // Prevent clickjacking by disallowing framing
-  // In dev mode, allow framing for Manus preview panel
+  // Prevent clickjacking by disallowing framing (skipped in dev)
   if (!isDev) {
     res.setHeader("X-Frame-Options", "DENY");
   }

@@ -10,9 +10,10 @@
  * Trusted domains that the server is allowed to fetch from.
  * Only S3 and CDN domains used by the application.
  */
+// .manuscdn.com / .cloudfront.net: old DB records still reference these hosts;
+// remove at final storage cutover (scripts/migrate-storage-urls.ts).
 const ALLOWED_DOMAINS = [
   ".amazonaws.com",
-  ".manus.storage",
   ".manuscdn.com",
   ".cloudfront.net",
 ];

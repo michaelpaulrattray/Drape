@@ -79,7 +79,9 @@ describe("Security Headers Middleware", () => {
     const csp = cspCall![1] as string;
 
     expect(csp).toContain("https://*.amazonaws.com");
-    expect(csp).toContain("https://*.manus.storage");
+    // Legacy manuscdn stays until final storage cutover; manus.storage is gone
+    expect(csp).toContain("https://files.manuscdn.com");
+    expect(csp).not.toContain("manus.storage");
   });
 
   it("should allow Stripe in CSP script-src, connect-src, and frame-src", () => {

@@ -21,9 +21,10 @@ describe("validateProxyUrl — SSRF protection", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("allows manus.storage URLs", () => {
+  it("blocks manus.storage URLs (removed from allowlist)", () => {
     const result = validateProxyUrl("https://files.manus.storage/path/to/image.jpg");
-    expect(result.valid).toBe(true);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("allowlist");
   });
 
   it("allows manuscdn.com URLs", () => {
