@@ -12,6 +12,11 @@ const REQUIRED_VARS: Record<string, string> = {
   GEMINI_API_KEY: "all image generation",
   STRIPE_SECRET_KEY: "billing",
   STRIPE_WEBHOOK_SECRET: "Stripe webhook signature verification",
+  R2_ENDPOINT: "file storage (generated images, garments, avatars)",
+  R2_BUCKET: "file storage (generated images, garments, avatars)",
+  R2_PUBLIC_URL: "served image URLs cannot be built",
+  R2_ACCESS_KEY_ID: "file storage uploads/deletes",
+  R2_SECRET_ACCESS_KEY: "file storage uploads/deletes",
 };
 
 /** Optional vars that degrade a feature when absent — warn, don't exit. */
@@ -57,6 +62,12 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // Cloudflare R2 storage (S3-compatible)
+  r2Endpoint: process.env.R2_ENDPOINT ?? "",
+  r2Bucket: process.env.R2_BUCKET ?? "",
+  r2PublicUrl: process.env.R2_PUBLIC_URL ?? "",
+  r2AccessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
+  r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   // Stripe configuration
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",

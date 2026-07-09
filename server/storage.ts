@@ -1,72 +1,69 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
+// Storage helpers backed by Cloudflare R2 (S3-compatible API).
+// Replaces the legacy Manus Forge storage proxy. The exported interface is
+// unchanged: callers pass relative keys and persist the returned URLs.
+//
+// URLs are public bucket URLs (R2_PUBLIC_URL), not presigned: callers store
+// them in database records and serve them indefinitely, so expiring URLs
+// would break stored content.
 
-import { ENV } from './_core/env';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
+import { ENV } from "./_core/env";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("storage");
 
-type StorageConfig = { baseUrl: string; apiKey: string };
+type StorageConfig = {
+  endpoint: string;
+  bucket: string;
+  publicUrl: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+};
 
 function getStorageConfig(): StorageConfig {
-  const baseUrl = ENV.forgeApiUrl;
-  const apiKey = ENV.forgeApiKey;
+  const { r2Endpoint, r2Bucket, r2PublicUrl, r2AccessKeyId, r2SecretAccessKey } = ENV;
 
-  if (!baseUrl || !apiKey) {
+  if (!r2Endpoint || !r2Bucket || !r2PublicUrl || !r2AccessKeyId || !r2SecretAccessKey) {
     throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
+      "R2 storage credentials missing: set R2_ENDPOINT, R2_BUCKET, R2_PUBLIC_URL, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY"
     );
   }
 
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
+  return {
+    endpoint: r2Endpoint,
+    bucket: r2Bucket,
+    publicUrl: r2PublicUrl.replace(/\/+$/, ""),
+    accessKeyId: r2AccessKeyId,
+    secretAccessKey: r2SecretAccessKey,
+  };
 }
 
-function buildUploadUrl(baseUrl: string, relKey: string): URL {
-  const url = new URL("v1/storage/upload", ensureTrailingSlash(baseUrl));
-  url.searchParams.set("path", normalizeKey(relKey));
-  return url;
-}
+let cachedClient: S3Client | null = null;
 
-async function buildDownloadUrl(
-  baseUrl: string,
-  relKey: string,
-  apiKey: string
-): Promise<string> {
-  const downloadApiUrl = new URL(
-    "v1/storage/downloadUrl",
-    ensureTrailingSlash(baseUrl)
-  );
-  downloadApiUrl.searchParams.set("path", normalizeKey(relKey));
-  const response = await fetch(downloadApiUrl, {
-    method: "GET",
-    headers: buildAuthHeaders(apiKey),
-  });
-  return (await response.json()).url;
-}
-
-function ensureTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value : `${value}/`;
+function getClient(config: StorageConfig): S3Client {
+  if (!cachedClient) {
+    cachedClient = new S3Client({
+      region: "auto",
+      endpoint: config.endpoint,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+  }
+  return cachedClient;
 }
 
 function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
 }
 
-function toFormData(
-  data: Buffer | Uint8Array | string,
-  contentType: string,
-  fileName: string
-): FormData {
-  const blob =
-    typeof data === "string"
-      ? new Blob([data], { type: contentType })
-      : new Blob([data as any], { type: contentType });
-  const form = new FormData();
-  form.append("file", blob, fileName || "file");
-  return form;
-}
-
-function buildAuthHeaders(apiKey: string): HeadersInit {
-  return { Authorization: `Bearer ${apiKey}` };
+function buildPublicUrl(publicUrl: string, key: string): string {
+  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
+  return `${publicUrl}/${encodedKey}`;
 }
 
 export async function storagePut(
@@ -74,53 +71,47 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+  const config = getStorageConfig();
   const key = normalizeKey(relKey);
-  const uploadUrl = buildUploadUrl(baseUrl, key);
-  const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
-  const response = await fetch(uploadUrl, {
-    method: "POST",
-    headers: buildAuthHeaders(apiKey),
-    body: formData,
-  });
+  const body = typeof data === "string" ? Buffer.from(data) : data;
 
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new Error(
-      `Storage upload failed (${response.status} ${response.statusText}): ${message}`
+  try {
+    await getClient(config).send(
+      new PutObjectCommand({
+        Bucket: config.bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      })
     );
+  } catch (err: any) {
+    throw new Error(`Storage upload failed for ${key}: ${err?.message ?? err}`);
   }
-  const url = (await response.json()).url;
-  return { key, url };
+
+  return { key, url: buildPublicUrl(config.publicUrl, key) };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+export async function storageGet(
+  relKey: string
+): Promise<{ key: string; url: string }> {
+  const config = getStorageConfig();
   const key = normalizeKey(relKey);
-  return {
-    key,
-    url: await buildDownloadUrl(baseUrl, key, apiKey),
-  };
+  return { key, url: buildPublicUrl(config.publicUrl, key) };
 }
 
-
-export async function storageDelete(relKey: string): Promise<{ success: boolean }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+export async function storageDelete(
+  relKey: string
+): Promise<{ success: boolean }> {
+  const config = getStorageConfig();
   const key = normalizeKey(relKey);
-  
-  const deleteUrl = new URL("v1/storage/delete", ensureTrailingSlash(baseUrl));
-  deleteUrl.searchParams.set("path", key);
-  
-  const response = await fetch(deleteUrl, {
-    method: "DELETE",
-    headers: buildAuthHeaders(apiKey),
-  });
 
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    log.warn(`Storage delete failed (${response.status}): ${message}`);
+  try {
+    await getClient(config).send(
+      new DeleteObjectCommand({ Bucket: config.bucket, Key: key })
+    );
+    return { success: true };
+  } catch (err: any) {
+    log.warn(`Storage delete failed for ${key}: ${err?.message ?? err}`);
     return { success: false };
   }
-  
-  return { success: true };
 }
