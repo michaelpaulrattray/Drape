@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Drape — AI fashion studio: cast AI models (Gemini image generation), digitize garments, run virtual try-on (wardrobe/VTO), and iterate on an infinite canvas (boards). Originally scaffolded on the Manus WebDev platform; now runs locally/independently (Manus runtime plugin removed, several Manus assumptions patched — see "Manus legacy" below).
+Drape — AI fashion studio: cast AI models (Gemini image generation), digitize garments, run virtual try-on (wardrobe/VTO), and iterate on an infinite canvas (boards). Originally scaffolded on the Manus WebDev platform; all Manus platform code has since been removed (see "Manus legacy" below for the one intentional remnant).
 
 ## Project context
 
@@ -28,7 +28,7 @@ Single Express server serves both the tRPC API and the client (Vite middleware i
   - `components/ui/` — shadcn/ui primitives (new-york style, see `components.json`)
   - `components/design-system/` — Drape design-system components (marketing/home pages)
 - `server/` — Express + tRPC
-  - `_core/` — bootstrap (`index.ts`), env access (`env.ts`), session cookies (`cookies.ts`), JWT session + legacy Manus OAuth (`sdk.ts`), Vite integration (`vite.ts`), tRPC setup (`trpc.ts`, `context.ts`)
+  - `_core/` — bootstrap (`index.ts`), env access (`env.ts`), session cookies (`cookies.ts`), JWT session sign/verify (`sdk.ts`), Vite integration (`vite.ts`), tRPC setup (`trpc.ts`, `context.ts`)
   - `routers.ts` — combines feature routers from `routes/` (admin sub-routers in `routes/admin/`)
   - `routes/` — tRPC feature routers + plain Express routes for auth (cookie-setting: `emailAuth.ts`, `googleAuth.ts`, `emailVerification.ts`) and `imageProxy.ts`
   - `db/` — Drizzle ORM queries per domain; shared pool in `connection.ts` (MySQL via mysql2)
@@ -49,7 +49,7 @@ Two login paths, both ending in a JWT (jose, HS256, signed with `JWT_SECRET`) se
 - Email/password (`routes/emailAuth.ts`): register requires a beta/invite code, then email verification via Resend (`routes/emailVerification.ts`), then admin approval (`approved` column) gates login.
 - Google OAuth (`routes/googleAuth.ts`): needs `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
 
-`sdk.ts` also contains the legacy Manus OAuth flow (`OAUTH_SERVER_URL`) — unused for local logins but `verifySession` requires a non-empty `appId` in the JWT payload, which is why `VITE_APP_ID` must be set.
+`sdk.ts` handles session JWT sign/verify only (no external OAuth server). `verifySession` requires a non-empty `appId` in the JWT payload, which is why `VITE_APP_ID` must be set. A session whose user is missing from the DB is rejected outright. Owner notifications (`_core/notification.ts`) go to the Slack webhooks (#admin-actions, falling back to #security-alerts) and log a warning when none is configured.
 
 ## Design system conventions
 
@@ -88,19 +88,16 @@ Two login paths, both ending in a JWT (jose, HS256, signed with `JWT_SECRET`) se
 - `KLAVIYO_PRIVATE_KEY` — marketing email flows
 - `PORT` (default 3000), `LOG_LEVEL`, `DAILY_GENERATION_LIMIT`, `GEMINI_TEXT_CONCURRENCY`, `GEMINI_IMAGE_CONCURRENCY`, `GEMINI_MAX_QUEUE_DEPTH`
 
-### Manus-legacy vars (not needed locally)
-
-- `OAUTH_SERVER_URL` — Manus OAuth server (legacy login path in `sdk.ts`)
-- `BUILT_IN_FORGE_API_URL`, `BUILT_IN_FORGE_API_KEY` — Manus "Forge" proxy, still referenced by `_core/map.ts` and `_core/voiceTranscription.ts` (those two features error without a replacement backend). File storage no longer uses Forge — `server/storage.ts` runs on R2.
-
 ### Windows notes
 
 - The dev script uses `cross-env` so `NODE_ENV=development` works under cmd/PowerShell.
 - Shell is PowerShell; prefer `pnpm` scripts over raw shell one-liners from docs.
 
-## Manus legacy — gotchas already hit
+## Manus legacy
 
-- `vitePluginManusRuntime` was removed from `vite.config.ts` (hangs outside Manus). Don't re-add it; `vite-plugin-manus-runtime` may still appear in package.json devDependencies.
+All Manus platform code (OAuth flow, Forge proxies, runtime/debug plugins, dead modules, deps) has been removed. The one intentional remnant: `files.manuscdn.com` / `*.cloudfront.net` stay in the CSP `img-src` (`server/security/securityHeaders.ts`) and SSRF allowlist (`server/security/urlValidator.ts`) because old DB records still reference those hosts — they go when `scripts/migrate-storage-urls.ts` is run against production at final cutover.
+
+Gotchas that remain relevant:
+
 - Session cookie: `sameSite` must be `lax` (not `none`) on plain-HTTP localhost — handled in `server/_core/cookies.ts`.
 - `VITE_APP_ID` empty → `verifySession` rejects every session with no visible error. Keep it set.
-- Forge file storage (resolved): `server/storage.ts` was rewritten against Cloudflare R2, so uploads/generation persistence work locally. Old content in the DB still points at `files.manuscdn.com` / cloudfront URLs — those stay in the CSP/SSRF allowlists until `scripts/migrate-storage-urls.ts` is run against production at cutover.
