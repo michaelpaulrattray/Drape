@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Mail, RefreshCw, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { ASSETS_BASE_URL } from "@shared/const";
 
 export default function VerifyEmail() {
   const [location] = useLocation();
@@ -66,7 +67,7 @@ export default function VerifyEmail() {
         <div className="flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/drape-logo-tight_067d1d7d.png"
+              src={`${ASSETS_BASE_URL}/drape-logo-tight.png`}
               alt="drape"
               className="h-6 w-auto"
             />

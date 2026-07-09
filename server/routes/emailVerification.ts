@@ -11,7 +11,7 @@ import { z } from "zod";
 import { randomBytes } from "crypto";
 import { Resend } from "resend";
 import { eq } from "drizzle-orm";
-import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
+import { ASSETS_BASE_URL, COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
 import { getDb } from "../db/connection";
@@ -69,7 +69,7 @@ export async function sendVerificationEmail(
   const verifyUrl = buildVerifyUrl(req, token);
   const resend = getResendClient();
 
-  const logoUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/drape-logo-tight_067d1d7d.png";
+  const logoUrl = `${ASSETS_BASE_URL}/drape-logo-tight.png`;
   const firstName = name ? name.split(" ")[0] : "there";
 
   const { error } = await resend.emails.send({

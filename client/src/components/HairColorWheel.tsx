@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ASSETS_BASE_URL } from '@shared/const';
 
 // Hair texture overlay image for realistic hair appearance
-const HAIR_TEXTURE_URL = 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/XvNvHbhiiaEqOOfX.png';
+const HAIR_TEXTURE_URL = `${ASSETS_BASE_URL}/hair-texture.png`;
 
 interface ColorOption {
   label: string;

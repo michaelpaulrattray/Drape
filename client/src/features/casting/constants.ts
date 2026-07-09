@@ -7,6 +7,8 @@
  * - Improve maintainability
  */
 
+import { ASSETS_BASE_URL } from "@shared/const";
+
 // ============ Brand & Vibe ============
 
 export const BRAND_OPTIONS = [
@@ -43,21 +45,21 @@ export const SKIN_FINISHES = ["Natural", "Matte / Powdered", "Dewy / Sweat", "Oi
 // ============ Eyes ============
 
 export const EYE_PRESETS = [
-  { label: "Ice", hex: "#c4d6e0", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/awhMLmxIrioToOtD.png" },
-  { label: "Sky", hex: "#8fb6cd", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/FlseOhpRliuvMbYW.png" },
-  { label: "Azure", hex: "#4e7bb5", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/jDkDZBaWyRxXoXzg.png" },
-  { label: "Navy", hex: "#283655", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/hyHYQcABgigtfLTG.png" },
-  { label: "Grey", hex: "#9baec2", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/IliNZctazjBbuArn.png" },
-  { label: "Steel", hex: "#687684", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/zRTUErdEfWCDvpZi.png" },
-  { label: "Mint", hex: "#8caea0", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/sWJWzVFBwmzmBmLc.png" },
-  { label: "Green", hex: "#4f6f46", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/GXpXcfyjyKJwqBiI.png" },
-  { label: "Olive", hex: "#6e7039", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/yIVGalpveKoMCBbA.png" },
-  { label: "Hazel", hex: "#947846", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lsZyCJPxdNyQUukh.png" },
-  { label: "Amber", hex: "#c49647", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/xdyXDoAPMTDZsHEG.png" },
-  { label: "Honey", hex: "#b89650", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/fCZhpeTDeAOFaWmt.png" },
-  { label: "Brown", hex: "#634e34", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/lAEQjgHkMacXaXgt.png" },
-  { label: "Dark", hex: "#3b2b22", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/UCJxxqEDBlsmVOvD.png" },
-  { label: "Black", hex: "#1c1c1c", image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/ZNXIoifWUSilVbcZ.png" },
+  { label: "Ice", hex: "#c4d6e0", image: `${ASSETS_BASE_URL}/eye-colors/ice.png` },
+  { label: "Sky", hex: "#8fb6cd", image: `${ASSETS_BASE_URL}/eye-colors/sky.png` },
+  { label: "Azure", hex: "#4e7bb5", image: `${ASSETS_BASE_URL}/eye-colors/azure.png` },
+  { label: "Navy", hex: "#283655", image: `${ASSETS_BASE_URL}/eye-colors/navy.png` },
+  { label: "Grey", hex: "#9baec2", image: `${ASSETS_BASE_URL}/eye-colors/grey.png` },
+  { label: "Steel", hex: "#687684", image: `${ASSETS_BASE_URL}/eye-colors/steel.png` },
+  { label: "Mint", hex: "#8caea0", image: `${ASSETS_BASE_URL}/eye-colors/mint.png` },
+  { label: "Green", hex: "#4f6f46", image: `${ASSETS_BASE_URL}/eye-colors/green.png` },
+  { label: "Olive", hex: "#6e7039", image: `${ASSETS_BASE_URL}/eye-colors/olive.png` },
+  { label: "Hazel", hex: "#947846", image: `${ASSETS_BASE_URL}/eye-colors/hazel.png` },
+  { label: "Amber", hex: "#c49647", image: `${ASSETS_BASE_URL}/eye-colors/amber.png` },
+  { label: "Honey", hex: "#b89650", image: `${ASSETS_BASE_URL}/eye-colors/honey.png` },
+  { label: "Brown", hex: "#634e34", image: `${ASSETS_BASE_URL}/eye-colors/brown.png` },
+  { label: "Dark", hex: "#3b2b22", image: `${ASSETS_BASE_URL}/eye-colors/dark.png` },
+  { label: "Black", hex: "#1c1c1c", image: `${ASSETS_BASE_URL}/eye-colors/black.png` },
 ];
 
 // ============ Face ============

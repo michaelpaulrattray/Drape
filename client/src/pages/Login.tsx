@@ -4,6 +4,7 @@ import { useLocation, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ASSETS_BASE_URL } from "@shared/const";
 
 // ─── Error configurations ──────────────────────────────────────────────────
 const ERROR_MESSAGES = {
@@ -91,12 +92,12 @@ const ERROR_MESSAGES = {
 
 // ─── Brand logos ───────────────────────────────────────────────────────────
 const BRAND_LOGOS = [
-  { name: "Google", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/KWvxGyeHeOdCWDBA.svg" },
-  { name: "Shopify", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/RrYrMQAByeXLDYvF.svg" },
-  { name: "Meta", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/IVQzagtquxBRPCYL.svg" },
-  { name: "Nike", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/TiXyLFbvFHbHEbTs.svg" },
-  { name: "Facebook", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/OeUyRoFtFBfOvhUj.svg" },
-  { name: "Instagram", logo: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296068708/mikmpxOOFgYakoyl.svg" },
+  { name: "Google", logo: `${ASSETS_BASE_URL}/logos/google.svg` },
+  { name: "Shopify", logo: `${ASSETS_BASE_URL}/logos/shopify.svg` },
+  { name: "Meta", logo: `${ASSETS_BASE_URL}/logos/meta.svg` },
+  { name: "Nike", logo: `${ASSETS_BASE_URL}/logos/nike.svg` },
+  { name: "Facebook", logo: `${ASSETS_BASE_URL}/logos/facebook.svg` },
+  { name: "Instagram", logo: `${ASSETS_BASE_URL}/logos/instagram.svg` },
 ];
 
 // ─── View states ──────────────────────────────────────────────────────────
@@ -203,7 +204,7 @@ function WaitlistForm() {
   );
 }
 
-const LOGIN_HERO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/login-hero_98682e27.webp";
+const LOGIN_HERO_URL = `${ASSETS_BASE_URL}/login-hero.webp`;
 
 function HeroImagePanel() {
   return (
@@ -569,7 +570,7 @@ export default function Login() {
         <div className="flex items-center justify-between h-14">
           <Link href="/" className="flex items-center gap-2">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/drape-logo-tight_067d1d7d.png"
+              src={`${ASSETS_BASE_URL}/drape-logo-tight.png`}
               alt="drape"
               className="h-6 w-auto"
             />

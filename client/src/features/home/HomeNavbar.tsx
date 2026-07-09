@@ -8,6 +8,7 @@
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ASSETS_BASE_URL } from "@shared/const";
 import { Link } from "wouter";
 
 // Nav stripped to essentials for launch — only Log In + Claim a Spot
@@ -29,7 +30,7 @@ export function HomeNavbar({ onClaimSpot }: HomeNavbarProps) {
       <div className="flex items-center justify-between">
         {/* Logo */}
         <img
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663296068708/EZPuXPuVfNWAAbrrMBoHnm/drape-logo-tight_067d1d7d.png"
+          src={`${ASSETS_BASE_URL}/drape-logo-tight.png`}
           alt="drape"
           className="h-6 w-auto"
         />
