@@ -20,6 +20,9 @@ import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { getUserByEmail } from "../db/users";
+import { getDb } from "../db/connection";
+import { users } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 import { generateVerificationToken, sendVerificationEmail, storeVerificationToken } from "./emailVerification";
 
 const BCRYPT_ROUNDS = 12;
@@ -130,6 +133,30 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
     if (!redeemResult.success) {
       // Edge case: code became invalid between validate and redeem
       res.status(400).json({ error: redeemResult.error || "Failed to redeem access code" });
+      return;
+    }
+
+    // Dev mode: skip email verification entirely so local signups can log
+    // in instantly (no Resend key needed). Mirrors the verify-email flow:
+    // mark verified, set the session cookie, send the user to the studio.
+    if (process.env.NODE_ENV === "development") {
+      console.warn(`[EmailAuth] DEV MODE: skipping email verification for ${email}`);
+      const devDb = await getDb();
+      if (devDb) {
+        await devDb
+          .update(users)
+          .set({ emailVerified: true })
+          .where(eq(users.id, newUser.id));
+      }
+
+      const sessionToken = await sdk.createSessionToken(newUser.openId, {
+        name: newUser.name || "",
+        expiresInMs: SESSION_MAX_AGE_MS,
+      });
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
+
+      res.status(201).json({ success: true, redirect: "/studio", needsVerification: false });
       return;
     }
 
