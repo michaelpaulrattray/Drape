@@ -12,7 +12,8 @@ Design taste: restrained, editorial, monochrome. Prefer simple, human-feeling so
 
 - `pnpm dev` — start dev server (Express + Vite middleware, single process on http://localhost:3000; auto-increments port if busy)
 - `pnpm check` — TypeScript typecheck (no emit)
-- `pnpm test` — vitest run (server tests: `server/**/*.test.ts`, node environment)
+- `pnpm test` — vitest run (server unit tests; green out of the box — env-dependent suites skip with a console message)
+- `pnpm test:integration` — HTTP tests against a live server (`server/**/*.integration.test.ts`); start `pnpm dev` first
 - `pnpm build` — vite build (client → `dist/public`) + esbuild (server → `dist`)
 - `pnpm db:push` — drizzle-kit generate + migrate (needs `DATABASE_URL`)
 - `npx tsx seed.ts` — dev helper: marks every user approved + emailVerified + admin
@@ -38,7 +39,7 @@ Single Express server serves both the tRPC API and the client (Vite middleware i
 - `drizzle/` — schema (`schema.ts`) + migrations
 - Path aliases: `@` → `client/src`, `@shared` → `shared`, `@assets` → `attached_assets` (in vite.config.ts, vitest.config.ts, tsconfig.json)
 
-Tests live next to server code as `*.test.ts` and run with vitest against a node environment.
+Tests live next to server code as `*.test.ts` and run with vitest against a node environment. `vitest.setup.ts` loads `.env` for tests but **strips `DATABASE_URL`** so unit tests can never touch the live Railway database — suites that need a DB skip unless a disposable `TEST_DATABASE_URL` is provided. Suites that hit a running server over HTTP are named `*.integration.test.ts`, excluded from `pnpm test`, and run via `pnpm test:integration` (config: `vitest.integration.config.ts`).
 
 ### Auth
 

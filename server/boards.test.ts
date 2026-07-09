@@ -43,7 +43,17 @@ function createUnauthContext(): TrpcContext {
   };
 }
 
-describe("boards", () => {
+// These tests run the real boards router against a real database.
+// vitest.setup.ts strips the live DATABASE_URL so unit runs can never touch
+// production data; provide a disposable TEST_DATABASE_URL to run this suite.
+const dbAvailable = Boolean(process.env.DATABASE_URL);
+if (!dbAvailable) {
+  console.warn(
+    "[test] Skipping boards tests — no test database (set TEST_DATABASE_URL to run them)"
+  );
+}
+
+describe.skipIf(!dbAvailable)("boards", () => {
   // ── Board CRUD ─────────────────────────────────────────────────────
 
   describe("create", () => {

@@ -7,7 +7,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
-describe("Slack Webhook Configuration", () => {
+// Config-verification suite: only meaningful where Slack alerting is set up.
+const slackConfigured = Boolean(process.env.SLACK_WEBHOOK_URL);
+if (!slackConfigured) {
+  console.warn(
+    "[test] Skipping Slack webhook configuration tests — SLACK_WEBHOOK_URL is not set"
+  );
+}
+
+describe.skipIf(!slackConfigured)("Slack Webhook Configuration", () => {
   beforeEach(() => {
     // Mock fetch to prevent real Slack messages
     globalThis.fetch = vi.fn().mockResolvedValue({

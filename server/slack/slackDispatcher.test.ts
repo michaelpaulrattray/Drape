@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import {
   dispatch,
   dispatchSecurityAlert,
@@ -13,6 +13,33 @@ import {
 // Mock fetch globally to prevent real Slack messages
 const originalFetch = globalThis.fetch;
 let fetchMock: ReturnType<typeof vi.fn>;
+
+// These tests exercise routing/dedup logic with fetch mocked — no real Slack
+// call is ever made — but the dispatcher resolves channel webhook URLs from
+// env and silently drops channels without one. Provide dummies when the real
+// vars are absent so the logic tests run on machines without Slack configured.
+const WEBHOOK_VARS = [
+  "SLACK_WEBHOOK_URL",
+  "SLACK_ADMIN_ACTIONS_WEBHOOK_URL",
+  "SLACK_AUDIT_LOG_WEBHOOK_URL",
+] as const;
+const originalEnv: Record<string, string | undefined> = {};
+
+beforeAll(() => {
+  for (const key of WEBHOOK_VARS) {
+    originalEnv[key] = process.env[key];
+    if (!process.env[key]) {
+      process.env[key] = `https://hooks.slack.com/services/TEST/${key}`;
+    }
+  }
+});
+
+afterAll(() => {
+  for (const key of WEBHOOK_VARS) {
+    if (originalEnv[key] === undefined) delete process.env[key];
+    else process.env[key] = originalEnv[key];
+  }
+});
 
 beforeEach(() => {
   _clearDedupCache();

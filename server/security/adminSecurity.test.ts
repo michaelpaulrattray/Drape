@@ -26,9 +26,13 @@ describe("Admin Security", () => {
         role: "admin",
         email: "owner@example.com",
       });
-      
-      expect(result).toHaveProperty("allowed");
-      expect(result).toHaveProperty("reason");
+
+      // Whether this user is allowed depends on the configured allowlist;
+      // the contract is: always an `allowed` boolean, and a `reason` on denial.
+      expect(typeof result.allowed).toBe("boolean");
+      if (!result.allowed) {
+        expect(result.reason).toBeDefined();
+      }
     });
 
     it("should deny access for users not on the allowlist", () => {

@@ -1,3 +1,8 @@
+/**
+ * Integration test config — suites that hit a live server over HTTP.
+ * Start the app first (`pnpm dev`), then run `pnpm test:integration`.
+ * Target defaults to http://localhost:3000; override with VITE_API_URL.
+ */
 import { defineConfig } from "vitest/config";
 import path from "path";
 
@@ -15,9 +20,6 @@ export default defineConfig({
   test: {
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
-    // *.integration.test.ts files need a running dev server — run them
-    // with `pnpm test:integration` (vitest.integration.config.ts)
-    exclude: ["**/node_modules/**", "server/**/*.integration.test.ts"],
+    include: ["server/**/*.integration.test.ts"],
   },
 });

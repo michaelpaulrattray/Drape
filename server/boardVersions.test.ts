@@ -43,7 +43,17 @@ function createUnauthContext(): TrpcContext {
   };
 }
 
-describe("board item versions", () => {
+// These tests run the real boards router against a real database.
+// vitest.setup.ts strips the live DATABASE_URL so unit runs can never touch
+// production data; provide a disposable TEST_DATABASE_URL to run this suite.
+const dbAvailable = Boolean(process.env.DATABASE_URL);
+if (!dbAvailable) {
+  console.warn(
+    "[test] Skipping board version tests — no test database (set TEST_DATABASE_URL to run them)"
+  );
+}
+
+describe.skipIf(!dbAvailable)("board item versions", () => {
   // Helper: create a board + item for version tests
   async function createBoardWithItem(userId: number) {
     const caller = appRouter.createCaller(createAuthContext(userId));
