@@ -13,6 +13,7 @@ import { requestContextMiddleware } from "../logging/requestContextMiddleware";
 import heroProxyRouter from "../heroProxy";
 import imageProxyRouter from "../routes/imageProxy";
 import { healthHandler } from "../health";
+import { validateEnv } from "./env";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("server");
 
@@ -135,20 +136,8 @@ function registerShutdownHandlers(): void {
 // ============================================================================
 
 async function startServer() {
-  // Fail fast if critical env vars are missing
-  const REQUIRED_ENV = [
-    "DATABASE_URL",
-    "GEMINI_API_KEY",
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
-    "JWT_SECRET",
-  ];
-  const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variable(s): ${missing.join(", ")}`
-    );
-  }
+  // Fail fast if critical env vars are missing (see server/_core/env.ts)
+  validateEnv();
 
   const app = express();
   const server = createServer(app);
@@ -289,4 +278,9 @@ async function startServer() {
   registerShutdownHandlers();
 }
 
-startServer().catch((err) => log.fatal({ err }, "Failed to start server"));
+startServer().catch((err) => {
+  log.fatal({ err }, "Failed to start server");
+  // Hard exit: module-level timers (queues, monitors) keep the event loop
+  // alive, so setting exitCode alone would leave a half-dead process running.
+  process.exit(1);
+});
