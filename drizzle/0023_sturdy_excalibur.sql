@@ -1,1 +1,0 @@
-ALTER TABLE `points` MODIFY COLUMN `balance` int NOT NULL DEFAULT 5000;

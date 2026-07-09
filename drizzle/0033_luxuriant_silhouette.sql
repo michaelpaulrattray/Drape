@@ -1,1 +1,0 @@
-ALTER TABLE `wardrobe_sessions` ADD `styleNotes` json;

@@ -1,2 +1,0 @@
-ALTER TABLE `change_requests` MODIFY COLUMN `status` enum('pending','approved','denied','cancelled','expired','pending_execution') NOT NULL DEFAULT 'pending';--> statement-breakpoint
-ALTER TABLE `change_requests` ADD `slackApprovalId` varchar(64);

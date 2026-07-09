@@ -1,1 +1,0 @@
-ALTER TABLE `bug_reports` MODIFY COLUMN `category` enum('casting','wardrobe','export','billing','ui','other','feedback') NOT NULL DEFAULT 'other';
