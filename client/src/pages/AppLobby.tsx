@@ -1,11 +1,11 @@
 /**
  * AppLobby — Page wrapper for /app route.
  *
- * Handles auth guard and renders BoardLobby.
+ * Handles auth guard and renders the unified HomeLobby.
  */
 import { useAuth } from '@/_core/hooks/useAuth';
 import { getLoginUrl } from '@/const';
-import { BoardLobby } from '@/features/boards/BoardLobby';
+import { HomeLobby } from '@/features/lobby/HomeLobby';
 
 export default function AppLobby() {
   const { user, loading, logout } = useAuth();
@@ -26,5 +26,5 @@ export default function AppLobby() {
     );
   }
 
-  return <BoardLobby user={user} onLogout={logout} />;
+  return <HomeLobby user={user} onLogout={logout} />;
 }
