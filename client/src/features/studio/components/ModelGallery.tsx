@@ -1,8 +1,8 @@
 /**
  * ModelGallery — Horizontal scrollable gallery of user's exported/minted models.
  *
- * Shown in the studio lobby. Receives pre-fetched model data from StudioLobby
- * so loading can be coordinated across all lobby sections.
+ * Shown on the WardrobeStart screen. Receives pre-fetched model data
+ * from its host so loading can be coordinated.
  * Click a model to load it into the wardrobe.
  */
 import { useRef, useState, useCallback } from 'react';

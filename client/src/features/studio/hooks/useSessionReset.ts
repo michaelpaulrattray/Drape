@@ -56,7 +56,7 @@ export function useSessionReset() {
 
   /**
    * Load a new uploaded model — clears old wardrobe + casting state first.
-   * Used by: StudioLobby upload flow.
+   * Used by: WardrobeStart upload flow.
    */
   const loadUploadedModel = useCallback((imageUrl: string) => {
     resetWardrobe();
@@ -67,7 +67,7 @@ export function useSessionReset() {
 
   /**
    * Load a gallery cast model — clears old wardrobe + casting state first.
-   * Used by: StudioLobby "My Models" gallery.
+   * Used by: WardrobeStart "My Models" gallery (via useLoadWardrobeModel).
    */
   const loadGalleryModel = useCallback((
     modelId: number,
@@ -83,7 +83,7 @@ export function useSessionReset() {
   /**
    * Resume a wardrobe session from the DB — restores canvas, wardrobe
    * VTO history, garment selection, and session ID.
-   * Used by: RecentSessionsRow in the lobby.
+   * Used by: useStudioEntry (wardrobe deep links from the /app lobby).
    */
   const resumeWardrobeSession = useCallback((session: {
     sessionId: number;
