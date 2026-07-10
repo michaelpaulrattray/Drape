@@ -343,7 +343,7 @@ function EmailSignUpForm({ betaCode }: { betaCode: string }) {
       if (data.needsVerification) {
         window.location.href = `/verify-email?email=${encodeURIComponent(email.trim())}`;
       } else {
-        window.location.href = data.redirect || "/studio";
+        window.location.href = data.redirect || "/app";
       }
     } catch {
       setError("Network error. Please check your connection and try again.");
@@ -448,7 +448,7 @@ function EmailSignInForm() {
       }
 
       markHasAccount();
-      window.location.href = data.redirect || "/studio";
+      window.location.href = data.redirect || "/app";
     } catch {
       setError("Network error. Please check your connection and try again.");
       setLoading(false);

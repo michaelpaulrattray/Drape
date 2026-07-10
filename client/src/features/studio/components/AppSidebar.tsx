@@ -9,12 +9,12 @@
  * Pushes content — not an overlay.
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import {
   ScanFace,
   Palette,
   PackageCheck,
-  Compass,
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Settings,
@@ -54,7 +54,7 @@ const TOOL_LABELS: Record<string, string> = {
   casting: 'Cast',
   wardrobe: 'Style',
   export: 'Export',
-  home: 'Home',
+  home: 'Lobby',
 };
 
 /** Track which tools were previously enabled to detect unlock transitions */
@@ -88,6 +88,7 @@ export function AppSidebar({
   onOpenReferral,
   onLogout,
 }: AppSidebarProps) {
+  const [, navigate] = useLocation();
   const activeTool = useStudioStore((s) => s.activeTool);
   const setActiveTool = useStudioStore((s) => s.setActiveTool);
   const { resetToLobby, resetAndSwitchTo } = useSessionReset();
@@ -203,20 +204,23 @@ export function AppSidebar({
     [canvas, setActiveTool, clearGlow, onWardrobeGate],
   );
 
+  // Back to the /app lobby — in-progress work is NOT reset; it stays
+  // resumable from the lobby's Recent feed and the localStorage session.
   const handleHomeClick = useCallback(() => {
-    setActiveTool(null);
-  }, [setActiveTool]);
+    navigate('/app');
+  }, [navigate]);
 
   const handleConfirm = useCallback(() => {
     if (!pendingAction) return;
     if (pendingAction === 'home') {
       resetToLobby();
+      navigate('/app');
     } else {
       resetAndSwitchTo(pendingAction);
     }
     setPendingAction(null);
     setConfirmMessage('');
-  }, [pendingAction, resetToLobby, resetAndSwitchTo]);
+  }, [pendingAction, resetToLobby, resetAndSwitchTo, navigate]);
 
   const handleCancel = useCallback(() => {
     setPendingAction(null);
@@ -254,11 +258,13 @@ export function AppSidebar({
           {expanded ? (
             <>
               <div className="flex items-center gap-2">
-                <img
-                  src="/drape-logo.svg"
-                  alt="Drape"
-                  style={{ height: 24, flexShrink: 0 }}
-                />
+                <Link href="/app" aria-label="Back to lobby" style={{ display: 'flex' }}>
+                  <img
+                    src="/drape-logo.svg"
+                    alt="Drape"
+                    style={{ height: 24, flexShrink: 0, cursor: 'pointer' }}
+                  />
+                </Link>
                 <span
                   className="px-1.5 py-0.5 rounded-full uppercase flex-shrink-0"
                   style={{
@@ -294,11 +300,11 @@ export function AppSidebar({
         <nav className="flex-1 flex flex-col gap-0.5 py-1 overflow-y-auto overflow-x-hidden"
           style={{ padding: expanded ? '4px 8px' : '4px 8px' }}
         >
-          {/* Home button */}
+          {/* Back to lobby — the one exit from the studio */}
           <SidebarItem
-            icon={Compass}
-            label="Home"
-            active={activeTool === null}
+            icon={ArrowLeft}
+            label="Lobby"
+            active={false}
             expanded={expanded}
             onClick={handleHomeClick}
           />

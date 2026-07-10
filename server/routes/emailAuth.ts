@@ -156,7 +156,7 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: SESSION_MAX_AGE_MS });
 
-      res.status(201).json({ success: true, redirect: "/studio", needsVerification: false });
+      res.status(201).json({ success: true, redirect: "/app", needsVerification: false });
       return;
     }
 
@@ -349,7 +349,7 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
       userAgent,
     });
 
-    res.json({ success: true, redirect: "/studio" });
+    res.json({ success: true, redirect: "/app" });
   } catch (error) {
     console.error("[EmailAuth] Login failed:", error);
     await logAuditEvent({

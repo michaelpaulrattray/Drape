@@ -232,9 +232,9 @@ describe("Google OAuth — Callback Error Handling", () => {
     }
   });
 
-  it("success redirect goes to /dashboard", () => {
-    // Both new and returning users redirect to /dashboard on success
-    const successRedirect = "/studio";
-    expect(successRedirect).toBe("/studio");
+  it("success redirect goes to /app", () => {
+    // Both new and returning users redirect to the /app lobby on success
+    const successRedirect = "/app";
+    expect(successRedirect).toBe("/app");
   });
 });

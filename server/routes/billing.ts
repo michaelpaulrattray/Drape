@@ -116,8 +116,8 @@ export const billingRouter = router({
       const checkoutUrl = await createSubscriptionCheckoutSession(
         customerId,
         input.plan,
-        `${baseUrl}/studio?billing=success`,
-        `${baseUrl}/studio?billing=canceled`,
+        `${baseUrl}/app?billing=success`,
+        `${baseUrl}/app?billing=canceled`,
         ctx.user.id,
         input.interval
       );
@@ -156,7 +156,7 @@ export const billingRouter = router({
 
     const portalUrl = await createCustomerPortalSession(
       subscription.stripeCustomerId,
-      `${baseUrl}/studio`
+      `${baseUrl}/app`
     );
 
     return { portalUrl };
