@@ -130,19 +130,19 @@ Edge rendering: hairline, low opacity, upgraded when either endpoint is selected
 
 #### 3a. Creating a cast happens inline on the canvas
 
-Drop a cast node from the floating tool pill at the bottom-center. The node lands with a placeholder image area and an inline prompt field, auto-selected, revealing its chrome: the blender chips below the card in ghost state; no floating toolbar, no control strip (nothing exists yet to act on).
+Drop a cast node from the floating tool pill at the bottom-center. The node lands with a placeholder image area and an inline prompt field, auto-selected, revealing its chrome: the identity attribute block below the card, showing its rows with faint "Add" values (per the VC1.5 ruling — `DESIGN_SYSTEM.md` §5.9); no floating toolbar, no control strip (nothing exists yet to act on).
 
 The user can, in any order, before hitting Run:
 - Type a prompt. On Run, the LLM parser — a new `server/casting/promptParser.ts` service using the existing Gemini text path (`getAiClient` + `withTextQueue` + circuit breaker; the deleted `server/_core/llm.ts` is NOT coming back) — extracts structured attributes into `CastAttributes` per `PARSER_PROMPT_V2.md`. The parser's three-path dispatch (parsed / random / per-field random) executes **server-side inside `boardOps.runGeneration`**; the preference randomizer must therefore be callable server-side (port or move it to `shared/`).
-- Click any blender chip to open the real tactile component in a popover, set a value, Apply. Explicit chip values are hard constraints; parser-extracted values are soft defaults that chips override (precedence chain per `PARSER_PROMPT_V2.md` §5).
+- Tap any attribute row to open the real tactile component in a popover, set a value, Apply. Explicit attribute values are hard constraints; parser-extracted values are soft defaults that explicit values override (precedence chain per `PARSER_PROMPT_V2.md` §5).
 
-**Run enables as soon as either the prompt has text OR at least one chip is filled.** The Run affordance displays its credit cost inline before execution (Decision 6). On Run, the node generates in place; on completion it transitions to the completed state (image, read-only prompt display, Edit button, control strip, floating toolbar, filled chips). What gets created is a `cast_root` — the identity anchor.
+**Run enables as soon as either the prompt has text OR at least one attribute is set.** The Run affordance displays its credit cost inline before execution (Decision 6). On Run, the node generates in place; on completion it transitions to the completed state (image, read-only prompt display, Edit button, control strip, floating toolbar, and the attribute block collapsed to its summary line). What gets created is a `cast_root` — the identity anchor.
 
 #### 3b. Generating additional views spawns separate view nodes
 
 Once a root exists, `+ Views` in the control strip opens a popover with checkboxes for the five canonical view types (headshot pre-checked and disabled — it's the root), a running cost total computed from real `CREDIT_COSTS` via the plan API, and Generate.
 
-**Each requested view spawns as its own node**: provenance `cast_view` with `rootItemId` and an `inputs` snapshot of the root image consumed; connected via a `generated_from_cast` edge; inheriting full identity from the root; auto-placed in a row to the right; each with its own version history, optional per-view pose prompt, and reduced toolbar. View nodes do NOT show blender chips — identity edits happen at the root.
+**Each requested view spawns as its own node**: provenance `cast_view` with `rootItemId` and an `inputs` snapshot of the root image consumed; connected via a `generated_from_cast` edge; inheriting full identity from the root; auto-placed in a row to the right; each with its own version history, optional per-view pose prompt, and reduced toolbar. View nodes do NOT show the attribute block — identity edits happen at the root.
 
 Root control strip: `+ Views · v1 · ···` (no view-switcher dropdown — views are nodes). View control strip: `v1 · ···`.
 
@@ -150,7 +150,7 @@ The five canonical views are **fixed and strict**. No custom pose or framing opt
 
 #### 3c. Identity changes on the root — the stale flow *(revised: stale is informational; pinning)*
 
-When the user changes an identity-level attribute on the root (blender chip or studio Attributes tab), the root regenerates and connected views become stale — they depict the previous person. The flow:
+When the user changes an identity-level attribute on the root (attribute-block popover or studio Attributes tab), the root regenerates and connected views become stale — they depict the previous person. The flow:
 
 1. User applies an identity change. The client calls `boardOps.updateAttributes.plan`, which detects identity-level fields and returns the affected (unpinned) view list and total cost.
 2. A confirmation dialog surfaces: **"This will regenerate N existing views · {cost} credits. Update views now / Update later / Cancel."** Costs come from the plan, never hardcoded.
@@ -411,7 +411,7 @@ New rows write both `type` (legacy) and `kind`. The old enum drops in a later ph
 
 Milestone-by-milestone ordering, sizing, and founder checkpoints live in **`PASS_1_BUILD_PLAN.md`** (authored after `DECISION_LOG.md` ratification). Pass-level scope:
 
-- **Pass 1 — Casting end to end on the new primitives.** Prerequisite refactors (audit Part 3) → tokens + schema → lifted-component redesign → canvas shell + empty/first-run states → inline cast creation with parser → completed-node chrome + chip popovers → toolbar + variations + fork/recast → views + lineage edges → stale/pin flow → refinement studio (Refine, Surgical, Attributes, History) → library placement ("Add from library") → keyboard + scoped undo. Dogfoodable at the end; team uses it daily.
+- **Pass 1 — Casting end to end on the new primitives.** Prerequisite refactors (audit Part 3) → tokens + schema → lifted-component redesign → canvas shell + empty/first-run states → inline cast creation with parser → completed-node chrome + attribute popovers → toolbar + variations + fork/recast → views + lineage edges → stale/pin flow → refinement studio (Refine, Surgical, Attributes, History) → library placement ("Add from library") → keyboard + scoped undo. Dogfoodable at the end; team uses it daily.
 - **Pass 2 — Wardrobe on the same primitives.** `wardrobe_config` nodes, VTO as `runGeneration` with model+garment input edges and snapshot provenance, consuming the existing auto-captions.
 - **Pass 3 — Canvas-native capabilities.** Generic image-gen node, note/frame maturity, multi-select operations, `Cmd+K` palette, frames-as-export-units (select a frame → export contents as PDF lookbook / PNG set — the canvas produces deliverables; groundwork only in pass 1 via frame kind + snapshot API).
 - **Pass 4+ — Video nodes and polish.** Per `PASS_4_VIDEO_NOTES.md`; pass 1's obligations to it are already folded into Decisions 1, 4, and 6 (extensible kind, media-agnostic job store and `runGeneration` result, cost-before-run).
@@ -473,11 +473,11 @@ Milestone-by-milestone ordering, sizing, and founder checkpoints live in **`PASS
 All demonstrable on a real board:
 
 1. Drop a cast node, type a natural-language prompt, hit Run (cost shown beforehand), receive a headshot in the node in ~20s. Prompt parsed server-side into structured `CastAttributes`; node provenance is `cast_root` with `engine` recorded.
-2. A freshly-dropped cast node is auto-selected with ghosted blender chips; Run stays disabled until prompt text or a filled chip exists.
+2. A freshly-dropped cast node is auto-selected with the attribute rows visible (faint "Add" values); Run stays disabled until prompt text or a set attribute exists.
 3. A first-time user landing on an empty board sees the designed empty state / first-run intro (design system §11), dismissible and never seen again.
-4. Selecting a completed root reveals the specified chrome (1px border, `+ Views · vN · ···` strip, filled chips, 6-icon toolbar). Every paid affordance shows its cost from plan data — no hardcoded credit numbers anywhere in the client.
-5. Blender chip popovers Apply-and-run; identity-level changes with connected unpinned views surface the Update now / later / Cancel dialog with real counts and costs.
-6. `+ Views` spawns `cast_view` nodes with `generated_from_cast` edges and `InputSnapshot` provenance; view nodes have their own prompt, no chips, reduced toolbar.
+4. Selecting a completed root reveals the specified chrome (1px border, `+ Views · vN · ···` strip, collapsed attribute summary line that expands to rows on tap, 6-icon toolbar). Every paid affordance shows its cost from plan data — no hardcoded credit numbers anywhere in the client.
+5. Attribute-row popovers Apply-and-run; identity-level changes with connected unpinned views surface the Update now / later / Cancel dialog with real counts and costs.
+6. `+ Views` spawns `cast_view` nodes with `generated_from_cast` edges and `InputSnapshot` provenance; view nodes have their own prompt, no attribute block, reduced toolbar.
 7. Rerun on a completed root offers **Fork new cast / Recast this cast**; fork creates a `forked_from` sibling; recast routes through the stale flow. Rerun on a view is a plain new version.
 8. Update-later marks views stale (badge + dimmed image); **Keep old pins the view** and pinned views are exempt from all staleness pressure; bulk refresh exists on the root menu.
 9. A failed generation renders the `error` status variant with a retry action — never a blank card.

@@ -49,7 +49,9 @@ Build:
 
 **VC1 (founder, live `pnpm dev`):** pan/zoom the seeded board; tune the two thresholds by feel; confirm the screen-fixed badge/toolbar behavior reads right at 40%; look at the 6-chip strip on a selected node and rule on the D-19 crowding flag. Output: final threshold constants (committed) + chips 6-or-5 ruling.
 
-> **VC1 outcome (2026-07-10):** thresholds ruled **0.45 / 0.35** and committed. Chip ruling superseded: the filled-pill resting render fails (reads as a second card); architecture retained, resting state redesigned. **VC1.5 added:** three resting-state variants (selection-only pills / collapsed summary line / text-row restyle) shown on the seeded board via a mock panel switcher; founder rules, then `DESIGN_SYSTEM.md` §5.9 is amended and the 5-vs-6 question re-decided in the winning treatment. M5 (chip popovers) consumes the ruled treatment.
+> **VC1 outcome (2026-07-10):** thresholds ruled **0.45 / 0.35** and committed. Chip ruling superseded: the filled-pill resting render fails (reads as a second card); architecture retained, resting state redesigned. **VC1.5 added:** three resting-state variants (selection-only pills / collapsed summary line / text-row restyle) shown on the seeded board via a mock panel switcher; founder rules, then `DESIGN_SYSTEM.md` §5.9 is amended and the 5-vs-6 question re-decided in the winning treatment. M5 (attribute popovers) consumes the ruled treatment.
+>
+> **VC1.5 ruled (same day): the synthesis — summary line at rest, spec-sheet rows on engagement.** Shipped as the `NodeAttributeBlock` primitive (pills deleted); DS §5.9 rewritten; six attributes confirmed. M4's cast node and M5's popovers build on `NodeAttributeBlock`.
 
 Gate: `pnpm check`. (No tests affected.)
 
