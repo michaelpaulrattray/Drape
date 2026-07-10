@@ -152,23 +152,9 @@ async function startServer() {
   // Request context: bind correlationId to AsyncLocalStorage for structured logging
   app.use(requestContextMiddleware);
 
-  // Configure body parser with size limit for file uploads (15MB covers base64 images + JSON metadata)
-  app.use(express.json({ limit: "15mb" }));
-  app.use(express.urlencoded({ limit: "15mb", extended: true }));
-
-  // Email/password auth routes
-  const { emailAuthRouter } = await import("../routes/emailAuth");
-  app.use("/api/auth", emailAuthRouter);
-
-  // Google OAuth routes
-  const { googleAuthRouter } = await import("../routes/googleAuth");
-  app.use("/api/auth", googleAuthRouter);
-
-  // Email verification routes
-  const { emailVerificationRouter } = await import("../routes/emailVerification");
-  app.use("/api/auth", emailVerificationRouter);
-  
-  // Stripe webhook endpoint (must use raw body)
+  // Stripe webhook endpoint. Must be registered BEFORE express.json(): signature
+  // verification needs the raw request bytes, and once the global JSON parser
+  // has consumed the body, express.raw() skips it and verification always fails.
   app.post(
     "/api/webhooks/stripe",
     express.raw({ type: "application/json" }),
@@ -194,6 +180,22 @@ async function startServer() {
       }
     }
   );
+
+  // Configure body parser with size limit for file uploads (15MB covers base64 images + JSON metadata)
+  app.use(express.json({ limit: "15mb" }));
+  app.use(express.urlencoded({ limit: "15mb", extended: true }));
+
+  // Email/password auth routes
+  const { emailAuthRouter } = await import("../routes/emailAuth");
+  app.use("/api/auth", emailAuthRouter);
+
+  // Google OAuth routes
+  const { googleAuthRouter } = await import("../routes/googleAuth");
+  app.use("/api/auth", googleAuthRouter);
+
+  // Email verification routes
+  const { emailVerificationRouter } = await import("../routes/emailVerification");
+  app.use("/api/auth", emailVerificationRouter);
 
   // Slack interactions endpoint (for button callbacks)
   app.post(
