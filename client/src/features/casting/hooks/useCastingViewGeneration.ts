@@ -1,21 +1,22 @@
 import { useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
-import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
-import { useStudioStore } from "@/features/studio/stores/useStudioStore";
 import { CREDIT_COSTS, type GeneratedAsset } from "@/features/casting/constants";
+import type { CastingBindings } from "./castingBindings";
 
 interface UseCastingViewGenerationParams {
   isAuthenticated: boolean;
   creditsData: { balance: number } | undefined;
   refetchCreditsWithWarning: () => Promise<void>;
+  /** Caller-supplied state surface (audit A1) — this hook imports no store. */
+  bindings: CastingBindings;
 }
 
 export function useCastingViewGeneration({
   isAuthenticated,
   creditsData,
   refetchCreditsWithWarning,
+  bindings,
 }: UseCastingViewGenerationParams) {
   const {
     genState,
@@ -24,8 +25,6 @@ export function useCastingViewGeneration({
     currentAssets,
     setCurrentAssets,
     pushHistory,
-  } = useCastingGenerationStore();
-  const {
     setActiveView,
     setShowExportModal,
     setLockModal,
@@ -34,7 +33,7 @@ export function useCastingViewGeneration({
     setIsAutoGenerating,
     setAutoGenCancelled,
     setIsTopupOpen,
-  } = useCastingUIStore();
+  } = bindings;
 
   // Mutations
   const generateFullBodyMutation = trpc.generation.fullBody.useMutation();
@@ -77,8 +76,8 @@ export function useCastingViewGeneration({
             pushHistory(newAssets);
             setActiveView("frontFull");
             toast.success("Full body generated!");
-            // Update shared canvas state so Wardrobe becomes available in ToolRail
-            useStudioStore.getState().setCanvas({ hasModel: true, hasFullBody: true, modelSource: 'cast' });
+            // (The legacy setCanvas side-effect was removed here — DrapeStudio's
+            // currentAssets→canvas sync effect derives hasFullBody; audit A1.)
             refetchCreditsWithWarning();
           }
 

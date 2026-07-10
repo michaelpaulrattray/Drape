@@ -1,10 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
-import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
-import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
-import { useStudioStore } from "@/features/studio/stores/useStudioStore";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
 import {
   CREDIT_COSTS,
@@ -12,6 +8,7 @@ import {
   type EditTool,
   type Amendment,
 } from "@/features/casting/constants";
+import type { CastingBindings } from "./castingBindings";
 
 interface UseCastingGenerationParams {
   isAuthenticated: boolean;
@@ -19,6 +16,12 @@ interface UseCastingGenerationParams {
   isMasking: boolean;
   getGuideOverlayDataUrl: () => Promise<string | undefined>;
   clearMask: () => void;
+  /**
+   * Where casting state lives — supplied by the caller (audit A1). /studio
+   * passes useLegacyCastingBindings(); the canvas controller (M4) passes
+   * node-local bindings. This hook imports no store.
+   */
+  bindings: CastingBindings;
 }
 
 export function useCastingGeneration({
@@ -27,10 +30,12 @@ export function useCastingGeneration({
   isMasking,
   getGuideOverlayDataUrl,
   clearMask,
+  bindings,
 }: UseCastingGenerationParams) {
-  const { prefs, modelName } = useCastingFormStore();
   const {
-    genState,
+    prefs,
+    modelName,
+    getReferenceImage,
     setGenState,
     currentModelId,
     setCurrentModelId,
@@ -45,6 +50,7 @@ export function useCastingGeneration({
     historyIndex,
     setHistoryIndex,
     pushHistory,
+    resetHistoryAmendments,
     canUndo,
     canRedo,
     getCurrentImageUrl,
@@ -54,8 +60,8 @@ export function useCastingGeneration({
     addAmendment,
     clearAmendments,
     setIdentityWarning,
-  } = useCastingGenerationStore();
-  const {
+    getFailedAction,
+    setFailedAction,
     activeView,
     setActiveView,
     setActiveTool,
@@ -64,7 +70,7 @@ export function useCastingGeneration({
     isEnhancing,
     setIsEnhancing,
     setIsTopupOpen,
-  } = useCastingUIStore();
+  } = bindings;
 
   // Credits query
   const { data: creditsData, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
@@ -276,14 +282,14 @@ export function useCastingGeneration({
         setCurrentAssets([newAsset]);
         setHistory([[newAsset]]);
         // Reset historyAmendments in sync with history — v1 has no amendments
-        useCastingGenerationStore.setState({ historyAmendments: [[]] });
+        resetHistoryAmendments();
         setHistoryIndex(0);
         setActiveView("frontClose");
         clearAmendments();
         setIdentityWarning(null);
         toast.success("Model generated successfully!");
-        // Update shared canvas state — model exists but no full body yet
-        useStudioStore.getState().setCanvas({ hasModel: true, modelSource: 'cast' });
+        // (The legacy setCanvas side-effect was removed here — DrapeStudio's
+        // currentAssets→canvas sync effect derives the same state; audit A1.)
         refetchCreditsWithWarning();
         
         // Fire-and-forget: fetch suggestions (session lifecycle handled server-side)
@@ -294,7 +300,7 @@ export function useCastingGeneration({
     } catch (error) {
       const message = error instanceof Error ? error.message : "Generation failed";
       setGenState({ isGenerating: false, currentStep: "", error: message });
-      useCastingGenerationStore.getState().setFailedAction({ type: 'NEW' });
+      setFailedAction({ type: 'NEW' });
       toast.error(message);
     }
   }, [isFormValid, creditsData, prefs, modelName]);
@@ -317,8 +323,8 @@ export function useCastingGeneration({
         throw new Error('No asset found for current view');
       }
       
-      // Read referenceImage fresh from store to avoid stale closure
-      const freshRefImage = useCastingFormStore.getState().prefs.referenceImage;
+      // Read referenceImage fresh (not from a render-time closure)
+      const freshRefImage = getReferenceImage();
       
       const result = await iterateMutation.mutateAsync({
         modelId: currentModelId,
@@ -364,8 +370,8 @@ export function useCastingGeneration({
         refetchCreditsWithWarning();
         
         // Fire-and-forget: fetch suggestions — re-analyze reference if present (matches SOT)
-        // Read fresh from store to avoid stale closure
-        const latestRefImage = useCastingFormStore.getState().prefs.referenceImage;
+        // Read fresh (not from a render-time closure)
+        const latestRefImage = getReferenceImage();
         if (latestRefImage) {
           handleAnalyzeReference(latestRefImage, result.imageUrl)
             .then((attrs) => {
@@ -400,7 +406,7 @@ export function useCastingGeneration({
     } catch (error) {
       const message = error instanceof Error ? error.message : "Iteration failed";
       setGenState({ isGenerating: false, currentStep: "", error: message });
-      useCastingGenerationStore.getState().setFailedAction({ type: 'ITERATE', args: { text: prompt, view: activeView, mask: maskBase64 } });
+      setFailedAction({ type: 'ITERATE', args: { text: prompt, view: activeView, mask: maskBase64 } });
       toast.error(message);
     }
   }, [currentModelId, creditsData, currentAssets, activeView]);
@@ -466,9 +472,9 @@ export function useCastingGeneration({
 
   // Retry handler — replays the exact failed action instead of always re-casting
   const handleRetry = useCallback(() => {
-    const failedAction = useCastingGenerationStore.getState().failedAction;
+    const failedAction = getFailedAction();
     setGenState({ isGenerating: false, currentStep: "", error: null });
-    useCastingGenerationStore.getState().setFailedAction(null);
+    setFailedAction(null);
     
     if (!failedAction || failedAction.type === 'NEW') {
       handleGenerate();

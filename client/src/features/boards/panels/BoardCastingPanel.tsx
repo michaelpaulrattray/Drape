@@ -19,6 +19,7 @@ import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
 import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingViewGeneration';
+import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
 
@@ -74,6 +75,10 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
     clearMask,
   } = useCastingCanvas(castingActiveTool, activeView, currentAssets);
 
+  // Legacy store-backed bindings for the generation hooks (audit A1 / D-24 —
+  // this whole panel is deleted in M4; until then it stays on the legacy path)
+  const castingBindings = useLegacyCastingBindings();
+
   // Generation hook
   const {
     creditsData,
@@ -93,6 +98,7 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
     isMasking,
     getGuideOverlayDataUrl,
     clearMask,
+    bindings: castingBindings,
   });
 
   // View generation hook
@@ -100,6 +106,7 @@ export function BoardCastingPanel({ boardId, onModelGenerated, getViewportCenter
     isAuthenticated,
     creditsData,
     refetchCreditsWithWarning,
+    bindings: castingBindings,
   });
 
   // Export hook

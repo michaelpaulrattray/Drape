@@ -40,6 +40,7 @@ import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingViewGeneration';
+import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { useDebugShortcuts } from '@/features/studio/hooks/useDebugShortcuts';
 import { useImagePreloader } from '@/features/studio/hooks/useImagePreloader';
 import { CastModelModal } from '@/features/studio/components/CastModelModal';
@@ -152,6 +153,9 @@ export default function DrapeStudio() {
     clearMask,
   } = useCastingCanvas(castingActiveTool, activeView, currentAssets);
 
+  // Legacy store-backed bindings for the generation hooks (audit A1 / D-24)
+  const castingBindings = useLegacyCastingBindings();
+
   // Generation hook
   const {
     creditsData,
@@ -175,6 +179,7 @@ export default function DrapeStudio() {
     isMasking,
     getGuideOverlayDataUrl,
     clearMask,
+    bindings: castingBindings,
   });
 
   // View generation hook
@@ -182,6 +187,7 @@ export default function DrapeStudio() {
     isAuthenticated,
     creditsData,
     refetchCreditsWithWarning,
+    bindings: castingBindings,
   });
 
   // Export hook
