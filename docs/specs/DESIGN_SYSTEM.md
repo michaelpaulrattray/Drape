@@ -330,7 +330,7 @@ interface CastNodeControllerResult {
 
 Five states now (was four):
 
-- `empty` — `User` icon + "Cast a model", inset bg.
+- `empty` — `User` icon + "Cast a model", inset bg — plus, beneath it, the quiet secondary path (D-28, founder-directed): a ghost text link **`or choose from your models`** (10px ink-faint, hover ink-soft, no border, no fill) that opens the `LibraryPickerPopover` (§7.3) anchored to the node. Create-new and pick-existing both live at the node — the ElevenLabs-Flows avatar-node pattern, rendered in Drape's language (popover, not modal). Picking **fills this node in place** (§7.3), it does not spawn a sibling.
 - `generating` — 3px progress bar animating `width` against `estimatedDurationMs` from `useGenerationJobs`, plus `Generating · {n}s`.
 - `complete` — image, `object-cover`; `dimmed` prop (70% opacity) when stale.
 - **`error`** *(new — foundations Decision 1 makes `error` a pass-1 status)* — inset bg, `XCircle` 16px in `text-canvas-destructive`, "Generation failed" in ink-soft, and a small ghost "Retry" button. The credit refund already happened server-side (`atomicCredits` refunds on failure); the message must not imply money was kept: subtitle "You weren't charged."
@@ -452,9 +452,15 @@ Rows: checkbox + label (`Headshot` pre-checked and locked — it's the root; `Fu
 
 When **all views already exist**, the popover body is replaced by the all-views-exist state (§11.4).
 
-### 7.3 `LibraryPickerPopover` *(new — foundations Decision 3a / library bridge)*
+### 7.3 `LibraryPickerPopover` *(new — foundations Decision 3a / library bridge; D-28 second entry point)*
 
-Triggered by "From library" in the Add menu. A 320px `CanvasPopoverContent`: search input (inset bg), two underline tabs `Models` / `Garments` (garments hidden until pass 2), then a 3-column grid of square thumbs (hairline borders, name in 10px below, hover = border-strong). Data: existing `models`/`wardrobe` list procedures. Clicking a thumb places a `library_cast` node at the viewport center (`boardOps.createNode`) and closes. Empty library state: `User` icon + "No models yet" + ghost link `Cast one on this board` (closes the popover, drops a cast node). No pagination in pass 1 — most-recent 30 with search.
+A 320px `CanvasPopoverContent`: search input (inset bg), two underline tabs `Models` / `Garments` (garments hidden until pass 2), then a 3-column grid of square thumbs (hairline borders, name in 10px below, hover = border-strong). Data: existing `models`/`wardrobe` list procedures. Empty library state: `User` icon + "No models yet" + ghost link `Cast one on this board` (closes the popover, drops a cast node). No pagination in pass 1 — most-recent 30 with search.
+
+**Two entry points, one picker (D-28):**
+1. **Add menu → "From library"** — clicking a thumb *places* a new `library_cast` node at the viewport center (`boardOps.createNode`) and closes.
+2. **Empty cast node → "or choose from your models"** (§5.12) — clicking a thumb *fills that node in place*: provenance becomes `library_cast` with the model's id, the image becomes the model's canonical headshot, an initial version row is written. No sibling node is spawned.
+
+**What is pickable here is constrained — canonical cast reference imagery only.** The Models tab lists cast/minted models and represents each by its canonical views (headshot by default; pass 1 places `frontClose`). It never lists VTO outputs, styled/outfitted renders, or scene imagery — a casting node is a reference asset (foundations §1.5), and letting a dressed-and-lit output stand as an identity reference would quietly break the identity guarantee downstream. ElevenLabs' avatar detail view offers styles/outfits/scenery at pick time (reference screenshots, 2026-07-10); Drape deliberately does not at this surface — creative variants belong to downstream image-gen/VTO nodes that consume the cast via edges. If a per-view choice is wanted later (full front vs headshot as the placed reference), it is a second-level select limited to the five canonical views — never styles.
 
 ### 7.4 `ForkRecastPopover` *(new — foundations 3f)*
 
@@ -503,7 +509,7 @@ Edge opacity upgrades to 1 when either endpoint is selected (selection-change li
 - Selection drives: border weight (hairline → 1px ink), `NodeFloatingToolbar`, `NodeControlStrip`, `NodeAttributeBlock` (roots), connected-edge opacity.
 
 ### Empty-state cast node (freshly dropped)
-As foundations 3a: auto-selected, prompt auto-focused, the six attribute rows visible with faint `Add` values (§5.9 empty-root state), no strip/toolbar, Run disabled until prompt text or a set attribute. First Run fires `boardOps.runGeneration` (server-side parser dispatch), with cost shown beforehand via `CostLabel`.
+As foundations 3a: auto-selected, prompt auto-focused, the six attribute rows visible with faint `Add` values (§5.9 empty-root state), no strip/toolbar, Run disabled until prompt text or a set attribute. First Run fires `boardOps.runGeneration` (server-side parser dispatch), with cost shown beforehand via `CostLabel`. The image area additionally carries the quiet `or choose from your models` link (§5.12/D-28) — the pick-existing path at the node; choosing a model fills the node in place as `library_cast` and the node exits its empty state without a generation.
 
 ### Drag
 - React Flow default node drag. During drag, chrome (toolbar/strips/chips) hides; reappears on drop if still selected.

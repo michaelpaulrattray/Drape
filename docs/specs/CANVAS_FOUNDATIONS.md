@@ -138,6 +138,8 @@ The user can, in any order, before hitting Run:
 
 **Run enables as soon as either the prompt has text OR at least one attribute is set.** The Run affordance displays its credit cost inline before execution (Decision 6). On Run, the node generates in place; on completion it transitions to the completed state (image, read-only prompt display, Edit button, control strip, floating toolbar, and the attribute block collapsed to its summary line). What gets created is a `cast_root` — the identity anchor.
 
+**The empty node also carries the pick-existing path (D-28, founder-directed):** a quiet `or choose from your models` link in the placeholder image area opens the library picker (`DESIGN_SYSTEM.md` §7.3) directly at the node — create-new and pick-existing are both node-local, never split across menu surfaces alone. Picking fills *this* node in place (provenance → `library_cast`, image → the model's canonical headshot, initial version row) rather than spawning a sibling. The picker is constrained to canonical cast reference imagery — never outfitted, styled, or scene outputs, which would smuggle non-reference imagery into an identity slot (§1.5).
+
 #### 3b. Generating additional views spawns separate view nodes
 
 Once a root exists, `+ Views` in the control strip opens a popover with checkboxes for the five canonical view types (headshot pre-checked and disabled — it's the root), a running cost total computed from real `CREDIT_COSTS` via the plan API, and Generate.
@@ -316,6 +318,8 @@ interface OperationPlan {
 
 // Pass-1 operations:
 boardOps.createNode          // drop a node (cast: creates an empty cast_root; library: places a library_cast/upload/reference)
+                             // D-28: the empty-cast-node picker path does NOT create — it fills the existing node in place
+                             // (provenance → library_cast, image → canonical headshot, initial version row)
 boardOps.updateNodeMetadata  // config changes on an existing node (debounced writes)
 boardOps.runGeneration       // fire a generation. First run on an empty cast_root invokes the prompt parser
                              // (three-path dispatch server-side). Result shape is engine- and media-agnostic:

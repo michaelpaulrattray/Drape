@@ -77,6 +77,12 @@ Referenced docs: `CANVAS_FOUNDATIONS.md` (F), `DESIGN_SYSTEM.md` (DS), `CANVAS_A
 | D-26 | **Backfill is provenance-aware**: legacy `type` rows get both `kind` and a stamped `metadata.provenance` using the `source*` FKs (e.g. `model`+`sourceModelId` → `library_cast`) | The original backfill set only `kind`, leaving old nodes provenance-less and invisible to the snapshot/agent layer | F §6 mapping table; migration script | RATIFY |
 | D-27 | **Board thumbnails stay fresh from canvas work** (update on first completed node + debounced thereafter) | The lobby's `recentWork` feed renders `thumbnailUrl`; a live canvas with a stale lobby card breaks the navigation model the brief mandates slotting into | F §1 | RATIFY |
 
+## Group 6b — Post-ratification founder directives
+
+| ID | Decision | Why | Affects | Status |
+|---|---|---|---|---|
+| D-28 | **Both paths at the node** (founder, 2026-07-10, with ElevenLabs Flows reference shots): the empty cast node carries a quiet secondary affordance — `or choose from your models` — opening the `LibraryPickerPopover` directly at the node; picking **fills the node in place** as `library_cast` (no sibling spawned). **Constraint:** the picker offers canonical cast reference imagery only — never outfitted/styled/scene outputs (ElevenLabs offers styles at pick time; Drape deliberately does not — §1.5 reference-asset framing). Patterns stolen, rendering not: popovers and hairlines, no modals/scrims | Create-new and pick-existing split across menu surfaces makes the empty node a dead end for returning users; merging them at the node is the stronger ergonomic, and the constraint keeps identity slots truthful | DS §5.12/§7.3/§9; F 3a/§4; build plan M4 (affordance slot) + M9 (picker wiring) | FOUNDER-DIRECTED (encoded) |
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

@@ -23,13 +23,13 @@
 | M1 | Tokens, shell primitives, zoom-tier mock | 1.5–2 | **VC1 — zoom tiers + chip-row density (tune D-1/2/3, re-eval D-19)** |
 | M2a | Generation-hook refactor (audit A1) | 1.5–2 | — |
 | M3a | Schema migration + boardOps core + job store | 2 | — |
-| M4 | **First interactive cast node (rough)** | 2–2.5 | **VC2 — cast a model from a sentence on a real board** |
+| M4 | **First interactive cast node (rough)** | 2.5–3 (D-28 picker core pulled in) | **VC2 — cast a model from a sentence on a real board** |
 | M2b | Remaining prerequisites + prompt parser | 2 | VC2.5 (async) — parsed chips fill in |
 | M5 | Lifted-component redesign + chip popovers + attributes op | 2.5–3 | **VC3 — the tactile loop** |
 | M6 | Toolbar, fork/recast, variations, delete+undo, keyboard | 2.5 | **VC4 — the grammar** |
 | M7 | Views, edges, stale/pin, snapshots | 3 | **VC5 — lineage and staleness** |
 | M8 | Refinement studio (4 tabs) | 4 | **VC6 — the deep path** |
-| M9 | Empty states, first-run, library bridge, thumbnails | 2 | **VC7 — first-touch experience** |
+| M9 | Empty states, first-run, library-bridge completion, thumbnails | 1.5–2 (picker core moved to M4) | **VC7 — first-touch experience** |
 | M10 | Hardening + success-criteria sweep | 1.5 | Dogfood start |
 | | **Total** | **≈ 24–27 focused days (~5 calendar weeks with feedback loops)** | |
 
@@ -82,11 +82,12 @@ Gate: `pnpm check`, `pnpm test`, both mechanical guards live from here.
 **Goal — the ratification hard requirement:** the founder casts a model from a sentence on a real board. Rough is fine; the loop is the deliverable.
 
 - `FloatingToolPill` with Add → Cast (menu may be Cast-only at this point).
-- `CastNode` v0: empty state (auto-select, focused `NodeInlinePrompt`, ghost chips — chips render, don't open), Run with `CostLabel` (from `runGeneration.plan`), generating state (job polling → progress), completed state (image, read-only prompt, Edit button present but inert). Prompt goes through as `userPrompt` passthrough — the engine already interprets free text; structured parsing arrives in M2b and simply starts filling the chips.
+- `CastNode` v0: empty state (auto-select, focused `NodeInlinePrompt`, attribute rows with faint Add values — rows render, popovers don't open yet), Run with `CostLabel` (from `runGeneration.plan`), generating state (job polling → progress), completed state (image, read-only prompt, Edit button present but inert). Prompt goes through as `userPrompt` passthrough — the engine already interprets free text; structured parsing arrives in M2b and simply starts filling the attributes.
+- **D-28 (pulled forward from M9):** the empty node's `or choose from your models` link + a minimal Models-only `LibraryPickerPopover` (grid + search over the existing models list procedure), wired to the **fill-in-place** path (provenance → `library_cast`, canonical headshot, initial version row). Constrained to canonical cast reference imagery per DS §7.3. M9 completes the picker (Add-menu placement path, garments tab prep, empty-library state).
 - Minimal `ImageNode` (upload/reference/library provenance render path) so backfilled legacy items still display; retire `BoardItemNode` for those kinds.
 - **Delete `BoardCastingPanel.tsx`** and the right-panel casting path — inline creation replaces it.
 
-**VC2 (founder, live):** open a board, drop a cast node, type a sentence, watch cost → run → progress → headshot. What's being felt: the prompt-to-result loop speed, the empty-node posture, selection/border behavior on the real shell. Known-rough list stated up front: chips inert, no toolbar, no views, Edit inert.
+**VC2 (founder, live):** open a board, drop a cast node, type a sentence, watch cost → run → progress → headshot — then drop a second cast node and take the other path: `or choose from your models` → pick → node fills in place. What's being felt: the prompt-to-result loop speed, the empty-node posture with both paths at the node (D-28), selection/border behavior on the real shell. Known-rough list stated up front: attribute popovers inert, no toolbar, no views, Edit inert, picker is Models-only.
 
 Gate: `pnpm check`, `pnpm test`, guards, studio smoke unaffected.
 
@@ -162,7 +163,7 @@ Gate: `pnpm check`, `pnpm test`, guards; the old overlay's deletion is in this m
 **Goal:** first-touch experience and the "boards don't start from zero" bridge.
 
 - First-run intro (DS §11.1; `canvasIntroSeen` on the profile), returning-user hint, all-views-exist popover state (landed in M7 — verify), empty library state.
-- `LibraryPickerPopover` + "From library" in the Add menu → `library_cast` placement (`boardOps.createNode`); canvas-minted casts confirmed visible in the Models library via the existing minting flow.
+- `LibraryPickerPopover` completion (the Models-only fill-in-place path shipped in M4 per D-28): "From library" in the Add menu → `library_cast` *placement* (`boardOps.createNode`), empty-library state, search polish, garments-tab prep for pass 2; canvas-minted casts confirmed visible in the Models library via the existing minting flow.
 - Board `thumbnailUrl` freshness: set on first completed node, debounced update thereafter (D-27); verify `lobby.recentWork` cards.
 
 **VC7 (founder, live, fresh account or reset flag):** open a brand-new board → the intro → `Cast your first model` → later, Add → From library placing an existing model → check the lobby card thumbnail. What's being felt: the welcome's restraint, whether the intro earns its permanence rule.
