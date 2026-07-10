@@ -174,6 +174,30 @@ export const boardOpsRouter = router({
       return boardOps.executeRemoveEdge(input);
     }),
 
+  /** D-28 picker data: models with canonical headshots only. */
+  listCastableModels: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(30) }).optional())
+    .query(async ({ ctx, input }) => {
+      return boardOps.listCastableModels(ctx.user.id, input?.limit ?? 30);
+    }),
+
+  /** D-28: fill an empty cast node in place from the Models library. */
+  fillFromLibrary: protectedProcedure
+    .input(z.object({
+      boardId: z.number().int().positive(),
+      itemId: z.number().int().positive(),
+      modelId: z.number().int().positive(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requireBoardOwnership(input.boardId, ctx.user.id);
+      await boardOps.requireItemInBoard(input.itemId, input.boardId);
+      return boardOps.executeFillFromLibrary({
+        userId: ctx.user.id,
+        itemId: input.itemId,
+        modelId: input.modelId,
+      });
+    }),
+
   runGeneration: router({
     plan: protectedProcedure
       .input(z.object({ boardId: z.number().int().positive(), itemId: z.number().int().positive() }))

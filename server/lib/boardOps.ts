@@ -19,6 +19,9 @@ import {
   addBoardItemVersion,
   getLatestVersionNumber,
   createModel,
+  getModelById,
+  getModelAssets,
+  createModelAsset,
   createGeneration,
   updateGeneration,
   deductPoints,
@@ -309,6 +312,16 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     }
     await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
 
+    // Register the headshot as a model asset (parity with the legacy flow) —
+    // the models library, the D-28 picker, and /studio resume all read these.
+    await createModelAsset({
+      modelId,
+      viewType: "frontClose",
+      resolution: "1K",
+      storageUrl: result.imageUrl,
+      pointsCost: cost,
+    });
+
     // Stamp the node: image + provenance (Decision 1 — engine recorded) + attrs
     const provenance: Provenance = {
       type: "cast_root",
@@ -361,6 +374,75 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     }).catch(() => {});
     throw error;
   }
+}
+
+// ── fillFromLibrary (D-28 — empty cast node picks an existing model) ───────
+//
+// Fills THIS node in place: provenance → library_cast, image → the model's
+// canonical headshot, initial version row. Never spawns a sibling.
+
+export async function executeFillFromLibrary(input: {
+  userId: number;
+  itemId: number;
+  modelId: number;
+}) {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+
+  const model = await getModelById(input.modelId);
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+
+  // Canonical reference imagery only (D-28 constraint): the frontClose asset.
+  const assets = await getModelAssets(input.modelId);
+  const headshot = assets.find((a) => a.viewType === "frontClose") ?? assets[0];
+  if (!headshot?.storageUrl) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no canonical imagery yet" });
+  }
+
+  const canonical = ["frontClose", "frontFull", "sideClose", "sideFull", "backFull"];
+  const provenance: Provenance = {
+    type: "library_cast",
+    modelId: input.modelId,
+    viewAngle: (canonical.includes(headshot.viewType) ? headshot.viewType : "frontClose") as
+      Extract<Provenance, { type: "library_cast" }>["viewAngle"],
+  };
+
+  const meta = readMeta(item);
+  await updateBoardItem(input.itemId, {
+    imageUrl: headshot.storageUrl,
+    label: model.name || item.label || "Model",
+    metadata: { ...meta, provenance, status: null, isGenerating: false },
+  });
+  const version = (await getLatestVersionNumber(input.itemId)) + 1;
+  await addBoardItemVersion({
+    itemId: input.itemId,
+    version,
+    imageUrl: headshot.storageUrl,
+    tool: "initial",
+  });
+  return { itemId: input.itemId, modelId: input.modelId, imageUrl: headshot.storageUrl, label: model.name };
+}
+
+// ── listCastableModels (D-28 picker data) ──────────────────────────────────
+//
+// Models represented ONLY by canonical cast reference imagery (frontClose
+// headshot). Models without one are excluded — never substituted with VTO
+// or styled outputs (§1.5).
+
+export async function listCastableModels(userId: number, limit = 30) {
+  const { getUserModels } = await import("../db");
+  const models = await getUserModels(userId, limit * 2); // headroom for filtering
+  const out: Array<{ id: number; name: string | null; headshotUrl: string }> = [];
+  for (const model of models) {
+    if (out.length >= limit) break;
+    const assets = await getModelAssets(model.id);
+    const headshot = assets.find((a) => a.viewType === "frontClose");
+    if (headshot?.storageUrl) {
+      out.push({ id: model.id, name: model.name, headshotUrl: headshot.storageUrl });
+    }
+  }
+  return out;
 }
 
 // ── Shared read helper for the router ──────────────────────────────────────

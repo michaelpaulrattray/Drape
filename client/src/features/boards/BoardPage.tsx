@@ -12,10 +12,10 @@ import { Loader2, Plus } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
-import { BoardCastingPanel } from './panels/BoardCastingPanel';
 import { ModelEditorOverlay } from './overlays/ModelEditorOverlay';
 import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
-import { CanvasToolbar, type CanvasToolId } from './components/CanvasToolbar';
+import { type CanvasToolId } from './components/CanvasToolbar';
+import { FloatingToolPill, type PillTool } from './canvas/FloatingToolPill';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
 import { NodeContextMenu, type NodeContextAction, type ViewAngle } from './components/NodeContextMenu';
@@ -69,6 +69,8 @@ function BoardPageImpl() {
   const viewportCenterGetterRef = useRef<(() => { x: number; y: number }) | null>(null);
   // Smooth scroll-to-node function exposed by BoardCanvas
   const scrollToNodeRef = useRef<((itemId: number) => void) | null>(null);
+  // Auto-select function exposed by BoardCanvas (freshly-dropped nodes)
+  const selectNodeRef = useRef<((itemId: number) => void) | null>(null);
 
   // Placement mode: 'note' or 'frame' — cursor becomes crosshair, next pane click places the node
   const [placementMode, setPlacementMode] = useState<'note' | 'frame' | null>(null);
@@ -249,16 +251,36 @@ function BoardPageImpl() {
     [placementMode, boardId],
   );
 
-  const handleModelGenerated = useCallback((_itemId: number) => {
-    // Model card was inserted onto the canvas
-  }, []);
+  // ── Inline cast creation (M4 — foundations 3a) ─────────────
+  const createCastNodeMutation = trpc.boardOps.createNode.execute.useMutation({
+    onSuccess: async (result) => {
+      await utils.boards.getItems.invalidate({ boardId });
+      selectNodeRef.current?.(result.itemId);
+      scrollToNodeRef.current?.(result.itemId);
+    },
+    onError: () => toast.error('Failed to add cast node'),
+  });
+
+  const castDropCountRef = useRef(0);
+  const handleAddCast = useCallback(() => {
+    const center = viewportCenterGetterRef.current?.() ?? { x: 0, y: 0 };
+    // Consecutive drops step right so nodes land beside each other, not stacked
+    const offset = (castDropCountRef.current++ % 4) * 300;
+    createCastNodeMutation.mutate({
+      boardId,
+      kind: 'cast_config',
+      provenance: null,
+      position: { x: center.x - 130 + offset, y: center.y - 130 },
+      size: { width: 260, height: 220 },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId]);
 
   const handleAddNodeAction = useCallback(
     (action: AddNodeAction) => {
       switch (action) {
         case 'cast':
-          setActivePanel('casting');
-          setActiveTool('cast');
+          handleAddCast();
           break;
         case 'wardrobe':
           setActivePanel('wardrobe');
@@ -279,7 +301,8 @@ function BoardPageImpl() {
       }
       setAddNodeMenu(null);
     },
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [handleAddCast],
   );
 
   const handleToolSelect = useCallback(
@@ -294,7 +317,7 @@ function BoardPageImpl() {
           setActivePanel(null);
           break;
         case 'cast':
-          setActivePanel('casting');
+          handleAddCast();
           break;
         case 'wardrobe':
           setActivePanel('wardrobe');
@@ -311,7 +334,8 @@ function BoardPageImpl() {
           break;
       }
     },
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [handleAddCast],
   );
 
   const handleCanvasContextMenu = useCallback(
@@ -402,6 +426,7 @@ function BoardPageImpl() {
       (items ?? []).map((item) => ({
         id: item.id,
         type: item.type as BoardItemRecord['type'],
+        kind: item.kind as BoardItemRecord['kind'],
         label: item.label,
         imageUrl: item.imageUrl,
         positionX: item.positionX,
@@ -471,7 +496,8 @@ function BoardPageImpl() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: '100vh', background: '#FAFAF8' }}>
+    // canvas-scope: light theme container for the canvas + its primitives (D-22)
+    <div className="canvas-scope flex flex-col" style={{ height: '100vh', background: '#FAFAF8' }}>
       <BoardHeader
         name={board.name}
         onRename={handleRename}
@@ -512,11 +538,27 @@ function BoardPageImpl() {
             onScrollToNodeRef={(scroller) => {
               scrollToNodeRef.current = scroller;
             }}
+            boardId={boardId}
+            onSelectNodeRef={(selector) => {
+              selectNodeRef.current = selector;
+            }}
             className="absolute inset-0"
           >
             {/* Bottom canvas UI — rendered inside ReactFlow for context access */}
             <CanvasZoomControls />
-            <CanvasToolbar activeTool={activeTool} onToolSelect={handleToolSelect} />
+            <FloatingToolPill
+              activeTool={
+                activeTool === 'note' ? 'note' : activeTool === 'frame' ? 'frame' : 'select'
+              }
+              onSelectTool={(tool: PillTool) => {
+                if (tool === 'add') {
+                  // Rough M4 Add: the AddNodeMenu anchored above the pill
+                  setAddNodeMenu({ x: window.innerWidth / 2 - 90, y: window.innerHeight - 320 });
+                  return;
+                }
+                handleToolSelect(tool);
+              }}
+            />
             <CanvasChatToggle />
           </BoardCanvas>
 
@@ -581,7 +623,6 @@ function BoardPageImpl() {
               }}
             >
               <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
-                {activePanel === 'casting' && 'Cast a Model'}
                 {activePanel === 'wardrobe' && 'Style an Outfit'}
                 {activePanel === 'export' && 'Export'}
               </span>
@@ -603,27 +644,19 @@ function BoardPageImpl() {
               </button>
             </div>
 
-            {/* Panel body */}
-            {activePanel === 'casting' ? (
-              <BoardCastingPanel
-                boardId={boardId}
-                onModelGenerated={handleModelGenerated}
-                getViewportCenter={viewportCenterGetterRef.current ?? undefined}
-                scrollToNode={scrollToNodeRef.current ?? undefined}
-              />
-            ) : (
-              <div className="flex-1 flex items-center justify-center p-6">
-                <div className="text-center">
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
-                    {activePanel === 'wardrobe' && 'Wardrobe Panel'}
-                    {activePanel === 'export' && 'Export Panel'}
-                  </p>
-                  <p style={{ fontSize: 13, color: '#a1a19a' }}>
-                    Tool integration coming soon.
-                  </p>
-                </div>
+            {/* Panel body — casting is now inline on the canvas (M4);
+                wardrobe arrives as canvas nodes in pass 2 */}
+            <div className="flex-1 flex items-center justify-center p-6">
+              <div className="text-center">
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+                  {activePanel === 'wardrobe' && 'Wardrobe Panel'}
+                  {activePanel === 'export' && 'Export Panel'}
+                </p>
+                <p style={{ fontSize: 13, color: '#a1a19a' }}>
+                  Tool integration coming soon.
+                </p>
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>

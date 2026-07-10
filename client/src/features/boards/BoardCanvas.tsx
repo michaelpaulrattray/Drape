@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   useNodesState,
   useEdgesState,
@@ -27,12 +28,17 @@ import '@xyflow/react/dist/style.css';
 import { BoardItemNode, type BoardItemNodeData, type BoardItemFlowNode } from './nodes/BoardItemNode';
 import { FrameNode, type FrameFlowNode } from './nodes/FrameNode';
 import { NoteNode, type NoteFlowNode } from './nodes/NoteNode';
+import { CastNode, type CastFlowNode, type CastNodeData } from './canvas/nodes/CastNode';
+import { ImageNode, type ImageFlowNode } from './canvas/nodes/ImageNode';
+import { ZoomTierContext, useZoomTier } from './canvas/zoomTiers';
+import type { BoardItemCanvasMetadata, Provenance } from '@shared/boardTypes';
 
 /* ── Types ────────────────────────────────────────────────── */
 
 export type BoardItemRecord = {
   id: number;
   type: 'model' | 'garment' | 'vto_result' | 'reference' | 'iteration' | 'note' | 'frame';
+  kind?: 'image' | 'cast_config' | 'wardrobe_config' | 'note' | 'frame' | 'video' | null;
   label: string | null;
   imageUrl: string | null;
   positionX: number;
@@ -69,6 +75,10 @@ type BoardCanvasProps = {
   crosshairCursor?: boolean;
   /** Expose a way for parent to smoothly scroll to a node by item ID */
   onScrollToNodeRef?: (scroller: (itemId: number) => void) => void;
+  /** Board id — threaded into node data for boardOps calls */
+  boardId: number;
+  /** Expose a way for parent to select a node (auto-select on drop) */
+  onSelectNodeRef?: (selector: (itemId: number) => void) => void;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -77,19 +87,67 @@ const nodeTypes: NodeTypes = {
   boardItem: BoardItemNode,
   frame: FrameNode,
   note: NoteNode,
+  cast: CastNode,
+  image: ImageNode,
 };
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
-type AnyFlowNode = BoardItemFlowNode | FrameFlowNode | NoteFlowNode;
+type AnyFlowNode = BoardItemFlowNode | FrameFlowNode | NoteFlowNode | CastFlowNode | ImageFlowNode;
+
+const CAST_PROVENANCE_TYPES = new Set(['cast_root', 'cast_view', 'library_cast']);
 
 function itemToNode(
   item: BoardItemRecord,
+  boardId: number,
   onDelete?: (id: number) => void,
   onRename?: (id: number, label: string) => void,
   onVersionHistory?: (id: number) => void,
   onResize?: (id: number, width: number, height: number) => void,
 ): AnyFlowNode {
+  const meta = (item.metadata ?? {}) as BoardItemCanvasMetadata;
+  const provenance = meta.provenance ?? null;
+
+  // New canvas node types (kind-driven; CANVAS_FOUNDATIONS Decision 1).
+  // cast_config = freshly-dropped empty cast; image + cast provenance = cast output.
+  if (item.kind === 'cast_config' || (provenance && CAST_PROVENANCE_TYPES.has(provenance.type))) {
+    return {
+      id: `item-${item.id}`,
+      type: 'cast',
+      position: { x: item.positionX, y: item.positionY },
+      zIndex: item.zIndex,
+      data: {
+        itemId: item.id,
+        boardId,
+        provenance: provenance as CastNodeData['provenance'],
+        label: item.label,
+        imageUrl: item.imageUrl,
+        userPrompt: meta.userPrompt,
+        attributes: meta.attributes,
+        status: meta.status ?? null,
+        pinned: meta.pinned === true,
+        version: 1, // version count wiring arrives with the M6 toolbar
+      } satisfies CastNodeData,
+    } as CastFlowNode;
+  }
+
+  if (item.kind === 'image') {
+    return {
+      id: `item-${item.id}`,
+      type: 'image',
+      position: { x: item.positionX, y: item.positionY },
+      zIndex: item.zIndex,
+      data: {
+        itemId: item.id,
+        boardId,
+        provenance,
+        label: item.label,
+        imageUrl: item.imageUrl,
+        width: item.width,
+        height: item.height,
+      },
+    } as ImageFlowNode;
+  }
   // Frame nodes
   if (item.type === 'frame') {
     return {
@@ -151,7 +209,17 @@ function itemToNode(
 
 /** Build a fingerprint of item data (excluding position) for change detection */
 function itemFingerprint(item: BoardItemRecord): string {
-  return `${item.id}|${item.type}|${item.label ?? ''}|${item.imageUrl ?? ''}|${item.width}|${item.height}|${item.zIndex}`;
+  // Canvas-relevant metadata (status/pinned/attributes) must invalidate the
+  // node — completion, errors, and staleness all arrive via metadata.
+  const meta = (item.metadata ?? {}) as BoardItemCanvasMetadata;
+  const metaSig = JSON.stringify({
+    p: meta.provenance?.type ?? null,
+    s: meta.status?.type ?? null,
+    pin: meta.pinned === true,
+    up: meta.userPrompt ?? '',
+    a: meta.attributes ? Object.keys(meta.attributes).length : 0,
+  });
+  return `${item.id}|${item.type}|${item.kind ?? ''}|${item.label ?? ''}|${item.imageUrl ?? ''}|${item.width}|${item.height}|${item.zIndex}|${metaSig}`;
 }
 
 /* ── Component ────────────────────────────────────────────── */
@@ -175,10 +243,27 @@ export function BoardCanvas({
   onViewportCenterRef,
   crosshairCursor,
   onScrollToNodeRef,
+  boardId,
+  onSelectNodeRef,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
   const isDraggingRef = useRef(false);
+  const pendingSelectRef = useRef<number | null>(null);
+
+  // Expose auto-select: applies immediately if the node exists, otherwise on
+  // the next rebuild (freshly-created items arrive via query invalidation)
+  useEffect(() => {
+    onSelectNodeRef?.((itemId: number) => {
+      pendingSelectRef.current = itemId;
+      setNodes((prev) => {
+        if (!prev.some((n) => n.id === `item-${itemId}`)) return prev;
+        pendingSelectRef.current = null;
+        return prev.map((n) => ({ ...n, selected: n.id === `item-${itemId}` }));
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onSelectNodeRef]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>([]);
   const [edges] = useEdgesState<Edge>([]);
@@ -202,11 +287,22 @@ export function BoardCanvas({
     // Don't reset nodes while user is actively dragging
     if (isDraggingRef.current) return;
 
-    const nextNodes = items.map((item) =>
-      itemToNode(item, onItemDelete, onItemRename, onVersionHistory, onItemResize),
-    );
-    setNodes(nextNodes);
-  }, [items, onItemDelete, onItemRename, onVersionHistory, onItemResize, setNodes]);
+    setNodes((prev) => {
+      // Preserve selection across rebuilds; honor a pending auto-select
+      // (freshly-dropped cast nodes must arrive selected — foundations 3a)
+      const selectedIds = new Set(prev.filter((n) => n.selected).map((n) => n.id));
+      const pendingId = pendingSelectRef.current;
+      if (pendingId !== null) {
+        selectedIds.clear();
+        selectedIds.add(`item-${pendingId}`);
+        pendingSelectRef.current = null;
+      }
+      return items.map((item) => {
+        const node = itemToNode(item, boardId, onItemDelete, onItemRename, onVersionHistory, onItemResize);
+        return selectedIds.has(node.id) ? { ...node, selected: true } : node;
+      });
+    });
+  }, [items, boardId, onItemDelete, onItemRename, onVersionHistory, onItemResize, setNodes]);
 
   // Handle node drag + position persistence
   const handleNodesChange: OnNodesChange<AnyFlowNode> = useCallback(
@@ -286,6 +382,8 @@ export function BoardCanvas({
         height: '100%',
       }}
     >
+      <ReactFlowProvider>
+        <ZoomTierBridge>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -371,6 +469,14 @@ export function BoardCanvas({
         />
         {children}
       </ReactFlow>
+        </ZoomTierBridge>
+      </ReactFlowProvider>
     </div>
   );
+}
+
+/** Provides the zoom tier to all nodes (DS §12). Must sit inside ReactFlowProvider. */
+function ZoomTierBridge({ children }: { children: ReactNode }) {
+  const value = useZoomTier();
+  return <ZoomTierContext.Provider value={value}>{children}</ZoomTierContext.Provider>;
 }
