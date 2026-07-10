@@ -20,6 +20,15 @@ interface StudioState {
   activeTool: ActiveTool;
   setActiveTool: (tool: ActiveTool) => void;
 
+  /**
+   * Wardrobe-start state — shown when the user entered via the Wardrobe
+   * deep link but has no session to resume and no model loaded yet
+   * (pick a minted model or upload a photo). Only meaningful while
+   * activeTool is null; cleared whenever a tool activates.
+   */
+  wardrobeStart: boolean;
+  setWardrobeStart: (value: boolean) => void;
+
   /** Shared canvas state — derived from model assets */
   canvas: CanvasState;
   setCanvas: (canvas: Partial<CanvasState>) => void;
@@ -46,7 +55,19 @@ export const useStudioStore = create<StudioState>()(
   devtools(
     (set) => ({
       activeTool: null, // Start in lobby state
-      setActiveTool: (tool) => set({ activeTool: tool }, false, 'setActiveTool'),
+      setActiveTool: (tool) =>
+        set(
+          (state) => ({
+            activeTool: tool,
+            wardrobeStart: tool === null ? state.wardrobeStart : false,
+          }),
+          false,
+          'setActiveTool'
+        ),
+
+      wardrobeStart: false,
+      setWardrobeStart: (value) =>
+        set({ wardrobeStart: value }, false, 'setWardrobeStart'),
 
       canvas: { ...DEFAULT_CANVAS },
       setCanvas: (partial) =>
@@ -71,6 +92,7 @@ export const useStudioStore = create<StudioState>()(
               isMinted: false,
             },
             activeTool: 'wardrobe' as StudioTool,
+            wardrobeStart: false,
           },
           false,
           'loadModelFromUpload'
@@ -91,6 +113,7 @@ export const useStudioStore = create<StudioState>()(
               isMinted: true, // Gallery-loaded models are always minted
             },
             activeTool: 'wardrobe' as StudioTool,
+            wardrobeStart: false,
           },
           false,
           'loadModelFromCast'
@@ -120,6 +143,7 @@ export const useStudioStore = create<StudioState>()(
         set(
           {
             activeTool: null, // Reset to lobby
+            wardrobeStart: false,
             canvas: { ...DEFAULT_CANVAS },
             isRailCollapsed: false,
           },

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { useLocation, useSearch } from 'wouter';
+import { useLocation } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { toast } from 'sonner';
 import { Camera, Loader2 } from 'lucide-react';
@@ -9,13 +9,12 @@ import { Camera, Loader2 } from 'lucide-react';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 import { AppSidebar } from '@/features/studio/components/AppSidebar';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
-import { StudioLobby } from '@/features/studio/components/StudioLobby';
-import type { DraftModel } from '@/features/studio/components/DraftCastsRow';
+import { WardrobeStart } from '@/features/studio/components/WardrobeStart';
 import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
 import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition';
-import type { StudioTool } from '@/features/studio/types';
+import { useStudioEntry } from '@/features/studio/hooks/useStudioEntry';
 
 // Wardrobe tool imports
 import { WardrobeWorkspaceSection } from '@/features/wardrobe';
@@ -47,19 +46,12 @@ import { CastModelModal } from '@/features/studio/components/CastModelModal';
 import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
 
-/** Valid tool query param values */
-const VALID_TOOLS: StudioTool[] = ['casting', 'wardrobe', 'export'];
-
 export default function DrapeStudio() {
   const [, navigate] = useLocation();
-  const searchString = useSearch();
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
 
   // Studio store
-  const { activeTool, setActiveTool, canvas, setCanvas } = useStudioStore();
-
-  // tRPC utils for imperative fetching (draft resume)
-  const trpcUtils = trpc.useUtils();
+  const { activeTool, canvas, setCanvas, wardrobeStart } = useStudioStore();
 
   // Sidebar: profile, billing, referral modals
   const [showSettings, setShowSettings] = useState(false);
@@ -92,15 +84,21 @@ export default function DrapeStudio() {
   const { isRestoring } = useSessionRestore(isAuthenticated);
   useSessionAutoSave();
 
-  // Always start in lobby on mount, then check for ?tool= override
+  // URL-driven entry: resolves ?tool/?new/?modelId/?sessionId once auth
+  // and the localStorage restore have settled; bare /studio → /app.
+  const { entryStatus } = useStudioEntry({ isAuthenticated, isRestoring });
+
+  // Null-tool watcher — with the studio lobby retired, landing on
+  // activeTool=null without the wardrobe-start screen means "leave the
+  // studio" (e.g. sidebar Home reset). Gated on entryStatus so it cannot
+  // fire while the async entry above is still resolving (see the
+  // invariants documented in useStudioEntry).
   useEffect(() => {
-    setActiveTool(null); // Reset to lobby on every navigation to /studio
-    const params = new URLSearchParams(searchString);
-    const toolParam = params.get('tool') as StudioTool | null;
-    if (toolParam && VALID_TOOLS.includes(toolParam)) {
-      setActiveTool(toolParam);
+    if (entryStatus !== 'settled') return;
+    if (activeTool === null && !wardrobeStart) {
+      navigate('/app');
     }
-  }, []); // Only on mount
+  }, [entryStatus, activeTool, wardrobeStart, navigate]);
 
   // Casting stores
   const { prefs, modelName } = useCastingFormStore();
@@ -254,13 +252,15 @@ export default function DrapeStudio() {
 
   const isNonCastModel = activeTool === 'casting' && canvas.modelSource === 'uploaded';
 
-  // New Model — resets entire session
+  // New Model — resets entire session, then stays in casting (with the
+  // lobby gone, landing on activeTool=null would bounce to /app)
   const handleNewModel = useCallback(() => {
     useStudioStore.getState().resetStudio();
     useCastingGenerationStore.getState().resetGeneration();
     useCastingFormStore.getState().resetForm();
     useWardrobeStore.getState().resetWardrobe();
     clearPersistedSession();
+    useStudioStore.getState().setActiveTool('casting');
     toast.success('Starting fresh canvas');
   }, []);
 
@@ -292,8 +292,9 @@ export default function DrapeStudio() {
     return Math.round((c.filter(Boolean).length / 12) * 100);
   }, [prefs]);
 
-  // Loading state
-  if (authLoading || isRestoring) {
+  // Loading state — held until the URL entry has resolved, so no stale
+  // tool (or nothing at all) flashes while an async resume is in flight
+  if (authLoading || isRestoring || entryStatus === 'resolving') {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -303,8 +304,6 @@ export default function DrapeStudio() {
       </div>
     );
   }
-
-  const isLobby = activeTool === null;
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ background: '#FAFAF8' }}>
@@ -348,97 +347,16 @@ export default function DrapeStudio() {
 
         {/* Tool Content Area */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
-          {/* Lobby — fades in/out */}
-          {isLobby && (
+          {/* Wardrobe start — pick/upload a model (no session to resume) */}
+          {activeTool === null && wardrobeStart && (
             <div
-              className="flex-1 min-h-0"
+              className="flex-1 min-h-0 flex"
               style={{
                 opacity: transition.lobbyVisible ? 1 : 0,
                 transition: 'opacity 300ms cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
-              <StudioLobby
-                onSelectCasting={() => {
-                  useCastingGenerationStore.getState().resetGeneration();
-                  useCastingFormStore.getState().resetForm();
-                  useWardrobeStore.getState().resetWardrobe();
-                  setCanvas({ castModelId: null, castFullBodyUrl: null, castMasterPrompt: null, hasModel: false, hasFullBody: false, hasAllViews: false, modelSource: null, uploadedModelUrl: null, isMinted: false });
-                  setActiveTool('casting');
-                }}
-                onResumeDraft={(draft: DraftModel) => {
-                  // Reset stores first
-                  useCastingGenerationStore.getState().resetGeneration();
-                  useCastingUIStore.getState().resetUI();
-                  useWardrobeStore.getState().resetWardrobe();
-
-                  // Restore casting generation state from the draft
-                  const genStore = useCastingGenerationStore.getState();
-                  genStore.setCurrentModelId(draft.id);
-                  genStore.setCurrentMasterPrompt(draft.masterPrompt);
-                  if (draft.technicalSchema) {
-                    genStore.setCurrentTechnicalSchema(draft.technicalSchema);
-                  }
-
-                  // Restore form preferences if available
-                  if (draft.preferences) {
-                    const formStore = useCastingFormStore.getState();
-                    formStore.setPrefs(draft.preferences as any);
-                    formStore.setModelName(draft.name || '');
-                  }
-
-                  // Set canvas immediately with the thumbnail we already have
-                  // (the draft thumbnail is the headshot — good enough for instant transition)
-                  setCanvas({
-                    castModelId: draft.id,
-                    castFullBodyUrl: null,
-                    castMasterPrompt: draft.masterPrompt,
-                    hasModel: true,
-                    hasFullBody: false,
-                    hasAllViews: false,
-                    modelSource: 'cast',
-                    uploadedModelUrl: null,
-                    isMinted: false,
-                  });
-
-                  // Switch to casting tool instantly — no waiting
-                  setActiveTool('casting');
-                  toast.success(`Resumed draft \u2014 ${draft.name || 'Draft Model'}`);
-
-                  // Fetch full assets in background and update stores when ready
-                  trpcUtils.models.get.fetch({ modelId: draft.id }).then((model) => {
-                    if (model?.assets?.length) {
-                      const currentGenStore = useCastingGenerationStore.getState();
-                      // Only update if we're still on this draft (user didn't navigate away)
-                      if (currentGenStore.currentModelId !== draft.id) return;
-
-                      const { history: rebuiltHistory, historyIndex: rebuiltIndex, currentAssets: rebuiltAssets } = buildHistoryFromAssets(
-                        model.assets as Array<{ id: number; viewType: string; storageUrl: string }>
-                      );
-                      currentGenStore.setCurrentAssets(rebuiltAssets);
-                      currentGenStore.setHistory(rebuiltHistory);
-                      currentGenStore.setHistoryIndex(rebuiltIndex);
-                      useCastingGenerationStore.setState({ historyAmendments: rebuiltHistory.map(() => []) });
-
-                      const fullBody = model.assets.find((a: { viewType: string }) => a.viewType === 'frontFull');
-                      const sideView = model.assets.find((a: { viewType: string }) => a.viewType === 'sideClose');
-
-                      setCanvas({
-                        castModelId: draft.id,
-                        castFullBodyUrl: fullBody?.storageUrl || null,
-                        castMasterPrompt: draft.masterPrompt,
-                        hasModel: true,
-                        hasFullBody: !!fullBody,
-                        hasAllViews: !!(fullBody && sideView),
-                        modelSource: 'cast',
-                        uploadedModelUrl: null,
-                        isMinted: false,
-                      });
-                    }
-                  }).catch(() => {
-                    // Silently fail — canvas already has minimal state set above
-                  });
-                }}
-              />
+              <WardrobeStart />
             </div>
           )}
 

@@ -48,9 +48,10 @@ export function useSessionReset() {
   const resetAndSwitchTo = useCallback((tool: StudioTool) => {
     resetWardrobe();
     clearUploadedModel(); // resets canvas to defaults
-    // Override the lobby redirect — go directly to the target tool.
-    // setTimeout ensures the state update from clearUploadedModel settles first.
-    setTimeout(() => setActiveTool(tool), 0);
+    // Zustand sets are synchronous and React batches the re-render, so the
+    // intermediate activeTool=null state never paints (and never trips the
+    // null-tool redirect back to /app).
+    setActiveTool(tool);
   }, [resetWardrobe, clearUploadedModel, setActiveTool]);
 
   /**
