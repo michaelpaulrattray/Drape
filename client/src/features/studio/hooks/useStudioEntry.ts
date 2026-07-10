@@ -12,7 +12,9 @@
  *     state-driven code path issues it.
  *  2. entryStatus stays 'resolving' until a terminal branch has run.
  *     Every terminal branch — including the async wardrobe ones —
- *     synchronously sets activeTool to a tool OR wardrobeStart=true
+ *     synchronously sets activeTool to a tool OR (resetStudio +
+ *     wardrobeStart=true; the reset matters because a stale activeTool
+ *     left over from in-app navigation would out-render WardrobeStart)
  *     BEFORE the finally block flips entryStatus to 'settled'. The
  *     page's null-tool watcher is gated on entryStatus === 'settled',
  *     so it provably cannot fire mid-resolution, and at the moment the
@@ -146,15 +148,20 @@ export function useStudioEntry({ isAuthenticated, isRestoring }: UseStudioEntryO
           resumeWardrobeSession(target);
           toast.success(`Resumed session — ${target.modelName || 'Uploaded Model'}`);
         } else {
-          // Nothing to resume — clean slate, then show the start screen
+          // Nothing to resume — clean slate, then show the start screen.
+          // resetStudio also nulls activeTool: a leftover tool from a
+          // previous in-app studio visit would otherwise render instead
+          // of WardrobeStart (which requires activeTool === null).
           useCastingGenerationStore.getState().resetGeneration();
           useCastingFormStore.getState().resetForm();
           useWardrobeStore.getState().resetWardrobe();
+          useStudioStore.getState().resetStudio();
           setWardrobeStart(true);
         }
       } catch {
         // Fetch failed — the start screen is the safe landing
         toast.error('Could not load your sessions');
+        useStudioStore.getState().resetStudio();
         setWardrobeStart(true);
       } finally {
         finish();
