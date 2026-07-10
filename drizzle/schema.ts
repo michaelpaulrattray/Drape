@@ -757,10 +757,20 @@ export type InsertBoard = typeof boards.$inferInsert;
 export const BOARD_ITEM_TYPES = ["model", "garment", "vto_result", "reference", "iteration", "note", "frame"] as const;
 export type BoardItemType = typeof BOARD_ITEM_TYPES[number];
 
+/**
+ * Canvas rebuild (docs/specs/CANVAS_FOUNDATIONS.md Decision 1): `kind` governs
+ * rendering; everything else lives in metadata.provenance. The legacy `type`
+ * enum remains one migration cycle as a compatibility fallback — new code
+ * writes both, reads `kind`.
+ */
+export const BOARD_ITEM_KINDS = ["image", "cast_config", "wardrobe_config", "note", "frame", "video"] as const;
+export type BoardItemKind = typeof BOARD_ITEM_KINDS[number];
+
 export const boardItems = mysqlTable("board_items", {
   id: int("id").autoincrement().primaryKey(),
   boardId: int("boardId").notNull(),
   type: mysqlEnum("type", ["model", "garment", "vto_result", "reference", "iteration", "note", "frame"]).notNull(),
+  kind: mysqlEnum("kind", ["image", "cast_config", "wardrobe_config", "note", "frame", "video"]), // null until backfilled
   label: varchar("label", { length: 256 }),
   imageUrl: text("imageUrl"), // S3 URL of the visual (null for notes)
   imageKey: varchar("imageKey", { length: 256 }),
@@ -771,16 +781,19 @@ export const boardItems = mysqlTable("board_items", {
   height: int("height").default(280).notNull(),
   zIndex: int("zIndex").default(0).notNull(),
   // Relationships — optional back-references to source records
-  parentItemId: int("parentItemId"), // Self-ref: links iteration → parent, VTO → model
+  parentItemId: int("parentItemId"), // Self-ref: legacy lineage. Frozen — new code writes board_edges (Decision 2)
   sourceModelId: int("sourceModelId"), // FK → models (if this item is a cast model)
   sourceGarmentId: int("sourceGarmentId"), // FK → wardrobe_garments (if this item is a garment)
   sourceSessionId: int("sourceSessionId"), // FK → wardrobe_sessions (if this item is a VTO result)
   sourceLookId: int("sourceLookId"), // FK → wardrobe_looks (if this item is a saved look)
-  // Tool-specific metadata (casting preferences, style notes, etc.)
+  // Tool-specific metadata (casting attributes, provenance, status, pinned…)
   metadata: json("metadata"),
+  // Soft delete (foundations Decision 7 — delete is undoable)
+  deletedAt: timestamp("deletedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ([
   index("idx_board_items_board").on(table.boardId, table.type),
+  index("idx_board_items_kind").on(table.kind),
 ]));
 
 export type BoardItem = typeof boardItems.$inferSelect;
@@ -804,3 +817,46 @@ export const boardItemVersions = mysqlTable("board_item_versions", {
 
 export type BoardItemVersion = typeof boardItemVersions.$inferSelect;
 export type InsertBoardItemVersion = typeof boardItemVersions.$inferInsert;
+
+/**
+ * Board edges — first-class DAG lineage for canvas items
+ * (CANVAS_FOUNDATIONS.md Decision 2). Fashion workflows are DAGs, not trees:
+ * one VTO result has one model parent plus N garment parents. New code writes
+ * edges; `board_items.parentItemId` is frozen legacy.
+ */
+export const BOARD_EDGE_RELATIONS = [
+  "iterated_from",
+  "vto_input_model",
+  "vto_input_garment",
+  "reference_for",
+  "variant_of",
+  "generated_from_cast",
+  "forked_from",
+] as const;
+export type BoardEdgeRelation = typeof BOARD_EDGE_RELATIONS[number];
+
+export const boardEdges = mysqlTable("board_edges", {
+  id: int("id").autoincrement().primaryKey(),
+  boardId: int("boardId").notNull(),
+  sourceItemId: int("sourceItemId").notNull(),
+  targetItemId: int("targetItemId").notNull(),
+  relation: mysqlEnum("relation", [
+    "iterated_from",
+    "vto_input_model",
+    "vto_input_garment",
+    "reference_for",
+    "variant_of",
+    "generated_from_cast",
+    "forked_from",
+  ]).notNull(),
+  // Edge-level context (D-30 reserves { viewAngle } for weighted references)
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  index("idx_board_edges_source").on(table.sourceItemId),
+  index("idx_board_edges_target").on(table.targetItemId),
+  index("idx_board_edges_board").on(table.boardId),
+]));
+
+export type BoardEdge = typeof boardEdges.$inferSelect;
+export type InsertBoardEdge = typeof boardEdges.$inferInsert;

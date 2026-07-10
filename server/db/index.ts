@@ -213,6 +213,8 @@ export {
   batchUpdateBoardItemPositions,
   deleteBoardItem,
   deleteBoardItems,
+  softDeleteBoardItems,
+  undoDeleteBoardItems,
   // Board Item Versions
   addBoardItemVersion,
   getBoardItemVersions,

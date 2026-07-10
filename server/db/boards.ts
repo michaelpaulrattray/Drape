@@ -1,7 +1,7 @@
 /**
  * Board DB Helpers — CRUD operations for boards and board items.
  */
-import { eq, and, desc, asc, inArray, sql } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, sql, isNull } from "drizzle-orm";
 import { getDb } from "./connection";
 import {
   boards,
@@ -83,11 +83,33 @@ export async function addBoardItems(items: InsertBoardItem[]) {
 
 export async function getBoardItems(boardId: number) {
   const db = (await getDb())!;
+  // Soft-deleted rows are invisible everywhere (foundations Decision 7);
+  // undoDelete clears deletedAt to restore.
   return db
     .select()
     .from(boardItems)
-    .where(eq(boardItems.boardId, boardId))
+    .where(and(eq(boardItems.boardId, boardId), isNull(boardItems.deletedAt)))
     .orderBy(asc(boardItems.createdAt));
+}
+
+// ── Soft delete (foundations Decision 7 — delete is undoable) ─────────────
+
+export async function softDeleteBoardItems(itemIds: number[]) {
+  if (itemIds.length === 0) return;
+  const db = (await getDb())!;
+  await db
+    .update(boardItems)
+    .set({ deletedAt: new Date() })
+    .where(inArray(boardItems.id, itemIds));
+}
+
+export async function undoDeleteBoardItems(itemIds: number[]) {
+  if (itemIds.length === 0) return;
+  const db = (await getDb())!;
+  await db
+    .update(boardItems)
+    .set({ deletedAt: null })
+    .where(inArray(boardItems.id, itemIds));
 }
 
 export async function getBoardItemById(itemId: number) {

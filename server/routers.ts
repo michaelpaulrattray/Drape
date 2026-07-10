@@ -29,6 +29,7 @@ import { accountRouter } from "./routes/account";
 import { bugReportsRouter } from "./routes/bugReports";
 import { wardrobeRouter } from "./routes/wardrobe";
 import { boardsRouter } from "./routes/boards";
+import { boardOpsRouter } from "./routes/boardOps";
 import { lobbyRouter } from "./routes/lobby";
 
 export const appRouter = router({
@@ -56,6 +57,7 @@ export const appRouter = router({
   bugReports: bugReportsRouter,
   wardrobe: wardrobeRouter,
   boards: boardsRouter,
+  boardOps: boardOpsRouter,
   lobby: lobbyRouter,
 });
 
