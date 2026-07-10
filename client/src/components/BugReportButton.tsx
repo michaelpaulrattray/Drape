@@ -180,6 +180,3 @@ export function BugReportTrigger() {
  * @deprecated Use BugReportTrigger inside nav bars instead.
  * Kept for backwards compatibility — renders nothing.
  */
-export default function BugReportButton() {
-  return null;
-}

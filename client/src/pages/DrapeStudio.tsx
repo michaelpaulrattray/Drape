@@ -314,7 +314,6 @@ export default function DrapeStudio() {
         user={user}
         profileImage={profileImage}
         creditsBalance={creditsData?.balance || 0}
-        planTier={creditsData?.planTier || 'free'}
         onOpenSettings={() => setShowSettings(true)}
         onOpenBilling={() => setIsBillingOpen(true)}
         onOpenReferral={() => setIsReferralOpen(true)}

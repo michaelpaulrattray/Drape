@@ -11,6 +11,8 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 interface ToolsIndexProps {
   onNewCanvas: () => void;
   isCreatingCanvas: boolean;
+  /** True when the user has no work yet — the index reads as a guided path. */
+  firstRun?: boolean;
 }
 
 interface ToolRowProps {
@@ -19,9 +21,10 @@ interface ToolRowProps {
   description: string;
   onClick: () => void;
   pending?: boolean;
+  cue?: string;
 }
 
-function ToolRow({ number, title, description, onClick, pending }: ToolRowProps) {
+function ToolRow({ number, title, description, onClick, pending, cue }: ToolRowProps) {
   return (
     <button
       onClick={onClick}
@@ -56,6 +59,20 @@ function ToolRow({ number, title, description, onClick, pending }: ToolRowProps)
       >
         {title}
       </span>
+      {cue && (
+        <span
+          className="flex-shrink-0 hidden sm:block"
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: '#B0AFA8',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {cue}
+        </span>
+      )}
       <span
         className="hidden sm:block ml-auto text-right"
         style={{ fontSize: 14, color: '#71716A' }}
@@ -77,7 +94,7 @@ function ToolRow({ number, title, description, onClick, pending }: ToolRowProps)
   );
 }
 
-export function ToolsIndex({ onNewCanvas, isCreatingCanvas }: ToolsIndexProps) {
+export function ToolsIndex({ onNewCanvas, isCreatingCanvas, firstRun }: ToolsIndexProps) {
   const [, navigate] = useLocation();
 
   return (
@@ -94,6 +111,7 @@ export function ToolsIndex({ onNewCanvas, isCreatingCanvas }: ToolsIndexProps) {
           title="Casting Studio"
           description="Cast and refine AI models from a brief"
           onClick={() => navigate('/studio?tool=casting&new=1')}
+          cue={firstRun ? 'Start here' : undefined}
         />
         <ToolRow
           number="02"

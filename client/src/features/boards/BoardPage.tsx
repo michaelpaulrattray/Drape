@@ -80,7 +80,7 @@ export function BoardPage() {
 
   const renameMutation = trpc.boards.update.useMutation({
     onSuccess: () => utils.boards.get.invalidate({ id: boardId }),
-    onError: () => toast.error('Failed to rename board'),
+    onError: () => toast.error('Failed to rename canvas'),
   });
 
   const saveViewportMutation = trpc.boards.saveViewport.useMutation();
@@ -408,7 +408,7 @@ export function BoardPage() {
   if (isNaN(boardId)) {
     return (
       <div className="flex-1 flex items-center justify-center" style={{ background: '#FAFAF8' }}>
-        <p style={{ color: '#71716A', fontSize: 15 }}>Invalid board ID</p>
+        <p style={{ color: '#71716A', fontSize: 15 }}>Invalid canvas ID</p>
       </div>
     );
   }
@@ -434,8 +434,8 @@ export function BoardPage() {
       <div className="flex-1 flex flex-col items-center justify-center gap-4" style={{ background: '#FAFAF8' }}>
         <p style={{ color: '#71716A', fontSize: 15 }}>
           {boardError?.message === 'Board not found'
-            ? "This board doesn't exist or was deleted."
-            : 'Failed to load board.'}
+            ? "This canvas doesn't exist or was deleted."
+            : 'Failed to load canvas.'}
         </p>
         <button
           onClick={() => navigate('/app')}

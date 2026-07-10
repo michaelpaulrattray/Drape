@@ -11,7 +11,9 @@ import { getUserBoards } from "../db/boards";
 import { getRecentUserSessions } from "../db/wardrobe";
 import { getUserDraftModelsWithThumbnail } from "../db/models";
 
-const DEFAULT_LIMIT = 12;
+// 8 = two clean rows at the lobby's 4-across laptop layout; Home is a
+// resume surface, the full archives live in Boards and the library pages.
+const DEFAULT_LIMIT = 8;
 const DRAFTS_LIMIT = 6;
 
 type BoardRow = Awaited<ReturnType<typeof getUserBoards>>[number];

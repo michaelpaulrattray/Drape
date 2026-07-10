@@ -26,7 +26,7 @@ export function useBoardMutations() {
       navigate(`/app/board/${board.id}`);
     },
     onError: (err) => {
-      toast.error(err.message || 'Failed to create board');
+      toast.error(err.message || 'Failed to create canvas');
     },
   });
 
@@ -41,9 +41,9 @@ export function useBoardMutations() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) utils.lobby.recentWork.setData(undefined, ctx.prev);
-      toast.error('Failed to delete board');
+      toast.error('Failed to delete canvas');
     },
-    onSuccess: () => toast.success('Board deleted'),
+    onSuccess: () => toast.success('Canvas deleted'),
     onSettled: invalidate,
   });
 
@@ -58,9 +58,9 @@ export function useBoardMutations() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) utils.lobby.recentWork.setData(undefined, ctx.prev);
-      toast.error('Failed to archive board');
+      toast.error('Failed to archive canvas');
     },
-    onSuccess: () => toast.success('Board archived'),
+    onSuccess: () => toast.success('Canvas archived'),
     onSettled: invalidate,
   });
 
@@ -77,7 +77,7 @@ export function useBoardMutations() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) utils.lobby.recentWork.setData(undefined, ctx.prev);
-      toast.error('Failed to rename board');
+      toast.error('Failed to rename canvas');
     },
     onSettled: invalidate,
   });
@@ -85,7 +85,7 @@ export function useBoardMutations() {
   const createBoard = useCallback(
     (startedWith: 'casting' | 'wardrobe' | 'blank') => {
       if (createBoardMutation.isPending) return;
-      createBoardMutation.mutate({ name: 'Untitled Board', startedWith });
+      createBoardMutation.mutate({ name: 'Untitled Canvas', startedWith });
     },
     [createBoardMutation],
   );

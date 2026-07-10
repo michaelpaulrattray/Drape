@@ -17,14 +17,8 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Settings,
-  LogOut,
-  CreditCard,
-  Gift,
-  Shield,
-  Eye,
-  LayoutDashboard,
 } from 'lucide-react';
+import { UserCard } from '@/components/UserCard';
 import { useStudioStore } from '../stores/useStudioStore';
 import { useSessionReset } from '../hooks/useSessionReset';
 import {
@@ -69,7 +63,6 @@ interface AppSidebarProps {
   } | null;
   profileImage?: string | null;
   creditsBalance: number;
-  planTier: string;
   onOpenSettings: () => void;
   onOpenBilling: () => void;
   onOpenReferral: () => void;
@@ -82,7 +75,6 @@ export function AppSidebar({
   user,
   profileImage,
   creditsBalance,
-  planTier,
   onOpenSettings,
   onOpenBilling,
   onOpenReferral,
@@ -334,26 +326,6 @@ export function AppSidebar({
             );
           })}
 
-          {/* Admin / Moderator links */}
-          {(user?.role === 'admin' || user?.role === 'moderator') && (
-            <>
-              <SectionDivider expanded={expanded} label="Admin" />
-              {user?.role === 'admin' && (
-                <SidebarLinkItem
-                  icon={LayoutDashboard}
-                  label="Overview"
-                  href="/admin/overview"
-                  expanded={expanded}
-                />
-              )}
-              <SidebarLinkItem
-                icon={Eye}
-                label="Moderator"
-                href="/moderator"
-                expanded={expanded}
-              />
-            </>
-          )}
         </nav>
 
         {/* Bottom section — user card */}
@@ -362,12 +334,12 @@ export function AppSidebar({
           style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}
         >
           {expanded ? (
-            <ExpandedUserCard
+            <UserCard
               userInitial={userInitial}
               userName={user?.name || 'User'}
               profileImage={profileImage}
               creditsBalance={creditsBalance}
-              planTier={planTier}
+              role={user?.role}
               onOpenSettings={onOpenSettings}
               onOpenBilling={onOpenBilling}
               onOpenReferral={onOpenReferral}
@@ -391,16 +363,6 @@ export function AppSidebar({
         .sidebar-item-hoverable:hover {
           background: rgba(0,0,0,0.04) !important;
           color: #1a1a1a !important;
-        }
-        .sidebar-user-menu-item {
-          color: #888;
-        }
-        .sidebar-user-menu-item:hover {
-          background: rgba(0,0,0,0.04);
-          color: #1a1a1a;
-        }
-        .sidebar-user-menu-item-danger:hover {
-          color: #dc2626;
         }
         .sidebar-toggle-btn {
           color: #bbb;
@@ -557,175 +519,6 @@ function SidebarItem({
           {tooltip || label}
         </div>
       )}
-    </button>
-  );
-}
-
-interface SidebarLinkItemProps {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  label: string;
-  href: string;
-  expanded: boolean;
-}
-
-function SidebarLinkItem({
-  icon: Icon,
-  label,
-  href,
-  expanded,
-}: SidebarLinkItemProps) {
-  return (
-    <Link href={href}>
-      <div
-        className="relative flex items-center rounded-lg group cursor-pointer sidebar-item-hoverable"
-        style={{
-          height: 40,
-          gap: expanded ? 12 : 0,
-          padding: expanded ? '0 12px' : '0',
-          justifyContent: expanded ? 'flex-start' : 'center',
-          color: '#888',
-          width: expanded ? '100%' : 40,
-          margin: expanded ? 0 : '0 auto',
-        }}
-      >
-        <Icon
-          className="w-5 h-5 flex-shrink-0"
-          strokeWidth={1.5}
-        />
-        {expanded && (
-          <span
-            className="truncate"
-            style={{ fontSize: 14, fontWeight: 450, whiteSpace: 'nowrap' }}
-          >
-            {label}
-          </span>
-        )}
-        {!expanded && (
-          <div
-            className="absolute left-full ml-3 px-2.5 py-1 rounded-md whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50"
-            style={{
-              background: '#1a1a1a',
-              color: '#fff',
-              fontSize: 12,
-              fontWeight: 500,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            }}
-          >
-            {label}
-          </div>
-        )}
-      </div>
-    </Link>
-  );
-}
-
-interface ExpandedUserCardProps {
-  userInitial: string;
-  userName: string;
-  profileImage?: string | null;
-  creditsBalance: number;
-  planTier: string;
-  onOpenSettings: () => void;
-  onOpenBilling: () => void;
-  onOpenReferral: () => void;
-  onLogout: () => void;
-}
-
-function ExpandedUserCard({
-  userInitial,
-  userName,
-  profileImage,
-  creditsBalance,
-  planTier,
-  onOpenSettings,
-  onOpenBilling,
-  onOpenReferral,
-  onLogout,
-}: ExpandedUserCardProps) {
-  return (
-    <div className="space-y-1">
-      {/* User info row */}
-      <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
-        <div
-          className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
-          style={{ border: '1.5px solid rgba(0,0,0,0.08)' }}
-        >
-          {profileImage ? (
-            <img
-              src={profileImage}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ background: '#1a1a1a' }}
-            >
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>
-                {userInitial}
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p
-            className="truncate"
-            style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}
-          >
-            {userName}
-          </p>
-          <p
-            className="truncate"
-            style={{ fontSize: 11, color: '#999' }}
-          >
-            {creditsBalance.toLocaleString()} credits
-          </p>
-        </div>
-      </div>
-
-      {/* Quick action buttons */}
-      <div className="flex flex-col">
-        <UserMenuItem
-          icon={Settings}
-          label="Settings"
-          onClick={onOpenSettings}
-        />
-        <UserMenuItem
-          icon={CreditCard}
-          label="Billing"
-          onClick={onOpenBilling}
-        />
-        <UserMenuItem
-          icon={Gift}
-          label="Share Drape"
-          onClick={onOpenReferral}
-        />
-        <UserMenuItem
-          icon={LogOut}
-          label="Log out"
-          onClick={onLogout}
-          danger
-        />
-      </div>
-    </div>
-  );
-}
-
-interface UserMenuItemProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}
-
-function UserMenuItem({ icon: Icon, label, onClick, danger }: UserMenuItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg w-full transition-colors sidebar-user-menu-item ${danger ? 'sidebar-user-menu-item-danger' : ''}`}
-    >
-      <Icon className="w-4 h-4 flex-shrink-0" />
-      <span style={{ fontSize: 13, fontWeight: 500 }}>{label}</span>
     </button>
   );
 }

@@ -19,23 +19,31 @@ import AdminInviteCodes from "./pages/AdminInviteCodes";
 import AppLobby from "./pages/AppLobby";
 import { BoardPage } from "./features/boards/BoardPage";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
-import BugReportButton from "./components/BugReportButton";
 
+
+/** Lobby views share one transition key so the rail doesn't remount between them. */
+const LOBBY_ROUTES = new Set(['/app', '/app/boards', '/app/models', '/app/garments', '/app/looks']);
 
 function Router() {
   const [location] = useLocation();
 
   return (
     <AnimatePresence mode="wait">
-      <PageTransition key={location}>
+      <PageTransition key={LOBBY_ROUTES.has(location) ? '/app' : location}>
         <Switch location={location}>
           {/* Public */}
           <Route path="/" component={Home} />
           <Route path="/login" component={Login} />
           <Route path="/verify-email" component={VerifyEmail} />
 
-          {/* Board-based canvas */}
+          {/* Lobby (rail + views) */}
           <Route path="/app" component={AppLobby} />
+          <Route path="/app/boards" component={AppLobby} />
+          <Route path="/app/models" component={AppLobby} />
+          <Route path="/app/garments" component={AppLobby} />
+          <Route path="/app/looks" component={AppLobby} />
+
+          {/* Board-based canvas */}
           <Route path="/app/board/:id" component={BoardPage} />
 
           {/* Classic Drape Studio (fallback) */}
@@ -66,7 +74,6 @@ function App() {
           <Toaster />
           <AnnouncementBanner />
           <Router />
-          <BugReportButton />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

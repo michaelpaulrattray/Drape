@@ -7,6 +7,7 @@
  * empty — the Tools index then leads the page.
  */
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { RecentWorkCard } from './RecentWorkCard';
@@ -37,6 +38,7 @@ export function RecentWorkSection({
   onArchiveBoard,
 }: RecentWorkSectionProps) {
   const utils = trpc.useUtils();
+  const [, navigate] = useLocation();
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
   const deleteSessionMutation = trpc.wardrobe.sessions.delete.useMutation({
@@ -98,13 +100,24 @@ export function RecentWorkSection({
 
   return (
     <section>
-      <h2
-        className="mb-4"
-        style={{ fontSize: 13, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+      <div className="flex items-baseline justify-between mb-4">
+        <h2
+          style={{ fontSize: 13, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+        >
+          Recent
+        </h2>
+        <button
+          onClick={() => navigate('/app/boards')}
+          className="transition-colors duration-200 hover:text-[#1a1a1a]"
+          style={{ fontSize: 13, color: '#71716A' }}
+        >
+          All canvases →
+        </button>
+      </div>
+      <div
+        className="grid gap-5"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
       >
-        Recent
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {items.map((item) => (
           <RecentWorkCard
             key={itemKey(item)}
