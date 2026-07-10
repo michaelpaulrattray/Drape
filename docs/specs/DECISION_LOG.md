@@ -83,6 +83,41 @@ Referenced docs: `CANVAS_FOUNDATIONS.md` (F), `DESIGN_SYSTEM.md` (DS), `CANVAS_A
 |---|---|---|---|---|
 | D-28 | **Both paths at the node** (founder, 2026-07-10, with ElevenLabs Flows reference shots): the empty cast node carries a quiet secondary affordance — `or choose from your models` — opening the `LibraryPickerPopover` directly at the node; picking **fills the node in place** as `library_cast` (no sibling spawned). **Constraint:** the picker offers canonical cast reference imagery only — never outfitted/styled/scene outputs (ElevenLabs offers styles at pick time; Drape deliberately does not — §1.5 reference-asset framing). Patterns stolen, rendering not: popovers and hairlines, no modals/scrims | Create-new and pick-existing split across menu surfaces makes the empty node a dead end for returning users; merging them at the node is the stronger ergonomic, and the constraint keeps identity slots truthful | DS §5.12/§7.3/§9; F 3a/§4; build plan M4 (affordance slot) + M9 (picker wiring) | FOUNDER-DIRECTED (encoded) |
 
+## Group 6c — PROPOSED AMENDMENT: character-sheet rendering + weighted reference semantics *(awaiting founder ratification before M7)*
+
+Two connected VC1-review findings from the founder (2026-07-10, with ElevenLabs composite-card reference shot). **D-29 amends an item on the locked ledger** (the root/view node model) — founder-initiated, so permitted. Neither `CANVAS_FOUNDATIONS.md` nor `DESIGN_SYSTEM.md` is edited until this section is ratified; M3a–M6 are unaffected and proceed.
+
+### D-29 — Character-sheet root: views are data records, the sheet is the default rendering
+
+**What changes:** nothing in the data model; everything in the default rendering. `cast_view` rows keep their full record (versions, staleness, `pinned`, position) but **spawn no standalone cards by default**. Once ≥1 view exists, the root's image area renders as a composite character sheet — the fashion comp-card form. Any view can be **popped out** to a standalone connectable card on demand (`poppedOut: boolean` in the view's metadata) and collapsed back.
+
+**Why it's right (and why it strengthens ratified architecture rather than fighting it):** §1.5 already defines the five-view package as *the* reference asset — "talent roster headshots." Rendering the package as one board object is more faithful to that framing than five cards and four edges; the exploded default was paying real board-footprint and visual-unity costs for a per-view addressability that (per D-30) turns out not to be data-load-bearing.
+
+**Amended interaction model (restrained per the anti-patterns — the sheet must not become a mini-app):**
+- **Sheet:** fixed comp-grid templates by view count (headshot-dominant), card width unchanged at 260, height grows by template. Tiles are images only at rest — no buttons, no labels inside.
+- **One per-view surface:** with the root selected, hovering a tile shows a 1px inset ring; *clicking* a tile opens a `CanvasPopoverContent` — view label · vN, status line, and the complete per-view action set: `Pop out` · `Refresh · ~cost` · `Pin`/`Unpin` · `Open in studio`. No per-tile toolbars, ever.
+- **Staleness per tile:** 70% dim + the compact screen-fixed status dot at the tile corner (reuses `NodeStatusBadge`), visible at all zooms. **Aggregate:** the root control strip gains a `{N} stale` action segment → bulk-refresh plan dialog. The 3c dialog (Update now / later / Cancel), pin semantics, and 3f fork/recast are unchanged — counts refer to view *records*.
+- **Pop out / collapse:** popping materializes the standard view card (reduced toolbar, pose prompt) at the view row's stored position, connected by its `generated_from_cast` edge; the sheet tile remains (package integrity) with a small `⤢` corner glyph. Collapsing dematerializes the card and **re-anchors any outgoing edges to the root, preserving `viewAngle` intent in edge metadata** (see D-30) — no data loss either direction.
+- **`+ Views` popover unchanged**; results land as tiles. **Zoom tiers:** the sheet is simply the card image at mid/far — identity survives density as a comp card (strengthens D-1).
+
+### D-30 — Weighted reference semantics: edges express intent, payloads are composed
+
+**What changes:** an edge from a cast to a consumer no longer means "this image is the input." It means **"reference this cast, weighted toward this view"** — edge metadata carries `{ viewAngle }`; the system composes the actual identity payload server-side. Rationale (founder, empirical): a single view alone is an invalid identity reference — the generating model invents unseen features, as proven by the hallucination clamps in the angles prototype.
+
+**Payload strategy — evaluated, with recommendation:**
+- *(a) Full canonical package* (all views as reference images): maximum constraint, but 5–6 reference images invite guidance dilution and pose-intent conflict, scale badly in cost/latency toward video (pass 4), and force a stale-filtering policy across the whole package on every run.
+- *(b) Headshot + intent view + generated identity text* — **recommended.** The identity text already exists and is already tuned: `buildIdentityAnchor(masterPrompt, technicalSchema)` (`server/casting/geminiClient.ts:196`) is exactly the "generated text identity description," and the shipped view/body pipeline already generates from **one anchor image + that text** (`geminiViews.ts:53, :73, :182, :266` — "THE ATTACHED IMAGE IS THIS EXACT PERSON"). The hallucination clamps live in the structured text — the precise role the prototype proved necessary. Strategy (b) = the proven house pattern plus one intent image for pose/framing weight. Two images + text avoids multi-ref dilution, is cheap, and keeps pass-4 video payloads sane.
+- **Escalation path:** one server function, `composeIdentityPayload(modelId, intentViewAngle)` in `server/casting/`, owns composition — if dogfooding shows identity drift, switching to (a) (or per-run hybrid) is a change to one function, not to callers.
+- **Stale-input rule:** the composer always uses the *current* root headshot + identity text. If the intent view is stale and unpinned, `plan()` flags it and the confirm UI warns ("Side view is out of sync — refresh first?"); pinned views are accepted-final and used silently.
+- **D-12 compliance:** `InputSnapshot[]` records the exact image URLs sent, and provenance additionally snapshots the composed `identityText` verbatim (a few KB of JSON — full reproducibility, not just a pointer).
+- **Reinforces D-29 (founder's own observation, confirmed):** if payloads are package-level, per-view edges are *intent annotations*, not data plumbing — permanent per-view cards lose their strongest justification. Pop-out remains a *work* surface (refining, inspecting a view), not a wiring requirement. In pass 1 no consumer nodes exist (image-gen is pass 3, VTO pass 2), so pass 1 ships the composer + edge-metadata shape + provenance manifest; the weighted-edge *UI* arrives with pass 2's first consumers.
+
+### Impact on M7 and sizing delta
+
+Removed from M7: view-node spawning + auto-row placement, per-card view chrome exercise, root↔view edge-highlight scope (−0.75–1d). Added: `CharacterSheetImageArea` (0.75–1d), tile popover + per-tile status (0.5d), pop-out/collapse + `poppedOut` + edge re-anchoring (0.75d), aggregate-stale strip segment + hover list (0.25d), `composeIdentityPayload` + provenance manifest (0.5d — mostly wiring the existing `buildIdentityAnchor`). **Net: M7 3d → 4–4.5d; plan total ≈25–28.5 focused days.** M3a/M4/M5/M6 unaffected (M4 is a single-headshot root; M6's dialogs count view records, not cards).
+
+**On ratification:** foundations 3b/3e and success criteria 5/6/8 rewritten; DS gains §5.17 (character sheet) with touches to §5.11/§9/§12; build plan M7 rewritten. Until then those documents intentionally still describe the exploded model.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
