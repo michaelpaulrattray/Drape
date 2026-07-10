@@ -594,16 +594,16 @@ Three tiers, driven by React Flow's live zoom (`useStore(s => s.transform[2])`),
 
 ```ts
 // client/src/features/boards/canvas/zoomTiers.ts
-export const ZOOM_TIER_MID = 0.65;   // below: "mid" — chrome retracts
+export const ZOOM_TIER_MID = 0.45;   // below: "mid" — chrome retracts
 export const ZOOM_TIER_FAR = 0.35;   // below: "far" — cards become tiles
 export type ZoomTier = "working" | "mid" | "far";
 ```
 
-> **Threshold values are provisional (ratification note on D-1/D-2/D-3):** the tier *architecture* is ratified; 0.65/0.35 are tuned by feel at the zoom-tier visual mock (`PASS_1_BUILD_PLAN.md` VC1), which exposes a dev-only threshold control for exactly this. Treat the constants as the single tuning point — nothing else may hardcode a zoom breakpoint.
+> **Thresholds ruled at VC1 (founder, 2026-07-10): mid 0.45, far 0.35.** The constants remain the single tuning point — nothing else may hardcode a zoom breakpoint. (The tier architecture itself was ratified as D-1/D-2/D-3.)
 
 Hysteresis: apply a ±0.03 band around each threshold when crossing back upward, so panning near a boundary doesn't flicker tiers. Tier transitions animate opacity only (120ms).
 
-| Element | working (≥ 0.65) | mid (0.35–0.65) | far (< 0.35) |
+| Element | working (≥ 0.45) | mid (0.35–0.45) | far (< 0.35) |
 |---|---|---|---|
 | Card + image | full spec | full spec | image tile only; `rounded-canvas-sm`; inset placeholder if no image |
 | Card border | hairline / 1px selected | **1px / 1.5px selected** (see below) | 1px; selected 2px |

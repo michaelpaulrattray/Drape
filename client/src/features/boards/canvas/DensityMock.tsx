@@ -28,7 +28,8 @@ import { ConnectionDot } from "./ConnectionDot";
 import { CastImageArea } from "./CastImageArea";
 import { NodeInlinePrompt } from "./NodeInlinePrompt";
 import { NodeControlStrip, type ControlSegment } from "./NodeControlStrip";
-import { BlenderChipStrip } from "./BlenderChipStrip";
+import { BlenderChipStrip, type BlenderChipId } from "./BlenderChipStrip";
+import { Popover, PopoverTrigger, CanvasPopoverContent } from "./CanvasPopover";
 import { NodeFloatingToolbar, type NodeToolbarAction } from "./NodeFloatingToolbar";
 import { NodeStatusBadge, type NodeStatus } from "./NodeStatusBadge";
 import {
@@ -41,10 +42,18 @@ import {
 
 /* ── Mock config (dev panel state) ─────────────────────────── */
 
+/**
+ * VC1.5 — chip resting-state exploration. The founder ruled the filled-pill
+ * resting render fails (reads as a second card). Three candidate treatments,
+ * switchable from the dev panel; the ruled winner becomes DS §5.9.
+ */
+type ChipMode = "pills" | "summary" | "rows";
+
 interface MockConfig {
   chipCount: 5 | 6;
+  chipMode: ChipMode;
 }
-const MockConfigContext = createContext<MockConfig>({ chipCount: 6 });
+const MockConfigContext = createContext<MockConfig>({ chipCount: 6, chipMode: "pills" });
 
 /* ── Seeded content ────────────────────────────────────────── */
 
@@ -171,10 +180,97 @@ function chipPlaceholder(label: string) {
   );
 }
 
+/* ── VC1.5 variant B: collapsed summary line → chips on interaction ── */
+
+function SummaryLineChips({
+  chips,
+  activeChipId,
+  onActiveChange,
+  expanded,
+  onExpand,
+}: {
+  chips: Array<{ id: BlenderChipId; label: string; value: string | null; popoverContent: React.ReactNode }>;
+  activeChipId: string | null;
+  onActiveChange: (id: string | null) => void;
+  expanded: boolean;
+  onExpand: (e: boolean) => void;
+}) {
+  const filled = chips.filter((c) => c.value !== null);
+
+  if (expanded) {
+    return (
+      <BlenderChipStrip chips={chips} activeChipId={activeChipId} onActiveChange={onActiveChange} />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onExpand(true)}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="mt-2 block w-full text-left text-canvas-xs text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors truncate px-0.5"
+      title="Edit identity"
+    >
+      {filled.length > 0 ? filled.map((c) => c.value).join(" · ") : "+ Identity"}
+    </button>
+  );
+}
+
+/* ── VC1.5 variant C: same-position text rows, no fills, uniform width ── */
+
+function AttrTextRows({
+  chips,
+  activeChipId,
+  onActiveChange,
+}: {
+  chips: Array<{ id: BlenderChipId; label: string; value: string | null; popoverContent: React.ReactNode }>;
+  activeChipId: string | null;
+  onActiveChange: (id: string | null) => void;
+}) {
+  return (
+    <div className="mt-2 w-full px-0.5" onMouseDown={(e) => e.stopPropagation()}>
+      {chips.map((chip) => (
+        <Popover
+          key={chip.id}
+          open={activeChipId === chip.id}
+          onOpenChange={(open) => onActiveChange(open ? chip.id : null)}
+        >
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={
+                "group grid grid-cols-[64px_1fr] items-baseline gap-2 w-full text-left py-[3px] transition-colors " +
+                (activeChipId === chip.id ? "" : "")
+              }
+            >
+              <span className="text-canvas-xs text-canvas-ink-faint">{chip.label}</span>
+              <span
+                className={
+                  activeChipId === chip.id
+                    ? "text-canvas-xs text-canvas-ink font-medium truncate"
+                    : chip.value
+                      ? "text-canvas-xs text-canvas-ink-soft group-hover:text-canvas-ink truncate transition-colors"
+                      : "text-canvas-xs text-canvas-ink-faint group-hover:text-canvas-ink-soft truncate transition-colors"
+                }
+              >
+                {chip.value ?? "Add"}
+              </span>
+            </button>
+          </PopoverTrigger>
+          <CanvasPopoverContent side="right" align="start" style={{ width: 280 }}>
+            {chip.popoverContent}
+          </CanvasPopoverContent>
+        </Popover>
+      ))}
+    </div>
+  );
+}
+
 function MockCastNode({ data, selected }: NodeProps<Node<MockNodeData>>) {
   const { tier } = useZoomTierContext();
-  const { chipCount } = useContext(MockConfigContext);
+  const { chipCount, chipMode } = useContext(MockConfigContext);
   const [activeChipId, setActiveChipId] = useState<string | null>(null);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  if (!selected && summaryExpanded) setSummaryExpanded(false); // collapse on deselect
 
   const isRoot = data.variant === "root";
   const width = tier === "far" ? (isRoot ? 260 : 200) : isRoot ? 260 : 200;
@@ -257,12 +353,28 @@ function MockCastNode({ data, selected }: NodeProps<Node<MockNodeData>>) {
       {selected && (
         <>
           {!data.empty && <NodeControlStrip segments={controlSegments} />}
-          {isRoot && (
-            <BlenderChipStrip
-              chips={chips}
-              activeChipId={activeChipId}
-              onActiveChange={setActiveChipId}
-            />
+          {isRoot && tier === "working" && (
+            chipMode === "pills" ? (
+              <BlenderChipStrip
+                chips={chips}
+                activeChipId={activeChipId}
+                onActiveChange={setActiveChipId}
+              />
+            ) : chipMode === "summary" ? (
+              <SummaryLineChips
+                chips={chips}
+                activeChipId={activeChipId}
+                onActiveChange={setActiveChipId}
+                expanded={summaryExpanded}
+                onExpand={setSummaryExpanded}
+              />
+            ) : (
+              <AttrTextRows
+                chips={chips}
+                activeChipId={activeChipId}
+                onActiveChange={setActiveChipId}
+              />
+            )
           )}
         </>
       )}
@@ -290,11 +402,15 @@ function DevPanel({
   onChange,
   chipCount,
   onChipCount,
+  chipMode,
+  onChipMode,
 }: {
   thresholds: ZoomTierThresholds;
   onChange: (t: ZoomTierThresholds) => void;
   chipCount: 5 | 6;
   onChipCount: (c: 5 | 6) => void;
+  chipMode: ChipMode;
+  onChipMode: (m: ChipMode) => void;
 }) {
   const { tier, zoom } = useZoomTierContext();
   const { fitView, zoomTo } = useReactFlow();
@@ -337,6 +453,33 @@ function DevPanel({
           className="w-full accent-[#0A0A0A]"
         />
       </label>
+
+      <div className="mb-3">
+        <div className="text-canvas-xs text-canvas-ink-soft mb-1">Chip resting state (VC1.5)</div>
+        <div className="grid grid-cols-3 gap-1">
+          {(
+            [
+              ["pills", "Pills"],
+              ["summary", "Summary"],
+              ["rows", "Rows"],
+            ] as const
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              data-chip-mode={mode}
+              onClick={() => onChipMode(mode)}
+              className={
+                chipMode === mode
+                  ? "py-1 rounded-canvas-sm text-canvas-xs bg-canvas-ink text-canvas-surface font-medium"
+                  : "py-1 rounded-canvas-sm text-canvas-xs text-canvas-ink-soft border-hairline border-canvas-border hover:border-canvas-border-strong"
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="flex items-center justify-between mb-3">
         <span className="text-canvas-xs text-canvas-ink-soft">Blender chips</span>
@@ -392,10 +535,12 @@ function DevPanel({
 function DensityMockInner() {
   const [thresholds, setThresholds] = useState<ZoomTierThresholds>(DEFAULT_THRESHOLDS);
   const [chipCount, setChipCount] = useState<5 | 6>(6);
+  const [chipMode, setChipMode] = useState<ChipMode>("pills");
   const { nodes: initialNodes, edges: initialEdges } = useMemo(buildMockBoard, []);
+  const config = useMemo(() => ({ chipCount, chipMode }), [chipCount, chipMode]);
 
   return (
-    <MockConfigContext.Provider value={{ chipCount }}>
+    <MockConfigContext.Provider value={config}>
       <ZoomTierProvider thresholds={thresholds}>
         <TierAwareFlow initialNodes={initialNodes} initialEdges={initialEdges} />
         <DevPanel
@@ -403,6 +548,8 @@ function DensityMockInner() {
           onChange={setThresholds}
           chipCount={chipCount}
           onChipCount={setChipCount}
+          chipMode={chipMode}
+          onChipMode={setChipMode}
         />
       </ZoomTierProvider>
     </MockConfigContext.Provider>

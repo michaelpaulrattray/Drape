@@ -3,14 +3,14 @@
  *
  * The card is the constant; chrome is the variable. Three tiers drive what
  * chrome each node renders. THE CONSTANTS BELOW ARE THE SINGLE TUNING POINT —
- * nothing else may hardcode a zoom breakpoint (ratification note on D-1/2/3:
- * values are provisional until tuned at the VC1 density mock).
+ * nothing else may hardcode a zoom breakpoint. Values tuned by the founder at
+ * VC1 (2026-07-10) on the seeded density mock.
  */
 import { createContext, useContext, useRef } from "react";
 import { useStore } from "@xyflow/react";
 
-export const ZOOM_TIER_MID = 0.65; // below this: "mid" — chrome retracts
-export const ZOOM_TIER_FAR = 0.35; // below this: "far" — cards become tiles
+export const ZOOM_TIER_MID = 0.45; // below this: "mid" — chrome retracts (VC1 ruling)
+export const ZOOM_TIER_FAR = 0.35; // below this: "far" — cards become tiles (VC1 ruling)
 export const ZOOM_TIER_HYSTERESIS = 0.03; // upward re-crossing band
 
 export type ZoomTier = "working" | "mid" | "far";
