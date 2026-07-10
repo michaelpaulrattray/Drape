@@ -5,6 +5,9 @@
 @import "./styles/tokens.css";
 @import "./styles/animations.css";
 
+/* Canvas boards design system (docs/specs/DESIGN_SYSTEM.md) */
+@import "./styles/canvas-tokens.css";
+
 @custom-variant dark (&:is(.dark *));
 
 html {

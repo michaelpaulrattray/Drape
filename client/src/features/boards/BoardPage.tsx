@@ -5,7 +5,7 @@
  * and hosts a collapsible tool panel on the right side.
  * Bottom-of-canvas UI: centered toolbar, zoom controls (left), AI chat (right).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
@@ -26,9 +26,26 @@ import { VersionHistoryModal } from './components/VersionHistoryModal';
 
 type ToolPanelId = 'casting' | 'wardrobe' | 'export' | null;
 
+/* ── Dev-only density mock gate (PASS_1_BUILD_PLAN.md M1 / VC1) ── */
+
+const DensityMock = import.meta.env.DEV
+  ? lazy(() => import('./canvas/DensityMock'))
+  : null;
+
 /* ── Component ────────────────────────────────────────────── */
 
 export function BoardPage() {
+  if (DensityMock && new URLSearchParams(window.location.search).get('mock') === 'density') {
+    return (
+      <Suspense fallback={null}>
+        <DensityMock />
+      </Suspense>
+    );
+  }
+  return <BoardPageImpl />;
+}
+
+function BoardPageImpl() {
   const [, params] = useRoute('/app/board/:id');
   const [, navigate] = useLocation();
   const boardId = params?.id ? parseInt(params.id, 10) : NaN;

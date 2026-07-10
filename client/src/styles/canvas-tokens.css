@@ -1,0 +1,81 @@
+/**
+ * Drape Canvas — design tokens.
+ *
+ * Spec: docs/specs/DESIGN_SYSTEM.md §2. These are the ONLY colors, radii, and
+ * type sizes canvas code may use; new values get argued into the spec first.
+ * Values are absolute (light-first) on purpose — the canvas does not read the
+ * app-shell theme variables (D-22).
+ */
+
+@theme {
+  /* Canvas surfaces */
+  --color-canvas-bg: #FAFAFA;
+  --color-canvas-surface: #FFFFFF;
+  --color-canvas-surface-inset: #F4F4F3;
+
+  /* Canvas ink */
+  --color-canvas-ink: #0A0A0A;
+  --color-canvas-ink-soft: #5A5A58;
+  --color-canvas-ink-faint: #9B9B98;
+
+  /* Canvas borders */
+  --color-canvas-border: #E8E8E6;
+  --color-canvas-border-strong: #C7C7C4;
+
+  /* Filled state (teal — "ready / parsed / complete") */
+  --color-canvas-teal-bg: #E1F5EE;
+  --color-canvas-teal-text: #085041;
+
+  /* Semantic accents — usage restricted to DESIGN_SYSTEM.md §2.1 */
+  --color-canvas-destructive: #B3261E;
+  --color-canvas-warning: #E07C5A;
+
+  /* Connection pins */
+  --color-canvas-pin-prompt: #CECBF6;
+  --color-canvas-pin-image: #B5D4F4;
+
+  /* Radii */
+  --radius-canvas-sm: 6px;
+  --radius-canvas-md: 8px;
+  --radius-canvas-lg: 12px;
+  --radius-canvas-pill: 9999px;
+
+  /* Typography scale */
+  --text-canvas-xs: 10px;
+  --text-canvas-sm: 11px;
+  --text-canvas-md: 12px;
+  --text-canvas-lg: 14px;
+  --text-canvas-xl: 17px;
+}
+
+@layer utilities {
+  /* Hairline borders — DESIGN_SYSTEM.md §4. Default weight on every canvas
+     card, popover, strip, and chip. Selected states upgrade to Tailwind's
+     1px `border`; nothing heavier exists in the language. */
+  .border-hairline {
+    border-width: 0.5px;
+  }
+  .border-b-hairline {
+    border-bottom-width: 0.5px;
+  }
+  .border-t-hairline {
+    border-top-width: 0.5px;
+  }
+  .border-l-hairline {
+    border-left-width: 0.5px;
+  }
+  .border-r-hairline {
+    border-right-width: 0.5px;
+  }
+}
+
+/* Light scope for the canvas and refinement studio (D-22).
+   The app shell defaults dark; canvas surfaces are token-absolute so they
+   don't inherit darkness, but native form controls, scrollbars, and any
+   primitive rendered inside this subtree should resolve light. Portal-mounted
+   primitives (dialogs, dropdowns) are handled when they arrive (M6). */
+.canvas-scope {
+  color-scheme: light;
+  background: var(--color-canvas-bg);
+  color: var(--color-canvas-ink);
+}
