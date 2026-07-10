@@ -246,6 +246,7 @@ export async function getUserDraftModelsWithThumbnail(
       preferences: models.preferences,
       technicalSchema: models.technicalSchema,
       createdAt: models.createdAt,
+      updatedAt: models.updatedAt,
     })
     .from(models)
     .where(and(eq(models.userId, userId), eq(models.status, "draft")))
@@ -289,6 +290,7 @@ export async function getUserDraftModelsWithThumbnail(
       thumbnailUrl: thumbMap.get(m.id)!,
       assetCount: assetViewTypes.get(m.id)?.size ?? 0,
       createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
     }));
 }
 

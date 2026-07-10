@@ -73,7 +73,7 @@ export const boardsRouter = router({
     .input(z.object({
       name: z.string().max(128).optional(),
       description: z.string().max(1000).optional(),
-      startedWith: z.enum(["casting", "wardrobe"]),
+      startedWith: z.enum(["casting", "wardrobe", "blank"]),
     }))
     .mutation(async ({ ctx, input }) => {
       const count = await getUserBoardCount(ctx.user.id);

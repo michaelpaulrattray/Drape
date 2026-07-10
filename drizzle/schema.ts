@@ -734,7 +734,7 @@ export const boards = mysqlTable("boards", {
   description: text("description"),
   thumbnailUrl: text("thumbnailUrl"), // S3 URL — auto-generated from first asset
   thumbnailKey: varchar("thumbnailKey", { length: 256 }),
-  startedWith: mysqlEnum("startedWith", ["casting", "wardrobe"]).notNull(),
+  startedWith: mysqlEnum("startedWith", ["casting", "wardrobe", "blank"]).notNull(),
   status: mysqlEnum("status", ["active", "archived"]).default("active").notNull(),
   // Canvas viewport state (for resume)
   viewportX: int("viewportX").default(0),

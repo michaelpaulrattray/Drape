@@ -1,0 +1,1 @@
+ALTER TABLE `boards` MODIFY COLUMN `startedWith` enum('casting','wardrobe','blank') NOT NULL;

@@ -24,7 +24,7 @@ import {
   createSession, getSessionById, getUserSessions, updateSession, deleteSession,
   getLatestUserSession, getRecentUserSessions, capUserSessions,
   createGeneration,
-  saveLook, getUserLooksByModel, renameLook, deleteLook,
+  saveLook, getUserLooksByModel, getUserLooks, renameLook, deleteLook,
 } from "../db";
 import { getUserMintedModelsWithThumbnail, getUserDraftModelsWithThumbnail } from "../db/models";
 import { storagePut } from "../storage";
@@ -878,6 +878,12 @@ const looksRouter = router({
     .input(z.object({ modelId: z.number() }))
     .query(async ({ ctx, input }) => {
       return getUserLooksByModel(ctx.user.id, input.modelId);
+    }),
+
+  /** List all of the user's saved looks across models (lobby library) */
+  listAll: protectedProcedure
+    .query(async ({ ctx }) => {
+      return getUserLooks(ctx.user.id);
     }),
 
   /** Rename a saved look */

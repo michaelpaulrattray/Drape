@@ -29,6 +29,7 @@ import { accountRouter } from "./routes/account";
 import { bugReportsRouter } from "./routes/bugReports";
 import { wardrobeRouter } from "./routes/wardrobe";
 import { boardsRouter } from "./routes/boards";
+import { lobbyRouter } from "./routes/lobby";
 
 export const appRouter = router({
   system: systemRouter,
@@ -55,6 +56,7 @@ export const appRouter = router({
   bugReports: bugReportsRouter,
   wardrobe: wardrobeRouter,
   boards: boardsRouter,
+  lobby: lobbyRouter,
 });
 
 export type AppRouter = typeof appRouter;
