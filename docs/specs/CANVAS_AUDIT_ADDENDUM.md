@@ -1,5 +1,7 @@
 # Canvas Pass 1 — Audit Addendum
 
+> **SUPERSEDED (July 2026).** This document is retained for provenance only. It has been replaced in full by `CANVAS_AUDIT_ADDENDUM_V2.md`, which re-verifies every finding below against the post-migration codebase and corrects stale file references. Do not implement from this document. Design content formerly in Section G now lives in the revised `DESIGN_SYSTEM.md` §13; divergences are recorded in `DECISION_LOG.md`.
+
 **Read this alongside `CANVAS_FOUNDATIONS.md` and `DESIGN_SYSTEM.md`.**
 
 This document captures the findings from a code audit run after the main spec was written. It corrects, clarifies, or adds detail to the main docs based on what the actual codebase looks like. Where this addendum disagrees with the main docs, **this addendum wins** — it's grounded in real code.

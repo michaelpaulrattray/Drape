@@ -1,14 +1,18 @@
-# Canvas Foundations — Drape Boards
+# Canvas Foundations — Drape Boards (revised)
 
-**Audience:** engineering (including coding agents). This is the authoritative spec for the canvas boards rebuild. All architectural decisions here are locked. Read this document end to end before writing any code. Read `DESIGN_SYSTEM.md` alongside it for visual and component specifications.
+**Audience:** engineering (including coding agents). This is the authoritative spec for the canvas boards rebuild. Read this document end to end before writing any code. Read `DESIGN_SYSTEM.md` alongside it for visual and component specifications, `CANVAS_AUDIT_ADDENDUM_V2.md` for verified code facts, and `DECISION_LOG.md` for the record of every divergence from the original drafts and its ratification status.
+
+**Revision note:** this is the post-migration revision of the original foundations doc. The founder-locked content — the reference-asset framing (§1.5), inline-first invocation, the root/view node model, edges-as-lineage, the four-verb grammar — is unchanged in substance. What changed: verified code facts replace stale ones, and the open design areas (identity semantics on rerun, provenance truthfulness, library integration, cost visibility, keyboard/undo) are now designed rather than deferred. Milestone-level build sequencing has moved to `PASS_1_BUILD_PLAN.md` (written after decision-log ratification); §7 here describes pass-level scope only.
 
 ---
 
 ## 1. Context and goals
 
-Drape is shifting from a linear classic studio (`/studio`, preserved as fallback) to a Luma-style infinite canvas workspace (`/app/board/:id`) where casting, wardrobe, general image generation, references, and notes all live together spatially. The canvas is the primary surface; tools are invoked on nodes, not in side panels. Dense configuration lives inside a focused refinement studio that you enter and leave explicitly via a back action — not as a modal, not behind a scrim.
+Drape is shifting from a linear classic studio (kept reachable at `/studio?tool=…` during the transition — see §8) to a Luma-style infinite canvas workspace (`/app/board/:id`) where casting, wardrobe, general image generation, references, and notes all live together spatially. The canvas is the primary surface; tools are invoked on nodes, not in side panels. Dense configuration lives inside a focused refinement studio that you enter and leave explicitly via a back action — not as a modal, not behind a scrim.
 
-The first vertical slice is casting, built end to end on the new primitives before wardrobe is touched. The classic studio remains accessible at `/studio` during the transition and is not deleted in this phase.
+The canvas slots into the existing lobby navigation model: boards are created from `/app` via `boards.create` (which requires `startedWith: "casting" | "wardrobe" | "blank"`; lobby CTAs pass `"blank"`), and appear in the cross-tool `lobby.recentWork` feed with their `thumbnailUrl`. Canvas work must keep that thumbnail fresh (update it when a board's first node completes, and on a debounce thereafter) or the lobby goes stale.
+
+The first vertical slice is casting, built end to end on the new primitives before wardrobe is touched.
 
 **The four experiential goals that shape every decision below:**
 
@@ -21,6 +25,8 @@ The first vertical slice is casting, built end to end on the new primitives befo
 
 ## 1.5 Casting's role in Drape — read this before everything else
 
+*(Locked. Unchanged from the original.)*
+
 Casting in Drape is a **reference-asset workflow, not a final-output workflow.** This framing governs every UI and data decision about casting in the rest of this doc, and understanding it up front prevents hours of confusion downstream.
 
 A cast produces an identity-locked model with a standard package of five canonical views (`frontClose`, `frontFull`, `sideClose`, `sideFull`, `backFull`). That package is a **reference asset** — it exists so downstream generation nodes can consume it as an identity input and produce novel creative output (new poses, new scenes, new compositions, wardrobe try-ons) with guaranteed identity consistency. The five canonical views are *not* the creative deliverable; they are the talent roster headshots that creative deliverables will be built from.
@@ -28,43 +34,60 @@ A cast produces an identity-locked model with a standard package of five canonic
 Concretely:
 
 - **Casting is deliberately narrow.** Five fixed view types, no custom poses, no custom framings, no "sixth view" affordance. The cast node produces the reference package, and that's it.
-- **Creative freedom lives downstream.** A user who wants Maya in a running three-quarter pose doesn't cast her in that pose — they cast her canonically, then drop an image-generation node, connect Maya's headshot (or any view) to the image-gen node's reference input via a lineage edge, and prompt for the pose. The image-gen node produces the output; the cast node provided the identity.
+- **Creative freedom lives downstream.** A user who wants Maya in a running three-quarter pose doesn't cast her in that pose — they cast her canonically, then drop an image-generation node, connect Maya's headshot (or any view) to the image-gen node's reference input via a lineage edge, and prompt for the pose.
 - **Wardrobe VTO follows the same shape.** A VTO node takes a cast reference (via edge) plus garment references (via edges) and produces a new output node. The cast stays clean; the VTO output carries the creative result.
-- **The connection dots on every node matter.** They are the interface between cast references and downstream consumers. Every node that can accept an image reference has a blue image pin; every node that can accept a prompt has a purple prompt pin. Edges between cast views and image-gen/VTO/other consumers are the lineage of the board.
-
-This framing explains why the casting UI is shaped the way it is: fixed views, locked identity, minimal per-node configuration, no hidden complexity. It also explains why passes 2 and 3 (wardrobe, generic image generation) are where the real creative surface expands — because casting is the calm layer underneath that everything else references.
+- **The connection dots on every node matter.** They are the interface between cast references and downstream consumers. Every node that can accept an image reference has a blue image pin; every node that can accept a prompt has a purple prompt pin. Edges between cast views and consumers are the lineage of the board.
 
 If anything later in this doc seems overly restrictive for casting, the answer is almost always "because casting is a reference-asset workflow, and that thing belongs in a downstream node type, not here."
 
 ---
 
-## 2. Foundational decisions (all locked)
+## 2. Foundational decisions
 
-### Decision 1 — Node typing: `kind` + `metadata.provenance`
+### Decision 1 — Node typing: `kind` + `metadata.provenance` *(locked, provenance shapes extended)*
 
-Node types split into two concerns. The `kind` field on `board_items` governs rendering: `image | cast_config | wardrobe_config | note | frame`. Everything else — "is this a cast output, a VTO result, a reference upload, a text-to-image output?" — lives in `metadata.provenance` as structured JSON. This means generic image generation, text-to-image, and any future generation type all slot into `kind: "image"` without schema migrations; the provenance tells renderers and agents what the image actually is.
+Node types split into two concerns. A new `kind` column on `board_items` governs rendering: `image | cast_config | wardrobe_config | note | frame | video` (`video` is reserved for pass 4 — see §2.6; nothing renders it in pass 1, but the enum ships extensible). Everything else — "is this a cast output, a VTO result, a library placement, a text-to-image output?" — lives in `metadata.provenance` as structured JSON.
 
-The existing enum on `board_items.type` (`model | garment | vto_result | reference | iteration | note | frame`) remains for one migration cycle but is *only* a compatibility fallback. New code writes to `kind` and reads provenance. Migration maps legacy rows to `kind: "image"` with appropriate provenance stamped into metadata.
+The existing enum on `board_items.type` (`model | garment | vto_result | reference | iteration | note | frame`) remains for one migration cycle as a compatibility fallback. New code writes both, reads `kind` + provenance.
 
-**Provenance shapes we commit to in pass 1:**
+**Provenance shapes committed for pass 1** (pass 2+ shapes shown for extensibility proof, not built now):
 
 ```ts
-type Provenance =
-  | { type: "cast_root"; modelId: number; viewAngle: "frontClose"; attributes: CastAttributes }
-  | { type: "cast_view"; modelId: number; rootItemId: number; viewAngle: CanonicalViewAngle; attributes: CastAttributes }
-  | { type: "vto_output"; sourceModelItemId: number; garmentItemIds: number[] }
-  | { type: "text2img"; prompt: string; engine: string }
-  | { type: "upload"; originalFilename?: string }
-  | { type: "reference"; sourceItemId?: number };
-
 type CanonicalViewAngle = "frontClose" | "frontFull" | "sideClose" | "sideFull" | "backFull";
+
+/** A snapshot of an input actually consumed by a generation, captured at generation time. */
+type InputSnapshot = {
+  itemId: number;          // the source node at the time of generation
+  versionId?: number;      // board_item_versions.id if the source was versioned
+  imageUrl: string;        // the EXACT image URL consumed — survives later edits to the source
+};
+
+type Provenance =
+  // pass 1
+  | { type: "cast_root"; modelId: number; viewAngle: "frontClose"; attributes: CastAttributes;
+      engine: string; forkedFromItemId?: number }
+  | { type: "cast_view"; modelId: number; rootItemId: number; viewAngle: CanonicalViewAngle;
+      attributes: CastAttributes; engine: string; inputs: InputSnapshot[] }
+  | { type: "library_cast"; modelId: number; viewAngle: CanonicalViewAngle; attributes?: CastAttributes }
+  | { type: "upload"; originalFilename?: string }
+  | { type: "reference"; sourceItemId?: number }
+  // pass 2+
+  | { type: "vto_output"; inputs: InputSnapshot[]; engine: string }
+  | { type: "library_garment"; garmentId: number }
+  | { type: "text2img"; prompt: string; engine: string; inputs: InputSnapshot[] }
+  // pass 4 (shape reserved, see PASS_4_VIDEO_NOTES.md)
+  | { type: "img2video"; engine: string; inputs: InputSnapshot[]; prompt: string; durationSec: number };
 ```
 
-`cast_root` represents the initial cast node — always rendered as the headshot (`frontClose`), owns the identity configuration (the five blender chips plus the master prompt), and is the only node that can accept identity-level edits. `cast_view` represents additional view nodes that share an identity with their root (`rootItemId` links back) but carry their own per-view image, version history, and optional per-view pose prompt. See Decision 3 for the interaction model.
+Two changes from the original draft, both ratified via the decision log:
 
-`CastAttributes` is structured and queryable (see Decision 5): `{ gender, ageRange, ethnicityBlend, build, vibe, brand, skin, hairColor, hairStyle, ... }`. All 27 casting fields appear here when set, with defaults filled by the LLM parser or by explicit editor choices. Identity-level attributes (brand, vibe, ethnicity, skin, hair, etc.) live on the root and are inherited by view nodes; view-specific attributes (currently none in pass 1, but reserved for future use like per-view pose prompts) live on the view node itself.
+1. **Provenance snapshots inputs at generation time** (`InputSnapshot[]`). Storing only `rootItemId`-style pointers made historical outputs lie after identity edits: a view generated from Maya-v1 would appear to descend from Maya-v3. With snapshots, every generated node truthfully records the exact image URLs it consumed. R2 URLs are stable and never expire (public-bucket serving), so snapshots normally stay resolvable. Edges remain the *navigational* lineage; snapshots are the *forensic* lineage. Agents, the History tab, and future reproducibility features read snapshots.
+   **Graceful degradation (founder amendment to D-12):** a snapshot URL may still stop resolving (object deleted from R2, storage migration). Every surface that renders a snapshot or version thumbnail must handle a non-resolving URL with the explicit "Source unavailable" state (`DESIGN_SYSTEM.md` §5.16) — never a broken image. Operations that would *consume* a missing input (e.g. regenerating from a snapshot) fail with a clear, refunded error naming the unavailable source, not a generic failure.
+2. **`engine` is recorded on every generated provenance.** Pass 1 writes a single value (the Gemini image engine identifier); nothing may assume it. This is the multi-engine door (§2.6).
 
-**Node metadata also carries an optional status field** that powers the generalized `NodeStatusBadge` system (see Decision 3 and the design system's `NodeStatusBadge` spec):
+`CastAttributes` is the `ModelPreferences` shape from `client/src/features/casting/constants.ts` (~34 fields — see audit B1) plus the six parser-override fields added as a pass-1 prerequisite. Identity-level attributes live on the root and are inherited by view nodes.
+
+**Node metadata also carries an optional `status` field** powering the generalized `NodeStatusBadge`:
 
 ```ts
 type NodeStatus =
@@ -75,11 +98,13 @@ type NodeStatus =
   | { type: "moderation"; message: string; context?: { caseId?: number } };
 ```
 
-Only `stale` is implemented in pass 1. The other variants are reserved in the type union for future use (quality checks, agent review handoffs, error states, moderation flags) — the `NodeStatusBadge` component handles dispatch based on `status.type` and will fall back to a generic rendering for unimplemented variants. See the design system doc for component spec.
+Pass 1 implements `stale` and `error` (`error` was originally deferred, but generation failures are a pass-1 reality — a failed node must communicate itself; see the design system's empty/error-state chapter). The other variants stay reserved in the union.
 
-### Decision 2 — Edges as first-class data
+**Node metadata additionally carries `pinned?: boolean`** — see Decision 3c. A pinned node is finished work: it is exempt from staleness pressure (no stale badge, excluded from cascade counts and bulk refresh).
 
-Fashion workflows are DAGs, not trees. One VTO result has one model parent plus N garment parents. Single-parent `parentItemId` cannot represent this cleanly. We add a `board_edges` table:
+### Decision 2 — Edges as first-class data *(locked, enum extended)*
+
+Fashion workflows are DAGs, not trees. One VTO result has one model parent plus N garment parents. We add a `board_edges` table:
 
 ```sql
 CREATE TABLE board_edges (
@@ -87,7 +112,8 @@ CREATE TABLE board_edges (
   boardId      INT NOT NULL,
   sourceItemId INT NOT NULL,
   targetItemId INT NOT NULL,
-  relation     ENUM('iterated_from','vto_input_model','vto_input_garment','reference_for','variant_of','generated_from_cast') NOT NULL,
+  relation     ENUM('iterated_from','vto_input_model','vto_input_garment','reference_for',
+                    'variant_of','generated_from_cast','forked_from') NOT NULL,
   metadata     JSON,
   createdAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_board_edges_source (sourceItemId),
@@ -96,131 +122,148 @@ CREATE TABLE board_edges (
 );
 ```
 
-`parentItemId` on `board_items` is retained for now but no longer the primary lineage mechanism. New code writes edges. The refinement studio's History tab and the future agent both read lineage from this table.
+`forked_from` is new — it records root-to-root forks from Decision 3f. `parentItemId` on `board_items` is retained but frozen (audit N7 confirmed nothing writes it today; nothing new starts). New code writes edges.
 
-Edge rendering on the canvas: hairline, 50% opacity, visible only when either endpoint node is selected. Not shown by default. React Flow edges bind to rows in this table via the `boardId` scope.
+Edge rendering: hairline, low opacity, upgraded when either endpoint is selected — exact treatment (including zoom behavior) in the design system.
 
-### Decision 3 — Tool invocation: inline-first, root + view node model, full-screen editor as escape hatch
+### Decision 3 — Tool invocation: inline-first, root + view node model, refinement studio as the deep path *(locked, with 3c/3f revised)*
 
 #### 3a. Creating a cast happens inline on the canvas
 
-Drop a cast node from the floating tool pill at the bottom-center. The node lands with a placeholder image area and an inline prompt field. **The freshly-dropped cast node is automatically selected**, which reveals its chrome: the five blender chips (Brand, Vibe, Ethnicity, Skin, Hair) appear below the card in their empty/ghosted state, and the floating action toolbar above the card is *not* rendered (because there is no output yet to rerun/duplicate/download). The control strip below the card is also not rendered on empty nodes — it's for completed casts.
+Drop a cast node from the floating tool pill at the bottom-center. The node lands with a placeholder image area and an inline prompt field, auto-selected, revealing its chrome: the blender chips below the card in ghost state; no floating toolbar, no control strip (nothing exists yet to act on).
 
-The user can now do any of the following, in any order, before hitting Run:
-- Type a prompt in the inline field. The LLM parser (Gemini via existing `server/_core/llm.ts`) will extract structured attributes from the prompt into `CastAttributes` on submit.
-- Click any of the five blender chips to open the real tactile component (`TriBlendSelector`, `EthnicityBlender`, `SkinToneGrid`, `HairColorWheel`, brand selector) in a popover anchored to the chip, set a value, Apply. The chip flips from ghosted to filled state.
-- Do both — explicit chip values are hard constraints; LLM-extracted values from the prompt are soft defaults that explicit chips override.
+The user can, in any order, before hitting Run:
+- Type a prompt. On Run, the LLM parser — a new `server/casting/promptParser.ts` service using the existing Gemini text path (`getAiClient` + `withTextQueue` + circuit breaker; the deleted `server/_core/llm.ts` is NOT coming back) — extracts structured attributes into `CastAttributes` per `PARSER_PROMPT_V2.md`. The parser's three-path dispatch (parsed / random / per-field random) executes **server-side inside `boardOps.runGeneration`**; the preference randomizer must therefore be callable server-side (port or move it to `shared/`).
+- Click any blender chip to open the real tactile component in a popover, set a value, Apply. Explicit chip values are hard constraints; parser-extracted values are soft defaults that chips override (precedence chain per `PARSER_PROMPT_V2.md` §5).
 
-**Run enables as soon as either the prompt has text OR at least one chip is filled.** An empty-empty node cannot Run. This is visually communicated by the Run button being in a ghosted state when there's nothing to run, and darkening to the primary pill when any input is provided.
-
-On Run, the node generates in place — progress bar in the image area, "Running" label on the button. When the generation completes, the node transitions to its completed state: the image fills in, the prompt field shows the submitted prompt in tertiary gray (read-only display), the Run button becomes Edit, the control strip appears below the card, and the floating action toolbar appears above the card. The chips stay visible and show their filled values (whatever the LLM extracted plus whatever the user set explicitly).
-
-This is the first (and often only) generation of the cast. What gets created here is a `cast_root` node — the identity anchor.
+**Run enables as soon as either the prompt has text OR at least one chip is filled.** The Run affordance displays its credit cost inline before execution (Decision 6). On Run, the node generates in place; on completion it transitions to the completed state (image, read-only prompt display, Edit button, control strip, floating toolbar, filled chips). What gets created is a `cast_root` — the identity anchor.
 
 #### 3b. Generating additional views spawns separate view nodes
 
-Once a root cast exists, the user can request additional view angles via the `+ Views` action in the control strip. This opens a popover anchored to the control strip with checkboxes for the five canonical view types (headshot is always pre-checked and disabled because it's the root). The user ticks the views they want, sees a running cost total in the popover footer, and hits Generate.
+Once a root exists, `+ Views` in the control strip opens a popover with checkboxes for the five canonical view types (headshot pre-checked and disabled — it's the root), a running cost total computed from real `CREDIT_COSTS` via the plan API, and Generate.
 
-**Each requested view spawns as its own separate node on the canvas**, not as internal state of the root. The generated view nodes:
+**Each requested view spawns as its own node**: provenance `cast_view` with `rootItemId` and an `inputs` snapshot of the root image consumed; connected via a `generated_from_cast` edge; inheriting full identity from the root; auto-placed in a row to the right; each with its own version history, optional per-view pose prompt, and reduced toolbar. View nodes do NOT show blender chips — identity edits happen at the root.
 
-- Are of provenance type `cast_view`
-- Reference the root via `rootItemId` in their provenance
-- Are connected to the root via a `board_edges` row with relation `generated_from_cast`
-- Inherit the full identity from the root (same `modelId`, same master prompt, same agency ID once minted)
-- Get auto-placed in a horizontal row to the right of the root by default, draggable anywhere afterward
-- Each show their own individual version history, their own inline prompt for optional per-view pose direction ("three-quarter pose, shoulder forward"), and their own floating toolbar when selected
-- Do NOT show blender chips (identity editing happens at the root)
-- Have type labels like `Cast · Maya R. · Full front` — identity name plus view angle
+Root control strip: `+ Views · v1 · ···` (no view-switcher dropdown — views are nodes). View control strip: `v1 · ···`.
 
-The root cast node's control strip reads `+ Views · v1 · ···` and has no view switcher dropdown (there's no dropdown needed — views are separate nodes, visible on the canvas). View nodes have a simpler control strip: `v1 · ···`.
+The five canonical views are **fixed and strict**. No custom pose or framing options — see §1.5.
 
-The five canonical view types are **fixed and strict**. There is no custom pose / custom framing option in the views popover. Creative freedom for non-canonical angles, poses, and scenes lives in downstream image-generation nodes that consume cast references as inputs — see section 1.5 for the full framing.
+#### 3c. Identity changes on the root — the stale flow *(revised: stale is informational; pinning)*
 
-#### 3c. Identity changes on the root invalidate view nodes — the stale flow
+When the user changes an identity-level attribute on the root (blender chip or studio Attributes tab), the root regenerates and connected views become stale — they depict the previous person. The flow:
 
-When the user changes an identity-level attribute on the root cast (any of the five blender chips, or any identity-level attribute via the refinement studio's Attributes tab), the root's own image becomes outdated immediately. But the existing view nodes connected to that root also become stale — they depict an old version of Maya.
+1. User applies an identity change. The client calls `boardOps.updateAttributes.plan`, which detects identity-level fields and returns the affected (unpinned) view list and total cost.
+2. A confirmation dialog surfaces: **"This will regenerate N existing views · {cost} credits. Update views now / Update later / Cancel."** Costs come from the plan, never hardcoded.
+3. **Cancel** — nothing commits; the popover reopens with the draft.
+4. **Update now** — identity commits, root regenerates, all affected views regenerate in parallel; total cost deducted atomically (existing `atomicCredits` pattern).
+5. **Update later** — identity commits, root regenerates, each affected view gains `status: { type: "stale", ... }` with old/new values in context, rendered as the corner `NodeStatusBadge` plus the dimmed-image secondary cue.
 
-The flow is:
+**Stale is informational, not corrective pressure.** The badge's hover card offers **Refresh · {cost}** (regenerate this view against the new identity) and **Keep old** — and Keep old now has real semantics: it sets `pinned: true` on the view. A pinned view is finished work: badge cleared, excluded from future cascade counts, bulk refreshes, and stale marking. (Unpinning is available from the node's `···` menu.) A bulk `Refresh all stale views` action lives in the root's `···` menu.
 
-1. User changes vibe on the root from 55/25/20 to 30/40/30 and hits Apply in the popover.
-2. Before firing the generation, the client detects that 3 view nodes exist connected to this root. A confirmation dialog surfaces: **"This will regenerate 3 existing views · 3,600 credits. Update views now / Update later / Cancel."**
-3. **Cancel** — no change is committed. Popover reopens so the user can tweak or discard.
-4. **Update now** — the root's identity is updated, the root regenerates, and all 3 view nodes are marked as generating and regenerate in parallel with the new identity. Total cost (root regen + 3 view regens) is deducted atomically.
-5. **Update later** — the root's identity is updated, the root regenerates, but the 3 view nodes stay as-is with their old images. Each view node gains a **stale status** (`NodeStatus` of type `"stale"`), which causes a `NodeStatusBadge` to appear in the top-right corner of the view node's image area. The view node's image is also rendered at 0.7 opacity as a secondary cue.
-
-A stale view node's badge is hover-interactive: on hover, a floating card appears next to the node with the status message (`"Maya's identity was updated. This view still reflects the previous vibe (55/25/20 → 30/40/30)."`) and two actions — **Refresh · 1,200 credits** (regenerates just this view) or **Keep old** (dismisses the card, the view stays stale and the badge remains until the user either refreshes or deletes the node). There is also a bulk `Refresh all stale views` action available from the root cast node's `···` more menu, which fires per-view regeneration for all connected stale views in one batch with a single cost confirmation.
-
-The stale badge is a specific variant of the generalized `NodeStatusBadge` system. Future variants (`quality_flagged`, `needs_review`, `error`, `moderation`) will reuse the same corner-badge + hover-card + action-button shape. See the design system doc for the component spec and section 1.5 for how this enables future agent review workflows.
+Pinned nodes remain truthful because provenance snapshots (Decision 1) record exactly what they were generated from.
 
 #### 3d. Editing an existing cast happens in the refinement studio
 
-Click Edit on a selected cast node (root or view). The canvas dissolves and the refinement studio fills the viewport — same browser window, same top-bar component in a different state, no dimmed scrim, no modal card. A `← Boards` action in the top bar is the only way out. The studio has four tabs (Refine, Surgical, Attributes, History) and contains every dense operation Drape supports on an existing cast.
+Click Edit on a selected cast node. The canvas dissolves and the refinement studio fills the viewport — same window, same top-bar component in a different state, no scrim, no modal card. `← Boards` in the top bar (or Esc) is the way out. Four tabs: Refine, Surgical, Attributes, History.
 
-Editing a **root cast node** in the studio gives access to all identity-level attributes via the Attributes tab (the five expressive blender widgets plus ~22 simple chips for the other structured attributes). Changes to identity-level attributes in the studio follow the same confirmation flow as on-canvas blender chip changes (section 3c).
+Editing a **root** exposes all identity-level attributes in the Attributes tab; identity changes follow 3c. Editing a **view** exposes Refine/Surgical/History normally; Attributes is read-only with an "Edit identity on root cast" link.
 
-Editing a **view cast node** in the studio gives access to per-view refinement only — the Refine and Surgical tabs work normally, the History tab shows per-view versions, and the Attributes tab is in a read-only mode showing the inherited identity from the root (with a "Edit identity on root cast" link that navigates to the root's editor). Users cannot change identity-level attributes from within a view node's editor; they must go to the root.
+The current `ModelEditorOverlay.tsx` (a modal-with-scrim, 786 lines) is **rebuilt into** the studio shell, salvaging its zoom/pan viewer and mask-canvas internals — it is not a rename (audit N12).
 
-#### 3e. Interaction grammar summary
+#### 3e. Interaction grammar summary *(revised Run semantics on roots — see 3f)*
 
-Every node type on the canvas obeys the same four-verb grammar, but with type-aware scoping:
+| Verb | On root cast | On view cast |
+|---|---|---|
+| **Run** | **Identity event** — opens the fork/recast choice (3f) | New version on the same view; root and siblings unaffected |
+| **Variations** | N sibling roots spawn with `variant_of` edges, each a new identity interpretation | **Disabled** — views of a locked identity don't vary meaningfully |
+| **New node** | Fresh cast node at cursor, no relation | Same |
+| **Edit** | Refinement studio for the root | Refinement studio for the view |
 
-| Verb       | On root cast                                              | On view cast                                         |
-|------------|-----------------------------------------------------------|------------------------------------------------------|
-| **Run**    | New version on the same root, may trigger stale flow if views exist | New version on the same view, root and siblings unaffected |
-| **Variations** | N sibling *root* nodes spawn with `variant_of` edges, each a new identity interpretation | **Disabled** — views of a locked identity don't vary meaningfully |
-| **New node** | Fresh cast node drops at cursor, no relation to existing | Same                                                 |
-| **Edit**   | Navigates to refinement studio for the root              | Navigates to refinement studio for the view          |
+View nodes show the full 6-icon toolbar with Variations and Duplicate disabled (tooltips explain why). Simple casts stay one prompt and one click; tactile adjustments two clicks; additional angles one popover; precision work one Edit click.
 
-**View nodes have a reduced floating toolbar: 4 icons** (Rerun, Download, Delete, Info). Variations and Duplicate are disabled (tooltip "Not available on view nodes"). Root cast nodes have the full 6-icon toolbar (Rerun, Variations, Duplicate, Download, Delete, Info).
+#### 3f. Rerun on a root is fork or recast — never a silent new version *(new; ratified via decision log D-11)*
 
-This model means **simple casts are one prompt and one click**, **tactile adjustments are two clicks on the canvas**, **additional angles are one popover on the canvas**, and **precision work is one Edit click into the studio**. Nothing is gated by how the node was created. Every cast has access to every tool its type supports.
+Generic vN versioning is wrong for cast roots: a rerun root is a **different person**, and "v2 of Maya" makes every downstream edge ambiguous. So on a completed `cast_root`, Rerun presents an explicit choice (small popover anchored to the toolbar, not a heavy dialog):
 
-### Decision 4 — Per-node state architecture
+- **Fork new cast** (default): creates a *new* `cast_root` node beside the original (new `modelId`, same attributes as its starting brief), connected by a `forked_from` edge. The original and its views are untouched. This is "same brief, another candidate."
+- **Recast this cast**: regenerates this root in place — a new person under the same node. This is an identity event: if unpinned views exist, the 3c dialog follows with exact counts and cost. This is "I don't like this face."
 
-The current `useCastingFormStore`, `useCastingGenerationStore`, and `useCastingUIStore` are deleted. They were built for a single active cast in a linear studio; they cannot represent multiple casts on the same canvas.
+**On roots, every image change is an identity event** — recast, attribute change, and History-tab revert all route through the 3c confirmation when views exist. Version history is still *recorded* for roots (`board_item_versions` — the rails already exist, audit N3) so History remains an honest audit trail and revert stays possible, but revert is presented as "restore this identity," with the same cascade rules. `cast_view`, image-gen, and VTO nodes keep plain vN versioning — reruns there are new shots of the same subject.
+
+### Decision 4 — Per-node state architecture *(revised store-retirement scope)*
+
+The three casting stores (`useCastingFormStore`, `useCastingGenerationStore`, `useCastingUIStore`) were built for a single active cast in a linear studio and cannot represent multiple casts on one canvas. **No canvas code may import them.**
+
+Revised retirement plan (audit N1): the stores are *not* deleted in pass 1. They survive as `/studio`-scoped state, because `/studio`'s `DrapeStudio` + `ControlPanel`, `useStudioEntry`'s entry-reset contract, and nothing else consume them once `BoardCastingPanel` is deleted. They die with `/studio`. The enforcement line moves from "deleted from the repo" to "zero imports from `features/boards/**` or any new canvas code" — mechanically checkable.
 
 **New model:**
 
-- **Persistent config** (all 27 casting fields, prompts, blender values, style notes) lives in `board_items.metadata`. Written via the existing `boards.updateItem` tRPC mutation, debounced during active editing.
-- **Transient editor state** (which tab is open, which chip is expanded, scroll position, unsaved draft text) lives in local React state inside the editor overlay or popover. Discarded on close unless committed.
-- **In-flight generation state** (job id, progress, status per node) lives in a single global Zustand store: `useGenerationJobs`. Keyed by `itemId`. This is the only global store in the new architecture, and it is orchestration-only — it never holds form values.
+- **Persistent config** (all casting fields, prompts, blender values) lives in `board_items.metadata`, written via `boardOps` (debounced during active editing).
+- **Transient editor state** (open tab, expanded chip, drafts) is local React state, discarded on close.
+- **In-flight generation state** lives in one global Zustand store, `useGenerationJobs`, keyed by `itemId` — orchestration only, never form values. Job shape from day one: `{ itemId, operation, engine, status: 'queued'|'running'|'failed'|'done', progressPct?, phaseLabel?, startedAt, estimatedDurationMs }`. It must tolerate **minutes-long jobs** (video, pass 4) even though pass-1 image jobs finish in seconds: progress is time-based against `estimatedDurationMs`, polling backs off on long jobs, and nothing in the store assumes a single image result.
 
-Duplicating a node is a copy of metadata. Undoing is a snapshot of metadata. The agent reading board state gets a cleanly serializable JSON object.
+Duplicating a node is a copy of metadata. Undo restores a snapshot of metadata (Decision 7). The agent reading board state gets cleanly serializable JSON.
 
-### Decision 5 — Agent-ready primitives
+### Decision 5 — Agent-ready primitives *(revised: 5.3 already shipped)*
 
-The canvas must be fully callable as a set of pure functions from day one. This is a shipping discipline, not a new feature. Five commitments:
+The canvas must be fully callable as pure functions from day one. Commitments:
 
-1. **All mutations go through `server/boardOps.ts`**, a thin typed wrapper over existing tRPC procedures plus any client-side coordination. No React component mutates board state directly. Example operations: `createNode`, `updateNodeMetadata`, `runGeneration`, `runRefinement`, `runVariations`, `generateViews`, `revertToVersion`, `branchFromVersion`, `addEdge`, `deleteNode`. Full API in section 4.
-2. **All cast output provenance is structured and filterable.** Never free-text. A future agent must be able to query "all male cast outputs on this board" via `boardState.getSnapshot()` and filter by `provenance.attributes.gender === "male"`. The LLM prompt parser emits structured JSON, not descriptions.
-3. **Garment nodes are auto-captioned and tagged at digitize time.** When a garment is uploaded, a vision LLM call populates `shortName`, `description`, and `tags` automatically. User can edit. Agent filters by tags: `tags.includes("hoodie") && tags.includes("orange")`. This also improves the non-agent wardrobe UX because users get smart default labels.
-4. **Mutations use a two-phase `plan / execute` API.** `planOperation()` computes what would happen (which nodes will be created, spatial placement, total credit cost, estimated time) and returns a plan object. `executeOperation()` runs it. This pattern serves the agent's "7,200 credits, proceed?" confirmation and also powers the Variations action and the views popover in the non-agent UI. Build once, use everywhere.
-5. **`boardState.getSnapshot(boardId)` returns a JSON-serializable description** of the full board: all nodes with their kinds and structured provenance, all edges with their relations, current selection, current viewport. This is what agents, undo/redo, board export, and future collaborative features all consume. One function, returns one object.
+1. **All mutations go through `boardOps`** (server module + tRPC router — §4). No React component mutates board state directly. This also replaces the current inline iteration orchestration in `BoardPage.tsx` (:632–685), which moves into `boardOps.runRefinement`.
+2. **All cast output provenance is structured and filterable.** Never free-text. The parser emits structured JSON.
+3. ~~Garment auto-captioning~~ — **already shipped** (`server/wardrobe/garmentAnalysis.ts`; audit N4). Removed from the pass-1 workload; pass 2 consumes it.
+4. **Mutations use a two-phase `plan / execute` API.** `plan()` computes what would happen — nodes created, placement, **credit cost derived server-side from `CREDIT_COSTS`**, estimated duration — and `execute()` performs it. This one pattern powers the agent's confirmations, the Variations action, the views popover, the stale dialog, and every inline cost display (Decision 6).
+5. **`boardState.getSnapshot(boardId)`** returns a JSON-serializable description of the full board: nodes with kinds and provenance, edges with relations, selection, viewport. Consumed by agents, undo, export, and future collaboration.
 
-The agent itself is not built in this vertical slice. These five commitments keep the door open at ~one day of extra discipline during the build.
+The agent itself is not built in this slice. These commitments cost ~one day of discipline.
+
+### Decision 6 — Credit cost at every point of action *(new; ratified via decision log D-15)*
+
+No affordance fires a paid generation without showing its cost first. The views popover's cost-total pattern generalizes:
+
+- Every Run/Rerun/Refresh/Generate control displays its cost inline (placement per design system §9: adjacent cost label, not inside the button text, except in popover footers where the total is the primary metric).
+- Costs are **computed by `plan()` server-side from `CREDIT_COSTS`** (`server/casting/aiService.ts:62`) — never client-side literals. The old docs' flat "1,200/view" examples are void (real: `castingImage` 350, `multiView` 300, `iterate` 350, etc.).
+- Cost copy is an estimate ("~350 credits") because the engine may fall back to Flash pricing (`flashMultiplier: 0.5`); actual deduction happens through the existing `atomicCredits` path.
+- This pattern is load-bearing for pass 4, where video costs make surprise charges unacceptable.
+
+### Decision 7 — Keyboard model and scoped undo, specified now *(new; ratified via decision log D-16/D-17)*
+
+Components are built against this model from the start, not retrofitted.
+
+**Keyboard (pass 1):**
+
+| Key | Behavior |
+|---|---|
+| `Esc` | Closes the topmost layer, strictly in order: popover → hover card → dialog → refinement studio → clear selection |
+| `Delete` / `Backspace` | Delete selection. Root with connected views → confirmation dialog with cascade count. Everything else deletes immediately (undoable) |
+| Arrow keys | Nudge selected node(s) 1 canvas unit; `Shift+Arrow` = 16 units. Batched into one undoable move |
+| `Enter` | Submit the focused inline prompt (Run) |
+| `Cmd/Ctrl+Z` | Undo, scoped (below) |
+| `Cmd/Ctrl+A` | Select all nodes |
+| `Space`+drag / wheel / pinch | Pan / zoom (React Flow defaults; zoom clamped to the existing 0.1×–5× persistence range) |
+| `Cmd/Ctrl+K` | Reserved; command palette in pass 3 |
+
+**Undo (pass 1, scoped):** a destructive spatial canvas without undo is a trust failure — but a full command-pattern undo stack across generations is not pass-1-sized. Pass 1 ships undo for the two trust-critical, cheaply-invertible operations:
+
+- **Delete** — soft delete. `board_items` gains a nullable `deletedAt` timestamp (additive migration); delete sets it, queries filter it, and a toast offers "Undo" (in addition to `Cmd+Z`) which clears it. Versions and edges survive intact. Cascade deletes (root + views) restore as a unit. Hard cleanup of old soft-deleted rows is a later maintenance job.
+- **Move** — an in-memory stack of position snapshots; `Cmd+Z` restores the previous positions via `boardOps.moveNodes`.
+
+Generation operations are **not** undoable (money was spent; history covers recovery via versions). Full multi-step undo remains pass 4, and `getSnapshot` is its designed foundation.
 
 ---
 
 ## 3. Interaction grammar
 
-Every node type on the canvas obeys the same four-verb grammar, scoped by node type where scoping makes semantic sense (see Decision 3e for the cast-specific table):
+*(Locked — table unchanged except Run-on-root routing to 3f.)*
 
-| Verb       | Spatial outcome                                           | Typical trigger              |
-|------------|-----------------------------------------------------------|------------------------------|
-| **Run**    | New version on the same node. Old version goes to history.| Click Run inside the card    |
-| **Variations** | N sibling nodes spawn adjacent to source, lineage edges connect them to the source, shared prompt config. Disabled on view cast nodes. | Variations button on selection toolbar |
-| **New node** | A fresh concept node drops at cursor position.          | Floating tool pill `+` menu  |
-| **Edit**   | Navigates to the refinement studio (full-screen takeover).| Edit button inside card, or selection toolbar |
+Every node type obeys the same four-verb grammar (Run / Variations / New node / Edit), scoped by node type where scoping makes semantic sense (3e). Disabled verbs stay visible as greyed icons with explanatory tooltips, so the grammar remains predictable.
 
-These four verbs apply to every node type. Users learn the grammar once. Individual node types may disable specific verbs when they're meaningless for that type (e.g. Variations and Duplicate on view cast nodes) — disabled actions remain visible in the toolbar as greyed-out icons with tooltips explaining why, so the grammar remains predictable.
-
-**Supporting actions on selection** (from the floating action toolbar above the card): `Rerun` (≡ Run), `Variations`, `Duplicate`, `Download`, `Delete`, `Info`. Six icons max for nodes that support all actions (root cast, wardrobe, image-gen). Four icons effectively active for view cast nodes (Variations and Duplicate greyed). No text labels. Tooltips on hover.
+**Supporting actions on selection** (floating toolbar above the card): `Rerun`, `Variations`, `Duplicate`, `Download`, `Delete`, `Info`. Six icons max; no text labels; tooltips on hover.
 
 ---
 
 ## 4. `boardOps` and `boardState` API shape
 
-Lives in `server/lib/boardOps.ts` (service layer, typed). Client calls these via tRPC. Every mutation is available through this module. The module is the single source of truth for "what operations exist on a board."
+Lives in `server/lib/boardOps.ts` + `server/lib/boardState.ts`, exposed via a tRPC router at `server/routes/boardOps.ts` (following the existing directory-router convention of `server/routes/generation/` if it grows sub-modules). The module is the single source of truth for "what operations exist on a board."
 
 ### Read operations
 
@@ -228,16 +271,18 @@ Lives in `server/lib/boardOps.ts` (service layer, typed). Client calls these via
 interface BoardStateSnapshot {
   boardId: number;
   viewport: { x: number; y: number; zoom: number };
-  selection: number[]; // item IDs
+  selection: number[];
   nodes: Array<{
     id: number;
-    kind: "image" | "cast_config" | "wardrobe_config" | "note" | "frame";
+    kind: "image" | "cast_config" | "wardrobe_config" | "note" | "frame" | "video";
     position: { x: number; y: number };
     size: { width: number; height: number };
     zIndex: number;
     label: string | null;
     imageUrl: string | null;
     provenance: Provenance;
+    status: NodeStatus | null;
+    pinned: boolean;
     metadata: Record<string, unknown>;
     currentVersion: number;
     versionCount: number;
@@ -246,7 +291,8 @@ interface BoardStateSnapshot {
     id: number;
     source: number;
     target: number;
-    relation: "iterated_from" | "vto_input_model" | "vto_input_garment" | "reference_for" | "variant_of";
+    relation: "iterated_from" | "vto_input_model" | "vto_input_garment" | "reference_for"
+            | "variant_of" | "generated_from_cast" | "forked_from";
   }>;
 }
 
@@ -255,7 +301,7 @@ boardState.getSnapshot(boardId: number): Promise<BoardStateSnapshot>;
 
 ### Mutation operations
 
-Every mutation has a matching `plan` function that returns the expected outcome without executing, and an `execute` function that performs it. Agents call `plan` first, show the plan, wait for confirmation, then call `execute`. Non-agent UI can call `execute` directly for simple cases (e.g., typing a prompt and hitting Run) or use `plan` for confirmations (e.g., Variations, Generate views).
+Every mutation has a `plan` function (expected outcome, cost, no side effects) and an `execute` function. Agents always plan-then-execute; the UI uses `plan` wherever a confirmation or cost display is needed (which, per Decision 6, is every paid action).
 
 ```ts
 interface OperationPlan {
@@ -264,177 +310,126 @@ interface OperationPlan {
   modifies: Array<{ itemId: number; changes: Partial<BoardItem> }>;
   deletes: number[];
   addEdges: Array<{ source: number; target: number; relation: string }>;
-  estimatedCreditCost: number;
+  estimatedCreditCost: number;   // derived from CREDIT_COSTS server-side
   estimatedDurationMs: number;
 }
 
-boardOps.createNode.plan(input): Promise<OperationPlan>;
-boardOps.createNode.execute(input): Promise<{ itemId: number; plan: OperationPlan }>;
-
-// Operations in pass 1:
-boardOps.createNode          // drop a new node (for cast: creates a cast_root)
-boardOps.updateNodeMetadata  // change config on an existing node
-boardOps.runGeneration       // fire a generation (cast, VTO, img-gen), creates new version on same node
-boardOps.runRefinement       // prompt-based iteration in the refinement studio
-boardOps.runSurgicalEdit     // mask-based edit
-boardOps.updateAttributes    // change structured attributes; for identity-level changes on cast_root, returns a plan that includes stale propagation to connected cast_view nodes, requiring explicit Update now / Update later confirmation
-boardOps.runVariations       // spawn N sibling nodes sharing config. On cast_root: creates new root casts. On cast_view: disallowed (throws NOT_SUPPORTED).
-boardOps.generateViews       // for a cast_root: spawn N new cast_view nodes for the requested canonical view types (fixed enum: frontClose, frontFull, sideClose, sideFull, backFull), place horizontally adjacent to the root, create `generated_from_cast` edges. Returns the list of created itemIds.
-boardOps.refreshStaleViews   // for a cast_root: regenerate all connected view nodes that currently have a `stale` NodeStatus. Batch operation with single cost confirmation via .plan(). Clears the stale status on each view as its regen completes.
-boardOps.markNodeStatus      // set or clear the optional `status` field on a node's metadata (pass 1 only writes `stale`; future variants reuse this same operation)
-boardOps.revertToVersion     // set a node's current version to a prior one
-boardOps.branchFromVersion   // create a new node rooted at a prior version of another node (for cast_view this creates a new cast_root snapshot from that version)
-boardOps.deleteNode          // on cast_root with connected cast_views: requires confirmation and cascade-deletes the views, unless the user branches them out first
-boardOps.addEdge
-boardOps.removeEdge
-boardOps.moveNodes           // batch position update (drag)
+// Pass-1 operations:
+boardOps.createNode          // drop a node (cast: creates an empty cast_root; library: places a library_cast/upload/reference)
+boardOps.updateNodeMetadata  // config changes on an existing node (debounced writes)
+boardOps.runGeneration       // fire a generation. First run on an empty cast_root invokes the prompt parser
+                             // (three-path dispatch server-side). Result shape is engine- and media-agnostic:
+                             // { outputs: [{ kind: "image", url, ... }], engine } — nothing assumes one image.
+boardOps.runRefinement       // prompt-based iteration (studio Refine tab); replaces BoardPage's inline orchestration
+boardOps.runSurgicalEdit     // mask-based edit (studio Surgical tab)
+boardOps.updateAttributes    // structured attribute changes. Applies cross-field invalidation rules
+                             // (gender clears hairStyle/hairFade/facialHair; hair-style selection cascade —
+                             // port both rules from ControlPanel, audit D1) and the ethnicity dual-write (audit B4).
+                             // Identity-level changes on cast_root: plan returns affected unpinned views for the 3c dialog.
+boardOps.runVariations       // N sibling nodes. cast_root: new roots with variant_of edges. cast_view: NOT_SUPPORTED.
+boardOps.forkRoot            // 3f Fork: new cast_root from an existing root (or from a version), forked_from edge
+boardOps.recastRoot          // 3f Recast: regenerate a root in place; plan reports affected views like updateAttributes
+boardOps.generateViews       // spawn N cast_view nodes for requested canonical views; generated_from_cast edges;
+                             // provenance carries InputSnapshots of the root image consumed
+boardOps.refreshStaleViews   // batch-regenerate all stale, unpinned views of a root; single plan/confirm
+boardOps.markNodeStatus      // set/clear metadata.status (pass 1 writes stale + error)
+boardOps.setNodePinned       // set/clear pinned (Keep old = pin; unpin from ··· menu)
+boardOps.revertToVersion     // wraps existing boards.revertItemVersion; on cast_root this is an identity event (3f)
+boardOps.branchFromVersion   // new node rooted at a prior version (from cast history: a new cast_root snapshot)
+boardOps.deleteNode          // soft delete (deletedAt); cast_root with views: confirm + cascade as a unit
+boardOps.undoDelete          // clears deletedAt for a node or cascade unit
+boardOps.addEdge / removeEdge
+boardOps.moveNodes           // batch position updates (drag, nudge)
 ```
 
-**The generateViews plan shape** is worth noting explicitly because it's the most common multi-node-creation operation in pass 1:
+Notes:
 
-```ts
-boardOps.generateViews.plan({
-  rootItemId: number;
-  views: Array<"frontClose" | "frontFull" | "sideClose" | "sideFull" | "backFull">;
-}): Promise<OperationPlan>;
-// plan.creates will contain one entry per requested view, each of kind "image" with
-// provenance { type: "cast_view", modelId, rootItemId, viewAngle, attributes: <inherited> }
-// plan.addEdges will contain one generated_from_cast edge per requested view
-// plan.estimatedCreditCost = views.length * 1200 (pass 1 flat rate; wire to existing pricing later)
-```
-
-**The updateAttributes plan shape** for identity-level changes on a cast root includes stale propagation:
-
-```ts
-boardOps.updateAttributes.plan({
-  itemId: number;  // a cast_root
-  changes: Partial<CastAttributes>;
-}): Promise<OperationPlan & { staleViews: number[] }>;
-// If any identity-level attribute is in `changes` and connected cast_view nodes exist,
-// the plan includes the list of affected view itemIds so the UI can present the
-// Update now / Update later / Cancel dialog with exact counts and cost.
-```
-
-Every operation is logged with its plan + result for debugging and audit. Every operation writes to `board_item_versions` when it changes the visible output of a node.
+- `generateViews.plan` returns one `creates` entry per requested view and per-view + total costs from `CREDIT_COSTS.multiView` (or `allViews` when all remaining are selected, if cheaper).
+- Every operation is logged with plan + result. Every operation that changes a node's visible output writes a `board_item_versions` row — the existing rails (audit N3); new `tool` values (`'attributes'`, `'rerun'`, `'views'`, …) are additive on the varchar column.
+- Where an operation wraps an existing `boards.*` or `generation.*` procedure, wrap — don't duplicate (`addItem`, `updateItem`, `batchUpdatePositions`, the version procedures, and the iterate path all exist; audit N8).
 
 ---
 
 ## 5. State management and data flow
 
-**Rule of thumb:** if a value needs to survive a page reload, it lives in the database (via `board_items.metadata` or a dedicated column). If a value is transient UI state, it lives in local React state. There is exactly one global Zustand store.
+*(Rule unchanged: survives-reload ⇒ database; transient ⇒ local React state; exactly one global store for canvas code.)*
 
-| State category          | Location                                   |
-|-------------------------|--------------------------------------------|
-| Node config (27 attributes, prompts, blends) | `board_items.metadata`    |
-| Version history         | `board_item_versions` table                |
-| Lineage/edges           | `board_edges` table                        |
-| Viewport                | `boards` table (existing columns)          |
-| Selection               | Local React state in `BoardPage`           |
-| Editor tab, scroll, draft text | Local React state in editor overlay |
-| In-flight generation jobs | `useGenerationJobs` Zustand store (only global store) |
-| Credit balance          | TanStack Query cache (tRPC)                |
+| State category | Location |
+|---|---|
+| Node config (attributes, prompts, blends) | `board_items.metadata` |
+| Version history | `board_item_versions` (existing table) |
+| Lineage/edges | `board_edges` (new) |
+| Viewport | `boards.viewportX/Y/Zoom` (existing; zoom stored ×100) |
+| Selection | Local React state in `BoardPage` |
+| Editor tab, scroll, drafts | Local React state in editor/popover |
+| In-flight generation jobs | `useGenerationJobs` (only global store in canvas code) |
+| Undo stacks (move, delete toasts) | Local module state in `BoardPage`/`boardOps` client wrapper |
+| Credit balance | TanStack Query cache (tRPC) |
 
-**Mutation flow:**
+**Mutation flow:** component → `boardOps.X.plan` (when confirmation/cost needed) → `boardOps.X.execute` via tRPC → optimistic update via `onMutate` → server writes → cache reconciles. Generation operations register in `useGenerationJobs`; node cards read job status from the store. Polling is fine for pass 1 (no SSE), with backoff for long jobs.
 
-1. User interaction triggers a call into `boardOps.someOperation` via tRPC.
-2. Optimistic update applied via TanStack Query `onMutate` hook.
-3. Server mutation runs, writes DB rows, returns new state.
-4. Query cache updates with server truth; optimistic rollback if error.
-5. For generation operations: `useGenerationJobs` tracks in-flight status via server-sent updates or polling; the node card reads job status from this store and shows progress.
+Preserve `BoardCanvas`'s existing drag-fingerprint protection (audit N6) — server round-trips must not stomp in-flight drags.
 
 ---
 
 ## 6. Schema changes (pass 1)
 
-### New table
+### New table: `board_edges`
 
-```sql
--- board_edges: DAG lineage for canvas items
-CREATE TABLE board_edges (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  boardId      INT NOT NULL,
-  sourceItemId INT NOT NULL,
-  targetItemId INT NOT NULL,
-  relation     ENUM('iterated_from','vto_input_model','vto_input_garment','reference_for','variant_of','generated_from_cast') NOT NULL,
-  metadata     JSON,
-  createdAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_board_edges_source (sourceItemId),
-  INDEX idx_board_edges_target (targetItemId),
-  INDEX idx_board_edges_board  (boardId)
-);
-```
+As in Decision 2. Drizzle schema addition in `drizzle/schema.ts` following existing patterns; migrate via `pnpm db:push`.
 
-Add corresponding Drizzle schema in `drizzle/schema.ts` following the existing patterns. Generate migration via `pnpm db:push`.
-
-### Additive column on `board_items`
-
-Add a new `kind` column alongside the existing `type` column. Both are populated during the migration window:
+### Additive columns on `board_items`
 
 ```sql
 ALTER TABLE board_items
-  ADD COLUMN kind ENUM('image','cast_config','wardrobe_config','note','frame') NULL,
+  ADD COLUMN kind ENUM('image','cast_config','wardrobe_config','note','frame','video') NULL,
+  ADD COLUMN deletedAt TIMESTAMP NULL,
   ADD INDEX idx_board_items_kind (kind);
 ```
 
-Backfill existing rows: `UPDATE board_items SET kind = 'image' WHERE type IN ('model','garment','vto_result','reference','iteration'); UPDATE board_items SET kind = 'note' WHERE type = 'note'; UPDATE board_items SET kind = 'frame' WHERE type = 'frame';`
+**Backfill mapping** (provenance-aware, audit N7 — stamped into `metadata.provenance` during the same migration script):
 
-New rows always write both `type` (legacy) and `kind` (new). The old enum is dropped in a later phase, not pass 1.
+| Legacy `type` | `kind` | provenance stamp |
+|---|---|---|
+| `model` with `sourceModelId` | `image` | `{ type: "library_cast", modelId: sourceModelId, viewAngle: metadata.viewType ?? "frontClose" }` |
+| `model` without `sourceModelId` | `image` | `{ type: "upload" }` |
+| `garment` | `image` | `{ type: "library_garment", garmentId: sourceGarmentId }` (or `upload` if no FK) |
+| `vto_result` | `image` | `{ type: "vto_output", inputs: [], engine: "unknown" }` |
+| `reference` | `image` | `{ type: "reference" }` |
+| `iteration` | `image` | `{ type: "upload" }` + `iterated_from` edge from `parentItemId` where set |
+| `note` / `frame` | `note` / `frame` | none |
 
-### Wardrobe auto-captioning columns
+New rows write both `type` (legacy) and `kind`. The old enum drops in a later phase.
 
-No schema change — `wardrobe_garments.shortName`, `description`, and `tags` already exist. We just need to *always populate them* at digitize time via a new vision-LLM caption step in `server/wardrobe/`.
+### No wardrobe schema change
+
+`shortName`/`description`/`tags` exist and are populated by the shipped auto-captioning (audit N4).
 
 ---
 
-## 7. Vertical slice sequencing
+## 7. Vertical slice sequencing (pass-level scope)
 
-### Pass 1 — Casting end to end on new primitives (2–3 weeks)
+Milestone-by-milestone ordering, sizing, and founder checkpoints live in **`PASS_1_BUILD_PLAN.md`** (authored after `DECISION_LOG.md` ratification). Pass-level scope:
 
-The only goal is to prove the primitives work by making casting fully canvas-native. Wardrobe, generic image gen, and agent work all wait.
-
-**Milestones (each milestone is dogfoodable):**
-
-1. **M1 — Canvas shell, fresh node, prompt-to-result, empty-state chips.** User can drop a cast node from the floating tool pill. The freshly-dropped node is auto-selected and shows the five blender chips in ghost/empty state immediately, with the inline prompt field focused and Run disabled until there's input. User can type a prompt OR click a chip (or both) to enable Run. On Run, node generates in place as a `cast_root` and transitions to completed state. Uses `boardOps.createNode` and `boardOps.runGeneration`. Old `BoardCastingPanel` is deleted. `useCastingFormStore` / `useCastingUIStore` / `useCastingGenerationStore` are deleted. New `useGenerationJobs` store handles in-flight state. LLM parser extracts structured attributes from the prompt into `CastAttributes`. At this milestone, control strip and floating toolbar are NOT yet rendered on completed nodes — M2 adds them.
-2. **M2 — Completed-node chrome: control strip, blender chip popovers with Apply & run.** Selected completed cast root shows `+ Views · v1 · ···` control strip (no view switcher dropdown, since views are separate nodes in this model) and filled blender chips. Clicking a blender chip opens the real component (`TriBlendSelector`, `EthnicityBlender`, `SkinToneGrid`, `HairColorWheel`, brand selector) in a shadcn Popover with canvas-language styling overrides. Apply & run commits new metadata and fires a new generation on the same node.
-3. **M3 — Floating action toolbar on selection, type-scoped.** Above-the-card Luma-style toolbar with 6 icons for cast_root (Rerun, Variations, Duplicate, Download, Delete, Info). Variations calls `boardOps.runVariations.plan` then `execute`, spawns N sibling cast_root nodes with `variant_of` edges. The view_cast case is prepared in the component but not yet exercised (no view nodes exist until M4).
-4. **M4 — Generate views popover spawning separate view nodes with lineage edges.** `+ Views` action in the root's control strip opens the popover with 5 canonical view checkboxes (headshot pre-checked and disabled), cost total, Generate. Calls `boardOps.generateViews.plan` then `.execute`, which spawns N new `cast_view` nodes placed horizontally to the right of the root, connected via `generated_from_cast` edges. Each view node gets its own inline prompt (for optional pose direction), no blender chips, a reduced 4-icon floating toolbar (Rerun, Download, Delete, Info — Variations and Duplicate disabled with tooltips). Selecting any view node highlights the lineage edge back to the root. Selecting the root highlights all outgoing edges to its views.
-5. **M4.5 — Stale view flow and NodeStatusBadge component.** Build the generalized `NodeStatusBadge` component with only the `stale` variant wired up (others stubbed in the type union for future use). When the user changes an identity-level attribute on the root (via blender chip or via `boardOps.updateAttributes.plan` detecting identity-level fields in the changes), surface a confirmation dialog with three options: Update now / Update later / Cancel. Update now calls `boardOps.refreshStaleViews.execute` with all connected views in one batch. Update later marks each connected view with `NodeStatus { type: "stale", ... }` via `boardOps.markNodeStatus` and renders the corner badge on each. Hovering the badge surfaces the floating status card with Refresh and Keep old actions. The root's `···` more menu gains a `Refresh all stale views` action for bulk manual refresh.
-6. **M5 — Refinement studio shell with Refine tab.** Click Edit → full-screen takeover, `← Boards` back. Three columns. Refine tab is the prompt-iteration surface. Calls `boardOps.runRefinement`. Studio is strictly self-contained: accepts `itemId` + `onClose` as props, does not import routing, so it can be hosted either as a full-screen route (pass 1 default) or inside a modal wrapper (fallback option if full-screen feels wrong during dogfooding).
-7. **M6 — Refinement studio: Surgical tab.** Brush-masking pipeline from existing `useCastingCanvas`, wired into the new tab. Calls `boardOps.runSurgicalEdit`.
-8. **M7 — Refinement studio: Attributes tab.** Layered layout: expressive widgets (vibe blender, ethnicity blender, brand, skin, hair) as full components at top; chip grid for the remaining ~22 simple attributes below. Calls `boardOps.updateAttributes`. For cast_root, identity-level changes trigger the same stale-view confirmation flow from M4.5. For cast_view, the tab is in read-only mode showing inherited attributes, with a link to open the root's editor.
-9. **M8 — Refinement studio: History tab.** Timeline of versions with tool/prompt/timestamp. Revert and branch actions. Calls `boardOps.revertToVersion` / `boardOps.branchFromVersion`. Branching from a cast_view history creates a new cast_root snapshot on the canvas.
-
-At M8, casting is fully canvas-native and dogfoodable by the team. Ship internal, use daily, file friction notes for polish passes.
-
-### Pass 2 — Wardrobe on the same primitives (1–2 weeks)
-
-Port wardrobe to the canvas using the exact patterns from pass 1. A wardrobe node is a `kind: "wardrobe_config"` node with its own blender-equivalent chips (though probably fewer — slot type, style notes). VTO is `runGeneration` on a wardrobe node with edges pointing to a source cast. Garment upload triggers auto-captioning. The refinement studio for wardrobe nodes gets its own tab set (TBD in pass 2 design).
-
-### Pass 3 — Canvas-native capabilities (1 week)
-
-Generic image generation node, note node, frame node, multi-select operations, proper `Cmd+K` command palette. Each of these is additive and small once the primitives exist.
-
-### Pass 4+ — Polish
-
-Keyboard shortcuts, empty states, micro-interactions, cursor states, alignment guides, onboarding, animation tuning, error states, loading skeletons. Emerges from dogfooding.
-
-### Later — Canvas agent
-
-Chat panel (or agent-node type) that reads `boardState.getSnapshot()` and calls `boardOps` operations via tool-use. Not built in pass 1, 2, or 3. Enabled by the agent-ready primitives committed to in Decision 5.
+- **Pass 1 — Casting end to end on the new primitives.** Prerequisite refactors (audit Part 3) → tokens + schema → lifted-component redesign → canvas shell + empty/first-run states → inline cast creation with parser → completed-node chrome + chip popovers → toolbar + variations + fork/recast → views + lineage edges → stale/pin flow → refinement studio (Refine, Surgical, Attributes, History) → library placement ("Add from library") → keyboard + scoped undo. Dogfoodable at the end; team uses it daily.
+- **Pass 2 — Wardrobe on the same primitives.** `wardrobe_config` nodes, VTO as `runGeneration` with model+garment input edges and snapshot provenance, consuming the existing auto-captions.
+- **Pass 3 — Canvas-native capabilities.** Generic image-gen node, note/frame maturity, multi-select operations, `Cmd+K` palette, frames-as-export-units (select a frame → export contents as PDF lookbook / PNG set — the canvas produces deliverables; groundwork only in pass 1 via frame kind + snapshot API).
+- **Pass 4+ — Video nodes and polish.** Per `PASS_4_VIDEO_NOTES.md`; pass 1's obligations to it are already folded into Decisions 1, 4, and 6 (extensible kind, media-agnostic job store and `runGeneration` result, cost-before-run).
+- **Later — canvas agent**, reading `getSnapshot()` and calling `boardOps` via tool-use.
 
 ---
 
 ## 8. Scope protection — what pass 1 does NOT include
 
-- **No dark mode.** CSS variables are used throughout so dark mode is free to add later, but no dark palette is authored in pass 1.
-- **No feature flags.** The canvas is the primary app. `/studio` remains as a parallel fallback route, untouched.
-- **No collaborative features.** Single-user canvases only.
-- **No agent UI.** Decision 5 is about the primitives supporting agents later, not building one.
-- **No keyboard shortcut system beyond the obvious:** `Esc` closes popovers, `Delete` deletes selected node, `Cmd+Z` is TBD (probably pass 4), `Cmd+K` placeholder in pass 3.
-- **No `/studio` removal.** It stays alive until the canvas has proven itself. Removal is a separate product call, later.
-- **No undo/redo in pass 1.** History exists via `board_item_versions` (per-node) but no global undo stack. Pass 4.
-- **No mobile or tablet layouts.** Desktop only.
-- **No real-time progress streaming from the server.** Polling is fine for pass 1.
+- **No dark canvas palette.** Canvas tokens are self-contained light values; the canvas routes render inside a light-scoped container within the dark-defaulting app shell (audit N11, design system §2). Dark variants later.
+- **No feature flags.** The canvas is the primary app surface.
+- **No collaborative features.**
+- **No agent UI.**
+- **No full undo/redo stack.** Only the scoped delete/move undo of Decision 7. Pass 4 for the rest.
+- **No `/studio` removal, restated:** `/studio` today is tool-URL-driven (`?tool=casting|wardrobe|export`; bare `/studio` redirects to `/app` — audit N1). Those tool entries and the lobby links into them keep working unchanged. The three casting stores survive as `/studio`-scoped state and are forbidden imports for canvas code (Decision 4).
+- **No custom poses in views. No view-switcher dropdowns. No modals for canvas/studio surfaces.**
+- **No real-time progress streaming.** Polling with backoff.
+- **No mobile/tablet layouts.**
 
 ---
 
@@ -442,68 +437,69 @@ Chat panel (or agent-node type) that reads `boardState.getSnapshot()` and calls 
 
 ### Delete
 
-- `client/src/features/boards/panels/BoardCastingPanel.tsx` — its job moves into inline canvas creation and the refinement studio.
-- `client/src/features/casting/stores/useCastingFormStore.ts`
-- `client/src/features/casting/stores/useCastingGenerationStore.ts`
-- `client/src/features/casting/stores/useCastingUIStore.ts`
+- `client/src/features/boards/panels/BoardCastingPanel.tsx` — replaced by inline creation + studio.
+- `client/src/features/boards/overlays/ModelEditorOverlay.tsx` — rebuilt as the refinement studio (salvage the zoom/pan viewer and `MaskCanvasLayer` internals into studio tabs before deleting).
+- `BoardPage.tsx`'s inline iteration orchestration (:632–685) — superseded by `boardOps.runRefinement`.
+- `client/src/features/boards/components/NodeContextMenu.tsx` and other chrome superseded by the new node components (audit N6 inventory) — retire as each replacement lands, not big-bang.
 
-### Refactor (content preserved, location/wrapper changes)
+### Refactor
 
-- `client/src/features/casting/ControlPanel.tsx` → becomes the content renderer for the Attributes tab of the refinement studio. Collapsible sections become the bottom-region chip grid. Expressive widgets (blenders, wheels, grids) become the top-region first-class widgets.
-- `client/src/features/casting/MasterPromptPanel.tsx` → becomes the right-rail "Master prompt" readout in the refinement studio and on the blender popover details view.
-- `client/src/features/boards/overlays/ModelEditorOverlay.tsx` → becomes `client/src/features/boards/studio/RefinementStudio.tsx`. The full-screen takeover container; hosts the three-column layout and tab routing.
-- `client/src/features/boards/BoardPage.tsx` — viewport, selection, floating tool pill, and top bar handling. Removes all casting-specific logic (moved to node-local).
-- `client/src/features/boards/BoardCanvas.tsx` — node rendering now uses new primitive components from `DESIGN_SYSTEM.md`.
+- `client/src/features/casting/hooks/useCastingGeneration.ts` + `useCastingViewGeneration.ts` → parameter-taking (audit A1; both `setCanvas` side-effects removed).
+- `ControlPanel.tsx` → `BrandSelector` extracted (A2); panel itself otherwise untouched in pass 1 (design system G.9).
+- `client/src/features/boards/BoardPage.tsx` — hosts canvas/studio swap, selection, keyboard model, undo stacks.
+- `client/src/features/boards/BoardCanvas.tsx` — keeps React Flow shell, fingerprint diff, imperative helpers; swaps node types and background to the new primitives.
 
 ### New
 
-- `server/lib/boardOps.ts` — the service layer. All mutation operations with `.plan()` and `.execute()` pairs.
-- `server/lib/boardState.ts` — `getSnapshot()` and related read helpers.
-- `server/db/boardEdges.ts` — query helpers for the new table.
-- `drizzle/schema.ts` — add `boardEdges` table, add `kind` column to `boardItems`.
-- `drizzle/NNNN_board_edges.sql` — migration.
-- `client/src/features/boards/canvas/` — new folder for canvas primitive components (see `DESIGN_SYSTEM.md` for full inventory).
-- `client/src/features/boards/studio/` — new folder for the refinement studio shell and tabs.
-- `client/src/features/boards/stores/useGenerationJobs.ts` — the one allowed global store.
-- `server/routes/boardOps.ts` — tRPC router exposing `boardOps` to the client.
+- `server/lib/boardOps.ts`, `server/lib/boardState.ts`, `server/db/boardEdges.ts`, `server/routes/boardOps.ts`.
+- `server/casting/promptParser.ts` (+ its structured-output schema and tests against `PARSER_GOLD_STANDARD_V2.md`).
+- `drizzle/schema.ts` additions + migration (board_edges; kind, deletedAt).
+- `client/src/features/boards/canvas/` — canvas primitives (full inventory in `DESIGN_SYSTEM.md` §5).
+- `client/src/features/boards/studio/` — refinement studio shell + tabs.
+- `client/src/features/boards/stores/useGenerationJobs.ts` — the one global store for canvas code.
+- `client/src/styles/canvas-tokens.css`.
 
-### Reuse without modification
+### Reuse without structural modification
 
-- All tactile components in `client/src/features/casting/components/`: `TriBlendSelector`, `HairColorWheel`, `SkinToneGrid`, `EthnicityBlender`, `WarmPrimitives`, `WarmSelectControl`. They are lifted into popovers and into the Attributes tab unchanged.
-- All casting hooks: `useCastingGeneration`, `useCastingViewGeneration`, `useCastingExport`, `useCastingCanvas`. They are called from new contexts (inline node, popover, refinement studio) but their internals don't change.
-- All shadcn/ui components. `Popover`, `Button`, `Input`, `Tooltip`, `ScrollArea`, `Tabs` are the primary primitives used by the new canvas chrome.
+- Tactile components (`TriBlendSelector`, `EthnicityBlender`, `SkinToneGrid`, `HairColorWheel`, `EyeGrid`, `WarmSelectControl`, …) — *visually redesigned* per design system §G, functionally unchanged; locations per audit G table.
+- `useCastingCanvas`, `useCastingExport` (already parameter-clean), the refactored generation hooks.
+- Existing `boards.*` procedures, version rails, `atomicCredits`, the Gemini service layer (client/queue/breaker), garment auto-captioning.
+- shadcn/ui primitives.
 
 ---
 
 ## 10. Success criteria for pass 1
 
-At the end of pass 1, all of the following must be demonstrably true on a real board:
+All demonstrable on a real board:
 
-1. A user can drop a cast node, type a natural-language prompt, hit Run, and receive a headshot in the node within ~20 seconds. Prompt is parsed by Gemini into structured `CastAttributes`. The resulting node is provenance type `cast_root`.
-2. A freshly-dropped cast node is auto-selected and immediately shows five ghosted blender chips. Run is disabled until either the prompt has text or at least one chip is filled. Typing a prompt OR clicking any chip enables Run.
-3. Selecting a completed cast root reveals: 1px dark border, control strip with `+ Views · vN · ···` (no view switcher dropdown), blender chip strip with five filled chips, and a floating action toolbar above the card with six icons (Rerun, Variations, Duplicate, Download, Delete, Info).
-4. Clicking a blender chip opens the real tactile component in a shadcn Popover anchored to the chip. Apply & run commits new metadata and fires a new generation. Identity-level changes trigger the Update now / Update later / Cancel dialog when connected view nodes exist.
-5. Clicking `+ Views` opens the view generation popover with 5 canonical view checkboxes (headshot pre-checked and disabled), cost total, Generate. Generating spawns N new `cast_view` nodes to the right of the root, connected by `generated_from_cast` edges. Each view node has its own control strip (`vN · ···`), its own inline prompt field, no blender chips, and a 4-icon floating toolbar (Variations and Duplicate disabled with tooltips).
-6. Clicking the Variations icon on a cast root spawns N sibling `cast_root` nodes with `variant_of` edges. Variations is disabled on view nodes.
-7. Changing an identity attribute on a root with connected view nodes surfaces the three-option confirmation dialog. Update later marks each view with `NodeStatus { type: "stale" }` and renders the corner `NodeStatusBadge`. Hovering the badge surfaces the floating status card with Refresh and Keep old actions.
-8. Clicking Edit navigates to the refinement studio (full-screen, not modal). Four tabs (Refine, Surgical, Attributes, History) all work on a root cast; on a view cast, the Attributes tab is read-only with a link to edit the root. `← Boards` returns to the canvas with node state preserved.
-9. All mutations go through `boardOps`. No React component writes to `board_items` directly. `boardState.getSnapshot(boardId)` returns a valid JSON object with all nodes (typed provenance), all edges (typed relations), selection, and viewport.
-10. `useCastingFormStore`, `useCastingGenerationStore`, `useCastingUIStore` are deleted from the repo. Only `useGenerationJobs` remains as a global store.
-11. The classic `/studio` still works unchanged.
-12. The design system in `DESIGN_SYSTEM.md` is followed component by component. No custom shadows, gradients, colored backgrounds, or chrome outside the specified language.
-13. `RefinementStudio` is self-contained (props-only, no routing imports), so switching it from full-screen takeover to modal presentation requires only changing how `BoardPage` hosts it, not editing the studio itself.
-
----
-
-## 11. Open questions for later phases (not pass 1)
-
-- Wardrobe's equivalent of the blender chip strip — what are the expressive controls for a garment/VTO node? Decide at start of pass 2.
-- Whether the agent lives as a chat panel or as an "agent node" type. Decide at start of agent work.
-- Whether to eventually delete `/studio` entirely, or keep it as a simple-mode entry point forever. Product call, post pass 3.
-- Dark mode palette authorship. Cosmetic, any time after pass 3.
-- Undo/redo scope — per-board global undo vs. per-node history-only. Pass 4.
-- Collaborative cursors and real-time sync. Much later, probably a separate project.
+1. Drop a cast node, type a natural-language prompt, hit Run (cost shown beforehand), receive a headshot in the node in ~20s. Prompt parsed server-side into structured `CastAttributes`; node provenance is `cast_root` with `engine` recorded.
+2. A freshly-dropped cast node is auto-selected with ghosted blender chips; Run stays disabled until prompt text or a filled chip exists.
+3. A first-time user landing on an empty board sees the designed empty state / first-run intro (design system §11), dismissible and never seen again.
+4. Selecting a completed root reveals the specified chrome (1px border, `+ Views · vN · ···` strip, filled chips, 6-icon toolbar). Every paid affordance shows its cost from plan data — no hardcoded credit numbers anywhere in the client.
+5. Blender chip popovers Apply-and-run; identity-level changes with connected unpinned views surface the Update now / later / Cancel dialog with real counts and costs.
+6. `+ Views` spawns `cast_view` nodes with `generated_from_cast` edges and `InputSnapshot` provenance; view nodes have their own prompt, no chips, reduced toolbar.
+7. Rerun on a completed root offers **Fork new cast / Recast this cast**; fork creates a `forked_from` sibling; recast routes through the stale flow. Rerun on a view is a plain new version.
+8. Update-later marks views stale (badge + dimmed image); **Keep old pins the view** and pinned views are exempt from all staleness pressure; bulk refresh exists on the root menu.
+9. A failed generation renders the `error` status variant with a retry action — never a blank card.
+10. Edit opens the refinement studio (full-screen room, no scrim); all four tabs work on a root; Attributes is read-only on a view with a link to the root; `← Boards`/Esc returns with canvas state preserved. `RefinementStudio` is props-only (`itemId`, `onClose`), no router imports.
+11. "Add from library" places an existing model as a `library_cast` node (and a garment as `library_garment`, if pass-1 scope allows) — boards don't start from zero.
+12. Deleting a node shows an Undo toast and `Cmd+Z` restores it (cascade units restore together); arrow-nudge and the full keyboard table (Decision 7) work.
+13. All mutations go through `boardOps`; `boardState.getSnapshot()` returns valid typed JSON; no canvas component imports the three casting stores; `useGenerationJobs` is the only global store in canvas code.
+14. `/studio?tool=…` entries still work unchanged.
+15. The design system is followed component by component — no custom shadows, gradients, or off-token colors; zoom-tier behavior (design system §12) verified at 40% on a 30+ node board.
 
 ---
 
-**End of foundations doc. Read `DESIGN_SYSTEM.md` next for the visual and component specifications that implement these decisions.**
+## 11. Open questions for later phases
+
+- Wardrobe's expressive-control equivalent of blender chips — start of pass 2.
+- Agent surface: chat panel vs agent-node — start of agent work.
+- `/studio` retirement timing — product call, post pass 3 (the three stores and `ControlPanel` go with it).
+- Dark canvas palette authorship — post pass 3.
+- Full undo/redo scope — pass 4, on `getSnapshot` foundations.
+- Frames-as-export implementation detail (PDF layout engine, export presets) — start of pass 3; pass 1 only guarantees the primitives don't block it.
+- Collaborative cursors / real-time sync — much later.
+
+---
+
+**End of foundations doc. Read `DESIGN_SYSTEM.md` next; check every divergence from the original drafts in `DECISION_LOG.md`.**
