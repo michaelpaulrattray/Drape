@@ -152,7 +152,7 @@ export function HomeLobby({ user, onLogout }: HomeLobbyProps) {
             <span className="font-heading italic" style={{ fontWeight: 400 }}>studio</span>
           </h1>
           <p style={{ fontSize: 15, color: '#71716A', marginTop: 4 }}>
-            Pick up where you left off, or start something new.
+            Your creative workspace. Resume recent work or start fresh.
           </p>
         </div>
 
