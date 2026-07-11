@@ -5,19 +5,17 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
+// Canonical option lists — single source (R2 dedupe; audit H). The old local
+// copies drifted (this file's EYE_PRESETS lacked the `image` field).
+import { ETHNICITIES, EYE_PRESETS, SKIN_TONES } from "../constants";
 
-// ── Ethnicity Constants ───────────────────────
-
-export const ETHNICITIES = [
-  "Slavic", "Nordic", "East Asian", "South Asian",
-  "Afro-Caribbean", "West African", "Latino",
-  "Middle Eastern", "Polynesian",
-];
+export { ETHNICITIES };
 
 const ETH_COLORS: Record<string, string> = {
-  "Slavic": "#b8a080", "Nordic": "#8fb6cd", "East Asian": "#c49647",
-  "South Asian": "#d9ae88", "Afro-Caribbean": "#8d5e42", "West African": "#593b2b",
-  "Latino": "#c08a65", "Middle Eastern": "#a06d48", "Polynesian": "#947846",
+  "Slavic": "#b8a080", "Nordic": "#8fb6cd", "Mediterranean": "#c2a377",
+  "East Asian": "#c49647", "South Asian": "#d9ae88", "Afro-Caribbean": "#8d5e42",
+  "West African": "#593b2b", "Latino": "#c08a65", "Middle Eastern": "#a06d48",
+  "Polynesian": "#947846",
 };
 
 // ── Tiny Helpers ──────────────────────────────
@@ -139,17 +137,6 @@ export const WarmSelectControl = ({ label, options, value, onChange }: {
 );
 
 // ── EyeGrid ───────────────────────────────────
-
-const EYE_PRESETS = [
-  { label: "Ice", hex: "#c4d6e0" }, { label: "Sky", hex: "#8fb6cd" },
-  { label: "Azure", hex: "#4e7bb5" }, { label: "Navy", hex: "#283655" },
-  { label: "Grey", hex: "#9baec2" }, { label: "Steel", hex: "#687684" },
-  { label: "Mint", hex: "#8caea0" }, { label: "Green", hex: "#4f6f46" },
-  { label: "Olive", hex: "#6e7039" }, { label: "Hazel", hex: "#947846" },
-  { label: "Amber", hex: "#c49647" }, { label: "Honey", hex: "#b89650" },
-  { label: "Brown", hex: "#634e34" }, { label: "Dark", hex: "#3b2b22" },
-  { label: "Black", hex: "#1c1c1c" },
-];
 
 export const EyeGrid = ({ selected, onSelect }: {
   selected: string; onSelect: (v: string) => void;
@@ -479,15 +466,6 @@ export const SummaryStrip = ({ prefs, ethnicityBlend }: {
 };
 
 // ── Skin Tone Grid ────────────────────────────
-
-const SKIN_TONES = [
-  { label: "Porcelain", value: "Porcelain / Pale", base: "#ffe0d6", shadow: "#eac0b0" },
-  { label: "Fair", value: "Fair / Light", base: "#f5cbb6", shadow: "#dcb098" },
-  { label: "Medium", value: "Medium / Olive", base: "#d9ae88", shadow: "#bf926b" },
-  { label: "Tan", value: "Tan / Bronze", base: "#c08a65", shadow: "#a06d48" },
-  { label: "Deep", value: "Deep / Brown", base: "#8d5e42", shadow: "#6b422a" },
-  { label: "Ebony", value: "Ebony / Dark", base: "#593b2b", shadow: "#3d2316" },
-];
 
 export const SkinToneGrid = ({ selected, onSelect }: { selected: string; onSelect: (v: string) => void }) => (
   <div className="grid grid-cols-6 gap-2">

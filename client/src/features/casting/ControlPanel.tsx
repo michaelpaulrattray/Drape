@@ -6,8 +6,10 @@ import HairColorWheel from "./components/HairColorWheel";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { generateRandomPreferences } from "./castingHelpers";
-import { type GenerationState, type GeneratedAsset, BRAND_OPTIONS, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS } from "@/features/casting/constants";
+import { type GenerationState, type GeneratedAsset, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS } from "@/features/casting/constants";
 import { HAIR_STYLE_CONFIG, HAIR_TUCKS, HAIR_FADES } from "./hairStyleConfig";
+import { BrandSelector } from "./components/BrandSelector";
+import { FromPromptField } from "./components/FromPromptField";
 import {
   FieldLabel, ChipRow, OptionGrid, WarmSelectControl, EyeGrid,
   EthnicityBlender, CollapsibleSection, SummaryStrip, SkinToneGrid,
@@ -143,6 +145,9 @@ export function ControlPanel({
         </div>
       </div>
 
+      {/* From prompt — the create-path parser entry (D-33/R2) */}
+      {!isReadOnly && <FromPromptField onApply={updatePrefs} />}
+
       <SummaryStrip prefs={prefs as unknown as Record<string, unknown>} ethnicityBlend={ethnicityBlend} />
 
       {/* Read-only banner */}
@@ -165,29 +170,10 @@ export function ControlPanel({
           <div className="space-y-4">
             <div>
               <FieldLabel>Brand Direction</FieldLabel>
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-                {BRAND_OPTIONS.map(b => {
-                  const sel = prefs.castingBrand === b.value;
-                  return (
-                    <button key={b.value} onClick={() => updatePref('castingBrand', b.value)}
-                      className="rounded-xl text-center transition-all"
-                      style={{
-                        padding: '8px 4px 7px',
-                        background: sel ? '#1a1a1a' : '#ffffff',
-                        color: sel ? '#fff' : '#52524B',
-                        fontSize: 12, fontWeight: sel ? 600 : 500,
-                        border: sel ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
-                        boxShadow: sel ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
-                      }}
-                      onMouseEnter={(e) => { if (!sel) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
-                      onMouseLeave={(e) => { if (!sel) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
-                    >
-                      <div>{b.value}</div>
-                      <div style={{ fontSize: 10, fontWeight: 400, marginTop: 1, color: sel ? 'rgba(255,255,255,0.5)' : '#71716A' }}>{b.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
+              <BrandSelector
+                value={prefs.castingBrand}
+                onChange={(v) => updatePref('castingBrand', v)}
+              />
             </div>
 
             <div className="pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>

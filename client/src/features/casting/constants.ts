@@ -8,6 +8,26 @@
  */
 
 import { ASSETS_BASE_URL } from "@shared/const";
+import { CORE_FACE_SHAPES } from "@shared/castingOptions";
+
+// Canonical value lists live in shared/castingOptions.ts (R2 dedupe — the
+// server parser + randomizer read the same source). This file adds the
+// client-only decoration: hex swatches, images, brand descriptions.
+export {
+  ETHNICITIES,
+  SKIN_TEXTURES,
+  SKIN_FINISHES,
+  CHAR_OPTIONS,
+  HAIR_FAMILIES_FEMALE,
+  HAIR_FAMILIES_MALE,
+  HAIR_LENGTHS,
+  HAIR_TEXTURES,
+  HAIR_FRINGES,
+  HAIR_PARTINGS,
+  HAIR_VOLUMES,
+  HAIR_TUCKS,
+  HAIR_FADES,
+} from "@shared/castingOptions";
 
 // ============ Brand & Vibe ============
 
@@ -22,12 +42,6 @@ export const BRAND_OPTIONS = [
   { value: "Social Media", desc: "Creator / Authentic" },
 ];
 
-export const ETHNICITIES = [
-  "Slavic", "Nordic", "East Asian", "South Asian",
-  "Afro-Caribbean", "West African", "Latino",
-  "Middle Eastern", "Polynesian"
-];
-
 // ============ Skin ============
 
 export const SKIN_TONES = [
@@ -38,9 +52,6 @@ export const SKIN_TONES = [
   { label: "Deep", value: "Deep / Brown", base: "#8d5e42", shadow: "#6b422a" },
   { label: "Ebony", value: "Ebony / Dark", base: "#593b2b", shadow: "#3d2316" },
 ];
-
-export const SKIN_TEXTURES = ["Raw / Standard", "Glass / Perfect", "Freckled", "Textured / Acneic", "Mature"];
-export const SKIN_FINISHES = ["Natural", "Matte / Powdered", "Dewy / Sweat", "Oily"];
 
 // ============ Eyes ============
 
@@ -64,41 +75,8 @@ export const EYE_PRESETS = [
 
 // ============ Face ============
 
-export const CHAR_OPTIONS = {
-  jawline: ["Sharp / Chiseled", "Soft / Rounded", "Strong / Pronounced", "Receding / Weak", "Snatched"],
-  cheekbones: ["High", "Defined", "Soft"],
-  cheeks: ["Slightly Hollow", "Full", "Balanced"],
-  eyeShape: ["Thin Almond", "Monolids", "Wide-Set", "Round", "Hooded"],
-  noseShape: ["Thin", "Straight Bridge", "Rounded", "Prominent", "Button"],
-  lipShape: ["Full", "Subtle", "Lip Lift", "Wide", "Cupid's Bow"],
-  eyebrows: ["Brushed Up", "Straight", "Arched", "Bold", "Bleached", "Random"],
-  facialHair: ["Clean Shaven", "Stubble", "Short Beard", "Full Beard"],
-};
-
-export const FACE_SHAPES = ["Oval", "Round", "Square", "Heart", "Diamond", "Random"];
-
-// ============ Hair ============
-
-export const HAIR_FAMILIES_FEMALE = [
-  "Buzz / Shaved", "Pixie", "Cropped Bob", "Bob", "Lob (Long Bob)",
-  "Medium Layers", "Long Layers", "Shag / Wolf", "Blunt Cut",
-  "Updo", "Pulled Back", "Braids"
-];
-
-export const HAIR_FAMILIES_MALE = [
-  "Buzz / Shaved", "Crew / Ivy League", "French Crop", "Caesar",
-  "Short Textured", "Fade", "Undercut", "Slick Back",
-  "Side Part", "Quiff", "Medium Layers", "Long Layers",
-  "Curly Top", "Man Bun", "Braids / Locs"
-];
-
-export const HAIR_LENGTHS = ["Very Short", "Short", "Medium", "Long", "Very Long"];
-export const HAIR_TEXTURES = ["Straight", "Slight Wave", "Wavy", "Curly", "Coily / Afro"];
-export const HAIR_FRINGES = ["None", "Curtain Bangs", "Wispy Bangs", "Blunt Bangs", "Side-Swept", "Micro Fringe"];
-export const HAIR_PARTINGS = ["Center", "Slight Off-Center", "Side", "Deep Side", "No Part / Slicked"];
-export const HAIR_VOLUMES = ["Flat / Sleek", "Natural", "Voluminous", "Lifted Crown", "Face-Framing"];
-export const HAIR_TUCKS = ["None", "One Side", "Both Sides"];
-export const HAIR_FADES = ["None", "Low Taper", "Mid Fade", "High Fade", "Skin Fade"];
+// "Random" is a client-only affordance in the face-shape picker
+export const FACE_SHAPES = [...CORE_FACE_SHAPES, "Random"];
 
 // ============ Body ============
 
@@ -166,6 +144,14 @@ export interface ModelPreferences {
   referenceImage?: string;
   userPrompt: string;
   ethnicityBlend?: { name: string; pct: number }[];
+  // Parser override fields (PARSER_PROMPT_V2 §4): verbatim user descriptions
+  // that the engine prefers over the enum value when present
+  hairStyleOverride?: string;
+  hairColorOverride?: string;
+  eyeColorOverride?: string;
+  facialHairOverride?: string;
+  skinTextureOverride?: string;
+  castingBrandOverride?: string;
 }
 
 export interface GeneratedAsset {

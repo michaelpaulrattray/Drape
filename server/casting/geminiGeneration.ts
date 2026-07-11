@@ -250,14 +250,20 @@ function bodyTypeHeadshotHint(bodyType?: string): string {
   return 'BODY TYPE NOTE: Model-standard build — lean proportions, defined bone structure, slender neck.';
 }
 
-function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string): string {
+// Exported for the parser-override unit tests (R2) — not part of the public API
+export function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string): string {
   const isMale = prefs.gender?.toLowerCase().includes('male');
 
   // Brand descriptor from unified BRAND_PROFILES
   const brandDescriptors: Record<string, string> = Object.fromEntries(
     Object.entries(BRAND_PROFILES).map(([key, val]) => [key, val.descriptor])
   );
-  const brandVibe = brandDescriptors[prefs.castingBrand || 'Gucci'] || DEFAULT_BRAND_DESCRIPTOR;
+  let brandVibe = brandDescriptors[prefs.castingBrand || 'Gucci'] || DEFAULT_BRAND_DESCRIPTOR;
+  // Parser override (PARSER_PROMPT_V2 §4): user-described brand archetypes
+  // outside the enum (Tom Ford, Margiela…) ride along as additional context
+  if (prefs.castingBrandOverride) {
+    brandVibe += `\nADDITIONAL BRAND CONTEXT (user-specified, treat as primary aesthetic direction): ${prefs.castingBrandOverride}`;
+  }
 
   // Vibe blend description — qualitative intensity bands, never raw numbers
   let vibeBlendDescription = "";
@@ -366,12 +372,19 @@ function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string)
     unsetFeatures.push('Eyebrows');
   }
 
-  if (isMale && prefs.facialHair) explicitFeatures.push(`Facial Hair: ${prefs.facialHair}`);
+  if (isMale && (prefs.facialHairOverride || prefs.facialHair)) {
+    explicitFeatures.push(`Facial Hair: ${prefs.facialHairOverride || prefs.facialHair}`);
+  }
   if (prefs.features) explicitFeatures.push(`Additional Traits: ${prefs.features}`);
 
   // Eye color, hair color, and skin tone are P1 when explicitly chosen
   if (isExplicit(prefs.skinTone)) explicitFeatures.push(`Skin Tone: ${prefs.skinTone} — this is a DELIBERATE casting choice. The model's skin must match this tone regardless of ethnicity. Do NOT default to the darkest or lightest shade for this heritage.`);
-  if (isExplicit(prefs.eyeColor)) {
+  if (prefs.skinTextureOverride) {
+    explicitFeatures.push(`Skin Texture Detail: ${prefs.skinTextureOverride} — this is a DELIBERATE casting choice; render it precisely as described.`);
+  }
+  if (prefs.eyeColorOverride) {
+    explicitFeatures.push(`Eye Color: ${prefs.eyeColorOverride} — this is a DELIBERATE casting choice, NOT a default. Do NOT substitute a different eye color.`);
+  } else if (isExplicit(prefs.eyeColor)) {
     const irisDetail = irisDescriptions[prefs.eyeColor!] || prefs.eyeColor;
     explicitFeatures.push(`Eye Color: ${prefs.eyeColor} (${irisDetail}) — this is a DELIBERATE casting choice, NOT a default. Do NOT substitute a different eye color.`);
   }
@@ -401,8 +414,8 @@ function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: string)
     Use this heritage to inform bone structure and facial geometry for any UNSET features below.
 
     ── HAIR ──
-    - Style: ${prefs.hairStyle || "Natural"}
-    - Color: ${prefs.hairColor || "Natural"}
+    - Style: ${prefs.hairStyleOverride || prefs.hairStyle || "Natural"}
+    - Color: ${prefs.hairColorOverride || prefs.hairColor || "Natural"}
     - Details: ${hairDetails || "Auto — choose styling that suits the brand and face shape"}
     
     STYLING DIRECTIVE:

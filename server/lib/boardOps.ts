@@ -35,6 +35,7 @@ import {
   type ModelPreferences,
 } from "../casting/aiService";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../casting/promptReinforcement";
+import { parseCastingPrompt, mergeParsedPreferences } from "../casting/promptParser";
 import { enforceDailyQuota } from "../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import type {
@@ -270,11 +271,24 @@ export async function executeRunGeneration(input: RunGenerationInput) {
   }
 
   try {
-    // M2b replaces this passthrough with the three-path parser dispatch.
-    const prefs: ModelPreferences = {
-      ...(input.attributes ?? {}),
-      userPrompt: input.userPrompt ?? "",
-    } as ModelPreferences;
+    // Three-path parser dispatch (R2/D-14): parsed / random / per-field
+    // random, merged under defaults < parser < randomization < locked
+    // attributes. The parser NEVER blocks a paid run — on failure the prompt
+    // passes through verbatim (the engine already interprets free text).
+    const locked = (input.attributes ?? {}) as Record<string, unknown>;
+    const promptText = (input.userPrompt ?? "").trim();
+    let prefs: ModelPreferences = { ...locked, userPrompt: promptText } as ModelPreferences;
+    if (promptText) {
+      try {
+        const parsed = await parseCastingPrompt(promptText);
+        prefs = mergeParsedPreferences(parsed, locked, promptText);
+      } catch (parseError) {
+        log.warn(
+          { itemId: input.itemId, err: parseError instanceof Error ? parseError.message : String(parseError) },
+          "Prompt parse failed — falling back to verbatim passthrough",
+        );
+      }
+    }
 
     const masterPrompt = await generateMasterPrompt(prefs);
     const modelResult = await createModel({

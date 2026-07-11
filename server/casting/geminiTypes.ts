@@ -39,6 +39,14 @@ export interface ModelPreferences {
   referenceImage?: string;
   previousMasterPrompt?: string;
   userPrompt?: string;
+  // Parser override fields (PARSER_PROMPT_V2 §4): verbatim user descriptions.
+  // buildNewPromptContent prefers these over the enum value when present.
+  hairStyleOverride?: string;
+  hairColorOverride?: string;
+  eyeColorOverride?: string;
+  facialHairOverride?: string;
+  skinTextureOverride?: string;
+  castingBrandOverride?: string;
 }
 
 export enum ImageResolution {
