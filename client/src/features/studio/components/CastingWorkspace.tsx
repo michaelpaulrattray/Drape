@@ -191,6 +191,16 @@ export function CastingWorkspace({
           formStore.setPrefs((model as any).preferences as any);
           formStore.setModelName(model.name || '');
         }
+        // Minted edit: the D-11 diff baseline is THIS payload — the same
+        // data the form was just filled from, recorded here rather than
+        // re-read from the store later (timing-free by construction)
+        const studio = useStudioStore.getState();
+        if (studio.mintedEditContext?.modelId === model.id) {
+          studio.setMintedEditContext({
+            ...studio.mintedEditContext,
+            baselinePrefs: JSON.parse(JSON.stringify((model as any).preferences ?? {})),
+          });
+        }
       })
       .catch(() => {})
       .finally(() => {

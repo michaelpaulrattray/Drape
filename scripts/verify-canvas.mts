@@ -31,9 +31,15 @@
  *      with provenance, mints the identity, relabels the node, and the
  *      ledger agrees with the balance (bug-4 lesson); packageState over
  *      raw HTTP reports minted + 4 filled slots.
+ *   H. (paid, rides on G's mint) The VC-R3b fixes: zero-edit save after a
+ *      fresh mint is a quiet no-op (the false "new person" ceremony);
+ *      the strip shows the six-slot package with upgrade ghosts; a ghost
+ *      opens the tier dialog priced at the remaining slots; executing it
+ *      completes the package (or names-and-refunds a gated slot); no
+ *      generation rows stuck in processing (createGeneration insertId).
  *
  * Run:  pnpm dev (running) → npx tsx scripts/verify-canvas.mts
- *       (+ $env:RUN_PAID_INVARIANTS='1' for F+G — ~1250 credits on verify-bot)
+ *       (+ $env:RUN_PAID_INVARIANTS='1' for F+G+H — ~1850 credits on verify-bot)
  * Uses the dev DB verify-bot user (see .claude/skills/verify) and system Edge.
  * Exits non-zero on any invariant failure.
  */
@@ -450,6 +456,21 @@ if (!(await filledNode())?.img) {
 } else {
   await openEditOnFilledNode();
   check("E1 edit hydrated", await waitEditHydrated());
+
+  // E1b (VC-R3b bug 2): a zero-edit save is a quiet no-op — the fork
+  // ceremony must NEVER fire on nothing (baseline = the hydration payload)
+  await clickByText("Save changes");
+  await sleep(800);
+  const zeroEdit = {
+    noDialog: !(await bodyIncludes("This is a new person")),
+    quietNote: await bodyIncludes("No identity changes yet"),
+  };
+  check(
+    "E1b zero-edit save is a no-op (no dialog, quiet note)",
+    zeroEdit.noDialog && zeroEdit.quietNote,
+    JSON.stringify(zeroEdit),
+  );
+
   const before = await selectedGender();
   const target = before === "Male" ? "Female" : "Male";
   await clickByText(target);
@@ -738,6 +759,126 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
       pkg.status === 200 && pkg.minted === true && pkg.filled === 4,
       JSON.stringify(pkg),
     );
+
+    // ── Invariant H: post-mint edit + package upgrade (VC-R3b fixes) ──────
+    // Michael's exact bug-2/bug-3 sequence: mint through the takeover, then
+    // immediately Edit the placed cast. Zero-edit save must be a quiet
+    // no-op; the strip must show the package with upgrade ghosts; a ghost
+    // opens the tier dialog priced at the REMAINING slots (600 after Core);
+    // executing it completes the package.
+    await sleep(4000); // the refetch must land minted provenance on the node
+    const [hBal] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const hBalanceBefore = (hBal as Array<{ balance: number }>)[0].balance;
+
+    const hNode = await page.evaluate((id: string) => {
+      const n = document.querySelector(`.react-flow__node[data-id="${id}"]`);
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }, `item-${draftRow.itemId}`);
+    if (!hNode) {
+      console.log("SKIP  H — the minted node is gone from the DOM");
+    } else {
+      let hOpened = false;
+      for (let attempt = 0; attempt < 6 && !hOpened; attempt++) {
+        await page.mouse.click(hNode.x, hNode.y);
+        await sleep(600);
+        if (!(await clickByText("Edit"))) continue;
+        for (let i = 0; i < 8; i++) {
+          await sleep(500);
+          if (await bodyIncludes("Save changes")) { hOpened = true; break; }
+        }
+      }
+      check("H1 minted edit opens on the fresh mint", hOpened);
+      check("H2 hydrated", await waitEditHydrated());
+
+      // Zero-edit save — the exact false-ceremony repro
+      await clickByText("Save changes");
+      await sleep(800);
+      const hZero = {
+        noDialog: !(await bodyIncludes("This is a new person")),
+        quietNote: await bodyIncludes("No identity changes yet"),
+      };
+      check("H3 zero-edit save after mint is a no-op", hZero.noDialog && hZero.quietNote, JSON.stringify(hZero));
+
+      // The package strip: 4 filled thumbnails + 2 upgrade ghosts
+      const strip = await page.evaluate(() => {
+        const ghosts = [...document.querySelectorAll('button[title="Add this view — complete the package"]')];
+        return { ghosts: ghosts.length };
+      });
+      check("H4 strip shows upgrade ghosts for the empty slots", strip.ghosts === 2, `ghosts=${strip.ghosts}`);
+
+      // Ghost → upgrade dialog, priced at the remaining slots only
+      await page.evaluate(() => {
+        const g = document.querySelector('button[title="Add this view — complete the package"]') as HTMLButtonElement | null;
+        g?.click();
+      });
+      await sleep(800);
+      let upgradeState = { header: false, remainderCost: false, noNameInput: false };
+      for (let i = 0; i < 12; i++) {
+        upgradeState = await page.evaluate(() => {
+          const body = document.body.textContent ?? "";
+          return {
+            header: body.includes("COMPLETE THE PACKAGE"),
+            remainderCost: body.includes("600 credits"),
+            noNameInput: !document.querySelector('input[placeholder="Enter name..."]'),
+          };
+        });
+        if (upgradeState.remainderCost) break;
+        await sleep(500);
+      }
+      check(
+        "H5 upgrade dialog: remaining-slots pricing (600), no name input",
+        upgradeState.header && upgradeState.remainderCost && upgradeState.noNameInput,
+        JSON.stringify(upgradeState),
+      );
+
+      // Execute the upgrade (real, ~600 credits: sideFull + gated backFull)
+      await clickByText("Add views");
+      console.log("   H: upgrading to Production (real, ~600 credits, 2 views)...");
+      let upgraded = false;
+      for (let i = 0; i < 180; i++) {
+        await sleep(1000);
+        if (await bodyIncludes("views added")) { upgraded = true; break; }
+      }
+      check("H6 upgrade lands (views-added feedback)", upgraded);
+
+      const hPkg = await page.evaluate(async (mid: number) => {
+        const res = await fetch(
+          `/api/trpc/generation.packageState?input=${encodeURIComponent(JSON.stringify({ json: { modelId: mid } }))}`,
+          { credentials: "include" },
+        );
+        const data = await res.json();
+        const result = data?.result?.data?.json;
+        return { filled: (result?.slots ?? []).filter((s: { filled: boolean }) => s.filled).length };
+      }, modelId);
+      const [hBalAfter] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+      const hBalanceAfter = (hBalAfter as Array<{ balance: number }>)[0].balance;
+      const [hTx] = await conn.execute(
+        `SELECT amount FROM point_transactions WHERE userId = ? AND description LIKE 'Mint package%refund%' AND createdAt > NOW() - INTERVAL 10 MINUTE`,
+        [userId],
+      );
+      const hRefunds = (hTx as Array<{ amount: number }>).reduce((s, t) => s + Math.max(0, t.amount), 0);
+      // A gate-failed back view is named-and-refunded BY DESIGN — the
+      // invariant is filled + refunded always accounts for both slots
+      const refundedSlots = hRefunds / 300;
+      check(
+        "H7 package accounts for both slots (filled or refunded), ledger agrees",
+        hPkg.filled === 6 - refundedSlots && hBalanceBefore - hBalanceAfter === 600 - hRefunds,
+        `filled=${hPkg.filled} delta=${hBalanceBefore - hBalanceAfter} refunds=${hRefunds}`,
+      );
+
+      // No stuck audit rows: every generation for this model reached a
+      // terminal status (the createGeneration insertId fix — bug-1 forensics)
+      const [hGens] = await conn.execute(
+        `SELECT COUNT(*) AS stuck FROM generations WHERE modelId = ? AND status = 'processing'`,
+        [modelId],
+      );
+      const stuck = (hGens as Array<{ stuck: number }>)[0].stuck;
+      check("H8 no generation rows stuck in processing", stuck === 0, `stuck=${stuck}`);
+
+      await closeTakeoverCleanly();
+    }
     }
   }
 }

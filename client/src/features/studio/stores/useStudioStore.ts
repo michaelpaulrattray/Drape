@@ -24,6 +24,13 @@ export interface MintedEditContext {
   boardId: number;
   itemId: number;
   modelId: number;
+  /** The D-11 diff baseline — the model's preferences EXACTLY as hydration
+   *  wrote them into the form. Set by CastingWorkspace's hydration, never
+   *  captured by observing store timing: a render-time hydrated flag plus
+   *  an effect-time store read across the mount reset produced a full false
+   *  diff at VC-R3b ("This is a new person" on a zero-edit save). Undefined
+   *  until hydration lands; no baseline = nothing diffable yet. */
+  baselinePrefs?: Record<string, unknown>;
 }
 
 interface StudioState {

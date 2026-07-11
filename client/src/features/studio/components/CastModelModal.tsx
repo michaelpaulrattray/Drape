@@ -5,7 +5,7 @@
  * (server truth, D-15) — never client literals. Upgrading later costs
  * the same: pricing counts only missing slots.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Camera, ChevronRight, Loader2 } from 'lucide-react';
 import type { MintTier } from '@shared/boardTypes';
 
@@ -32,6 +32,11 @@ export interface CastModelModalProps {
   castingMessage?: string;
   /** Preview image URL (headshot) */
   previewImage?: string;
+  /** Upgrade mode (D-39c): the model is already minted and named — no name
+   *  input, no Draft row, tier costs cover only the missing slots. */
+  mode?: 'mint' | 'upgrade';
+  /** The minted model's name, passed through onConfirm in upgrade mode */
+  fixedName?: string;
 }
 
 export function CastModelModal({
@@ -42,14 +47,29 @@ export function CastModelModal({
   isCasting,
   castingMessage,
   previewImage,
+  mode = 'mint',
+  fixedName,
 }: CastModelModalProps) {
   const [name, setName] = useState('');
   const [tier, setTier] = useState<MintTier>('core');
+  const upgrade = mode === 'upgrade';
+
+  // Upgrade: land on the first tier that still has something to add
+  useEffect(() => {
+    if (upgrade && tiers && tiers[tier].cost === 0 && tiers.production.cost > 0) {
+      setTier('production');
+    }
+  }, [upgrade, tiers, tier]);
+
+  const effectiveName = upgrade ? (fixedName ?? '').trim() : name.trim();
+  const selectedCost = tiers?.[tier]?.cost;
+  const confirmable =
+    !!effectiveName && !isCasting && !(upgrade && selectedCost === 0);
 
   const handleConfirm = useCallback(() => {
-    if (!name.trim() || isCasting) return;
-    onConfirm(name.trim(), tier);
-  }, [name, isCasting, onConfirm, tier]);
+    if (!confirmable) return;
+    onConfirm(effectiveName, tier);
+  }, [confirmable, effectiveName, onConfirm, tier]);
 
   if (!isOpen) return null;
 
@@ -91,51 +111,58 @@ export function CastModelModal({
           <div className="flex items-center gap-2 mb-3">
             <Camera className="w-4 h-4" style={{ color: '#52524B' }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: '#52524B', letterSpacing: '0.06em' }}>
-              CAST THIS MODEL
+              {upgrade ? 'COMPLETE THE PACKAGE' : 'CAST THIS MODEL'}
             </span>
           </div>
 
-          {/* Name input */}
-          <div style={{ marginBottom: 14 }}>
-            <label
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: '#71716A',
-                letterSpacing: '0.06em',
-                display: 'block',
-                marginBottom: 6,
-              }}
-            >
-              MODEL NAME
-            </label>
-            <input
-              autoFocus
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleConfirm();
-              }}
-              placeholder="Enter name..."
-              disabled={isCasting}
-              className="w-full outline-none"
-              style={{
-                border: 'none',
-                borderBottom: '1.5px solid rgba(0,0,0,0.08)',
-                padding: '8px 0',
-                fontSize: 16,
-                fontWeight: 500,
-                color: '#1a1a1a',
-                background: 'transparent',
-                opacity: isCasting ? 0.5 : 1,
-              }}
-            />
-          </div>
+          {upgrade ? (
+            <p style={{ fontSize: 12.5, color: '#71716A', lineHeight: 1.5, marginBottom: 14 }}>
+              {fixedName ? `Add the views ${fixedName} is missing.` : 'Add the missing views.'} Upgrading
+              later always costs the same — you only pay for what's new.
+            </p>
+          ) : (
+            /* Name input */
+            <div style={{ marginBottom: 14 }}>
+              <label
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: '#71716A',
+                  letterSpacing: '0.06em',
+                  display: 'block',
+                  marginBottom: 6,
+                }}
+              >
+                MODEL NAME
+              </label>
+              <input
+                autoFocus
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleConfirm();
+                }}
+                placeholder="Enter name..."
+                disabled={isCasting}
+                className="w-full outline-none"
+                style={{
+                  border: 'none',
+                  borderBottom: '1.5px solid rgba(0,0,0,0.08)',
+                  padding: '8px 0',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  color: '#1a1a1a',
+                  background: 'transparent',
+                  opacity: isCasting ? 0.5 : 1,
+                }}
+              />
+            </div>
+          )}
 
           {/* Tier picker (D-39) */}
           <div style={{ marginBottom: 14 }}>
-            {TIER_ORDER.map((t) => {
+            {(upgrade ? TIER_ORDER.filter((t) => t !== 'draft') : TIER_ORDER).map((t) => {
               const selected = tier === t;
               const plan = tiers?.[t];
               const complete = t !== 'draft' && plan !== undefined && plan.cost === 0;
@@ -223,24 +250,24 @@ export function CastModelModal({
             </button>
             <button
               onClick={handleConfirm}
-              disabled={!name.trim() || isCasting}
+              disabled={!confirmable}
               className="flex items-center gap-1.5 px-5 py-2 rounded-xl transition-all"
               style={{
-                background: name.trim() && !isCasting ? '#1a1a1a' : '#e0e0e0',
-                color: name.trim() && !isCasting ? '#fff' : '#999',
+                background: confirmable ? '#1a1a1a' : '#e0e0e0',
+                color: confirmable ? '#fff' : '#999',
                 fontSize: 13,
                 fontWeight: 600,
-                cursor: name.trim() && !isCasting ? 'pointer' : 'not-allowed',
+                cursor: confirmable ? 'pointer' : 'not-allowed',
               }}
             >
               {isCasting ? (
                 <>
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Casting...
+                  {upgrade ? 'Adding...' : 'Casting...'}
                 </>
               ) : (
                 <>
-                  Cast & Continue
+                  {upgrade ? 'Add views' : 'Cast & Continue'}
                   <ChevronRight className="w-3 h-3" />
                 </>
               )}

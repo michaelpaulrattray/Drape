@@ -40,6 +40,13 @@ export async function verifyBackView(
   headshotUrl: string,
   backViewUrl: string,
 ): Promise<BackViewVerdict> {
+  // Founder test hook: set BACK_VIEW_GATE_FORCE_FAIL=1 (a Railway service
+  // var — adding it redeploys) to watch the named-and-refunded flow live,
+  // then remove it. Never ships enabled.
+  if (process.env.BACK_VIEW_GATE_FORCE_FAIL === "1") {
+    log.warn("[BackViewGate] FORCE FAIL active (BACK_VIEW_GATE_FORCE_FAIL=1) — remove after testing");
+    return { ok: false, checked: true };
+  }
   const ai = getAiClient();
   try {
     const [headshotPart, backPart] = await Promise.all([

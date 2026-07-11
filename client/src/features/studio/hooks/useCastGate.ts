@@ -46,7 +46,7 @@ export function useCastGate({
   );
 
   const handleCastAndContinue = useCallback(
-    async (characterName: string, tier: MintTier = 'core') => {
+    async (characterName: string, tier: MintTier = 'core', upgrade = false) => {
       if (!currentModelId) {
         toast.error('No model to cast');
         return;
@@ -93,18 +93,28 @@ export function useCastGate({
           );
         }
 
-        toast.success(`${characterName} has been cast!`);
         setShowCastModal(false);
         utils.models.get.invalidate({ modelId: currentModelId });
         utils.generation.packageState.invalidate({ modelId: currentModelId });
         utils.generation.mintPackagePlan.invalidate({ modelId: currentModelId });
 
-        if (onMinted) {
-          // Takeover host: land the model on the board node
-          onMinted(currentModelId, characterName);
+        if (upgrade) {
+          // D-39c upgrade: already minted and placed — stay in the session,
+          // the new views are in the strip
+          if (result.generated.length > 0) {
+            toast.success(
+              `${result.generated.length} view${result.generated.length === 1 ? '' : 's'} added to ${characterName}'s package`
+            );
+          }
         } else {
-          // Studio default: transition to wardrobe
-          setActiveTool('wardrobe');
+          toast.success(`${characterName} has been cast!`);
+          if (onMinted) {
+            // Takeover host: land the model on the board node
+            onMinted(currentModelId, characterName);
+          } else {
+            // Studio default: transition to wardrobe
+            setActiveTool('wardrobe');
+          }
         }
 
         if (result.generated.length > 0 || result.failed.length > 0) {

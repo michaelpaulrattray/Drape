@@ -29,10 +29,13 @@ interface AssetWithMeta {
 export function buildHistoryFromAssets(
   allAssets: AssetWithMeta[]
 ): { history: GeneratedAsset[][]; historyIndex: number; currentAssets: GeneratedAsset[] } {
-  // Group by viewType — DB returns newest first
+  // Group by viewType — DB returns newest first. All six package slots
+  // (D-39) hydrate; the old frontClose/frontFull/sideClose whitelist made a
+  // Production mint look three slots short on re-edit (VC-R3b bug 1).
+  const PACKAGE_VIEW_TYPES = ['frontClose', 'threeQuarter', 'sideClose', 'frontFull', 'sideFull', 'backFull'];
   const byViewType = new Map<string, AssetWithMeta[]>();
   for (const asset of allAssets) {
-    if (!['frontClose', 'frontFull', 'sideClose'].includes(asset.viewType)) continue;
+    if (!PACKAGE_VIEW_TYPES.includes(asset.viewType)) continue;
     const existing = byViewType.get(asset.viewType) || [];
     existing.push(asset);
     byViewType.set(asset.viewType, existing);

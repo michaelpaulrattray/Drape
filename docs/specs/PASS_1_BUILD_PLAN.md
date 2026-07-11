@@ -99,6 +99,8 @@ Gate: full gates + studio smoke.
 
 **VC-R3b (founder, live):** cast through each tier; force a back-view failure to see the refund copy; upgrade a Draft to Core from the environment.
 
+**VC-R3b fix batch (2026-07-12):** (1) six-slot hydration — `buildHistoryFromAssets`'s legacy trio whitelist hid half a Production package on re-edit; plus `createGeneration` newest-row id lookup collided under the parallel mint (four rows stuck `processing` — the silent-audit-gap class) → `$returningId()`. (2) D-11 baseline now written by hydration from the payload that fills the form — zero-edit save is a quiet no-op (invariants E1b/H3). (3) Upgrade path built: minted strip = six package slots, ghosts open the tier dialog in upgrade mode (remaining-slots pricing; invariants H4–H7). (4) Leave dialog above the z-40 loading overlay; mid-generation copy states the cast continues to the draft. `BACK_VIEW_GATE_FORCE_FAIL=1` env hook for live refund verification. Drive now A–H (~1,850cr paid run).
+
 Gate: full gates + studio smoke.
 
 ## R4 — Canvas grammar: toolbar, fork/recast, variations, delete+undo, keyboard → **VC-R4**

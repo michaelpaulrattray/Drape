@@ -15,7 +15,7 @@
  *
  * Studio-scoped code hosted by BoardPage — the D-24 boundary in practice.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -105,6 +105,9 @@ export function CastingTakeover({
     changes: Record<string, unknown>;
     labels: string[];
   } | null>(null);
+  // D-39c: a ghost slot in the view strip opens the mint dialog in upgrade
+  // mode (add the missing views to an already-minted package)
+  const [upgradeMode, setUpgradeMode] = useState(false);
   const isMintedEdit = !!editContext && !editContext.draft;
 
   // Fold-in (VC-R1 feedback, folded post-VC-R3): the takeover ARRIVES over
@@ -157,14 +160,17 @@ export function CastingTakeover({
   const modelNameInStore = useCastingFormStore((s) => s.modelName);
   const { isTopupOpen, setIsTopupOpen } = useCastingUIStore();
 
-  // Baseline for the identity diff — captured once, after hydration lands
-  const baselineRef = useRef<ModelPreferences | null>(null);
-  const hydrated = !editContext || currentAssets.length > 0;
-  useEffect(() => {
-    if (editContext && hydrated && !baselineRef.current) {
-      baselineRef.current = JSON.parse(JSON.stringify(useCastingFormStore.getState().prefs));
-    }
-  }, [editContext, hydrated]);
+  // Baseline for the identity diff — written by the hydration path itself
+  // (CastingWorkspace) from the exact payload that filled the form. The old
+  // capture-on-hydrated-flag effect mixed a render-time flag with an
+  // effect-time store read across the mount reset: with a prior session's
+  // assets still in the store, it captured freshly-reset defaults and every
+  // hydrated field became a "change" (VC-R3b bug 2 — the fork ceremony on a
+  // zero-edit save).
+  const baselinePrefs = useStudioStore((s) => s.mintedEditContext?.baselinePrefs);
+  const hydrated =
+    !editContext ||
+    (currentAssets.length > 0 && (editContext.draft || baselinePrefs !== undefined));
 
   const { data: creditsData, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(
     undefined,
@@ -202,10 +208,10 @@ export function CastingTakeover({
   // Unsaved work: minted edits = a non-empty identity diff; authoring
   // sessions = a draft in progress (which persists server-side either way)
   const unsavedDiff = useCallback(() => {
-    if (!isMintedEdit || !baselineRef.current) return null;
-    const diff = diffPreferences(baselineRef.current, prefs);
+    if (!isMintedEdit || !baselinePrefs) return null;
+    const diff = diffPreferences(baselinePrefs as unknown as ModelPreferences, prefs);
     return Object.keys(diff.changes).length > 0 ? diff : null;
-  }, [isMintedEdit, prefs]);
+  }, [isMintedEdit, baselinePrefs, prefs]);
 
   const workInProgress = isMintedEdit
     ? unsavedDiff() !== null
@@ -228,6 +234,20 @@ export function CastingTakeover({
     }
     setIdentityDialog(diff);
   }, [unsavedDiff]);
+
+  // Ghost slots in the view strip open the upgrade dialog (D-39c)
+  useEffect(() => {
+    const onUpgrade = () => {
+      if (!isMintedEdit) return;
+      setUpgradeMode(true);
+      setShowCastModal(true);
+    };
+    window.addEventListener('casting-open-package-upgrade', onUpgrade);
+    return () => window.removeEventListener('casting-open-package-upgrade', onUpgrade);
+  }, [isMintedEdit, setShowCastModal]);
+  useEffect(() => {
+    if (!showCastModal) setUpgradeMode(false);
+  }, [showCastModal]);
 
   // Esc closes (capture so board-level handlers never see it while we're up)
   useEffect(() => {
@@ -350,9 +370,11 @@ export function CastingTakeover({
         )}
       </div>
 
-      {/* Leave confirmation */}
+      {/* Leave confirmation — above ALL environment chrome (the viewer's
+          LoadingOverlay sits at z-40 and occluded the Leave button at
+          VC-R3b bug 4; a confirm the user cannot answer is worse than none) */}
       {confirmingLeave && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center">
+        <div className="absolute inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0" style={{ background: 'rgba(10,10,10,0.3)' }} onClick={() => setConfirmingLeave(false)} />
           <div
             className="relative rounded-xl p-5"
@@ -364,7 +386,9 @@ export function CastingTakeover({
             <p style={{ fontSize: 12.5, color: '#71716A', lineHeight: 1.55, marginBottom: 18 }}>
               {isMintedEdit
                 ? 'Unsaved identity changes are discarded — the placed cast stays as it is.'
-                : 'Your draft stays in your studio, but nothing will land on this board.'}
+                : genState.isGenerating
+                  ? 'This cast keeps generating and saves to your draft — nothing will land on this board.'
+                  : 'Your draft stays in your studio, but nothing will land on this board.'}
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -409,11 +433,13 @@ export function CastingTakeover({
       <CastModelModal
         isOpen={showCastModal}
         onClose={() => setShowCastModal(false)}
-        onConfirm={handleCastAndContinue}
+        onConfirm={(name, tier) => handleCastAndContinue(name, tier, upgradeMode)}
         tiers={tierPlan}
         isCasting={isCasting}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
+        mode={upgradeMode ? 'upgrade' : 'mint'}
+        fixedName={upgradeMode ? modelNameInStore : undefined}
       />
 
       <CreditTopupModal

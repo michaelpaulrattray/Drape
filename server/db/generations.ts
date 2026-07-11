@@ -17,13 +17,12 @@ export async function createGeneration(
   }
 
   try {
-    await db.insert(generations).values(data);
-    const inserted = await db
-      .select()
-      .from(generations)
-      .where(eq(generations.userId, data.userId))
-      .orderBy(desc(generations.createdAt))
-      .limit(1);
+    // $returningId, never newest-by-createdAt: concurrent inserts (the mint
+    // package runs slots in parallel) land in the same second, and a
+    // newest-row lookup hands every caller the same id — their completion
+    // writes then all hit one row while the rest stay "processing" forever
+    // (the silent-audit-gap class, caught at VC-R3b on a Production mint).
+    const [inserted] = await db.insert(generations).values(data).$returningId();
 
     // Check if this is the user's first generation — trigger REFEREE credit (welcome bonus)
     // Referrer credit is awarded separately on first paid subscription (Stripe webhook)
@@ -39,7 +38,7 @@ export async function createGeneration(
       }).catch(() => {});
     }
 
-    return { success: true, generationId: inserted[0]?.id };
+    return { success: true, generationId: inserted.id };
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to create generation:");
     return { success: false, error: "Failed to create generation" };

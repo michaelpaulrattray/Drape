@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
+import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 
 // ============ Types ============
 
-export type ViewType = 'frontClose' | 'frontFull' | 'sideClose' | 'sideFull' | 'backFull';
+export type ViewType = 'frontClose' | 'threeQuarter' | 'frontFull' | 'sideClose' | 'sideFull' | 'backFull';
 
 export interface GeneratedAsset {
   id: number;
@@ -117,17 +118,79 @@ function AddViewButton({ onClick, visible }: { onClick: () => void; visible: boo
   );
 }
 
+// ============ GhostSlot (D-39c) ============
+// An empty package slot on a minted model — the upgrade affordance.
+// Clicking any ghost opens the tier dialog (upgrade-anytime-same-cost).
+
+function GhostSlot({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="flex flex-col items-center justify-center gap-1 transition-all duration-200"
+      title="Add this view — complete the package"
+      style={{
+        width: 72,
+        height: 90,
+        borderRadius: 12,
+        border: '2px dashed rgba(0,0,0,0.12)',
+        background: 'rgba(255,255,255,0.5)',
+        backdropFilter: 'blur(8px)',
+        color: '#71716A',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.85)';
+        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.25)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.5)';
+        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)';
+      }}
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
 // ============ Main Component ============
+
+// The canonical package order (D-39): face cluster, then body cluster
+const PACKAGE_SLOTS: Array<{ vt: ViewType; label: string }> = [
+  { vt: 'frontClose', label: 'Head' },
+  { vt: 'threeQuarter', label: '3/4' },
+  { vt: 'sideClose', label: 'Side' },
+  { vt: 'frontFull', label: 'Full' },
+  { vt: 'sideFull', label: 'Walk' },
+  { vt: 'backFull', label: 'Back' },
+];
 
 export function ViewTabs({ nextStage }: ViewTabsProps) {
   const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
   const { activeView, setActiveView } = useCastingUIStore();
+  // Minted models surface the full package: filled slots as thumbnails,
+  // empty ones as upgrade ghosts (VC-R3b bug 3 — the upgrade path's home)
+  const isMintedEdit = useStudioStore((s) => s.mintedEditContext !== null);
   const [hovered, setHovered] = useState(false);
 
   const getAsset = (vt: ViewType) => currentAssets.find((a) => a.viewType === vt);
   const hasAsset = (vt: ViewType) => currentAssets.some((a) => a.viewType === vt);
 
   if (currentAssets.length === 0) return null;
+
+  const thumbnail = (vt: ViewType, label: string) => (
+    <ViewThumbnail
+      key={vt}
+      src={getAsset(vt)!.storageUrl}
+      label={label}
+      isActive={activeView === vt}
+      onClick={() => setActiveView(vt)}
+      isHovered={hovered}
+    />
+  );
 
   return (
     <div
@@ -137,69 +200,47 @@ export function ViewTabs({ nextStage }: ViewTabsProps) {
       style={{ opacity: hovered ? 1 : 0.75 }}
     >
       <div className="contents pointer-events-auto">
-        {/* HEAD */}
-        {getAsset('frontClose') && (
-          <ViewThumbnail
-            src={getAsset('frontClose')!.storageUrl}
-            label="Head"
-            isActive={activeView === 'frontClose'}
-            onClick={() => setActiveView('frontClose')}
-            isHovered={hovered}
-          />
-        )}
-
-        {/* FULL BODY */}
-        {hasAsset('frontFull') ? (
-          <ViewThumbnail
-            src={getAsset('frontFull')!.storageUrl}
-            label="Full"
-            isActive={activeView === 'frontFull'}
-            onClick={() => setActiveView('frontFull')}
-            isHovered={hovered}
-          />
-        ) : (
-          <AddViewButton
-            visible={hovered}
-            onClick={() => nextStage?.step === 2 && nextStage.action()}
-          />
-        )}
-
-        {/* SIDE */}
-        {hasAsset('frontFull') && (
-          hasAsset('sideClose') ? (
-            <>
-              <ViewThumbnail
-                src={getAsset('sideClose')!.storageUrl}
-                label="Side"
-                isActive={activeView === 'sideClose'}
-                onClick={() => setActiveView('sideClose')}
-                isHovered={hovered}
+        {isMintedEdit ? (
+          // Minted: the six-slot package (D-39) — ghosts open the upgrade dialog
+          PACKAGE_SLOTS.map(({ vt, label }) =>
+            hasAsset(vt) ? (
+              thumbnail(vt, label)
+            ) : (
+              <GhostSlot
+                key={vt}
+                label={label}
+                onClick={() => window.dispatchEvent(new CustomEvent('casting-open-package-upgrade'))}
               />
-              {hasAsset('sideFull') && (
-                <ViewThumbnail
-                  src={getAsset('sideFull')!.storageUrl}
-                  label="Walk"
-                  isActive={activeView === 'sideFull'}
-                  onClick={() => setActiveView('sideFull')}
-                  isHovered={hovered}
-                />
-              )}
-              {hasAsset('backFull') && (
-                <ViewThumbnail
-                  src={getAsset('backFull')!.storageUrl}
-                  label="Back"
-                  isActive={activeView === 'backFull'}
-                  onClick={() => setActiveView('backFull')}
-                  isHovered={hovered}
-                />
-              )}
-            </>
-          ) : (
-            <AddViewButton
-              visible={hovered}
-              onClick={() => nextStage?.step === 3 && nextStage.action()}
-            />
+            ),
           )
+        ) : (
+          // Authoring: the staged ladder (head → full → side), extra views shown as they exist
+          <>
+            {getAsset('frontClose') && thumbnail('frontClose', 'Head')}
+            {hasAsset('threeQuarter') && thumbnail('threeQuarter', '3/4')}
+            {hasAsset('frontFull') ? (
+              thumbnail('frontFull', 'Full')
+            ) : (
+              <AddViewButton
+                visible={hovered}
+                onClick={() => nextStage?.step === 2 && nextStage.action()}
+              />
+            )}
+            {hasAsset('frontFull') && (
+              hasAsset('sideClose') ? (
+                <>
+                  {thumbnail('sideClose', 'Side')}
+                  {hasAsset('sideFull') && thumbnail('sideFull', 'Walk')}
+                  {hasAsset('backFull') && thumbnail('backFull', 'Back')}
+                </>
+              ) : (
+                <AddViewButton
+                  visible={hovered}
+                  onClick={() => nextStage?.step === 3 && nextStage.action()}
+                />
+              )
+            )}
+          </>
         )}
       </div>
     </div>
