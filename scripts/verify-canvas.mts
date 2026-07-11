@@ -37,6 +37,16 @@
  *      opens the tier dialog priced at the remaining slots; executing it
  *      completes the package (or names-and-refunds a gated slot); no
  *      generation rows stuck in processing (createGeneration insertId).
+ *   J. THE DELETE TRUST NET (R4/D-17, free): delete is optimistic and SOFT
+ *      (the row survives with deletedAt); the Undo toast and Cmd+Z share one
+ *      restore path and both survive the server reconcile.
+ *   K. Duplicate (R4, free): selection raises the toolbar; Duplicate lands
+ *      an optimistic copy that persists with the same image.
+ *   L. (paid — RUN_PAID_INVARIANTS=1) Variations landing (R4): the popover
+ *      total is plan-derived (2 × castingImage); two optimistic temps render
+ *      immediately, never vanish, land as sibling drafts with variant_of
+ *      edges; the ledger nets exactly the landed count; no generation rows
+ *      stuck 'processing' (the $returningId class).
  *   I. (paid, SEPARATE mode) Forced gate failure surfaces named + refunded
  *      (D-40). Needs a server booted with BACK_VIEW_GATE_FORCE_FAIL=1 and
  *      the drive with RUN_GATE_FAIL=1 (the fail flag is server-side, out of
@@ -47,7 +57,7 @@
  *      computePackageSlots unit test.
  *
  * Run:  pnpm dev (running) → npx tsx scripts/verify-canvas.mts
- *       (+ $env:RUN_PAID_INVARIANTS='1' for F+G+H — ~1850 credits on verify-bot)
+ *       (+ $env:RUN_PAID_INVARIANTS='1' for F+G+H+L — ~2550 credits on verify-bot)
  *       (gate-fail mode: boot server with BACK_VIEW_GATE_FORCE_FAIL=1, then
  *        $env:RUN_GATE_FAIL='1' — ~1550 credits; do NOT combine with the F–H run)
  * Uses the dev DB verify-bot user (see .claude/skills/verify) and system Edge.
@@ -89,8 +99,9 @@ if (!boardId) {
   );
   boardId = (res as { insertId: number }).insertId;
 }
-// Clean slate each run
+// Clean slate each run (edges too — they reference the deleted items)
 await conn.execute(`DELETE FROM board_items WHERE boardId = ?`, [boardId]);
+await conn.execute(`DELETE FROM board_edges WHERE boardId = ?`, [boardId]);
 
 const token = await new SignJWT({
   openId: "verify-bot-local",
@@ -575,6 +586,124 @@ if (!(await filledNode())?.img) {
   await closeTakeoverCleanly();
 }
 
+// ── Invariant J: delete → undo round trip (R4 trust net) — FREE ────────────
+// Soft delete is optimistic, the Undo toast and Cmd+Z share one restore
+// path, and the DB row survives with deletedAt toggling — never a hard row
+// delete from the canvas.
+{
+  // Use an EMPTY cast node (A/B leftovers) so later invariants keep their
+  // filled node. Select via the label row region — the image area hosts the
+  // front-door pill, which would open the picker.
+  const emptyNode = await page.evaluate(() => {
+    const nodes = [...document.querySelectorAll(".react-flow__node")].filter(
+      (n) => !n.querySelector("img")?.getAttribute("src"),
+    );
+    const el = nodes[nodes.length - 1];
+    if (!el) return null;
+    const id = parseInt((el.getAttribute("data-id") ?? "").replace("item-", ""), 10);
+    if (isNaN(id) || id <= 0) return null;
+    el.scrollIntoView({ block: "center" });
+    const r = el.getBoundingClientRect();
+    return { id, x: r.x + r.width / 2, y: r.y + 8 };
+  });
+  if (!emptyNode) {
+    console.log("SKIP  J — no empty cast node available");
+  } else {
+    const countBefore = await nodeCount();
+    await page.mouse.click(emptyNode.x, emptyNode.y);
+    await sleep(400);
+    await page.keyboard.press("Delete");
+    // Optimistic removal — the node must vanish essentially immediately
+    let goneAtMs = -1;
+    const t0 = Date.now();
+    for (let i = 0; i < 20; i++) {
+      if ((await nodeCount()) < countBefore) { goneAtMs = Date.now() - t0; break; }
+      await sleep(50);
+    }
+    check("J1 delete removes the node optimistically (<1s)", goneAtMs >= 0 && goneAtMs < 1000, `${goneAtMs}ms`);
+
+    // Soft, not hard: the row survives with deletedAt set
+    await sleep(1500);
+    const [delRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
+    const softDeleted = (delRows as Array<{ deletedAt: unknown }>)[0]?.deletedAt != null;
+    check("J2 soft delete (row survives, deletedAt set)", softDeleted);
+
+    // The Undo toast restores it
+    const undoClicked = await clickByText("Undo");
+    check("J3 undo toast present", undoClicked);
+    if (undoClicked) {
+      await sleep(400);
+      const restoredInDom = (await nodeCount()) === countBefore;
+      await sleep(2500); // server reconcile + refetch
+      const [restRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
+      const restoredInDb = (restRows as Array<{ deletedAt: unknown }>)[0]?.deletedAt == null;
+      const stillInDom = (await nodeCount()) === countBefore;
+      check("J4 undo restores (DOM + DB, survives reconcile)", restoredInDom && restoredInDb && stillInDom,
+        `dom=${restoredInDom}/${stillInDom} db=${restoredInDb}`);
+
+      // Cmd+Z is the same restore path
+      const node2 = await page.evaluate((id: string) => {
+        const el = document.querySelector(`.react-flow__node[data-id="${id}"]`);
+        if (!el) return null;
+        el.scrollIntoView({ block: "center" });
+        const r = el.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + 8 };
+      }, `item-${emptyNode.id}`);
+      if (node2) {
+        await page.mouse.click(node2.x, node2.y);
+        await sleep(400);
+        await page.keyboard.press("Delete");
+        await sleep(600);
+        await page.keyboard.down("Control");
+        await page.keyboard.press("KeyZ");
+        await page.keyboard.up("Control");
+        await sleep(2500);
+        const [zRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
+        const zRestored = (zRows as Array<{ deletedAt: unknown }>)[0]?.deletedAt == null;
+        check("J5 Cmd+Z undoes the delete (same restore path)", zRestored && (await nodeCount()) === countBefore);
+      }
+    }
+  }
+}
+
+// ── Invariant K: duplicate lands instantly (R4 grammar) — FREE ─────────────
+{
+  const source = await filledNode();
+  if (!source?.img) {
+    console.log("SKIP  K — no filled cast node available");
+  } else {
+    const countBefore = await nodeCount();
+    await page.mouse.click(source.x, source.y);
+    await sleep(500);
+    const dupBtn = await page.evaluate(() => {
+      const b = document.querySelector('button[aria-label="Duplicate"]');
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    });
+    check("K1 selection raises the toolbar (Duplicate present)", !!dupBtn);
+    if (dupBtn) {
+      await page.mouse.click(dupBtn.x, dupBtn.y);
+      // Optimistic copy — appears immediately with the same image
+      let dupAtMs = -1;
+      const t0 = Date.now();
+      for (let i = 0; i < 20; i++) {
+        if ((await nodeCount()) > countBefore) { dupAtMs = Date.now() - t0; break; }
+        await sleep(50);
+      }
+      check("K2 duplicate renders optimistically (<1s)", dupAtMs >= 0 && dupAtMs < 1000, `${dupAtMs}ms`);
+
+      await sleep(3000); // server confirm + refetch
+      const [dupRows] = await conn.execute(
+        `SELECT COUNT(*) AS n FROM board_items WHERE boardId = ? AND deletedAt IS NULL AND imageUrl = ?`,
+        [boardId, source.img],
+      );
+      const copies = Number((dupRows as Array<{ n: number }>)[0].n);
+      check("K3 duplicate persisted (server row with the same image)", copies >= 2 && (await nodeCount()) > countBefore, `copies=${copies}`);
+    }
+  }
+}
+
 // ── Invariant F: fork landing stability — RUN_PAID_INVARIANTS=1 ────────────
 if (process.env.RUN_PAID_INVARIANTS !== "1") {
   console.log("SKIP  F — paid invariant (set RUN_PAID_INVARIANTS=1; ~350 credits)");
@@ -935,6 +1064,106 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
 
       await closeTakeoverCleanly();
     }
+    }
+  }
+}
+
+// ── Invariant L: variations landing (R4) — RUN_PAID_INVARIANTS=1 ───────────
+// Plan-priced confirm → N optimistic temps that never vanish → sibling
+// drafts land with variant_of edges; ledger agrees with the landing count.
+if (process.env.RUN_PAID_INVARIANTS !== "1") {
+  console.log("SKIP  L — paid invariant (2 variations; ~700 credits)");
+} else {
+  const source = await filledNode();
+  const sourceItemId = await page.evaluate(() => {
+    const nodes = [...document.querySelectorAll(".react-flow__node")].filter((n) =>
+      n.querySelector("img")?.getAttribute("src"),
+    );
+    const id = nodes[nodes.length - 1]?.getAttribute("data-id") ?? "";
+    return parseInt(id.replace("item-", ""), 10);
+  });
+  if (!source?.img || isNaN(sourceItemId)) {
+    console.log("SKIP  L — no filled cast node available");
+  } else {
+    const [lBal0] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const lBalanceStart = (lBal0 as Array<{ balance: number }>)[0].balance;
+
+    await page.mouse.click(source.x, source.y);
+    await sleep(500);
+    const varBtn = await page.evaluate(() => {
+      const b = document.querySelector('button[aria-label="Variations"]');
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    });
+    check("L1 Variations toolbar action present", !!varBtn);
+    if (varBtn) {
+      await page.mouse.click(varBtn.x, varBtn.y);
+      // The popover's total is plan-derived: 2 candidates × castingImage(350)
+      let costShown = false;
+      for (let i = 0; i < 12; i++) {
+        await sleep(400);
+        if (await bodyIncludes("~700 credits")) { costShown = true; break; }
+      }
+      check("L2 popover shows the plan-derived total (~700 credits at 2)", costShown);
+
+      const countBefore = await nodeCount();
+      await clickByText("Generate");
+      // Two optimistic temps, essentially immediately
+      let tempsAtMs = -1;
+      const t0 = Date.now();
+      for (let i = 0; i < 30; i++) {
+        if ((await nodeCount()) >= countBefore + 2) { tempsAtMs = Date.now() - t0; break; }
+        await sleep(50);
+      }
+      check("L3 two candidate temps render immediately (<1.5s)", tempsAtMs >= 0 && tempsAtMs < 1500, `${tempsAtMs}ms`);
+
+      console.log("   L: generating 2 variations (real, ~700 credits)...");
+      const countDuring = await nodeCount();
+      let vanished = false;
+      let landed = 0;
+      for (let i = 0; i < 120; i++) {
+        await sleep(1000);
+        if ((await nodeCount()) < countDuring) vanished = true;
+        const [rows] = await conn.execute(
+          `SELECT COUNT(*) AS n FROM board_edges e JOIN board_items i ON i.id = e.targetItemId
+           WHERE e.boardId = ? AND e.sourceItemId = ? AND e.relation = 'variant_of'
+             AND i.deletedAt IS NULL AND i.imageUrl IS NOT NULL`,
+          [boardId, sourceItemId],
+        );
+        landed = Number((rows as Array<{ n: number }>)[0].n);
+        if (landed >= 2) break;
+      }
+      check("L4 temps never vanished during generation", !vanished);
+      check("L5 two siblings landed with variant_of edges", landed === 2, `landed=${landed}`);
+
+      // DOM reveal trails the DB rows by a refetch — poll briefly
+      let domLanded = false;
+      for (let i = 0; i < 10; i++) {
+        domLanded = await page.evaluate((n: number) => {
+          const withImg = [...document.querySelectorAll(".react-flow__node")].filter(
+            (el) => el.querySelector("img")?.getAttribute("src"),
+          );
+          return withImg.length >= n;
+        }, 3); // source + 2 candidates (+K's duplicate also counts, so ≥3 is safe)
+        if (domLanded) break;
+        await sleep(1000);
+      }
+      check("L6 candidates visible on the board", domLanded);
+
+      // Ledger: exactly the landed count was kept (700 for 2; failures refund)
+      await sleep(2000);
+      const [lBal1] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+      const lNet = lBalanceStart - (lBal1 as Array<{ balance: number }>)[0].balance;
+      check("L7 ledger net = 700 (2 × castingImage, no silent charges)", lNet === 700, `net=${lNet}`);
+
+      // The $returningId class: no generation rows stuck processing
+      const [stuck] = await conn.execute(
+        `SELECT COUNT(*) AS n FROM generations
+         WHERE userId = ? AND status = 'processing' AND createdAt > NOW() - INTERVAL 10 MINUTE`,
+        [userId],
+      );
+      check("L8 no generations stuck 'processing'", Number((stuck as Array<{ n: number }>)[0].n) === 0);
     }
   }
 }
