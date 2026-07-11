@@ -37,9 +37,19 @@
  *      opens the tier dialog priced at the remaining slots; executing it
  *      completes the package (or names-and-refunds a gated slot); no
  *      generation rows stuck in processing (createGeneration insertId).
+ *   I. (paid, SEPARATE mode) Forced gate failure surfaces named + refunded
+ *      (D-40). Needs a server booted with BACK_VIEW_GATE_FORCE_FAIL=1 and
+ *      the drive with RUN_GATE_FAIL=1 (the fail flag is server-side, out of
+ *      the drive's reach). Forks + Production-mints; the back view fails
+ *      twice; asserts the toast names it, the ledger refunds it, and the
+ *      slot renders a Retry affordance. Runs standalone (A–H assume a
+ *      passing gate). The always-on guard for the surfacing DATA is the
+ *      computePackageSlots unit test.
  *
  * Run:  pnpm dev (running) → npx tsx scripts/verify-canvas.mts
  *       (+ $env:RUN_PAID_INVARIANTS='1' for F+G+H — ~1850 credits on verify-bot)
+ *       (gate-fail mode: boot server with BACK_VIEW_GATE_FORCE_FAIL=1, then
+ *        $env:RUN_GATE_FAIL='1' — ~1550 credits; do NOT combine with the F–H run)
  * Uses the dev DB verify-bot user (see .claude/skills/verify) and system Edge.
  * Exits non-zero on any invariant failure.
  */
@@ -879,6 +889,153 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
 
       await closeTakeoverCleanly();
     }
+    }
+  }
+}
+
+// ── Invariant I: forced gate failure surfaces named + refunded (D-40) ──────
+// The gate can't be failed on demand from the drive process (the fail flag is
+// server-side). Run this mode with a server booted with
+// BACK_VIEW_GATE_FORCE_FAIL=1 AND the drive with RUN_GATE_FAIL=1 — it forks a
+// fresh draft and mints Production; the back view fails its gate twice, and
+// the invariant asserts BOTH halves of the contract: the failure is NAMED
+// (toast + a Retry slot in the strip + packageState.failed) and REFUNDED
+// (ledger). Standalone from A–H (those assume a passing gate).
+if (process.env.RUN_GATE_FAIL === "1") {
+  if (!(await filledNode())?.img) {
+    console.log("SKIP  I — no filled cast node to fork from");
+  } else {
+    const [iBal0] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const iBalanceStart = (iBal0 as Array<{ balance: number }>)[0].balance;
+
+    // Fork a fresh draft, then promote + Production mint (back will fail)
+    await openEditOnFilledNode();
+    check("I0 edit hydrated", await waitEditHydrated());
+    const g = await selectedGender();
+    await clickByText(g === "Male" ? "Female" : "Male");
+    await sleep(400);
+    await clickByText("Save changes");
+    await sleep(1200);
+    const forkPos = await page.evaluate(() => {
+      const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim().startsWith("Fork as new model"));
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    });
+    if (!forkPos) {
+      console.log("SKIP  I — fork button not found");
+    } else {
+      await page.mouse.click(forkPos.x, forkPos.y);
+      console.log("   I: forking then Production-minting under forced gate failure...");
+      // Wait for the fork draft to land (DB truth)
+      let iDraft: { itemId: number; modelId: number } | null = null;
+      for (let i = 0; i < 90; i++) {
+        await sleep(1000);
+        const [rows] = await conn.execute(
+          `SELECT i.id AS itemId, m.id AS modelId FROM board_items i JOIN models m
+             ON m.id = CAST(JSON_EXTRACT(i.metadata, '$.provenance.modelId') AS UNSIGNED)
+           WHERE i.boardId = ? AND i.deletedAt IS NULL AND i.imageUrl IS NOT NULL AND m.status = 'draft'
+           ORDER BY i.id DESC LIMIT 1`,
+          [boardId],
+        );
+        iDraft = (rows as Array<{ itemId: number; modelId: number }>)[0] ?? null;
+        if (iDraft) break;
+      }
+      check("I1 fork draft landed", !!iDraft);
+      if (iDraft) {
+        const node = await page.evaluate((id: string) => {
+          const n = document.querySelector(`.react-flow__node[data-id="${id}"]`);
+          if (!n) return null;
+          n.scrollIntoView({ block: "center" });
+          const r = n.getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        }, `item-${iDraft.itemId}`);
+        // Promote → mint Production
+        let promoted = false;
+        for (let attempt = 0; attempt < 8 && !promoted && node; attempt++) {
+          await page.mouse.click(node.x, node.y);
+          await sleep(600);
+          if (!(await clickByText("Edit"))) continue;
+          for (let i = 0; i < 10; i++) { await sleep(500); if (await bodyIncludes("Finish this cast")) { promoted = true; break; } }
+        }
+        check("I2 promotion opened", promoted);
+        // arm + mint Production
+        for (let i = 0; i < 30; i++) {
+          await sleep(1000);
+          const armed = await page.evaluate(() => {
+            const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim() === "Cast this model") as HTMLButtonElement | undefined;
+            return !!b && !b.disabled;
+          });
+          if (armed) break;
+        }
+        await clickByText("Cast this model");
+        await sleep(800);
+        await page.type('input[placeholder="Enter name..."]', "Gate Fail");
+        await clickByText("Production sheet", "span");
+        await sleep(300);
+        await clickByText("Cast & Continue");
+
+        // Assert the NAMED notice (toast) appears — the "silent" half of the bug
+        let namedToast = false;
+        for (let i = 0; i < 180; i++) {
+          await sleep(1000);
+          if (await bodyIncludes("couldn't match this identity")) { namedToast = true; }
+          if (await bodyIncludes("Gate Fail") && !(await bodyIncludes("CAST THIS MODEL"))) break;
+        }
+        check("I3 failure is NAMED at mint time (toast surfaced)", namedToast);
+
+        // Ledger: the back slot (300) refunded
+        const [iRef] = await conn.execute(
+          `SELECT COALESCE(SUM(amount),0) AS refunded FROM point_transactions
+           WHERE userId = ? AND description LIKE 'Mint package%failed%' AND createdAt > NOW() - INTERVAL 10 MINUTE`,
+          [userId],
+        );
+        const iRefunded = Number((iRef as Array<{ refunded: number }>)[0].refunded);
+        check("I4 the failed back slot was REFUNDED (300)", iRefunded === 300, `refunded=${iRefunded}`);
+
+        // packageState: backFull failed, five slots filled
+        const iPkg = await page.evaluate(async (mid: number) => {
+          const res = await fetch(
+            `/api/trpc/generation.packageState?input=${encodeURIComponent(JSON.stringify({ json: { modelId: mid } }))}`,
+            { credentials: "include" },
+          );
+          const data = await res.json();
+          const slots = data?.result?.data?.json?.slots ?? [];
+          const back = slots.find((s: { angle: string }) => s.angle === "backFull");
+          return { filled: slots.filter((s: { filled: boolean }) => s.filled).length, backFailed: !!back?.failed };
+        }, iDraft.modelId);
+        check("I5 packageState reports backFull failed, 5 filled", iPkg.filled === 5 && iPkg.backFailed, JSON.stringify(iPkg));
+
+        // The strip shows a Retry slot on re-edit (durable, visible)
+        await sleep(3000);
+        let retryVisible = false;
+        for (let attempt = 0; attempt < 6 && !retryVisible; attempt++) {
+          const rn = await page.evaluate((id: string) => {
+            const n = document.querySelector(`.react-flow__node[data-id="${id}"]`);
+            if (!n) return null;
+            const r = n.getBoundingClientRect();
+            return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+          }, `item-${iDraft.itemId}`);
+          if (!rn) break;
+          await page.mouse.click(rn.x, rn.y);
+          await sleep(600);
+          if (!(await clickByText("Edit"))) continue;
+          if (!(await waitEditHydrated())) continue;
+          for (let i = 0; i < 8; i++) {
+            await sleep(500);
+            retryVisible = await page.evaluate(() =>
+              [...document.querySelectorAll("button")].some((b) => /·\s*Retry/.test(b.textContent ?? "")),
+            );
+            if (retryVisible) break;
+          }
+        }
+        check("I6 failed slot renders a Retry affordance in the strip", retryVisible);
+        const [iBalEnd] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+        const iNet = iBalanceStart - (iBalEnd as Array<{ balance: number }>)[0].balance;
+        // fork 350 + Production 1500 − back refund 300 = 1550
+        check("I7 ledger net = fork + Production − back refund (1550)", iNet === 1550, `net=${iNet}`);
+        await closeTakeoverCleanly();
+      }
     }
   }
 }

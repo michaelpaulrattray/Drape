@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { trpc } from '@/lib/trpc';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
@@ -156,6 +157,38 @@ function GhostSlot({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
+// ============ FailedSlot (D-40) ============
+// A slot whose generation failed the identity gate — named + refunded, and
+// retryable. Distinct from an empty ghost: the user was told, not charged.
+
+function FailedSlot({ label, reason, onRetry }: { label: string; reason: string; onRetry: () => void }) {
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onRetry(); }}
+      className="flex flex-col items-center justify-center gap-1 transition-all duration-200"
+      title={`${label} didn't pass the identity check — ${reason}. You weren't charged. Click to try again.`}
+      style={{
+        width: 72,
+        height: 90,
+        borderRadius: 12,
+        border: '2px solid rgba(180,90,20,0.35)',
+        background: 'rgba(180,90,20,0.06)',
+        color: '#8a4a10',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(180,90,20,0.12)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(180,90,20,0.06)'; }}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M23 4v6h-6M1 20v-6h6" />
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+      </svg>
+      <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        {label} · Retry
+      </span>
+    </button>
+  );
+}
+
 // ============ Main Component ============
 
 // The canonical package order (D-39): face cluster, then body cluster
@@ -173,7 +206,18 @@ export function ViewTabs({ nextStage }: ViewTabsProps) {
   const { activeView, setActiveView } = useCastingUIStore();
   // Minted models surface the full package: filled slots as thumbnails,
   // empty ones as upgrade ghosts (VC-R3b bug 3 — the upgrade path's home)
-  const isMintedEdit = useStudioStore((s) => s.mintedEditContext !== null);
+  const mintedModelId = useStudioStore((s) => s.mintedEditContext?.modelId ?? null);
+  const isMintedEdit = mintedModelId !== null;
+  // Named-and-refunded slot failures (D-40) surface as retryable failed slots
+  const packageQuery = trpc.generation.packageState.useQuery(
+    { modelId: mintedModelId ?? 0 },
+    { enabled: isMintedEdit },
+  );
+  const failedByAngle = new Map(
+    (packageQuery.data?.slots ?? [])
+      .filter((s) => s.failed)
+      .map((s) => [s.angle as ViewType, s.failed!.reason]),
+  );
   const [hovered, setHovered] = useState(false);
 
   const getAsset = (vt: ViewType) => currentAssets.find((a) => a.viewType === vt);
@@ -201,10 +245,18 @@ export function ViewTabs({ nextStage }: ViewTabsProps) {
     >
       <div className="contents pointer-events-auto">
         {isMintedEdit ? (
-          // Minted: the six-slot package (D-39) — ghosts open the upgrade dialog
+          // Minted: the six-slot package (D-39) — filled thumbnails, failed
+          // slots as named+retryable (D-40), the rest as upgrade ghosts
           PACKAGE_SLOTS.map(({ vt, label }) =>
             hasAsset(vt) ? (
               thumbnail(vt, label)
+            ) : failedByAngle.has(vt) ? (
+              <FailedSlot
+                key={vt}
+                label={label}
+                reason={failedByAngle.get(vt)!}
+                onRetry={() => window.dispatchEvent(new CustomEvent('casting-open-package-upgrade'))}
+              />
             ) : (
               <GhostSlot
                 key={vt}

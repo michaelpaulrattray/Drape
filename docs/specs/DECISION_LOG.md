@@ -243,6 +243,22 @@ Follow-up batch after the founder drove the R1 takeover. Items 1–2 (optimistic
 
 **Affects:** `useCastingFormStore` (empty gender/age/brand defaults, `engineChoice` state), `isFormValid` semantics, `buildNewPromptContent` identity directives, `resolveEngineChoices` on both paid paths, `EngineChoiceChip`/`ParseSummaryStrip` (new surfaces, canvas language per the R6 discipline), Cast button cost display. R4's keyboard work inherits Enter-fires-focused-button as the ratified second keystroke.
 
+### D-44 — The sixth slot is WALK, not static side-full *(founder-ratified 2026-07-12 at VC-R3b; amends D-39.1)*
+
+**What:** D-39's sixth slot `sideFull` is ratified as a **deliberate walking pose** (option A), not a static full-body side. It turned out the legacy full-body-side was already generated as a walking shot and occupies this slot; the ruling makes that intentional and first-class. Fashion comp cards traditionally include a walk, and a walking side view is a stronger dynamic-pose reference for D-30's composer payload and the future video pass than a static side-full. The slot's label stays ("Walk"); its prompt treats the motion pose as intended; **its identity gate is mandatory** — a motion pose has more drift room than any static view, so the slot that most needs the gate must have it. **Gate-on-walk is scoped into the stage-lock unification report** (`STAGE_LOCK_UNIFICATION_ASSESSMENT.md`) and lands with that work, pending ratification; the label/semantics amendment applies now.
+
+**Why:** the package should encode a real comp card, and a walk is part of that vocabulary. Leaving the walk ungated while the back view is gated is backwards — rotation-and-motion drift is worst exactly here.
+
+**Affects:** `VIEW_ANGLE_LABELS.sideFull` ("Walk"), `mintPackage` `SINGLE_VIEW_TYPE.sideFull='walk'` (already), the gate set (extends beyond `backFull` to `sideFull` — folded into the unification report), D-39.1 record.
+
+### D-45 — Credit balance visible on money-spending surfaces *(founder-ratified 2026-07-12 at VC-R3b; closes a D-15 gap)*
+
+**What:** balance was invisible from the canvas and the takeover — you had to return to the lobby to see it, on the exact surfaces where credits are spent. Two placements, both ratified, both in canvas language, build when convenient (R4-adjacent or with R6): **(1)** the takeover header carries the balance as a quiet tertiary figure (tabular number, ink, no icon) left of the primary Cast/Save action, clickable to the top-up modal, updating on the same refetch that already follows every generation; **(2)** the board top bar's profile/avatar button opens a small popover with the balance line + a "Top up" action — no permanent number on the canvas (keeps D-34's clean-canvas spirit). If only one ships, it is (1).
+
+**Why:** D-15's deliberate-spend covenant assumes the user can see what they're spending against. The tier dialog shows prices; the balance completes the arithmetic at the decision point (D-40 — feedback where the action happens).
+
+**Affects:** `CastingTakeover` header, board top bar profile popover, `credits.getBalance` reuse; no schema.
+
 ### D-39 — Canonical identity package + tiered mint *(RATIFIED 2026-07-11, all lines — see ratification record below)*
 
 > **RATIFICATION RECORD (founder, 2026-07-11) — `D39_PACKAGE_ASSESSMENT.md` ratified, all lines:**

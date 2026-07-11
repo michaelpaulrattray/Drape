@@ -36,6 +36,9 @@ export function buildHistoryFromAssets(
   const byViewType = new Map<string, AssetWithMeta[]>();
   for (const asset of allAssets) {
     if (!PACKAGE_VIEW_TYPES.includes(asset.viewType)) continue;
+    // Skip failed-slot markers (storageUrl-less status rows, D-40) — they'd
+    // otherwise inject a blank frame into the viewer history
+    if (!asset.storageUrl) continue;
     const existing = byViewType.get(asset.viewType) || [];
     existing.push(asset);
     byViewType.set(asset.viewType, existing);

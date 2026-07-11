@@ -5,9 +5,18 @@
  * always sums to the from-scratch production price.
  */
 import { describe, it, expect } from "vitest";
-import { tierCosts, slotCost } from "./mintPackage";
+import { tierCosts, slotCost, computePackageSlots } from "./mintPackage";
 import { MINT_TIER_SLOTS } from "../../shared/boardTypes";
 import { CREDIT_COSTS } from "./aiService";
+
+// Assets arrive newest-first (getModelAssets order); a failed slot is a
+// storageUrl-less row carrying a failed status marker.
+const filled = (viewType: string, url = "https://r2/x.png") => ({ viewType, storageUrl: url });
+const failedMarker = (viewType: string, reason = "identity mismatch") => ({
+  viewType,
+  storageUrl: "",
+  status: { state: "failed", reason, refunded: 300, at: "2026-07-12T00:00:00Z" },
+});
 
 describe("tierCosts", () => {
   it("prices a fresh draft at zero (headshot already exists)", () => {
@@ -59,5 +68,44 @@ describe("tierCosts", () => {
     expect(slotCost("threeQuarter")).toBe(CREDIT_COSTS.multiView);
     expect(slotCost("sideFull")).toBe(CREDIT_COSTS.multiView);
     expect(slotCost("backFull")).toBe(CREDIT_COSTS.multiView);
+  });
+});
+
+describe("computePackageSlots — failure surfacing (D-40)", () => {
+  it("a filled slot is filled, never failed", () => {
+    const slots = computePackageSlots([filled("frontClose")]);
+    const head = slots.find((s) => s.angle === "frontClose")!;
+    expect(head.filled).toBe(true);
+    expect(head.failed).toBeNull();
+  });
+
+  it("a failed-marker slot with no fill surfaces named + refunded", () => {
+    const slots = computePackageSlots([filled("frontClose"), failedMarker("backFull", "the build didn't match")]);
+    const back = slots.find((s) => s.angle === "backFull")!;
+    expect(back.filled).toBe(false);
+    expect(back.failed).toEqual({ reason: "the build didn't match", refunded: 300, at: "2026-07-12T00:00:00Z" });
+  });
+
+  it("a slot never attempted is neither filled nor failed (a plain empty slot)", () => {
+    const slots = computePackageSlots([filled("frontClose")]);
+    const walk = slots.find((s) => s.angle === "sideFull")!;
+    expect(walk.filled).toBe(false);
+    expect(walk.failed).toBeNull();
+  });
+
+  it("a later success supersedes an earlier failure (newest-first: success wins)", () => {
+    // getModelAssets returns newest first — the retry's filled row precedes the marker
+    const slots = computePackageSlots([filled("backFull"), failedMarker("backFull")]);
+    const back = slots.find((s) => s.angle === "backFull")!;
+    expect(back.filled).toBe(true);
+    expect(back.failed).toBeNull();
+  });
+
+  it("reports all six canonical slots regardless of input", () => {
+    const slots = computePackageSlots([]);
+    expect(slots.map((s) => s.angle).sort()).toEqual(
+      ["backFull", "frontClose", "frontFull", "sideClose", "sideFull", "threeQuarter"].sort(),
+    );
+    expect(slots.every((s) => !s.filled && s.failed === null)).toBe(true);
   });
 });

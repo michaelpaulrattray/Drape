@@ -32,7 +32,10 @@ export const VIEW_ANGLE_LABELS: Record<CanonicalViewAngle, string> = {
   threeQuarter: "Three-quarter",
   sideClose: "Side profile",
   frontFull: "Full front",
-  sideFull: "Full side",
+  // D-44: the sixth slot is a deliberate WALKING pose (comp-card walk),
+  // generated as viewType 'walk'; identity gate becomes mandatory with the
+  // stage-lock unification (STAGE_LOCK_UNIFICATION_ASSESSMENT.md)
+  sideFull: "Walk",
   backFull: "Full back",
 };
 

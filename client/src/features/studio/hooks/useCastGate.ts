@@ -86,10 +86,14 @@ export function useCastGate({
         // Mark as minted in canvas state
         setCanvas({ isMinted: true, castModelId: currentModelId });
 
-        // Named-and-refunded slot failures surface honestly (D-39)
+        // Named-and-refunded slot failures surface honestly (D-39/D-40). A
+        // long duration: the takeover may be closing under this toast, and a
+        // fleeting notice is what made the failure feel silent at VC-R3b. The
+        // failed slot also renders retryable in the view strip (durable).
         for (const f of result.failed) {
           toast.error(
-            `${f.label} didn't pass — ${f.refunded} credits refunded. The slot stays open to fill later.`
+            `${f.label} view couldn't match this identity — ${f.refunded} credits refunded, nothing charged. It's marked "Retry" in the package.`,
+            { duration: 9000 }
           );
         }
 

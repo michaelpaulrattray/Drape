@@ -163,6 +163,20 @@ export async function executeMintPackage(input: MintPackageInput) {
       // Named-and-refunded: this slot's cost goes back; the mint proceeds
       const refund = slotCost(angle);
       await addCredits(input.userId, refund, "refund", `Mint package: ${VIEW_ANGLE_LABELS[angle]} failed (refund)`);
+      // Persist the failure DURABLY (D-40): a storageUrl-less marker row
+      // carrying status — so the failed slot survives the takeover close and
+      // renders named + retryable on re-edit (getPackageState reads it). A
+      // later successful (re)generation writes a newer row with a real URL,
+      // which supersedes this marker. (VC-R3b: the failure surfaced NOWHERE.)
+      await createModelAsset({
+        modelId: input.modelId,
+        viewType: angle,
+        resolution: "1K",
+        storageUrl: "",
+        pointsCost: 0,
+        status: { state: "failed", reason, refunded: refund, at: new Date().toISOString() },
+        provenance: { inputs: [{ viewAngle: "frontClose", imageUrl: headshot.storageUrl }], engine: "identity-gate", mintTier: input.tier },
+      }).catch(() => {});
       failed.push({ angle, label: VIEW_ANGLE_LABELS[angle], reason, refunded: refund });
       log.warn({ modelId: input.modelId, angle, reason }, "[MintPackage] slot failed — refunded");
     }
@@ -192,22 +206,61 @@ export async function executeMintPackage(input: MintPackageInput) {
   return { agencyId, tier: input.tier, generated, failed };
 }
 
+/** A slot's failure marker, read from the durable status row. */
+export interface SlotFailure {
+  reason: string;
+  refunded: number;
+  at: string;
+}
+export interface PackageSlot {
+  angle: CanonicalViewAngle;
+  label: string;
+  filled: boolean;
+  url: string | null;
+  pinned: boolean;
+  /** Set when the newest attempt at this slot failed the gate and no filled
+   *  view exists (named-and-refunded, D-40). Cleared by a later success. */
+  failed: SlotFailure | null;
+}
+
+interface SlotAssetRow {
+  viewType: string;
+  storageUrl: string;
+  pinned?: boolean | null;
+  status?: unknown;
+  createdAt?: Date | string | null;
+}
+
+/** Pure per-slot computation — filled wins; else the newest attempt's failure
+ *  marker surfaces. `assets` MUST be newest-first (getModelAssets order).
+ *  Exported for tests. */
+export function computePackageSlots(assets: SlotAssetRow[]): PackageSlot[] {
+  return (Object.keys(VIEW_ANGLE_LABELS) as CanonicalViewAngle[]).map((angle) => {
+    const forAngle = assets.filter((a) => a.viewType === angle);
+    const filledRow = forAngle.find((a) => a.storageUrl);
+    // Failed only when nothing is filled AND the newest attempt is a marker
+    const newest = forAngle[0];
+    const status = newest?.status as { state?: string; reason?: string; refunded?: number; at?: string } | undefined;
+    const failed =
+      !filledRow && status?.state === "failed"
+        ? { reason: status.reason ?? "The identity check didn't pass", refunded: status.refunded ?? 0, at: status.at ?? "" }
+        : null;
+    return {
+      angle,
+      label: VIEW_ANGLE_LABELS[angle],
+      filled: !!filledRow,
+      url: filledRow?.storageUrl ?? null,
+      pinned: filledRow?.pinned ?? false,
+      failed,
+    };
+  });
+}
+
 /** Package completeness — the model-level slot read (D-39c; R5's sheet reads this). */
 export async function getPackageState(input: { userId: number; modelId: number }) {
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   const assets = await getModelAssets(input.modelId);
-  const byAngle = new Map(assets.filter((a) => a.storageUrl).map((a) => [a.viewType, a]));
-  const slots = (Object.keys(VIEW_ANGLE_LABELS) as CanonicalViewAngle[]).map((angle) => {
-    const asset = byAngle.get(angle);
-    return {
-      angle,
-      label: VIEW_ANGLE_LABELS[angle],
-      filled: !!asset,
-      url: asset?.storageUrl ?? null,
-      pinned: asset?.pinned ?? false,
-    };
-  });
-  return { modelId: input.modelId, minted: !!model.agencyId, slots };
+  return { modelId: input.modelId, minted: !!model.agencyId, slots: computePackageSlots(assets) };
 }
