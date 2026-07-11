@@ -81,6 +81,20 @@ type BoardCanvasProps = {
   onSelectNodeRef?: (selector: (itemId: number) => void) => void;
   /** Expose screen→flow coordinate conversion (right-click placement, VC2 #4) */
   onScreenToFlowRef?: (fn: (screen: { x: number; y: number }) => { x: number; y: number }) => void;
+  /** R4 keyboard model (Decision 7): full multi-selection, reported alongside
+   *  the legacy single-select callback */
+  onSelectionIdsChange?: (itemIds: number[]) => void;
+  /** Nudge every selected node by (dx, dy); returns what moved with prior
+   *  positions (the caller batches undo entries + persistence) */
+  onNudgeSelectionRef?: (
+    nudger: (dx: number, dy: number) => Array<{ itemId: number; x: number; y: number; prevX: number; prevY: number }>,
+  ) => void;
+  /** Cmd+A */
+  onSelectAllRef?: (selectAll: () => void) => void;
+  /** Esc bottom layer */
+  onClearSelectionRef?: (clear: () => void) => void;
+  /** Move-undo restore: set node positions imperatively */
+  onSetPositionsRef?: (setter: (moves: Array<{ itemId: number; x: number; y: number }>) => void) => void;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -248,6 +262,11 @@ export function BoardCanvas({
   boardId,
   onSelectNodeRef,
   onScreenToFlowRef,
+  onSelectionIdsChange,
+  onNudgeSelectionRef,
+  onSelectAllRef,
+  onClearSelectionRef,
+  onSetPositionsRef,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -270,6 +289,45 @@ export function BoardCanvas({
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>([]);
   const [edges] = useEdgesState<Edge>([]);
+
+  // Latest nodes for imperative helpers (registered once — never stale, and
+  // never inside a setNodes updater, which StrictMode double-invokes)
+  const nodesRef = useRef<AnyFlowNode[]>(nodes);
+  nodesRef.current = nodes;
+
+  // R4 keyboard model: imperative selection/position helpers for the parent
+  useEffect(() => {
+    onNudgeSelectionRef?.((dx, dy) => {
+      const moved: Array<{ itemId: number; x: number; y: number; prevX: number; prevY: number }> = [];
+      const next = nodesRef.current.map((n) => {
+        if (!n.selected) return n;
+        const itemId = parseInt(n.id.replace('item-', ''), 10);
+        if (isNaN(itemId)) return n;
+        const x = n.position.x + dx;
+        const y = n.position.y + dy;
+        moved.push({ itemId, x, y, prevX: n.position.x, prevY: n.position.y });
+        return { ...n, position: { x, y } };
+      });
+      if (moved.length > 0) setNodes(next);
+      return moved;
+    });
+    onSelectAllRef?.(() => {
+      setNodes(nodesRef.current.map((n) => (n.selected ? n : { ...n, selected: true })));
+    });
+    onClearSelectionRef?.(() => {
+      setNodes(nodesRef.current.map((n) => (n.selected ? { ...n, selected: false } : n)));
+    });
+    onSetPositionsRef?.((moves) => {
+      const byId = new Map(moves.map((m) => [`item-${m.itemId}`, m]));
+      setNodes(
+        nodesRef.current.map((n) => {
+          const m = byId.get(n.id);
+          return m ? { ...n, position: { x: m.x, y: m.y } } : n;
+        }),
+      );
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onNudgeSelectionRef, onSelectAllRef, onClearSelectionRef, onSetPositionsRef]);
 
   /**
    * Smart sync: only update React Flow nodes when the item LIST actually changes
@@ -349,6 +407,12 @@ export function BoardCanvas({
   // Handle selection
   const handleSelectionChange = useCallback(
     ({ nodes: selectedNodes }: { nodes: Node[] }) => {
+      // Full multi-selection for the keyboard model (R4)
+      onSelectionIdsChange?.(
+        selectedNodes
+          .map((n) => parseInt(n.id.replace('item-', ''), 10))
+          .filter((id) => !isNaN(id)),
+      );
       if (!onNodeSelect) return;
       if (selectedNodes.length === 1) {
         const itemId = parseInt(selectedNodes[0].id.replace('item-', ''), 10);
@@ -357,7 +421,7 @@ export function BoardCanvas({
         onNodeSelect(null);
       }
     },
-    [onNodeSelect],
+    [onNodeSelect, onSelectionIdsChange],
   );
 
   // Handle viewport changes (debounced save)
@@ -463,6 +527,10 @@ export function BoardCanvas({
         zoomOnScroll
         selectionOnDrag={false}
         selectNodesOnDrag={false}
+        multiSelectionKeyCode={['Meta', 'Control']}
+        // The Decision-7 keyboard model owns arrows/delete/Esc at the window
+        // level — React Flow's built-in arrow-move would double-nudge
+        disableKeyboardA11y
         proOptions={{ hideAttribution: true }}
         style={{
           '--xy-background-color': '#DFDFDF',

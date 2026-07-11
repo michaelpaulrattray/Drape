@@ -22,6 +22,8 @@ import { BrandLoader } from '@/components/BrandLoader';
 import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
 import { useGenerationJobs } from './stores/useGenerationJobs';
 import { useOptimisticFills } from './stores/useOptimisticFills';
+import { hasOpenCanvasLayers } from './stores/useCanvasLayers';
+import { DeleteCascadeDialog } from './canvas/DeleteCascadeDialog';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
@@ -78,6 +80,16 @@ function BoardPageImpl() {
   // when a right-click menu opens (nodes spawn at the cursor, VC2 fix #4)
   const screenToFlowRef = useRef<((s: { x: number; y: number }) => { x: number; y: number }) | null>(null);
   const contextMenuFlowPosRef = useRef<{ x: number; y: number } | null>(null);
+  // R4 keyboard model refs (Decision 7)
+  const selectedItemIdsRef = useRef<number[]>([]);
+  const nudgeSelectionRef = useRef<
+    ((dx: number, dy: number) => Array<{ itemId: number; x: number; y: number; prevX: number; prevY: number }>) | null
+  >(null);
+  const selectAllRef = useRef<(() => void) | null>(null);
+  const clearSelectionRef = useRef<(() => void) | null>(null);
+  const setPositionsRef = useRef<((moves: Array<{ itemId: number; x: number; y: number }>) => void) | null>(null);
+  // Cmd+C/V alias Duplicate for same-board (D-39 ratification line 5)
+  const clipboardRef = useRef<number[]>([]);
 
   // Placement mode: 'note' or 'frame' — cursor becomes crosshair, next pane click places the node
   const [placementMode, setPlacementMode] = useState<'note' | 'frame' | null>(null);
@@ -101,6 +113,18 @@ function BoardPageImpl() {
     { boardId },
     { enabled: !isNaN(boardId) && !!board, staleTime: 10_000 },
   );
+  // Fresh items for event listeners registered once (no re-subscription churn)
+  const itemsRef = useRef<typeof items>(undefined);
+  itemsRef.current = items;
+
+  // R4: client-side cascade knowledge for the delete trust net (which nodes
+  // fall with a root) — invalidated whenever an op adds edges
+  const { data: boardEdges } = trpc.boardOps.listEdges.useQuery(
+    { boardId },
+    { enabled: !isNaN(boardId) && !!board, staleTime: 30_000 },
+  );
+  const boardEdgesRef = useRef<typeof boardEdges>(undefined);
+  boardEdgesRef.current = boardEdges;
 
   // ── Mutations ──────────────────────────────────────────────
 
@@ -115,20 +139,119 @@ function BoardPageImpl() {
     onSuccess: () => utils.boards.getItems.invalidate({ boardId }),
   });
 
-  const deleteItemMutation = trpc.boards.deleteItem.useMutation({
-    onMutate: async ({ itemId }) => {
+  // ── R4 delete trust net (Decision 7 / D-17): soft delete + Undo ──────────
+  // Every canvas delete routes here — keyboard, toolbar, context menu, node
+  // chrome. Cascade units (root + connected views) are predicted client-side
+  // from the edge cache for the confirm dialog and the optimistic removal;
+  // the server recomputes them authoritatively.
+
+  type UndoEntry =
+    | { kind: 'delete'; itemIds: number[]; rows: NonNullable<typeof items> }
+    | { kind: 'move'; moves: Array<{ itemId: number; x: number; y: number }> };
+  const undoStackRef = useRef<UndoEntry[]>([]);
+  const pushUndo = (entry: UndoEntry) => {
+    undoStackRef.current.push(entry);
+    if (undoStackRef.current.length > 50) undoStackRef.current.shift();
+  };
+
+  const [deleteConfirm, setDeleteConfirm] = useState<{ itemIds: number[]; cascadeCount: number } | null>(null);
+
+  /** Client-side cascade prediction: selection + generated_from_cast targets. */
+  const predictDeleteUnit = (itemIds: number[]) => {
+    const unit = new Set(itemIds);
+    for (const edge of boardEdgesRef.current ?? []) {
+      if (edge.relation === 'generated_from_cast' && unit.has(edge.source)) unit.add(edge.target);
+    }
+    return unit;
+  };
+
+  const undoDeleteMutation = trpc.boardOps.undoDelete.useMutation({
+    onSettled: () => utils.boards.getItems.invalidate({ boardId }),
+    onError: (err) => toast.error(err.message),
+  });
+
+  const undoEntry = useCallback(
+    (entry: UndoEntry) => {
+      const idx = undoStackRef.current.indexOf(entry);
+      if (idx >= 0) undoStackRef.current.splice(idx, 1);
+      if (entry.kind === 'delete') {
+        // Optimistic restore — the rows are client-held (D-38)
+        utils.boards.getItems.setData({ boardId }, (old) => {
+          const existing = old ?? [];
+          const restored = entry.rows.filter((r) => !existing.some((i) => i.id === r.id));
+          return [...existing, ...restored];
+        });
+        undoDeleteMutation.mutate({ boardId, itemIds: entry.itemIds });
+      } else {
+        setPositionsRef.current?.(entry.moves);
+        for (const m of entry.moves) recentMovesRef.current.set(m.itemId, { x: m.x, y: m.y });
+        const persistable = entry.moves.filter((m) => m.itemId > 0);
+        if (persistable.length > 0) {
+          moveNodesMutation.mutate({ boardId, moves: persistable.map((m) => ({ itemId: m.itemId, x: m.x, y: m.y })) });
+        }
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [boardId],
+  );
+  const undoEntryRef = useRef(undoEntry);
+  undoEntryRef.current = undoEntry;
+
+  const deleteNodesMutation = trpc.boardOps.deleteNodes.execute.useMutation({
+    onMutate: async ({ itemIds }) => {
       await utils.boards.getItems.cancel({ boardId });
       const prev = utils.boards.getItems.getData({ boardId });
-      utils.boards.getItems.setData({ boardId }, (old) =>
-        old ? old.filter((i) => i.id !== itemId) : [],
-      );
-      return { prev };
+      const unit = predictDeleteUnit(itemIds);
+      const removedRows = (prev ?? []).filter((i) => unit.has(i.id));
+      utils.boards.getItems.setData({ boardId }, (old) => (old ? old.filter((i) => !unit.has(i.id)) : []));
+      return { prev, removedRows };
     },
-    onError: (_err, _vars, ctx) => {
+    onSuccess: (result, _vars, ctx) => {
+      const rows = (ctx?.removedRows ?? []) as NonNullable<typeof items>;
+      const entry: UndoEntry = { kind: 'delete', itemIds: result.deletedItemIds, rows };
+      pushUndo(entry);
+      // The trust net: soft-deleted, one toast, one restore path with Cmd+Z
+      const label =
+        rows.length === 1
+          ? (rows[0].kind === 'cast_config' || rows[0].sourceModelId || rows[0].type === 'model'
+              ? 'Cast deleted'
+              : 'Node deleted')
+          : `${result.deletedItemIds.length} nodes deleted`;
+      toast(label, {
+        duration: 8000,
+        action: { label: 'Undo', onClick: () => undoEntryRef.current(entry) },
+      });
+      utils.boards.getItems.invalidate({ boardId });
+    },
+    onError: (err, _vars, ctx) => {
       if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
-      toast.error('Failed to delete item');
+      toast.error(err.message || 'Failed to delete');
     },
-    onSettled: () => utils.boards.getItems.invalidate({ boardId }),
+  });
+
+  /** Entry point for every delete gesture. Cascades confirm first (red — the
+   *  one D-8 moment); plain deletes go straight to soft-delete + Undo toast. */
+  const handleDeleteNodes = useCallback(
+    (itemIds: number[]) => {
+      const ids = itemIds.filter((id) => id > 0);
+      if (ids.length === 0) return;
+      const unit = predictDeleteUnit(ids);
+      const cascadeCount = unit.size - ids.length;
+      if (cascadeCount > 0) {
+        setDeleteConfirm({ itemIds: ids, cascadeCount });
+        return;
+      }
+      deleteNodesMutation.mutate({ boardId, itemIds: ids });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [boardId, deleteNodesMutation],
+  );
+  const handleDeleteRef = useRef(handleDeleteNodes);
+  handleDeleteRef.current = handleDeleteNodes;
+
+  // Move persistence for nudges + move-undo (wraps batchUpdatePositions)
+  const moveNodesMutation = trpc.boardOps.moveNodes.useMutation({
+    onError: () => utils.boards.getItems.invalidate({ boardId }),
   });
 
   // Optimistic for ALL node kinds (VC2 re-drive follow-up #1): notes, frames,
@@ -205,8 +328,33 @@ function BoardPageImpl() {
    */
   const recentMovesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
 
+  // Drag-end undo batching (Decision 7): a multi-node drag emits one
+  // position callback per node in the same tick — they collapse into ONE
+  // undo entry holding the pre-drag positions.
+  const dragUndoBatchRef = useRef<{
+    moves: Array<{ itemId: number; x: number; y: number }>;
+    timer: ReturnType<typeof setTimeout> | null;
+  } | null>(null);
+
   const handleItemMove = useCallback(
     (itemId: number, x: number, y: number) => {
+      // Pre-drag position = the last local move if one is pending, else the
+      // server row — captured BEFORE the ledger updates
+      const prevLocal = recentMovesRef.current.get(itemId);
+      const row = itemsRef.current?.find((i) => i.id === itemId);
+      const prev = prevLocal ?? (row ? { x: row.positionX, y: row.positionY } : null);
+      if (prev && !(prev.x === x && prev.y === y)) {
+        const batch = dragUndoBatchRef.current ?? { moves: [], timer: null };
+        batch.moves.push({ itemId, x: prev.x, y: prev.y });
+        if (batch.timer) clearTimeout(batch.timer);
+        batch.timer = setTimeout(() => {
+          const b = dragUndoBatchRef.current;
+          dragUndoBatchRef.current = null;
+          if (b && b.moves.length > 0) pushUndo({ kind: 'move', moves: b.moves });
+        }, 50);
+        dragUndoBatchRef.current = batch;
+      }
+
       recentMovesRef.current.set(itemId, { x, y });
       if (itemId > 0) {
         // Negative ids are optimistic temp nodes — their move is recorded and
@@ -214,6 +362,7 @@ function BoardPageImpl() {
         updateItemMutation.mutate({ itemId, positionX: x, positionY: y });
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [updateItemMutation],
   );
 
@@ -227,12 +376,11 @@ function BoardPageImpl() {
     [updateItemMutation],
   );
 
-  const handleItemDelete = useCallback(
-    (itemId: number) => {
-      deleteItemMutation.mutate({ itemId });
-    },
-    [deleteItemMutation],
-  );
+  // All node-owned delete affordances (frames, notes, context menu) route
+  // into the same trust net as the keyboard/toolbar (R4)
+  const handleItemDelete = useCallback((itemId: number) => {
+    handleDeleteRef.current([itemId]);
+  }, []);
 
   const handleItemRename = useCallback(
     (itemId: number, label: string) => {
@@ -307,6 +455,28 @@ function BoardPageImpl() {
     window.addEventListener('board-edit-cast', onEditCast);
     return () => window.removeEventListener('board-edit-cast', onEditCast);
   }, [boardId]);
+
+  // R4: toolbar Info + the strip's ··· menu (same surfaces as right-click,
+  // reached from the node's own chrome)
+  useEffect(() => {
+    const onInfo = (e: Event) => {
+      const detail = (e as CustomEvent<{ itemId: number; x: number; y: number }>).detail;
+      if (!detail || detail.itemId <= 0) return;
+      setInfoPanel({ itemId: detail.itemId, position: { x: detail.x, y: detail.y } });
+    };
+    const onMenu = (e: Event) => {
+      const detail = (e as CustomEvent<{ itemId: number; x: number; y: number }>).detail;
+      if (!detail || detail.itemId <= 0) return;
+      const item = itemsRef.current?.find((i) => i.id === detail.itemId);
+      setNodeContextMenu({ x: detail.x, y: detail.y, nodeId: detail.itemId, imageUrl: item?.imageUrl ?? null });
+    };
+    window.addEventListener('board-node-info', onInfo);
+    window.addEventListener('board-open-node-menu', onMenu);
+    return () => {
+      window.removeEventListener('board-node-info', onInfo);
+      window.removeEventListener('board-open-node-menu', onMenu);
+    };
+  }, []);
 
   // The takeover's mint landing (D-35): the finished model fills the
   // originating node in place — same op as the picker's library path.
@@ -425,6 +595,7 @@ function BoardPageImpl() {
         completeJob(vars.itemId);
       }
       utils.boards.getItems.invalidate({ boardId });
+      utils.boardOps.listEdges.invalidate({ boardId }); // forks add edges
       utils.credits.getBalance.invalidate();
       // The next Edit on this cast must hydrate the post-update model (bug-2b)
       utils.models.get.invalidate();
@@ -454,30 +625,340 @@ function BoardPageImpl() {
     [boardId, castEditContext, applyModelEditMutation, startJob],
   );
 
-  // ── Keyboard shortcuts ───────────────────────────────────
+  // ── R4: fork / recast from the node's ForkRecastPopover (3f, D-43) ────────
+  // Both are the same identity engine as the environment's D-11 landing
+  // (applyModelEdit with empty changes); intent:'rerun' stamps the version
+  // ledger honestly. Recast is draft-only — the popover seals it on minted
+  // casts and the server guard refuses regardless.
+  useEffect(() => {
+    const onFork = (e: Event) => {
+      const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
+      if (typeof itemId !== 'number' || itemId <= 0) return;
+      applyModelEditMutation.mutate({ boardId, itemId, decision: 'fork', changes: {}, intent: 'rerun' });
+    };
+    const onRecast = (e: Event) => {
+      const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
+      if (typeof itemId !== 'number' || itemId <= 0) return;
+      startJob({ itemId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
+      applyModelEditMutation.mutate({ boardId, itemId, decision: 'update', changes: {}, intent: 'rerun' });
+    };
+    window.addEventListener('board-fork-cast', onFork);
+    window.addEventListener('board-recast-cast', onRecast);
+    return () => {
+      window.removeEventListener('board-fork-cast', onFork);
+      window.removeEventListener('board-recast-cast', onRecast);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId]);
+
+  // ── R4: variations — N sibling candidates land optimistically (D-38) ──────
+  // Temp rows ride the pendingForks overlay (same lifecycle: outside the
+  // query cache, self-pruning once server rows arrive); positions come from
+  // the plan the popover already fetched, so temps land exactly where the
+  // server will put the real rows.
+  const variationTempsRef = useRef<Array<{ tempId: number; index: number }>>([]);
+  const runVariationsMutation = trpc.boardOps.runVariations.execute.useMutation({
+    onSuccess: (result) => {
+      const temps = variationTempsRef.current;
+      setPendingForks((pf) =>
+        pf
+          .filter((p) => {
+            const temp = temps.find((t) => t.tempId === p.id);
+            // Drop temps whose candidate failed (named-and-refunded below)
+            return !(temp && result.failures.some((f) => f.index === temp.index));
+          })
+          .map((p) => {
+            const temp = temps.find((t) => t.tempId === p.id);
+            const landed = temp && result.variations.find((v) => v.index === temp.index);
+            if (!landed) return p;
+            completeJob(temp.tempId);
+            return {
+              ...p,
+              id: landed.itemId,
+              imageUrl: landed.imageUrl,
+              metadata: {
+                provenance: { type: 'library_cast', modelId: landed.modelId, viewAngle: 'frontClose', draft: true },
+              },
+            };
+          }),
+      );
+      for (const failure of result.failures) {
+        const temp = temps.find((t) => t.index === failure.index);
+        if (temp) failJob(temp.tempId, failure.message);
+        // The failed candidate's surface just vanished — a toast is the
+        // correct fallback (D-40), named and refund-honest (D-12 amendment)
+        toast.error(`Variation ${failure.index + 1} failed — you weren't charged for it.`);
+      }
+      variationTempsRef.current = [];
+      utils.boards.getItems.invalidate({ boardId });
+      utils.boardOps.listEdges.invalidate({ boardId });
+      utils.credits.getBalance.invalidate();
+    },
+    onError: (err) => {
+      const temps = variationTempsRef.current;
+      variationTempsRef.current = [];
+      setPendingForks((pf) => pf.filter((p) => !temps.some((t) => t.tempId === p.id)));
+      for (const t of temps) failJob(t.tempId, err.message);
+      utils.boards.getItems.invalidate({ boardId });
+      toast.error(err.message);
+    },
+  });
+
+  useEffect(() => {
+    const onRunVariations = (e: Event) => {
+      const detail = (e as CustomEvent<{ itemId: number; count: number; positions: Array<{ x: number; y: number }> }>).detail;
+      if (!detail || detail.itemId <= 0 || runVariationsMutation.isPending) return;
+      const temps = detail.positions.map((pos, index) => {
+        const tempId = -(Date.now() + index);
+        startJob({ itemId: tempId, operation: 'runVariations', estimatedDurationMs: 30_000 });
+        return {
+          temp: {
+            id: tempId,
+            type: 'model',
+            kind: 'image',
+            label: null,
+            imageUrl: null,
+            positionX: pos.x,
+            positionY: pos.y,
+            width: 280,
+            height: 420,
+            zIndex: 0,
+            metadata: { provenance: { type: 'library_cast', modelId: -1, viewAngle: 'frontClose', draft: true } },
+            sourceModelId: null,
+          } as BoardItemRecord,
+          tempId,
+          index,
+        };
+      });
+      variationTempsRef.current = temps.map(({ tempId, index }) => ({ tempId, index }));
+      setPendingForks((pf) => [...pf, ...temps.map((t) => t.temp)]);
+      runVariationsMutation.mutate({ boardId, itemId: detail.itemId, count: detail.count });
+    };
+    window.addEventListener('board-run-variations', onRunVariations);
+    return () => window.removeEventListener('board-run-variations', onRunVariations);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId]);
+
+  // ── R4: duplicate — Cmd+C/V alias here too (same-board, D-39 ruling 5) ────
+  // A structural copy: provenance/attributes ride along, status/pin/version
+  // history do not (the copy starts life clean at v1 with the same image).
+  const duplicateNodeMutation = trpc.boardOps.createNode.execute.useMutation({
+    onMutate: async (vars) => {
+      await utils.boards.getItems.cancel({ boardId });
+      const prev = utils.boards.getItems.getData({ boardId });
+      const tempId = -Date.now();
+      type ItemsRow = NonNullable<typeof prev>[number];
+      const tempRow = {
+        id: tempId,
+        boardId,
+        type: 'model',
+        kind: vars.kind,
+        label: vars.label ?? null,
+        imageUrl: vars.imageUrl ?? null,
+        imageKey: null,
+        positionX: Math.round(vars.position.x),
+        positionY: Math.round(vars.position.y),
+        width: vars.size?.width ?? 280,
+        height: vars.size?.height ?? 420,
+        zIndex: 0,
+        parentItemId: null,
+        sourceModelId: null,
+        sourceGarmentId: null,
+        sourceSessionId: null,
+        sourceLookId: null,
+        metadata: vars.metadata ?? {},
+        deletedAt: null,
+        createdAt: new Date(),
+      } as unknown as ItemsRow;
+      utils.boards.getItems.setData({ boardId }, (old) => [...(old ?? []), tempRow]);
+      return { prev, tempId };
+    },
+    onSuccess: (result, _vars, ctx) => {
+      utils.boards.getItems.setData({ boardId }, (old) =>
+        old?.map((i) => (i.id === ctx?.tempId ? { ...i, id: result.itemId } : i)),
+      );
+      utils.boards.getItems.invalidate({ boardId });
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
+      toast.error(err.message);
+    },
+  });
+
+  const handleDuplicateNode = useCallback(
+    (itemId: number) => {
+      const item = itemsRef.current?.find((i) => i.id === itemId);
+      if (!item || itemId <= 0) return;
+      const meta = (item.metadata ?? {}) as Record<string, unknown>;
+      const metadata: Record<string, unknown> = {};
+      if (meta.provenance) metadata.provenance = meta.provenance;
+      if (meta.attributes) metadata.attributes = meta.attributes;
+      if (meta.userPrompt) metadata.userPrompt = meta.userPrompt;
+      duplicateNodeMutation.mutate({
+        boardId,
+        kind: (item.kind ?? 'image') as 'image' | 'cast_config' | 'note' | 'frame',
+        provenance: (meta.provenance as Record<string, unknown> | undefined) ?? null,
+        position: { x: item.positionX + 40, y: item.positionY + 40 },
+        size: { width: item.width, height: item.height },
+        label: item.label ?? undefined,
+        imageUrl: item.imageUrl ?? undefined,
+        metadata,
+      });
+    },
+    [boardId, duplicateNodeMutation],
+  );
+  const handleDuplicateRef = useRef(handleDuplicateNode);
+  handleDuplicateRef.current = handleDuplicateNode;
+
+  useEffect(() => {
+    const onDuplicate = (e: Event) => {
+      const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
+      if (typeof itemId === 'number') handleDuplicateRef.current(itemId);
+    };
+    window.addEventListener('board-duplicate-node', onDuplicate);
+    return () => window.removeEventListener('board-duplicate-node', onDuplicate);
+  }, []);
+
+  // R4: toolbar Delete — routes into the same trust-net path as the keyboard
+  useEffect(() => {
+    const onDelete = (e: Event) => {
+      const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
+      if (typeof itemId === 'number' && itemId > 0) handleDeleteRef.current([itemId]);
+    };
+    window.addEventListener('board-delete-node', onDelete);
+    return () => window.removeEventListener('board-delete-node', onDelete);
+  }, []);
+
+  // ── Keyboard model (Decision 7 — full table, R4) ─────────────────────────
+  // Nudges batch into one undoable move: prev positions captured on the first
+  // press, one undo entry + one moveNodes persist 500ms after the last press.
+  const nudgeBatchRef = useRef<{
+    prev: Map<number, { x: number; y: number }>;
+    last: Map<number, { x: number; y: number }>;
+    timer: ReturnType<typeof setTimeout> | null;
+  } | null>(null);
+
+  const flushNudgeBatch = useCallback(() => {
+    const batch = nudgeBatchRef.current;
+    nudgeBatchRef.current = null;
+    if (!batch || batch.prev.size === 0) return;
+    pushUndo({
+      kind: 'move',
+      moves: Array.from(batch.prev, ([itemId, pos]) => ({ itemId, x: pos.x, y: pos.y })),
+    });
+    const moves = Array.from(batch.last, ([itemId, pos]) => ({ itemId, x: pos.x, y: pos.y }));
+    for (const m of moves) recentMovesRef.current.set(m.itemId, { x: m.x, y: m.y });
+    const persistable = moves.filter((m) => m.itemId > 0);
+    if (persistable.length > 0) moveNodesMutation.mutate({ boardId, moves: persistable });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId]);
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Escape cancels placement mode
-      if (e.key === 'Escape' && placementMode) {
-        setPlacementMode(null);
-        setActiveTool('select');
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
+      const mod = e.metaKey || e.ctrlKey;
+      // The takeover captures its own Esc; every other overlay makes the
+      // board's keyboard inert (their own handlers own the keys)
+      const overlayOpen =
+        editorItemId !== null || castTakeoverItemId !== null || castEditContext !== null;
+
+      // Esc — strictly the topmost layer (Decision 7 / DS §9)
+      if (e.key === 'Escape') {
+        if (typing || overlayOpen) return;
+        if (hasOpenCanvasLayers()) return; // node popovers close themselves
+        if (addNodeMenu) { setAddNodeMenu(null); return; }
+        if (nodeContextMenu) { setNodeContextMenu(null); return; }
+        if (deleteConfirm) { setDeleteConfirm(null); return; }
+        if (infoPanel) { setInfoPanel(null); return; }
+        if (versionHistoryItemId !== null) { setVersionHistoryItemId(null); return; }
+        if (castPickerItemId !== null) { setCastPickerItemId(null); return; }
+        if (placementMode) {
+          setPlacementMode(null);
+          setActiveTool('select');
+          return;
+        }
+        // Bottom of the stack: clear selection
+        clearSelectionRef.current?.();
+        setSelectedItemId(null);
         return;
       }
-      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
-      // Don't delete while typing in an input/textarea
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
-      // Don't delete while an overlay (editor, casting takeover) is open
-      if (editorItemId !== null || castTakeoverItemId !== null || castEditContext !== null) return;
-      if (selectedItemId !== null) {
+
+      if (typing || overlayOpen || deleteConfirm) return;
+
+      // Delete / Backspace — the trust net (soft delete + Undo)
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const ids = selectedItemIdsRef.current.filter((id) => id > 0);
+        if (ids.length > 0) {
+          e.preventDefault();
+          handleDeleteRef.current(ids);
+        }
+        return;
+      }
+
+      // Arrow nudge — 1 canvas unit, Shift = 16; batched as one undoable move
+      const arrow: Record<string, [number, number]> = {
+        ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+      };
+      if (arrow[e.key]) {
+        const step = e.shiftKey ? 16 : 1;
+        const [dx, dy] = arrow[e.key];
+        const moved = nudgeSelectionRef.current?.(dx * step, dy * step) ?? [];
+        if (moved.length === 0) return;
         e.preventDefault();
-        handleItemDelete(selectedItemId);
-        setSelectedItemId(null);
+        const batch = nudgeBatchRef.current ?? { prev: new Map(), last: new Map(), timer: null };
+        for (const m of moved) {
+          if (!batch.prev.has(m.itemId)) batch.prev.set(m.itemId, { x: m.prevX, y: m.prevY });
+          batch.last.set(m.itemId, { x: m.x, y: m.y });
+        }
+        if (batch.timer) clearTimeout(batch.timer);
+        batch.timer = setTimeout(flushNudgeBatch, 500);
+        nudgeBatchRef.current = batch;
+        return;
+      }
+
+      // Cmd/Ctrl+A — select all
+      if (mod && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        selectAllRef.current?.();
+        return;
+      }
+
+      // Cmd/Ctrl+Z — undo (delete and move, scoped per D-17)
+      if (mod && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        const entry = undoStackRef.current[undoStackRef.current.length - 1];
+        if (entry) {
+          e.preventDefault();
+          undoEntryRef.current(entry);
+        }
+        return;
+      }
+
+      // Cmd/Ctrl+C / V — alias Duplicate for same-board (founder ruling,
+      // D-39 ratification line 5; cross-board paste is a logged future
+      // D-16 amendment, not R4 scope)
+      if (mod && e.key.toLowerCase() === 'c') {
+        // Never hijack a real text copy
+        if (window.getSelection()?.toString()) return;
+        const ids = selectedItemIdsRef.current.filter((id) => id > 0);
+        if (ids.length > 0) clipboardRef.current = ids;
+        return;
+      }
+      if (mod && e.key.toLowerCase() === 'v') {
+        if (clipboardRef.current.length === 0) return;
+        e.preventDefault();
+        for (const id of clipboardRef.current) handleDuplicateRef.current(id);
+        return;
       }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedItemId, editorItemId, castTakeoverItemId, castEditContext, handleItemDelete, placementMode]);
+  }, [
+    editorItemId, castTakeoverItemId, castEditContext, placementMode,
+    addNodeMenu, nodeContextMenu, infoPanel, versionHistoryItemId,
+    castPickerItemId, deleteConfirm, flushNudgeBatch,
+  ]);
 
   // ── Placement mode click handler ───────────────────────
   const handlePlacementClick = useCallback(
@@ -883,6 +1364,21 @@ function BoardPageImpl() {
             onScreenToFlowRef={(fn) => {
               screenToFlowRef.current = fn;
             }}
+            onSelectionIdsChange={(ids) => {
+              selectedItemIdsRef.current = ids;
+            }}
+            onNudgeSelectionRef={(nudger) => {
+              nudgeSelectionRef.current = nudger;
+            }}
+            onSelectAllRef={(selectAll) => {
+              selectAllRef.current = selectAll;
+            }}
+            onClearSelectionRef={(clear) => {
+              clearSelectionRef.current = clear;
+            }}
+            onSetPositionsRef={(setter) => {
+              setPositionsRef.current = setter;
+            }}
             className="absolute inset-0"
           >
             {/* Bottom canvas UI — rendered inside ReactFlow for context access */}
@@ -1020,6 +1516,19 @@ function BoardPageImpl() {
           imageUrl={nodeContextMenu.imageUrl}
           onAction={handleNodeContextAction}
           onClose={() => setNodeContextMenu(null)}
+        />
+      )}
+
+      {/* Delete cascade confirm — the one red confirm in the app (D-8/D-43) */}
+      {deleteConfirm && (
+        <DeleteCascadeDialog
+          cascadeCount={deleteConfirm.cascadeCount}
+          onCancel={() => setDeleteConfirm(null)}
+          onConfirm={() => {
+            const ids = deleteConfirm.itemIds;
+            setDeleteConfirm(null);
+            deleteNodesMutation.mutate({ boardId, itemIds: ids });
+          }}
         />
       )}
 
