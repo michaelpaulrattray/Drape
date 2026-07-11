@@ -197,7 +197,9 @@ export const boardsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
-      const itemId = await addBoardItem(input);
+      // Stamp the canvas `kind` alongside the legacy type (foundations Decision 1)
+      const kind = input.type === "note" ? "note" : input.type === "frame" ? "frame" : "image";
+      const itemId = await addBoardItem({ ...input, kind });
       return { id: itemId };
     }),
 

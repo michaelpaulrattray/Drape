@@ -130,9 +130,58 @@ function BoardPageImpl() {
 
   const iterateMutation = trpc.generation.iterate.useMutation();
   const addVersionMutation = trpc.boards.addItemVersion.useMutation();
+  // Optimistic for ALL node kinds (VC2 re-drive follow-up #1): notes, frames,
+  // and any legacy-path item render instantly; the server confirm swaps the
+  // temp id in place, exactly like cast creation.
   const addItemMutation = trpc.boards.addItem.useMutation({
-    onSuccess: () => {
-      if (boardId) utils.boards.getItems.invalidate({ boardId });
+    onMutate: async (vars) => {
+      await utils.boards.getItems.cancel({ boardId });
+      const prev = utils.boards.getItems.getData({ boardId });
+      const tempId = -Date.now();
+      type ItemsRow = NonNullable<typeof prev>[number];
+      const tempRow = {
+        id: tempId,
+        boardId,
+        type: vars.type,
+        kind: vars.type === 'note' ? 'note' : vars.type === 'frame' ? 'frame' : 'image',
+        label: vars.label ?? null,
+        imageUrl: vars.imageUrl ?? null,
+        imageKey: null,
+        positionX: vars.positionX ?? 0,
+        positionY: vars.positionY ?? 0,
+        width: vars.width ?? 280,
+        height: vars.height ?? 280,
+        zIndex: vars.zIndex ?? 0,
+        parentItemId: null,
+        sourceModelId: vars.sourceModelId ?? null,
+        sourceGarmentId: null,
+        sourceSessionId: null,
+        sourceLookId: null,
+        metadata: vars.metadata ?? {},
+        deletedAt: null,
+        createdAt: new Date(),
+      } as unknown as ItemsRow;
+      utils.boards.getItems.setData({ boardId }, (old) => [...(old ?? []), tempRow]);
+      return { prev, tempId };
+    },
+    onSuccess: (result, _vars, ctx) => {
+      const move = ctx?.tempId ? recentMovesRef.current.get(ctx.tempId) : undefined;
+      if (ctx?.tempId && move) {
+        recentMovesRef.current.delete(ctx.tempId);
+        recentMovesRef.current.set(result.id, move);
+        updateItemMutation.mutate({ itemId: result.id, positionX: move.x, positionY: move.y });
+      }
+      utils.boards.getItems.setData({ boardId }, (old) =>
+        old?.map((i) =>
+          i.id === ctx?.tempId
+            ? { ...i, id: result.id, positionX: move?.x ?? i.positionX, positionY: move?.y ?? i.positionY }
+            : i,
+        ),
+      );
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
+      toast.error('Failed to add node');
     },
   });
 
