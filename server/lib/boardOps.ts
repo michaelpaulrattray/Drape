@@ -186,23 +186,40 @@ export async function executeMoveNodes(input: {
 
 // ── deleteNode / undoDelete (soft, cascade-aware) ──────────────────────────
 
-/** A root's cascade unit = itself + its generated_from_cast targets. */
+/** A root's cascade unit = itself + its generated_from_cast targets.
+ *  Deliberately NOT forked_from/variant_of — forks and variations are
+ *  independent identities, never destroyed by deleting their source (D-8's
+ *  red is scoped to delete-cascade alone). */
 async function cascadeUnit(itemId: number): Promise<number[]> {
   const viewEdges = await getEdgesFrom(itemId, "generated_from_cast");
   return [itemId, ...viewEdges.map((e) => e.targetItemId)];
 }
 
-export async function planDeleteNode(input: { itemId: number }): Promise<OperationPlan> {
-  const unit = await cascadeUnit(input.itemId);
-  return { ...emptyPlan("deleteNode"), deletes: unit };
+/** Union of cascade units for a selection — deleted and restored as one unit. */
+async function cascadeUnits(itemIds: number[]): Promise<number[]> {
+  const unit = new Set<number>();
+  for (const id of itemIds) {
+    for (const member of await cascadeUnit(id)) unit.add(member);
+  }
+  return Array.from(unit);
 }
 
-export async function executeDeleteNode(input: { itemId: number }) {
-  const unit = await cascadeUnit(input.itemId);
+export async function planDeleteNodes(input: { itemIds: number[] }): Promise<OperationPlan> {
+  const unit = await cascadeUnits(input.itemIds);
+  return { ...emptyPlan("deleteNodes"), deletes: unit };
+}
+
+export async function executeDeleteNodes(input: { itemIds: number[] }) {
+  const unit = await cascadeUnits(input.itemIds);
   await softDeleteBoardItems(unit);
   // Edges + versions survive intact — undo restores everything (Decision 7)
   return { deletedItemIds: unit };
 }
+
+export const planDeleteNode = (input: { itemId: number }) =>
+  planDeleteNodes({ itemIds: [input.itemId] });
+export const executeDeleteNode = (input: { itemId: number }) =>
+  executeDeleteNodes({ itemIds: [input.itemId] });
 
 export async function executeUndoDelete(input: { itemIds: number[] }) {
   await undoDeleteBoardItems(input.itemIds);
@@ -555,6 +572,49 @@ export interface ApplyModelEditInput {
   itemId: number;
   decision: "update" | "fork";
   changes: Record<string, unknown>;
+  /** 'rerun' = the R4 fork/recast gesture (same engine path, version rows
+   *  stamp `tool:'rerun'`); 'edit' = an environment save (default). */
+  intent?: "edit" | "rerun";
+}
+
+/**
+ * One draft candidate from a set of preferences: model row (unnamed draft,
+ * D-42) + generation audit + headshot + frontClose asset. The shared engine
+ * path behind fork (applyModelEdit), recast-as-fork, and runVariations.
+ * Throws on failure — the CALLER owns deduction and refunds.
+ */
+async function generateCastCandidate(opts: { userId: number; prefs: ModelPreferences; cost: number }) {
+  const masterPrompt = await generateMasterPrompt(opts.prefs);
+  const model = await createModel({
+    userId: opts.userId,
+    name: DRAFT_AUTO_NAME,
+    masterPrompt: masterPrompt.naturalDescription,
+    technicalSchema: masterPrompt.technicalSchema,
+    preferences: opts.prefs,
+    status: "draft",
+  });
+  if (!model.success || !model.modelId) {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: model.error || "Failed to create model" });
+  }
+  const genRecord = await createGeneration({
+    userId: opts.userId, modelId: model.modelId, type: "castingImage", status: "processing", pointsCost: opts.cost,
+  });
+  const result = await generateCastingImage(
+    buildReinforcedPrompt(masterPrompt.naturalDescription, opts.prefs as never),
+    {
+      castingBrand: (opts.prefs as { castingBrand?: string }).castingBrand || "Generic",
+      frame: "HEADSHOT",
+      ethnicityHint: buildEthnicityHint(opts.prefs as never),
+      userId: String(opts.userId),
+    },
+  );
+  if (!result.imageUrl) {
+    await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
+  }
+  await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+  await createModelAsset({ modelId: model.modelId, viewType: "frontClose", resolution: "1K", storageUrl: result.imageUrl, pointsCost: opts.cost });
+  return { modelId: model.modelId, imageUrl: result.imageUrl, engineUsed: result.engineUsed };
 }
 
 export async function executeApplyModelEdit(input: ApplyModelEditInput) {
@@ -599,9 +659,8 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   }
 
   try {
-    const masterPrompt = await generateMasterPrompt(merged);
-
     if (input.decision === "update") {
+      const masterPrompt = await generateMasterPrompt(merged);
       const genRecord = await createGeneration({
         userId: input.userId, modelId: model.id, type: "castingImage", status: "processing", pointsCost: cost,
       });
@@ -635,10 +694,12 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
         imageUrl: result.imageUrl,
         metadata: { ...meta, provenance: newProv, attributes: merged as Record<string, unknown>, status: null, isGenerating: false, version },
       });
+      // R4: a recast (rerun-in-place, drafts only past the D-43 guard) is a
+      // rerun in the version ledger, not an attribute edit
       await addBoardItemVersion({
         itemId: input.itemId, version, imageUrl: result.imageUrl,
-        prompt: `Identity update: ${Object.keys(input.changes).join(", ")}`,
-        tool: "attributes",
+        prompt: input.intent === "rerun" ? "Recast" : `Identity update: ${Object.keys(input.changes).join(", ")}`,
+        tool: input.intent === "rerun" ? "rerun" : "attributes",
       });
 
       // Downstream edge targets go stale (D-11; R5 renders the full flow)
@@ -659,49 +720,20 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     }
 
     // decision === "fork" — a new unnamed draft, original untouched
-    const forkModel = await createModel({
-      userId: input.userId,
-      name: DRAFT_AUTO_NAME,
-      masterPrompt: masterPrompt.naturalDescription,
-      technicalSchema: masterPrompt.technicalSchema,
-      preferences: merged,
-      status: "draft",
-    });
-    if (!forkModel.success || !forkModel.modelId) {
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: forkModel.error || "Failed to create fork" });
-    }
-    const genRecord = await createGeneration({
-      userId: input.userId, modelId: forkModel.modelId, type: "castingImage", status: "processing", pointsCost: cost,
-    });
-    const result = await generateCastingImage(
-      buildReinforcedPrompt(masterPrompt.naturalDescription, merged as never),
-      {
-        castingBrand: (merged as { castingBrand?: string }).castingBrand || "Generic",
-        frame: "HEADSHOT",
-        ethnicityHint: buildEthnicityHint(merged as never),
-        userId: String(input.userId),
-      },
-    );
-    if (!result.imageUrl) {
-      await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
-    }
-    await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
-    await createModelAsset({ modelId: forkModel.modelId, viewType: "frontClose", resolution: "1K", storageUrl: result.imageUrl, pointsCost: cost });
-
+    const candidate = await generateCastCandidate({ userId: input.userId, prefs: merged, cost });
     const { itemId: newItemId } = await executeCreateNode({
       boardId: item.boardId,
       kind: "image",
       provenance: {
         type: "library_cast",
-        modelId: forkModel.modelId,
+        modelId: candidate.modelId,
         viewAngle: "frontClose",
         attributes: merged as Record<string, unknown>,
         draft: true,
       },
       position: { x: item.positionX + item.width + 60, y: item.positionY },
       size: { width: 280, height: 420 },
-      imageUrl: result.imageUrl,
+      imageUrl: candidate.imageUrl,
     });
     await addBoardEdge({
       boardId: item.boardId,
@@ -710,13 +742,150 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       relation: "forked_from",
     });
 
-    log.info({ itemId: input.itemId, newItemId, forkModelId: forkModel.modelId }, "Identity forked");
-    return { decision: "fork" as const, itemId: input.itemId, newItemId, modelId: forkModel.modelId, imageUrl: result.imageUrl };
+    log.info({ itemId: input.itemId, newItemId, forkModelId: candidate.modelId }, "Identity forked");
+    return { decision: "fork" as const, itemId: input.itemId, newItemId, modelId: candidate.modelId, imageUrl: candidate.imageUrl };
   } catch (error) {
     // Atomic-credits contract: refund on any failure after deduction
     await addCredits(input.userId, cost, "refund", `Identity ${input.decision} failed (refund)`);
     throw error;
   }
+}
+
+// ── runVariations (R4 — N sibling candidates, variant_of edges) ────────────
+//
+// Foundations §4: N new roots cast from the SAME identity attributes — the
+// engine's variance produces the candidates (the D-42 comparison workflow).
+// The source is never modified. cast_view sources are NOT_SUPPORTED.
+
+export const MAX_VARIATIONS = 4;
+
+/** Candidates land in a row below the source — one formula, shared by plan
+ *  (client optimistic temps read plan.creates) and execute. */
+function variationPositions(
+  item: { positionX: number; positionY: number; width: number; height: number },
+  count: number,
+) {
+  return Array.from({ length: count }, (_, i) => ({
+    x: item.positionX + i * (item.width + 60),
+    y: item.positionY + item.height + 80,
+  }));
+}
+
+/** Pure plan core — exported for tests (Decision 6: cost always CREDIT_COSTS-derived). */
+export function buildVariationsPlan(
+  itemId: number,
+  item: { positionX: number; positionY: number; width: number; height: number },
+  requestedCount: number,
+): OperationPlan {
+  const count = Math.max(1, Math.min(MAX_VARIATIONS, requestedCount));
+  return {
+    ...emptyPlan("runVariations"),
+    creates: variationPositions(item, count).map((position) => ({
+      kind: "image" as BoardItemKind,
+      provenance: null,
+      position,
+    })),
+    addEdges: Array.from({ length: count }, () => ({
+      source: itemId,
+      target: 0, // unknown until execute
+      relation: "variant_of" as BoardEdgeRelation,
+    })),
+    estimatedCreditCost: count * CREDIT_COSTS.castingImage,
+    estimatedDurationMs: 30_000, // candidates run in parallel
+  };
+}
+
+export async function planRunVariations(input: { itemId: number; count: number }): Promise<OperationPlan> {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  return buildVariationsPlan(input.itemId, item, input.count);
+}
+
+export async function executeRunVariations(input: { userId: number; itemId: number; count: number }) {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  const meta = readMeta(item);
+  const prov = meta.provenance;
+  if (!prov || !("modelId" in prov)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "This node has no cast identity to vary" });
+  }
+  if (prov.type === "cast_view") {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Variations spawn from the cast, not a view" });
+  }
+  const model = await getModelById(prov.modelId);
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+
+  const rate = checkRateLimit(`user:${input.userId}`, RATE_LIMITS.generation);
+  if (!rate.allowed) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
+  }
+  await enforceDailyQuota(input.userId);
+
+  const count = Math.max(1, Math.min(MAX_VARIATIONS, input.count));
+  const unitCost = CREDIT_COSTS.castingImage;
+  const totalCost = count * unitCost;
+  const deduct = await deductPoints(
+    input.userId, totalCost, "generation",
+    `${count} cast variation${count === 1 ? "" : "s"} (pending)`, `variations-${input.itemId}-${Date.now()}`,
+  );
+  if (!deduct.success) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
+  }
+
+  const base = (model.preferences ?? {}) as Record<string, unknown>;
+  const positions = variationPositions(item, count);
+
+  // Parallel candidates; failures are named-and-refunded PER candidate (the
+  // mintPackage contract) — one bad roll never takes the batch down.
+  const settled = await Promise.allSettled(
+    positions.map(() =>
+      // Each candidate re-resolves engine choices — an open brand rolls fresh
+      // per candidate (D-41 records the pick in the model's preferences)
+      generateCastCandidate({ userId: input.userId, prefs: resolveEngineChoices({ ...base } as ModelPreferences), cost: unitCost }),
+    ),
+  );
+
+  const variations: Array<{ index: number; itemId: number; modelId: number; imageUrl: string; position: { x: number; y: number } }> = [];
+  const failures: Array<{ index: number; message: string }> = [];
+  for (let i = 0; i < settled.length; i++) {
+    const outcome = settled[i];
+    if (outcome.status === "rejected") {
+      const message = outcome.reason instanceof Error ? outcome.reason.message : "Generation failed";
+      failures.push({ index: i, message });
+      await addCredits(input.userId, unitCost, "refund", `Cast variation ${i + 1} failed (refund)`);
+      log.warn({ itemId: input.itemId, index: i, message }, "Variation candidate failed — refunded");
+      continue;
+    }
+    const { itemId: newItemId } = await executeCreateNode({
+      boardId: item.boardId,
+      kind: "image",
+      provenance: {
+        type: "library_cast",
+        modelId: outcome.value.modelId,
+        viewAngle: "frontClose",
+        draft: true,
+      },
+      position: positions[i],
+      size: { width: 280, height: 420 },
+      imageUrl: outcome.value.imageUrl,
+    });
+    await addBoardEdge({
+      boardId: item.boardId,
+      sourceItemId: input.itemId,
+      targetItemId: newItemId,
+      relation: "variant_of",
+    });
+    variations.push({ index: i, itemId: newItemId, modelId: outcome.value.modelId, imageUrl: outcome.value.imageUrl, position: positions[i] });
+  }
+
+  if (variations.length === 0) {
+    // Everything already refunded per candidate above
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: failures[0]?.message || "All variations failed — you weren't charged." });
+  }
+
+  log.info({ itemId: input.itemId, requested: count, landed: variations.length }, "Variations cast");
+  return { itemId: input.itemId, variations, failures, creditCost: variations.length * unitCost };
 }
 
 // ── Shared read helper for the router ──────────────────────────────────────

@@ -9,6 +9,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getBoardById } from "../db";
+import { getBoardEdges } from "../db/boardEdges";
 import * as boardOps from "../lib/boardOps";
 import { getSnapshot } from "../lib/boardState";
 import { BOARD_ITEM_KINDS, BOARD_EDGE_RELATIONS } from "../../drizzle/schema";
@@ -142,6 +143,30 @@ export const boardOpsRouter = router({
       }),
   }),
 
+  /** R4 multi-select delete: the selection's cascade units, one soft-deleted unit. */
+  deleteNodes: router({
+    plan: protectedProcedure
+      .input(z.object({
+        boardId: z.number().int().positive(),
+        itemIds: z.array(z.number().int().positive()).min(1).max(100),
+      }))
+      .query(async ({ ctx, input }) => {
+        await requireBoardOwnership(input.boardId, ctx.user.id);
+        for (const id of input.itemIds) await boardOps.requireItemInBoard(id, input.boardId);
+        return boardOps.planDeleteNodes(input);
+      }),
+    execute: protectedProcedure
+      .input(z.object({
+        boardId: z.number().int().positive(),
+        itemIds: z.array(z.number().int().positive()).min(1).max(100),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await requireBoardOwnership(input.boardId, ctx.user.id);
+        for (const id of input.itemIds) await boardOps.requireItemInBoard(id, input.boardId);
+        return boardOps.executeDeleteNodes(input);
+      }),
+  }),
+
   undoDelete: protectedProcedure
     .input(z.object({
       boardId: z.number().int().positive(),
@@ -213,6 +238,7 @@ export const boardOpsRouter = router({
         itemId: z.number().int().positive(),
         decision: z.enum(["update", "fork"]),
         changes: z.record(z.string(), z.unknown()),
+        intent: z.enum(["edit", "rerun"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
@@ -222,9 +248,55 @@ export const boardOpsRouter = router({
           itemId: input.itemId,
           decision: input.decision,
           changes: input.changes,
+          intent: input.intent,
         });
       }),
   }),
+
+  /** R4 (foundations §4): N sibling candidates from one identity, variant_of edges. */
+  runVariations: router({
+    plan: protectedProcedure
+      .input(z.object({
+        boardId: z.number().int().positive(),
+        itemId: z.number().int().positive(),
+        count: z.number().int().min(1).max(boardOps.MAX_VARIATIONS),
+      }))
+      .query(async ({ ctx, input }) => {
+        await requireBoardOwnership(input.boardId, ctx.user.id);
+        await boardOps.requireItemInBoard(input.itemId, input.boardId);
+        return boardOps.planRunVariations(input);
+      }),
+    execute: protectedProcedure
+      .input(z.object({
+        boardId: z.number().int().positive(),
+        itemId: z.number().int().positive(),
+        count: z.number().int().min(1).max(boardOps.MAX_VARIATIONS),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await requireBoardOwnership(input.boardId, ctx.user.id);
+        await boardOps.requireItemInBoard(input.itemId, input.boardId);
+        return boardOps.executeRunVariations({
+          userId: ctx.user.id,
+          itemId: input.itemId,
+          count: input.count,
+        });
+      }),
+  }),
+
+  /** Board edges — light read for client cascade knowledge (R4) and edge
+   *  rendering (R5). Invalidate alongside getItems when ops add edges. */
+  listEdges: protectedProcedure
+    .input(z.object({ boardId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      await requireBoardOwnership(input.boardId, ctx.user.id);
+      const edges = await getBoardEdges(input.boardId);
+      return edges.map((e) => ({
+        id: e.id,
+        source: e.sourceItemId,
+        target: e.targetItemId,
+        relation: e.relation,
+      }));
+    }),
 
   runGeneration: router({
     plan: protectedProcedure
