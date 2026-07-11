@@ -188,6 +188,7 @@ export const modelAssets = mysqlTable("model_assets", {
   modelId: int("modelId").notNull(),
   viewType: mysqlEnum("viewType", [
     "frontClose",   // Headshot/portrait
+    "threeQuarter", // Three-quarter portrait (D-39 face cluster; added R3b)
     "frontFull",    // Full body front
     "sideClose",    // Side profile headshot
     "sideFull",     // Full body side
@@ -197,6 +198,12 @@ export const modelAssets = mysqlTable("model_assets", {
   storageUrl: text("storageUrl").notNull(), // S3 URL
   storageKey: varchar("storageKey", { length: 256 }), // S3 key for management
   pointsCost: int("pointsCost").notNull(), // Points spent on this asset
+  // D-39/D-43 package columns (additive, R3b): the model-level package is the
+  // single per-slot ledger — pins mark finished work; provenance records the
+  // exact inputs + engine each view consumed (D-12 reproducibility)
+  pinned: boolean("pinned").default(false).notNull(),
+  status: json("status"),
+  provenance: json("provenance"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ([
   index("idx_model_assets_model").on(table.modelId),

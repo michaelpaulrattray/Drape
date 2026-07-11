@@ -8,6 +8,7 @@
 
 export type CanonicalViewAngle =
   | "frontClose"
+  | "threeQuarter"
   | "frontFull"
   | "sideClose"
   | "sideFull"
@@ -15,11 +16,37 @@ export type CanonicalViewAngle =
 
 export const CANONICAL_VIEW_ANGLES: readonly CanonicalViewAngle[] = [
   "frontClose",
+  "threeQuarter",
   "frontFull",
   "sideClose",
   "sideFull",
   "backFull",
 ];
+
+/** The canonical identity package (D-39, ratified): face cluster locks
+ *  facial identity, body cluster locks silhouette/build. */
+export const PACKAGE_SLOTS: readonly CanonicalViewAngle[] = CANONICAL_VIEW_ANGLES;
+
+export const VIEW_ANGLE_LABELS: Record<CanonicalViewAngle, string> = {
+  frontClose: "Headshot",
+  threeQuarter: "Three-quarter",
+  sideClose: "Side profile",
+  frontFull: "Full front",
+  sideFull: "Full side",
+  backFull: "Full back",
+};
+
+/** D-39 mint tiers: each names what it is FOR; costs are always plan-derived. */
+export type MintTier = "draft" | "core" | "production";
+
+export const MINT_TIER_SLOTS: Record<MintTier, readonly CanonicalViewAngle[]> = {
+  // Draft: headshot only — exploring candidates; always allowed
+  draft: [],
+  // Core identity: ready for downstream work (VTO, boards)
+  core: ["sideClose", "threeQuarter", "frontFull"],
+  // Production sheet: the full comp card for scenes/video
+  production: ["sideClose", "threeQuarter", "frontFull", "sideFull", "backFull"],
+};
 
 /** A snapshot of an input actually consumed by a generation, captured at generation time (D-12). */
 export interface InputSnapshot {

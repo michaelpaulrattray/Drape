@@ -78,8 +78,12 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         detail: { itemId: data.itemId, modelId, draft: isDraft },
       }),
     );
+  // modelId > 0 — optimistic rows carry a -1 placeholder until the server
+  // confirm swaps in the real id; Edit on that would open a dead session
   const editSegment: ControlSegment[] =
-    modelId && data.imageUrl ? [{ kind: "action", content: "Edit", onClick: openEdit }] : [];
+    typeof modelId === "number" && modelId > 0 && data.imageUrl
+      ? [{ kind: "action", content: "Edit", onClick: openEdit }]
+      : [];
 
   // D-43 v-chip ruling: hidden at v1; at >1 the chip itself opens history
   const versionSegment: ControlSegment[] =

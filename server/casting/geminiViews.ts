@@ -240,7 +240,7 @@ export const generateSingleView = async (
   masterPrompt: string,
   sourceImageUrl: string,
   gender: string,
-  viewType: 'side' | 'walk' | 'back',
+  viewType: 'side' | 'walk' | 'back' | 'threeQuarter',
   technicalSchema?: any
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   return withImageQueue(async () => {
@@ -259,7 +259,9 @@ export const generateSingleView = async (
   const viewPrompts: Record<string, string> = {
     'side': `SIDE PROFILE PORTRAIT. Head and shoulders only. Facing Right. ${wardrobeConstraint} Same subject.`,
     'walk': `FULL BODY SIDE PROFILE. Walking motion. Facing Right. ${wardrobeConstraint} Same subject.`,
-    'back': `FULL BODY FROM BEHIND. Walking away. ${wardrobeConstraint} Same subject. No new back tattoos.`
+    'back': `FULL BODY FROM BEHIND. Walking away. ${wardrobeConstraint} Same subject. No new back tattoos.`,
+    // D-39 face cluster: ~45° is the safest person-rotation (angles research)
+    'threeQuarter': `THREE-QUARTER PORTRAIT. Head and shoulders only, face turned 45 degrees to the right of camera — a classic three-quarter angle. Both eyes visible. ${wardrobeConstraint} Same subject.`
   };
 
   const prompt = viewPrompts[viewType];

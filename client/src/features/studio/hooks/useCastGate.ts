@@ -1,9 +1,11 @@
 /**
- * useCastGate — Hook that manages the "Cast this model" gate
- * shown when a user tries to enter Wardrobe with a draft model.
+ * useCastGate — Hook that manages the "Cast this model" gate.
  *
- * Handles: side view generation, model name update, minting,
- * and transition to wardrobe.
+ * R3b: one mintPackage call does the whole thing server-side —
+ * generates the chosen tier's missing views (back views behind the
+ * identity gate), names the model, and mints. Tier costs come from
+ * the plan query (server truth, D-15). Failed slots arrive named-
+ * and-refunded and are surfaced honestly (D-39).
  */
 import { useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
@@ -11,6 +13,7 @@ import { toast } from 'sonner';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useStudioStore } from '../stores/useStudioStore';
 import type { GeneratedAsset } from '@/features/casting/constants';
+import type { MintTier } from '@shared/boardTypes';
 
 interface UseCastGateParams {
   currentModelId: number | null;
@@ -35,66 +38,66 @@ export function useCastGate({
   const [isCasting, setIsCasting] = useState(false);
   const [castingMessage, setCastingMessage] = useState('');
 
-  const needsSideView = !currentAssets.some(
-    (a) => a.viewType === 'sideClose' && a.storageUrl
+  const utils = trpc.useUtils();
+  const mintPackageMutation = trpc.generation.mintPackage.useMutation();
+  const planQuery = trpc.generation.mintPackagePlan.useQuery(
+    { modelId: currentModelId ?? 0 },
+    { enabled: showCastModal && !!currentModelId }
   );
 
-  const mintMutation = trpc.generation.mint.useMutation();
-  const generateMultiViewMutation = trpc.generation.multiView.useMutation();
-  const updateModelMutation = trpc.models.update.useMutation();
-
   const handleCastAndContinue = useCallback(
-    async (characterName: string, generateSideView: boolean = true) => {
+    async (characterName: string, tier: MintTier = 'core') => {
       if (!currentModelId) {
         toast.error('No model to cast');
         return;
       }
       setIsCasting(true);
+      const missingCount = planQuery.data?.tiers[tier]?.missing.length ?? 0;
+      setCastingMessage(
+        missingCount > 0
+          ? `Casting ${missingCount} view${missingCount === 1 ? '' : 's'}...`
+          : 'Saving identity...'
+      );
       try {
-        // Step 1: Generate side view if requested and missing
-        if (needsSideView && generateSideView) {
-          setCastingMessage('Generating side view...');
-          const result = await generateMultiViewMutation.mutateAsync({
-            modelId: currentModelId,
-            viewType: 'side',
-          });
-          if (result.success && result.imageUrl) {
-            const newAsset = {
-              id: result.assetId || Date.now(),
-              viewType: 'sideClose' as const,
-              storageUrl: result.imageUrl,
-            };
-            const newAssets = [
-              ...currentAssets.filter((a) => a.viewType !== 'sideClose'),
-              newAsset,
-            ];
-            const castStore = useCastingGenerationStore.getState();
-            castStore.setCurrentAssets(newAssets);
-            // Append to history properly — this IS a user action (side view gen)
-            castStore.pushHistory(newAssets);
-          }
-        }
-
-        // Step 2: Update model name
-        setCastingMessage('Saving identity...');
-        await updateModelMutation.mutateAsync({
+        const result = await mintPackageMutation.mutateAsync({
           modelId: currentModelId,
-          name: characterName,
+          tier,
+          characterName,
         });
 
-        // Step 3: Mint the model (status → active, agencyId assigned)
-        const mintResult = await mintMutation.mutateAsync({
-          modelId: currentModelId,
-        });
-        if (!mintResult.agencyId) {
-          throw new Error('Failed to cast model');
+        // Land freshly generated views in the studio viewer state
+        if (result.generated.length > 0) {
+          const castStore = useCastingGenerationStore.getState();
+          const fresh: GeneratedAsset[] = result.generated.map((g, i) => ({
+            id: Date.now() + i,
+            viewType: g.angle,
+            storageUrl: g.imageUrl,
+          }));
+          const newAssets = [
+            ...currentAssets.filter(
+              (a) => !result.generated.some((g) => g.angle === a.viewType)
+            ),
+            ...fresh,
+          ];
+          castStore.setCurrentAssets(newAssets);
+          castStore.pushHistory(newAssets);
         }
 
         // Mark as minted in canvas state
         setCanvas({ isMinted: true, castModelId: currentModelId });
 
+        // Named-and-refunded slot failures surface honestly (D-39)
+        for (const f of result.failed) {
+          toast.error(
+            `${f.label} didn't pass — ${f.refunded} credits refunded. The slot stays open to fill later.`
+          );
+        }
+
         toast.success(`${characterName} has been cast!`);
         setShowCastModal(false);
+        utils.models.get.invalidate({ modelId: currentModelId });
+        utils.generation.packageState.invalidate({ modelId: currentModelId });
+        utils.generation.mintPackagePlan.invalidate({ modelId: currentModelId });
 
         if (onMinted) {
           // Takeover host: land the model on the board node
@@ -104,12 +107,14 @@ export function useCastGate({
           setActiveTool('wardrobe');
         }
 
-        // Refetch credits after side view generation
-        if (needsSideView && generateSideView) refetchCreditsWithWarning();
+        if (result.generated.length > 0 || result.failed.length > 0) {
+          refetchCreditsWithWarning();
+        }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Casting failed';
         toast.error(message);
+        refetchCreditsWithWarning();
       } finally {
         setIsCasting(false);
         setCastingMessage('');
@@ -118,10 +123,9 @@ export function useCastGate({
     [
       currentModelId,
       currentAssets,
-      needsSideView,
-      mintMutation,
-      generateMultiViewMutation,
-      updateModelMutation,
+      planQuery.data,
+      mintPackageMutation,
+      utils,
       setActiveTool,
       setCanvas,
       refetchCreditsWithWarning,
@@ -135,7 +139,7 @@ export function useCastGate({
     isCasting,
     isMinted,
     castingMessage,
-    needsSideView,
+    tierPlan: planQuery.data?.tiers,
     handleCastAndContinue,
   };
 }

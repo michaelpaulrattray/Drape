@@ -1,18 +1,31 @@
 /**
- * CastModelModal — Gate modal shown when user tries to enter Wardrobe
- * with an unsaved (draft) model. Asks for a name, optionally generates
- * the side view, then mints the identity before transitioning.
+ * CastModelModal — the mint gate. Asks for a name and a package tier
+ * (D-39: Draft / Core identity / Production sheet), then mints the
+ * identity via a single mintPackage call. Tier costs are plan-derived
+ * (server truth, D-15) — never client literals. Upgrading later costs
+ * the same: pricing counts only missing slots.
  */
 import { useState, useCallback } from 'react';
-import { Camera, ChevronRight, Loader2, Check } from 'lucide-react';
+import { Camera, ChevronRight, Loader2 } from 'lucide-react';
+import type { MintTier } from '@shared/boardTypes';
+
+export type TierPlan = Record<MintTier, { missing: string[]; cost: number }>;
+
+const TIER_COPY: Record<MintTier, { name: string; purpose: string }> = {
+  draft: { name: 'Draft', purpose: 'Name them and keep exploring. Views come later.' },
+  core: { name: 'Core identity', purpose: 'Face angles and full body — ready for styling.' },
+  production: { name: 'Production sheet', purpose: 'The full six-view card, for scenes and video.' },
+};
+
+const TIER_ORDER: MintTier[] = ['draft', 'core', 'production'];
 
 export interface CastModelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Called with (characterName, generateSideView) when user confirms */
-  onConfirm: (characterName: string, generateSideView: boolean) => void;
-  /** Whether the side view still needs to be generated */
-  needsSideView: boolean;
+  /** Called with (characterName, tier) when user confirms */
+  onConfirm: (characterName: string, tier: MintTier) => void;
+  /** Plan-derived tier costs; undefined while the plan loads */
+  tiers?: TierPlan;
   /** Whether the casting process is in progress */
   isCasting: boolean;
   /** Progress message during casting */
@@ -25,18 +38,18 @@ export function CastModelModal({
   isOpen,
   onClose,
   onConfirm,
-  needsSideView,
+  tiers,
   isCasting,
   castingMessage,
   previewImage,
 }: CastModelModalProps) {
   const [name, setName] = useState('');
-  const [generateSide, setGenerateSide] = useState(true);
+  const [tier, setTier] = useState<MintTier>('core');
 
   const handleConfirm = useCallback(() => {
     if (!name.trim() || isCasting) return;
-    onConfirm(name.trim(), needsSideView && generateSide);
-  }, [name, isCasting, onConfirm, needsSideView, generateSide]);
+    onConfirm(name.trim(), tier);
+  }, [name, isCasting, onConfirm, tier]);
 
   if (!isOpen) return null;
 
@@ -82,11 +95,6 @@ export function CastModelModal({
             </span>
           </div>
 
-          <p style={{ fontSize: 14, color: '#52524B', lineHeight: 1.5, marginBottom: 16 }}>
-            Save this model as a character in your gallery before dressing them.
-            This only takes a moment.
-          </p>
-
           {/* Name input */}
           <div style={{ marginBottom: 14 }}>
             <label
@@ -125,49 +133,62 @@ export function CastModelModal({
             />
           </div>
 
-          {/* Optional side view toggle */}
-          {needsSideView && (
-            <button
-              type="button"
-              onClick={() => !isCasting && setGenerateSide(!generateSide)}
-              disabled={isCasting}
-              className="flex items-center gap-2.5 w-full mb-4 transition-all"
-              style={{
-                padding: '10px 12px',
-                borderRadius: 10,
-                background: generateSide ? '#F5F3F0' : '#fafafa',
-                border: generateSide ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)',
-                cursor: isCasting ? 'not-allowed' : 'pointer',
-                opacity: isCasting ? 0.5 : 1,
-              }}
-            >
-              <div
-                className="flex items-center justify-center flex-shrink-0 rounded transition-all"
-                style={{
-                  width: 18,
-                  height: 18,
-                  background: generateSide ? '#1a1a1a' : 'transparent',
-                  border: generateSide ? 'none' : '1.5px solid #ccc',
-                }}
-              >
-                {generateSide && <Check className="w-3 h-3 text-white" />}
-              </div>
-              <div className="text-left">
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#52524B' }}>
-                  Generate side view
-                </span>
-                <span
+          {/* Tier picker (D-39) */}
+          <div style={{ marginBottom: 14 }}>
+            {TIER_ORDER.map((t) => {
+              const selected = tier === t;
+              const plan = tiers?.[t];
+              const complete = t !== 'draft' && plan !== undefined && plan.cost === 0;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => !isCasting && setTier(t)}
+                  disabled={isCasting}
+                  className="flex items-start gap-2.5 w-full text-left transition-all"
                   style={{
-                    fontSize: 12,
-                    color: '#71716A',
-                    marginLeft: 6,
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    marginBottom: 6,
+                    background: selected ? '#F5F3F0' : '#fafafa',
+                    border: selected ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(0,0,0,0.04)',
+                    cursor: isCasting ? 'not-allowed' : 'pointer',
+                    opacity: isCasting ? 0.5 : 1,
                   }}
                 >
-                  recommended
-                </span>
-              </div>
-            </button>
-          )}
+                  <div
+                    className="flex-shrink-0 rounded-full transition-all"
+                    style={{
+                      width: 14,
+                      height: 14,
+                      marginTop: 2,
+                      border: selected ? '4.5px solid #1a1a1a' : '1.5px solid #ccc',
+                      background: '#fff',
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+                        {TIER_COPY[t].name}
+                      </span>
+                      <span style={{ fontSize: 12, color: '#71716A', whiteSpace: 'nowrap' }}>
+                        {plan === undefined
+                          ? '…'
+                          : complete
+                            ? 'Complete'
+                            : plan.cost === 0
+                              ? 'Free'
+                              : `${plan.cost.toLocaleString()} credits`}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 12, color: '#71716A', lineHeight: 1.4, display: 'block' }}>
+                      {TIER_COPY[t].purpose}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
           {/* Casting progress */}
           {isCasting && castingMessage && (

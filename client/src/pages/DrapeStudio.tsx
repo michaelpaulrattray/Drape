@@ -146,7 +146,7 @@ export default function DrapeStudio() {
     setShowCastModal,
     isCasting,
     castingMessage,
-    needsSideView,
+    tierPlan,
     handleCastAndContinue,
   } = useCastGate({
     currentModelId,
@@ -297,7 +297,7 @@ export default function DrapeStudio() {
         isOpen={showCastModal}
         onClose={() => setShowCastModal(false)}
         onConfirm={handleCastAndContinue}
-        needsSideView={needsSideView}
+        tiers={tierPlan}
         isCasting={isCasting}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}

@@ -3,6 +3,9 @@ import {
   getModelById, getUserGenerations, getUserById, mintModel,
 } from "../../db";
 import { POINT_COSTS } from "../../casting/aiService";
+import { planMintPackage, executeMintPackage, getPackageState } from "../../casting/mintPackage";
+import { enforceDailyQuota } from "../../db/dailyQuota";
+import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { generatePremiumIdentityPdf, PdfModelData } from "../../casting/pdfService";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -106,6 +109,43 @@ export const castingExportRouter = router({
         pdfBase64: base64Pdf,
         filename: `IDENTITY_${model.agencyId || 'DRAFT'}.pdf`,
       };
+    }),
+
+  /** D-39 tiered mint (R3b): per-tier costs over MISSING slots — upgrade
+   *  anytime at the same price. Costs derive from CREDIT_COSTS (D-15). */
+  mintPackagePlan: protectedProcedure
+    .input(z.object({ modelId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      return planMintPackage({ userId: ctx.user.id, modelId: input.modelId });
+    }),
+
+  /** D-39 tiered mint execute: generates the tier's missing views (back
+   *  views pass the identity gate, retry-then-refund), names + mints. */
+  mintPackage: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+      tier: z.enum(["draft", "core", "production"]),
+      characterName: z.string().trim().min(1).max(128),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const rate = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+      if (!rate.allowed) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
+      }
+      await enforceDailyQuota(ctx.user.id);
+      return executeMintPackage({
+        userId: ctx.user.id,
+        modelId: input.modelId,
+        tier: input.tier,
+        characterName: input.characterName,
+      });
+    }),
+
+  /** Package completeness (D-39c) — R5's sheet + future picker read this. */
+  packageState: protectedProcedure
+    .input(z.object({ modelId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      return getPackageState({ userId: ctx.user.id, modelId: input.modelId });
     }),
 
   // Mint model on export - assigns agencyId and locks identity

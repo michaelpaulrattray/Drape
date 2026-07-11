@@ -398,9 +398,28 @@ function BoardPageImpl() {
       if (result.decision === 'fork' && ctx?.tempId) {
         completeJob(ctx.tempId);
         // Reveal the real node in place; the prune effect drops this entry
-        // once the refetch delivers the server row
+        // once the refetch delivers the server row. The real modelId must
+        // land WITH the swap — an Edit click in the refetch window would
+        // otherwise open a promotion session pointed at the -1 placeholder
+        // (dead environment, mint never arms).
         setPendingForks((pf) =>
-          pf.map((p) => (p.id === ctx.tempId ? { ...p, id: result.newItemId!, imageUrl: result.imageUrl } : p)),
+          pf.map((p) =>
+            p.id === ctx.tempId
+              ? {
+                  ...p,
+                  id: result.newItemId!,
+                  imageUrl: result.imageUrl,
+                  metadata: {
+                    provenance: {
+                      type: 'library_cast',
+                      modelId: result.modelId,
+                      viewAngle: 'frontClose',
+                      draft: true,
+                    },
+                  },
+                }
+              : p,
+          ),
         );
       } else {
         completeJob(vars.itemId);

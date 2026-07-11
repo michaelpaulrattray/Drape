@@ -25,9 +25,15 @@
  *      node appears immediately and never vanishes during the ~25s
  *      generation (the optimistic-reconcile race), then lands as an
  *      unnamed draft.
+ *   G. (paid — RUN_PAID_INVARIANTS=1, rides on F's draft) Tiered mint
+ *      package (R3b/D-39): the promotion session's mint modal shows
+ *      plan-derived tier costs; a Core mint generates the three core slots
+ *      with provenance, mints the identity, relabels the node, and the
+ *      ledger agrees with the balance (bug-4 lesson); packageState over
+ *      raw HTTP reports minted + 4 filled slots.
  *
  * Run:  pnpm dev (running) → npx tsx scripts/verify-canvas.mts
- *       (+ $env:RUN_PAID_INVARIANTS='1' for F — ~350 credits on verify-bot)
+ *       (+ $env:RUN_PAID_INVARIANTS='1' for F+G — ~1250 credits on verify-bot)
  * Uses the dev DB verify-bot user (see .claude/skills/verify) and system Edge.
  * Exits non-zero on any invariant failure.
  */
@@ -531,17 +537,209 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
   const countAfterFork = await nodeCount();
   check("F1 pending fork node appears immediately", countAfterFork >= 4, `${countAfterFork} nodes`);
   console.log("   F: forking (real, ~350 credits)...");
+  // Landing truth comes from the DB (a filled item whose model is a DRAFT) —
+  // node-text /Draft/ matching is ambiguous: a minted model can be NAMED
+  // "…Draft…" (that spurious match burned a run once already).
   let vanished = false;
-  let forkDone = false;
-  for (let i = 0; i < 70; i++) {
-    await sleep(500);
+  let forkedItemId: number | null = null;
+  for (let i = 0; i < 90; i++) {
+    await sleep(1000);
     const c = await nodeCount();
     if (c < countAfterFork) vanished = true;
-    const ln = await filledNode();
-    if (ln?.img && /Draft/.test(ln.text)) { forkDone = true; break; }
+    const [rows] = await conn.execute(
+      `SELECT i.id FROM board_items i JOIN models m
+         ON m.id = CAST(JSON_EXTRACT(i.metadata, '$.provenance.modelId') AS UNSIGNED)
+       WHERE i.boardId = ? AND i.deletedAt IS NULL AND i.imageUrl IS NOT NULL AND m.status = 'draft'
+       ORDER BY i.id DESC LIMIT 1`,
+      [boardId],
+    );
+    forkedItemId = (rows as Array<{ id: number }>)[0]?.id ?? null;
+    if (forkedItemId) break;
   }
   check("F2 pending node never vanished during generation", !vanished);
-  check("F3 fork landed as an unnamed draft", forkDone, (await filledNode())?.text.slice(0, 60));
+  // The DOM reveal (id swap + image) trails the DB row by the mutation
+  // round-trip — poll briefly rather than checking the instant the row lands
+  let forkNodeInDom = false;
+  if (forkedItemId) {
+    for (let i = 0; i < 10; i++) {
+      forkNodeInDom = await page.evaluate((id: string) => {
+        const n = document.querySelector(`.react-flow__node[data-id="${id}"]`);
+        return !!n?.querySelector("img")?.getAttribute("src");
+      }, `item-${forkedItemId}`);
+      if (forkNodeInDom) break;
+      await sleep(1000);
+    }
+  }
+  check("F3 fork landed as a draft on its node", !!forkedItemId && forkNodeInDom, `item=${forkedItemId}`);
+}
+
+// ── Invariant G: tiered mint package (R3b/D-39) — RUN_PAID_INVARIANTS=1 ────
+if (process.env.RUN_PAID_INVARIANTS !== "1") {
+  console.log("SKIP  G — paid invariant (tiered Core mint; ~900 credits on top of F)");
+} else {
+  // The draft node comes from DB truth (model status = 'draft'), never from
+  // node-text matching — see the F3 note.
+  const [dRows] = await conn.execute(
+    `SELECT i.id AS itemId, m.id AS modelId FROM board_items i JOIN models m
+       ON m.id = CAST(JSON_EXTRACT(i.metadata, '$.provenance.modelId') AS UNSIGNED)
+     WHERE i.boardId = ? AND i.deletedAt IS NULL AND i.imageUrl IS NOT NULL AND m.status = 'draft'
+     ORDER BY i.id DESC LIMIT 1`,
+    [boardId],
+  );
+  const draftRow = (dRows as Array<{ itemId: number; modelId: number }>)[0];
+  const draft = draftRow
+    ? await page.evaluate((id: string) => {
+        const n = document.querySelector(`.react-flow__node[data-id="${id}"]`);
+        if (!n) return null;
+        n.scrollIntoView({ block: "center" });
+        const r = n.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      }, `item-${draftRow.itemId}`)
+    : null;
+  if (!draftRow || !draft) {
+    console.log("SKIP  G — no draft node on the board (needs F's fork to land first)");
+  } else {
+    const modelId = draftRow.modelId;
+    const [balRows] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const balanceBefore = (balRows as Array<{ balance: number }>)[0].balance;
+
+    // Open the promotion session on the draft. The Edit affordance only
+    // renders once the node carries a real modelId (the -1 placeholder
+    // guard) — retry the select+Edit until the session opens.
+    let promoted = false;
+    for (let attempt = 0; attempt < 8 && !promoted; attempt++) {
+      await page.mouse.click(draft.x, draft.y);
+      await sleep(600);
+      if (!(await clickByText("Edit"))) continue;
+      for (let i = 0; i < 10; i++) {
+        await sleep(500);
+        if (await bodyIncludes("Finish this cast")) { promoted = true; break; }
+      }
+    }
+    check("G1 promotion session opens ('Finish this cast')", promoted);
+
+    // Promotion hydration: the mint button arms once the headshot loads
+    let armed = false;
+    for (let i = 0; i < 30; i++) {
+      await sleep(1000);
+      armed = await page.evaluate(() => {
+        const b = [...document.querySelectorAll("button")].find(
+          (el) => el.textContent?.trim() === "Cast this model",
+        ) as HTMLButtonElement | undefined;
+        const body = document.body.textContent ?? "";
+        return !!b && !b.disabled && !body.includes("Loading this cast") && !body.includes("Loading your draft");
+      });
+      if (armed) break;
+    }
+    check("G2 draft hydrated (mint button armed)", armed);
+
+    await clickByText("Cast this model");
+    await sleep(800);
+    // Tier modal: three tiers, plan-derived costs (fresh fork = headshot only,
+    // so Core = 3 slots = 900, Production = 5 slots = 1,500). Poll: the plan
+    // query resolves async behind the modal.
+    let tierState = { draft: false, core: false, production: false, coreCost: false, prodCost: false };
+    for (let i = 0; i < 12; i++) {
+      tierState = await page.evaluate(() => {
+        const body = document.body.textContent ?? "";
+        return {
+          draft: body.includes("Name them and keep exploring"),
+          core: body.includes("Core identity"),
+          production: body.includes("Production sheet"),
+          coreCost: body.includes("900 credits"),
+          prodCost: body.includes("1,500 credits"),
+        };
+      });
+      if (tierState.coreCost && tierState.prodCost) break;
+      await sleep(500);
+    }
+    check(
+      "G3 tier modal shows plan-derived costs (Core 900 / Production 1,500)",
+      tierState.draft && tierState.core && tierState.production && tierState.coreCost && tierState.prodCost,
+      JSON.stringify(tierState),
+    );
+
+    // Name + Core mint (core is the default; click the row for explicitness)
+    const nameInput = await page.$('input[placeholder="Enter name..."]');
+    check("G3b mint modal name input present", !!nameInput);
+    if (nameInput) {
+      await nameInput.click();
+      await nameInput.type("Verify Core");
+      await clickByText("Core identity", "span"); // bubbles to the tier row button
+      await sleep(300);
+      await clickByText("Cast & Continue");
+      console.log("   G: minting Core package (real, ~900 credits, 3 views in parallel)...");
+
+    // Completion: the modal closes and the node relabels with the name
+    let mintedOnNode = false;
+    for (let i = 0; i < 180; i++) {
+      await sleep(1000);
+      const state = await page.evaluate(() => {
+        const body = document.body.textContent ?? "";
+        return {
+          modalGone: !body.includes("CAST THIS MODEL"),
+          named: [...document.querySelectorAll(".react-flow__node")].some((n) =>
+            (n.textContent ?? "").includes("Verify Core"),
+          ),
+        };
+      });
+      if (state.modalGone && state.named) { mintedOnNode = true; break; }
+    }
+    check("G4 mint lands: modal closed, node carries the name", mintedOnNode);
+
+    // DB truth: minted identity + the three Core assets with provenance
+    const [mRows] = await conn.execute(`SELECT name, agencyId FROM models WHERE id = ?`, [modelId]);
+    const m = (mRows as Array<{ name: string; agencyId: string | null }>)[0];
+    check("G5 model minted (name + agencyId)", m?.name === "Verify Core" && !!m?.agencyId, JSON.stringify(m));
+    const [aRows] = await conn.execute(
+      `SELECT viewType, storageUrl != '' AS filled, provenance IS NOT NULL AS prov
+       FROM model_assets WHERE modelId = ? AND viewType IN ('sideClose','threeQuarter','frontFull')`,
+      [modelId],
+    );
+    const assets = aRows as Array<{ viewType: string; filled: number; prov: number }>;
+    const allThree = ["sideClose", "threeQuarter", "frontFull"].every((v) =>
+      assets.some((a) => a.viewType === v && a.filled && a.prov),
+    );
+    check("G6 core slots created with provenance", allThree, assets.map((a) => a.viewType).join(",") || "(none)");
+
+    // Billing truth (bug-4 lesson: the ledger must agree with the balance)
+    const [balAfterRows] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const balanceAfter = (balAfterRows as Array<{ balance: number }>)[0].balance;
+    const [txRows] = await conn.execute(
+      `SELECT amount, description FROM point_transactions
+       WHERE userId = ? AND description LIKE 'Mint package%' ORDER BY id DESC LIMIT 6`,
+      [userId],
+    );
+    const txs = txRows as Array<{ amount: number; description: string }>;
+    const deducted = txs.find((t) => t.amount === -900 && t.description.includes("core"));
+    const refunds = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    check(
+      "G7 ledger + balance agree (900 deducted, refunds netted)",
+      !!deducted && balanceBefore - balanceAfter === 900 - refunds,
+      `delta=${balanceBefore - balanceAfter} refunds=${refunds}`,
+    );
+
+    // The new packageState route over raw HTTP: minted, 4 slots filled
+    const pkg = await page.evaluate(async (mid: number) => {
+      const res = await fetch(
+        `/api/trpc/generation.packageState?input=${encodeURIComponent(JSON.stringify({ json: { modelId: mid } }))}`,
+        { credentials: "include" },
+      );
+      const data = await res.json();
+      const result = data?.result?.data?.json;
+      return {
+        status: res.status,
+        minted: result?.minted,
+        filled: (result?.slots ?? []).filter((s: { filled: boolean }) => s.filled).length,
+      };
+    }, modelId);
+    check(
+      "G8 packageState: minted with 4 filled slots",
+      pkg.status === 200 && pkg.minted === true && pkg.filled === 4,
+      JSON.stringify(pkg),
+    );
+    }
+  }
 }
 
 await browser.close();

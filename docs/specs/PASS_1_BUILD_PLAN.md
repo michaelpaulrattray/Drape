@@ -31,7 +31,7 @@
 | R1 | **Casting takeover** (overlay-hosted environment, mint → board landing) | 2.5–3 | **VC-R1 — drop → picker → Cast new → environment → mint → root lands** |
 | R2 | Server prompt parser + prerequisites (old M2b, as ruled by D-33) | 2 | async — prompt → parsed attributes in the environment |
 | R3 | Edit path + identity events (minted-edit session mode, `applyModelEdit` → D-11) | 1.5–2 | **VC-R3 — edit a placed cast, watch the stale flow** |
-| R3b | **Identity package + tiered mint** (D-39: ¾ view, back gate, Draft/Core/Production dialog, package read model) | 2–2.5 | **VC-R3b — mint through the tiers** |
+| R3b | **Identity package + tiered mint** (D-39: ¾ view, back gate, Draft/Core/Production dialog, package read model) | ✅ built 2026-07-11 | **VC-R3b — mint through the tiers** |
 | R4 | Canvas grammar: toolbar, fork/recast, variations, delete+undo, keyboard incl. Cmd+C/V→Duplicate (old M6) | 2.5 | **VC-R4 — the grammar tour** |
 | R5 | Edges, refresh/pin, snapshots, character sheet + composer (old M7 + D-29 as amended by D-39 + D-30; **identity-edit staleness deleted by D-43** — per-tile quality refresh, pins, and aggregate refresh remain) | 2.5–3 | **VC-R5 — lineage and the sheet** |
 | R6 | First-touch (old M9) + **full environment restyle to canvas language** (named slot; scope amended 2026-07-11 to include the panel header, progress donut, and viewer/master-prompt chrome) | 3–3.5 | **VC-R6 — first-run + the environment in Drape's language** |
@@ -93,7 +93,9 @@ Gate: full gates + studio smoke.
 - **Back-view identity gate:** adapt `checkIdentityMatch` (silhouette/build/hair vs headshot + full-body front); one auto-retry, then fail named-and-refunded. Replaces the "No new back tattoos" text plea.
 - **Tiered `CastModelModal`:** Draft (headshot, +0 — exploring candidates) / Core identity (+side, ¾, full-body front — ready for downstream work) / Production sheet (all six — full comp card for scenes/video); costs from a server `plan()` per D-15; copy states upgrade-anytime-at-same-cost so Draft isn't a trap.
 - **Package as model property:** additive `model_assets` columns (status, pinned, provenance stamp) — the single staleness ledger (D-29 as amended); package-completeness read model.
-- **Composer slot-recording:** D-30's composer records which slots each generation used in its `InputSnapshot`; the ~5–6 reference-image budget is enforced here (multi-model scenes: headshot + one task-relevant view per model).
+- **Composer slot-recording:** D-30's composer records which slots each generation used in its `InputSnapshot`; the ~5–6 reference-image budget is enforced here (multi-model scenes: headshot + one task-relevant view per model). *(Status: per-asset `provenance` (inputs + engine + tier) shipped with R3b; the composer's own `InputSnapshot` moves with the composer to R5 — nothing to record against until it exists.)*
+
+**Shipped 2026-07-11:** `shared/boardTypes` package contracts (`MINT_TIER_SLOTS`, slot labels), `threeQuarter` view (prompt + enum + plumbing), `backViewGate` (headshot-only comparison — the full-body front generates in parallel so it can't be a gate input; fails open on infra errors), `mintPackage` plan/execute/packageState (missing-slots pricing, upfront deduct, per-slot named-and-refunded failures), tier-picker `CastModelModal` + single-call `useCastGate`, migration `0003` (dev applied; **prod pending — see Dependencies**). Drive invariant G covers the tier costs, Core mint, ledger-vs-balance agreement, and the packageState route.
 
 **VC-R3b (founder, live):** cast through each tier; force a back-view failure to see the refund copy; upgrade a Draft to Core from the environment.
 
@@ -153,7 +155,7 @@ Gate: full gates + studio smoke.
 ## Dependencies and parallelism
 
 - Hard chain: R1 → R3 (Edit needs the environment) → R3b (tier dialog sits in the takeover; the D-11 dialog shell precedes it) → R5 (the sheet reads R3b's package; stale flow needs R3's identity events). R2 ∥ R3 (server parser vs edit path — different layers). R4 mostly independent after R3 (rerun/recast route through the identity dialog). R6's restyle touches R1's surfaces — sequence after VC-R1 feedback settles. Everything → R7.
-- **Prod migration timing:** no new schema work in the R-sequence (M3a's migration already ran on prod 2026-07-10). Deploys continue per-milestone to `local-migration`.
+- **Prod migration timing:** R3b added migration `0003` (additive `model_assets` changes: `threeQuarter` enum value + `pinned`/`status`/`provenance` columns; applied to dev 2026-07-11). It must run against prod (`pnpm db:push` with `MYSQL_PUBLIC_URL` pasted inline) **before** `local-migration` syncs past R3b — the new `createModelAsset` insert names those columns, so deploying first breaks every view generation. Deploys continue per-milestone to `local-migration` otherwise.
 
 ## Risks, with handles
 

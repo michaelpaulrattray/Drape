@@ -252,7 +252,7 @@ export async function generateRemainingViews(
   masterPrompt: string,
   sourceImageUrl: string,
   gender: string,
-  viewType: 'side' | 'back' | 'walk',
+  viewType: 'side' | 'back' | 'walk' | 'threeQuarter',
   technicalSchema?: any
 ): Promise<GenerationResult> {
   const sourceBase64 = await fetchAsBase64(sourceImageUrl);
