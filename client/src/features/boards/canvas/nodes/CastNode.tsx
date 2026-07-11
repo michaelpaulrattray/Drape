@@ -87,11 +87,10 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const prov = data.provenance;
   const isRoot = !prov || prov.type === "cast_root"; // empty nodes are roots-to-be
   const isLibrary = prov?.type === "library_cast";
-  // Card size: only true view cards are smaller. Library casts are identity
-  // anchors like fresh roots and get canonical root dimensions (VC2 fix #5).
+  // Card size (VC2 ruling, 2026-07-11): canonical/library 280, views 200; the
+  // image area is a 3:4 portrait matching the generation ratio exactly.
   const isView = prov?.type === "cast_view";
-  const cardWidth = isView ? 200 : 260;
-  const imageHeight = isView ? 140 : 170;
+  const cardWidth = isView ? 200 : 280;
   const baseLabel = data.label ? `Cast · ${data.label}` : "Cast";
   const typeLabel = isLibrary
     ? `${baseLabel} · Library`
@@ -136,7 +135,6 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
             dimmed={data.status?.type === "stale" && !data.pinned}
             error={errored}
             onRetry={controller.retry}
-            height={imageHeight}
           />
           {/* D-28: the pick-existing path, at the node */}
           {controller.isEmpty && !errored && controller.promptState !== "generating" && tier === "working" && (

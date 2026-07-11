@@ -118,6 +118,16 @@ Removed from M7: view-node spawning + auto-row placement, per-card view chrome e
 
 **On ratification:** foundations 3b/3e and success criteria 5/6/8 rewritten; DS gains §5.17 (character sheet) with touches to §5.11/§9/§12; build plan M7 rewritten. Until then those documents intentionally still describe the exploded model.
 
+### D-31 — Cast card geometry *(founder-ratified 2026-07-11, VC2 re-drive cycle)*
+
+| What | Ruling |
+|---|---|
+| Image area | **3:4 portrait at every state** (empty/generating/complete) — matches the measured generation output (896×1200, consistent across all samples), so cover-fit never crops. The model image is sacred (founder). |
+| Canonical width | **280** for cast roots and library casts |
+| View width | **200** (same 3:4 area) |
+| Ratio drift | If a future engine breaks the 3:4 contract, that's a design event to surface — never a silent crop |
+| Zoom tiers | VC1 thresholds (0.45/0.35) were tuned on shorter cards — sanity-checked against the new geometry same day; founder flags any retune himself (dev slider retained) |
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

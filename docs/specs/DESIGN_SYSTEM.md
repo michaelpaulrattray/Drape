@@ -295,7 +295,7 @@ export interface CastNodeData {
 }
 ```
 
-Composition (root **and library** width 260 — a placed library cast is an identity anchor, not a view; VC2 finding — true `cast_view` cards 200):
+Composition (**ratified 2026-07-11:** canonical/library casts **280** wide, true `cast_view` cards **200**; the image area is a **3:4 portrait** — the measured generation ratio, 896×1200 — through all states including empty and generating, so geometry never shifts and cover never crops):
 
 - `NodeFloatingToolbar` — selected && !isEmpty. Root: 6 active (Rerun → ForkRecastPopover). View: Variations/Duplicate disabled. Library cast: Rerun/Variations disabled ("Generate from this cast in a downstream node"), Duplicate/Download/Delete/Info active.
 - `NodeLabelRow` — root `Cast · {name}`; view `Cast · {name} · {viewLabel}`; library `Cast · {name} · Library`. Engine right-slot only when present.
@@ -327,6 +327,8 @@ interface CastNodeControllerResult {
 **Root empty/complete/view behavior** (empty root: placeholder art, focused prompt, attribute rows with faint `Add` values, disabled Run, no strip/toolbar; complete root: image, read-only prompt, Edit, control strip, collapsed attribute summary line, toolbar; complete view: image, pose prompt, no attribute block, reduced toolbar) — with the pass-1 additions: costs on Run affordances, pinned exemptions, and the error state (§5.12).
 
 ### 5.12 `CastImageArea`
+
+**The image area is `aspect-ratio: 3/4` at every state** — matching the generation output exactly (896×1200, measured 2026-07-11), so `object-cover` never crops the model image and the card's geometry is identical empty → generating → complete. The model image is sacred; a future engine that breaks the 3:4 contract is a design event, not a silent crop.
 
 Five states now (was four):
 

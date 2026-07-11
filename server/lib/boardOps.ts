@@ -120,8 +120,8 @@ export async function executeCreateNode(input: CreateNodeInput) {
     imageUrl: input.imageUrl,
     positionX: Math.round(input.position.x),
     positionY: Math.round(input.position.y),
-    width: input.size?.width ?? 260,
-    height: input.size?.height ?? 220,
+    width: input.size?.width ?? 280,
+    height: input.size?.height ?? 420,
     metadata,
     sourceModelId:
       input.provenance && "modelId" in input.provenance ? input.provenance.modelId : undefined,

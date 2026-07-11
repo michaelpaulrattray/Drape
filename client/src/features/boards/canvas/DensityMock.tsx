@@ -58,17 +58,17 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Flat monochrome portrait silhouette as a data URI — no external hosts (CSP). */
+/** Flat monochrome portrait silhouette as a data URI — 3:4, the real generation ratio. */
 function mockPortrait(rand: () => number): string {
   const tones = ["#D6D6D3", "#CCCCC9", "#C2C2BF", "#B8B8B5", "#AEAEAB"];
   const bg = tones[Math.floor(rand() * tones.length)];
   const fg = "#8A8A87";
-  const headX = 90 + Math.round(rand() * 20);
+  const headX = 80 + Math.round(rand() * 20);
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="140" viewBox="0 0 200 140">` +
-    `<rect width="200" height="140" fill="${bg}"/>` +
-    `<circle cx="${headX}" cy="58" r="24" fill="${fg}"/>` +
-    `<path d="M ${headX - 44} 140 Q ${headX} 84 ${headX + 44} 140 Z" fill="${fg}"/>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="240" viewBox="0 0 180 240">` +
+    `<rect width="180" height="240" fill="${bg}"/>` +
+    `<circle cx="${headX}" cy="92" r="34" fill="${fg}"/>` +
+    `<path d="M ${headX - 60} 240 Q ${headX} 132 ${headX + 60} 240 Z" fill="${fg}"/>` +
     `</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
@@ -99,7 +99,7 @@ function buildMockBoard(): { nodes: Node<MockNodeData>[]; edges: Edge[] } {
     const col = i % 4;
     const row = Math.floor(i / 4);
     const rx = col * 1150 + Math.round(rand() * 100);
-    const ry = row * 620 + Math.round(rand() * 100);
+    const ry = row * 780 + Math.round(rand() * 100); // taller 3:4 cards need taller rows
     const rootId = `root-${i}`;
     const empty = i === 10; // one freshly-dropped node
     const rootStatus: NodeStatus | undefined =
@@ -126,7 +126,7 @@ function buildMockBoard(): { nodes: Node<MockNodeData>[]; edges: Edge[] } {
       nodes.push({
         id: viewId,
         type: "mockCast",
-        position: { x: rx + 310 + v * 230, y: ry + 40 + Math.round(rand() * 30) },
+        position: { x: rx + 330 + v * 230, y: ry + 40 + Math.round(rand() * 30) },
         data: {
           variant: "view",
           name,
@@ -180,7 +180,7 @@ function MockCastNode({ data, selected }: NodeProps<Node<MockNodeData>>) {
   if (!selected && attrsExpanded) setAttrsExpanded(false); // collapse on deselect
 
   const isRoot = data.variant === "root";
-  const width = tier === "far" ? (isRoot ? 260 : 200) : isRoot ? 260 : 200;
+  const width = isRoot ? 280 : 200; // VC2 ruling: canonical 280, views 200, 3:4 image
   const typeLabel = isRoot ? `Cast · ${data.name}` : `Cast · ${data.name} · ${data.viewLabel}`;
   const promptState = data.empty ? "empty" : "complete";
 
@@ -244,7 +244,6 @@ function MockCastNode({ data, selected }: NodeProps<Node<MockNodeData>>) {
           dimmed={data.status?.type === "stale" && !data.pinned}
           error={data.status?.type === "error"}
           onRetry={() => {}}
-          height={isRoot ? 150 : 130}
         />
 
         <NodeInlinePrompt

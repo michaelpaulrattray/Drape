@@ -19,7 +19,6 @@ export interface CastImageAreaProps {
   dimmed?: boolean;
   error?: boolean;
   onRetry?: () => void;
-  height?: number;
 }
 
 export function CastImageArea({
@@ -30,7 +29,6 @@ export function CastImageArea({
   dimmed,
   error,
   onRetry,
-  height = 140,
 }: CastImageAreaProps) {
   // In-card text is working-tier chrome; below it, the card simplifies and the
   // screen-fixed status dot carries error/empty signals (DS §12).
@@ -38,9 +36,11 @@ export function CastImageArea({
   const detailed = tier === "working";
 
   return (
+    // 3:4 — the exact ratio casting generates (896×1200, measured), so cover
+    // never crops. The empty and generating states hold the same rectangle:
+    // geometry is stable through the node's whole life (VC2 ruling, 2026-07-11).
     <div
-      className="bg-canvas-surface-inset flex flex-col items-center justify-center text-canvas-ink-faint"
-      style={{ height }}
+      className="aspect-[3/4] bg-canvas-surface-inset flex flex-col items-center justify-center text-canvas-ink-faint"
     >
       {error ? (
         detailed ? (

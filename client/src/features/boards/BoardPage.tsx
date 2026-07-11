@@ -339,8 +339,8 @@ function BoardPageImpl() {
         imageKey: null,
         positionX: Math.round(vars.position.x),
         positionY: Math.round(vars.position.y),
-        width: vars.size?.width ?? 260,
-        height: vars.size?.height ?? 220,
+        width: vars.size?.width ?? 280,
+        height: vars.size?.height ?? 420,
         zIndex: 0,
         parentItemId: null,
         sourceModelId: null,
@@ -396,7 +396,7 @@ function BoardPageImpl() {
       kind: 'cast_config',
       provenance: null,
       position,
-      size: { width: 260, height: 220 },
+      size: { width: 280, height: 420 }, // 280 × (3:4 image + prompt row)
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId]);
