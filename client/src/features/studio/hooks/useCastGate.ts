@@ -16,12 +16,16 @@ interface UseCastGateParams {
   currentModelId: number | null;
   currentAssets: GeneratedAsset[];
   refetchCreditsWithWarning: () => void;
+  /** Override the post-mint destination: the studio transitions to wardrobe
+   *  by default; the board takeover (D-35) lands the model on its node. */
+  onMinted?: (modelId: number) => void;
 }
 
 export function useCastGate({
   currentModelId,
   currentAssets,
   refetchCreditsWithWarning,
+  onMinted,
 }: UseCastGateParams) {
   const setActiveTool = useStudioStore((s) => s.setActiveTool);
   const setCanvas = useStudioStore((s) => s.setCanvas);
@@ -92,8 +96,13 @@ export function useCastGate({
         toast.success(`${characterName} has been cast!`);
         setShowCastModal(false);
 
-        // Transition to wardrobe
-        setActiveTool('wardrobe');
+        if (onMinted) {
+          // Takeover host: land the model on the board node
+          onMinted(currentModelId);
+        } else {
+          // Studio default: transition to wardrobe
+          setActiveTool('wardrobe');
+        }
 
         // Refetch credits after side view generation
         if (needsSideView && generateSideView) refetchCreditsWithWarning();
@@ -116,6 +125,7 @@ export function useCastGate({
       setActiveTool,
       setCanvas,
       refetchCreditsWithWarning,
+      onMinted,
     ]
   );
 

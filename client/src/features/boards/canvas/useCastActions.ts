@@ -1,33 +1,21 @@
 /**
  * useCastActions — the boardOps mutation surface for one cast node, shared by
- * the node controller (retry) and the CastPickerModal (run / fill). Lives
- * outside the node component so the picker survives the optimistic temp→real
- * id remount (VC2 fix #3 aftermath). No legacy casting store imports (D-24).
+ * the node controller (retry) and the CastPickerModal (fill). Lives outside
+ * the node component so the picker survives the optimistic temp→real id
+ * remount. No legacy casting store imports (D-24). New-cast generation goes
+ * through the takeover environment (D-35), not through here.
  */
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useGenerationJobs } from "../stores/useGenerationJobs";
 
-export function useCastActions(options: {
-  boardId: number;
-  itemId: number;
-  /** Plan (cost preview) only runs when the caller says the node is runnable. */
-  enablePlan: boolean;
-}) {
-  const { boardId, itemId, enablePlan } = options;
+export function useCastActions(options: { boardId: number; itemId: number }) {
+  const { boardId, itemId } = options;
   const utils = trpc.useUtils();
   const { startJob, completeJob, failJob } = useGenerationJobs();
   const job = useGenerationJobs((s) => s.jobs[itemId]);
   const generating = job?.status === "running";
-
-  // Cost before Run — always from the server plan (Decision 6). Gated on a
-  // confirmed server id: optimistic temp nodes (negative id) can't plan yet.
-  const planQuery = trpc.boardOps.runGeneration.plan.useQuery(
-    { boardId, itemId },
-    { enabled: enablePlan && !generating && itemId > 0, staleTime: 60_000 },
-  );
-  const runCost = planQuery.data?.estimatedCreditCost ?? null;
 
   const runMutation = trpc.boardOps.runGeneration.execute.useMutation({
     onSuccess: () => {
@@ -51,21 +39,10 @@ export function useCastActions(options: {
     onError: (err) => toast.error(err.message),
   });
 
-  const run = useCallback(
-    (prompt: string) => {
-      if (!prompt.trim() || generating || itemId < 0) return;
-      startJob({
-        itemId,
-        operation: "runGeneration",
-        estimatedDurationMs: planQuery.data?.estimatedDurationMs ?? 20_000,
-      });
-      runMutation.mutate({ boardId, itemId, userPrompt: prompt.trim() });
-    },
-    [generating, boardId, itemId, planQuery.data, runMutation, startJob],
-  );
-
+  /** Rerun after a failed generation, with the prompt stamped on the node. */
   const retry = useCallback(
     (userPrompt?: string) => {
+      if (generating || itemId < 0) return;
       startJob({ itemId, operation: "runGeneration", estimatedDurationMs: 20_000 });
       runMutation.mutate({
         boardId,
@@ -73,7 +50,7 @@ export function useCastActions(options: {
         userPrompt: (userPrompt ?? "").trim() || undefined,
       });
     },
-    [boardId, itemId, runMutation, startJob],
+    [generating, boardId, itemId, runMutation, startJob],
   );
 
   const fillFromLibrary = useCallback(
@@ -85,12 +62,8 @@ export function useCastActions(options: {
   );
 
   return {
-    run,
     retry,
     fillFromLibrary,
     fillPending: fillMutation.isPending,
-    runCost,
-    generating,
-    job,
   };
 }

@@ -17,6 +17,8 @@ import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 import { type CanvasToolId } from './components/CanvasToolbar';
 import { FloatingToolPill, type PillTool } from './canvas/FloatingToolPill';
 import { CastPickerModal } from './canvas/CastPickerModal';
+import { CastingTakeover } from '@/features/studio/takeover/CastingTakeover';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
 import { NodeContextMenu, type NodeContextAction, type ViewAngle } from './components/NodeContextMenu';
@@ -55,6 +57,10 @@ function BoardPageImpl() {
   // Cast picker (D-33) — hosted here, not in CastNode, so it survives the
   // optimistic temp→real id remount. Opened via the node's front-door event.
   const [castPickerItemId, setCastPickerItemId] = useState<number | null>(null);
+  // Casting takeover (D-35) — opened from the picker's "Cast new"; on mint
+  // the finished model lands on this node via fillFromLibrary.
+  const [castTakeoverItemId, setCastTakeoverItemId] = useState<number | null>(null);
+  const { user, isAuthenticated } = useAuth();
 
   // Viewport center getter exposed by BoardCanvas
   const viewportCenterGetterRef = useRef<(() => { x: number; y: number }) | null>(null);
@@ -265,6 +271,26 @@ function BoardPageImpl() {
     return () => window.removeEventListener('board-open-cast-picker', onOpenPicker);
   }, []);
 
+  // The takeover's mint landing (D-35): the finished model fills the
+  // originating node in place — same op as the picker's library path
+  const landMintedCastMutation = trpc.boardOps.fillFromLibrary.useMutation({
+    onSuccess: () => {
+      utils.boards.getItems.invalidate({ boardId });
+      toast.success('Cast landed on your board');
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleTakeoverMinted = useCallback(
+    (modelId: number) => {
+      if (castTakeoverItemId !== null && castTakeoverItemId > 0) {
+        landMintedCastMutation.mutate({ boardId, itemId: castTakeoverItemId, modelId });
+      }
+      setCastTakeoverItemId(null);
+    },
+    [boardId, castTakeoverItemId, landMintedCastMutation],
+  );
+
   // ── Keyboard shortcuts ───────────────────────────────────
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -278,8 +304,8 @@ function BoardPageImpl() {
       // Don't delete while typing in an input/textarea
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
-      // Don't delete while editor overlay or context menu is open
-      if (editorItemId !== null) return;
+      // Don't delete while an overlay (editor, casting takeover) is open
+      if (editorItemId !== null || castTakeoverItemId !== null) return;
       if (selectedItemId !== null) {
         e.preventDefault();
         handleItemDelete(selectedItemId);
@@ -288,7 +314,7 @@ function BoardPageImpl() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedItemId, editorItemId, handleItemDelete, placementMode]);
+  }, [selectedItemId, editorItemId, castTakeoverItemId, handleItemDelete, placementMode]);
 
   // ── Placement mode click handler ───────────────────────
   const handlePlacementClick = useCallback(
@@ -375,8 +401,9 @@ function BoardPageImpl() {
             : i,
         ),
       );
-      // If the picker was opened on the temp node, follow it to the real id
+      // If the picker/takeover was opened on the temp node, follow it to the real id
       setCastPickerItemId((prev) => (prev === ctx?.tempId ? result.itemId : prev));
+      setCastTakeoverItemId((prev) => (prev === ctx?.tempId ? result.itemId : prev));
       selectNodeRef.current?.(result.itemId);
     },
     onError: (_err, _vars, ctx) => {
@@ -920,6 +947,20 @@ function BoardPageImpl() {
           boardId={boardId}
           itemId={castPickerItemId}
           onClose={() => setCastPickerItemId(null)}
+          onCastNew={() => {
+            setCastTakeoverItemId(castPickerItemId);
+            setCastPickerItemId(null);
+          }}
+        />
+      )}
+
+      {/* Casting takeover (D-35) — the environment opens over the untouched board */}
+      {castTakeoverItemId !== null && (
+        <CastingTakeover
+          user={user}
+          isAuthenticated={isAuthenticated}
+          onMinted={handleTakeoverMinted}
+          onClose={() => setCastTakeoverItemId(null)}
         />
       )}
 

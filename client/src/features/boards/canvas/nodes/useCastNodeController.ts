@@ -30,11 +30,7 @@ export function useCastNodeController(data: CastNodeData) {
   // paid wait must render progress, never the placeholder (VC2 fix #1).
   const isEmpty = !data.imageUrl && data.status?.type !== "error" && !generating;
 
-  const actions = useCastActions({
-    boardId: data.boardId,
-    itemId: data.itemId,
-    enablePlan: false, // cost preview belongs to the picker modal
-  });
+  const actions = useCastActions({ boardId: data.boardId, itemId: data.itemId });
 
   const retry = useCallback(() => {
     // Clear the error status, then rerun with the same prompt

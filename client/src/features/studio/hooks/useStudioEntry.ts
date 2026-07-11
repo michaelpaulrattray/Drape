@@ -29,6 +29,7 @@ import { useStudioStore } from '../stores/useStudioStore';
 import { useSessionReset } from './useSessionReset';
 import { useResumeDraft } from './useResumeDraft';
 import { useLoadWardrobeModel } from './useLoadWardrobeModel';
+import { resetCastingSession } from './castingSessionReset';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
@@ -60,7 +61,6 @@ export function useStudioEntry({ isAuthenticated, isRestoring }: UseStudioEntryO
   const trpcUtils = trpc.useUtils();
   const setActiveTool = useStudioStore((s) => s.setActiveTool);
   const setWardrobeStart = useStudioStore((s) => s.setWardrobeStart);
-  const setCanvas = useStudioStore((s) => s.setCanvas);
   const { resumeWardrobeSession } = useSessionReset();
   const { resumeDraftById } = useResumeDraft();
   const { loadMintedModelById } = useLoadWardrobeModel();
@@ -91,22 +91,9 @@ export function useStudioEntry({ isAuthenticated, isRestoring }: UseStudioEntryO
     if (tool === 'casting') {
       const modelId = positiveIntParam(params, 'modelId');
       if (params.get('new') === '1') {
-        // Fresh casting session — same reset block as the old lobby's
-        // "Cast a Model" CTA
-        useCastingGenerationStore.getState().resetGeneration();
-        useCastingFormStore.getState().resetForm();
-        useWardrobeStore.getState().resetWardrobe();
-        setCanvas({
-          castModelId: null,
-          castFullBodyUrl: null,
-          castMasterPrompt: null,
-          hasModel: false,
-          hasFullBody: false,
-          hasAllViews: false,
-          modelSource: null,
-          uploadedModelUrl: null,
-          isMinted: false,
-        });
+        // Fresh casting session — the shared reset contract (also used by
+        // the board's CastingTakeover, D-35)
+        resetCastingSession();
         setActiveTool('casting');
         finish();
       } else if (modelId) {
@@ -174,7 +161,6 @@ export function useStudioEntry({ isAuthenticated, isRestoring }: UseStudioEntryO
     navigate,
     setActiveTool,
     setWardrobeStart,
-    setCanvas,
     resumeWardrobeSession,
     resumeDraftById,
     loadMintedModelById,

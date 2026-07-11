@@ -10,9 +10,9 @@ import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 import { AppSidebar } from '@/features/studio/components/AppSidebar';
 import { StudioHeader } from '@/features/studio/components/StudioHeader';
 import { WardrobeStart } from '@/features/studio/components/WardrobeStart';
-import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
 import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
 import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
+import { CastingWorkspace } from '@/features/studio/components/CastingWorkspace';
 import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition';
 import { useStudioEntry } from '@/features/studio/hooks/useStudioEntry';
 
@@ -28,21 +28,11 @@ import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
 import { BillingModal } from '@/features/billing/BillingModal';
 import { ReferralModal } from '@/features/referral/ReferralModal';
 import ProfileSettingsModal from '@/components/ProfileSettingsModal';
+import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from '@/features/billing/LowBalanceWarning';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
-import { ControlPanel } from '@/features/casting/ControlPanel';
-import { ImageViewerPanel } from '@/features/casting/ImageViewerPanel';
-import { MasterPromptPanel } from '@/features/casting/MasterPromptPanel';
-import { StageLockModal } from '@/features/casting/StageLockModal';
-import { ExportModal } from '@/features/casting/ExportModal';
-import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
-import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
-import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
-import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingViewGeneration';
-import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { useDebugShortcuts } from '@/features/studio/hooks/useDebugShortcuts';
-import { useImagePreloader } from '@/features/studio/hooks/useImagePreloader';
 import { CastModelModal } from '@/features/studio/components/CastModelModal';
 import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
@@ -71,14 +61,6 @@ export default function DrapeStudio() {
 
   // Orchestrated transition phases
   const baseTransition = useStudioTransition(activeTool);
-
-  // Eagerly preload casting images into browser cache (warm S3 URLs)
-  const castingAssets = useCastingGenerationStore((s) => s.currentAssets);
-  const castingAssetUrls = useMemo(
-    () => activeTool === 'casting' ? castingAssets.map((a) => a.storageUrl) : [],
-    [activeTool, castingAssets],
-  );
-  useImagePreloader(castingAssetUrls); // cache-warm only, don't gate transitions
   const transition = baseTransition;
 
   // Session persistence — restore on mount, auto-save on changes
@@ -101,103 +83,25 @@ export default function DrapeStudio() {
     }
   }, [entryStatus, activeTool, wardrobeStart, navigate]);
 
-  // Casting stores
-  const { prefs, modelName } = useCastingFormStore();
-  const {
-    genState,
-    setGenState,
-    currentModelId,
-    currentAssets,
-  } = useCastingGenerationStore();
-  const {
-    activeView,
-    activeTool: castingActiveTool,
-    showExportModal,
-    setShowExportModal,
-    lockModal,
-    closeLockModal,
-    isTopupOpen,
-    setIsTopupOpen,
-  } = useCastingUIStore();
+  // Casting stores — only what the studio shell itself needs; the casting
+  // surface's own wiring lives in CastingWorkspace (shared with the D-35
+  // board takeover)
+  const { currentModelId, currentAssets } = useCastingGenerationStore();
+  const { isTopupOpen, setIsTopupOpen } = useCastingUIStore();
 
-  // Sync casting assets → shared canvas (skip for uploaded/gallery models)
-  useEffect(() => {
-    const isExternalModel = canvas.modelSource === 'uploaded' || canvas.castModelId !== null;
-    if (isExternalModel) return;
-
-    const hasModel = currentAssets.some((a) => a.viewType === 'frontClose' && a.storageUrl);
-    const hasFullBody = currentAssets.some((a) => a.viewType === 'frontFull' && a.storageUrl);
-    const hasAllViews =
-      hasModel &&
-      hasFullBody &&
-      currentAssets.some((a) => a.viewType === 'sideClose' && a.storageUrl);
-
-    setCanvas({
-      hasModel,
-      hasFullBody,
-      hasAllViews,
-      modelSource: currentModelId ? 'cast' : canvas.modelSource,
-    });
-  }, [currentAssets, currentModelId]);
-
-  // Canvas drawing hook
-  const {
-    canvasRef,
-    imageRef,
-    maskPaths,
-    isMasking,
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    getGuideOverlayDataUrl,
-    clearMask,
-  } = useCastingCanvas(castingActiveTool, activeView, currentAssets);
-
-  // Legacy store-backed bindings for the generation hooks (audit A1 / D-24)
-  const castingBindings = useLegacyCastingBindings();
-
-  // Generation hook
-  const {
-    creditsData,
-    refetchCreditsWithWarning,
-    isFormValid,
-    currentImageUrl,
-    isViewLocked,
-    hasDownstreamDependencies,
-    isIterationAllowed,
-    handleGenerate,
-    handleRefineSubmit,
-    handleEnhance,
-    handleRetry,
-    handleUndo,
-    handleRedo,
-    canUndo,
-    canRedo,
-  } = useCastingGeneration({
-    isAuthenticated,
-    activeTool: castingActiveTool,
-    isMasking,
-    getGuideOverlayDataUrl,
-    clearMask,
-    bindings: castingBindings,
-  });
-
-  // View generation hook
-  const { nextStage } = useCastingViewGeneration({
-    isAuthenticated,
-    creditsData,
-    refetchCreditsWithWarning,
-    bindings: castingBindings,
-  });
-
-  // Export hook
-  const { handleExport } = useCastingExport({
-    currentModelId,
-    currentAssets,
-    genState,
-    setGenState,
-    setShowExportModal,
-  });
+  // Credits for the sidebar / top-up / cast gate (same query key as the
+  // workspace's internal query — TanStack dedupes)
+  const { data: creditsData, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(
+    undefined,
+    { enabled: isAuthenticated },
+  );
+  const refetchCreditsWithWarning = useCallback(async () => {
+    const result = await refetchCredits();
+    const newBalance = result.data?.balance;
+    if (newBalance !== undefined && newBalance < LOW_BALANCE_THRESHOLD) {
+      showLowBalanceToast(newBalance, () => setIsTopupOpen(true));
+    }
+  }, [refetchCredits, setIsTopupOpen]);
 
   // Auth redirect
   useEffect(() => {
@@ -215,43 +119,6 @@ export default function DrapeStudio() {
 
   // Keyboard shortcuts (admin debug)
   useDebugShortcuts();
-
-  // Hydrate casting store for gallery-loaded models (assets in DB, not Zustand)
-  const modelAssetsQuery = trpc.models.get.useQuery(
-    { modelId: canvas.castModelId! },
-    {
-      enabled: activeTool === 'casting' && canvas.castModelId !== null && currentAssets.length === 0,
-      retry: false,
-    }
-  );
-
-  useEffect(() => {
-    if (!modelAssetsQuery.data) return;
-    if (currentAssets.length > 0) return; // already hydrated
-
-    const model = modelAssetsQuery.data;
-    const assets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
-    const genStore = useCastingGenerationStore.getState();
-
-    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(assets);
-
-    if (rebuilt.length > 0) {
-      genStore.setCurrentModelId(model.id);
-      genStore.setCurrentAssets(rebuilt);
-      genStore.setHistory(history);
-      genStore.setHistoryIndex(historyIndex);
-      useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
-      if (model.masterPrompt) {
-        genStore.setCurrentMasterPrompt(model.masterPrompt);
-      }
-    }
-    // Restore form preferences so ControlPanel shows actual model identity
-    if ((model as any).preferences) {
-      const formStore = useCastingFormStore.getState();
-      formStore.setPrefs((model as any).preferences as any);
-      formStore.setModelName(model.name || '');
-    }
-  }, [modelAssetsQuery.data, currentAssets.length]);
 
   // Read-only: locked only for minted models (drafts remain editable)
   const isReadOnly = activeTool === 'casting' && canvas.isMinted;
@@ -292,12 +159,6 @@ export default function DrapeStudio() {
     return fullBodyAsset?.storageUrl || null;
   }, [canvas.uploadedModelUrl, canvas.castFullBodyUrl, currentAssets]);
 
-  // Form completion progress (12 fields)
-  const formProgress = useMemo(() => {
-    const c = [!!prefs.castingBrand, !!(prefs.castingVibe && (prefs.castingVibe.editorial > 0 || prefs.castingVibe.commercial > 0 || prefs.castingVibe.runway > 0)), !!prefs.gender, !!(prefs.age && prefs.ethnicity), !!prefs.bodyType, !!prefs.faceShape, !!prefs.skinTone, !!(prefs.skinTexture || prefs.skinFinish), !!prefs.eyeColor, !!prefs.eyeColor, !!prefs.hairColor, !!prefs.hairStyle];
-    return Math.round((c.filter(Boolean).length / 12) * 100);
-  }, [prefs]);
-
   // Loading state — held until the URL entry has resolved, so no stale
   // tool (or nothing at all) flashes while an async resume is in flight
   if (authLoading || isRestoring || entryStatus === 'resolving') {
@@ -330,25 +191,6 @@ export default function DrapeStudio() {
       <div className="flex-1 flex flex-col min-h-0 min-w-0">
         {/* Studio Header — spans content area only */}
         <StudioHeader />
-
-        {/* Stage Lock Modal */}
-        <StageLockModal
-          isOpen={lockModal.isOpen}
-          title={lockModal.title}
-          message={lockModal.message}
-          onConfirm={lockModal.onConfirm}
-          onCancel={closeLockModal}
-        />
-
-        {/* Export Modal */}
-        <ExportModal
-          isOpen={showExportModal}
-          onClose={() => setShowExportModal(false)}
-          onExport={handleExport}
-          previewImage={
-            currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl ?? undefined
-          }
-        />
 
         {/* Tool Content Area */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
@@ -401,72 +243,14 @@ export default function DrapeStudio() {
           )}
 
           {activeTool === 'casting' && !isNonCastModel && (
-            <>
-              {/* Left Panel — Control (slides from left) */}
-              <AnimatedPanel
-                ready={transition.leftReady}
-                from="left"
-                offset={60}
-                duration={500}
-                className="w-full lg:w-auto flex-shrink-0 relative z-10"
-              >
-                <StudioSidePanel side="left" width={320}>
-                  <ControlPanel
-                    user={user}
-                    isFormValid={isFormValid}
-                    genState={genState}
-                    currentAssets={currentAssets}
-                    handleGenerate={handleGenerate}
-                    isReadOnly={isReadOnly}
-                    onNewModel={handleNewModel}
-                    modelName={modelName}
-                  />
-                </StudioSidePanel>
-              </AnimatedPanel>
-
-              {/* Center — Image Viewer */}
-              <div className="flex-1 min-w-0 h-full relative">
-                <ImageViewerPanel
-                  currentImageUrl={currentImageUrl ?? undefined}
-                  currentAssets={currentAssets}
-                  genState={genState}
-                  isViewLocked={isViewLocked}
-                  hasDownstreamDependencies={hasDownstreamDependencies}
-                  isIterationAllowed={isIterationAllowed}
-                  isMasking={isMasking}
-                  maskPathsCount={maskPaths.length}
-                  formProgress={formProgress}
-                  nextStage={nextStage}
-                  canvasRef={canvasRef}
-                  imageRef={imageRef}
-                  handlePointerDown={handlePointerDown}
-                  handlePointerMove={handlePointerMove}
-                  handlePointerUp={handlePointerUp}
-                  handleUndo={handleUndo}
-                  handleRedo={handleRedo}
-                  handleRetry={handleRetry}
-                  handleGenerate={handleGenerate}
-                  handleEnhance={handleEnhance}
-                  handleRefineSubmit={handleRefineSubmit}
-                  canUndo={canUndo}
-                  canRedo={canRedo}
-                  isReadOnly={isReadOnly}
-                />
-              </div>
-
-              {/* Right Panel — Master Prompt (slides from right) */}
-              <AnimatedPanel
-                ready={transition.rightReady}
-                from="right"
-                offset={60}
-                duration={500}
-                className="hidden lg:block flex-shrink-0"
-              >
-                <StudioSidePanel side="right" width={320}>
-                  <MasterPromptPanel />
-                </StudioSidePanel>
-              </AnimatedPanel>
-            </>
+            <CastingWorkspace
+              user={user}
+              isAuthenticated={isAuthenticated}
+              isReadOnly={isReadOnly}
+              onNewModel={handleNewModel}
+              leftReady={transition.leftReady}
+              rightReady={transition.rightReady}
+            />
           )}
 
           {/* Wardrobe workspace — panels slide in from edges */}
