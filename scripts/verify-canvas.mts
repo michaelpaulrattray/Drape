@@ -539,6 +539,37 @@ if (!(await filledNode())?.img) {
     guardResult.status >= 400 && guardResult.immutable,
     JSON.stringify(guardResult),
   );
+
+  // E5 (D-46): the ungated view-generation endpoints are GONE. A raw tRPC
+  // caller must not be able to add an unverified view — the same bypass class
+  // E4 closes for identity. Both procedures must 404 (not merely error).
+  // NOTE: no named inner functions inside page.evaluate — esbuild's keepNames
+  // helper injects __name and crashes in the page context. Inline both fetches.
+  const legacyEndpoints = await page.evaluate(async () => {
+    const mvRes = await fetch("/api/trpc/generation.multiView", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ json: { modelId: 1, viewType: "back" } }),
+    });
+    const mvText = await mvRes.text();
+    const fbRes = await fetch("/api/trpc/generation.fullBody", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ json: { modelId: 1 } }),
+    });
+    const fbText = await fbRes.text();
+    return {
+      multiView: { status: mvRes.status, notFound: mvText.includes("NOT_FOUND") || mvRes.status === 404 },
+      fullBody: { status: fbRes.status, notFound: fbText.includes("NOT_FOUND") || fbRes.status === 404 },
+    };
+  });
+  check(
+    "E5 ungated view endpoints (fullBody/multiView) are removed — raw path closed",
+    legacyEndpoints.multiView.notFound && legacyEndpoints.fullBody.notFound,
+    JSON.stringify(legacyEndpoints),
+  );
   await clickByText("Keep editing");
   await sleep(400);
   await closeTakeoverCleanly();
@@ -743,11 +774,13 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
     );
     const txs = txRows as Array<{ amount: number; description: string }>;
     const deducted = txs.find((t) => t.amount === -900 && t.description.includes("core"));
-    const refunds = txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    // Core's slots (sideClose, threeQuarter, frontFull) are NONE of them gated
+    // — a Core mint can never refund, so the net is exactly 900. (Refund
+    // netting is exercised by H/I, where gated slots can fail.)
     check(
-      "G7 ledger + balance agree (900 deducted, refunds netted)",
-      !!deducted && balanceBefore - balanceAfter === 900 - refunds,
-      `delta=${balanceBefore - balanceAfter} refunds=${refunds}`,
+      "G7 ledger + balance agree (Core = clean 900 deduct, no refunds)",
+      !!deducted && balanceBefore - balanceAfter === 900,
+      `delta=${balanceBefore - balanceAfter} deducted=${!!deducted}`,
     );
 
     // The new packageState route over raw HTTP: minted, 4 slots filled
@@ -843,15 +876,28 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
         JSON.stringify(upgradeState),
       );
 
-      // Execute the upgrade (real, ~600 credits: sideFull + gated backFull)
+      // Execute the upgrade (real, ~600 credits: sideFull + gated backFull).
+      // D-46 rider 3 removed the "N views added" toast — the strip filling IS
+      // the feedback — so completion is read from packageState (filled grows
+      // past Core's 4), and the modal closing, not a toast.
       await clickByText("Add views");
       console.log("   H: upgrading to Production (real, ~600 credits, 2 views)...");
       let upgraded = false;
       for (let i = 0; i < 180; i++) {
         await sleep(1000);
-        if (await bodyIncludes("views added")) { upgraded = true; break; }
+        const state = await page.evaluate(async (mid: number) => {
+          const res = await fetch(
+            `/api/trpc/generation.packageState?input=${encodeURIComponent(JSON.stringify({ json: { modelId: mid } }))}`,
+            { credentials: "include" },
+          );
+          const data = await res.json();
+          const slots = data?.result?.data?.json?.slots ?? [];
+          const modalGone = !(document.body.textContent ?? "").includes("COMPLETE THE PACKAGE");
+          return { filled: slots.filter((s: { filled: boolean }) => s.filled).length, modalGone };
+        }, modelId);
+        if (state.filled > 4 && state.modalGone) { upgraded = true; break; }
       }
-      check("H6 upgrade lands (views-added feedback)", upgraded);
+      check("H6 upgrade lands (package grew past Core, modal closed)", upgraded);
 
       const hPkg = await page.evaluate(async (mid: number) => {
         const res = await fetch(

@@ -259,6 +259,26 @@ Follow-up batch after the founder drove the R1 takeover. Items 1–2 (optimistic
 
 **Affects:** `CastingTakeover` header, board top bar profile popover, `credits.getBalance` reuse; no schema.
 
+### D-46 — One view system: stage-lock retired, view generation is the mint gate *(founder-ratified 2026-07-12, Fable audit + riders; assessment: `STAGE_LOCK_UNIFICATION_ASSESSMENT.md`)*
+
+**What:** the pre-D-39 sequential ladder (headshot → *"Lock Headshot & Generate Body?"* → body → *"Lock Body & Generate Side?"* → side) and its `StageLockModal` are retired. There is **one** view system: the six-slot package strip, where an empty slot's ghost opens `CastModelModal` — **mint** mode for a draft, **upgrade** mode for a minted model. Nothing in the old stage-lock was load-bearing (full-body generation reads the *current* headshot at generation time, never a frozen one; `isViewLocked` already bypassed minted edits). It crudely pre-empted staleness by forbidding edits, which D-43 + the package ledger now *represent* instead. Ratified **with riders**, all three landed in the unification commit:
+
+> **Rider 1 (draft views, ratified knowingly):** adding views to a draft routes through the **mint gate** — a draft holds only its headshot; the pre-mint body/side ladder is gone. Exploring beyond the headshot is a Core mint away (same cost, upgrade-anytime).
+>
+> **Rider 2 (endpoint removal, MANDATORY in this change):** the legacy `generation.fullBody` / `generation.multiView` procedures are **removed**. Fable verified they accepted `back`/`walk` with **no identity gate** over raw tRPC — the exact ungated-write bypass class D-43 closed. An ungated view path may not outlive the unification. All view generation now flows through `mintPackage` (gates back/walk, prices per slot). Closure asserted by unit (`batch3-hardening`: both procedures absent) **and** drive (invariant **E5**: raw tRPC POST to both → 404/NOT_FOUND).
+>
+> **Rider 3 (D-40 toast hygiene, this batch):** the `"${name} has been cast!"` toast (a legacy survivor — the node filling on the board IS the feedback) and the `"N views added"` toast (the strip visibly fills) are removed.
+
+**Why:** two view systems split by `status` — draft ghosts firing the old stage-lock while minted ghosts opened the tier dialog — is incoherent, and the stage-lock's threat copy (*"you won't be able to return and edit the head"*) directly contradicts D-43's freely-editable drafts. The endpoints were a live re-opening of the D-43 bypass. Unifying is mostly deletion.
+
+**Walk-gate (folds in, D-44):** the sixth slot's identity gate is mandatory; `backViewGate` generalizes to a per-angle gate covering `sideFull`/walk with the same retry-then-refund contract. **Calibration note (log):** motion poses have more drift room — if the walk gate over-rejects, tune the prompt/threshold before it churns refunds on every Production mint; budget a calibration loop when real walk generations flow.
+
+**Affects:** `castingImaging.ts` (both procedures deleted + import cleanup), `useCastingViewGeneration` (gutted to an Export-only `nextStage`; stage handlers + `generation.fullBody`/`multiView` mutations gone), `useCastingGeneration` (`isViewLocked`/`hasDownstreamDependencies` → constant `false`), `StageLockModal` (deleted), `ViewTabs` (one six-slot render; ghosts → `casting-open-mint` | `casting-open-package-upgrade`), `CastingTakeover` + `DrapeStudio` (mint-event listeners), `useCastGate` (rider-3 toasts removed), `batch3-hardening.test.ts`, drive invariant E5.
+
+**R7 log (from Fable's audit + this batch):** (1) the failed-slot marker insert in `mintPackage` uses `.catch(() => {})` — unlogged, the same silent-audit-gap class as the `createGeneration` bug; give it a logged failure path. (2) `createModel`/`createModelAsset` still use newest-row-by-`createdAt` id lookup (convert to `$returningId()`). (3) storageUrl-less **marker rows leak unfiltered** into `models.get` and the public registry bundle — filter them at the query boundary (client `buildHistoryFromAssets` already filters, but the raw payloads shouldn't carry them). (4) dead stage-lock plumbing (`setLockModal`/`closeLockModal`/`LockModalState`/auto-gen bindings in `castingBindings` + `useCastingUIStore`) — remove once the canvas `useCastNodeController` (R4) is settled, to avoid churn on a concurrently-built file.
+
+**R6 log:** `FailedSlot`'s amber is a **named third hue**, unsanctioned by any ruling — defensible pre-restyle (a failure genuinely isn't ink-or-red), but it needs a verdict when the environment restyle sets the palette.
+
 ### D-39 — Canonical identity package + tiered mint *(RATIFIED 2026-07-11, all lines — see ratification record below)*
 
 > **RATIFICATION RECORD (founder, 2026-07-11) — `D39_PACKAGE_ASSESSMENT.md` ratified, all lines:**

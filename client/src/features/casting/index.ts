@@ -1,6 +1,5 @@
 export { ControlPanel } from "./ControlPanel";
 export { ImageViewerPanel } from "./ImageViewerPanel";
-export { StageLockModal } from "./StageLockModal";
 export { ExportModal } from "./ExportModal";
 export { useCastingCanvas } from "./hooks/useCastingCanvas";
 export { useCastingGeneration } from "./hooks/useCastingGeneration";

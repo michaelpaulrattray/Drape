@@ -14,17 +14,6 @@ export interface GeneratedAsset {
   storageUrl: string;
 }
 
-interface NextStage {
-  label: string;
-  action: () => void;
-  step: number;
-  total: number;
-}
-
-interface ViewTabsProps {
-  nextStage: NextStage | null;
-}
-
 // ============ ViewThumbnail ============
 
 function ViewThumbnail({
@@ -78,43 +67,6 @@ function ViewThumbnail({
           {label}
         </span>
       </div>
-    </button>
-  );
-}
-
-// ============ AddViewButton ============
-
-function AddViewButton({ onClick, visible }: { onClick: () => void; visible: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center justify-center gap-1.5"
-      style={{
-        width: 72,
-        height: 90,
-        borderRadius: 12,
-        border: '2px dashed rgba(0,0,0,0.1)',
-        background: 'rgba(255,255,255,0.5)',
-        backdropFilter: 'blur(8px)',
-        fontSize: 10,
-        fontWeight: 600,
-        color: '#52524B',
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'scale(1)' : 'scale(0.9)',
-        transition: 'all 0.2s ease',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.85)';
-        e.currentTarget.style.transform = 'scale(1.05)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.5)';
-        e.currentTarget.style.transform = visible ? 'scale(1)' : 'scale(0.9)';
-      }}
-    >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
     </button>
   );
 }
@@ -201,13 +153,21 @@ const PACKAGE_SLOTS: Array<{ vt: ViewType; label: string }> = [
   { vt: 'backFull', label: 'Back' },
 ];
 
-export function ViewTabs({ nextStage }: ViewTabsProps) {
+export function ViewTabs() {
   const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
   const { activeView, setActiveView } = useCastingUIStore();
-  // Minted models surface the full package: filled slots as thumbnails,
-  // empty ones as upgrade ghosts (VC-R3b bug 3 — the upgrade path's home)
+  // ONE view system (D-46): the six-slot package renders for drafts and minted
+  // models alike — filled slots as thumbnails, empty ones as ghosts. The only
+  // difference is where a ghost leads: a draft's ghost opens the MINT gate
+  // ("adding views is a Core mint away"); a minted model's ghost opens the
+  // UPGRADE dialog (add to the existing package). The old head→lock→body
+  // ladder and its StageLockModal are retired.
   const mintedModelId = useStudioStore((s) => s.mintedEditContext?.modelId ?? null);
   const isMintedEdit = mintedModelId !== null;
+  const openPackage = () =>
+    window.dispatchEvent(
+      new CustomEvent(isMintedEdit ? 'casting-open-package-upgrade' : 'casting-open-mint'),
+    );
   // Named-and-refunded slot failures (D-40) surface as retryable failed slots
   const packageQuery = trpc.generation.packageState.useQuery(
     { modelId: mintedModelId ?? 0 },
@@ -225,17 +185,6 @@ export function ViewTabs({ nextStage }: ViewTabsProps) {
 
   if (currentAssets.length === 0) return null;
 
-  const thumbnail = (vt: ViewType, label: string) => (
-    <ViewThumbnail
-      key={vt}
-      src={getAsset(vt)!.storageUrl}
-      label={label}
-      isActive={activeView === vt}
-      onClick={() => setActiveView(vt)}
-      isHovered={hovered}
-    />
-  );
-
   return (
     <div
       className="absolute left-4 top-16 z-30 flex flex-col gap-2 transition-opacity duration-200"
@@ -244,55 +193,21 @@ export function ViewTabs({ nextStage }: ViewTabsProps) {
       style={{ opacity: hovered ? 1 : 0.75 }}
     >
       <div className="contents pointer-events-auto">
-        {isMintedEdit ? (
-          // Minted: the six-slot package (D-39) — filled thumbnails, failed
-          // slots as named+retryable (D-40), the rest as upgrade ghosts
-          PACKAGE_SLOTS.map(({ vt, label }) =>
-            hasAsset(vt) ? (
-              thumbnail(vt, label)
-            ) : failedByAngle.has(vt) ? (
-              <FailedSlot
-                key={vt}
-                label={label}
-                reason={failedByAngle.get(vt)!}
-                onRetry={() => window.dispatchEvent(new CustomEvent('casting-open-package-upgrade'))}
-              />
-            ) : (
-              <GhostSlot
-                key={vt}
-                label={label}
-                onClick={() => window.dispatchEvent(new CustomEvent('casting-open-package-upgrade'))}
-              />
-            ),
-          )
-        ) : (
-          // Authoring: the staged ladder (head → full → side), extra views shown as they exist
-          <>
-            {getAsset('frontClose') && thumbnail('frontClose', 'Head')}
-            {hasAsset('threeQuarter') && thumbnail('threeQuarter', '3/4')}
-            {hasAsset('frontFull') ? (
-              thumbnail('frontFull', 'Full')
-            ) : (
-              <AddViewButton
-                visible={hovered}
-                onClick={() => nextStage?.step === 2 && nextStage.action()}
-              />
-            )}
-            {hasAsset('frontFull') && (
-              hasAsset('sideClose') ? (
-                <>
-                  {thumbnail('sideClose', 'Side')}
-                  {hasAsset('sideFull') && thumbnail('sideFull', 'Walk')}
-                  {hasAsset('backFull') && thumbnail('backFull', 'Back')}
-                </>
-              ) : (
-                <AddViewButton
-                  visible={hovered}
-                  onClick={() => nextStage?.step === 3 && nextStage.action()}
-                />
-              )
-            )}
-          </>
+        {PACKAGE_SLOTS.map(({ vt, label }) =>
+          hasAsset(vt) ? (
+            <ViewThumbnail
+              key={vt}
+              src={getAsset(vt)!.storageUrl}
+              label={label}
+              isActive={activeView === vt}
+              onClick={() => setActiveView(vt)}
+              isHovered={hovered}
+            />
+          ) : failedByAngle.has(vt) ? (
+            <FailedSlot key={vt} label={label} reason={failedByAngle.get(vt)!} onRetry={openPackage} />
+          ) : (
+            <GhostSlot key={vt} label={label} onClick={openPackage} />
+          ),
         )}
       </div>
     </div>

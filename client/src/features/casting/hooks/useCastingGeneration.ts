@@ -191,26 +191,15 @@ export function useCastingGeneration({
     }
   }, [currentMasterPrompt]);
 
-  // View locking logic. The linear stage-lock PREVENTS edits; D-11 PROPAGATES
-  // them — in a minted-edit session (R3) the lock never applies, because every
-  // save routes through applyModelEdit → the identity dialog instead.
-  const isMintedEditSession = bindings.isMintedEditSession;
-  const isViewLocked = useMemo(() => {
-    if (isMintedEditSession) return false;
-    if (currentAssets.length === 0) return false;
-    if (activeView === 'frontClose' && currentAssets.some(a => a.viewType === 'frontFull')) return true;
-    if (activeView === 'frontFull' && currentAssets.some(a => a.viewType === 'sideClose')) return true;
-    if (activeView === 'backFull') return true;
-    return false;
-  }, [activeView, currentAssets, isMintedEditSession]);
-
-  const hasDownstreamDependencies = useMemo(() => {
-    if (isMintedEditSession) return false;
-    if (currentAssets.length === 0) return false;
-    if (activeView === 'frontClose' && currentAssets.some(a => a.viewType === 'frontFull')) return true;
-    if (activeView === 'frontFull' && currentAssets.some(a => a.viewType === 'sideClose')) return true;
-    return false;
-  }, [activeView, currentAssets, isMintedEditSession]);
+  // View locking RETIRED (D-46, the unification). The linear stage-lock
+  // pre-empted staleness by forbidding upstream edits; D-43 (drafts freely
+  // editable, minted identities fork on change) and the package staleness
+  // ledger replaced that model entirely. Nothing was load-bearing — full-body
+  // generation reads the *current* headshot at generation time, never a frozen
+  // one. Held at constant false; the read-only plumbing downstream is a no-op
+  // now (flagged for R7 removal).
+  const isViewLocked = false;
+  const hasDownstreamDependencies = false;
 
   const isIterationAllowed = useMemo(() => {
     return ['frontClose', 'frontFull', 'backFull'].includes(activeView);

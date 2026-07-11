@@ -22,7 +22,6 @@ import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { ControlPanel } from '@/features/casting/ControlPanel';
 import { ImageViewerPanel } from '@/features/casting/ImageViewerPanel';
 import { MasterPromptPanel } from '@/features/casting/MasterPromptPanel';
-import { StageLockModal } from '@/features/casting/StageLockModal';
 import { ExportModal } from '@/features/casting/ExportModal';
 import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
@@ -61,8 +60,6 @@ export function CastingWorkspace({
     activeTool: castingActiveTool,
     showExportModal,
     setShowExportModal,
-    lockModal,
-    closeLockModal,
   } = useCastingUIStore();
 
   // Eagerly preload casting images into browser cache (warm S3 URLs)
@@ -135,13 +132,8 @@ export function CastingWorkspace({
     bindings: castingBindings,
   });
 
-  // View generation hook
-  const { nextStage } = useCastingViewGeneration({
-    isAuthenticated,
-    creditsData,
-    refetchCreditsWithWarning,
-    bindings: castingBindings,
-  });
+  // Post-headshot "next step" affordance (Export). Stage-lock retired (D-46).
+  const { nextStage } = useCastingViewGeneration({ bindings: castingBindings });
 
   // Export hook
   const { handleExport } = useCastingExport({
@@ -220,15 +212,6 @@ export function CastingWorkspace({
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative w-full">
-      {/* Stage Lock Modal */}
-      <StageLockModal
-        isOpen={lockModal.isOpen}
-        title={lockModal.title}
-        message={lockModal.message}
-        onConfirm={lockModal.onConfirm}
-        onCancel={closeLockModal}
-      />
-
       {/* Export Modal */}
       <ExportModal
         isOpen={showExportModal}

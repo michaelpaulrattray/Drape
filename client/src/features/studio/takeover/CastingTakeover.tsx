@@ -235,15 +235,26 @@ export function CastingTakeover({
     setIdentityDialog(diff);
   }, [unsavedDiff]);
 
-  // Ghost slots in the view strip open the upgrade dialog (D-39c)
+  // Ghost slots in the view strip (D-46, one view system): a minted model's
+  // ghost opens the UPGRADE dialog; a draft's ghost opens the MINT gate — the
+  // draft's "add views is a Core mint away". Both are CastModelModal.
   useEffect(() => {
     const onUpgrade = () => {
       if (!isMintedEdit) return;
       setUpgradeMode(true);
       setShowCastModal(true);
     };
+    const onMint = () => {
+      if (isMintedEdit) return; // a minted model can't re-mint; upgrade only
+      setUpgradeMode(false);
+      setShowCastModal(true);
+    };
     window.addEventListener('casting-open-package-upgrade', onUpgrade);
-    return () => window.removeEventListener('casting-open-package-upgrade', onUpgrade);
+    window.addEventListener('casting-open-mint', onMint);
+    return () => {
+      window.removeEventListener('casting-open-package-upgrade', onUpgrade);
+      window.removeEventListener('casting-open-mint', onMint);
+    };
   }, [isMintedEdit, setShowCastModal]);
   useEffect(() => {
     if (!showCastModal) setUpgradeMode(false);

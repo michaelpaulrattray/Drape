@@ -105,9 +105,19 @@ describe("Dead Code Removal - generateAllViews", () => {
     expect(procedures).not.toHaveProperty("generateAllViews");
   });
 
-  it("multiView procedure still exists", async () => {
+  // D-46 (stage-lock unification): the ungated view-generation endpoints were
+  // removed — they added back/walk/side views with NO identity gate (the D-43
+  // bypass class). All view generation now flows through mintPackage, which
+  // gates back/walk. There must be no ungated view endpoint.
+  it("multiView procedure is REMOVED (ungated view path closed)", async () => {
     const { castingImagingRouter } = await import("./routes/generation/castingImaging");
     const procedures = castingImagingRouter._def.procedures;
-    expect(procedures).toHaveProperty("multiView");
+    expect(procedures).not.toHaveProperty("multiView");
+  });
+
+  it("fullBody procedure is REMOVED (ungated view path closed)", async () => {
+    const { castingImagingRouter } = await import("./routes/generation/castingImaging");
+    const procedures = castingImagingRouter._def.procedures;
+    expect(procedures).not.toHaveProperty("fullBody");
   });
 });

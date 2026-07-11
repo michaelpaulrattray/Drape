@@ -154,6 +154,14 @@ export default function DrapeStudio() {
     refetchCreditsWithWarning,
   });
 
+  // A view-strip ghost opens the mint gate (D-46 one view system — in /studio
+  // every model is a draft until cast, so "add a view" is a mint away)
+  useEffect(() => {
+    const onMint = () => setShowCastModal(true);
+    window.addEventListener('casting-open-mint', onMint);
+    return () => window.removeEventListener('casting-open-mint', onMint);
+  }, [setShowCastModal]);
+
   // Full-body URL for wardrobe (uploaded > gallery > casting asset)
   const fullBodyUrl = useMemo(() => {
     if (canvas.uploadedModelUrl) return canvas.uploadedModelUrl;

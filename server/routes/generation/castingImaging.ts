@@ -1,14 +1,13 @@
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
-  getModelById, createModelAsset, getModelAssets,
+  getModelById, createModelAsset,
   createGeneration, updateGeneration,
 } from "../../db";
 import { deductPoints, addCredits } from "../../db";
 import {
-  generateCastingImage, generateFullBody, generateRemainingViews,
+  generateCastingImage,
   POINT_COSTS,
 } from "../../casting/aiService";
-import { withAtomicCredits } from "../../casting/atomicCredits";
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { z } from "zod";
@@ -152,216 +151,12 @@ export const castingImagingRouter = router({
       }
     }),
 
-  // Generate full body image
-  fullBody: protectedProcedure
-    .input(z.object({ modelId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      // Rate limit by user to prevent API abuse
-      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
-      if (!rateCheck.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: rateLimitError(rateCheck.resetIn),
-        });
-      }
-
-      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
-      await enforceDailyQuota(ctx.user.id);
-
-      // Validate model ownership first (cheap operation)
-      const model = await getModelById(input.modelId);
-      if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-      }
-      if (model.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-      }
-
-      // Get existing headshot for reference (cheap operation)
-      const assets = await getModelAssets(input.modelId);
-      const headshot = assets.find(a => a.viewType === "frontClose");
-      if (!headshot?.storageUrl) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No headshot found for full body generation",
-        });
-      }
-
-      const genResult = await createGeneration({
-        userId: ctx.user.id,
-        modelId: input.modelId,
-        type: "fullBody",
-        status: "processing",
-        pointsCost: POINT_COSTS.fullBody,
-      });
-
-      try {
-        // ATOMIC CREDITS: Deduct before generation, refund on failure
-        const result = await withAtomicCredits(
-          {
-            userId: ctx.user.id,
-            amount: POINT_COSTS.fullBody,
-            description: "Full body image generation",
-            referenceId: `gen-${genResult.generationId}`,
-          },
-          async () => {
-            const gender = (model.preferences as any)?.gender || 'female';
-            const bodyType = (model.preferences as any)?.bodyType;
-            const genResult = await generateFullBody(
-              model.masterPrompt,
-              headshot.storageUrl,
-              gender,
-              model.technicalSchema,
-              bodyType
-            );
-
-            if (!genResult.imageUrl) {
-              throw new TRPCError({
-                code: "INTERNAL_SERVER_ERROR",
-                message: "Failed to generate full body image",
-              });
-            }
-
-            return genResult;
-          }
-        );
-
-        const assetResult = await createModelAsset({
-          modelId: input.modelId,
-          viewType: "frontFull",
-          resolution: "1K",
-          storageUrl: result.imageUrl,
-          pointsCost: POINT_COSTS.fullBody,
-        });
-
-        await updateGeneration(genResult.generationId!, {
-          status: "completed",
-          resultUrl: result.imageUrl,
-          completedAt: new Date(),
-        });
-
-        return {
-          success: true,
-          imageUrl: result.imageUrl,
-          pointsCost: POINT_COSTS.fullBody,
-          assetId: assetResult.assetId,
-        };
-      } catch (error) {
-        await updateGeneration(genResult.generationId!, {
-          status: "failed",
-          errorMessage: error instanceof Error ? error.message : "Unknown error",
-          completedAt: new Date(),
-        });
-        throw error;
-      }
-    }),
-
-  // Generate side, back, or walk view
-  multiView: protectedProcedure
-    .input(z.object({
-      modelId: z.number(),
-      viewType: z.enum(["side", "back", "walk"]),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      // Rate limit by user to prevent API abuse
-      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
-      if (!rateCheck.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: rateLimitError(rateCheck.resetIn),
-        });
-      }
-
-      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
-      await enforceDailyQuota(ctx.user.id);
-
-      // Validate model ownership first (cheap operation)
-      const model = await getModelById(input.modelId);
-      if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-      }
-      if (model.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-      }
-
-      // Get reference image (cheap operation)
-      const assets = await getModelAssets(input.modelId);
-      const reference = assets.find(a => a.viewType === "frontClose" || a.viewType === "frontFull");
-      if (!reference?.storageUrl) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No reference image found for multi-view generation",
-        });
-      }
-
-      const genResult = await createGeneration({
-        userId: ctx.user.id,
-        modelId: input.modelId,
-        type: "multiView",
-        status: "processing",
-        pointsCost: POINT_COSTS.multiView,
-        metadata: { viewType: input.viewType },
-      });
-
-      try {
-        // ATOMIC CREDITS: Deduct before generation, refund on failure
-        const result = await withAtomicCredits(
-          {
-            userId: ctx.user.id,
-            amount: POINT_COSTS.multiView,
-            description: `${input.viewType} view generation`,
-            referenceId: `gen-${genResult.generationId}`,
-          },
-          async () => {
-            const gender = (model.technicalSchema as any)?.subject?.sex || 'female';
-            const genResult = await generateRemainingViews(
-              model.masterPrompt,
-              reference.storageUrl,
-              gender,
-              input.viewType,
-              model.technicalSchema
-            );
-
-            if (!genResult.imageUrl) {
-              throw new TRPCError({
-                code: "INTERNAL_SERVER_ERROR",
-                message: "Failed to generate view",
-              });
-            }
-
-            return genResult;
-          }
-        );
-
-        const assetViewType = input.viewType === "side" ? "sideClose" : input.viewType === "walk" ? "sideFull" : "backFull";
-        const assetResult = await createModelAsset({
-          modelId: input.modelId,
-          viewType: assetViewType,
-          resolution: "1K",
-          storageUrl: result.imageUrl,
-          pointsCost: POINT_COSTS.multiView,
-        });
-
-        await updateGeneration(genResult.generationId!, {
-          status: "completed",
-          resultUrl: result.imageUrl,
-          completedAt: new Date(),
-        });
-
-        return {
-          success: true,
-          imageUrl: result.imageUrl,
-          pointsCost: POINT_COSTS.multiView,
-          assetId: assetResult.assetId,
-        };
-      } catch (error) {
-        await updateGeneration(genResult.generationId!, {
-          status: "failed",
-          errorMessage: error instanceof Error ? error.message : "Unknown error",
-          completedAt: new Date(),
-        });
-        throw error;
-      }
-    }),
+  // NOTE (stage-lock unification, D-46): the `fullBody` and `multiView`
+  // procedures were REMOVED here. They generated body/side/walk/back views
+  // with NO identity gate — an ungated write path of the exact class D-43
+  // closed (a raw tRPC caller could add an unverified back or walk view to a
+  // minted identity). All view generation now flows through `mintPackage`
+  // (server/casting/mintPackage.ts), which gates back/walk and prices per
+  // slot. There is no ungated view endpoint. Do not reintroduce one.
 
 });

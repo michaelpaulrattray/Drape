@@ -103,15 +103,11 @@ export function useCastGate({
         utils.generation.mintPackagePlan.invalidate({ modelId: currentModelId });
 
         if (upgrade) {
-          // D-39c upgrade: already minted and placed — stay in the session,
-          // the new views are in the strip
-          if (result.generated.length > 0) {
-            toast.success(
-              `${result.generated.length} view${result.generated.length === 1 ? '' : 's'} added to ${characterName}'s package`
-            );
-          }
+          // D-39c upgrade: already minted and placed — stay in the session;
+          // the new views filling the strip ARE the feedback (D-40, no toast).
         } else {
-          toast.success(`${characterName} has been cast!`);
+          // D-40: the node landing on the board IS the feedback — no
+          // "has been cast!" toast (a legacy survivor Fable caught at VC-R3b).
           if (onMinted) {
             // Takeover host: land the model on the board node
             onMinted(currentModelId, characterName);

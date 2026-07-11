@@ -196,7 +196,7 @@ export function ImageViewerPanel({
   // ── Top overlay: ViewTabs + Identity Warning ──
   const topOverlay = (
     <>
-      <ViewTabs nextStage={nextStage} />
+      <ViewTabs />
       {identityWarning && !genState.isGenerating && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full"
           style={{

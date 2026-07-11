@@ -1,7 +1,11 @@
 # Stage-lock unification — assessment (VC-R3b)
 
-**Status:** awaiting founder ratification. No code changed beyond the ratified
-D-44 label/semantics amendment. Requested at VC-R3b (2026-07-12).
+**Status: RATIFIED + LANDED 2026-07-12** (Fable audit → founder ratified with
+riders → shipped as D-46). This doc is retained as the rationale record; the
+ruling, riders, and R6/R7 log items live in `DECISION_LOG.md` (D-46). All three
+riders landed in the unification commit: (1) draft views route through the mint
+gate; (2) the ungated `generation.fullBody`/`multiView` endpoints removed
+(unit + drive E5 assert closure); (3) the two D-40 survivor toasts removed.
 
 ## The defect that triggered this
 
