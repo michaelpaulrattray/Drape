@@ -21,7 +21,7 @@ import { CastingTakeover } from '@/features/studio/takeover/CastingTakeover';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
-import { NodeContextMenu, type NodeContextAction, type ViewAngle } from './components/NodeContextMenu';
+import { NodeContextMenu, type NodeContextAction } from './components/NodeContextMenu';
 import { NodeInfoPanel } from './components/NodeInfoPanel';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 
@@ -49,7 +49,6 @@ function BoardPageImpl() {
     x: number;
     y: number;
     nodeId: number;
-    nodeType: string;
     imageUrl: string | null;
   } | null>(null);
   const [infoPanel, setInfoPanel] = useState<{ itemId: number; position: { x: number; y: number } } | null>(null);
@@ -125,8 +124,6 @@ function BoardPageImpl() {
     onSettled: () => utils.boards.getItems.invalidate({ boardId }),
   });
 
-  const iterateMutation = trpc.generation.iterate.useMutation();
-  const addVersionMutation = trpc.boards.addItemVersion.useMutation();
   // Optimistic for ALL node kinds (VC2 re-drive follow-up #1): notes, frames,
   // and any legacy-path item render instantly; the server confirm swaps the
   // temp id in place, exactly like cast creation.
@@ -260,6 +257,13 @@ function BoardPageImpl() {
     }
   }, [items]);
 
+  // Warm the picker's models query on board load (D-38: the picker must open
+  // against cache and revalidate, never open empty-then-load)
+  useEffect(() => {
+    if (!isNaN(boardId)) void utils.boardOps.listCastableModels.prefetch({ limit: 30 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId]);
+
   // The cast node's front-door pill dispatches this (same pattern as
   // 'board-rename-node') — node-local modal state wouldn't survive remounts
   useEffect(() => {
@@ -272,23 +276,45 @@ function BoardPageImpl() {
   }, []);
 
   // The takeover's mint landing (D-35): the finished model fills the
-  // originating node in place — same op as the picker's library path
+  // originating node in place — same op as the picker's library path.
+  // Optimistic (D-38): the client already holds the headshot, so the node
+  // fills the instant the takeover closes; the server confirm reconciles
+  // behind (an error refetches back to truth).
   const landMintedCastMutation = trpc.boardOps.fillFromLibrary.useMutation({
     onSuccess: () => {
       utils.boards.getItems.invalidate({ boardId });
-      toast.success('Cast landed on your board');
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      utils.boards.getItems.invalidate({ boardId });
+      toast.error(err.message);
+    },
   });
 
   const handleTakeoverMinted = useCallback(
-    (modelId: number) => {
-      if (castTakeoverItemId !== null && castTakeoverItemId > 0) {
-        landMintedCastMutation.mutate({ boardId, itemId: castTakeoverItemId, modelId });
-      }
+    (modelId: number, info: { name: string; headshotUrl: string | null }) => {
+      const itemId = castTakeoverItemId;
       setCastTakeoverItemId(null);
+      if (itemId === null || itemId <= 0) return;
+      utils.boards.getItems.setData({ boardId }, (old) =>
+        old?.map((i) =>
+          i.id === itemId
+            ? {
+                ...i,
+                imageUrl: info.headshotUrl ?? i.imageUrl,
+                label: info.name || i.label,
+                metadata: {
+                  ...((i.metadata as Record<string, unknown> | null) ?? {}),
+                  provenance: { type: 'library_cast', modelId, viewAngle: 'frontClose' },
+                  status: null,
+                  isGenerating: false,
+                },
+              }
+            : i,
+        ),
+      );
+      landMintedCastMutation.mutate({ boardId, itemId, modelId });
     },
-    [boardId, castTakeoverItemId, landMintedCastMutation],
+    [boardId, castTakeoverItemId, landMintedCastMutation, utils],
   );
 
   // ── Keyboard shortcuts ───────────────────────────────────
@@ -520,7 +546,6 @@ function BoardPageImpl() {
         x: e.clientX,
         y: e.clientY,
         nodeId: itemId,
-        nodeType: item?.type ?? 'reference',
         imageUrl: item?.imageUrl ?? null,
       });
     },
@@ -530,14 +555,6 @@ function BoardPageImpl() {
   const handleNodeContextAction = useCallback(
     (action: NodeContextAction, nodeId: number) => {
       switch (action) {
-        case 'modify_iterate':
-          setEditorItemId(nodeId);
-          break;
-        case 'wardrobe':
-          setSelectedItemId(nodeId);
-          setActivePanel('wardrobe');
-          setActiveTool('wardrobe');
-          break;
         case 'rename': {
           // Dispatch a custom event that BoardItemNode listens for
           window.dispatchEvent(new CustomEvent('board-rename-node', { detail: { itemId: nodeId } }));
@@ -554,24 +571,11 @@ function BoardPageImpl() {
         case 'delete':
           handleItemDelete(nodeId);
           break;
-        case 'remove_bg':
-        case 'upscale':
-        case 'extract_palette':
-          toast.info('Feature coming soon');
-          break;
         default:
           break;
       }
     },
-    [handleItemDelete, items, nodeContextMenu],
-  );
-
-  const handleViewGenerate = useCallback(
-    (nodeId: number, angle: ViewAngle) => {
-      const angleName = angle === 'three_quarter' ? '3/4' : angle;
-      toast.info(`Generating ${angleName} view — coming soon`);
-    },
-    [],
+    [handleItemDelete, nodeContextMenu],
   );
 
   // ── Derived state ──────────────────────────────────────────
@@ -855,64 +859,8 @@ function BoardPageImpl() {
         <NodeContextMenu
           position={{ x: nodeContextMenu.x, y: nodeContextMenu.y }}
           nodeId={nodeContextMenu.nodeId}
-          nodeType={nodeContextMenu.nodeType}
           imageUrl={nodeContextMenu.imageUrl}
           onAction={handleNodeContextAction}
-          onViewGenerate={handleViewGenerate}
-          onPromptSubmit={async (nId, prompt) => {
-            const item = items?.find((i) => i.id === nId);
-            if (!item?.sourceModelId) {
-              toast.error('This item has no linked model for iteration');
-              return;
-            }
-            // Get model info to find the latest asset ID
-            const modelInfo = await utils.boards.getItemModelInfo.fetch({ itemId: nId });
-            const assetId = modelInfo?.latestAssetId;
-            if (!assetId) {
-              toast.error('No asset found for this model');
-              return;
-            }
-            setNodeContextMenu(null);
-            const toastId = toast.loading(`Iterating: "${prompt}"...`);
-            try {
-              // Save current image as a version before iterating
-              if (item.imageUrl) {
-                await addVersionMutation.mutateAsync({
-                  itemId: nId,
-                  imageUrl: item.imageUrl,
-                  prompt: 'Original',
-                  tool: 'initial',
-                });
-              }
-              // Call iterate
-              const result = await iterateMutation.mutateAsync({
-                modelId: item.sourceModelId,
-                feedback: prompt,
-                assetId,
-              });
-              if (result.success && result.imageUrl) {
-                // Update the board item image
-                await updateItemMutation.mutateAsync({
-                  itemId: nId,
-                  imageUrl: result.imageUrl,
-                });
-                // Save new version
-                await addVersionMutation.mutateAsync({
-                  itemId: nId,
-                  imageUrl: result.imageUrl,
-                  prompt,
-                  tool: 'chat',
-                });
-                utils.boards.getItemVersionCount.invalidate({ itemId: nId });
-                toast.success('Iteration complete', { id: toastId });
-              } else {
-                toast.error('Iteration failed — no image returned', { id: toastId });
-              }
-            } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : 'Iteration failed';
-              toast.error(msg, { id: toastId });
-            }
-          }}
           onClose={() => setNodeContextMenu(null)}
         />
       )}

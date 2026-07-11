@@ -18,7 +18,7 @@ interface UseCastGateParams {
   refetchCreditsWithWarning: () => void;
   /** Override the post-mint destination: the studio transitions to wardrobe
    *  by default; the board takeover (D-35) lands the model on its node. */
-  onMinted?: (modelId: number) => void;
+  onMinted?: (modelId: number, characterName: string) => void;
 }
 
 export function useCastGate({
@@ -98,7 +98,7 @@ export function useCastGate({
 
         if (onMinted) {
           // Takeover host: land the model on the board node
-          onMinted(currentModelId);
+          onMinted(currentModelId, characterName);
         } else {
           // Studio default: transition to wardrobe
           setActiveTool('wardrobe');

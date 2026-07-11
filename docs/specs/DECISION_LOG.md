@@ -193,6 +193,31 @@ Everything renders in Drape's language — their patterns, our tokens.
 
 **Affects:** D-1/D-3/D-4 superseded (VC1's 0.45/0.35 threshold ruling is moot); D-2 narrowed — statuses (and the M6 toolbar's counter-scaling, pending M6) remain the only screen-fixed chrome; D-6 unchanged and load-bearing; D-5 (frames as far-zoom wayfinding, pass 3) unaffected. Applied 2026-07-11: `zoomTiers.ts` → `canvasZoom.ts` (live zoom only), all tier gates removed from primitives, `DensityMock` (a tier-tuning tool) deleted with its `?mock=density` gate.
 
+## Group 6e — Post-VC-R1 directives (founder, 2026-07-11)
+
+Follow-up batch after the founder drove the R1 takeover. Items 1–2 (optimistic mint landing, picker prefetch) and 4 (context-menu strip to Rename/Info/Download/Copy Image/Delete) shipped same day; D-38 records the general principle; D-39 records the identity-package brief as PROPOSED pending the founder ratifying the written assessment (`docs/specs/D39_PACKAGE_ASSESSMENT.md`).
+
+### D-38 — Optimistic rendering is the default wherever the client already holds the data *(founder-directed, ratified)*
+
+**What:** any interaction where the client already possesses the data renders optimistically — server confirms reconcile, **never gate**. Errors reconcile back to server truth (refetch), never leave phantom state. Corollary: queries behind user-visible surfaces are prefetched so those surfaces open against cache and revalidate (never open empty-then-load).
+
+**Why:** the founder drives from AU against a US server; his latency is free QA — what feels snappy to him is instant for everyone. VC2's optimistic creation + local-position ledger already proved the pattern; this generalizes it from a fix to a rule.
+
+**Applied 2026-07-11:** mint → node fill is optimistic (the takeover passes the client-held headshot + name across the D-24 boundary as plain data; `fillFromLibrary` confirms behind); `listCastableModels` prefetched on board load + front-door hover so the picker opens instantly from cache.
+
+**Affects:** every future paid-op landing (R3 `applyModelEdit`, R5 view refresh) and every picker/dialog data dependency. Plan-derived *costs* still come from the server before firing (D-15) — optimism applies to rendering what the client knows, never to skipping the cost contract.
+
+### D-39 — Canonical identity package + tiered mint *(PROPOSED — assessment delivered, awaiting founder ratification; no build until then)*
+
+**What (founder brief, 5a–5e):**
+- **(a)** The canonical package is **six slots** — front headshot (default cast output), side profile, three-quarter, full-body front, full-body back, plus one further slot to be confirmed at ratification (five were named; the current system's sixth canonical view is full-body side). Face cluster (headshot, side profile, three-quarter) locks facial identity; body cluster locks silhouette/build for VTO and scene work. Back views need an identityCheck-style verification gate before joining the package (angles research: person-rotation hallucinates past ~120°).
+- **(b)** The mint dialog's "generate side view (recommended)" is replaced by **tiered packages**: **Draft** (headshot only — always allowed; exploring candidates), **Core identity** (+ side, ¾, full-body front; ready for downstream work), **Production sheet** (all six; full comp card for scenes/video). Each tier shows its credit cost per D-15, and the copy explains what each tier is FOR.
+- **(c)** Package completeness is a **first-class model property**: the R5 sheet renders empty slots with add-view affordances (upgrade anytime, no re-cast); D-30's composer degrades gracefully and records which slots it used per generation in the `InputSnapshot`.
+- **(d)** Hard constraint on D-30: the composer operates under a **per-generation reference-image budget (~5–6 usable)** before identity fidelity degrades. Multi-model scenes fit inside it — per-model allocation drops to headshot + one task-relevant view, with the text identity description doing more work. Full-package-per-model is never the strategy; staged composition is the future escape hatch for 3+ subjects (logged, not scheduled).
+- **(e)** Proposed landing in the R-sequence and per-slot capability/risk analysis: see the assessment doc; plan is rewritten only on ratification.
+
+**Affects (on ratification):** studio view system (three-quarter slot is net-new), mint dialog (`CastModelModal` → tiered), D-29 sheet slots, D-30 composer + `InputSnapshot`, model-assets schema (per-slot status/pin home — see assessment collision), R-sequence.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

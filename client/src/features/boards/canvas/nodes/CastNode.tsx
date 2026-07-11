@@ -10,6 +10,7 @@
  */
 import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
+import { trpc } from "@/lib/trpc";
 import { CanvasNodeShell } from "../CanvasNodeShell";
 import { NodeLabelRow } from "../NodeLabelRow";
 import { ConnectionDot } from "../ConnectionDot";
@@ -44,6 +45,7 @@ const VIEW_ANGLE_LABEL: Record<string, string> = {
 
 function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const controller = useCastNodeController(data);
+  const utils = trpc.useUtils();
 
   const prov = data.provenance;
   const isRoot = !prov || prov.type === "cast_root"; // empty nodes are roots-to-be
@@ -107,6 +109,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
               <button
                 type="button"
                 onMouseDown={(e) => e.stopPropagation()}
+                onMouseEnter={() => void utils.boardOps.listCastableModels.prefetch({ limit: 30 })}
                 onClick={() =>
                   window.dispatchEvent(
                     new CustomEvent("board-open-cast-picker", { detail: { itemId: data.itemId } }),

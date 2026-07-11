@@ -23,8 +23,10 @@ import { resetCastingSession } from '../hooks/castingSessionReset';
 export interface CastingTakeoverProps {
   user: { role?: string } | null;
   isAuthenticated: boolean;
-  /** Mint completed — host lands the model on the originating node and closes. */
-  onMinted: (modelId: number) => void;
+  /** Mint completed — host lands the model on the originating node and closes.
+   *  Carries the client-held headshot + name as plain data so the host can
+   *  fill optimistically (D-38) without touching casting stores (D-24). */
+  onMinted: (modelId: number, info: { name: string; headshotUrl: string | null }) => void;
   /** User backed out (Esc / back / close), after the leave-confirm if work exists. */
   onClose: () => void;
 }
@@ -64,7 +66,12 @@ export function CastingTakeover({ user, isAuthenticated, onMinted, onClose }: Ca
     currentModelId,
     currentAssets,
     refetchCreditsWithWarning,
-    onMinted,
+    onMinted: (modelId, characterName) =>
+      onMinted(modelId, {
+        name: characterName,
+        headshotUrl:
+          currentAssets.find((a) => a.viewType === 'frontClose' && a.storageUrl)?.storageUrl ?? null,
+      }),
   });
 
   const hasHeadshot = currentAssets.some((a) => a.viewType === 'frontClose' && a.storageUrl);
