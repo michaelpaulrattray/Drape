@@ -104,6 +104,8 @@ Gate: `pnpm check`, `pnpm test`, guards, studio smoke unaffected.
 
 Gate: `pnpm check`, `pnpm test` (parser suite green), studio smoke (constants + ControlPanel touched).
 
+> **VC2 outcome (founder, 2026-07-11): the core loop works** — three casts completed, generation quality good, library path confirmed. Five trust/usability fixes landed same-day (generating state masked by isEmpty; wheel=zoom + page scroll eliminated; optimistic creation + local-position-always-wins ledger; unified creation path with `screenToFlowPosition` for right-click; library-cast width parity). A permanent regression drive (`scripts/verify-canvas.mts`) covers the create→drag and right-click-placement invariants. **Queued into M5 from VC2:** (a) library-placed cast nodes hydrate attributes from the model record so the same node kind gets the same chrome regardless of arrival path; (b) founder re-characterizes residual interaction jank after the fixes — suspects to check: unmemoized node re-renders during job-store ticks, images loading without intrinsic dimensions causing layout shift, `getItems` refetch churn on every mutation success.
+
 ## M5 — Lifted-component redesign + chip popovers + attributes op → **VC3**
 
 **Goal:** the tactile loop — Drape's differentiator — works on the canvas in the canvas language.

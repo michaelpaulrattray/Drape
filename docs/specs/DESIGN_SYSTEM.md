@@ -295,7 +295,7 @@ export interface CastNodeData {
 }
 ```
 
-Composition (root width 260, view/library width 200):
+Composition (root **and library** width 260 — a placed library cast is an identity anchor, not a view; VC2 finding — true `cast_view` cards 200):
 
 - `NodeFloatingToolbar` — selected && !isEmpty. Root: 6 active (Rerun → ForkRecastPopover). View: Variations/Duplicate disabled. Library cast: Rerun/Variations disabled ("Generate from this cast in a downstream node"), Duplicate/Download/Delete/Info active.
 - `NodeLabelRow` — root `Cast · {name}`; view `Cast · {name} · {viewLabel}`; library `Cast · {name} · Library`. Engine right-slot only when present.

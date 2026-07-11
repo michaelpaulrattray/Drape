@@ -29,8 +29,10 @@ export function useCastNodeController(data: CastNodeData) {
     return () => clearInterval(t);
   }, [job?.status]);
 
-  const isEmpty = !data.imageUrl && data.status?.type !== "error";
   const generating = job?.status === "running";
+  // Generating takes precedence: a node mid-generation is NOT "empty" — the
+  // paid wait must render progress, never the placeholder (VC2 fix #1).
+  const isEmpty = !data.imageUrl && data.status?.type !== "error" && !generating;
 
   // Cost before Run — always from the server plan (Decision 6)
   const planQuery = trpc.boardOps.runGeneration.plan.useQuery(

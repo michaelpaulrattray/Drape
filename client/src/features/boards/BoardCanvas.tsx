@@ -79,6 +79,8 @@ type BoardCanvasProps = {
   boardId: number;
   /** Expose a way for parent to select a node (auto-select on drop) */
   onSelectNodeRef?: (selector: (itemId: number) => void) => void;
+  /** Expose screen→flow coordinate conversion (right-click placement, VC2 #4) */
+  onScreenToFlowRef?: (fn: (screen: { x: number; y: number }) => { x: number; y: number }) => void;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -245,6 +247,7 @@ export function BoardCanvas({
   onScrollToNodeRef,
   boardId,
   onSelectNodeRef,
+  onScreenToFlowRef,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -431,6 +434,11 @@ export function BoardCanvas({
               };
             });
           }
+          // Expose screen→flow conversion (uses React Flow's own transform —
+          // never hand-roll the pan/zoom math; that was VC2 bug #4)
+          if (onScreenToFlowRef) {
+            onScreenToFlowRef((screen) => instance.screenToFlowPosition(screen));
+          }
           // Expose smooth scroll-to-node for parent
           if (onScrollToNodeRef) {
             onScrollToNodeRef((itemId: number) => {
@@ -452,7 +460,7 @@ export function BoardCanvas({
         minZoom={0.1}
         maxZoom={3}
         deleteKeyCode={null}
-        panOnScroll
+        zoomOnScroll
         selectionOnDrag={false}
         selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}

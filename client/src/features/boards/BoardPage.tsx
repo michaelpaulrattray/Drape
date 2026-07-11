@@ -71,6 +71,10 @@ function BoardPageImpl() {
   const scrollToNodeRef = useRef<((itemId: number) => void) | null>(null);
   // Auto-select function exposed by BoardCanvas (freshly-dropped nodes)
   const selectNodeRef = useRef<((itemId: number) => void) | null>(null);
+  // Screen→flow converter exposed by BoardCanvas + the flow position captured
+  // when a right-click menu opens (nodes spawn at the cursor, VC2 fix #4)
+  const screenToFlowRef = useRef<((s: { x: number; y: number }) => { x: number; y: number }) | null>(null);
+  const contextMenuFlowPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Placement mode: 'note' or 'frame' — cursor becomes crosshair, next pane click places the node
   const [placementMode, setPlacementMode] = useState<'note' | 'frame' | null>(null);
@@ -141,9 +145,24 @@ function BoardPageImpl() {
     [boardId, renameMutation],
   );
 
+  /**
+   * Local-moves ledger (VC2 fix #3): a user's position change ALWAYS wins over
+   * any in-flight server confirm. Every drag-end is recorded here; canvasItems
+   * overrides server positions with these until the server catches up (returned
+   * position matches), at which point the entry self-prunes. This closes the
+   * race where a refetch issued before the move persisted rebuilt the node at
+   * its stale position ("snap back").
+   */
+  const recentMovesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+
   const handleItemMove = useCallback(
     (itemId: number, x: number, y: number) => {
-      updateItemMutation.mutate({ itemId, positionX: x, positionY: y });
+      recentMovesRef.current.set(itemId, { x, y });
+      if (itemId > 0) {
+        // Negative ids are optimistic temp nodes — their move is recorded and
+        // transferred to the real id at swap time (see createCastNodeMutation)
+        updateItemMutation.mutate({ itemId, positionX: x, positionY: y });
+      }
     },
     [updateItemMutation],
   );
@@ -252,25 +271,82 @@ function BoardPageImpl() {
   );
 
   // ── Inline cast creation (M4 — foundations 3a) ─────────────
+  // Optimistic (VC2 fix #3): a temp row renders instantly; the server confirm
+  // swaps the temp id for the real one in place (no invalidation flicker), and
+  // any position the user set meanwhile transfers to the real id.
   const createCastNodeMutation = trpc.boardOps.createNode.execute.useMutation({
-    onSuccess: async (result) => {
-      await utils.boards.getItems.invalidate({ boardId });
-      selectNodeRef.current?.(result.itemId);
-      scrollToNodeRef.current?.(result.itemId);
+    onMutate: async (vars) => {
+      await utils.boards.getItems.cancel({ boardId });
+      const prev = utils.boards.getItems.getData({ boardId });
+      const tempId = -Date.now();
+      type ItemsRow = NonNullable<typeof prev>[number];
+      const tempRow = {
+        id: tempId,
+        boardId,
+        type: 'model',
+        kind: 'cast_config',
+        label: null,
+        imageUrl: null,
+        imageKey: null,
+        positionX: Math.round(vars.position.x),
+        positionY: Math.round(vars.position.y),
+        width: vars.size?.width ?? 260,
+        height: vars.size?.height ?? 220,
+        zIndex: 0,
+        parentItemId: null,
+        sourceModelId: null,
+        sourceGarmentId: null,
+        sourceSessionId: null,
+        sourceLookId: null,
+        metadata: {},
+        deletedAt: null,
+        createdAt: new Date(),
+      } as unknown as ItemsRow;
+      utils.boards.getItems.setData({ boardId }, (old) => [...(old ?? []), tempRow]);
+      selectNodeRef.current?.(tempId);
+      return { prev, tempId };
     },
-    onError: () => toast.error('Failed to add cast node'),
+    onSuccess: (result, _vars, ctx) => {
+      // Swap temp → real in place; transfer any local move to the real id
+      const move = ctx?.tempId ? recentMovesRef.current.get(ctx.tempId) : undefined;
+      if (ctx?.tempId && move) {
+        recentMovesRef.current.delete(ctx.tempId);
+        recentMovesRef.current.set(result.itemId, move);
+        updateItemMutation.mutate({ itemId: result.itemId, positionX: move.x, positionY: move.y });
+      }
+      utils.boards.getItems.setData({ boardId }, (old) =>
+        old?.map((i) =>
+          i.id === ctx?.tempId
+            ? { ...i, id: result.itemId, positionX: move?.x ?? i.positionX, positionY: move?.y ?? i.positionY }
+            : i,
+        ),
+      );
+      selectNodeRef.current?.(result.itemId);
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
+      toast.error('Failed to add cast node');
+    },
   });
 
   const castDropCountRef = useRef(0);
-  const handleAddCast = useCallback(() => {
-    const center = viewportCenterGetterRef.current?.() ?? { x: 0, y: 0 };
-    // Consecutive drops step right so nodes land beside each other, not stacked
-    const offset = (castDropCountRef.current++ % 4) * 300;
+  /** ONE creation path for every entry point (VC2 fix #4): right-click passes
+   *  the cursor's flow position; the pill and Add menu default to center. */
+  const handleAddCast = useCallback((flowPos?: { x: number; y: number } | null) => {
+    let position: { x: number; y: number };
+    if (flowPos) {
+      position = { x: flowPos.x - 130, y: flowPos.y - 20 };
+    } else {
+      const center = viewportCenterGetterRef.current?.() ?? { x: 0, y: 0 };
+      // Consecutive center-drops step right so nodes land beside each other
+      const offset = (castDropCountRef.current++ % 4) * 300;
+      position = { x: center.x - 130 + offset, y: center.y - 130 };
+    }
     createCastNodeMutation.mutate({
       boardId,
       kind: 'cast_config',
       provenance: null,
-      position: { x: center.x - 130 + offset, y: center.y - 130 },
+      position,
       size: { width: 260, height: 220 },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -280,7 +356,9 @@ function BoardPageImpl() {
     (action: AddNodeAction) => {
       switch (action) {
         case 'cast':
-          handleAddCast();
+          // Right-click menus carry the cursor's flow position; pill/center adds don't
+          handleAddCast(contextMenuFlowPosRef.current);
+          contextMenuFlowPosRef.current = null;
           break;
         case 'wardrobe':
           setActivePanel('wardrobe');
@@ -342,6 +420,9 @@ function BoardPageImpl() {
     (e: React.MouseEvent) => {
       e.preventDefault();
       setNodeContextMenu(null);
+      // Capture the cursor's flow position NOW (pan/zoom may change before the pick)
+      contextMenuFlowPosRef.current =
+        screenToFlowRef.current?.({ x: e.clientX, y: e.clientY }) ?? null;
       setAddNodeMenu({ x: e.clientX, y: e.clientY });
     },
     [],
@@ -423,20 +504,30 @@ function BoardPageImpl() {
 
   const canvasItems: BoardItemRecord[] = useMemo(
     () =>
-      (items ?? []).map((item) => ({
-        id: item.id,
-        type: item.type as BoardItemRecord['type'],
-        kind: item.kind as BoardItemRecord['kind'],
-        label: item.label,
-        imageUrl: item.imageUrl,
-        positionX: item.positionX,
-        positionY: item.positionY,
-        width: item.width,
-        height: item.height,
-        zIndex: item.zIndex,
-        metadata: item.metadata as Record<string, unknown> | null,
-        sourceModelId: item.sourceModelId,
-      })),
+      (items ?? []).map((item) => {
+        // Apply the local-moves ledger: local position wins until the server
+        // echoes it back, then the entry self-prunes (VC2 fix #3)
+        const localMove = recentMovesRef.current.get(item.id);
+        if (localMove && localMove.x === item.positionX && localMove.y === item.positionY) {
+          recentMovesRef.current.delete(item.id);
+        }
+        const positionX = localMove?.x ?? item.positionX;
+        const positionY = localMove?.y ?? item.positionY;
+        return {
+          id: item.id,
+          type: item.type as BoardItemRecord['type'],
+          kind: item.kind as BoardItemRecord['kind'],
+          label: item.label,
+          imageUrl: item.imageUrl,
+          positionX,
+          positionY,
+          width: item.width,
+          height: item.height,
+          zIndex: item.zIndex,
+          metadata: item.metadata as Record<string, unknown> | null,
+          sourceModelId: item.sourceModelId,
+        };
+      }),
     [items],
   );
 
@@ -496,8 +587,10 @@ function BoardPageImpl() {
   }
 
   return (
-    // canvas-scope: light theme container for the canvas + its primitives (D-22)
-    <div className="canvas-scope flex flex-col" style={{ height: '100vh', background: '#FAFAF8' }}>
+    // canvas-scope: light theme container for the canvas + its primitives (D-22).
+    // overflow-hidden: the board page owns the viewport — page scroll must not
+    // exist, so the wheel always reaches React Flow as zoom (VC2 fix #2).
+    <div className="canvas-scope flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFAF8' }}>
       <BoardHeader
         name={board.name}
         onRename={handleRename}
@@ -542,6 +635,9 @@ function BoardPageImpl() {
             onSelectNodeRef={(selector) => {
               selectNodeRef.current = selector;
             }}
+            onScreenToFlowRef={(fn) => {
+              screenToFlowRef.current = fn;
+            }}
             className="absolute inset-0"
           >
             {/* Bottom canvas UI — rendered inside ReactFlow for context access */}
@@ -552,7 +648,8 @@ function BoardPageImpl() {
               }
               onSelectTool={(tool: PillTool) => {
                 if (tool === 'add') {
-                  // Rough M4 Add: the AddNodeMenu anchored above the pill
+                  // Pill adds spawn at viewport center — clear any stale cursor pos
+                  contextMenuFlowPosRef.current = null;
                   setAddNodeMenu({ x: window.innerWidth / 2 - 90, y: window.innerHeight - 320 });
                   return;
                 }

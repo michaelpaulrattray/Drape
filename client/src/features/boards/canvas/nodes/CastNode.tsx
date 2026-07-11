@@ -87,6 +87,11 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const prov = data.provenance;
   const isRoot = !prov || prov.type === "cast_root"; // empty nodes are roots-to-be
   const isLibrary = prov?.type === "library_cast";
+  // Card size: only true view cards are smaller. Library casts are identity
+  // anchors like fresh roots and get canonical root dimensions (VC2 fix #5).
+  const isView = prov?.type === "cast_view";
+  const cardWidth = isView ? 200 : 260;
+  const imageHeight = isView ? 140 : 170;
   const baseLabel = data.label ? `Cast · ${data.label}` : "Cast";
   const typeLabel = isLibrary
     ? `${baseLabel} · Library`
@@ -109,7 +114,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
       ];
 
   return (
-    <div className="relative" style={{ width: isRoot ? 260 : 200 }}>
+    <div className="relative" style={{ width: cardWidth }}>
       <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
 
       <CanvasNodeShell selected={selected}>
@@ -131,7 +136,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
             dimmed={data.status?.type === "stale" && !data.pinned}
             error={errored}
             onRetry={controller.retry}
-            height={isRoot ? 170 : 140}
+            height={imageHeight}
           />
           {/* D-28: the pick-existing path, at the node */}
           {controller.isEmpty && !errored && controller.promptState !== "generating" && tier === "working" && (
