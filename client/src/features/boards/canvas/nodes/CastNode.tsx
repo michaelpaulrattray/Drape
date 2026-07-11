@@ -3,23 +3,19 @@
  * §5.11). One component for cast_root, cast_view, and library_cast
  * provenance; branch on provenance.type, never split into separate files.
  *
- * M4 (VC2) scope: empty → run → generating → complete on roots, D-28 library
- * fill-in-place, error state with retry. Known-inert until later milestones:
- * attribute popovers (M5), toolbar (M6), views (M7), Edit → studio (M8).
+ * Node face = label row, image, control strip — nothing else (D-34). The
+ * empty node's front door is the CastPickerModal (D-33): choose existing or
+ * cast new. No inline prompt, no attribute chrome; configuration and
+ * post-cast editing consolidate in the casting environment (D-35, gated).
  */
-import { memo, useState } from "react";
+import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { CanvasNodeShell } from "../CanvasNodeShell";
 import { NodeLabelRow } from "../NodeLabelRow";
 import { ConnectionDot } from "../ConnectionDot";
 import { CastImageArea } from "../CastImageArea";
-import { NodeInlinePrompt } from "../NodeInlinePrompt";
 import { NodeControlStrip, type ControlSegment } from "../NodeControlStrip";
-import { NodeAttributeBlock, type AttributeDescriptor } from "../NodeAttributeBlock";
 import { NodeStatusBadge } from "../NodeStatusBadge";
-import { Popover, PopoverTrigger, CanvasPopoverContent } from "../CanvasPopover";
-import { LibraryPickerContent } from "../LibraryPickerPopover";
-import { useZoomTierContext } from "../zoomTiers";
 import { useCastNodeController } from "./useCastNodeController";
 import type { Provenance, NodeStatus, CastAttributes } from "@shared/boardTypes";
 
@@ -46,43 +42,8 @@ const VIEW_ANGLE_LABEL: Record<string, string> = {
   backFull: "Back full",
 };
 
-/** Attribute rows from parsed/user attributes — popovers land in M5. */
-function attributeRows(attrs: CastAttributes | undefined): AttributeDescriptor[] {
-  const a = (attrs ?? {}) as Record<string, unknown>;
-  const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
-  const inert = (
-    <div className="text-canvas-sm text-canvas-ink-soft leading-relaxed">
-      Tactile editing arrives in M5. Values shown are from your prompt.
-    </div>
-  );
-  return [
-    { id: "brand", label: "Brand", value: str(a.castingBrand), popoverContent: inert, popoverWidth: 260 },
-    { id: "vibe", label: "Vibe", value: a.castingVibe ? "Set" : null, popoverContent: inert, popoverWidth: 280 },
-    {
-      id: "ethnicity",
-      label: "Ethnicity",
-      value: Array.isArray(a.ethnicityBlend) && a.ethnicityBlend.length
-        ? (a.ethnicityBlend as Array<{ name: string }>).map((e) => e.name).join(" + ")
-        : str(a.ethnicity),
-      popoverContent: inert,
-      popoverWidth: 320,
-    },
-    { id: "skin", label: "Skin", value: str(a.skinTone)?.split(" / ")[0] ?? null, popoverContent: inert, popoverWidth: 280 },
-    { id: "hair", label: "Hair", value: str(a.hairColor), popoverContent: inert, popoverWidth: 300 },
-    { id: "eyes", label: "Eyes", value: str(a.eyeColor), popoverContent: inert, popoverWidth: 240 },
-  ];
-}
-
 function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const controller = useCastNodeController(data);
-  const { tier } = useZoomTierContext();
-  const [activeAttrId, setActiveAttrId] = useState<string | null>(null);
-  const [attrsExpanded, setAttrsExpanded] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  if (!selected && (attrsExpanded || activeAttrId)) {
-    setAttrsExpanded(false);
-    setActiveAttrId(null);
-  }
 
   const prov = data.provenance;
   const isRoot = !prov || prov.type === "cast_root"; // empty nodes are roots-to-be
@@ -99,6 +60,8 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
       : baseLabel;
   const engine = prov && "engine" in prov ? prov.engine : undefined;
   const errored = data.status?.type === "error";
+  const showFrontDoor =
+    controller.isEmpty && !errored && controller.promptState !== "generating";
 
   const controlSegments: ControlSegment[] = isRoot && !isLibrary
     ? [
@@ -136,62 +99,29 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
             error={errored}
             onRetry={controller.retry}
           />
-          {/* D-28: the pick-existing path, at the node */}
-          {controller.isEmpty && !errored && controller.promptState !== "generating" && tier === "working" && (
-            <div className="absolute bottom-2 inset-x-0 flex justify-center">
-              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    className="text-canvas-xs text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors bg-canvas-surface-inset px-2"
-                  >
-                    or choose from your models
-                  </button>
-                </PopoverTrigger>
-                <CanvasPopoverContent side="right" align="start" style={{ width: 320 }}>
-                  <LibraryPickerContent
-                    disabled={controller.fillPending}
-                    onPick={(modelId) => {
-                      setPickerOpen(false);
-                      controller.fillFromLibrary(modelId);
-                    }}
-                    onCastInstead={() => setPickerOpen(false)}
-                  />
-                </CanvasPopoverContent>
-              </Popover>
+          {/* The front door (D-33): one dark pill, below the empty-slot glyph.
+              The picker itself is hosted by BoardPage — node-local state dies
+              on the optimistic temp→real id remount. */}
+          {showFrontDoor && (
+            <div className="absolute inset-x-0 top-[58%] flex justify-center">
+              <button
+                type="button"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent("board-open-cast-picker", { detail: { itemId: data.itemId } }),
+                  )
+                }
+                className="px-3 py-1.5 rounded-canvas-pill text-canvas-xs font-medium bg-canvas-ink text-canvas-surface hover:opacity-90 transition-opacity"
+              >
+                Choose or cast a model
+              </button>
             </div>
           )}
         </div>
-
-        {!isLibrary && (
-          <NodeInlinePrompt
-            value={controller.promptValue}
-            onChange={controller.setPromptValue}
-            onSubmit={controller.runOrEdit}
-            state={controller.isEmpty && !errored ? (controller.canRun ? "ready" : "empty") : controller.promptState}
-            placeholder={isRoot ? "Describe your model..." : "Pose..."}
-            runCost={controller.runCost}
-            canRun={controller.canRun}
-            autoFocus={controller.isEmpty && selected}
-          />
-        )}
       </CanvasNodeShell>
 
-      {selected && (
-        <>
-          {!controller.isEmpty && <NodeControlStrip segments={controlSegments} />}
-          {isRoot && !isLibrary && (
-            <NodeAttributeBlock
-              attributes={attributeRows(data.attributes)}
-              expanded={attrsExpanded}
-              onExpandedChange={setAttrsExpanded}
-              activeId={activeAttrId}
-              onActiveChange={setActiveAttrId}
-            />
-          )}
-        </>
-      )}
+      {selected && !controller.isEmpty && <NodeControlStrip segments={controlSegments} />}
     </div>
   );
 }

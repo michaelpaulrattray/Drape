@@ -30,7 +30,7 @@ import { FrameNode, type FrameFlowNode } from './nodes/FrameNode';
 import { NoteNode, type NoteFlowNode } from './nodes/NoteNode';
 import { CastNode, type CastFlowNode, type CastNodeData } from './canvas/nodes/CastNode';
 import { ImageNode, type ImageFlowNode } from './canvas/nodes/ImageNode';
-import { ZoomTierContext, useZoomTier } from './canvas/zoomTiers';
+import { CanvasZoomContext, useLiveCanvasZoom } from './canvas/canvasZoom';
 import type { BoardItemCanvasMetadata, Provenance } from '@shared/boardTypes';
 
 /* ── Types ────────────────────────────────────────────────── */
@@ -386,7 +386,7 @@ export function BoardCanvas({
       }}
     >
       <ReactFlowProvider>
-        <ZoomTierBridge>
+        <CanvasZoomBridge>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -477,14 +477,14 @@ export function BoardCanvas({
         />
         {children}
       </ReactFlow>
-        </ZoomTierBridge>
+        </CanvasZoomBridge>
       </ReactFlowProvider>
     </div>
   );
 }
 
-/** Provides the zoom tier to all nodes (DS §12). Must sit inside ReactFlowProvider. */
-function ZoomTierBridge({ children }: { children: ReactNode }) {
-  const value = useZoomTier();
-  return <ZoomTierContext.Provider value={value}>{children}</ZoomTierContext.Provider>;
+/** Provides live zoom to screen-legible chrome (D-37). Must sit inside ReactFlowProvider. */
+function CanvasZoomBridge({ children }: { children: ReactNode }) {
+  const value = useLiveCanvasZoom();
+  return <CanvasZoomContext.Provider value={value}>{children}</CanvasZoomContext.Provider>;
 }

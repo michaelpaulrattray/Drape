@@ -83,7 +83,7 @@ Referenced docs: `CANVAS_FOUNDATIONS.md` (F), `DESIGN_SYSTEM.md` (DS), `CANVAS_A
 |---|---|---|---|---|
 | D-28 | **Both paths at the node** (founder, 2026-07-10, with ElevenLabs Flows reference shots): the empty cast node carries a quiet secondary affordance — `or choose from your models` — opening the `LibraryPickerPopover` directly at the node; picking **fills the node in place** as `library_cast` (no sibling spawned). **Constraint:** the picker offers canonical cast reference imagery only — never outfitted/styled/scene outputs (ElevenLabs offers styles at pick time; Drape deliberately does not — §1.5 reference-asset framing). Patterns stolen, rendering not: popovers and hairlines, no modals/scrims | Create-new and pick-existing split across menu surfaces makes the empty node a dead end for returning users; merging them at the node is the stronger ergonomic, and the constraint keeps identity slots truthful | DS §5.12/§7.3/§9; F 3a/§4; build plan M4 (affordance slot) + M9 (picker wiring) | FOUNDER-DIRECTED (encoded) |
 
-## Group 6c — PROPOSED AMENDMENT: character-sheet rendering + weighted reference semantics *(awaiting founder ratification before M7)*
+## Group 6c — Character-sheet rendering + weighted reference semantics *(RATIFIED 2026-07-11, alongside the D-35 assessment — see Group 6d ratification record)*
 
 Two connected VC1-review findings from the founder (2026-07-10, with ElevenLabs composite-card reference shot). **D-29 amends an item on the locked ledger** (the root/view node model) — founder-initiated, so permitted. Neither `CANVAS_FOUNDATIONS.md` nor `DESIGN_SYSTEM.md` is edited until this section is ratified; M3a–M6 are unaffected and proceed.
 
@@ -128,6 +128,71 @@ Removed from M7: view-node spawning + auto-row placement, per-card view chrome e
 | Ratio drift | If a future engine breaks the 3:4 contract, that's a design event to surface — never a silent crop |
 | Zoom tiers | VC1 thresholds (0.45/0.35) were tuned on shorter cards — sanity-checked against the new geometry same day; founder flags any retune himself (dev slider retained) |
 
+## Group 6d — Founder rulings, 2026-07-11 (VC2 driving + ElevenLabs Flows study) *(D-32…D-37, founder-ratified)*
+
+Six rulings from hands-on VC2 driving plus a structured study of ElevenLabs Flows. Reference screenshots in `docs/specs/references/` — filenames map to rulings (`ruling1-*.png` … `ruling5d-*.png`). Two of these amend locked-ledger items (the no-modal rule and the inline-first principle) — founder-initiated, so permitted, same class as D-8/D-29. Rulings 1–3 and 6 were applied in code same-day where cheap; ruling 4 is a ratified *direction* whose execution is gated on the founder ratifying a written assessment (see D-35); ruling 5 is reference-logging only.
+
+> **RATIFICATION RECORD (founder, 2026-07-11) — `RULING_4_ASSESSMENT.md` ratified; D-35's execution gate is lifted. Six rulings binding on implementation:**
+> 1. **Option B** — overlay-hosted takeover; the transition feel is the point.
+> 2. **D-24 re-ratified as inverted:** the casting stores are the flagship environment's load-bearing state; the mechanical guard (zero imports under `features/boards/**`) stands verbatim as a permanent architectural boundary, not a retirement fence.
+> 3. **`isMinted`/amend: no new concept.** Saving changes to a placed cast is a D-11 identity event, full stop — the dialog offers update-with-cascade, fork-as-new-model, or keep-old/pin.
+> 4. **Picker is click-to-open permanently** — matches the ElevenLabs reference and preserves the create→drag trust invariant. The auto-open question is closed.
+> 5. **D-29 and D-30 ratified alongside** (Group 6c gate cleared; foundations 3b/3e, success criteria 5/6/8, and DS §5.17 rewrites land with R5 prep per the resequenced plan).
+> 6. **The warm→canvas-language restyle of the environment gets a named slot in the plan** (R6/R7), not an unscheduled "later."
+>
+> Resequenced plan R1–R7 approved; `PASS_1_BUILD_PLAN.md` rewritten to the R-sequence same day.
+
+### D-32 — No-modal rule refined: workspaces never, selection surfaces may *(amends the locked rule)*
+
+**What:** WORKSPACES are never modals — editing, refinement, and dense configuration always get a room (D-25 stands unchanged). SELECTION/SETUP surfaces may be modal-class: single-purpose choose-and-dismiss, one purpose per modal, no nesting, no editing workflows inside, rendered in Drape's visual language (hairlines, canvas tokens, light scrim). Concretely: the `LibraryPickerPopover` upgrades to a modal-class picker — grid + search (filters later) — with tabs for select-existing and cast-new. (refs: `ruling1-picker-modal-select-existing.png`, `ruling1-create-modal-upload-or-prompt.png`)
+
+**Why:** the blanket rule was defending against modal *workflows*, not modal *choices*. A choose-and-dismiss picker is the one surface where a modal's focus-stealing is the point; ElevenLabs' avatar picker demonstrates the class working at production quality.
+
+**Affects:** DS §6/§7.3; D-28 amended — its "popovers, no modals/scrims" rendering note is superseded (both-paths-at-the-node survives as both-paths-in-the-picker); `CastPickerModal` replaces `LibraryPickerPopover` (applied 2026-07-11).
+
+### D-33 — Inline NL prompt removed as the cast node's face *(amends the locked inline-first principle for casting)*
+
+**What:** the empty cast node's front door is the picker modal: choose existing or cast new. `NodeInlinePrompt` is no longer the node's primary interface. The M2b parser still ships fully server-side, tested against the gold standard — surfaced later as a "from prompt" option inside the create path, never as the node's face. Interim (until D-35 executes): the picker's Cast-new tab carries the prompt + cost + Run path so the VC2 loop keeps working.
+
+**Why:** VC2 driving showed the inline prompt makes the empty node a form, not a slot; the reference-asset framing (§1.5) wants the node to *receive* an identity, not to host authoring. ElevenLabs' create-avatar flow (upload-or-prompt inside the create surface) is the working pattern.
+
+**Affects:** DS §5.7/§5.12; foundations 3a posture; build plan M2b checkpoint (VC2.5 chip-fill on nodes is void — parser output surfaces in the create path instead). `NodeInlinePrompt` deleted from the cast node (applied 2026-07-11).
+
+### D-34 — Cast nodes carry no attribute chrome on canvas
+
+**What:** no chip rows, no chip popovers, no collapsed attribute display on canvas. Node face = label row, image, control strip. All configuration happens pre-cast in the casting environment; all post-cast editing consolidates in that same environment via Edit.
+
+**Why:** the attribute block re-created the second-card problem VC1.5 tried to solve, and it duplicates the casting environment's controls in a worse medium. The board shows finished reference assets; the environment does the shaping.
+
+**Affects:** supersedes the VC1.5 `NodeAttributeBlock` ruling and moots D-19 on canvas (the six-attribute question moves into the casting environment); M5's canvas chip popovers die (the `updateAttributes` op survives — identity events still originate in the environment and must stale downstream nodes). `NodeAttributeBlock` deleted (applied 2026-07-11). Edit's entry point on the node lands with D-35 execution.
+
+### D-35 — The casting environment is a takeover; the canvas hosts no casting workflow *(RATIFIED 2026-07-11 with the assessment — Option B, see ratification record above)*
+
+**What:** the full casting flow becomes: drop cast node → picker modal → "Cast new" → the complete casting environment opens as a TAKEOVER in the exact pattern of the existing double-click image viewer overlay (near-full-screen, slim frame, back/close, Esc with unsaved-work confirmation — casting holds paid in-progress state), containing full studio capability: attributes, generation, views, surgical edits, refinement. On save/mint it closes back to the untouched board and the finished package lands as the root node rendered as a character sheet, registered as the identity reference for downstream nodes. The canvas itself hosts NO casting workflow — it receives finished reference assets. (ref: `ruling4-takeover-pattern-image-viewer.png` — reuse its shell conventions.)
+
+**Why:** rulings 2–3 already moved authoring off the node; a takeover room is the D-25-consistent home for it, and the existing `/studio` casting flow may serve as its contents — potentially collapsing most of M8.
+
+**Affects (pending assessment ratification):** M2b/M5/M7/M8 restructure; reinforces proposed D-29 (character-sheet root) — view generation moves into the environment; amends the locked inline-first principle alongside D-33. Assessment scope ruled by the founder: (1) `/studio` casting flow as takeover contents via hosting/routing with return-to-board context + savings vs M8; (2) M7 impact — view-spawning dies, stale/identity machinery survives; (3) full scope delta + resequenced plan; (4) collisions with ratified decisions surfaced, not silently resolved. Nothing after the picker modal is built until the founder ratifies.
+
+### D-36 — Interaction-pattern references logged (design targets, mostly M7/pass 3 — nothing built now)
+
+| Ref | Pattern | Disposition |
+|---|---|---|
+| a | **Pin-initiated spawning:** dragging from a typed pin into empty space opens a menu of COMPATIBLE node types and spawns the choice pre-connected | Adopt as the primary edge-creation gesture when edges render in M7 (refs: `ruling5a-pin-spawn-menu-from-avatar.png`, `ruling5a-pin-spawn-menu-image-node.png`) |
+| b | **Edge hover reveals an X-to-disconnect affordance** | Adopt with M7 edge rendering (ref: `ruling5b-edge-hover-x-disconnect.png`) |
+| c | Confirmed already-covered: typed side pins (foundations §5.4/`ConnectionDot`), control strip gains an engine DROPDOWN at pass-3 multi-engine (D-12's `engine` field is the door; `ControlSegment` already has a `dropdown` kind), multi-image references per the fan-in/typed-input-roles decision (D-30 composer) | No new decisions needed (refs: `ruling5c-*.png`) |
+| d | **Future-pass marker:** a board-aware agent panel is the eventual consumer of `boardState.getSnapshot` + the parser; their agent credit meter / spend-cap pattern is the D-15-consistent reference | Logged for the agent pass (refs: `ruling5d-*.png`) |
+
+Everything renders in Drape's language — their patterns, our tokens.
+
+### D-37 — Zoom tiers retired: spatial constancy *(amends D-1/D-2/D-3; supersedes D-4)*
+
+**What:** with D-33/D-34 stripping the cast node's chrome, the tier system's justification is mostly gone. New policy, ElevenLabs-style spatial constancy: nodes render the same at every zoom — no chrome retraction, no placeholder-block far tier, no visual mode switches; small text at far zoom simply reads small. Two survivors, reframed: **(a)** status indicators stay counter-scaled/screen-legible at any zoom per D-6's data-integrity reasoning — a stale or failed node must never become invisible (the compact-dot *variant* is retired; one badge, floor-scaled to screen size); **(b)** a pure-performance image downgrade (thumbnail swap below readable zoom) may return **only if profiling shows dense boards need it** — invisible to the user, never a visual mode.
+
+**Why:** the tiers existed to retract chrome that no longer exists. Constancy is simpler, calmer, and matches how the reference product survives density.
+
+**Affects:** D-1/D-3/D-4 superseded (VC1's 0.45/0.35 threshold ruling is moot); D-2 narrowed — statuses (and the M6 toolbar's counter-scaling, pending M6) remain the only screen-fixed chrome; D-6 unchanged and load-bearing; D-5 (frames as far-zoom wayfinding, pass 3) unaffected. Applied 2026-07-11: `zoomTiers.ts` → `canvasZoom.ts` (live zoom only), all tier gates removed from primitives, `DensityMock` (a tier-tuning tool) deleted with its `?mock=density` gate.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
@@ -158,6 +223,6 @@ Removed from M7: view-node spawning + auto-row placement, per-card view chrome e
 
 ---
 
-**Nothing from brief §4 was rejected**; D-11/D-13/D-20 accepted with modifications noted. **One locked rule is amended (D-8)** — with the explicit argument the brief invited; everything else in the locked ledger (reference-asset framing, inline-first, root/view model, edges-as-lineage, the non-negotiables, sentence case / two weights / hairlines / no modals) is preserved unchanged.
+**Nothing from brief §4 was rejected**; D-11/D-13/D-20 accepted with modifications noted. **Locked-ledger amendments to date, all founder-initiated or brief-invited:** D-8 (red confirm), D-29 (root/view rendering, proposed), D-32 (no-modal rule refined), D-33/D-35 (inline-first for casting). Everything else in the locked ledger (reference-asset framing, edges-as-lineage, the non-negotiables, sentence case / two weights / hairlines) is preserved unchanged.
 
 **End of decision log.** Ratify, amend, or veto per line; the build plan follows your pass.

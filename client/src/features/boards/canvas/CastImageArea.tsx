@@ -2,12 +2,14 @@
  * Image-or-placeholder area inside a cast node card — DESIGN_SYSTEM.md §5.12.
  * Five states: empty, generating, complete, error, plus the stale `dimmed` cue.
  * Load failures render ImageFallback — never a broken image (§5.16 / D-12).
+ * Renders identically at every zoom (D-37).
  */
 import { User, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { NodePromptState } from "./NodeInlinePrompt";
 import { SafeImage } from "./ImageFallback";
-import { useZoomTierContext } from "./zoomTiers";
+
+/** Lifecycle of a cast node's generation, driven by the job store. */
+export type NodePromptState = "empty" | "ready" | "generating" | "complete";
 
 export interface CastImageAreaProps {
   imageUrl: string | null;
@@ -30,11 +32,6 @@ export function CastImageArea({
   error,
   onRetry,
 }: CastImageAreaProps) {
-  // In-card text is working-tier chrome; below it, the card simplifies and the
-  // screen-fixed status dot carries error/empty signals (DS §12).
-  const { tier } = useZoomTierContext();
-  const detailed = tier === "working";
-
   return (
     // 3:4 — the exact ratio casting generates (896×1200, measured), so cover
     // never crops. The empty and generating states hold the same rectangle:
@@ -43,22 +40,20 @@ export function CastImageArea({
       className="aspect-[3/4] bg-canvas-surface-inset flex flex-col items-center justify-center text-canvas-ink-faint"
     >
       {error ? (
-        detailed ? (
-          <>
-            <XCircle className="w-4 h-4 text-canvas-destructive" strokeWidth={1.4} />
-            <span className="text-canvas-xs mt-1.5 text-canvas-ink-soft">Generation failed</span>
-            <span className="text-canvas-xs mt-0.5">You weren't charged</span>
-            {onRetry && (
-              <button
-                type="button"
-                onClick={onRetry}
-                className="mt-2 px-2.5 py-1 rounded-canvas-pill text-canvas-xs text-canvas-ink-soft border-hairline border-canvas-border hover:border-canvas-border-strong transition-colors"
-              >
-                Retry
-              </button>
-            )}
-          </>
-        ) : null
+        <>
+          <XCircle className="w-4 h-4 text-canvas-destructive" strokeWidth={1.4} />
+          <span className="text-canvas-xs mt-1.5 text-canvas-ink-soft">Generation failed</span>
+          <span className="text-canvas-xs mt-0.5">You weren't charged</span>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-2 px-2.5 py-1 rounded-canvas-pill text-canvas-xs text-canvas-ink-soft border-hairline border-canvas-border hover:border-canvas-border-strong transition-colors"
+            >
+              Retry
+            </button>
+          )}
+        </>
       ) : promptState === "generating" ? (
         <>
           <div className="w-[72%] h-[3px] bg-canvas-surface rounded-full overflow-hidden">
@@ -70,9 +65,7 @@ export function CastImageArea({
               }}
             />
           </div>
-          {detailed && (
-            <span className="text-canvas-xs mt-2">Generating · {progressSeconds ?? 0}s</span>
-          )}
+          <span className="text-canvas-xs mt-2">Generating · {progressSeconds ?? 0}s</span>
         </>
       ) : imageUrl ? (
         <SafeImage
@@ -85,10 +78,7 @@ export function CastImageArea({
           )}
         />
       ) : (
-        <>
-          <User className="w-5 h-5 opacity-50" strokeWidth={1.2} />
-          {detailed && <span className="text-canvas-xs mt-1.5">Cast a model</span>}
-        </>
+        <User className="w-5 h-5 opacity-50" strokeWidth={1.2} />
       )}
     </div>
   );

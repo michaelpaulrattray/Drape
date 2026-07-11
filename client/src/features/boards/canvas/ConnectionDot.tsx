@@ -1,11 +1,9 @@
 /**
  * Input pins on the card's left edge — DESIGN_SYSTEM.md §5.4. Double as
  * React Flow connection handles. Purple = prompt input, blue = image input;
- * the only affordance whose meaning IS its color (§2.1). Hidden at the far
- * zoom tier (§12).
+ * the only affordance whose meaning IS its color (§2.1).
  */
 import { Handle, Position } from "@xyflow/react";
-import { useZoomTierContext } from "./zoomTiers";
 
 export interface ConnectionDotProps {
   kind: "prompt" | "image";
@@ -14,9 +12,6 @@ export interface ConnectionDotProps {
 }
 
 export function ConnectionDot({ kind, id, top }: ConnectionDotProps) {
-  const { tier } = useZoomTierContext();
-  if (tier === "far") return null;
-
   return (
     <Handle
       type="target"

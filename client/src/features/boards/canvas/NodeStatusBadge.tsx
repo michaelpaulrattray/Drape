@@ -1,15 +1,16 @@
 /**
  * The generalized node status indicator — DESIGN_SYSTEM.md §5.14.
  * One component for ALL node statuses; pass 1 wires `stale` and `error`
- * (others reserved in the union). Working tier: 22px corner badge with a
- * hover card. Mid/far tiers: a screen-fixed 14px dot — statuses stay findable
- * at any zoom (§12/D-6). The error glyph is the one red mark on the canvas
- * (§2.1). Extend this component; never fork it.
+ * (others reserved in the union). One 22px corner badge with a hover card,
+ * counter-scaled below 1× zoom so statuses stay screen-legible at any zoom
+ * (D-6 / D-37 survivor — a stale or failed node must never become invisible).
+ * The error glyph is the one red mark on the canvas (§2.1). Extend this
+ * component; never fork it.
  */
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { AlertCircle, AlertTriangle, Eye, XCircle, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useZoomTierContext } from "./zoomTiers";
+import { useCanvasZoom, screenLegibleScale } from "./canvasZoom";
 
 export type NodeStatus =
   | {
@@ -51,14 +52,12 @@ const VARIANT_CONFIG: Record<NodeStatus["type"], VariantConfig> = {
 };
 
 export function NodeStatusBadge({ status, primaryLabel, onPrimary, onSecondary }: NodeStatusBadgeProps) {
-  const { tier, zoom } = useZoomTierContext();
+  const { zoom } = useCanvasZoom();
   const config = VARIANT_CONFIG[status.type];
   const { Icon } = config;
   const glyphColor = config.destructiveGlyph ? "text-canvas-destructive" : "text-canvas-ink";
 
-  // Below working tier: a screen-fixed dot, no ring — pure signal.
-  const compact = tier !== "working";
-  const counterScale = compact ? 1 / Math.max(zoom, 0.05) : 1;
+  const counterScale = screenLegibleScale(zoom);
 
   return (
     <HoverCard openDelay={100} closeDelay={150}>
@@ -69,14 +68,12 @@ export function NodeStatusBadge({ status, primaryLabel, onPrimary, onSecondary }
           onMouseDown={(e) => e.stopPropagation()}
           className={cn(
             "absolute top-2 right-2 z-10 rounded-full flex items-center justify-center transition-colors",
-            compact
-              ? "w-3.5 h-3.5 bg-canvas-surface"
-              : "w-[22px] h-[22px] bg-canvas-surface border-hairline border-canvas-border-strong hover:border-canvas-ink",
+            "w-[22px] h-[22px] bg-canvas-surface border-hairline border-canvas-border-strong hover:border-canvas-ink",
             glyphColor,
           )}
-          style={compact ? { transform: `scale(${counterScale})`, transformOrigin: "top right" } : undefined}
+          style={counterScale !== 1 ? { transform: `scale(${counterScale})`, transformOrigin: "top right" } : undefined}
         >
-          <Icon className={compact ? "w-2.5 h-2.5" : "w-[11px] h-[11px]"} strokeWidth={1.5} />
+          <Icon className="w-[11px] h-[11px]" strokeWidth={1.5} />
         </button>
       </HoverCardTrigger>
       <HoverCardContent

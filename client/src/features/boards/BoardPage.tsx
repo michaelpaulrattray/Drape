@@ -5,7 +5,7 @@
  * and hosts a collapsible tool panel on the right side.
  * Bottom-of-canvas UI: centered toolbar, zoom controls (left), AI chat (right).
  */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
@@ -16,6 +16,7 @@ import { ModelEditorOverlay } from './overlays/ModelEditorOverlay';
 import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 import { type CanvasToolId } from './components/CanvasToolbar';
 import { FloatingToolPill, type PillTool } from './canvas/FloatingToolPill';
+import { CastPickerModal } from './canvas/CastPickerModal';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
 import { NodeContextMenu, type NodeContextAction, type ViewAngle } from './components/NodeContextMenu';
@@ -26,22 +27,9 @@ import { VersionHistoryModal } from './components/VersionHistoryModal';
 
 type ToolPanelId = 'casting' | 'wardrobe' | 'export' | null;
 
-/* ── Dev-only density mock gate (PASS_1_BUILD_PLAN.md M1 / VC1) ── */
-
-const DensityMock = import.meta.env.DEV
-  ? lazy(() => import('./canvas/DensityMock'))
-  : null;
-
 /* ── Component ────────────────────────────────────────────── */
 
 export function BoardPage() {
-  if (DensityMock && new URLSearchParams(window.location.search).get('mock') === 'density') {
-    return (
-      <Suspense fallback={null}>
-        <DensityMock />
-      </Suspense>
-    );
-  }
   return <BoardPageImpl />;
 }
 
@@ -64,6 +52,9 @@ function BoardPageImpl() {
   } | null>(null);
   const [infoPanel, setInfoPanel] = useState<{ itemId: number; position: { x: number; y: number } } | null>(null);
   const [versionHistoryItemId, setVersionHistoryItemId] = useState<number | null>(null);
+  // Cast picker (D-33) — hosted here, not in CastNode, so it survives the
+  // optimistic temp→real id remount. Opened via the node's front-door event.
+  const [castPickerItemId, setCastPickerItemId] = useState<number | null>(null);
 
   // Viewport center getter exposed by BoardCanvas
   const viewportCenterGetterRef = useRef<(() => { x: number; y: number }) | null>(null);
@@ -218,6 +209,9 @@ function BoardPageImpl() {
 
   const handleItemResize = useCallback(
     (itemId: number, width: number, height: number) => {
+      // Negative ids are optimistic temp nodes — React Flow emits a
+      // dimensions change on first measure, which must not hit the server
+      if (itemId <= 0) return;
       updateItemMutation.mutate({ itemId, width, height });
     },
     [updateItemMutation],
@@ -259,6 +253,17 @@ function BoardPageImpl() {
       setEditorItemId(itemId);
     }
   }, [items]);
+
+  // The cast node's front-door pill dispatches this (same pattern as
+  // 'board-rename-node') — node-local modal state wouldn't survive remounts
+  useEffect(() => {
+    const onOpenPicker = (e: Event) => {
+      const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
+      if (typeof itemId === 'number') setCastPickerItemId(itemId);
+    };
+    window.addEventListener('board-open-cast-picker', onOpenPicker);
+    return () => window.removeEventListener('board-open-cast-picker', onOpenPicker);
+  }, []);
 
   // ── Keyboard shortcuts ───────────────────────────────────
   useEffect(() => {
@@ -370,6 +375,8 @@ function BoardPageImpl() {
             : i,
         ),
       );
+      // If the picker was opened on the temp node, follow it to the real id
+      setCastPickerItemId((prev) => (prev === ctx?.tempId ? result.itemId : prev));
       selectNodeRef.current?.(result.itemId);
     },
     onError: (_err, _vars, ctx) => {
@@ -906,6 +913,15 @@ function BoardPageImpl() {
           />
         );
       })()}
+
+      {/* Cast picker — the empty cast node's front door (D-32/D-33) */}
+      {castPickerItemId !== null && (
+        <CastPickerModal
+          boardId={boardId}
+          itemId={castPickerItemId}
+          onClose={() => setCastPickerItemId(null)}
+        />
+      )}
 
       {/* Version history modal */}
       {versionHistoryItemId !== null && (() => {

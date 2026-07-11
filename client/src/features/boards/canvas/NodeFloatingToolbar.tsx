@@ -1,8 +1,8 @@
 /**
  * Above-card action pill on selection — DESIGN_SYSTEM.md §5.10.
- * Screen-fixed chrome (§12/D-2): counter-scaled against canvas zoom so it
- * stays the same physical size at any zoom; hidden entirely at the far tier.
- * Six icons max; disabled actions stay visible with explanatory tooltips.
+ * Screen-legible chrome (D-2 as narrowed by D-37): counter-scaled below 1×
+ * zoom so it never shrinks past usable size. Six icons max; disabled actions
+ * stay visible with explanatory tooltips.
  */
 import { cn } from "@/lib/utils";
 import { RefreshCw, Shuffle, Copy, Download, Trash2, Info } from "lucide-react";
@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { useZoomTierContext } from "./zoomTiers";
+import { useCanvasZoom, screenLegibleScale } from "./canvasZoom";
 
 export interface NodeToolbarAction {
   id: "rerun" | "variations" | "duplicate" | "download" | "delete" | "info";
@@ -34,10 +34,8 @@ const ICONS: Record<
 };
 
 export function NodeFloatingToolbar({ actions }: { actions: NodeToolbarAction[] }) {
-  const { tier, zoom } = useZoomTierContext();
-  if (tier === "far") return null;
-
-  const counterScale = 1 / Math.max(zoom, 0.05);
+  const { zoom } = useCanvasZoom();
+  const counterScale = screenLegibleScale(zoom);
 
   return (
     <TooltipProvider delayDuration={300}>

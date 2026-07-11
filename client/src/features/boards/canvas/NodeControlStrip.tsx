@@ -1,12 +1,10 @@
 /**
- * Pill strip below the card — DESIGN_SYSTEM.md §5.8. Selected nodes only;
- * hidden below the working zoom tier (§12). Root cast: `+ Views · vN · ···`;
- * view cast: `vN · ···` (+ pin glyph when pinned). No view-switcher segment
- * exists on any cast strip — views are separate nodes.
+ * Pill strip below the card — DESIGN_SYSTEM.md §5.8. Selected nodes only.
+ * Root cast: `+ Views · vN · ···`; view cast: `vN · ···` (+ pin glyph when
+ * pinned). No view-switcher segment exists on any cast strip.
  */
 import { cn } from "@/lib/utils";
 import { ChevronDown, MoreHorizontal, Pin } from "lucide-react";
-import { useZoomTierContext } from "./zoomTiers";
 
 export interface ControlSegment {
   kind: "label" | "dropdown" | "action" | "pin";
@@ -21,8 +19,7 @@ export interface NodeControlStripProps {
 }
 
 export function NodeControlStrip({ segments }: NodeControlStripProps) {
-  const { tier } = useZoomTierContext();
-  if (tier !== "working" || segments.length === 0) return null;
+  if (segments.length === 0) return null;
 
   return (
     <div
