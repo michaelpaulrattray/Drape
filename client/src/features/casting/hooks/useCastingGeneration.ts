@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
+import { CASTING_BRANDS } from "@shared/castingOptions";
 import {
   CREDIT_COSTS,
   type GeneratedAsset,
@@ -35,6 +36,8 @@ export function useCastingGeneration({
   const {
     prefs,
     modelName,
+    engineChoice,
+    updatePrefs,
     getReferenceImage,
     setGenState,
     currentModelId,
@@ -100,16 +103,23 @@ export function useCastingGeneration({
 
   // Form validation — matches original: ethnicity OR ethnicityBlend satisfies requirement
   const isFormValid = useMemo(() => {
+    // A required field is satisfied by a value OR by an explicit
+    // Engine's-choice delegation (D-41) — absence in prefs then becomes an
+    // honest engine directive in the prompt builder
+    const ec = engineChoice ?? {};
+    const ok = (field: string, value: unknown) => !!value || !!ec[field];
     return (
-      !!prefs.gender &&
-      !!prefs.age &&
-      (!!prefs.ethnicity || (Array.isArray(prefs.ethnicityBlend) && prefs.ethnicityBlend.length > 0)) &&
-      !!prefs.skinTone &&
-      !!prefs.eyeColor &&
-      !!prefs.hairColor &&
-      !!prefs.hairStyle
+      ok('gender', prefs.gender) &&
+      ok('age', prefs.age) &&
+      (!!prefs.ethnicity ||
+        (Array.isArray(prefs.ethnicityBlend) && prefs.ethnicityBlend.length > 0) ||
+        !!ec.ethnicity) &&
+      ok('skinTone', prefs.skinTone) &&
+      ok('eyeColor', prefs.eyeColor) &&
+      ok('hairColor', prefs.hairColor) &&
+      ok('hairStyle', prefs.hairStyle)
     );
-  }, [prefs]);
+  }, [prefs, engineChoice]);
 
   // Current image URL
   const currentImageUrl = getCurrentImageUrl(activeView);
@@ -217,6 +227,16 @@ export function useCastingGeneration({
 
     setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 15000 });
 
+    // Engine's-choice brand resolves at fire time (founder ruling 2026-07-11
+    // — kills the silent Gucci fallback): a random pick from the eight,
+    // written back to the form so the user sees what the engine received,
+    // and recorded in preferences so the cast is reproducible (D-12)
+    let resolvedBrand = prefs.castingBrand;
+    if (!resolvedBrand) {
+      resolvedBrand = CASTING_BRANDS[Math.floor(Math.random() * CASTING_BRANDS.length)];
+      updatePrefs({ castingBrand: resolvedBrand });
+    }
+
     try {
       const backendPrefs = {
         gender: prefs.gender,
@@ -247,7 +267,7 @@ export function useCastingGeneration({
         hairTuck: prefs.hairTuck,
         hairFade: prefs.hairFade,
         facialHair: prefs.facialHair,
-        castingBrand: prefs.castingBrand,
+        castingBrand: resolvedBrand,
         castingVibe: prefs.castingVibe,
         features: prefs.features,
         referenceImage: prefs.referenceImage,
@@ -303,7 +323,7 @@ export function useCastingGeneration({
       setFailedAction({ type: 'NEW' });
       toast.error(message);
     }
-  }, [isFormValid, creditsData, prefs, modelName]);
+  }, [isFormValid, creditsData, prefs, modelName, updatePrefs]);
 
   // Handle iteration/refinement
   const performIteration = useCallback(async (prompt: string, maskBase64?: string) => {

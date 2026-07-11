@@ -5,9 +5,9 @@
  * gold-standard suite is promptParser.gold.test.ts.
  */
 import { describe, it, expect } from "vitest";
-import { sanitizeParsed, mergeParsedPreferences, type ParsedCastAttributes } from "./promptParser";
+import { sanitizeParsed, mergeParsedPreferences, resolveEngineChoices, type ParsedCastAttributes } from "./promptParser";
 import { buildNewPromptContent } from "./geminiGeneration";
-import { ETHNICITIES } from "../../shared/castingOptions";
+import { ETHNICITIES, CASTING_BRANDS } from "../../shared/castingOptions";
 
 describe("R2 prerequisites", () => {
   it("ETHNICITIES includes Mediterranean (PARSER_PROMPT_V2 §6)", () => {
@@ -138,6 +138,46 @@ describe("mergeParsedPreferences — the precedence chain", () => {
     const out = mergeParsedPreferences(parsed({ gender: "Male" }), { gender: "", skinTone: null as never }, "p");
     expect(out.gender).toBe("Male");
     expect(out.skinTone).toBeUndefined();
+  });
+
+  it("does NOT inject a brand — prefill must leave brand open (D-41)", () => {
+    const out = mergeParsedPreferences(parsed({ gender: "Female" }), {}, "p");
+    expect(out.castingBrand).toBeUndefined();
+  });
+});
+
+describe("resolveEngineChoices — fire-time brand resolution (D-41)", () => {
+  it("absent brand resolves to a random pick from the eight", () => {
+    const out = resolveEngineChoices({ gender: "Female" });
+    expect(CASTING_BRANDS).toContain(out.castingBrand as (typeof CASTING_BRANDS)[number]);
+  });
+
+  it("a chosen brand is never overwritten", () => {
+    const out = resolveEngineChoices({ castingBrand: "Prada" });
+    expect(out.castingBrand).toBe("Prada");
+  });
+
+  it("a brand override suppresses the random pick", () => {
+    const out = resolveEngineChoices({ castingBrandOverride: "Tom Ford 2003" });
+    expect(out.castingBrand).toBeUndefined();
+    expect(out.castingBrandOverride).toBe("Tom Ford 2003");
+  });
+});
+
+describe("buildNewPromptContent — honest engine-choice directives (D-41)", () => {
+  it("absent gender and age become ENGINE'S CHOICE directives, not silent defaults", () => {
+    const out = buildNewPromptContent({}, "skin");
+    expect(out).toContain("Gender: ENGINE'S CHOICE — cast whoever best serves the brand direction");
+    expect(out).toContain("Age: ENGINE'S CHOICE — pick an age that suits the brand direction and vibe");
+    expect(out).not.toContain("Gender: Female");
+    expect(out).not.toContain("Age: 23");
+  });
+
+  it("stated gender and age pass through verbatim", () => {
+    const out = buildNewPromptContent({ gender: "Male", age: "41" }, "skin");
+    expect(out).toContain("Gender: Male");
+    expect(out).toContain("Age: 41");
+    expect(out).not.toContain("ENGINE'S CHOICE — cast whoever");
   });
 });
 

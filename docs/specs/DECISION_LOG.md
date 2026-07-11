@@ -215,6 +215,16 @@ Follow-up batch after the founder drove the R1 takeover. Items 1–2 (optimistic
 
 **Applied 2026-07-11:** toast primitive restyled app-wide (`components/ui/sonner.tsx`); the library-pick and mint success toasts removed (the node filling IS the feedback). Call-site audit delivered with the post-R2 report; inline migrations land with their surfaces (parse summary strip with item 4, wardrobe flows with pass 2, modal-local errors opportunistically). **R6's design-system update encodes this principle** in `DESIGN_SYSTEM.md`.
 
+### D-41 — Engine's choice + the two-keystroke cast *(founder-ratified 2026-07-11, per-field rulings included)*
+
+**What:** the required-field contradiction is resolved in the restraint philosophy's favor. **(a)** Every required cast field supports an explicit **Engine's choice** state that satisfies validation — displayed as the field's value, cleared by selecting a value, selectable on the pure form path. It is UI-only state: what the engine receives is *absence*, made honest per the per-field rulings: gender → `ENGINE'S CHOICE — cast whoever best serves the brand direction`; age → suited to brand and vibe (the old silent Female/23 defaults are dead, including as form defaults); brand → resolves to a random pick from the eight **at fire time only** (recorded for D-12 reproducibility; the prefill path leaves brand open — a pick the user never made must not appear as "understood"); everything else (skin, iris, hair, ethnicity) was already genuine engine creative space. **(b)** The flow is two keystrokes: brief + Enter fills the form (parsed values + Engine's choice on the rest) and arms the Cast button with its cost visible and focused; Enter again fires. **No auto-fire** — D-15's deliberate-spend covenant holds; the armed-button glance is the correction window.
+
+**Parse choreography (the visible half):** parsed fields fill with a sequential ink-pulse sweep (~600ms), affected sections auto-open and scroll into view, and a **summary strip directly under the brief field** replaces the corner toast (D-40's archetype): "Understood: [chips, tappable to jump to their control] · everything else — engine's choice."
+
+**Why:** the parser's ratified restraint deliberately leaves fields null as the engine's creative space; validation that blocks on those same fields contradicts the philosophy and strands the brief flow one step from casting. And feedback that lands in a far corner while the form changes silently fails the first-time user — the sentence must be SEEN becoming the form.
+
+**Affects:** `useCastingFormStore` (empty gender/age/brand defaults, `engineChoice` state), `isFormValid` semantics, `buildNewPromptContent` identity directives, `resolveEngineChoices` on both paid paths, `EngineChoiceChip`/`ParseSummaryStrip` (new surfaces, canvas language per the R6 discipline), Cast button cost display. R4's keyboard work inherits Enter-fires-focused-button as the ratified second keystroke.
+
 ### D-39 — Canonical identity package + tiered mint *(RATIFIED 2026-07-11, all lines — see ratification record below)*
 
 > **RATIFICATION RECORD (founder, 2026-07-11) — `D39_PACKAGE_ASSESSMENT.md` ratified, all lines:**

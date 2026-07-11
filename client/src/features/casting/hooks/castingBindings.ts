@@ -45,6 +45,12 @@ export interface CastingBindings {
   /* ── Form ─────────────────────────────────────────────── */
   prefs: ModelPreferences;
   modelName: string;
+  /** Engine's-choice flags (D-41): required fields explicitly delegated to
+   *  the engine — they satisfy validation without a value. */
+  engineChoice: Record<string, boolean>;
+  /** Write prefs (fire-time resolutions, e.g. the Engine's-choice brand pick
+   *  that must be recorded and shown before the paid call). */
+  updatePrefs: (partial: Partial<ModelPreferences>) => void;
   /** Fresh read mid-mutation — never a render-time closure value. */
   getReferenceImage: () => string | undefined;
 
@@ -108,7 +114,7 @@ export interface CastingBindings {
  * /studio-scoped by decision D-24; no canvas code may call this.
  */
 export function useLegacyCastingBindings(): CastingBindings {
-  const { prefs, modelName } = useCastingFormStore();
+  const { prefs, modelName, engineChoice, updatePrefs } = useCastingFormStore();
   const {
     genState,
     setGenState,
@@ -156,6 +162,8 @@ export function useLegacyCastingBindings(): CastingBindings {
   return {
     prefs,
     modelName,
+    engineChoice: engineChoice as Record<string, boolean>,
+    updatePrefs,
     getReferenceImage: () => useCastingFormStore.getState().prefs.referenceImage,
 
     genState,

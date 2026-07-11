@@ -35,7 +35,7 @@ import {
   type ModelPreferences,
 } from "../casting/aiService";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../casting/promptReinforcement";
-import { parseCastingPrompt, mergeParsedPreferences } from "../casting/promptParser";
+import { parseCastingPrompt, mergeParsedPreferences, resolveEngineChoices } from "../casting/promptParser";
 import { enforceDailyQuota } from "../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import type {
@@ -289,6 +289,8 @@ export async function executeRunGeneration(input: RunGenerationInput) {
         );
       }
     }
+    // Paid path: engine-choice brand resolves to a recorded random pick (D-41)
+    prefs = resolveEngineChoices(prefs);
 
     const masterPrompt = await generateMasterPrompt(prefs);
     const modelResult = await createModel({

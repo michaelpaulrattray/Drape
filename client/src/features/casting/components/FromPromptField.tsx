@@ -1,26 +1,29 @@
 /**
  * FromPromptField — the "from prompt" option inside the create path (D-33/R2).
- * A sentence goes to the server parser; the extracted attributes PREFILL the
- * form controls (never bypass them — the user reviews, adjusts, generates).
- * Warm-styled to match the current environment; restyles with R6.
+ * A sentence goes to the server parser; the host (ControlPanel) applies the
+ * result with the D-41 choreography: visible fill sweep, summary strip where
+ * the action happened (no corner toast — D-40), Engine's-choice on the rest,
+ * Cast button armed. Warm-styled to match the current environment; restyles
+ * with R6.
  */
 import { useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import type { ModelPreferences } from "../constants";
 
-export function FromPromptField({ onApply }: { onApply: (prefs: Partial<ModelPreferences>) => void }) {
+export interface ParsePromptResult {
+  intent: "parsed" | "random";
+  preferences: Record<string, unknown>;
+  randomizeFields: string[];
+  parsedFieldCount: number;
+}
+
+export function FromPromptField({ onParsed }: { onParsed: (result: ParsePromptResult) => void }) {
   const [value, setValue] = useState("");
 
   const parseMutation = trpc.generation.parsePrompt.useMutation({
     onSuccess: (res) => {
-      onApply(res.preferences as Partial<ModelPreferences>);
-      toast.success(
-        res.intent === "random"
-          ? "Randomized from your brief"
-          : `Brief translated — ${res.parsedFieldCount} field${res.parsedFieldCount === 1 ? "" : "s"} set`,
-      );
+      onParsed(res as ParsePromptResult);
       setValue("");
     },
     onError: (err) => toast.error(err.message),

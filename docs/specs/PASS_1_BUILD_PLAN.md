@@ -34,9 +34,9 @@
 | R3b | **Identity package + tiered mint** (D-39: ¾ view, back gate, Draft/Core/Production dialog, package read model) | 2–2.5 | **VC-R3b — mint through the tiers** |
 | R4 | Canvas grammar: toolbar, fork/recast, variations, delete+undo, keyboard incl. Cmd+C/V→Duplicate (old M6) | 2.5 | **VC-R4 — the grammar tour** |
 | R5 | Edges, stale/pin, snapshots, character sheet + composer (old M7 + D-29 as amended by D-39 + D-30) | 3.5–4 | **VC-R5 — lineage and staleness on the sheet** |
-| R6 | First-touch (old M9) + **environment restyle to canvas language** (named slot, founder ruling 2026-07-11) | 2.5–3 | **VC-R6 — first-run + the environment in Drape's language** |
+| R6 | First-touch (old M9) + **full environment restyle to canvas language** (named slot; scope amended 2026-07-11 to include the panel header, progress donut, and viewer/master-prompt chrome) | 3–3.5 | **VC-R6 — first-run + the environment in Drape's language** |
 | R7 | Hardening + success-criteria sweep (old M10) | 1.5 | Dogfood start |
-| | **Remaining total** | **≈ 18–20.5 focused days** | |
+| | **Remaining total** | **≈ 18.5–21 focused days** | |
 
 The pre-ruling plan had 18–19.5 days remaining with M8's from-scratch `RefinementStudio` as the riskiest item; the R-sequence deletes that build entirely (the existing studio casting flow *is* the environment) and absorbs M5's canvas popovers into R3's environment-side identity events.
 
@@ -134,7 +134,7 @@ Gate: full gates.
 Two named halves (restyle slot per founder ruling 2026-07-11 — not an unscheduled "later"):
 
 - **First-touch (old M9):** first-run intro (DS §11.1, `canvasIntroSeen` on the profile; the CTA opens the picker modal), returning-user hint, empty-library state, picker completion (filters per the ElevenLabs reference, Add-menu placement path, garments-tab prep), board `thumbnailUrl` freshness (D-27), lobby card verification.
-- **Environment restyle (~1–1.5d of this slot):** the warm studio surfaces inside the takeover move to the canvas language — DS §13 redesign of the lifted components (`TriBlendSelector`, `EthnicityBlender`, `SkinToneGrid`, `HairColorWheel`, `EyeGrid`, `WarmSelectControl`, section/row primitives) applied in place, `/studio` dissonance check retired with it.
+- **Full environment restyle (~1.5–2d of this slot; scope amended per founder, 2026-07-11):** the warm studio surfaces inside the takeover move to the canvas language — DS §13 redesign of the lifted components (`TriBlendSelector`, `EthnicityBlender`, `SkinToneGrid`, `HairColorWheel`, `EyeGrid`, `WarmSelectControl`, section/row primitives) applied in place, **plus the panel header block, the progress donut (`CastingProgressRing`), and the viewer/master-prompt panel chrome**; D-40's feedback-inline principle encoded in `DESIGN_SYSTEM.md`; `/studio` dissonance check retired with it. (The D-41 surfaces — `EngineChoiceChip`, `ParseSummaryStrip`, sweep — shipped in canvas language already and are not restyle scope.)
 
 **VC-R6 (founder, live, fresh account or reset flag):** brand-new board → intro → cast the first model through the picker + takeover, now in Drape's language → lobby thumbnail check.
 

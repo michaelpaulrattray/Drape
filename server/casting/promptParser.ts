@@ -14,7 +14,7 @@
  * fail-open (passthrough prefs) — see mergeParsedPreferences/boardOps.
  */
 import { TEXT_LIGHT_FALLBACK } from "@shared/modelRegistry";
-import { generateRandomPreferences } from "@shared/castingOptions";
+import { generateRandomPreferences, CASTING_BRANDS } from "@shared/castingOptions";
 import { getAiClient, SAFETY_SETTINGS, safeResponseText, withSingleRetry503, withTimeout, formatGeminiError } from "./geminiClient";
 import { withTextQueue } from "./geminiQueue";
 import type { ModelPreferences } from "./geminiTypes";
@@ -140,6 +140,27 @@ export function mergeParsedPreferences(
 
   merged.userPrompt = originalPrompt;
   return merged as ModelPreferences;
+}
+
+/**
+ * Fire-time engine-choice resolution (D-41, founder ruling 2026-07-11):
+ * an absent brand resolves to a random pick from the eight — never the old
+ * silent Gucci fallback. Called on the PAID path only (boardOps
+ * runGeneration; the studio's handleGenerate does the client-side
+ * equivalent), never on the parse-prefill path — prefill must leave brand
+ * open as Engine's choice, not pre-apply a pick the user never made. The
+ * resolved value is recorded in preferences so the cast stays reproducible
+ * (D-12). Gender/age need no resolution: their absence IS the engine
+ * directive in buildNewPromptContent.
+ */
+export function resolveEngineChoices(prefs: ModelPreferences): ModelPreferences {
+  if (!prefs.castingBrand && !prefs.castingBrandOverride) {
+    return {
+      ...prefs,
+      castingBrand: CASTING_BRANDS[Math.floor(Math.random() * CASTING_BRANDS.length)],
+    };
+  }
+  return prefs;
 }
 
 function stripEmpty(obj: Record<string, unknown>): Record<string, unknown> {

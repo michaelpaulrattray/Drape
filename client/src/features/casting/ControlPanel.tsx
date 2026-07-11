@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
@@ -6,14 +6,78 @@ import HairColorWheel from "./components/HairColorWheel";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { generateRandomPreferences } from "./castingHelpers";
-import { type GenerationState, type GeneratedAsset, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS } from "@/features/casting/constants";
+import { type GenerationState, type GeneratedAsset, type ModelPreferences, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS, CREDIT_COSTS } from "@/features/casting/constants";
 import { HAIR_STYLE_CONFIG, HAIR_TUCKS, HAIR_FADES } from "./hairStyleConfig";
 import { BrandSelector } from "./components/BrandSelector";
-import { FromPromptField } from "./components/FromPromptField";
+import { FromPromptField, type ParsePromptResult } from "./components/FromPromptField";
+import { EngineChoiceChip } from "./components/EngineChoiceChip";
+import { ParseSummaryStrip, type ParseSummary, type ParsedChip } from "./components/ParseSummaryStrip";
 import {
   FieldLabel, ChipRow, OptionGrid, WarmSelectControl, EyeGrid,
   EthnicityBlender, CollapsibleSection, SummaryStrip, SkinToneGrid,
 } from "./components/WarmPrimitives";
+
+// ── Parse choreography metadata (D-41) ─────────
+// Pref key → summary chip + sweep target + hosting section. Keys absent here
+// still apply to the form; they just don't get a chip.
+const REQUIRED_FIELD_LABELS: Record<string, string> = {
+  castingBrand: "Brand", gender: "Gender", age: "Age", ethnicity: "Ethnicity",
+  skinTone: "Skin", eyeColor: "Eyes", hairColor: "Hair color", hairStyle: "Hair style",
+};
+
+type FieldMeta = {
+  label: string;
+  sweep: string;
+  section: "basics" | "physique" | "face" | "skin" | "hair";
+  advancedFace?: boolean;
+  format?: (v: unknown, prefs: ModelPreferences) => string | null;
+};
+
+const PARSE_FIELD_META: Record<string, FieldMeta> = {
+  gender: { label: "Gender", sweep: "gender", section: "basics" },
+  age: { label: "Age", sweep: "age", section: "basics", format: (v) => `${v}y` },
+  ethnicityBlend: {
+    label: "Ethnicity", sweep: "ethnicity", section: "basics",
+    format: (v) => Array.isArray(v) && v.length ? (v as Array<{ name: string }>).map((e) => e.name).join(" + ") : null,
+  },
+  castingBrand: { label: "Brand", sweep: "brand", section: "basics" },
+  castingVibe: {
+    label: "Vibe", sweep: "vibe", section: "basics",
+    format: (v) => {
+      const vibe = v as { editorial: number; commercial: number; runway: number } | undefined;
+      if (!vibe) return null;
+      const entries = [["editorial", vibe.editorial], ["commercial", vibe.commercial], ["runway", vibe.runway]] as const;
+      const [name, weight] = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
+      return weight >= 0.45 ? name : null; // balanced default isn't "understood"
+    },
+  },
+  bodyType: { label: "Body", sweep: "body", section: "physique" },
+  faceShape: { label: "Face", sweep: "face-shape", section: "face" },
+  eyebrowStyle: { label: "Brows", sweep: "brows", section: "face" },
+  jawline: { label: "Jawline", sweep: "face-advanced", section: "face", advancedFace: true },
+  cheekbones: { label: "Cheekbones", sweep: "face-advanced", section: "face", advancedFace: true },
+  cheeks: { label: "Cheeks", sweep: "face-advanced", section: "face", advancedFace: true },
+  eyeShape: { label: "Eye shape", sweep: "face-advanced", section: "face", advancedFace: true },
+  noseShape: { label: "Nose", sweep: "face-advanced", section: "face", advancedFace: true },
+  lipShape: { label: "Lips", sweep: "face-advanced", section: "face", advancedFace: true },
+  skinTone: { label: "Skin", sweep: "skin-tone", section: "skin", format: (v) => String(v).split(" / ")[0] },
+  skinTexture: { label: "Texture", sweep: "skin-texture", section: "skin" },
+  skinFinish: { label: "Finish", sweep: "skin-texture", section: "skin" },
+  eyeColor: { label: "Eyes", sweep: "eyes", section: "hair" },
+  hairColor: { label: "Hair", sweep: "hair-color", section: "hair" },
+  hairStyle: { label: "Style", sweep: "hair-style", section: "hair" },
+  hairLength: { label: "Length", sweep: "hair-style", section: "hair" },
+  hairTexture: { label: "Hair texture", sweep: "hair-style", section: "hair" },
+  hairFringe: { label: "Bangs", sweep: "hair-style", section: "hair" },
+  facialHair: { label: "Facial hair", sweep: "hair-style", section: "hair" },
+  features: { label: "Details", sweep: "brand", section: "basics" },
+};
+
+function isMeaningful(v: unknown): boolean {
+  if (v === null || v === undefined || v === "") return false;
+  if (Array.isArray(v)) return v.length > 0;
+  return true;
+}
 
 // ── Props ─────────────────────────────────────
 
@@ -78,6 +142,7 @@ export function ControlPanel({
   const updatePref = useCastingFormStore((s) => s.updatePref);
   const updatePrefs = useCastingFormStore((s) => s.updatePrefs);
   const setPrefs = useCastingFormStore((s) => s.setPrefs);
+  const engineChoice = useCastingFormStore((s) => s.engineChoice);
   const { showMobilePanel } = useCastingUIStore();
 
   const [showAdvancedFace, setShowAdvancedFace] = useState(false);
@@ -86,6 +151,76 @@ export function ControlPanel({
     basics: true, physique: false, face: false, skin: false, hair: false,
   });
   const toggleSection = (id: string) => setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
+
+  // ── Parse choreography (D-41): the sentence is SEEN becoming the form ──
+  const [parseSummary, setParseSummary] = useState<ParseSummary | null>(null);
+
+  const jumpToField = useCallback((sweep: string) => {
+    const el = document.querySelector(`[data-sweep-field="${sweep}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.remove("parse-sweep");
+    void (el as HTMLElement).offsetWidth; // restart the pulse animation
+    el.classList.add("parse-sweep");
+    setTimeout(() => el.classList.remove("parse-sweep"), 950);
+  }, []);
+
+  const runSweep = useCallback((targets: string[]) => {
+    const unique = Array.from(new Set(targets));
+    if (unique.length === 0) return;
+    const stagger = Math.min(120, 600 / unique.length);
+    unique.forEach((sweep, i) => {
+      setTimeout(() => {
+        const el = document.querySelector(`[data-sweep-field="${sweep}"]`);
+        if (!el) return;
+        if (i === 0) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("parse-sweep");
+        setTimeout(() => el.classList.remove("parse-sweep"), 950);
+      }, i * stagger);
+    });
+  }, []);
+
+  const handleParsed = useCallback(
+    (result: ParsePromptResult) => {
+      // 1. Apply what was heard
+      updatePrefs(result.preferences as Partial<ModelPreferences>);
+      // 2. Everything required and still open is the engine's (D-41)
+      const engineFields = useCastingFormStore.getState().markUnsetRequiredAsEngineChoice();
+
+      // 3. Chips + sweep targets from the meaningful parsed fields
+      const chips: ParsedChip[] = [];
+      const sweeps: string[] = [];
+      const sections: Record<string, boolean> = {};
+      let anyAdvancedFace = false;
+      for (const [key, meta] of Object.entries(PARSE_FIELD_META)) {
+        const value = (result.preferences as Record<string, unknown>)[key];
+        if (!isMeaningful(value)) continue;
+        const display = meta.format ? meta.format(value, prefs) : String(value);
+        if (display === null) continue;
+        chips.push({ sweep: meta.sweep, label: meta.label, value: display });
+        sweeps.push(meta.sweep);
+        sections[meta.section] = true;
+        if (meta.advancedFace) anyAdvancedFace = true;
+      }
+
+      // 4. Panel shows the changes: affected sections open, sweep runs
+      if (Object.keys(sections).length > 0) {
+        setOpenSections((prev) => ({ ...prev, ...sections }));
+      }
+      if (anyAdvancedFace) setShowAdvancedFace(true);
+      setParseSummary({
+        chips,
+        engineFields: engineFields.map((f) => REQUIRED_FIELD_LABELS[f] ?? f),
+      });
+      requestAnimationFrame(() => runSweep(sweeps));
+
+      // 5. Two keystrokes: the armed Cast button takes focus — Enter fires it
+      setTimeout(() => {
+        document.querySelector<HTMLButtonElement>("[data-debug-generate]")?.focus();
+      }, 750);
+    },
+    [prefs, runSweep, updatePrefs],
+  );
 
   const ethnicityBlend = prefs.ethnicityBlend || [];
   const setEthnicityBlend = (blend: { name: string; pct: number }[]) => {
@@ -102,12 +237,23 @@ export function ControlPanel({
 
   const activeHairConfig = prefs.hairStyle ? HAIR_STYLE_CONFIG[prefs.hairStyle] : null;
 
+  // Engine's-choice delegation counts as complete (D-41)
+  const ec = engineChoice;
   const completions = {
-    basics: [prefs.castingBrand, prefs.gender, prefs.age, ethnicityBlend.length > 0].filter(Boolean).length / 4,
+    basics: [
+      prefs.castingBrand || ec.castingBrand,
+      prefs.gender || ec.gender,
+      prefs.age || ec.age,
+      ethnicityBlend.length > 0 || ec.ethnicity,
+    ].filter(Boolean).length / 4,
     physique: prefs.bodyType ? 1 : 0,
     face: [prefs.faceShape, prefs.eyebrowStyle].filter(Boolean).length / 2,
-    skin: prefs.skinTone ? 1 : 0,
-    hair: [prefs.eyeColor, prefs.hairColor, prefs.hairStyle].filter(Boolean).length / 3,
+    skin: prefs.skinTone || ec.skinTone ? 1 : 0,
+    hair: [
+      prefs.eyeColor || ec.eyeColor,
+      prefs.hairColor || ec.hairColor,
+      prefs.hairStyle || ec.hairStyle,
+    ].filter(Boolean).length / 3,
   };
 
   const handleDebugFill = () => {
@@ -145,8 +291,28 @@ export function ControlPanel({
         </div>
       </div>
 
-      {/* From prompt — the create-path parser entry (D-33/R2) */}
-      {!isReadOnly && <FromPromptField onApply={updatePrefs} />}
+      {/* Parse-sweep pulse (D-41) — one style block, canvas-language ink */}
+      <style>{`
+        @keyframes parseSweepPulse {
+          0% { box-shadow: 0 0 0 1px rgba(10,10,10,0); }
+          25% { box-shadow: 0 0 0 1px rgba(10,10,10,0.85); }
+          100% { box-shadow: 0 0 0 1px rgba(10,10,10,0); }
+        }
+        [data-sweep-field] { border-radius: 10px; }
+        [data-sweep-field].parse-sweep { animation: parseSweepPulse 900ms ease; }
+      `}</style>
+
+      {/* From prompt — the create-path parser entry (D-33/R2/D-41) */}
+      {!isReadOnly && <FromPromptField onParsed={handleParsed} />}
+
+      {/* What was heard, where the action happened (D-40) */}
+      {!isReadOnly && parseSummary && (
+        <ParseSummaryStrip
+          summary={parseSummary}
+          onJump={jumpToField}
+          onDismiss={() => setParseSummary(null)}
+        />
+      )}
 
       <SummaryStrip prefs={prefs as unknown as Record<string, unknown>} ethnicityBlend={ethnicityBlend} />
 
@@ -168,15 +334,18 @@ export function ControlPanel({
         {/* ═══ CASTING BASICS ═══ */}
         <CollapsibleSection id="basics" title="Casting Basics" icon={<Palette size={12} strokeWidth={1.8} />} isOpen={openSections.basics} onToggle={toggleSection} completionRatio={completions.basics}>
           <div className="space-y-4">
-            <div>
-              <FieldLabel>Brand Direction</FieldLabel>
+            <div data-sweep-field="brand">
+              <div className="flex items-center justify-between">
+                <FieldLabel filled={!!prefs.castingBrand || !!ec.castingBrand}>Brand Direction</FieldLabel>
+                <EngineChoiceChip field="castingBrand" />
+              </div>
               <BrandSelector
                 value={prefs.castingBrand}
                 onChange={(v) => updatePref('castingBrand', v)}
               />
             </div>
 
-            <div className="pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+            <div className="pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }} data-sweep-field="vibe">
               <TriBlendSelector
                 value={prefs.castingVibe || { commercial: 0.34, editorial: 0.33, runway: 0.33 }}
                 onChange={(val) => updatePref('castingVibe', val)}
@@ -184,17 +353,28 @@ export function ControlPanel({
             </div>
 
             <div className="pt-4 space-y-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-              <OptionGrid cols={3} options={["Female", "Male", "Non-Binary"]} selected={prefs.gender || 'Female'}
-                onSelect={(val) => {
-                  if (val !== (prefs.gender || 'Female')) {
-                    updatePrefs({ gender: val, hairStyle: '', hairFade: '', facialHair: '' });
-                  } else updatePref('gender', val);
-                }}
-              />
-              <div className="space-y-2">
+              <div className="space-y-2" data-sweep-field="gender">
+                <div className="flex items-center justify-between">
+                  <FieldLabel filled={!!prefs.gender || !!ec.gender}>Gender</FieldLabel>
+                  <EngineChoiceChip field="gender" />
+                </div>
+                <OptionGrid cols={3} options={["Female", "Male", "Non-Binary"]} selected={prefs.gender}
+                  onSelect={(val) => {
+                    if (val !== prefs.gender) {
+                      updatePrefs({ gender: val, hairStyle: '', hairFade: '', facialHair: '' });
+                    } else updatePref('gender', val);
+                  }}
+                />
+              </div>
+              <div className="space-y-2" data-sweep-field="age">
                 <div className="flex justify-between items-end">
-                  <span style={{ fontSize: 12, fontWeight: 500, color: '#52524B' }}>Age</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{prefs.age || 23}</span>
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: 12, fontWeight: 500, color: '#52524B' }}>Age</span>
+                    <EngineChoiceChip field="age" />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: prefs.age ? '#1a1a1a' : '#a1a19a' }}>
+                    {prefs.age || (ec.age ? "Engine's choice" : '—')}
+                  </span>
                 </div>
                 <input type="range" min="18" max="85" step="1" value={prefs.age || "23"}
                   onChange={(e) => updatePref('age', e.target.value)}
@@ -204,8 +384,11 @@ export function ControlPanel({
               </div>
             </div>
 
-            <div className="pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-              <FieldLabel filled={ethnicityBlend.length > 0}>Ethnicity</FieldLabel>
+            <div className="pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }} data-sweep-field="ethnicity">
+              <div className="flex items-center justify-between">
+                <FieldLabel filled={ethnicityBlend.length > 0 || !!ec.ethnicity}>Ethnicity</FieldLabel>
+                <EngineChoiceChip field="ethnicity" />
+              </div>
               <EthnicityBlender selected={ethnicityBlend} onChange={setEthnicityBlend} />
             </div>
           </div>
@@ -213,19 +396,21 @@ export function ControlPanel({
 
         {/* ═══ PHYSIQUE ═══ */}
         <CollapsibleSection id="physique" title="Physique" icon={<Dumbbell size={12} strokeWidth={1.8} />} isOpen={openSections.physique} onToggle={toggleSection} completionRatio={completions.physique}>
-          <OptionGrid cols={2} options={["Ultra Thin", "Slim", "Athletic", "Muscular", "Curvy", "Petite"]}
-            selected={prefs.bodyType || "Slim"} onSelect={(val) => updatePref('bodyType', val)} />
+          <div data-sweep-field="body">
+            <OptionGrid cols={2} options={["Ultra Thin", "Slim", "Athletic", "Muscular", "Curvy", "Petite"]}
+              selected={prefs.bodyType || "Slim"} onSelect={(val) => updatePref('bodyType', val)} />
+          </div>
         </CollapsibleSection>
 
         {/* ═══ FACE STRUCTURE ═══ */}
         <CollapsibleSection id="face" title="Face Structure" icon={<ScanFace size={12} strokeWidth={1.8} />} isOpen={openSections.face} onToggle={toggleSection} completionRatio={completions.face}>
           <div className="space-y-5">
-            <div className="space-y-2">
+            <div className="space-y-2" data-sweep-field="face-shape">
               <FieldLabel>Face Shape</FieldLabel>
               <OptionGrid options={["Oval", "Round", "Square", "Heart", "Diamond", "Auto"]}
                 selected={prefs.faceShape || "Auto"} onSelect={(val) => updatePref('faceShape', val)} showAutoReset />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" data-sweep-field="brows">
               <FieldLabel>Eyebrow Style</FieldLabel>
               <OptionGrid options={CHAR_OPTIONS.eyebrows} selected={prefs.eyebrowStyle || "Auto"}
                 onSelect={(val) => updatePref('eyebrowStyle', val)} cols={2} showAutoReset />
@@ -240,7 +425,7 @@ export function ControlPanel({
               {showAdvancedFace ? 'LESS' : 'ADVANCED'}
             </button>
             {showAdvancedFace && (
-              <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-200" data-sweep-field="face-advanced">
                 <WarmSelectControl label="Jawline" options={CHAR_OPTIONS.jawline} value={prefs.jawline || ""} onChange={v => updatePref('jawline', v)} />
                 <WarmSelectControl label="Cheekbones" options={CHAR_OPTIONS.cheekbones} value={prefs.cheekbones || ""} onChange={v => updatePref('cheekbones', v)} />
                 <WarmSelectControl label="Cheek Shape" options={CHAR_OPTIONS.cheeks} value={prefs.cheeks || ""} onChange={v => updatePref('cheeks', v)} />
@@ -255,11 +440,14 @@ export function ControlPanel({
         {/* ═══ SKIN & COMPLEXION ═══ */}
         <CollapsibleSection id="skin" title="Skin & Complexion" icon={<Droplets size={12} strokeWidth={1.8} />} isOpen={openSections.skin} onToggle={toggleSection} completionRatio={completions.skin}>
           <div className="space-y-5">
-            <div className="space-y-2">
-              <FieldLabel filled={!!prefs.skinTone}>Skin Tone</FieldLabel>
+            <div className="space-y-2" data-sweep-field="skin-tone">
+              <div className="flex items-center justify-between">
+                <FieldLabel filled={!!prefs.skinTone || !!ec.skinTone}>Skin Tone</FieldLabel>
+                <EngineChoiceChip field="skinTone" />
+              </div>
               <SkinToneGrid selected={prefs.skinTone || ''} onSelect={(v) => updatePref('skinTone', v)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3" data-sweep-field="skin-texture">
               <WarmSelectControl label="Texture" options={SKIN_TEXTURES} value={prefs.skinTexture || 'Raw / Standard'} onChange={v => updatePref('skinTexture', v)} />
               <WarmSelectControl label="Finish" options={SKIN_FINISHES} value={prefs.skinFinish || 'Natural'} onChange={v => updatePref('skinFinish', v)} />
             </div>
@@ -269,22 +457,33 @@ export function ControlPanel({
         {/* ═══ EYES & HAIR ═══ */}
         <CollapsibleSection id="hair" title="Eyes & Hair" icon={<Scissors size={12} strokeWidth={1.8} />} isOpen={openSections.hair} onToggle={toggleSection} completionRatio={completions.hair}>
           <div className="space-y-5">
-            <div className="space-y-2">
-              <FieldLabel filled={!!prefs.eyeColor}>Iris Color</FieldLabel>
+            <div className="space-y-2" data-sweep-field="eyes">
+              <div className="flex items-center justify-between">
+                <FieldLabel filled={!!prefs.eyeColor || !!ec.eyeColor}>Iris Color</FieldLabel>
+                <EngineChoiceChip field="eyeColor" />
+              </div>
               <EyeGrid selected={prefs.eyeColor} onSelect={(val) => updatePref('eyeColor', val)} />
             </div>
 
-            <div className="space-y-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+            <div className="space-y-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }} data-sweep-field="hair-color">
               <div className="flex justify-between items-center mb-2">
-                <FieldLabel filled={!!prefs.hairColor}>Hair Color</FieldLabel>
-                <span style={{ fontSize: 11, fontWeight: 500, color: '#52524B' }}>{prefs.hairColor || ""}</span>
+                <div className="flex items-center gap-2">
+                  <FieldLabel filled={!!prefs.hairColor || !!ec.hairColor}>Hair Color</FieldLabel>
+                  <EngineChoiceChip field="hairColor" />
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 500, color: prefs.hairColor ? '#52524B' : '#a1a19a' }}>
+                  {prefs.hairColor || (ec.hairColor ? "Engine's choice" : "")}
+                </span>
               </div>
               <HairColorWheel currentColor={prefs.hairColor || "Natural"} onColorSelect={(c) => updatePref('hairColor', c)} />
             </div>
 
-            <div className="space-y-4 pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+            <div className="space-y-4 pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }} data-sweep-field="hair-style">
               <div className="space-y-2">
-                <FieldLabel filled={!!prefs.hairStyle}>Style</FieldLabel>
+                <div className="flex items-center justify-between">
+                  <FieldLabel filled={!!prefs.hairStyle || !!ec.hairStyle}>Style</FieldLabel>
+                  <EngineChoiceChip field="hairStyle" />
+                </div>
                 <OptionGrid cols={2} options={currentHairFamilies} selected={prefs.hairStyle || ''}
                   onSelect={(val) => {
                     const cfg = HAIR_STYLE_CONFIG[val];
@@ -415,8 +614,10 @@ export function ControlPanel({
                   <Sparkles size={14} strokeWidth={2} />
                   <span>{isFormValid ? (currentAssets.length > 0 ? 'Recast Model' : 'Cast Model') : 'Fill Required Fields'}</span>
                   {isFormValid && (
-                    <span style={{ fontSize: 10, fontWeight: 500, color: 'rgba(240,237,232,0.45)', marginLeft: 4, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.04em' }}>
-                      {navigator.platform?.includes('Mac') ? '⌘G' : 'Ctrl+G'}
+                    // Cost visible on the armed button (D-15/D-41): the
+                    // confirm-glance before the second keystroke
+                    <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(240,237,232,0.6)', marginLeft: 2 }}>
+                      · ~{CREDIT_COSTS.castingImage} credits
                     </span>
                   )}
                 </>

@@ -404,8 +404,8 @@ export function buildNewPromptContent(prefs: ModelPreferences, skinInstruction: 
     Create a CASTING SPECIFICATION (JSON) based on these requirements:
 
     ── IDENTITY ──
-    - Gender: ${prefs.gender || "Female"}
-    - Age: ${prefs.age || "23"}
+    - Gender: ${prefs.gender || "ENGINE'S CHOICE — cast whoever best serves the brand direction"}
+    - Age: ${prefs.age || "ENGINE'S CHOICE — pick an age that suits the brand direction and vibe"}
     - Body Type: ${prefs.bodyType || "Model Standard"}
     ${btHint}
 

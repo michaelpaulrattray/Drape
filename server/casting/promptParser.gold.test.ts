@@ -1,6 +1,12 @@
 /**
  * Parser gold-standard suite — LIVE Gemini calls, validated against
- * PARSER_GOLD_STANDARD_V2.md. Skips without GEMINI_API_KEY.
+ * PARSER_GOLD_STANDARD_V2.md.
+ *
+ * OPT-IN: set RUN_PARSER_GOLD=1 (plus GEMINI_API_KEY) to run —
+ *   $env:RUN_PARSER_GOLD='1'; npx vitest run server/casting/promptParser.gold.test.ts
+ * Live calls flaked `pnpm test` twice (transient Gemini hiccups beyond the
+ * single-retry wrapper), so the default suite stays deterministic; run this
+ * before shipping parser or prompt changes, and at milestone gates.
  *
  * The two canaries are HARD assertions (D-14):
  *  - Test 16 (Zendaya): celebrity restraint — gender + age ONLY. If this
@@ -16,9 +22,9 @@ import { describe, it, expect } from "vitest";
 import { parseCastingPrompt } from "./promptParser";
 import { CASTING_BRANDS } from "../../shared/castingOptions";
 
-const hasKey = !!process.env.GEMINI_API_KEY;
+const hasKey = !!process.env.GEMINI_API_KEY && process.env.RUN_PARSER_GOLD === "1";
 if (!hasKey) {
-  console.log("[test] Skipping parser gold-standard tests — no GEMINI_API_KEY");
+  console.log("[test] Skipping parser gold-standard tests — set RUN_PARSER_GOLD=1 (and GEMINI_API_KEY) to run them");
 }
 
 const TIMEOUT = 45_000;
