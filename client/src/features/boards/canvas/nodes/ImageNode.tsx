@@ -2,12 +2,18 @@
  * ImageNode — minimal renderer for non-cast image-kind items (uploads,
  * references, backfilled legacy rows). Replaces BoardItemNode for these
  * kinds; garment/VTO get richer nodes in pass 2.
+ *
+ * R4: carries the same six-slot toolbar as every node (grammar stays
+ * predictable — Decision 7); Rerun/Variations are visibly disabled because
+ * these nodes don't generate.
  */
-import { memo } from "react";
+import { memo, useRef } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { CanvasNodeShell } from "../CanvasNodeShell";
 import { NodeLabelRow } from "../NodeLabelRow";
 import { SafeImage } from "../ImageFallback";
+import { NodeFloatingToolbar, type NodeToolbarAction } from "../NodeFloatingToolbar";
+import { downloadImage } from "../imageActions";
 import type { Provenance } from "@shared/boardTypes";
 
 export interface ImageNodeData extends Record<string, unknown> {
@@ -31,6 +37,7 @@ const PROVENANCE_LABEL: Record<string, string> = {
 };
 
 function ImageNodeInner({ data, selected }: NodeProps<ImageFlowNode>) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const typeName = data.provenance ? PROVENANCE_LABEL[data.provenance.type] ?? "Image" : "Image";
   const typeLabel = data.label ? `${typeName} · ${data.label}` : typeName;
   const engine =
@@ -38,8 +45,54 @@ function ImageNodeInner({ data, selected }: NodeProps<ImageFlowNode>) {
       ? data.provenance.engine
       : undefined;
 
+  const dispatchNodeEvent = (name: string) =>
+    window.dispatchEvent(new CustomEvent(name, { detail: { itemId: data.itemId } }));
+
+  const toolbarActions: NodeToolbarAction[] = [
+    { id: "rerun", label: "This node doesn't generate", disabled: true, onClick: () => {} },
+    { id: "variations", label: "This node doesn't generate", disabled: true, onClick: () => {} },
+    {
+      id: "duplicate",
+      label: "Duplicate",
+      disabled: data.itemId <= 0,
+      onClick: () => dispatchNodeEvent("board-duplicate-node"),
+    },
+    {
+      id: "download",
+      label: data.imageUrl ? "Download" : "No image",
+      disabled: !data.imageUrl,
+      onClick: () => {
+        if (data.imageUrl) void downloadImage(data.imageUrl, `drape-${data.label || data.itemId}.png`);
+      },
+    },
+    {
+      id: "delete",
+      label: "Delete",
+      disabled: data.itemId <= 0,
+      onClick: () => dispatchNodeEvent("board-delete-node"),
+    },
+    {
+      id: "info",
+      label: "Info",
+      disabled: data.itemId <= 0,
+      onClick: () => {
+        const rect = containerRef.current?.getBoundingClientRect();
+        window.dispatchEvent(
+          new CustomEvent("board-node-info", {
+            detail: {
+              itemId: data.itemId,
+              x: rect ? rect.right + 12 : window.innerWidth / 2,
+              y: rect ? rect.top : window.innerHeight / 2,
+            },
+          }),
+        );
+      },
+    },
+  ];
+
   return (
-    <div className="relative" style={{ width: data.width }}>
+    <div ref={containerRef} className="relative" style={{ width: data.width }}>
+      {selected && <NodeFloatingToolbar actions={toolbarActions} />}
       <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
       <CanvasNodeShell selected={selected}>
         <Handle type="target" position={Position.Left} id="in" style={{ opacity: 0, left: -2 }} />

@@ -7,16 +7,29 @@
  * empty node's front door is the CastPickerModal (D-33): choose existing or
  * cast new. No inline prompt, no attribute chrome; configuration and
  * post-cast editing consolidate in the casting environment (D-35, gated).
+ *
+ * R4: selection raises the floating toolbar (Decision 7 grammar). Rerun
+ * opens the ForkRecastPopover (3f, as amended by D-43 — recast sealed on
+ * minted); Variations opens the plan-priced popover; Duplicate/Delete/Info
+ * dispatch to BoardPage (which owns modals, the trust net, and optimistic
+ * landings); Download acts directly.
  */
-import { memo } from "react";
+import { memo, useRef, useState } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { trpc } from "@/lib/trpc";
+import { Popover, PopoverAnchor } from "@/components/ui/popover";
+import { CanvasPopoverContent } from "../CanvasPopover";
 import { CanvasNodeShell } from "../CanvasNodeShell";
 import { NodeLabelRow } from "../NodeLabelRow";
 import { ConnectionDot } from "../ConnectionDot";
 import { CastImageArea } from "../CastImageArea";
 import { NodeControlStrip, type ControlSegment } from "../NodeControlStrip";
 import { NodeStatusBadge } from "../NodeStatusBadge";
+import { NodeFloatingToolbar, type NodeToolbarAction } from "../NodeFloatingToolbar";
+import { ForkRecastPopoverContent } from "../ForkRecastPopover";
+import { VariationsPopoverContent } from "../VariationsPopover";
+import { downloadImage } from "../imageActions";
+import { useRegisterCanvasLayer } from "../../stores/useCanvasLayers";
 import { useCastNodeController } from "./useCastNodeController";
 import type { Provenance, NodeStatus, CastAttributes } from "@shared/boardTypes";
 
@@ -39,13 +52,19 @@ const VIEW_ANGLE_LABEL: Record<string, string> = {
   frontClose: "Headshot",
   frontFull: "Full front",
   sideClose: "Side close",
-  sideFull: "Side full",
+  sideFull: "Walk",
   backFull: "Back full",
+  threeQuarter: "Three-quarter",
 };
+
+type NodePopover = "forkRecast" | "variations" | null;
 
 function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const controller = useCastNodeController(data);
   const utils = trpc.useUtils();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [popover, setPopover] = useState<NodePopover>(null);
+  useRegisterCanvasLayer(`cast-node-popover-${data.itemId}`, popover !== null);
 
   const prov = data.provenance;
   const isRoot = !prov || prov.type === "cast_root"; // empty nodes are roots-to-be
@@ -56,6 +75,8 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const cardWidth = isView ? 200 : 280;
   // D-42: placed drafts wear their status in the label row
   const isDraft = isLibrary && prov?.type === "library_cast" && prov.draft === true;
+  // D-43: a non-draft library cast is a MINTED identity — recast is sealed
+  const isMinted = isLibrary && !isDraft;
   const baseLabel = data.label ? `Cast · ${data.label}` : "Cast";
   const typeLabel = isDraft
     ? `${baseLabel} · Draft`
@@ -72,16 +93,17 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // R3: Edit opens the casting environment on this model — for drafts it is
   // the promotion route (name/mint/add views; the node updates in place)
   const modelId = prov && "modelId" in prov ? prov.modelId : null;
+  // modelId > 0 — optimistic rows carry a -1 placeholder until the server
+  // confirm swaps in the real id; acting on that would target a dead session
+  const modelReady = typeof modelId === "number" && modelId > 0 && data.itemId > 0;
   const openEdit = () =>
     window.dispatchEvent(
       new CustomEvent("board-edit-cast", {
         detail: { itemId: data.itemId, modelId, draft: isDraft },
       }),
     );
-  // modelId > 0 — optimistic rows carry a -1 placeholder until the server
-  // confirm swaps in the real id; Edit on that would open a dead session
   const editSegment: ControlSegment[] =
-    typeof modelId === "number" && modelId > 0 && data.imageUrl
+    modelReady && data.imageUrl
       ? [{ kind: "action", content: "Edit", onClick: openEdit }]
       : [];
 
@@ -98,22 +120,148 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         }]
       : [];
 
+  // R4: the ··· segment opens the node menu (same surface as right-click)
+  const openMenu = () => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    window.dispatchEvent(
+      new CustomEvent("board-open-node-menu", {
+        detail: {
+          itemId: data.itemId,
+          x: rect ? rect.right + 8 : window.innerWidth / 2,
+          y: rect ? rect.top : window.innerHeight / 2,
+        },
+      }),
+    );
+  };
+
   const controlSegments: ControlSegment[] = isRoot && !isLibrary
     ? [
         ...editSegment,
         { kind: "action", content: "+ Views", onClick: () => {} }, // R5
         ...versionSegment,
-        { kind: "action", content: "···", onClick: () => {} }, // R4
+        { kind: "action", content: "···", onClick: openMenu },
       ]
     : [
         ...(data.pinned ? [{ kind: "pin", content: "Pinned — kept as finished work" } as ControlSegment] : []),
         ...editSegment,
         ...versionSegment,
-        { kind: "action", content: "···", onClick: () => {} },
+        { kind: "action", content: "···", onClick: openMenu },
       ];
 
+  // ── R4 toolbar: type-scoped action set (Decision 7 grammar; DS §5.10) ──
+  const dispatchNodeEvent = (name: string) =>
+    window.dispatchEvent(new CustomEvent(name, { detail: { itemId: data.itemId } }));
+
+  const toolbarActions: NodeToolbarAction[] = [
+    {
+      id: "rerun",
+      label: modelReady ? "Rerun" : "Rerun — still landing",
+      disabled: !modelReady,
+      onClick: () => setPopover((p) => (p === "forkRecast" ? null : "forkRecast")),
+    },
+    {
+      id: "variations",
+      label: isView
+        ? "Not available on view nodes"
+        : modelReady
+          ? "Variations"
+          : "Variations — still landing",
+      disabled: isView || !modelReady,
+      onClick: () => setPopover((p) => (p === "variations" ? null : "variations")),
+    },
+    {
+      id: "duplicate",
+      label: isView ? "Not available on view nodes" : "Duplicate",
+      disabled: isView || data.itemId <= 0,
+      onClick: () => dispatchNodeEvent("board-duplicate-node"),
+    },
+    {
+      id: "download",
+      label: data.imageUrl ? "Download" : "No image yet",
+      disabled: !data.imageUrl,
+      onClick: () => {
+        if (data.imageUrl) void downloadImage(data.imageUrl, `drape-${data.label || data.itemId}.png`);
+      },
+    },
+    {
+      id: "delete",
+      label: "Delete",
+      disabled: data.itemId <= 0,
+      onClick: () => dispatchNodeEvent("board-delete-node"),
+    },
+    {
+      id: "info",
+      label: "Info",
+      disabled: data.itemId <= 0,
+      onClick: () => {
+        const rect = containerRef.current?.getBoundingClientRect();
+        window.dispatchEvent(
+          new CustomEvent("board-node-info", {
+            detail: {
+              itemId: data.itemId,
+              x: rect ? rect.right + 12 : window.innerWidth / 2,
+              y: rect ? rect.top : window.innerHeight / 2,
+            },
+          }),
+        );
+      },
+    },
+  ];
+
+  const showToolbar =
+    selected && !controller.isEmpty && controller.promptState !== "generating";
+
   return (
-    <div className="relative" style={{ width: cardWidth }}>
+    <div ref={containerRef} className="relative" style={{ width: cardWidth }}>
+      {showToolbar && <NodeFloatingToolbar actions={toolbarActions} />}
+
+      {/* Rerun/Variations popovers — anchored above the card, beside the
+          toolbar; screen-space via the portal, so screen-legible at any zoom */}
+      <Popover open={popover !== null} onOpenChange={(open) => !open && setPopover(null)}>
+        <PopoverAnchor asChild>
+          <div className="absolute inset-x-0 top-0 h-0 pointer-events-none" />
+        </PopoverAnchor>
+        {popover !== null && (
+          <CanvasPopoverContent
+            side="top"
+            sideOffset={52}
+            className={popover === "forkRecast" ? "w-[260px]" : "w-[248px]"}
+            onOpenAutoFocus={(e) => popover === "variations" && e.preventDefault()}
+          >
+            {popover === "forkRecast" ? (
+              <ForkRecastPopoverContent
+                boardId={data.boardId}
+                itemId={data.itemId}
+                name={data.label}
+                isMinted={isMinted}
+                onFork={() => {
+                  setPopover(null);
+                  dispatchNodeEvent("board-fork-cast");
+                }}
+                onRecast={() => {
+                  setPopover(null);
+                  dispatchNodeEvent("board-recast-cast");
+                }}
+              />
+            ) : (
+              <VariationsPopoverContent
+                boardId={data.boardId}
+                itemId={data.itemId}
+                onCancel={() => setPopover(null)}
+                onGenerate={(count, positions) => {
+                  setPopover(null);
+                  window.dispatchEvent(
+                    new CustomEvent("board-run-variations", {
+                      detail: { itemId: data.itemId, count, positions },
+                    }),
+                  );
+                }}
+              />
+            )}
+          </CanvasPopoverContent>
+        )}
+      </Popover>
+
       <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
 
       <CanvasNodeShell selected={selected}>
