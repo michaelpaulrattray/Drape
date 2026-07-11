@@ -164,6 +164,60 @@ describe("resolveEngineChoices — fire-time brand resolution (D-41)", () => {
   });
 });
 
+describe("mergeAttributeChanges — cross-field invalidation + dual-write (R3, audit D1/B4)", async () => {
+  const { mergeAttributeChanges } = await import("../lib/boardOps");
+
+  it("gender change clears gendered styling unless the change set replaces it", () => {
+    const out = mergeAttributeChanges(
+      { gender: "Female", hairStyle: "Bob", hairFade: "", facialHair: "" },
+      { gender: "Male" },
+    );
+    expect(out.gender).toBe("Male");
+    expect(out.hairStyle).toBe("");
+    expect(out.facialHair).toBe("");
+
+    const withReplacement = mergeAttributeChanges(
+      { gender: "Female", hairStyle: "Bob" },
+      { gender: "Male", hairStyle: "Undercut" },
+    );
+    expect(withReplacement.hairStyle).toBe("Undercut");
+  });
+
+  it("hair-style change resets its sub-selectors", () => {
+    const out = mergeAttributeChanges(
+      { hairStyle: "Bob", hairLength: "Short", hairFringe: "Blunt Bangs", hairVolume: "Voluminous" },
+      { hairStyle: "Long Layers" },
+    );
+    expect(out.hairStyle).toBe("Long Layers");
+    expect(out.hairLength).toBe("");
+    expect(out.hairFringe).toBe("");
+    expect(out.hairVolume).toBe("");
+  });
+
+  it("unchanged gender/style leave everything intact", () => {
+    const out = mergeAttributeChanges(
+      { gender: "Female", hairStyle: "Bob", hairLength: "Short" },
+      { skinTone: "Tan / Bronze" },
+    );
+    expect(out.hairLength).toBe("Short");
+    expect(out.skinTone).toBe("Tan / Bronze");
+  });
+
+  it("ethnicity dual-write keeps blend and legacy string in sync (both directions)", () => {
+    const fromBlend = mergeAttributeChanges({}, { ethnicityBlend: [{ name: "Nordic", pct: 60 }, { name: "Latino", pct: 40 }] });
+    expect(fromBlend.ethnicity).toBe("Nordic, Latino");
+
+    const fromString = mergeAttributeChanges({}, { ethnicity: "Mediterranean" });
+    expect(fromString.ethnicityBlend).toEqual([{ name: "Mediterranean", pct: 100 }]);
+
+    const fromStringPair = mergeAttributeChanges({}, { ethnicity: "Nordic, Slavic" });
+    expect(fromStringPair.ethnicityBlend).toEqual([
+      { name: "Nordic", pct: 50 },
+      { name: "Slavic", pct: 50 },
+    ]);
+  });
+});
+
 describe("buildNewPromptContent — honest engine-choice directives (D-41)", () => {
   it("absent gender and age become ENGINE'S CHOICE directives, not silent defaults", () => {
     const out = buildNewPromptContent({}, "skin");

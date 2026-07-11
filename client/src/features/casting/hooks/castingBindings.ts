@@ -28,6 +28,7 @@ import type {
 import { useCastingFormStore } from "../stores/useCastingFormStore";
 import { useCastingGenerationStore } from "../stores/useCastingGenerationStore";
 import { useCastingUIStore } from "../stores/useCastingUIStore";
+import { useStudioStore } from "@/features/studio/stores/useStudioStore";
 
 export type FailedAction = {
   type: "NEW" | "ITERATE" | "BODY" | "SIDE";
@@ -51,6 +52,10 @@ export interface CastingBindings {
   /** Write prefs (fire-time resolutions, e.g. the Engine's-choice brand pick
    *  that must be recorded and shown before the paid call). */
   updatePrefs: (partial: Partial<ModelPreferences>) => void;
+  /** R3 (D-11): true inside a minted-edit session — the stage-lock never
+   *  applies; every save routes through applyModelEdit → the identity dialog.
+   *  Held in shared state so a /studio resume can never bypass the dialog. */
+  isMintedEditSession: boolean;
   /** Fresh read mid-mutation — never a render-time closure value. */
   getReferenceImage: () => string | undefined;
 
@@ -115,6 +120,7 @@ export interface CastingBindings {
  */
 export function useLegacyCastingBindings(): CastingBindings {
   const { prefs, modelName, engineChoice, updatePrefs } = useCastingFormStore();
+  const isMintedEditSession = useStudioStore((s) => s.mintedEditContext !== null);
   const {
     genState,
     setGenState,
@@ -164,6 +170,7 @@ export function useLegacyCastingBindings(): CastingBindings {
     modelName,
     engineChoice: engineChoice as Record<string, boolean>,
     updatePrefs,
+    isMintedEditSession,
     getReferenceImage: () => useCastingFormStore.getState().prefs.referenceImage,
 
     genState,

@@ -124,7 +124,7 @@ export async function getBoardItemById(itemId: number) {
 
 export async function updateBoardItem(
   itemId: number,
-  data: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "positionX" | "positionY" | "width" | "height" | "zIndex" | "metadata">>
+  data: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "positionX" | "positionY" | "width" | "height" | "zIndex" | "metadata" | "sourceModelId">>
 ) {
   const db = (await getDb())!;
   await db.update(boardItems).set(data).where(eq(boardItems.id, itemId));

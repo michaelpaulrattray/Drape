@@ -36,7 +36,7 @@ export type Provenance =
   // pass 1
   | { type: "cast_root"; modelId: number; viewAngle: "frontClose"; attributes: CastAttributes; engine: string; forkedFromItemId?: number }
   | { type: "cast_view"; modelId: number; rootItemId: number; viewAngle: CanonicalViewAngle; attributes: CastAttributes; engine: string; inputs: InputSnapshot[] }
-  | { type: "library_cast"; modelId: number; viewAngle: CanonicalViewAngle; attributes?: CastAttributes }
+  | { type: "library_cast"; modelId: number; viewAngle: CanonicalViewAngle; attributes?: CastAttributes; /** D-42: placed drafts carry their status honestly; cleared on promotion (mint via Edit) */ draft?: boolean }
   | { type: "upload"; originalFilename?: string }
   | { type: "reference"; sourceItemId?: number }
   // pass 2+

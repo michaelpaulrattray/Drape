@@ -20,6 +20,7 @@ import {
   getLatestVersionNumber,
   createModel,
   getModelById,
+  updateModel,
   getModelAssets,
   createModelAsset,
   createGeneration,
@@ -417,18 +418,25 @@ export async function executeFillFromLibrary(input: {
   }
 
   const canonical = ["frontClose", "frontFull", "sideClose", "sideFull", "backFull"];
+  const draft = model.status !== "active" && model.status !== "locked";
   const provenance: Provenance = {
     type: "library_cast",
     modelId: input.modelId,
     viewAngle: (canonical.includes(headshot.viewType) ? headshot.viewType : "frontClose") as
       Extract<Provenance, { type: "library_cast" }>["viewAngle"],
+    ...(draft ? { draft: true } : {}),
   };
 
   const meta = readMeta(item);
+  // Unnamed drafts render as unnamed (D-42) — never the fake auto-name
+  const honestName = draft && model.name === DRAFT_AUTO_NAME ? null : model.name;
   await updateBoardItem(input.itemId, {
     imageUrl: headshot.storageUrl,
-    label: model.name || item.label || "Model",
+    label: honestName || item.label || null,
     metadata: { ...meta, provenance, status: null, isGenerating: false },
+    // Keep the legacy FK in sync — the node was created empty, so createNode
+    // couldn't stamp it (legacy surfaces + analytics read this column)
+    sourceModelId: input.modelId,
   });
   const version = (await getLatestVersionNumber(input.itemId)) + 1;
   await addBoardItemVersion({
@@ -437,28 +445,264 @@ export async function executeFillFromLibrary(input: {
     imageUrl: headshot.storageUrl,
     tool: "initial",
   });
-  return { itemId: input.itemId, modelId: input.modelId, imageUrl: headshot.storageUrl, label: model.name };
+  return { itemId: input.itemId, modelId: input.modelId, imageUrl: headshot.storageUrl, label: honestName, draft };
 }
 
-// ── listCastableModels (D-28 picker data) ──────────────────────────────────
+// ── listCastableModels (D-28 picker data, D-42 drafts) ─────────────────────
 //
 // Models represented ONLY by canonical cast reference imagery (frontClose
 // headshot). Models without one are excluded — never substituted with VTO
-// or styled outputs (§1.5).
+// or styled outputs (§1.5). Drafts are placeable and honestly presented
+// (D-42): they carry `draft: true`, sort below minted models, and the fake
+// auto-name ("Draft Model") is stripped — unnamed renders as unnamed.
+
+const DRAFT_AUTO_NAME = "Draft Model";
 
 export async function listCastableModels(userId: number, limit = 30) {
   const { getUserModels } = await import("../db");
   const models = await getUserModels(userId, limit * 2); // headroom for filtering
-  const out: Array<{ id: number; name: string | null; headshotUrl: string }> = [];
+  const out: Array<{ id: number; name: string | null; headshotUrl: string; draft: boolean }> = [];
   for (const model of models) {
     if (out.length >= limit) break;
     const assets = await getModelAssets(model.id);
     const headshot = assets.find((a) => a.viewType === "frontClose");
     if (headshot?.storageUrl) {
-      out.push({ id: model.id, name: model.name, headshotUrl: headshot.storageUrl });
+      const draft = model.status !== "active" && model.status !== "locked";
+      out.push({
+        id: model.id,
+        name: draft && model.name === DRAFT_AUTO_NAME ? null : model.name,
+        headshotUrl: headshot.storageUrl,
+        draft,
+      });
     }
   }
-  return out;
+  // Minted first; drafts below (each group keeps recency order)
+  return out.sort((a, b) => Number(a.draft) - Number(b.draft));
+}
+
+// ── applyModelEdit (R3 — identity events, D-11/D-41) ───────────────────────
+//
+// The ONE landing path for identity edits made in the casting environment on
+// a placed cast. Every save routes through here (the D-11 dialog is the
+// confirm); the stage-lock never applies to minted edits. `decision`:
+//   update — the cast becomes a different person: attributes merge with both
+//            cross-field invalidation rules, the headshot regenerates, THIS
+//            node restamps (image + version row `tool:'attributes'`), and
+//            downstream edge targets go stale (R5 renders them richly).
+//   fork   — the original is untouched; a NEW unnamed draft model generates
+//            from the merged attributes and lands as a new node beside it,
+//            connected by a `forked_from` edge (D-42 draft presentation).
+
+/**
+ * Cross-field invalidation (audit D1) + ethnicity dual-write (audit B4),
+ * applied server-side so no surface can bypass them. Exported for tests.
+ */
+export function mergeAttributeChanges(
+  current: Record<string, unknown>,
+  changes: Record<string, unknown>,
+): ModelPreferences {
+  const merged: Record<string, unknown> = { ...current, ...changes };
+
+  // Rule 1: a gender change clears gendered styling (unless the change set
+  // provides its own replacement values)
+  if (changes.gender && changes.gender !== current.gender) {
+    for (const f of ["hairStyle", "hairFade", "facialHair"]) {
+      if (!(f in changes)) merged[f] = "";
+    }
+  }
+  // Rule 2: a hair-style change resets its sub-selectors — the engine
+  // re-derives them for the new silhouette
+  if (changes.hairStyle && changes.hairStyle !== current.hairStyle) {
+    for (const f of ["hairLength", "hairTexture", "hairFringe", "hairParting", "hairVolume", "hairTuck", "hairFlyaways", "hairFade"]) {
+      if (!(f in changes)) merged[f] = "";
+    }
+  }
+  // Ethnicity dual-write: blend and legacy string stay in sync
+  const blend = changes.ethnicityBlend as Array<{ name: string; pct: number }> | undefined;
+  if (blend && blend.length > 0) {
+    merged.ethnicity = blend.map((e) => e.name).join(", ");
+  } else if (typeof changes.ethnicity === "string" && changes.ethnicity && !blend) {
+    const names = changes.ethnicity.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 2);
+    const pct = names.length === 2 ? 50 : 100;
+    merged.ethnicityBlend = names.map((name) => ({ name, pct }));
+  }
+  return merged as ModelPreferences;
+}
+
+export async function planApplyModelEdit(input: { itemId: number }) {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  const prov = readMeta(item).provenance;
+  const modelId = prov && "modelId" in prov ? prov.modelId : null;
+  let affectedViewCount = 0;
+  if (modelId) {
+    const assets = await getModelAssets(modelId);
+    affectedViewCount = assets.filter((a) => a.viewType !== "frontClose" && a.storageUrl).length;
+  }
+  return {
+    ...emptyPlan("applyModelEdit"),
+    estimatedCreditCost: CREDIT_COSTS.castingImage,
+    estimatedDurationMs: 25_000,
+    affectedViewCount,
+  };
+}
+
+export interface ApplyModelEditInput {
+  userId: number;
+  itemId: number;
+  decision: "update" | "fork";
+  changes: Record<string, unknown>;
+}
+
+export async function executeApplyModelEdit(input: ApplyModelEditInput) {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  const meta = readMeta(item);
+  const prov = meta.provenance;
+  if (!prov || !("modelId" in prov)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "This node has no cast identity to edit" });
+  }
+  const model = await getModelById(prov.modelId);
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+
+  const rate = checkRateLimit(`user:${input.userId}`, RATE_LIMITS.generation);
+  if (!rate.allowed) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
+  }
+  await enforceDailyQuota(input.userId);
+
+  const current = (model.preferences ?? {}) as Record<string, unknown>;
+  const merged = resolveEngineChoices(mergeAttributeChanges(current, input.changes));
+
+  const cost = CREDIT_COSTS.castingImage;
+  const deduct = await deductPoints(
+    input.userId, cost, "generation",
+    `Identity ${input.decision} (pending)`, `apply-edit-${input.itemId}-${Date.now()}`,
+  );
+  if (!deduct.success) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
+  }
+
+  try {
+    const masterPrompt = await generateMasterPrompt(merged);
+
+    if (input.decision === "update") {
+      const genRecord = await createGeneration({
+        userId: input.userId, modelId: model.id, type: "castingImage", status: "processing", pointsCost: cost,
+      });
+      const result = await generateCastingImage(
+        buildReinforcedPrompt(masterPrompt.naturalDescription, merged as never),
+        {
+          castingBrand: (merged as { castingBrand?: string }).castingBrand || "Generic",
+          frame: "HEADSHOT",
+          ethnicityHint: buildEthnicityHint(merged as never),
+          userId: String(input.userId),
+        },
+      );
+      if (!result.imageUrl) {
+        await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
+      }
+      await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+      await createModelAsset({ modelId: model.id, viewType: "frontClose", resolution: "1K", storageUrl: result.imageUrl, pointsCost: cost });
+      await updateModel(model.id, {
+        masterPrompt: masterPrompt.naturalDescription,
+        technicalSchema: masterPrompt.technicalSchema,
+        preferences: merged,
+      });
+
+      // Restamp THIS node — the landing op is the only writer of node versions (D-23)
+      const newProv: Provenance = prov.type === "cast_root"
+        ? { ...prov, attributes: merged as Record<string, unknown>, engine: result.engineUsed || prov.engine }
+        : { ...prov, attributes: merged as Record<string, unknown> };
+      await updateBoardItem(input.itemId, {
+        imageUrl: result.imageUrl,
+        metadata: { ...meta, provenance: newProv, attributes: merged as Record<string, unknown>, status: null, isGenerating: false },
+      });
+      const version = (await getLatestVersionNumber(input.itemId)) + 1;
+      await addBoardItemVersion({
+        itemId: input.itemId, version, imageUrl: result.imageUrl,
+        prompt: `Identity update: ${Object.keys(input.changes).join(", ")}`,
+        tool: "attributes",
+      });
+
+      // Downstream edge targets go stale (D-11; R5 renders the full flow)
+      const edges = await getEdgesFrom(input.itemId);
+      for (const edge of edges) {
+        await executeMarkNodeStatus({
+          itemId: edge.targetItemId,
+          status: {
+            type: "stale",
+            message: "The cast this was made from was updated — it reflects the previous identity.",
+            context: { causedByItemId: input.itemId },
+          },
+        }).catch(() => {});
+      }
+
+      log.info({ itemId: input.itemId, modelId: model.id, changed: Object.keys(input.changes) }, "Identity updated");
+      return { decision: "update" as const, itemId: input.itemId, modelId: model.id, imageUrl: result.imageUrl };
+    }
+
+    // decision === "fork" — a new unnamed draft, original untouched
+    const forkModel = await createModel({
+      userId: input.userId,
+      name: DRAFT_AUTO_NAME,
+      masterPrompt: masterPrompt.naturalDescription,
+      technicalSchema: masterPrompt.technicalSchema,
+      preferences: merged,
+      status: "draft",
+    });
+    if (!forkModel.success || !forkModel.modelId) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: forkModel.error || "Failed to create fork" });
+    }
+    const genRecord = await createGeneration({
+      userId: input.userId, modelId: forkModel.modelId, type: "castingImage", status: "processing", pointsCost: cost,
+    });
+    const result = await generateCastingImage(
+      buildReinforcedPrompt(masterPrompt.naturalDescription, merged as never),
+      {
+        castingBrand: (merged as { castingBrand?: string }).castingBrand || "Generic",
+        frame: "HEADSHOT",
+        ethnicityHint: buildEthnicityHint(merged as never),
+        userId: String(input.userId),
+      },
+    );
+    if (!result.imageUrl) {
+      await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
+    }
+    await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+    await createModelAsset({ modelId: forkModel.modelId, viewType: "frontClose", resolution: "1K", storageUrl: result.imageUrl, pointsCost: cost });
+
+    const { itemId: newItemId } = await executeCreateNode({
+      boardId: item.boardId,
+      kind: "image",
+      provenance: {
+        type: "library_cast",
+        modelId: forkModel.modelId,
+        viewAngle: "frontClose",
+        attributes: merged as Record<string, unknown>,
+        draft: true,
+      },
+      position: { x: item.positionX + item.width + 60, y: item.positionY },
+      size: { width: 280, height: 420 },
+      imageUrl: result.imageUrl,
+    });
+    await addBoardEdge({
+      boardId: item.boardId,
+      sourceItemId: input.itemId,
+      targetItemId: newItemId,
+      relation: "forked_from",
+    });
+
+    log.info({ itemId: input.itemId, newItemId, forkModelId: forkModel.modelId }, "Identity forked");
+    return { decision: "fork" as const, itemId: input.itemId, newItemId, modelId: forkModel.modelId, imageUrl: result.imageUrl };
+  } catch (error) {
+    // Atomic-credits contract: refund on any failure after deduction
+    await addCredits(input.userId, cost, "refund", `Identity ${input.decision} failed (refund)`);
+    throw error;
+  }
 }
 
 // ── Shared read helper for the router ──────────────────────────────────────

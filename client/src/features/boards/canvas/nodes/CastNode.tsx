@@ -54,25 +54,43 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // image area is a 3:4 portrait matching the generation ratio exactly.
   const isView = prov?.type === "cast_view";
   const cardWidth = isView ? 200 : 280;
+  // D-42: placed drafts wear their status in the label row
+  const isDraft = isLibrary && prov?.type === "library_cast" && prov.draft === true;
   const baseLabel = data.label ? `Cast · ${data.label}` : "Cast";
-  const typeLabel = isLibrary
-    ? `${baseLabel} · Library`
-    : prov?.type === "cast_view"
-      ? `${baseLabel} · ${VIEW_ANGLE_LABEL[prov.viewAngle] ?? prov.viewAngle}`
-      : baseLabel;
+  const typeLabel = isDraft
+    ? `${baseLabel} · Draft`
+    : isLibrary
+      ? `${baseLabel} · Library`
+      : prov?.type === "cast_view"
+        ? `${baseLabel} · ${VIEW_ANGLE_LABEL[prov.viewAngle] ?? prov.viewAngle}`
+        : baseLabel;
   const engine = prov && "engine" in prov ? prov.engine : undefined;
   const errored = data.status?.type === "error";
   const showFrontDoor =
     controller.isEmpty && !errored && controller.promptState !== "generating";
 
+  // R3: Edit opens the casting environment on this model — for drafts it is
+  // the promotion route (name/mint/add views; the node updates in place)
+  const modelId = prov && "modelId" in prov ? prov.modelId : null;
+  const openEdit = () =>
+    window.dispatchEvent(
+      new CustomEvent("board-edit-cast", {
+        detail: { itemId: data.itemId, modelId, draft: isDraft },
+      }),
+    );
+  const editSegment: ControlSegment[] =
+    modelId && data.imageUrl ? [{ kind: "action", content: "Edit", onClick: openEdit }] : [];
+
   const controlSegments: ControlSegment[] = isRoot && !isLibrary
     ? [
-        { kind: "action", content: "+ Views", onClick: () => {} }, // M7
+        ...editSegment,
+        { kind: "action", content: "+ Views", onClick: () => {} }, // R5
         { kind: "label", content: `v${data.version || 1}` },
-        { kind: "action", content: "···", onClick: () => {} }, // M6
+        { kind: "action", content: "···", onClick: () => {} }, // R4
       ]
     : [
         ...(data.pinned ? [{ kind: "pin", content: "Pinned — kept as finished work" } as ControlSegment] : []),
+        ...editSegment,
         { kind: "label", content: `v${data.version || 1}` },
         { kind: "action", content: "···", onClick: () => {} },
       ];

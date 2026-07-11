@@ -29,6 +29,45 @@ export interface CastPickerModalProps {
   onCastNew: () => void;
 }
 
+interface PickableModel {
+  id: number;
+  name: string | null;
+  headshotUrl: string;
+  draft: boolean;
+}
+
+function ModelCard({
+  model,
+  disabled,
+  onPick,
+}: {
+  model: PickableModel;
+  disabled: boolean;
+  onPick: (m: PickableModel) => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onPick(model)}
+      className="text-left group disabled:opacity-50"
+    >
+      {/* 3:4 — canonical cast geometry (D-31); the model image is sacred */}
+      <div className="relative aspect-[3/4] rounded-canvas-sm overflow-hidden border-hairline border-canvas-border group-hover:border-canvas-ink transition-colors bg-canvas-surface-inset">
+        <SafeImage src={model.headshotUrl} alt="" fallbackIconOnly className="w-full h-full object-cover" />
+        {model.draft && (
+          <span className="absolute top-1.5 left-1.5 px-1.5 py-[1px] rounded-canvas-sm bg-canvas-surface border-hairline border-canvas-border text-canvas-xs text-canvas-ink-soft">
+            Draft
+          </span>
+        )}
+      </div>
+      <div className="text-canvas-xs text-canvas-ink-soft truncate mt-1.5">
+        {model.name ?? (model.draft ? <span className="text-canvas-ink-faint">Untitled</span> : "Untitled")}
+      </div>
+    </button>
+  );
+}
+
 export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPickerModalProps) {
   const [search, setSearch] = useState("");
 
@@ -48,16 +87,26 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
 
   const { data: models, isLoading } = trpc.boardOps.listCastableModels.useQuery({ limit: 30 });
 
-  const filtered = useMemo(() => {
-    const list = models ?? [];
-    if (!search.trim()) return list;
-    const q = search.trim().toLowerCase();
-    return list.filter((m) => (m.name ?? "").toLowerCase().includes(q));
+  // D-42: minted models first, drafts in a quieter section below
+  const { minted, drafts } = useMemo(() => {
+    let list = models ?? [];
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((m) => (m.name ?? "").toLowerCase().includes(q));
+    }
+    return {
+      minted: list.filter((m) => !m.draft),
+      drafts: list.filter((m) => m.draft),
+    };
   }, [models, search]);
 
-  const pick = (model: { id: number; headshotUrl: string; name: string | null }) => {
-    // The picker's thumbnail fills the node optimistically (D-38)
-    actions.fillFromLibrary(model.id, { headshotUrl: model.headshotUrl, name: model.name });
+  const pick = (model: PickableModel) => {
+    // The picker's thumbnail fills the node optimistically (D-38/D-42)
+    actions.fillFromLibrary(model.id, {
+      headshotUrl: model.headshotUrl,
+      name: model.name,
+      draft: model.draft,
+    });
     onClose();
   };
 
@@ -106,7 +155,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
 
           {isLoading ? (
             <div className="py-14 text-center text-canvas-xs text-canvas-ink-faint">Loading…</div>
-          ) : filtered.length === 0 ? (
+          ) : minted.length === 0 && drafts.length === 0 ? (
             <div className="py-12 flex flex-col items-center text-canvas-ink-faint">
               <User className="w-4 h-4 opacity-50" strokeWidth={1.2} />
               <span className="text-canvas-xs mt-1.5">
@@ -123,29 +172,29 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-3 overflow-y-auto pr-1">
-              {filtered.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => pick(m)}
-                  className="text-left group disabled:opacity-50"
-                >
-                  {/* 3:4 — canonical cast geometry (D-31); the model image is sacred */}
-                  <div className="aspect-[3/4] rounded-canvas-sm overflow-hidden border-hairline border-canvas-border group-hover:border-canvas-ink transition-colors bg-canvas-surface-inset">
-                    <SafeImage
-                      src={m.headshotUrl}
-                      alt=""
-                      fallbackIconOnly
-                      className="w-full h-full object-cover"
-                    />
+            <div className="overflow-y-auto pr-1">
+              {minted.length > 0 && (
+                <div className="grid grid-cols-4 gap-3">
+                  {minted.map((m) => (
+                    <ModelCard key={m.id} model={m} disabled={disabled} onPick={pick} />
+                  ))}
+                </div>
+              )}
+              {/* Drafts — placeable, honestly presented, visually quieter (D-42) */}
+              {drafts.length > 0 && (
+                <>
+                  <div className={minted.length > 0 ? "mt-4 mb-2.5" : "mb-2.5"}>
+                    <span className="text-canvas-xs text-canvas-ink-faint">
+                      Drafts — exploring, not yet cast
+                    </span>
                   </div>
-                  <div className="text-canvas-xs text-canvas-ink-soft truncate mt-1.5">
-                    {m.name ?? "Untitled"}
+                  <div className="grid grid-cols-4 gap-3 opacity-80">
+                    {drafts.map((m) => (
+                      <ModelCard key={m.id} model={m} disabled={disabled} onPick={pick} />
+                    ))}
                   </div>
-                </button>
-              ))}
+                </>
+              )}
             </div>
           )}
         </div>

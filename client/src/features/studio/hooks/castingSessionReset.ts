@@ -12,6 +12,8 @@ export function resetCastingSession() {
   useCastingGenerationStore.getState().resetGeneration();
   useCastingFormStore.getState().resetForm();
   useWardrobeStore.getState().resetWardrobe();
+  // A fresh session is never a minted edit (R3 mode set explicitly by its host)
+  useStudioStore.getState().setMintedEditContext(null);
   useStudioStore.getState().setCanvas({
     castModelId: null,
     castFullBodyUrl: null,

@@ -15,10 +15,25 @@ const DEFAULT_CANVAS: CanvasState = {
   isMinted: false,
 };
 
+/** R3 (D-11/D-41): a minted-edit session — set when a placed, minted cast is
+ *  opened for editing. Held in SHARED workspace state (founder ruling) so a
+ *  session resumed in /studio carries the same D-11 routing: stage-lock off,
+ *  every save through applyModelEdit → the identity dialog. Null = normal
+ *  authoring (new casts and draft promotion keep the stage-lock + mint gate). */
+export interface MintedEditContext {
+  boardId: number;
+  itemId: number;
+  modelId: number;
+}
+
 interface StudioState {
   /** Currently active tool — null = lobby/landing state */
   activeTool: ActiveTool;
   setActiveTool: (tool: ActiveTool) => void;
+
+  /** R3 minted-edit session mode (D-11 routing) — see MintedEditContext. */
+  mintedEditContext: MintedEditContext | null;
+  setMintedEditContext: (ctx: MintedEditContext | null) => void;
 
   /**
    * Wardrobe-start state — shown when the user entered via the Wardrobe
@@ -68,6 +83,10 @@ export const useStudioStore = create<StudioState>()(
       wardrobeStart: false,
       setWardrobeStart: (value) =>
         set({ wardrobeStart: value }, false, 'setWardrobeStart'),
+
+      mintedEditContext: null,
+      setMintedEditContext: (ctx) =>
+        set({ mintedEditContext: ctx }, false, 'setMintedEditContext'),
 
       canvas: { ...DEFAULT_CANVAS },
       setCanvas: (partial) =>
@@ -145,6 +164,7 @@ export const useStudioStore = create<StudioState>()(
             activeTool: null, // Reset to lobby
             wardrobeStart: false,
             canvas: { ...DEFAULT_CANVAS },
+            mintedEditContext: null,
             isRailCollapsed: false,
           },
           false,

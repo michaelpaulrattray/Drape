@@ -191,21 +191,26 @@ export function useCastingGeneration({
     }
   }, [currentMasterPrompt]);
 
-  // View locking logic
+  // View locking logic. The linear stage-lock PREVENTS edits; D-11 PROPAGATES
+  // them — in a minted-edit session (R3) the lock never applies, because every
+  // save routes through applyModelEdit → the identity dialog instead.
+  const isMintedEditSession = bindings.isMintedEditSession;
   const isViewLocked = useMemo(() => {
+    if (isMintedEditSession) return false;
     if (currentAssets.length === 0) return false;
     if (activeView === 'frontClose' && currentAssets.some(a => a.viewType === 'frontFull')) return true;
     if (activeView === 'frontFull' && currentAssets.some(a => a.viewType === 'sideClose')) return true;
     if (activeView === 'backFull') return true;
     return false;
-  }, [activeView, currentAssets]);
+  }, [activeView, currentAssets, isMintedEditSession]);
 
   const hasDownstreamDependencies = useMemo(() => {
+    if (isMintedEditSession) return false;
     if (currentAssets.length === 0) return false;
     if (activeView === 'frontClose' && currentAssets.some(a => a.viewType === 'frontFull')) return true;
     if (activeView === 'frontFull' && currentAssets.some(a => a.viewType === 'sideClose')) return true;
     return false;
-  }, [activeView, currentAssets]);
+  }, [activeView, currentAssets, isMintedEditSession]);
 
   const isIterationAllowed = useMemo(() => {
     return ['frontClose', 'frontFull', 'backFull'].includes(activeView);

@@ -57,9 +57,9 @@ export function ParseSummaryStrip({
           {summary.engineFields.length > 0 && (
             <span
               className="text-canvas-xs text-canvas-ink-faint"
-              title={summary.engineFields.join(", ")}
+              title={`Left open — the casting resolves: ${summary.engineFields.join(", ")}`}
             >
-              {summary.chips.length > 0 ? "· " : ""}everything else — engine's choice
+              {summary.chips.length > 0 ? "· everything else stays open" : "everything stays open"}
             </span>
           )}
         </div>

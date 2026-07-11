@@ -49,6 +49,9 @@ export function CastingWorkspace({
   rightReady = true,
 }: CastingWorkspaceProps) {
   const { canvas, setCanvas } = useStudioStore();
+  // R3: minted-edit sessions route saves through the host's identity dialog —
+  // the panel's own generate button hides (it would bypass D-11)
+  const mintedEdit = useStudioStore((s) => s.mintedEditContext !== null);
 
   // Casting stores
   const { prefs, modelName } = useCastingFormStore();
@@ -232,6 +235,7 @@ export function CastingWorkspace({
             isReadOnly={isReadOnly}
             onNewModel={onNewModel}
             modelName={modelName}
+            mintedEdit={mintedEdit}
           />
         </StudioSidePanel>
       </AnimatedPanel>

@@ -120,8 +120,11 @@ export default function DrapeStudio() {
   // Keyboard shortcuts (admin debug)
   useDebugShortcuts();
 
-  // Read-only: locked only for minted models (drafts remain editable)
-  const isReadOnly = activeTool === 'casting' && canvas.isMinted;
+  // Read-only: locked only for minted models (drafts remain editable).
+  // A minted-EDIT session (R3, shared state — survives a takeover→/studio
+  // resume) is editable: its saves route through the D-11 dialog instead.
+  const mintedEditContext = useStudioStore((s) => s.mintedEditContext);
+  const isReadOnly = activeTool === 'casting' && canvas.isMinted && !mintedEditContext;
 
   const isNonCastModel = activeTool === 'casting' && canvas.modelSource === 'uploaded';
 

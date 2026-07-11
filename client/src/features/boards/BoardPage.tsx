@@ -17,7 +17,8 @@ import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 import { type CanvasToolId } from './components/CanvasToolbar';
 import { FloatingToolPill, type PillTool } from './canvas/FloatingToolPill';
 import { CastPickerModal } from './canvas/CastPickerModal';
-import { CastingTakeover } from '@/features/studio/takeover/CastingTakeover';
+import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
+import { useGenerationJobs } from './stores/useGenerationJobs';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
@@ -59,7 +60,10 @@ function BoardPageImpl() {
   // Casting takeover (D-35) — opened from the picker's "Cast new"; on mint
   // the finished model lands on this node via fillFromLibrary.
   const [castTakeoverItemId, setCastTakeoverItemId] = useState<number | null>(null);
+  // R3: Edit session on a placed cast (minted → D-11 routing; draft → promotion)
+  const [castEditContext, setCastEditContext] = useState<CastEditContext | null>(null);
   const { user, isAuthenticated } = useAuth();
+  const { startJob, completeJob, failJob } = useGenerationJobs();
 
   // Viewport center getter exposed by BoardCanvas
   const viewportCenterGetterRef = useRef<(() => { x: number; y: number }) | null>(null);
@@ -275,6 +279,22 @@ function BoardPageImpl() {
     return () => window.removeEventListener('board-open-cast-picker', onOpenPicker);
   }, []);
 
+  // R3: the cast node's Edit action — the environment opens on the model
+  useEffect(() => {
+    const onEditCast = (e: Event) => {
+      const detail = (e as CustomEvent<{ itemId: number; modelId: number | null; draft: boolean }>).detail;
+      if (!detail || typeof detail.itemId !== 'number' || !detail.modelId) return;
+      setCastEditContext({
+        boardId,
+        itemId: detail.itemId,
+        modelId: detail.modelId,
+        draft: !!detail.draft,
+      });
+    };
+    window.addEventListener('board-edit-cast', onEditCast);
+    return () => window.removeEventListener('board-edit-cast', onEditCast);
+  }, [boardId]);
+
   // The takeover's mint landing (D-35): the finished model fills the
   // originating node in place — same op as the picker's library path.
   // Optimistic (D-38): the client already holds the headshot, so the node
@@ -292,8 +312,12 @@ function BoardPageImpl() {
 
   const handleTakeoverMinted = useCallback(
     (modelId: number, info: { name: string; headshotUrl: string | null }) => {
-      const itemId = castTakeoverItemId;
+      // New cast lands on the picker's node; a promoted draft (R3/D-42)
+      // lands back on its own node — same fill op re-stamps label + clears
+      // the draft badge
+      const itemId = castEditContext?.itemId ?? castTakeoverItemId;
       setCastTakeoverItemId(null);
+      setCastEditContext(null);
       if (itemId === null || itemId <= 0) return;
       utils.boards.getItems.setData({ boardId }, (old) =>
         old?.map((i) =>
@@ -314,7 +338,81 @@ function BoardPageImpl() {
       );
       landMintedCastMutation.mutate({ boardId, itemId, modelId });
     },
-    [boardId, castTakeoverItemId, landMintedCastMutation, utils],
+    [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation, utils],
+  );
+
+  // R3: the identity-event landing (D-11). Update regenerates THIS node
+  // (job-driven progress on the card); fork lands a new draft node beside
+  // the original, optimistically (D-38).
+  const applyModelEditMutation = trpc.boardOps.applyModelEdit.execute.useMutation({
+    onMutate: async (vars) => {
+      if (vars.decision !== 'fork') return {};
+      await utils.boards.getItems.cancel({ boardId });
+      const prev = utils.boards.getItems.getData({ boardId });
+      const source = prev?.find((i) => i.id === vars.itemId);
+      const tempId = -Date.now();
+      type ItemsRow = NonNullable<typeof prev>[number];
+      const tempRow = {
+        id: tempId,
+        boardId,
+        type: 'model',
+        kind: 'image',
+        label: null,
+        imageUrl: null,
+        imageKey: null,
+        positionX: (source?.positionX ?? 0) + (source?.width ?? 280) + 60,
+        positionY: source?.positionY ?? 0,
+        width: 280,
+        height: 420,
+        zIndex: 0,
+        parentItemId: null,
+        sourceModelId: null,
+        sourceGarmentId: null,
+        sourceSessionId: null,
+        sourceLookId: null,
+        metadata: { provenance: { type: 'library_cast', modelId: -1, viewAngle: 'frontClose', draft: true } },
+        deletedAt: null,
+        createdAt: new Date(),
+      } as unknown as ItemsRow;
+      utils.boards.getItems.setData({ boardId }, (old) => [...(old ?? []), tempRow]);
+      startJob({ itemId: tempId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
+      return { prev, tempId };
+    },
+    onSuccess: (result, vars, ctx) => {
+      if (result.decision === 'fork' && ctx?.tempId) {
+        completeJob(ctx.tempId);
+        utils.boards.getItems.setData({ boardId }, (old) =>
+          old?.map((i) => (i.id === ctx.tempId ? { ...i, id: result.newItemId!, imageUrl: result.imageUrl } : i)),
+        );
+      } else {
+        completeJob(vars.itemId);
+      }
+      utils.boards.getItems.invalidate({ boardId });
+      utils.credits.getBalance.invalidate();
+    },
+    onError: (err, vars, ctx) => {
+      if (vars.decision === 'fork') {
+        if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
+        if (ctx?.tempId) failJob(ctx.tempId, err.message);
+      } else {
+        failJob(vars.itemId, err.message);
+      }
+      utils.boards.getItems.invalidate({ boardId });
+      toast.error(err.message);
+    },
+  });
+
+  const handleIdentityCommit = useCallback(
+    (decision: 'update' | 'fork', changes: Record<string, unknown>) => {
+      const ctx = castEditContext;
+      setCastEditContext(null);
+      if (!ctx || ctx.itemId <= 0) return;
+      if (decision === 'update') {
+        startJob({ itemId: ctx.itemId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
+      }
+      applyModelEditMutation.mutate({ boardId, itemId: ctx.itemId, decision, changes });
+    },
+    [boardId, castEditContext, applyModelEditMutation, startJob],
   );
 
   // ── Keyboard shortcuts ───────────────────────────────────
@@ -331,7 +429,7 @@ function BoardPageImpl() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
       // Don't delete while an overlay (editor, casting takeover) is open
-      if (editorItemId !== null || castTakeoverItemId !== null) return;
+      if (editorItemId !== null || castTakeoverItemId !== null || castEditContext !== null) return;
       if (selectedItemId !== null) {
         e.preventDefault();
         handleItemDelete(selectedItemId);
@@ -340,7 +438,7 @@ function BoardPageImpl() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedItemId, editorItemId, castTakeoverItemId, handleItemDelete, placementMode]);
+  }, [selectedItemId, editorItemId, castTakeoverItemId, castEditContext, handleItemDelete, placementMode]);
 
   // ── Placement mode click handler ───────────────────────
   const handlePlacementClick = useCallback(
@@ -902,13 +1000,19 @@ function BoardPageImpl() {
         />
       )}
 
-      {/* Casting takeover (D-35) — the environment opens over the untouched board */}
-      {castTakeoverItemId !== null && (
+      {/* Casting takeover (D-35) — the environment opens over the untouched
+          board: new casts, draft promotion, and minted edits (R3) */}
+      {(castTakeoverItemId !== null || castEditContext !== null) && (
         <CastingTakeover
           user={user}
           isAuthenticated={isAuthenticated}
+          editContext={castEditContext}
           onMinted={handleTakeoverMinted}
-          onClose={() => setCastTakeoverItemId(null)}
+          onIdentityCommit={handleIdentityCommit}
+          onClose={() => {
+            setCastTakeoverItemId(null);
+            setCastEditContext(null);
+          }}
         />
       )}
 

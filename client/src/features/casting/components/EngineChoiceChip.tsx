@@ -1,9 +1,12 @@
 /**
- * EngineChoiceChip — the explicit "Engine's choice" state on a required
- * field (D-41). Selecting it satisfies validation and clears any value
- * (delegating un-chooses); picking a value clears the delegation. Absence in
- * prefs is what the engine actually receives — this chip is UI truth about
- * that, never a sentinel string in prompts.
+ * EngineChoiceChip — the explicit "Open" state on a required field (D-41 as
+ * amended by ruling A, 2026-07-11): deliberately unspecified, resolved at
+ * generation. UI vocabulary is "Open" everywhere this state appears — the
+ * internal engineChoice naming stays dev-side and must never leak into copy.
+ * Selecting Open satisfies validation and clears any value (leaving it open
+ * un-chooses); picking a value takes it back. Absence in prefs is what the
+ * engine actually receives — this chip is UI truth about that, never a
+ * sentinel string in prompts.
  *
  * Styled in the canvas language (new surface — survives the R6 restyle).
  */
@@ -20,8 +23,8 @@ export function EngineChoiceChip({ field }: { field: RequiredCastField }) {
       onClick={() => setEngineChoice(field, !on)}
       title={
         on
-          ? "The engine will choose this — select a value to take it back"
-          : "Let the engine choose this from the brand direction"
+          ? "Left open — the casting resolves it. Select a value to take it back."
+          : "Leave this open — the casting resolves it"
       }
       className={cn(
         "shrink-0 px-2 py-[3px] rounded-canvas-pill text-canvas-xs transition-colors",
@@ -30,7 +33,7 @@ export function EngineChoiceChip({ field }: { field: RequiredCastField }) {
           : "border-hairline border-canvas-border text-canvas-ink-faint hover:text-canvas-ink-soft hover:border-canvas-border-strong",
       )}
     >
-      Engine's choice
+      Open
     </button>
   );
 }

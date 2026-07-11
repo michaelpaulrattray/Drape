@@ -60,10 +60,11 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
   );
 
   const fillFromLibrary = useCallback(
-    (modelId: number, preview?: { headshotUrl?: string | null; name?: string | null }) => {
+    (modelId: number, preview?: { headshotUrl?: string | null; name?: string | null; draft?: boolean }) => {
       if (itemId < 0) return;
       // Optimistic fill (D-38): the picker already holds the model's
-      // canonical headshot — the node fills the instant it's picked
+      // canonical headshot — the node fills the instant it's picked (drafts
+      // wear their badge immediately, D-42)
       if (preview?.headshotUrl) {
         utils.boards.getItems.setData({ boardId }, (old) =>
           old?.map((i) =>
@@ -74,7 +75,12 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
                   label: preview.name ?? i.label,
                   metadata: {
                     ...((i.metadata as Record<string, unknown> | null) ?? {}),
-                    provenance: { type: "library_cast", modelId, viewAngle: "frontClose" },
+                    provenance: {
+                      type: "library_cast",
+                      modelId,
+                      viewAngle: "frontClose",
+                      ...(preview.draft ? { draft: true } : {}),
+                    },
                     status: null,
                     isGenerating: false,
                   },

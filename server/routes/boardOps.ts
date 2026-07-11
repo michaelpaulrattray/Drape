@@ -198,6 +198,34 @@ export const boardOpsRouter = router({
       });
     }),
 
+  /** R3 (D-11/D-41): identity edits from the casting environment land here. */
+  applyModelEdit: router({
+    plan: protectedProcedure
+      .input(z.object({ boardId: z.number().int().positive(), itemId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        await requireBoardOwnership(input.boardId, ctx.user.id);
+        await boardOps.requireItemInBoard(input.itemId, input.boardId);
+        return boardOps.planApplyModelEdit({ itemId: input.itemId });
+      }),
+    execute: protectedProcedure
+      .input(z.object({
+        boardId: z.number().int().positive(),
+        itemId: z.number().int().positive(),
+        decision: z.enum(["update", "fork"]),
+        changes: z.record(z.string(), z.unknown()),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await requireBoardOwnership(input.boardId, ctx.user.id);
+        await boardOps.requireItemInBoard(input.itemId, input.boardId);
+        return boardOps.executeApplyModelEdit({
+          userId: ctx.user.id,
+          itemId: input.itemId,
+          decision: input.decision,
+          changes: input.changes,
+        });
+      }),
+  }),
+
   runGeneration: router({
     plan: protectedProcedure
       .input(z.object({ boardId: z.number().int().positive(), itemId: z.number().int().positive() }))

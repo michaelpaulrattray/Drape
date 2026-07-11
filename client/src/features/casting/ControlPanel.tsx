@@ -90,6 +90,9 @@ interface ControlPanelProps {
   isReadOnly?: boolean;
   onNewModel?: () => void;
   modelName?: string;
+  /** R3: minted-edit session — saves go through the host's identity dialog;
+   *  the panel's own generate button hides (it would bypass D-11). */
+  mintedEdit?: boolean;
 }
 
 // ── Progress Ring ────────────────────────────
@@ -135,7 +138,7 @@ function CastingProgressRing({ completions }: { completions: Record<string, numb
 
 export function ControlPanel({
   user, isFormValid, genState, currentAssets, handleGenerate,
-  isReadOnly, onNewModel, modelName,
+  isReadOnly, onNewModel, modelName, mintedEdit,
 }: ControlPanelProps) {
   // Use store's functional updaters — no stale closure risk
   const prefs = useCastingFormStore((s) => s.prefs);
@@ -373,7 +376,7 @@ export function ControlPanel({
                     <EngineChoiceChip field="age" />
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 600, color: prefs.age ? '#1a1a1a' : '#a1a19a' }}>
-                    {prefs.age || (ec.age ? "Engine's choice" : '—')}
+                    {prefs.age || (ec.age ? 'Open' : '—')}
                   </span>
                 </div>
                 <input type="range" min="18" max="85" step="1" value={prefs.age || "23"}
@@ -472,7 +475,7 @@ export function ControlPanel({
                   <EngineChoiceChip field="hairColor" />
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 500, color: prefs.hairColor ? '#52524B' : '#a1a19a' }}>
-                  {prefs.hairColor || (ec.hairColor ? "Engine's choice" : "")}
+                  {prefs.hairColor || (ec.hairColor ? 'Open' : '')}
                 </span>
               </div>
               <HairColorWheel currentColor={prefs.hairColor || "Natural"} onColorSelect={(c) => updatePref('hairColor', c)} />
@@ -581,6 +584,12 @@ export function ControlPanel({
             <Plus size={14} strokeWidth={2} />
             <span>New Model</span>
           </button>
+        ) : mintedEdit ? (
+          // R3: identity changes save from the takeover's top bar — every
+          // save is an identity event (D-11); no direct generate here
+          <p style={{ fontSize: 12, color: '#71716A', lineHeight: 1.5, textAlign: 'center', padding: '4px 8px' }}>
+            Adjust the identity, then save from the top bar — changing a cast is an identity event.
+          </p>
         ) : (
           <>
             {prefs.referenceImage && (
