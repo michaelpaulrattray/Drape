@@ -115,6 +115,8 @@ Unchanged from the old M6, with rerun/recast routing through the identity dialog
 
 **VC-R4 (founder, live):** the grammar tour — rerun→fork a root, spawn variations, duplicate, delete, undo, nudge, Esc everything.
 
+**Shipped 2026-07-12:** `runVariations` plan/execute (parallel candidates, per-candidate named-and-refunded, `variant_of` edges, plan positions as the optimistic-temp contract), fork/recast as `applyModelEdit` intents (`tool:'rerun'` version rows; recast sealed on minted per D-43 — the popover explains, the server refuses), six-slot toolbar on cast + image nodes (type-scoped), `ForkRecastPopover`/`VariationsPopover` (plan-priced), delete trust net (ALL canvas deletes off the legacy hard `boards.deleteItem` onto soft `boardOps.deleteNodes`; cascade dialog carries the app's one red confirm; undo entry pushed at mutate time so Cmd+Z has no dead window at AU latency), move/nudge undo batching, full Decision-7 keyboard (Esc layer registry incl. node popovers; Cmd+C/V→Duplicate same-board; RF a11y arrow-move disabled to prevent double-nudge), `boardOps.listEdges` (client cascade knowledge now, edge rendering feed for R5), D-45(1) takeover-header balance. Drive extended: J (delete→undo round trip, soft-not-hard asserted), K (duplicate), L (paid variations landing + ledger + stuck-processing guard). **Flag for VC-R4:** DS §5.11's "library_cast: Rerun/Variations disabled" predates D-35 — post-R1 every placed cast is `library_cast` provenance, so R4 treats a model-backed library cast as root-grade for the grammar; §5.11 needs a one-line amendment on ratification.
+
 Gate: full gates.
 
 ## R5 — Edges, stale/pin, snapshots, character sheet + composer → **VC-R5**

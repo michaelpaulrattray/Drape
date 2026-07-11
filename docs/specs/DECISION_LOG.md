@@ -259,6 +259,8 @@ Follow-up batch after the founder drove the R1 takeover. Items 1–2 (optimistic
 
 **Affects:** `CastingTakeover` header, board top bar profile popover, `credits.getBalance` reuse; no schema.
 
+**Applied 2026-07-12 (with R4):** placement (1) shipped — quiet tabular figure left of the primary action, click → top-up modal, updates on the post-generation refetch. Placement (2) rides with R6's board-chrome work.
+
 ### D-46 — One view system: stage-lock retired, view generation is the mint gate *(founder-ratified 2026-07-12, Fable audit + riders; assessment: `STAGE_LOCK_UNIFICATION_ASSESSMENT.md`)*
 
 **What:** the pre-D-39 sequential ladder (headshot → *"Lock Headshot & Generate Body?"* → body → *"Lock Body & Generate Side?"* → side) and its `StageLockModal` are retired. There is **one** view system: the six-slot package strip, where an empty slot's ghost opens `CastModelModal` — **mint** mode for a draft, **upgrade** mode for a minted model. Nothing in the old stage-lock was load-bearing (full-body generation reads the *current* headshot at generation time, never a frozen one; `isViewLocked` already bypassed minted edits). It crudely pre-empted staleness by forbidding edits, which D-43 + the package ledger now *represent* instead. Ratified **with riders**, all three landed in the unification commit:

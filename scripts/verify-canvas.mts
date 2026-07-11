@@ -71,6 +71,13 @@ import puppeteer from "puppeteer-core";
 const BASE = process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 
+// RUN_PAID_INVARIANTS: '1' = all paid invariants; or a letter list ('L' /
+// 'F,G') to re-verify one leg without re-burning the others (quota/credits).
+const paidEnabled = (letter: string) => {
+  const v = process.env.RUN_PAID_INVARIANTS ?? "";
+  return v === "1" || v.toUpperCase().split(",").includes(letter);
+};
+
 const failures: string[] = [];
 const check = (name: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
@@ -622,14 +629,25 @@ if (!(await filledNode())?.img) {
     }
     check("J1 delete removes the node optimistically (<1s)", goneAtMs >= 0 && goneAtMs < 1000, `${goneAtMs}ms`);
 
-    // Soft, not hard: the row survives with deletedAt set
-    await sleep(1500);
-    const [delRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
-    const softDeleted = (delRows as Array<{ deletedAt: unknown }>)[0]?.deletedAt != null;
-    check("J2 soft delete (row survives, deletedAt set)", softDeleted);
+    // Soft, not hard: the row survives with deletedAt set. Poll — the write
+    // rides a remote Railway round trip; a fixed sleep raced it once.
+    let softDeleted = false;
+    let rowGone = false;
+    for (let i = 0; i < 16; i++) {
+      await sleep(500);
+      const [delRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
+      const row = (delRows as Array<{ deletedAt: unknown }>)[0];
+      if (!row) { rowGone = true; break; } // hard delete = the exact regression this guards
+      if (row.deletedAt != null) { softDeleted = true; break; }
+    }
+    check("J2 soft delete (row survives, deletedAt set)", softDeleted && !rowGone, rowGone ? "ROW HARD-DELETED" : "");
 
-    // The Undo toast restores it
-    const undoClicked = await clickByText("Undo");
+    // The Undo toast restores it (poll — it appears with the server confirm)
+    let undoClicked = false;
+    for (let i = 0; i < 10 && !undoClicked; i++) {
+      undoClicked = await clickByText("Undo");
+      if (!undoClicked) await sleep(500);
+    }
     check("J3 undo toast present", undoClicked);
     if (undoClicked) {
       await sleep(400);
@@ -705,7 +723,7 @@ if (!(await filledNode())?.img) {
 }
 
 // ── Invariant F: fork landing stability — RUN_PAID_INVARIANTS=1 ────────────
-if (process.env.RUN_PAID_INVARIANTS !== "1") {
+if (!paidEnabled("F")) {
   console.log("SKIP  F — paid invariant (set RUN_PAID_INVARIANTS=1; ~350 credits)");
 } else if (!(await filledNode())?.img) {
   console.log("SKIP  F — no filled cast node available");
@@ -765,7 +783,7 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
 }
 
 // ── Invariant G: tiered mint package (R3b/D-39) — RUN_PAID_INVARIANTS=1 ────
-if (process.env.RUN_PAID_INVARIANTS !== "1") {
+if (!paidEnabled("G")) {
   console.log("SKIP  G — paid invariant (tiered Core mint; ~900 credits on top of F)");
 } else {
   // The draft node comes from DB truth (model status = 'draft'), never from
@@ -1071,18 +1089,11 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
 // ── Invariant L: variations landing (R4) — RUN_PAID_INVARIANTS=1 ───────────
 // Plan-priced confirm → N optimistic temps that never vanish → sibling
 // drafts land with variant_of edges; ledger agrees with the landing count.
-if (process.env.RUN_PAID_INVARIANTS !== "1") {
+if (!paidEnabled("L")) {
   console.log("SKIP  L — paid invariant (2 variations; ~700 credits)");
 } else {
   const source = await filledNode();
-  const sourceItemId = await page.evaluate(() => {
-    const nodes = [...document.querySelectorAll(".react-flow__node")].filter((n) =>
-      n.querySelector("img")?.getAttribute("src"),
-    );
-    const id = nodes[nodes.length - 1]?.getAttribute("data-id") ?? "";
-    return parseInt(id.replace("item-", ""), 10);
-  });
-  if (!source?.img || isNaN(sourceItemId)) {
+  if (!source?.img) {
     console.log("SKIP  L — no filled cast node available");
   } else {
     const [lBal0] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
@@ -1090,6 +1101,15 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
 
     await page.mouse.click(source.x, source.y);
     await sleep(500);
+    // The click hits whichever node is on TOP where cards overlap (K's
+    // duplicate sits +40/+40 over its source), so the node that fires the
+    // variations is the SELECTED one — never trust DOM order for the id
+    const sourceItemId = await page.evaluate(() => {
+      const sel = document.querySelector(".react-flow__node.selected");
+      const id = parseInt((sel?.getAttribute("data-id") ?? "").replace("item-", ""), 10);
+      return isNaN(id) ? -1 : id; // -1 keeps the later SQL harmless
+    });
+    check("L0 click selected a filled node", sourceItemId > 0, `item=${sourceItemId}`);
     const varBtn = await page.evaluate(() => {
       const b = document.querySelector('button[aria-label="Variations"]');
       if (!b) return null;

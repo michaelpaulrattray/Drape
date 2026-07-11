@@ -202,14 +202,19 @@ function BoardPageImpl() {
       await utils.boards.getItems.cancel({ boardId });
       const prev = utils.boards.getItems.getData({ boardId });
       const unit = predictDeleteUnit(itemIds);
-      const removedRows = (prev ?? []).filter((i) => unit.has(i.id));
+      const removedRows = (prev ?? []).filter((i) => unit.has(i.id)) as NonNullable<typeof items>;
       utils.boards.getItems.setData({ boardId }, (old) => (old ? old.filter((i) => !unit.has(i.id)) : []));
-      return { prev, removedRows };
+      // Undo entry lands NOW, not on the server confirm — Cmd+Z must have no
+      // dead window during the round trip (the founder drives at AU latency).
+      // onSuccess reconciles the ids to server truth in place.
+      const entry: UndoEntry = { kind: 'delete', itemIds: Array.from(unit), rows: removedRows };
+      pushUndo(entry);
+      return { prev, entry };
     },
     onSuccess: (result, _vars, ctx) => {
-      const rows = (ctx?.removedRows ?? []) as NonNullable<typeof items>;
-      const entry: UndoEntry = { kind: 'delete', itemIds: result.deletedItemIds, rows };
-      pushUndo(entry);
+      const entry = ctx?.entry;
+      if (entry) entry.itemIds = result.deletedItemIds;
+      const rows = entry?.rows ?? [];
       // The trust net: soft-deleted, one toast, one restore path with Cmd+Z
       const label =
         rows.length === 1
@@ -219,11 +224,15 @@ function BoardPageImpl() {
           : `${result.deletedItemIds.length} nodes deleted`;
       toast(label, {
         duration: 8000,
-        action: { label: 'Undo', onClick: () => undoEntryRef.current(entry) },
+        action: { label: 'Undo', onClick: () => entry && undoEntryRef.current(entry) },
       });
       utils.boards.getItems.invalidate({ boardId });
     },
     onError: (err, _vars, ctx) => {
+      if (ctx?.entry) {
+        const idx = undoStackRef.current.indexOf(ctx.entry);
+        if (idx >= 0) undoStackRef.current.splice(idx, 1);
+      }
       if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
       toast.error(err.message || 'Failed to delete');
     },
