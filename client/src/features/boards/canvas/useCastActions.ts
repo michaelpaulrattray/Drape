@@ -32,11 +32,17 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
   });
 
   const fillMutation = trpc.boardOps.fillFromLibrary.useMutation({
+    // Reconcile in both directions (D-38): success confirms the optimistic
+    // fill; an error refetches back to server truth. No success toast — the
+    // node filling IS the feedback (feedback renders where the action
+    // happened, D-40).
     onSuccess: () => {
       utils.boards.getItems.invalidate({ boardId });
-      toast.success("Model placed");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      utils.boards.getItems.invalidate({ boardId });
+      toast.error(err.message);
+    },
   });
 
   /** Rerun after a failed generation, with the prompt stamped on the node. */
@@ -54,11 +60,32 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
   );
 
   const fillFromLibrary = useCallback(
-    (modelId: number) => {
+    (modelId: number, preview?: { headshotUrl?: string | null; name?: string | null }) => {
       if (itemId < 0) return;
+      // Optimistic fill (D-38): the picker already holds the model's
+      // canonical headshot — the node fills the instant it's picked
+      if (preview?.headshotUrl) {
+        utils.boards.getItems.setData({ boardId }, (old) =>
+          old?.map((i) =>
+            i.id === itemId
+              ? {
+                  ...i,
+                  imageUrl: preview.headshotUrl ?? i.imageUrl,
+                  label: preview.name ?? i.label,
+                  metadata: {
+                    ...((i.metadata as Record<string, unknown> | null) ?? {}),
+                    provenance: { type: "library_cast", modelId, viewAngle: "frontClose" },
+                    status: null,
+                    isGenerating: false,
+                  },
+                }
+              : i,
+          ),
+        );
+      }
       fillMutation.mutate({ boardId, itemId, modelId });
     },
-    [boardId, itemId, fillMutation],
+    [boardId, itemId, fillMutation, utils],
   );
 
   return {

@@ -55,8 +55,9 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
     return list.filter((m) => (m.name ?? "").toLowerCase().includes(q));
   }, [models, search]);
 
-  const pick = (modelId: number) => {
-    actions.fillFromLibrary(modelId);
+  const pick = (model: { id: number; headshotUrl: string; name: string | null }) => {
+    // The picker's thumbnail fills the node optimistically (D-38)
+    actions.fillFromLibrary(model.id, { headshotUrl: model.headshotUrl, name: model.name });
     onClose();
   };
 
@@ -128,7 +129,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
                   key={m.id}
                   type="button"
                   disabled={disabled}
-                  onClick={() => pick(m.id)}
+                  onClick={() => pick(m)}
                   className="text-left group disabled:opacity-50"
                 >
                   {/* 3:4 — canonical cast geometry (D-31); the model image is sacred */}

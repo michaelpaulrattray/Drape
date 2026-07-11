@@ -207,6 +207,14 @@ Follow-up batch after the founder drove the R1 takeover. Items 1–2 (optimistic
 
 **Affects:** every future paid-op landing (R3 `applyModelEdit`, R5 view refresh) and every picker/dialog data dependency. Plan-derived *costs* still come from the server before firing (D-15) — optimism applies to rendering what the client knows, never to skipping the cost contract.
 
+### D-40 — Feedback renders where the action happened *(founder-directed, 2026-07-11 post-R2)*
+
+**What:** the toast is the fallback, not the default. When an action's surface is on screen, its feedback belongs there — the node fills, the form animates, the strip summarizes — not in a floating corner. Toasts remain correct for outcomes with no visible surface of their own (background failures, actions whose surface just closed, cross-surface notices). The toast primitive itself is restyled once in Drape's language (flat white, hairline border, no shadow, ink type, 8px radius, monochrome icons — error keeps the destructive-red glyph per D-8's reasoning) so every call site inherits it; per-surface toast styling is forbidden.
+
+**Why:** the stock dark-blob toast violated the design language on every surface, and — worse — corner feedback made in-workspace actions (the parser's "Brief translated") invisible where the user was looking. The founder's parse-choreography directive (post-R2 item 4) is the archetype: the sentence must be SEEN becoming the form.
+
+**Applied 2026-07-11:** toast primitive restyled app-wide (`components/ui/sonner.tsx`); the library-pick and mint success toasts removed (the node filling IS the feedback). Call-site audit delivered with the post-R2 report; inline migrations land with their surfaces (parse summary strip with item 4, wardrobe flows with pass 2, modal-local errors opportunistically). **R6's design-system update encodes this principle** in `DESIGN_SYSTEM.md`.
+
 ### D-39 — Canonical identity package + tiered mint *(RATIFIED 2026-07-11, all lines — see ratification record below)*
 
 > **RATIFICATION RECORD (founder, 2026-07-11) — `D39_PACKAGE_ASSESSMENT.md` ratified, all lines:**

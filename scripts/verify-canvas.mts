@@ -1,11 +1,14 @@
 /**
  * Canvas interaction invariants — permanent headless regression drive.
  *
- * Guards the two VC2 trust invariants that broke silently once already:
+ * Guards the trust invariants that broke silently once already:
  *   A. Create → immediately drag: the user's position ALWAYS wins over the
  *      in-flight server confirm (no snap-back to spawn position).
  *   B. Right-click add at a panned+zoomed viewport: the node lands at the
  *      cursor's flow position (screen→flow conversion, not raw coords).
+ *   C. Library pick fills the node optimistically (D-38): the picked model's
+ *      thumbnail lands on the node immediately, server reconcile behind.
+ *      (Skips with a note when the verify-bot has no castable models.)
  *
  * Run:  pnpm dev (running) → npx tsx scripts/verify-canvas.mts
  * Uses the dev DB verify-bot user (see .claude/skills/verify) and system Edge.
@@ -176,6 +179,75 @@ const addCastViaPill = async () => {
     const dist = Math.hypot(center.x - target.x, center.y - target.y);
     // Node center should land near the cursor (within ~1.5 card widths on screen)
     check("B2 node lands at cursor after pan+zoom", dist < 220, `distance=${dist.toFixed(0)}px`);
+  }
+}
+
+// ── Invariant C: library pick fills the node optimistically (D-38) ─────────
+{
+  const [models] = await conn.execute(
+    `SELECT COUNT(*) AS n FROM models m WHERE m.userId = ? AND m.id IN
+       (SELECT modelId FROM model_assets WHERE viewType = 'frontClose' AND storageUrl != '')`,
+    [userId],
+  );
+  const castable = (models as Array<{ n: number }>)[0].n;
+  if (castable === 0) {
+    console.log("SKIP  C — verify-bot has no castable models (mint one via the takeover drive first)");
+  } else {
+    const before = await nodeCount();
+    await addCastViaPill();
+    await page.waitForFunction(
+      (n: number) => document.querySelectorAll(".react-flow__node").length > n,
+      { timeout: 3000, polling: 100 },
+      before,
+    );
+    await sleep(2500); // create confirm (picker actions need the real id)
+
+    // Open the picker via the newest node's front-door pill (earlier
+    // invariants left empty cast nodes behind — take the last pill)
+    const pill = (await page.evaluate(() => {
+      const els = [...document.querySelectorAll("button")].filter(
+        (b) => b.textContent?.trim() === "Choose or cast a model",
+      );
+      const el = els[els.length - 1];
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }))!;
+    await page.mouse.click(pill.x, pill.y);
+    await page.waitForSelector(".canvas-scope .grid button img", { timeout: 10000 });
+    const card = (await page.evaluate(() => {
+      const img = document.querySelector(".canvas-scope .grid button img")!;
+      const r = img.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }))!;
+    await page.mouse.click(card.x, card.y);
+
+    // The node must show the image essentially immediately (optimistic fill)
+    let filledAtMs = -1;
+    const t0 = Date.now();
+    for (let i = 0; i < 20; i++) {
+      const filled = await page.evaluate(() => {
+        const nodes = [...document.querySelectorAll(".react-flow__node")];
+        const last = nodes[nodes.length - 1];
+        return !!last?.querySelector("img")?.getAttribute("src");
+      });
+      if (filled) {
+        filledAtMs = Date.now() - t0;
+        break;
+      }
+      await sleep(50);
+    }
+    check("C1 library pick fills node optimistically (<800ms)", filledAtMs >= 0 && filledAtMs < 800, `${filledAtMs}ms`);
+
+    // Server reconcile: the row is stamped library_cast
+    await sleep(5000);
+    const [rows] = await conn.execute(
+      `SELECT JSON_EXTRACT(metadata, '$.provenance.type') AS prov FROM board_items
+       WHERE boardId = ? AND deletedAt IS NULL AND imageUrl IS NOT NULL`,
+      [boardId],
+    );
+    const provs = (rows as Array<{ prov: string | null }>).map((r) => String(r.prov ?? ""));
+    check("C2 server confirm reconciled (library_cast stamped)", provs.some((p) => p.includes("library_cast")));
   }
 }
 
