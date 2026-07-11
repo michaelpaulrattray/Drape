@@ -17,15 +17,17 @@
  *      mode — holds by construction: the mode flag and the session stores are
  *      reset TOGETHER in the takeover cleanup; the flag cannot be cleared
  *      while the session lives.
- *   E. (paid — RUN_PAID_INVARIANTS=1) Identity update round trip: Update
- *      regenerates the node, the strip advances past v1, and re-entering
- *      Edit hydrates the POST-update baseline.
- *   F. (paid) Fork landing stability: the pending node appears immediately
- *      and never vanishes during the ~25s generation (the optimistic-
- *      reconcile race), then lands as an unnamed draft.
+ *   E. IMMUTABLE MINTED IDENTITY (D-43, free): the Save dialog on a minted
+ *      edit is fork-or-keep — no update option, no red; and the server
+ *      structurally refuses decision:'update' on any non-draft model
+ *      (checked over raw tRPC HTTP, bypassing the UI entirely).
+ *   F. (paid — RUN_PAID_INVARIANTS=1) Fork landing stability: the pending
+ *      node appears immediately and never vanishes during the ~25s
+ *      generation (the optimistic-reconcile race), then lands as an
+ *      unnamed draft.
  *
  * Run:  pnpm dev (running) → npx tsx scripts/verify-canvas.mts
- *       (+ $env:RUN_PAID_INVARIANTS='1' for E/F — ~700 credits on verify-bot)
+ *       (+ $env:RUN_PAID_INVARIANTS='1' for F — ~350 credits on verify-bot)
  * Uses the dev DB verify-bot user (see .claude/skills/verify) and system Edge.
  * Exits non-zero on any invariant failure.
  */
@@ -436,13 +438,10 @@ const closeTakeoverCleanly = async () => {
   }
 }
 
-// ── Invariants E/F: paid identity round trips — RUN_PAID_INVARIANTS=1 ──────
-if (process.env.RUN_PAID_INVARIANTS !== "1") {
-  console.log("SKIP  E/F — paid invariants (set RUN_PAID_INVARIANTS=1; ~700 credits)");
-} else if (!(await filledNode())?.img) {
-  console.log("SKIP  E/F — no filled cast node available");
+// ── Invariant E: immutable minted identity (D-43) — FREE ───────────────────
+if (!(await filledNode())?.img) {
+  console.log("SKIP  E — no filled cast node available");
 } else {
-  // E: update round trip
   await openEditOnFilledNode();
   check("E1 edit hydrated", await waitEditHydrated());
   const before = await selectedGender();
@@ -451,40 +450,83 @@ if (process.env.RUN_PAID_INVARIANTS !== "1") {
   await sleep(400);
   await clickByText("Save changes");
   await sleep(1200);
-  check("E2 D-11 dialog", await bodyIncludes("This is an identity change"));
-  const imgBefore = (await filledNode())?.img ?? "";
-  const confirmPos = (await page.evaluate(() => {
-    const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim().startsWith("Update this cast"));
+  check("E2 dialog is fork-or-keep", await bodyIncludes("This is a new person"));
+  // The fork cost is plan-derived — poll for the server round trip
+  let dialogButtons = { noUpdate: false, hasFork: false, forkHasCost: false, noRed: false };
+  for (let i = 0; i < 12; i++) {
+    dialogButtons = await page.evaluate(() => {
+      const labels = [...document.querySelectorAll("button")].map((b) => b.textContent?.trim() ?? "");
+      return {
+        noUpdate: !labels.some((l) => l.startsWith("Update this cast")),
+        hasFork: labels.some((l) => l.startsWith("Fork as new model")),
+        forkHasCost: labels.some((l) => l.startsWith("Fork as new model") && /credits/.test(l)),
+        noRed: ![...document.querySelectorAll("button")].some(
+          (b) => getComputedStyle(b).backgroundColor === "rgb(179, 38, 30)",
+        ),
+      };
+    });
+    if (dialogButtons.forkHasCost) break;
+    await sleep(500);
+  }
+  check(
+    "E3 no update option, no red; fork carries plan cost",
+    dialogButtons.noUpdate && dialogButtons.hasFork && dialogButtons.forkHasCost && dialogButtons.noRed,
+    JSON.stringify(dialogButtons),
+  );
+
+  // Structural guard: decision:'update' refused server-side even when the UI
+  // is bypassed entirely (raw tRPC HTTP with the session cookie)
+  const editedItemId = await page.evaluate(() => {
+    const nodes = [...document.querySelectorAll(".react-flow__node")].filter((n) =>
+      n.querySelector("img")?.getAttribute("src"),
+    );
+    const id = nodes[nodes.length - 1]?.getAttribute("data-id") ?? "";
+    return parseInt(id.replace("item-", ""), 10);
+  });
+  const guardResult = await page.evaluate(
+    async (bId: number, iId: number) => {
+      const res = await fetch("/api/trpc/boardOps.applyModelEdit.execute", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { boardId: bId, itemId: iId, decision: "update", changes: { gender: "Male" } } }),
+      });
+      const text = await res.text();
+      return { status: res.status, immutable: text.includes("immutable") };
+    },
+    boardId,
+    editedItemId,
+  );
+  check(
+    "E4 server refuses update on minted identity (UI bypassed)",
+    guardResult.status >= 400 && guardResult.immutable,
+    JSON.stringify(guardResult),
+  );
+  await clickByText("Keep editing");
+  await sleep(400);
+  await closeTakeoverCleanly();
+}
+
+// ── Invariant F: fork landing stability — RUN_PAID_INVARIANTS=1 ────────────
+if (process.env.RUN_PAID_INVARIANTS !== "1") {
+  console.log("SKIP  F — paid invariant (set RUN_PAID_INVARIANTS=1; ~350 credits)");
+} else if (!(await filledNode())?.img) {
+  console.log("SKIP  F — no filled cast node available");
+} else {
+  await openEditOnFilledNode();
+  check("F0 edit hydrated", await waitEditHydrated());
+  const g = await selectedGender();
+  await clickByText(g === "Male" ? "Female" : "Male");
+  await sleep(400);
+  await clickByText("Save changes");
+  await sleep(1200);
+  const forkPos = (await page.evaluate(() => {
+    const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim().startsWith("Fork as new model"));
     if (!b) return null;
     const r = b.getBoundingClientRect();
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
   }))!;
-  await page.mouse.click(confirmPos.x, confirmPos.y);
-  console.log("   E: regenerating identity (real, ~350 credits)...");
-  let landed = false;
-  for (let i = 0; i < 60; i++) {
-    await sleep(2000);
-    const n = await filledNode();
-    if (n?.img && n.img !== imgBefore) { landed = true; break; }
-  }
-  check("E3 update landed on the node", landed);
-  const n = await filledNode();
-  await page.mouse.click(n!.x, n!.y); // select -> strip
-  await sleep(500);
-  const stripText = (await filledNode())?.text ?? "";
-  check("E4 version strip advanced past v1", /v([2-9]|\d{2,})/.test(stripText), stripText.slice(0, 80));
-  check("E5 re-edit opens", await openEditOnFilledNode());
-  check("E6 re-hydrated", await waitEditHydrated());
-  const after = await selectedGender();
-  check("E7 re-edit hydrates the POST-update baseline", after === target, `ui=${after} expected=${target}`);
-
-  // F: fork landing stability (from this same edit session)
-  const forkTarget = after === "Male" ? "Female" : "Male";
-  await clickByText(forkTarget);
-  await sleep(400);
-  await clickByText("Save changes");
-  await sleep(1200);
-  await clickByText("Fork as new model");
+  await page.mouse.click(forkPos.x, forkPos.y);
   await sleep(1000);
   const countAfterFork = await nodeCount();
   check("F1 pending fork node appears immediately", countAfterFork >= 4, `${countAfterFork} nodes`);

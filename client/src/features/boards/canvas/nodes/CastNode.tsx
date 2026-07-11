@@ -81,17 +81,30 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const editSegment: ControlSegment[] =
     modelId && data.imageUrl ? [{ kind: "action", content: "Edit", onClick: openEdit }] : [];
 
+  // D-43 v-chip ruling: hidden at v1; at >1 the chip itself opens history
+  const versionSegment: ControlSegment[] =
+    (data.version || 1) > 1
+      ? [{
+          kind: "action",
+          content: `v${data.version}`,
+          onClick: () =>
+            window.dispatchEvent(
+              new CustomEvent("board-open-version-history", { detail: { itemId: data.itemId } }),
+            ),
+        }]
+      : [];
+
   const controlSegments: ControlSegment[] = isRoot && !isLibrary
     ? [
         ...editSegment,
         { kind: "action", content: "+ Views", onClick: () => {} }, // R5
-        { kind: "label", content: `v${data.version || 1}` },
+        ...versionSegment,
         { kind: "action", content: "···", onClick: () => {} }, // R4
       ]
     : [
         ...(data.pinned ? [{ kind: "pin", content: "Pinned — kept as finished work" } as ControlSegment] : []),
         ...editSegment,
-        { kind: "label", content: `v${data.version || 1}` },
+        ...versionSegment,
         { kind: "action", content: "···", onClick: () => {} },
       ];
 

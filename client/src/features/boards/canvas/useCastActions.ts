@@ -9,6 +9,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useGenerationJobs } from "../stores/useGenerationJobs";
+import { useOptimisticFills } from "../stores/useOptimisticFills";
 
 export function useCastActions(options: { boardId: number; itemId: number }) {
   const { boardId, itemId } = options;
@@ -40,6 +41,7 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
       utils.boards.getItems.invalidate({ boardId });
     },
     onError: (err) => {
+      useOptimisticFills.getState().clearFill(itemId);
       utils.boards.getItems.invalidate({ boardId });
       toast.error(err.message);
     },
@@ -62,36 +64,22 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
   const fillFromLibrary = useCallback(
     (modelId: number, preview?: { headshotUrl?: string | null; name?: string | null; draft?: boolean }) => {
       if (itemId < 0) return;
-      // Optimistic fill (D-38): the picker already holds the model's
-      // canonical headshot — the node fills the instant it's picked (drafts
-      // wear their badge immediately, D-42)
+      // Optimistic fill via the LEDGER, never the query cache (D-38): a
+      // cache write loses to any in-flight refetch resolving late with
+      // pre-fill data. The ledger overlays canvasItems and self-prunes when
+      // the server row carries the image. Drafts wear their badge
+      // immediately (D-42).
       if (preview?.headshotUrl) {
-        utils.boards.getItems.setData({ boardId }, (old) =>
-          old?.map((i) =>
-            i.id === itemId
-              ? {
-                  ...i,
-                  imageUrl: preview.headshotUrl ?? i.imageUrl,
-                  label: preview.name ?? i.label,
-                  metadata: {
-                    ...((i.metadata as Record<string, unknown> | null) ?? {}),
-                    provenance: {
-                      type: "library_cast",
-                      modelId,
-                      viewAngle: "frontClose",
-                      ...(preview.draft ? { draft: true } : {}),
-                    },
-                    status: null,
-                    isGenerating: false,
-                  },
-                }
-              : i,
-          ),
-        );
+        useOptimisticFills.getState().setFill(itemId, {
+          imageUrl: preview.headshotUrl,
+          label: preview.name ?? null,
+          modelId,
+          draft: preview.draft,
+        });
       }
       fillMutation.mutate({ boardId, itemId, modelId });
     },
-    [boardId, itemId, fillMutation, utils],
+    [boardId, itemId, fillMutation],
   );
 
   return {

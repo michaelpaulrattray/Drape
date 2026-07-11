@@ -569,6 +569,17 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
 
+  // D-43 (founder-ratified 2026-07-11): minted identities are IMMUTABLE —
+  // fork is the sole identity operation on any non-draft model. Keyed off
+  // status !== 'draft' so no status value ('locked', 'archived', …) is a
+  // loophole. Enforced HERE, where no client can bypass it.
+  if (input.decision === "update" && model.status !== "draft") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This identity is minted and immutable — fork it as a new model instead.",
+    });
+  }
+
   const rate = checkRateLimit(`user:${input.userId}`, RATE_LIMITS.generation);
   if (!rate.allowed) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });

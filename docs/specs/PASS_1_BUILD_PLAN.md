@@ -33,10 +33,10 @@
 | R3 | Edit path + identity events (minted-edit session mode, `applyModelEdit` → D-11) | 1.5–2 | **VC-R3 — edit a placed cast, watch the stale flow** |
 | R3b | **Identity package + tiered mint** (D-39: ¾ view, back gate, Draft/Core/Production dialog, package read model) | 2–2.5 | **VC-R3b — mint through the tiers** |
 | R4 | Canvas grammar: toolbar, fork/recast, variations, delete+undo, keyboard incl. Cmd+C/V→Duplicate (old M6) | 2.5 | **VC-R4 — the grammar tour** |
-| R5 | Edges, stale/pin, snapshots, character sheet + composer (old M7 + D-29 as amended by D-39 + D-30) | 3.5–4 | **VC-R5 — lineage and staleness on the sheet** |
+| R5 | Edges, refresh/pin, snapshots, character sheet + composer (old M7 + D-29 as amended by D-39 + D-30; **identity-edit staleness deleted by D-43** — per-tile quality refresh, pins, and aggregate refresh remain) | 2.5–3 | **VC-R5 — lineage and the sheet** |
 | R6 | First-touch (old M9) + **full environment restyle to canvas language** (named slot; scope amended 2026-07-11 to include the panel header, progress donut, and viewer/master-prompt chrome) | 3–3.5 | **VC-R6 — first-run + the environment in Drape's language** |
-| R7 | Hardening + success-criteria sweep (old M10) | 1.5 | Dogfood start |
-| | **Remaining total** | **≈ 18.5–21 focused days** | |
+| R7 | Hardening + success-criteria sweep (old M10; **watch for silent-audit-gap failures** — the bug-4 class where an action applies but its audit write dies) | 1.5 | Dogfood start |
+| | **Remaining total** | **≈ 17.5–20 focused days** | |
 
 The pre-ruling plan had 18–19.5 days remaining with M8's from-scratch `RefinementStudio` as the riskiest item; the R-sequence deletes that build entirely (the existing studio casting flow *is* the environment) and absorbs M5's canvas popovers into R3's environment-side identity events.
 
@@ -122,7 +122,7 @@ The old M7 with D-29 (as amended by D-39: the package and its staleness/pins liv
 - Pop out / collapse (pop-outs are board items **referencing model assets** per the D-39 ratification; edge re-anchoring with `viewAngle` preserved in edge metadata).
 - View generation lives in the environment (R1's capability); results land as sheet tiles. No standalone view-card spawning, no canvas views popover.
 - Edge rendering (default 40%, full on endpoint selection); `generated_from_cast`/`forked_from`/`variant_of` visible lineage.
-- Stale flow end-to-end: identity events (R3) → per-tile staleness → refresh one / bulk / pin exemptions; `refreshStaleViews`; D-12 amendment enforced (`ImageFallback` everywhere, consuming ops fail named-and-refunded).
+- Refresh flow (as reduced by D-43 — identity-edit staleness no longer exists): per-tile quality refresh with plan-derived costs, pin exemptions, aggregate refresh; the stale machinery (`NodeStatusBadge` stale variant, `markNodeStatus`) stays built as pass-2 infrastructure. D-12 amendment enforced (`ImageFallback` everywhere, consuming ops fail named-and-refunded).
 - `composeIdentityPayload(modelId, intentViewAngle)` in `server/casting/` (D-30 strategy b: current headshot + intent view + `buildIdentityAnchor` text), provenance manifest with verbatim `identityText`; stale-input rule (plan flags unpinned stale intent views; pinned used silently).
 
 **VC-R5 (founder, live):** generate views in the environment → sheet renders → change identity → Update later → tiles go stale → refresh one, pin one → recast → pinned tile exempt. What's being felt: the sheet as one board object, staleness as information, pin gesture.

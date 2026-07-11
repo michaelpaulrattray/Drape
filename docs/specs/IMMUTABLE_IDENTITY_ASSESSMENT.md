@@ -1,6 +1,6 @@
 # Assessment — minted casts as identity-immutable (amends D-11)
 
-**Status: awaiting founder ratification. Nothing is built.** Prepared 2026-07-11 from the VC-R3 drive directive. The instinct under assessment: minted casts should be identity-IMMUTABLE — fork is the only identity operation on a minted cast; drafts stay freely editable pre-mint.
+**Status: RATIFIED (founder, 2026-07-11), all four sub-decisions as recommended** — fork-only (dialog = fork-or-keep, no red); refinements are not staleness; v-chip hidden at v1, opens history at >1; immutability keyed off `status !== 'draft'` server-side. Logged as D-43 in `DECISION_LOG.md`; implemented same day; R5 scope reduced in `PASS_1_BUILD_PLAN.md`. Prepared 2026-07-11 from the VC-R3 drive directive.
 
 ---
 

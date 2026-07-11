@@ -21,6 +21,7 @@ import { DottedGridBackground } from './canvas/DottedGridBackground';
 import { BrandLoader } from '@/components/BrandLoader';
 import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
 import { useGenerationJobs } from './stores/useGenerationJobs';
+import { useOptimisticFills } from './stores/useOptimisticFills';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { CanvasZoomControls } from './components/CanvasZoomControls';
 import { CanvasChatToggle } from './components/CanvasChatToggle';
@@ -281,6 +282,16 @@ function BoardPageImpl() {
     return () => window.removeEventListener('board-open-cast-picker', onOpenPicker);
   }, []);
 
+  // D-43: the v-chip opens version history directly (visible only at v2+)
+  useEffect(() => {
+    const onOpenHistory = (e: Event) => {
+      const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
+      if (typeof itemId === 'number' && itemId > 0) setVersionHistoryItemId(itemId);
+    };
+    window.addEventListener('board-open-version-history', onOpenHistory);
+    return () => window.removeEventListener('board-open-version-history', onOpenHistory);
+  }, []);
+
   // R3: the cast node's Edit action — the environment opens on the model
   useEffect(() => {
     const onEditCast = (e: Event) => {
@@ -320,31 +331,22 @@ function BoardPageImpl() {
     (modelId: number, info: { name: string; headshotUrl: string | null }) => {
       // New cast lands on the picker's node; a promoted draft (R3/D-42)
       // lands back on its own node — same fill op re-stamps label + clears
-      // the draft badge
+      // the draft badge. Optimistic via the fill LEDGER (D-38) — cache
+      // writes lose stale-refetch races.
       const itemId = castEditContext?.itemId ?? castTakeoverItemId;
       setCastTakeoverItemId(null);
       setCastEditContext(null);
       if (itemId === null || itemId <= 0) return;
-      utils.boards.getItems.setData({ boardId }, (old) =>
-        old?.map((i) =>
-          i.id === itemId
-            ? {
-                ...i,
-                imageUrl: info.headshotUrl ?? i.imageUrl,
-                label: info.name || i.label,
-                metadata: {
-                  ...((i.metadata as Record<string, unknown> | null) ?? {}),
-                  provenance: { type: 'library_cast', modelId, viewAngle: 'frontClose' },
-                  status: null,
-                  isGenerating: false,
-                },
-              }
-            : i,
-        ),
-      );
+      if (info.headshotUrl) {
+        useOptimisticFills.getState().setFill(itemId, {
+          imageUrl: info.headshotUrl,
+          label: info.name || null,
+          modelId,
+        });
+      }
       landMintedCastMutation.mutate({ boardId, itemId, modelId });
     },
-    [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation, utils],
+    [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation],
   );
 
   // R3: the identity-event landing (D-11). Update regenerates THIS node
@@ -356,9 +358,17 @@ function BoardPageImpl() {
   // was the vanish-then-materialize race). The overlay merges into
   // canvasItems and self-prunes once the server row arrives.
   const [pendingForks, setPendingForks] = useState<BoardItemRecord[]>([]);
+  const optimisticFills = useOptimisticFills((s) => s.fills);
   useEffect(() => {
     if (!items) return;
     setPendingForks((pf) => pf.filter((p) => !items.some((i) => i.id === p.id)));
+    // Fill-ledger entries prune once the server row carries the image
+    for (const idStr of Object.keys(useOptimisticFills.getState().fills)) {
+      const id = Number(idStr);
+      if (items.some((i) => i.id === id && i.imageUrl)) {
+        useOptimisticFills.getState().clearFill(id);
+      }
+    }
   }, [items]);
 
   const applyModelEditMutation = trpc.boardOps.applyModelEdit.execute.useMutation({
@@ -707,18 +717,33 @@ function BoardPageImpl() {
         }
         const positionX = localMove?.x ?? item.positionX;
         const positionY = localMove?.y ?? item.positionY;
+        // Fill-ledger overlay (D-38): client intent outlives cache churn —
+        // applied until the server row itself carries the image
+        const fill = !item.imageUrl ? optimisticFills[item.id] : undefined;
         return {
           id: item.id,
           type: item.type as BoardItemRecord['type'],
           kind: item.kind as BoardItemRecord['kind'],
-          label: item.label,
-          imageUrl: item.imageUrl,
+          label: fill ? (fill.label ?? item.label) : item.label,
+          imageUrl: item.imageUrl ?? fill?.imageUrl ?? null,
           positionX,
           positionY,
           width: item.width,
           height: item.height,
           zIndex: item.zIndex,
-          metadata: item.metadata as Record<string, unknown> | null,
+          metadata: fill
+            ? {
+                ...((item.metadata as Record<string, unknown> | null) ?? {}),
+                provenance: {
+                  type: 'library_cast',
+                  modelId: fill.modelId,
+                  viewAngle: 'frontClose',
+                  ...(fill.draft ? { draft: true } : {}),
+                },
+                status: null,
+                isGenerating: false,
+              }
+            : (item.metadata as Record<string, unknown> | null),
           sourceModelId: item.sourceModelId,
         };
       });
@@ -726,7 +751,7 @@ function BoardPageImpl() {
     // them; entries self-prune once the server row arrives (effect above)
     const pending = pendingForks.filter((p) => !mapped.some((m) => m.id === p.id));
     return pending.length > 0 ? [...mapped, ...pending] : mapped;
-  }, [items, pendingForks]);
+  }, [items, pendingForks, optimisticFills]);
 
   const isSaving =
     renameMutation.isPending ||
