@@ -207,7 +207,15 @@ Follow-up batch after the founder drove the R1 takeover. Items 1–2 (optimistic
 
 **Affects:** every future paid-op landing (R3 `applyModelEdit`, R5 view refresh) and every picker/dialog data dependency. Plan-derived *costs* still come from the server before firing (D-15) — optimism applies to rendering what the client knows, never to skipping the cost contract.
 
-### D-39 — Canonical identity package + tiered mint *(PROPOSED — assessment delivered, awaiting founder ratification; no build until then)*
+### D-39 — Canonical identity package + tiered mint *(RATIFIED 2026-07-11, all lines — see ratification record below)*
+
+> **RATIFICATION RECORD (founder, 2026-07-11) — `D39_PACKAGE_ASSESSMENT.md` ratified, all lines:**
+> 1. **Sixth slot = `sideFull`, confirmed** — symmetric face cluster (front/side/¾ close) + body cluster (front/side/back full).
+> 2. **Model-level package ratified** — one staleness ledger on `model_assets`; board pop-outs *reference* model assets; `cast_view` board rows never ship. **Amends D-29** (its board-level view records are superseded; the sheet, per-tile status, and pins read/write model-asset state).
+> 3. **R3b ratified as scoped** (three-quarter view, back gate, tiered mint dialog, package read model, composer slot-recording; between R3 and R4; plan +2–2.5d).
+> 4. **Back-view identityCheck gate ratified**: one auto-retry, then fail named-and-refunded — replaces the "No new back tattoos" text plea.
+> 5. **Keyboard**: `Cmd+C`/`Cmd+V` alias to Duplicate for same-board in R4 (hands expect the keys); **cross-board paste logged as a future D-16 amendment**, not R4 scope.
+> 6. **R3 session-mode design ratified**: stage-lock disabled for minted edits; every save routes through `applyModelEdit` → the D-11 dialog; the mode lives in shared workspace state so session bleed can never bypass the dialog (a `/studio` resume carries the same routing).
 
 **What (founder brief, 5a–5e):**
 - **(a)** The canonical package is **six slots** — front headshot (default cast output), side profile, three-quarter, full-body front, full-body back, plus one further slot to be confirmed at ratification (five were named; the current system's sixth canonical view is full-body side). Face cluster (headshot, side profile, three-quarter) locks facial identity; body cluster locks silhouette/build for VTO and scene work. Back views need an identityCheck-style verification gate before joining the package (angles research: person-rotation hallucinates past ~120°).

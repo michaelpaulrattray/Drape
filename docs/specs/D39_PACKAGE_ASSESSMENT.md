@@ -1,6 +1,6 @@
 # D-39 Assessment — canonical identity package, tiered mint, and the D-11 six-view seam
 
-**Status: awaiting founder ratification. Nothing below is built.** Prepared 2026-07-11 against the code as of the post-VC-R1 fixes commit. Covers the founder's brief items 5a–5e and the item-6 seam verification. Companion to `DECISION_LOG.md` D-39 (proposed).
+**Status: RATIFIED (founder, 2026-07-11), all lines** — sixth slot = `sideFull`; model-level package (amends D-29); R3b as scoped; back gate retry-then-refund; Cmd+C/V aliases Duplicate same-board (cross-board = future D-16 amendment); R3 session mode as designed. See the ratification record under D-39 in `DECISION_LOG.md`; `PASS_1_BUILD_PLAN.md` carries R3b. Prepared 2026-07-11 against the code as of the post-VC-R1 fixes commit. Covers the founder's brief items 5a–5e and the item-6 seam verification. Companion to `DECISION_LOG.md` D-39 (proposed).
 
 ---
 

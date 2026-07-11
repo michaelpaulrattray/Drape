@@ -30,12 +30,13 @@
 | — | D-32…D-37 application (picker modal, chrome strip, tiers retired) | ✅ shipped 2026-07-11 | — |
 | R1 | **Casting takeover** (overlay-hosted environment, mint → board landing) | 2.5–3 | **VC-R1 — drop → picker → Cast new → environment → mint → root lands** |
 | R2 | Server prompt parser + prerequisites (old M2b, as ruled by D-33) | 2 | async — prompt → parsed attributes in the environment |
-| R3 | Edit path + identity events (amend = D-11, `applyModelEdit` landing) | 1.5–2 | **VC-R3 — edit a placed cast, watch the stale flow** |
-| R4 | Canvas grammar: toolbar, fork/recast, variations, delete+undo, keyboard (old M6) | 2.5 | **VC-R4 — the grammar tour** |
-| R5 | Edges, stale/pin, snapshots, character sheet + composer (old M7 + D-29/D-30) | 3.5–4 | **VC-R5 — lineage and staleness on the sheet** |
+| R3 | Edit path + identity events (minted-edit session mode, `applyModelEdit` → D-11) | 1.5–2 | **VC-R3 — edit a placed cast, watch the stale flow** |
+| R3b | **Identity package + tiered mint** (D-39: ¾ view, back gate, Draft/Core/Production dialog, package read model) | 2–2.5 | **VC-R3b — mint through the tiers** |
+| R4 | Canvas grammar: toolbar, fork/recast, variations, delete+undo, keyboard incl. Cmd+C/V→Duplicate (old M6) | 2.5 | **VC-R4 — the grammar tour** |
+| R5 | Edges, stale/pin, snapshots, character sheet + composer (old M7 + D-29 as amended by D-39 + D-30) | 3.5–4 | **VC-R5 — lineage and staleness on the sheet** |
 | R6 | First-touch (old M9) + **environment restyle to canvas language** (named slot, founder ruling 2026-07-11) | 2.5–3 | **VC-R6 — first-run + the environment in Drape's language** |
 | R7 | Hardening + success-criteria sweep (old M10) | 1.5 | Dogfood start |
-| | **Remaining total** | **≈ 16–18 focused days** | |
+| | **Remaining total** | **≈ 18–20.5 focused days** | |
 
 The pre-ruling plan had 18–19.5 days remaining with M8's from-scratch `RefinementStudio` as the riskiest item; the R-sequence deletes that build entirely (the existing studio casting flow *is* the environment) and absorbs M5's canvas popovers into R3's environment-side identity events.
 
@@ -74,12 +75,27 @@ Gate: `pnpm check`, `pnpm test` (parser suite green), studio smoke.
 
 **Goal:** post-cast editing consolidates in the environment (D-34); saving changes to a placed cast is a D-11 identity event, full stop (founder ruling 2026-07-11 — no separate "amend mode" concept).
 
-- Edit entry on the placed root (control strip / `···`) → takeover opens with the model loaded (the gallery-hydration path exists in `DrapeStudio` — reuse).
+- Edit entry on the placed root (control strip / `···`) → takeover opens with the model loaded (the gallery-hydration path exists in `CastingWorkspace` — reuse).
+- **Minted-edit session mode (ratified 2026-07-11):** the studio's linear stage-lock (`isViewLocked` chain + `StageLockModal`) is disabled for minted-edit sessions; every save routes through `applyModelEdit` → the D-11 dialog. The mode flag lives in **shared workspace state** (not the takeover shell) so a `/studio` resume of the same session carries identical routing — session bleed can never bypass the dialog.
 - `boardOps.updateAttributes` with both cross-field invalidation rules (gender reset AND hair-style cascade, audit D1), ethnicity dual-write (B4) — fired from environment saves.
-- `boardOps.applyModelEdit(itemId)` landing op: restamps the node (image, version row `tool:'attributes'|'rerun'`, provenance) and fires the D-11 dialog — update-with-cascade / fork-as-new-model / keep-old+pin. Node version rows remain the canvas-side ledger, stamped only by landing ops (extends D-23).
-- Downstream staleness wiring (consumed fully in R5; until views exist, the dialog's cascade set is empty and applies directly).
+- `boardOps.applyModelEdit(itemId)` landing op: restamps the node (image, version row `tool:'attributes'|'rerun'`, provenance) and fires the D-11 dialog — update-with-cascade / fork-as-new-model / keep-old+pin. Node version rows remain the canvas-side ledger, stamped only by landing ops (extends D-23). Landing renders optimistically per D-38.
+- Downstream staleness wiring (consumed fully in R5; until package views exist, the dialog's cascade set is empty and applies directly).
 
 **VC-R3 (founder, live):** place a cast → Edit → change identity in the environment → save → the D-11 dialog → watch the root update. What's being felt: the takeover as an editing room, dialog copy, trust in the identity event.
+
+Gate: full gates + studio smoke.
+
+## R3b — Identity package + tiered mint (D-39) → **VC-R3b**
+
+**Goal:** the canonical six-slot package (face cluster: front/side/¾ close · body cluster: front/side/back full) and the mint dialog that prices it honestly.
+
+- **Three-quarter view** (net-new): prompt config + `viewType` value + cost entry + studio plumbing.
+- **Back-view identity gate:** adapt `checkIdentityMatch` (silhouette/build/hair vs headshot + full-body front); one auto-retry, then fail named-and-refunded. Replaces the "No new back tattoos" text plea.
+- **Tiered `CastModelModal`:** Draft (headshot, +0 — exploring candidates) / Core identity (+side, ¾, full-body front — ready for downstream work) / Production sheet (all six — full comp card for scenes/video); costs from a server `plan()` per D-15; copy states upgrade-anytime-at-same-cost so Draft isn't a trap.
+- **Package as model property:** additive `model_assets` columns (status, pinned, provenance stamp) — the single staleness ledger (D-29 as amended); package-completeness read model.
+- **Composer slot-recording:** D-30's composer records which slots each generation used in its `InputSnapshot`; the ~5–6 reference-image budget is enforced here (multi-model scenes: headshot + one task-relevant view per model).
+
+**VC-R3b (founder, live):** cast through each tier; force a back-view failure to see the refund copy; upgrade a Draft to Core from the environment.
 
 Gate: full gates + studio smoke.
 
@@ -90,7 +106,7 @@ Unchanged from the old M6, with rerun/recast routing through the identity dialog
 - `NodeFloatingToolbar` wiring (screen-legible per D-37), type-scoped action sets.
 - `ForkRecastPopover` (DS §7.4) + `boardOps.forkRoot`/`recastRoot` (`forked_from` edges; recast = identity event, red confirm per D-8).
 - `boardOps.runVariations` (plan → confirm → N sibling roots, `variant_of` edges).
-- Delete: cascade-confirm dialog (cascade populated in R5), soft delete + Undo toast + `Cmd+Z`; move-undo stack; arrow nudge; Esc layer stack (now including the takeover layer); `Cmd+A`; full Decision-7 table.
+- Delete: cascade-confirm dialog (cascade populated in R5), soft delete + Undo toast + `Cmd+Z`; move-undo stack; arrow nudge; Esc layer stack (now including the takeover layer); `Cmd+A`; full Decision-7 table. **`Cmd+C`/`Cmd+V` alias Duplicate for same-board** (founder ruling 2026-07-11); cross-board paste is a logged future D-16 amendment, not R4 scope.
 - Duplicate, Download, Info (minimal provenance readout via `ImageFallback`).
 
 **VC-R4 (founder, live):** the grammar tour — rerun→fork a root, spawn variations, duplicate, delete, undo, nudge, Esc everything.
@@ -99,11 +115,11 @@ Gate: full gates.
 
 ## R5 — Edges, stale/pin, snapshots, character sheet + composer → **VC-R5**
 
-The old M7 with D-29/D-30 (ratified 2026-07-11) folded in and view-card spawning removed:
+The old M7 with D-29 (as amended by D-39: the package and its staleness/pins live on `model_assets`, built in R3b — the sheet *reads* the model's package; `cast_view` board rows never ship) and D-30 folded in; view-card spawning removed:
 
 - **Doc pre-work (scheduled here per the ratification):** foundations 3b/3e + success criteria 5/6/8 rewritten; DS gains §5.17 (character sheet) with touches to §5.11/§9/§12.
-- `CharacterSheetImageArea`: fixed comp-grid templates by view count, tiles image-only at rest; tile click → `CanvasPopoverContent` (label · vN, status, `Pop out` · `Refresh · ~cost` · `Pin` · `Open in environment`); per-tile status dots (screen-legible); aggregate `{N} stale` strip segment → bulk-refresh plan dialog.
-- Pop out / collapse (`poppedOut` metadata, edge re-anchoring with `viewAngle` preserved in edge metadata).
+- `CharacterSheetImageArea`: fixed comp-grid templates by slot count, empty slots render add-view affordances (D-39c — upgrade anytime, no re-cast); tiles image-only at rest; tile click → `CanvasPopoverContent` (label · vN, status, `Pop out` · `Refresh · ~cost` · `Pin` · `Open in environment`); per-tile status dots (screen-legible); aggregate `{N} stale` strip segment → bulk-refresh plan dialog.
+- Pop out / collapse (pop-outs are board items **referencing model assets** per the D-39 ratification; edge re-anchoring with `viewAngle` preserved in edge metadata).
 - View generation lives in the environment (R1's capability); results land as sheet tiles. No standalone view-card spawning, no canvas views popover.
 - Edge rendering (default 40%, full on endpoint selection); `generated_from_cast`/`forked_from`/`variant_of` visible lineage.
 - Stale flow end-to-end: identity events (R3) → per-tile staleness → refresh one / bulk / pin exemptions; `refreshStaleViews`; D-12 amendment enforced (`ImageFallback` everywhere, consuming ops fail named-and-refunded).
@@ -135,7 +151,7 @@ Gate: full gates + studio smoke.
 
 ## Dependencies and parallelism
 
-- Hard chain: R1 → R3 (Edit needs the environment) → R5 (stale flow needs identity events). R2 ∥ R1 (server parser vs client hosting — different layers). R4 mostly independent after R1 (needs the identity dialog from R3 for rerun/recast routing — build the dialog shell in R3, wire in R4). R6's restyle touches R1's surfaces — sequence after VC-R1 feedback settles. Everything → R7.
+- Hard chain: R1 → R3 (Edit needs the environment) → R3b (tier dialog sits in the takeover; the D-11 dialog shell precedes it) → R5 (the sheet reads R3b's package; stale flow needs R3's identity events). R2 ∥ R3 (server parser vs edit path — different layers). R4 mostly independent after R3 (rerun/recast route through the identity dialog). R6's restyle touches R1's surfaces — sequence after VC-R1 feedback settles. Everything → R7.
 - **Prod migration timing:** no new schema work in the R-sequence (M3a's migration already ran on prod 2026-07-10). Deploys continue per-milestone to `local-migration`.
 
 ## Risks, with handles
