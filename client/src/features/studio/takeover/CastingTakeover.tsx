@@ -331,6 +331,20 @@ export function CastingTakeover({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* D-45(1): the balance lives where credits are spent — a quiet
+              tertiary figure left of the primary action, click = top up.
+              Updates on the same refetch that follows every generation. */}
+          {isAuthenticated && creditsData && (
+            <button
+              type="button"
+              onClick={() => setIsTopupOpen(true)}
+              title="Credit balance — top up"
+              className="px-2 py-1 rounded-md transition-colors hover:bg-black/[0.04]"
+              style={{ fontSize: 12, color: '#52524B', fontVariantNumeric: 'tabular-nums' }}
+            >
+              {creditsData.balance.toLocaleString()}
+            </button>
+          )}
           {isMintedEdit ? (
             <button
               type="button"
