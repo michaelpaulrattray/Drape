@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("slack/slackCore");
 
@@ -309,7 +310,6 @@ export function verifySlackSignature(
     return false;
   }
   
-  const crypto = require("crypto");
   const sigBasestring = `v0:${timestamp}:${body}`;
   const expectedSignature = "v0=" + crypto
     .createHmac("sha256", signingSecret)

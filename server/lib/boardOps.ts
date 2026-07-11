@@ -113,6 +113,7 @@ export async function executeCreateNode(input: CreateNodeInput) {
   const metadata: BoardItemCanvasMetadata = {
     ...(input.metadata ?? {}),
     ...(input.provenance ? { provenance: input.provenance } : {}),
+    ...(input.imageUrl ? { version: 1 } : {}),
   };
   const itemId = await addBoardItem({
     boardId: input.boardId,
@@ -339,7 +340,8 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       pointsCost: cost,
     });
 
-    // Stamp the node: image + provenance (Decision 1 — engine recorded) + attrs
+    // Stamp the node: image + provenance (Decision 1 — engine recorded) +
+    // attrs + version (the strip reads metadata.version — never hardcode)
     const provenance: Provenance = {
       type: "cast_root",
       modelId,
@@ -348,6 +350,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       engine: result.engineUsed || "gemini",
     };
     const meta = readMeta(item);
+    const version = (await getLatestVersionNumber(input.itemId)) + 1;
     await updateBoardItem(input.itemId, {
       imageUrl: result.imageUrl,
       label: input.modelName || item.label || "Cast",
@@ -358,9 +361,9 @@ export async function executeRunGeneration(input: RunGenerationInput) {
         userPrompt: input.userPrompt ?? "",
         status: null,
         isGenerating: false,
+        version,
       } satisfies BoardItemCanvasMetadata,
     });
-    const version = (await getLatestVersionNumber(input.itemId)) + 1;
     await addBoardItemVersion({
       itemId: input.itemId,
       version,
@@ -430,15 +433,15 @@ export async function executeFillFromLibrary(input: {
   const meta = readMeta(item);
   // Unnamed drafts render as unnamed (D-42) — never the fake auto-name
   const honestName = draft && model.name === DRAFT_AUTO_NAME ? null : model.name;
+  const version = (await getLatestVersionNumber(input.itemId)) + 1;
   await updateBoardItem(input.itemId, {
     imageUrl: headshot.storageUrl,
     label: honestName || item.label || null,
-    metadata: { ...meta, provenance, status: null, isGenerating: false },
+    metadata: { ...meta, provenance, status: null, isGenerating: false, version },
     // Keep the legacy FK in sync — the node was created empty, so createNode
     // couldn't stamp it (legacy surfaces + analytics read this column)
     sourceModelId: input.modelId,
   });
-  const version = (await getLatestVersionNumber(input.itemId)) + 1;
   await addBoardItemVersion({
     itemId: input.itemId,
     version,
@@ -616,11 +619,11 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       const newProv: Provenance = prov.type === "cast_root"
         ? { ...prov, attributes: merged as Record<string, unknown>, engine: result.engineUsed || prov.engine }
         : { ...prov, attributes: merged as Record<string, unknown> };
+      const version = (await getLatestVersionNumber(input.itemId)) + 1;
       await updateBoardItem(input.itemId, {
         imageUrl: result.imageUrl,
-        metadata: { ...meta, provenance: newProv, attributes: merged as Record<string, unknown>, status: null, isGenerating: false },
+        metadata: { ...meta, provenance: newProv, attributes: merged as Record<string, unknown>, status: null, isGenerating: false, version },
       });
-      const version = (await getLatestVersionNumber(input.itemId)) + 1;
       await addBoardItemVersion({
         itemId: input.itemId, version, imageUrl: result.imageUrl,
         prompt: `Identity update: ${Object.keys(input.changes).join(", ")}`,

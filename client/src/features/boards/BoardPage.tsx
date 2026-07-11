@@ -17,6 +17,8 @@ import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 import { type CanvasToolId } from './components/CanvasToolbar';
 import { FloatingToolPill, type PillTool } from './canvas/FloatingToolPill';
 import { CastPickerModal } from './canvas/CastPickerModal';
+import { DottedGridBackground } from './canvas/DottedGridBackground';
+import { BrandLoader } from '@/components/BrandLoader';
 import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
 import { useGenerationJobs } from './stores/useGenerationJobs';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -303,6 +305,10 @@ function BoardPageImpl() {
   const landMintedCastMutation = trpc.boardOps.fillFromLibrary.useMutation({
     onSuccess: () => {
       utils.boards.getItems.invalidate({ boardId });
+      // Mint changed the model (name/status) — the next Edit must hydrate
+      // fresh (bug-2b), and the picker must show the promotion (P2/D-38)
+      utils.models.get.invalidate();
+      utils.boardOps.listCastableModels.invalidate();
     },
     onError: (err) => {
       utils.boards.getItems.invalidate({ boardId });
@@ -344,56 +350,60 @@ function BoardPageImpl() {
   // R3: the identity-event landing (D-11). Update regenerates THIS node
   // (job-driven progress on the card); fork lands a new draft node beside
   // the original, optimistically (D-38).
+  //
+  // Fork's pending node lives OUTSIDE the query cache (bug-3 fix): a cache
+  // row would be clobbered by any refetch during the ~25s generation (that
+  // was the vanish-then-materialize race). The overlay merges into
+  // canvasItems and self-prunes once the server row arrives.
+  const [pendingForks, setPendingForks] = useState<BoardItemRecord[]>([]);
+  useEffect(() => {
+    if (!items) return;
+    setPendingForks((pf) => pf.filter((p) => !items.some((i) => i.id === p.id)));
+  }, [items]);
+
   const applyModelEditMutation = trpc.boardOps.applyModelEdit.execute.useMutation({
     onMutate: async (vars) => {
       if (vars.decision !== 'fork') return {};
-      await utils.boards.getItems.cancel({ boardId });
-      const prev = utils.boards.getItems.getData({ boardId });
-      const source = prev?.find((i) => i.id === vars.itemId);
+      const source = items?.find((i) => i.id === vars.itemId);
       const tempId = -Date.now();
-      type ItemsRow = NonNullable<typeof prev>[number];
-      const tempRow = {
+      const tempRow: BoardItemRecord = {
         id: tempId,
-        boardId,
         type: 'model',
         kind: 'image',
         label: null,
         imageUrl: null,
-        imageKey: null,
         positionX: (source?.positionX ?? 0) + (source?.width ?? 280) + 60,
         positionY: source?.positionY ?? 0,
         width: 280,
         height: 420,
         zIndex: 0,
-        parentItemId: null,
-        sourceModelId: null,
-        sourceGarmentId: null,
-        sourceSessionId: null,
-        sourceLookId: null,
         metadata: { provenance: { type: 'library_cast', modelId: -1, viewAngle: 'frontClose', draft: true } },
-        deletedAt: null,
-        createdAt: new Date(),
-      } as unknown as ItemsRow;
-      utils.boards.getItems.setData({ boardId }, (old) => [...(old ?? []), tempRow]);
+        sourceModelId: null,
+      };
+      setPendingForks((pf) => [...pf, tempRow]);
       startJob({ itemId: tempId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
-      return { prev, tempId };
+      return { tempId };
     },
     onSuccess: (result, vars, ctx) => {
       if (result.decision === 'fork' && ctx?.tempId) {
         completeJob(ctx.tempId);
-        utils.boards.getItems.setData({ boardId }, (old) =>
-          old?.map((i) => (i.id === ctx.tempId ? { ...i, id: result.newItemId!, imageUrl: result.imageUrl } : i)),
+        // Reveal the real node in place; the prune effect drops this entry
+        // once the refetch delivers the server row
+        setPendingForks((pf) =>
+          pf.map((p) => (p.id === ctx.tempId ? { ...p, id: result.newItemId!, imageUrl: result.imageUrl } : p)),
         );
       } else {
         completeJob(vars.itemId);
       }
       utils.boards.getItems.invalidate({ boardId });
       utils.credits.getBalance.invalidate();
+      // The next Edit on this cast must hydrate the post-update model (bug-2b)
+      utils.models.get.invalidate();
     },
     onError: (err, vars, ctx) => {
-      if (vars.decision === 'fork') {
-        if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
-        if (ctx?.tempId) failJob(ctx.tempId, err.message);
+      if (vars.decision === 'fork' && ctx?.tempId) {
+        setPendingForks((pf) => pf.filter((p) => p.id !== ctx.tempId));
+        failJob(ctx.tempId, err.message);
       } else {
         failJob(vars.itemId, err.message);
       }
@@ -687,9 +697,8 @@ function BoardPageImpl() {
     };
   }, [board]);
 
-  const canvasItems: BoardItemRecord[] = useMemo(
-    () =>
-      (items ?? []).map((item) => {
+  const canvasItems: BoardItemRecord[] = useMemo(() => {
+    const mapped = (items ?? []).map((item) => {
         // Apply the local-moves ledger: local position wins until the server
         // echoes it back, then the entry self-prunes (VC2 fix #3)
         const localMove = recentMovesRef.current.get(item.id);
@@ -712,9 +721,12 @@ function BoardPageImpl() {
           metadata: item.metadata as Record<string, unknown> | null,
           sourceModelId: item.sourceModelId,
         };
-      }),
-    [items],
-  );
+      });
+    // Pending forks overlay the cache (bug-3 fix) — refetches can't clobber
+    // them; entries self-prune once the server row arrives (effect above)
+    const pending = pendingForks.filter((p) => !mapped.some((m) => m.id === p.id));
+    return pending.length > 0 ? [...mapped, ...pending] : mapped;
+  }, [items, pendingForks]);
 
   const isSaving =
     renameMutation.isPending ||
@@ -732,16 +744,20 @@ function BoardPageImpl() {
   }
 
   if (boardLoading || itemsLoading) {
+    // Designed loading state (P1): the space reads as a board from frame one —
+    // dotted grid immediately, centered mark, hairline progress. Never a bare
+    // spinner.
     return (
-      <div className="flex-1 flex flex-col" style={{ background: '#FAFAF8' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFAF8' }}>
         <div
           className="flex items-center gap-3 px-4 flex-shrink-0"
           style={{ height: 52, borderBottom: '1px solid rgba(0,0,0,0.06)' }}
         >
           <div className="rounded animate-pulse" style={{ width: 80, height: 20, background: 'rgba(0,0,0,0.06)' }} />
         </div>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#a1a19a' }} />
+        <div className="flex-1 relative" style={{ background: '#DFDFDF' }}>
+          <DottedGridBackground />
+          <BrandLoader />
         </div>
       </div>
     );

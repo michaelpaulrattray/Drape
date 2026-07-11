@@ -8,6 +8,7 @@
  * 4. Immutable Audit Log - Append-only critical log storage
  */
 
+import crypto from "crypto";
 import { SlackAlerts, sendAuditLogEntry } from "../slack/slackNotification";
 import { logAuditEvent } from "../auditLog";
 import { AUDIT_ACTIONS } from "../../drizzle/schema";
@@ -237,8 +238,7 @@ export async function writeImmutableLog(
   eventType: string,
   data: Record<string, unknown>
 ): Promise<ImmutableLogEntry> {
-  const crypto = require("crypto");
-  
+
   const entry: Omit<ImmutableLogEntry, "hash"> = {
     id: crypto.randomBytes(16).toString("hex"),
     timestamp: Date.now(),

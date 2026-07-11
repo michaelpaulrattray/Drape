@@ -128,7 +128,7 @@ function itemToNode(
         attributes: meta.attributes,
         status: meta.status ?? null,
         pinned: meta.pinned === true,
-        version: 1, // version count wiring arrives with the M6 toolbar
+        version: meta.version ?? 1, // stamped by landing ops (R3 fix — never hardcode)
       } satisfies CastNodeData,
     } as CastFlowNode;
   }

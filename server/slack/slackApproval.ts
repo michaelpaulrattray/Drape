@@ -17,6 +17,7 @@
  * Pending actions expire after 5 minutes if not approved/denied.
  */
 
+import crypto from "crypto";
 import { sendRawToChannel, dispatchAuditLog } from "./slackDispatcher";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("slack/slackApproval");
@@ -143,7 +144,6 @@ export async function requestApproval(options: {
   params: Record<string, unknown>;
   ipAddress?: string;
 }): Promise<{ actionId: string; sent: boolean }> {
-  const crypto = require("crypto");
   const actionId = crypto.randomBytes(16).toString("hex");
   
   const pendingAction: PendingAction = {

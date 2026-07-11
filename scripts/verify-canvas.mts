@@ -9,8 +9,23 @@
  *   C. Library pick fills the node optimistically (D-38): the picked model's
  *      thumbnail lands on the node immediately, server reconcile behind.
  *      (Skips with a note when the verify-bot has no castable models.)
+ *   D. THE BLEED CONTRACT (bug-1, founder-ordered — must never regress
+ *      silently): leaving a minted edit discards the session. (i) re-entering
+ *      Edit hydrates the model's true baseline, never leftovers; (iii) plain
+ *      /studio?tool=casting after leaving opens a FRESH session — no ghost,
+ *      no D-11 bypass. Leg (ii) — a surviving session arrives in minted-edit
+ *      mode — holds by construction: the mode flag and the session stores are
+ *      reset TOGETHER in the takeover cleanup; the flag cannot be cleared
+ *      while the session lives.
+ *   E. (paid — RUN_PAID_INVARIANTS=1) Identity update round trip: Update
+ *      regenerates the node, the strip advances past v1, and re-entering
+ *      Edit hydrates the POST-update baseline.
+ *   F. (paid) Fork landing stability: the pending node appears immediately
+ *      and never vanishes during the ~25s generation (the optimistic-
+ *      reconcile race), then lands as an unnamed draft.
  *
  * Run:  pnpm dev (running) → npx tsx scripts/verify-canvas.mts
+ *       (+ $env:RUN_PAID_INVARIANTS='1' for E/F — ~700 credits on verify-bot)
  * Uses the dev DB verify-bot user (see .claude/skills/verify) and system Edge.
  * Exits non-zero on any invariant failure.
  */
@@ -130,7 +145,7 @@ const addCastViaPill = async () => {
   await sleep(300);
   const dragged = (await nodeRects()).find((r) => r.id === node.id)!;
   const movedImmediately = Math.abs(dragged.x - node.x - 340) < 30 && Math.abs(dragged.y - node.y - 180) < 30;
-  check("A2 drag applied", movedImmediately, `Δ=(${(dragged.x - node.x).toFixed(0)},${(dragged.y - node.y).toFixed(0)})`);
+  check("A2 drag applied", movedImmediately, `d=(${(dragged.x - node.x).toFixed(0)},${(dragged.y - node.y).toFixed(0)})`);
 
   // Wait out the create-confirm + move-persist + any refetches, then re-assert
   await sleep(5000);
@@ -140,7 +155,7 @@ const addCastViaPill = async () => {
 
 // ── Invariant B: right-click add at panned+zoomed viewport → at cursor ─────
 {
-  // Zoom out two notches and pan, so screen≠flow coordinates diverge hard
+  // Zoom out two notches and pan, so screen and flow coordinates diverge hard
   await page.mouse.move(800, 500);
   await page.mouse.wheel({ deltaY: 240 });
   await sleep(300);
@@ -228,8 +243,7 @@ const addCastViaPill = async () => {
     for (let i = 0; i < 20; i++) {
       const filled = await page.evaluate(() => {
         const nodes = [...document.querySelectorAll(".react-flow__node")];
-        const last = nodes[nodes.length - 1];
-        return !!last?.querySelector("img")?.getAttribute("src");
+        return nodes.some((n) => !!n.querySelector("img")?.getAttribute("src"));
       });
       if (filled) {
         filledAtMs = Date.now() - t0;
@@ -249,6 +263,243 @@ const addCastViaPill = async () => {
     const provs = (rows as Array<{ prov: string | null }>).map((r) => String(r.prov ?? ""));
     check("C2 server confirm reconciled (library_cast stamped)", provs.some((p) => p.includes("library_cast")));
   }
+}
+
+// ── Shared helpers for the takeover invariants ─────────────────────────────
+// Scroll targets into view first: panel controls can sit below the scroll
+// fold (the takeover's inset frame shortened the panel; a mouse click at an
+// occluded rect hits whatever is on top — that raced D3/E2 once already).
+const clickByText = async (text: string, tag = "button") => {
+  const found = await page.evaluate(
+    (t: string, tg: string) => {
+      const els = [...document.querySelectorAll(tg)].filter((el) => el.textContent?.trim() === t);
+      const el = els[els.length - 1];
+      if (!el) return false;
+      el.scrollIntoView({ block: "center" });
+      return true;
+    },
+    text,
+    tag,
+  );
+  if (!found) return false;
+  await sleep(250); // scroll settle
+  const pos = await page.evaluate(
+    (t: string, tg: string) => {
+      const els = [...document.querySelectorAll(tg)].filter((el) => el.textContent?.trim() === t);
+      const el = els[els.length - 1];
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    },
+    text,
+    tag,
+  );
+  if (!pos) return false;
+  await page.mouse.click(pos.x, pos.y);
+  return true;
+};
+const bodyIncludes = (text: string) =>
+  page.evaluate((t: string) => (document.body.textContent ?? "").includes(t), text);
+// DOM order does not track creation order (React Flow reorders on selection)
+// — target the node that actually has an image
+const filledNode = () =>
+  page.evaluate(() => {
+    const nodes = [...document.querySelectorAll(".react-flow__node")].filter((n) =>
+      n.querySelector("img")?.getAttribute("src"),
+    );
+    const last = nodes[nodes.length - 1];
+    if (!last) return null;
+    const r = last.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2, text: last.textContent ?? "", img: last.querySelector("img")?.getAttribute("src") ?? "" };
+  });
+const openEditOnFilledNode = async () => {
+  const n = await filledNode();
+  if (!n) return false;
+  await page.mouse.click(n.x, n.y);
+  await sleep(500);
+  return clickByText("Edit");
+};
+const waitEditHydrated = async () => {
+  for (let i = 0; i < 30; i++) {
+    await sleep(1000);
+    const ready = await page.evaluate(() => {
+      const body = document.body.textContent ?? "";
+      const save = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Save changes") as HTMLButtonElement | undefined;
+      const genderVisible = [...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Female");
+      const loaderGone = !body.includes("Loading this cast") && !body.includes("Loading your draft");
+      return !!save && !save.disabled && genderVisible && loaderGone;
+    });
+    if (ready) {
+      await sleep(400); // settle: prefs render in the same commit as assets, plus margin
+      return true;
+    }
+  }
+  return false;
+};
+const selectedGender = () =>
+  page.evaluate(() => {
+    const buttons = [...document.querySelectorAll("button")];
+    for (const name of ["Female", "Male", "Non-Binary"]) {
+      const b = buttons.find((el) => el.textContent?.trim() === name);
+      if (b && getComputedStyle(b).backgroundColor === "rgb(26, 26, 26)") return name;
+    }
+    return null;
+  });
+const modelGenderFromDb = async () => {
+  const [rows] = await conn.execute(
+    `SELECT JSON_EXTRACT(m.preferences, '$.gender') AS g FROM models m JOIN board_items i
+       ON m.id = CAST(JSON_EXTRACT(i.metadata, '$.provenance.modelId') AS UNSIGNED)
+     WHERE i.boardId = ? AND i.deletedAt IS NULL AND i.imageUrl IS NOT NULL
+     ORDER BY i.id DESC LIMIT 1`,
+    [boardId],
+  );
+  const raw = (rows as Array<{ g: unknown }>)[0]?.g;
+  return String(raw ?? "").replace(/"/g, "");
+};
+const closeTakeoverCleanly = async () => {
+  // Esc; if the leave confirm appears, Leave; else it closed clean
+  await page.keyboard.press("Escape");
+  await sleep(500);
+  if (await bodyIncludes("Leave editing?")) {
+    await clickByText("Leave");
+  }
+  await sleep(600);
+};
+
+// ── Invariant D: the bleed contract (bug-1) — FREE ──────────────────────────
+{
+  const filledExists = (await filledNode())?.img;
+  if (!filledExists) {
+    const debug = await page.evaluate(() =>
+      [...document.querySelectorAll(".react-flow__node")].map((n) => ({
+        id: n.getAttribute("data-id"),
+        imgs: n.querySelectorAll("img").length,
+        src: n.querySelector("img")?.getAttribute("src")?.slice(0, 40) ?? null,
+        text: (n.textContent ?? "").slice(0, 40),
+      })),
+    );
+    console.log("SKIP  D — no filled cast node available (C skipped?)", JSON.stringify(debug));
+  } else {
+    const truthBefore = await modelGenderFromDb();
+
+    // Open Edit, dirty the session, LEAVE
+    check("D1 edit opens on the placed cast", await openEditOnFilledNode());
+    check("D2 hydrated", await waitEditHydrated());
+    const current = await selectedGender();
+    const other = current === "Male" ? "Female" : "Male";
+    await clickByText(other);
+    await sleep(400);
+    await page.keyboard.press("Escape");
+    await sleep(500);
+    check("D3 leave-confirm fired for dirty session", await bodyIncludes("Leave editing?"));
+    await clickByText("Leave");
+    await sleep(800);
+
+    // Leg (i): re-entering hydrates the TRUE baseline, not the ghost.
+    // (gender may legitimately be Open — normalize null/"" before comparing)
+    check("D4 re-edit opens", await openEditOnFilledNode());
+    check("D5 re-hydrated", await waitEditHydrated());
+    const reopened = (await selectedGender()) ?? "";
+    const truth = truthBefore ?? "";
+    check(
+      "D6 leg(i): baseline restored — discarded edits are gone",
+      reopened === truth && reopened !== other,
+      `ui=${reopened || "(open)"} truth=${truth || "(open)"} ghost=${other}`,
+    );
+    await closeTakeoverCleanly();
+
+    // Leg (iii): plain /studio opens FRESH — no ghost, no D-11 bypass
+    await page.goto(`${BASE}/studio?tool=casting`, { waitUntil: "networkidle2", timeout: 60000 });
+    await sleep(2500);
+    const studioState = await page.evaluate(() => {
+      const body = document.body.textContent ?? "";
+      const gen = document.querySelector("[data-debug-generate]") as HTMLButtonElement | null;
+      return {
+        freshForm: !!gen && gen.disabled, // fresh required fields — nothing armed
+        noSave: !body.includes("Save changes"),
+        // Empty-viewer copy varies ("Ready to Cast" / "New Model — Configure…")
+        emptyViewer: body.includes("Ready to") || body.includes("Configure parameters"),
+        notLocked: !body.includes("Identity locked"),
+      };
+    });
+    check(
+      "D7 leg(iii): /studio after leave is a fresh session",
+      studioState.freshForm && studioState.noSave && studioState.emptyViewer && studioState.notLocked,
+      JSON.stringify(studioState),
+    );
+    // Leg (ii) holds by construction: the mode flag and the session stores
+    // reset together in the takeover cleanup (see CastingTakeover).
+
+    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+    await sleep(800);
+  }
+}
+
+// ── Invariants E/F: paid identity round trips — RUN_PAID_INVARIANTS=1 ──────
+if (process.env.RUN_PAID_INVARIANTS !== "1") {
+  console.log("SKIP  E/F — paid invariants (set RUN_PAID_INVARIANTS=1; ~700 credits)");
+} else if (!(await filledNode())?.img) {
+  console.log("SKIP  E/F — no filled cast node available");
+} else {
+  // E: update round trip
+  await openEditOnFilledNode();
+  check("E1 edit hydrated", await waitEditHydrated());
+  const before = await selectedGender();
+  const target = before === "Male" ? "Female" : "Male";
+  await clickByText(target);
+  await sleep(400);
+  await clickByText("Save changes");
+  await sleep(1200);
+  check("E2 D-11 dialog", await bodyIncludes("This is an identity change"));
+  const imgBefore = (await filledNode())?.img ?? "";
+  const confirmPos = (await page.evaluate(() => {
+    const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim().startsWith("Update this cast"));
+    if (!b) return null;
+    const r = b.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  }))!;
+  await page.mouse.click(confirmPos.x, confirmPos.y);
+  console.log("   E: regenerating identity (real, ~350 credits)...");
+  let landed = false;
+  for (let i = 0; i < 60; i++) {
+    await sleep(2000);
+    const n = await filledNode();
+    if (n?.img && n.img !== imgBefore) { landed = true; break; }
+  }
+  check("E3 update landed on the node", landed);
+  const n = await filledNode();
+  await page.mouse.click(n!.x, n!.y); // select -> strip
+  await sleep(500);
+  const stripText = (await filledNode())?.text ?? "";
+  check("E4 version strip advanced past v1", /v([2-9]|\d{2,})/.test(stripText), stripText.slice(0, 80));
+  check("E5 re-edit opens", await openEditOnFilledNode());
+  check("E6 re-hydrated", await waitEditHydrated());
+  const after = await selectedGender();
+  check("E7 re-edit hydrates the POST-update baseline", after === target, `ui=${after} expected=${target}`);
+
+  // F: fork landing stability (from this same edit session)
+  const forkTarget = after === "Male" ? "Female" : "Male";
+  await clickByText(forkTarget);
+  await sleep(400);
+  await clickByText("Save changes");
+  await sleep(1200);
+  await clickByText("Fork as new model");
+  await sleep(1000);
+  const countAfterFork = await nodeCount();
+  check("F1 pending fork node appears immediately", countAfterFork >= 4, `${countAfterFork} nodes`);
+  console.log("   F: forking (real, ~350 credits)...");
+  let vanished = false;
+  let forkDone = false;
+  for (let i = 0; i < 70; i++) {
+    await sleep(500);
+    const c = await nodeCount();
+    if (c < countAfterFork) vanished = true;
+    const ln = await filledNode();
+    if (ln?.img && /Draft/.test(ln.text)) { forkDone = true; break; }
+  }
+  check("F2 pending node never vanished during generation", !vanished);
+  check("F3 fork landed as an unnamed draft", forkDone, (await filledNode())?.text.slice(0, 60));
 }
 
 await browser.close();

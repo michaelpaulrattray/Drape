@@ -26,6 +26,7 @@ import { useCastingFormStore } from '@/features/casting/stores/useCastingFormSto
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import type { ModelPreferences } from '@/features/casting/constants';
 import { useStudioStore } from '../stores/useStudioStore';
+import { BrandLoader } from '@/components/BrandLoader';
 import { CastingWorkspace } from '../components/CastingWorkspace';
 import { CastModelModal } from '../components/CastModelModal';
 import { useCastGate } from '../hooks/useCastGate';
@@ -106,9 +107,31 @@ export function CastingTakeover({
   } | null>(null);
   const isMintedEdit = !!editContext && !editContext.draft;
 
+  // Fold-in (VC-R1 feedback, folded post-VC-R3): the takeover ARRIVES over
+  // the board — scale+fade entrance, mirrored exit, board visible around it
+  const [entered, setEntered] = useState(false);
+  const [closing, setClosing] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  const startClose = useCallback(() => {
+    setClosing(true);
+    window.setTimeout(onClose, 210);
+  }, [onClose]);
+
   // Session setup: always a clean slate; edit sessions then hydrate via the
   // workspace's gallery path (canvas.castModelId), and minted edits raise the
-  // shared-state mode flag (D-11 routing survives a /studio resume)
+  // shared-state mode flag (D-11 routing survives a /studio resume).
+  //
+  // BLEED CONTRACT (bug-1 fix, founder-verified invariant): a minted-edit
+  // session is CONSUMED on close — every exit path unmounts this component,
+  // and the cleanup below hard-resets the whole session (stores + canvas +
+  // mode flag together). Leave means discarded; re-entering Edit hydrates
+  // from the model's true baseline; plain /studio opens fresh. The mode flag
+  // and the session can only live or die together — if a session ever DID
+  // survive, the flag survives with it and /studio arrives in minted-edit
+  // mode (stage-lock off, no direct Cast) rather than as a D-11 bypass.
   useEffect(() => {
     resetCastingSession();
     if (editContext) {
@@ -122,9 +145,8 @@ export function CastingTakeover({
       }
     }
     return () => {
-      // Leaving the takeover never strands the mode on an unrelated session
       if (editContext && !editContext.draft) {
-        useStudioStore.getState().setMintedEditContext(null);
+        resetCastingSession(); // full discard — never just the flag
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -195,8 +217,8 @@ export function CastingTakeover({
       setConfirmingLeave(true);
       return;
     }
-    onClose();
-  }, [isCasting, workInProgress, onClose]);
+    startClose();
+  }, [isCasting, workInProgress, startClose]);
 
   const handleSaveChanges = useCallback(() => {
     const diff = unsavedDiff();
@@ -229,8 +251,36 @@ export function CastingTakeover({
       ? 'Finish this cast'
       : 'Cast a model';
 
+  const open = entered && !closing;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: '#FAFAF8' }}>
+    <div className="fixed inset-0 z-50">
+      {/* Scrim — the board stays visible, dimmed, around the takeover */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'rgba(10,10,10,0.25)',
+          opacity: open ? 1 : 0,
+          transition: 'opacity 200ms ease',
+        }}
+        onClick={attemptClose}
+      />
+
+      {/* The panel — arrives over the board (VC-R1 fold-in): slim visible
+          board margin, ~200ms scale+fade in, mirrored out */}
+      <div
+        className="absolute flex flex-col overflow-hidden"
+        style={{
+          inset: 16,
+          borderRadius: 14,
+          background: '#FAFAF8',
+          border: '1px solid rgba(0,0,0,0.10)',
+          opacity: open ? 1 : 0,
+          transform: open ? 'scale(1)' : 'scale(0.975)',
+          transformOrigin: 'center center',
+          transition: 'opacity 200ms cubic-bezier(0.16,1,0.3,1), transform 200ms cubic-bezier(0.16,1,0.3,1)',
+        }}
+      >
       {/* Slim frame — image-viewer shell conventions */}
       <div
         className="flex items-center justify-between px-4 flex-shrink-0"
@@ -284,13 +334,20 @@ export function CastingTakeover({
       </div>
 
       {/* The environment */}
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 relative">
         <CastingWorkspace
           user={user}
           isAuthenticated={isAuthenticated}
           isReadOnly={false}
           onNewModel={resetCastingSession}
         />
+        {/* Cold-mount loader (P1): edit sessions hydrate the model first —
+            never flash the default studio */}
+        {editContext && !hydrated && (
+          <div className="absolute inset-0 z-10" style={{ background: '#FAFAF8' }}>
+            <BrandLoader label={isMintedEdit ? 'Loading this cast' : 'Loading your draft'} />
+          </div>
+        )}
       </div>
 
       {/* Leave confirmation */}
@@ -314,7 +371,7 @@ export function CastingTakeover({
                 type="button"
                 onClick={() => {
                   setConfirmingLeave(false);
-                  onClose();
+                  startClose();
                 }}
                 className="px-3.5 py-1.5 rounded-full transition-colors hover:bg-black/[0.04]"
                 style={{ fontSize: 12, fontWeight: 500, color: '#52524B', border: '1px solid rgba(0,0,0,0.12)' }}
@@ -364,6 +421,7 @@ export function CastingTakeover({
         onClose={() => setIsTopupOpen(false)}
         currentBalance={creditsData?.balance || 0}
       />
+      </div>
     </div>
   );
 }

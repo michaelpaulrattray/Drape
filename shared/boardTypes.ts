@@ -58,6 +58,9 @@ export interface BoardItemCanvasMetadata {
   provenance?: Provenance;
   status?: NodeStatus | null;
   pinned?: boolean;
+  /** Latest version number — stamped by landing ops alongside the version
+   *  row so the node strip never lies (was hardcoded v1 pre-R3-fixes). */
+  version?: number;
   /** Casting attributes for cast_config/cast_root nodes (parser + user merged). */
   attributes?: CastAttributes;
   /** The submitted natural-language prompt (verbatim). */

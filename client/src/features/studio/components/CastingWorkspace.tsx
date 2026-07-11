@@ -9,7 +9,7 @@
  * belong to the hosts — the studio triggers the gate from its sidebar, the
  * takeover from its top bar.
  */
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useStudioStore } from '../stores/useStudioStore';
 import { AnimatedPanel } from './AnimatedPanel';
@@ -152,43 +152,55 @@ export function CastingWorkspace({
     setShowExportModal,
   });
 
-  // Hydrate casting store for gallery-loaded models (assets in DB, not Zustand)
-  const modelAssetsQuery = trpc.models.get.useQuery(
-    { modelId: canvas.castModelId! },
-    {
-      enabled: canvas.castModelId !== null && currentAssets.length === 0,
-      retry: false,
-    },
-  );
-
+  // Hydrate casting store for gallery/edit-loaded models (assets in DB, not
+  // Zustand). IMPERATIVE fetch, not useQuery: a hook would serve the STALE
+  // cached model first and the one-shot hydration guard would then block the
+  // fresh data — the exact post-update stale-baseline bug (VC-R3 bug 2b).
+  // utils.fetch() refetches whenever the entry is stale, so every hydration
+  // starts from server truth; the takeover's loader covers the round trip.
+  const utils = trpc.useUtils();
+  const hydratingRef = useRef(false);
   useEffect(() => {
-    if (!modelAssetsQuery.data) return;
-    if (currentAssets.length > 0) return; // already hydrated
+    const modelId = canvas.castModelId;
+    if (modelId === null || currentAssets.length > 0 || hydratingRef.current) return;
+    hydratingRef.current = true;
+    let cancelled = false;
+    utils.models.get
+      .fetch({ modelId })
+      .then((model) => {
+        if (cancelled || !model) return;
+        if (useCastingGenerationStore.getState().currentAssets.length > 0) return; // already hydrated
 
-    const model = modelAssetsQuery.data;
-    const assets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
-    const genStore = useCastingGenerationStore.getState();
+        const assets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
+        const genStore = useCastingGenerationStore.getState();
+        const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(assets);
 
-    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(assets);
-
-    if (rebuilt.length > 0) {
-      genStore.setCurrentModelId(model.id);
-      genStore.setCurrentAssets(rebuilt);
-      genStore.setHistory(history);
-      genStore.setHistoryIndex(historyIndex);
-      useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
-      if (model.masterPrompt) {
-        genStore.setCurrentMasterPrompt(model.masterPrompt);
-      }
-    }
-    // Restore form preferences so ControlPanel shows actual model identity
-    if ((model as any).preferences) {
-      const formStore = useCastingFormStore.getState();
-      formStore.setPrefs((model as any).preferences as any);
-      formStore.setModelName(model.name || '');
-    }
+        if (rebuilt.length > 0) {
+          genStore.setCurrentModelId(model.id);
+          genStore.setCurrentAssets(rebuilt);
+          genStore.setHistory(history);
+          genStore.setHistoryIndex(historyIndex);
+          useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
+          if (model.masterPrompt) {
+            genStore.setCurrentMasterPrompt(model.masterPrompt);
+          }
+        }
+        // Restore form preferences so ControlPanel shows actual model identity
+        if ((model as any).preferences) {
+          const formStore = useCastingFormStore.getState();
+          formStore.setPrefs((model as any).preferences as any);
+          formStore.setModelName(model.name || '');
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        hydratingRef.current = false;
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modelAssetsQuery.data, currentAssets.length]);
+  }, [canvas.castModelId, currentAssets.length]);
 
   // Form completion progress (12 fields)
   const formProgress = useMemo(() => {
