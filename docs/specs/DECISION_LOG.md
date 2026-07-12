@@ -325,6 +325,33 @@ VC-R4 verdict: **the grammar passes** — toolbar, fork-beside, delete/undo, key
 
 **Affects (on ratification):** studio view system (three-quarter slot is net-new), mint dialog (`CastModelModal` → tiered), D-29 sheet slots, D-30 composer + `InputSnapshot`, model-assets schema (per-slot status/pin home — see assessment collision), R-sequence.
 
+## Group 6g — R5 planning rulings (founder, 2026-07-12)
+
+Issued at R5 plan approval (the comp-card milestone). Reference screenshots `ruling6-*.png` in `docs/specs/references/`. The four R5 design forks were put to the founder with previews and ratified: **(1)** comp-card grid = headshot-dominant mosaic (headshot spans 2×2, views fill around, ghosts for empty slots); **(2)** pop-out placement = right of root, stacked downward — knowingly shares fork's "beside" axis; **flagged for the founder's VC-R5 feel ruling per D-48's revisit clause**, placement is one constant; **(3)** pin-initiated spawning (D-36a) ships scoped: drag from the root's out-pin into empty space → six-slot menu → spawns that view popped-out, pre-connected (consumer node types join the menu with pass 2/3); **(4)** D-36b's edge-hover X-disconnect is **deferred to pass 2, superseding the original milestone brief knowingly** — lineage edges are facts (history), not wiring; disconnect arrives with the input-edge class it applies to.
+
+### D-50 — Group selection grammar *(founder-directed at R5 plan approval; ElevenLabs reference `ruling6-elevenlabs-group-select-context-menu.PNG`, current clutter `ruling6-drape-multiselect-clutter-current.png`)*
+
+**What:** multi-select (D-47 marquee) currently renders N per-node toolbars — cluttered and group-illiterate. Five sub-rulings:
+
+1. **Selection >1 renders as a group**: one visual container with padding around the selected set, in the selection language (hairline/ink, no blue); per-node floating toolbars suppressed, replaced by ONE group toolbar. Right-click on the selection opens a context menu in **parity** with the group toolbar — same actions, two surfaces.
+2. **Group action set, pass-1-honest**: Duplicate · Download all · Focus (zoom-to-selection) · Delete (routes through the existing soft-delete + cascade dialog; one red confirm covers the set). Cmd+C/V alias Duplicate per the R4 keyboard ruling.
+3. **Tidy up** (auto-arrange respecting D-31 geometry and variable comp-card heights) — v1 spec banked: row-major pack over **measured** node dimensions (React Flow `node.measured`), reading-order sort (y then x), 60px gutters, row height = tallest node in row, committed as ONE batched `moveNodes`. **Ratified as a requirement, not an implementation detail: Cmd+Z reverses the whole tidy** (one entry on the move-undo stack). Cluster-aware arrangement (roots + popped views/variations/forks keeping their semantic geometry) is deliberately not v1 — it lives in D-48's revisit territory and is ruled on real boards.
+4. **Run all — semantics ratified now, execution deferred to first consumer nodes**: run-all = execute the selected subgraph in dependency order. Cast roots are **sources** — they feed, never regenerate; D-43 untouched by design. Pass-1 boards contain no executable nodes, so the action ships with pass 2/3's first consumers; the group toolbar **reserves the slot** (disabled, tooltip). Batch execution inherits existing contracts: one aggregate `plan()` confirm (D-15), per-node named-and-refunded failures.
+5. **Edge classes** (the full context for run-all, D-30's composer, and the future board agent — all consume the *input* graph): lineage edges (history: `generated_from_cast`, `forked_from`, `variant_of`, `iterated_from`) stay distinguishable from input edges (dataflow: `vto_input_model`, `vto_input_garment`, `reference_for`, D-30 weighted references). R5 ships `EDGE_CLASS` in `shared/boardTypes.ts`; edge rendering and the pop-out edge select by class, never by ad-hoc relation lists. R5 is the cheap moment to shape this — encoded in foundations Decision 2.
+
+**Landing seam (founder-ruled):** items 1–2 + the reserved Run-all slot ride R5 as a thin rider (suppression is a render gate; the actions reuse shipped mutations; VC-R5's marquee-over-tall-comp-cards drive is exactly when the clutter is worst). **Tidy up defers to R6** with the v1 spec above banked.
+
+### D-51 — The comp card: canonical vocabulary + the strip verb *(founder-ruled at R5 planning; same class as D-41's "Open" ruling)*
+
+**What:** the user-facing name for the composite object (the root rendering its package) is the **COMP CARD** — fashion's own word for exactly this artifact (headshot + angles + walk on one card; agencies hand these to clients). "Character sheet" remains internal/docs shorthand only; "views" remains schema vocabulary only; neither appears on user-facing chrome. Related copy inherits now: the tier dialog's **"Production sheet" tier renames to "Full comp card"** (its description already says "the full six-view card"), and all R5 copy refers to the rendered composite as the comp card.
+
+**The strip segment — one verb, three honest states** (replaces the dead pre-D-46 `+ Views` stub):
+- **Draft** (headshot only, no card grid exists): segment reads **"Build comp card"** — opens the takeover at the mint gate. This state is why the segment must exist: ghost tiles can't carry the affordance when there's no grid yet.
+- **Minted with empty slots**: segment reads **"Complete card"** — opens the takeover in upgrade mode, same route as the ghost tiles.
+- **Complete six-slot model**: the segment **disappears entirely** — a permanent verb with nothing to do would be the unintuitive thing.
+
+Ghost tiles remain the in-card accelerator; the strip verb is the stable anchor (the R4 grammar philosophy: stable locations anchor, in-context affordances accelerate). **Scope guard:** only the vocabulary and state logic land in R5 — the strip's visual treatment stays R6's restyle problem.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

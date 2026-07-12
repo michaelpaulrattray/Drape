@@ -297,10 +297,10 @@ export interface CastNodeData {
 
 Composition (**ratified 2026-07-11:** canonical/library casts **280** wide, true `cast_view` cards **200**; the image area is a **3:4 portrait** — the measured generation ratio, 896×1200 — through all states including empty and generating, so geometry never shifts and cover never crops):
 
-- `NodeFloatingToolbar` — selected && !isEmpty. Root: 6 active (Rerun → ForkRecastPopover). View: Variations/Duplicate disabled. Library cast: Rerun/Variations disabled ("Generate from this cast in a downstream node"), Duplicate/Download/Delete/Info active.
-- `NodeLabelRow` — root `Cast · {name}`; view `Cast · {name} · {viewLabel}`; library `Cast · {name} · Library`. Engine right-slot only when present.
-- `CanvasNodeShell` containing: `ConnectionDot`s (root: prompt+image; view: prompt; library: none — it *is* a reference source), `NodeStatusBadge` when `status` set, `CastImageArea`, `NodeInlinePrompt` (root placeholder `Describe your model...`; view placeholder `Pose...`; hidden entirely on library casts).
-- Below, when selected: `NodeControlStrip` (!isEmpty), `NodeAttributeBlock` (root only — summary line when complete, rows immediately on empty roots).
+- `NodeFloatingToolbar` — selected && !isEmpty, **suppressed when selection >1 (D-50 — the group toolbar replaces it)**. **Amended with R4/R5 (supersedes the pre-D-35 line):** post-D-35 every placed cast is `library_cast` provenance and is **root-grade for the grammar** — Rerun (→ ForkRecastPopover; recast sealed on minted per D-43), Variations, Duplicate, Download, Delete, Info all active. Popped-out views (`cast_view`): Rerun/Variations disabled with explanatory tooltips.
+- `NodeLabelRow` — root `Cast · {name}` (`· Draft` per D-42); popped view `Cast · {name} · {viewLabel}`. Engine right-slot only when present.
+- `CanvasNodeShell` containing: `ConnectionDot`s, `NodeStatusBadge` when `status` set, and the image area — `CastImageArea` (§5.12) for single-image states, **`CharacterSheetImageArea` (§5.17) once the model's package has ≥2 filled slots**. *(The inline prompt and attribute block were deleted by D-33/D-34 — the picker modal is the front door.)*
+- Below, when selected: `NodeControlStrip` (!isEmpty), carrying the D-51 package verb (`Build comp card` / `Complete card` / nothing — §5.17).
 
 State reference for `useCastNodeController` (the hook binds node → `boardOps` + `useGenerationJobs` + tRPC; all branching and mutation plumbing lives there, the component stays thin):
 
@@ -404,6 +404,35 @@ export function ImageFallback({ label = "Source unavailable" }: { label?: string
 
 Wire via a small `onError` state swap (or a shared `SafeImage` wrapper — implementer's choice, one implementation only). Tiny contexts (History thumbs, snapshot chips) may render icon-only. Operations that would *consume* a missing input fail with a clear, refunded error naming the source (foundations Decision 1).
 
+### 5.17 `CharacterSheetImageArea` — the comp card *(new with R5; D-29 as amended by D-39, D-51 vocabulary)*
+
+`client/src/features/boards/canvas/CharacterSheetImageArea.tsx`. When a placed cast's model has **≥2 filled package slots**, this replaces `CastImageArea` as the node's image area — and ONLY in the completed state (empty/generating/error/draft states keep §5.12 untouched). User-facing name: **comp card** (D-51 — "character sheet" is docs shorthand; "views" is schema vocabulary; neither appears on chrome).
+
+**Grid (founder-ruled: headshot-dominant mosaic).** Card width fixed at 280; all tiles 3:4; 4px gaps; hairline tile borders. Templates are data (`SHEET_TEMPLATES`, buckets by filled-slot count) — the full card:
+
+```
+┌────────────┬──────┐
+│            │ 3/4  │
+│  HEADSHOT  ├──────┤
+│    2×2     │ Side │
+├────┬───────┼──────┤
+│Full│ Walk  │ Back │
+└────┴───────┴──────┘
+```
+
+Partial packages use the same frame; missing slots render as **ghost tiles** (dashed hairline, `+` glyph, slot label) that open the takeover in upgrade mode (mint gate for drafts — D-46/D-39c: upgrade anytime, no re-cast).
+
+**Rules (D-29 restraint — the card must not become a mini-app):**
+- Tiles are **images only at rest** (SafeImage per §5.16). No buttons, no labels, no per-tile toolbars, ever.
+- With the node selected, hovering a tile shows a 1px inset ring; **clicking a tile opens the one per-view surface** — a `CanvasPopoverContent`: `{viewLabel} · vN`, status line (`Pinned — kept as finished work` / `Out of sync` / `Failed: {reason} — you weren't charged`), then `Pop out` · `Refresh · ~{cost}` · `Pin`/`Unpin` · `Open in environment`. Costs from `refreshSlotsPlan` (D-15, never literals). Esc via the canvas layer stack.
+- **The headshot tile never offers Refresh** — it IS the minted identity (D-43); in its place one quiet line: *"The headshot is this identity — fork to change it."* On pinned tiles Refresh renders disabled with tooltip *"Pinned — unpin to refresh."*
+- **Per-tile status dots**: 6px, tile top-right, counter-scaled screen-legible at every zoom (D-37 survivor class, §12). Monochrome ink for stale; destructive red only for failed (§2.1). Stale tiles additionally dim to 70%.
+- **Popped-out tiles** carry a small ⤢ corner glyph; their popover action reads `Return to sheet`.
+- **Aggregate**: when unpinned stale slots exist, the control strip gains a `{N} stale` segment → bulk-refresh plan dialog (400px house dialog, not red — refreshing isn't destroying). Dormant in pass 1 (D-43 removed the stale trigger); machinery keys off `model_assets.status`.
+- **The strip verb (D-51)**: `Build comp card` on drafts → takeover mint gate; `Complete card` on minted-with-gaps → takeover upgrade; nothing when complete. Visual treatment is R6 scope.
+
+**Pop out / collapse:** popping materializes a 200-wide view card (provenance `cast_view` referencing the model asset, `InputSnapshot`, `generated_from_cast` edge with `{ viewAngle }` metadata) **right of the root, stacking downward** (founder-ruled; shares fork's "beside" axis — flagged for the VC-R5 feel ruling per D-48). Collapse soft-deletes the placement and re-anchors outgoing edges to the root, `viewAngle` preserved in metadata; not Cmd+Z-undoable in pass 1 — recovery is a free re-pop-out. **Pin-spawn (D-36a, scoped):** dragging from the root's out-pin into empty space opens a six-slot menu (filled + unpopped enabled; ghosts disabled — "Add in the casting environment") and spawns the chosen view popped-out, pre-connected, at the drop point.
+
 ---
 
 ## 6. Refinement studio layout
@@ -446,13 +475,9 @@ Each blender popover wraps its tactile component (§13 redesigned versions) in t
 
 Header "Casting vibe" + "drag to adjust"; `TriBlendSelector`; three readouts (Commercial/Editorial/Runway percentages, 9px label + `text-canvas-md font-medium` value); footer. Implementation as in the original draft.
 
-### 7.2 `ViewsGenerationPopover`
+### 7.2 `ViewsGenerationPopover` — **RETIRED (never built): superseded by D-46 + §5.17**
 
-**The 5 canonical views are fixed** — no custom pose field, no "+ Another pose", no free-text angle. Ever. (Foundations §1.5.)
-
-Rows: checkbox + label (`Headshot` pre-checked and locked — it's the root; `Full body front`, `Side close`, `Side full`, `Back full`), right-aligned per-view cost — **from the plan, not a literal** (real pricing: `CREDIT_COSTS.multiView`; the popover requests `boardOps.generateViews.plan` on open and re-plans on toggle). Footer: `{n} views selected` + total (`text-canvas-lg font-medium`), then Cancel / Generate (disabled at 0 selected). Checkbox: 14px square, checked = ink fill + white check path, locked-checked = ink-faint fill, unchecked = hairline-strong border. Completed views render at 60% opacity with "done" instead of a cost.
-
-When **all views already exist**, the popover body is replaced by the all-views-exist state (§11.4).
+View generation is the mint/upgrade gate inside the casting environment (D-46 — one view system; `CastModelModal` tiers, "Full comp card" per D-51). On the board, the comp card's ghost tiles and the D-51 strip verb are the affordances (§5.17). The six canonical slots remain **fixed and strict** — no custom pose field, no free-text angle, ever (foundations §1.5). §11.4's all-views-exist state retires with it (a complete card simply has no ghosts and no strip verb).
 
 ### 7.3 `LibraryPickerPopover` *(new — foundations Decision 3a / library bridge; D-28 second entry point)*
 
@@ -507,8 +532,9 @@ Edge opacity upgrades to 1 when either endpoint is selected (selection-change li
 ## 9. Interaction specifications
 
 ### Selection
-- Click selects (single); Cmd/Ctrl+click extends; click empty canvas deselects; `Cmd/Ctrl+A` selects all.
-- Selection drives: border weight (hairline → 1px ink), `NodeFloatingToolbar`, `NodeControlStrip`, `NodeAttributeBlock` (roots), connected-edge opacity.
+- Click selects (single); Cmd/Ctrl+click extends; Select-tool drag draws a marquee (D-47, partial intersection); click empty canvas deselects; `Cmd/Ctrl+A` selects all.
+- Selection drives: border weight (hairline → 1px ink), `NodeFloatingToolbar`, `NodeControlStrip`, connected-edge opacity.
+- **Selection >1 renders as a group (D-50):** one container with padding around the set (hairline/ink — no blue), per-node toolbars suppressed, ONE group toolbar: `Duplicate · Download all · Focus · Delete` + the reserved `Run all` slot (disabled until consumer nodes exist; run-all = execute the selected subgraph in dependency order, cast roots as sources). Right-click on the selection opens a context menu in parity — same actions, two surfaces. Group Delete routes through the cascade dialog; one red confirm covers the set. Tidy up (row-major pack over measured sizes, one batched undoable move — Cmd+Z reverses the whole tidy) lands with R6.
 
 ### Empty-state cast node (freshly dropped)
 As foundations 3a: auto-selected, prompt auto-focused, the six attribute rows visible with faint `Add` values (§5.9 empty-root state), no strip/toolbar, Run disabled until prompt text or a set attribute. First Run fires `boardOps.runGeneration` (server-side parser dispatch), with cost shown beforehand via `CostLabel`. The image area additionally carries the quiet `or choose from your models` link (§5.12/D-28) — the pick-existing path at the node; choosing a model fills the node in place as `library_cast` and the node exits its empty state without a generation.
@@ -531,11 +557,11 @@ Fires when an identity-level attribute on a `cast_root` is about to change AND u
 - **Cancel** — text button. Nothing commits; the popover/tab retains the draft.
 - shadcn `Dialog` restyled: `bg-canvas-surface border-hairline border-canvas-border-strong shadow-none`, backdrop `bg-black/20` max, width 400px. This dialog's confirm is **not** red — updating views isn't destroying work. Red confirms appear only where work is destroyed (§2.1): delete-cascade and recast (recast's confirm IS red — it discards an identity).
 
-### Stale + pin
-- Stale views show the badge at all times (not selection-gated) + 70% image opacity.
-- Badge hover card: **Refresh · ~{cost}** (regenerate this view against current identity; clears status on completion) / **Keep old** (sets `pinned: true` via `boardOps.setNodePinned`, clears the badge permanently — finished work).
-- Pinned nodes: pin glyph in control strip; excluded from cascade counts, bulk refresh, and future stale marking; unpin lives in the node's `···` menu.
-- Root `···` menu gains `Refresh all stale views ({N} · ~{cost})` when applicable → `refreshStaleViews.plan` → confirm → execute; each view transitions through its own generating state.
+### Stale + pin *(rewritten with R5 — model-level per D-39; dormant in pass 1 per D-43)*
+- Staleness and pins live on **`model_assets`** (the package ledger), rendered on comp-card tiles: stale = 70% dim + the counter-scaled tile dot (not selection-gated). Nothing sets stale in pass 1 (D-43 removed the identity-edit trigger); the machinery ships keyed off `model_assets.status` for pass 2.
+- The tile popover (§5.17) carries **Refresh · ~{cost}** (regenerates that slot against the current headshot + identity text; a new asset row supersedes by newest-wins) and **Pin/Unpin** (`generation.setSlotPinned`). Pinned = accepted-final: exempt from stale marking, bulk refresh, and refresh pressure; Refresh renders disabled with the pinned tooltip. The headshot slot is identity-sealed — never refreshable (D-43).
+- Board-item pins (`boardOps.setNodePinned`, pin glyph in the control strip) remain a separate ledger for placements.
+- Aggregate: the `{N} stale` strip segment → bulk-refresh plan dialog → `refreshSlots` over the unpinned stale set; each tile transitions through its own generating state; failures land named-and-refunded on the tile.
 
 ### Delete + undo
 - `Delete`/`Backspace` or toolbar Trash: plain nodes soft-delete immediately with a toast `Cast deleted · Undo` (8s); roots with connected views get the cascade dialog first (**red confirm** — destroys work), then delete as a unit with one toast.
@@ -602,47 +628,18 @@ Per §7.3: icon + `No models yet` + ghost `Cast one on this board`.
 
 ---
 
-## 12. Zoom & density strategy *(new chapter — highest-priority gap)*
+## 12. Zoom & density strategy *(rewritten with R5 — D-37 spatial constancy; the tier system is retired)*
 
-The system above is specced at ~100% zoom with few nodes. Unmanaged, it degrades at 40% on a 50-node board: 10px labels become smudges, 0.5px hairlines alias out of existence, below-card chrome turns to noise, and every selected node shouts. The strategy: **the card is the constant; chrome is the variable.** Chrome progressively retracts as zoom falls, so the flat/hairline language at working zoom is never compromised — small sizes simply show less, not smaller-everything.
+**Policy (D-37, founder-ratified 2026-07-11): nodes render the same at every zoom.** No chrome retraction, no placeholder-block far tier, no visual mode switches; small text at far zoom simply reads small. The tier system (D-1/D-2/D-3, VC1 thresholds) is retired — its chrome targets were deleted by D-33/D-34, and constancy is simpler, calmer, and matches how the reference product survives density. Implementation: `canvasZoom.ts` (`useLiveCanvasZoom`, `screenLegibleScale`) — live zoom only, no tier enum, no hardcoded zoom breakpoints anywhere else.
 
-Three tiers, driven by React Flow's live zoom (`useStore(s => s.transform[2])`), with thresholds as exported constants:
+**Two survivors, reframed:**
 
-```ts
-// client/src/features/boards/canvas/zoomTiers.ts
-export const ZOOM_TIER_MID = 0.45;   // below: "mid" — chrome retracts
-export const ZOOM_TIER_FAR = 0.35;   // below: "far" — cards become tiles
-export type ZoomTier = "working" | "mid" | "far";
-```
+1. **Status indication stays screen-legible at any zoom** (D-6's data-integrity reasoning — a stale or failed node must never become invisible): `NodeStatusBadge`, the comp card's **per-tile status dots (§5.17)**, and the floating toolbar (including D-50's group toolbar) counter-scale via `screenLegibleScale(zoom)` = `1 / min(max(zoom, 0.05), 1)`. These are the ONLY screen-fixed chrome.
+2. A pure-performance image downgrade (thumbnail swap below readable zoom) may return **only if profiling shows dense boards need it** — invisible to the user, never a visual mode.
 
-> **Thresholds ruled at VC1 (founder, 2026-07-10): mid 0.45, far 0.35.** The constants remain the single tuning point — nothing else may hardcode a zoom breakpoint. (The tier architecture itself was ratified as D-1/D-2/D-3.)
+**What never becomes illegible:** the image itself, status indication (badges + tile dots), selection indication. What you made, what needs attention, what you're touching.
 
-Hysteresis: apply a ±0.03 band around each threshold when crossing back upward, so panning near a boundary doesn't flicker tiers. Tier transitions animate opacity only (120ms).
-
-| Element | working (≥ 0.45) | mid (0.35–0.45) | far (< 0.35) |
-|---|---|---|---|
-| Card + image | full spec | full spec | image tile only; `rounded-canvas-sm`; inset placeholder if no image |
-| Card border | hairline / 1px selected | **1px / 1.5px selected** (see below) | 1px; selected 2px |
-| External `NodeLabelRow` | shown | hidden | hidden |
-| Inline prompt row | shown | hidden (image fills the card) | hidden |
-| Control strip / attribute block | shown on selection | hidden | hidden |
-| Floating toolbar | shown on selection | shown on selection (it's fixed-size screen-space chrome — see below) | hidden; selection acts via keyboard/context |
-| Connection pins | shown | shown at fixed screen size | hidden |
-| Status badge | in-card corner, 22px | **screen-fixed 14px dot** at card corner (icon only, no ring) | same 14px dot — statuses stay findable at any zoom |
-| Edges | 40% opacity, 1px | same, screen-space width | 60% opacity (they become the structure you're reading) |
-| Stale dimming | 70% image opacity | same | same |
-
-**Screen-space vs canvas-space (the load-bearing implementation rule):** labels, strips, and chips are canvas-space (they scale with the node, hence they retract instead of shrinking below legibility). The floating toolbar, status badges, and pins render at **fixed screen size** regardless of zoom (`transform: scale(1/zoom)` on their wrappers, or React Flow's `NodeToolbar` which does this natively). A 22px badge that scales down to 9px is decoration; a fixed 14px dot is information.
-
-**Hairline handling below 1× zoom:** a 0.5px canvas-space border at 0.5 zoom renders at 0.25px — sub-pixel, aliased, effectively random. Hence the tier table upgrades card borders to 1px at mid and below: at those zooms 1px canvas-space ≈ the hairline's *rendered* weight at working zoom. This preserves the hairline *appearance* rather than the hairline *number* — the language is the look, not the CSS value.
-
-**Selection at density:** at far tier, the selected tile's 2px ink border plus the (screen-fixed) toolbar at mid — or, at far, a 1px ink outline ring offset 2px — keeps selection findable without color. Multi-select at far tier shows the outline on each node.
-
-**What never retracts:** the image itself, the status dot, selection indication. What you made, what needs attention, what you're touching.
-
-Frame labels (pass 3) will render at far tier as the *only* text on the canvas — frames become the wayfinding layer at density; noted here so pass-1 code doesn't fight it.
-
-Implementation: `useZoomTier()` hook (subscribes to zoom, returns the tier with hysteresis); every node component reads the tier from context and branches its chrome rendering. Do not implement per-element `if (zoom < x)` checks scattered through components — one tier enum, one source.
+Edges render per §8 (40% opacity ambient, 1 on endpoint selection) at every zoom. Frame labels (pass 3) remain the planned wayfinding layer at density (D-5, unaffected).
 
 ---
 

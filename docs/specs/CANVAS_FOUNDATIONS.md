@@ -124,7 +124,9 @@ CREATE TABLE board_edges (
 
 `forked_from` is new — it records root-to-root forks from Decision 3f. `parentItemId` on `board_items` is retained but frozen (audit N7 confirmed nothing writes it today; nothing new starts). New code writes edges.
 
-Edge rendering: hairline, low opacity, upgraded when either endpoint is selected — exact treatment (including zoom behavior) in the design system.
+**Edge classes (D-50.5):** every relation belongs to exactly one class — **lineage** (history: `generated_from_cast`, `forked_from`, `variant_of`, `iterated_from`) or **input** (dataflow: `vto_input_model`, `vto_input_garment`, `reference_for`, and D-30's weighted references). Run-all, the D-30 composer, and the future board agent consume the *input* graph; lineage is what renders as ambient history. The classification lives as `EDGE_CLASS` in `shared/boardTypes.ts` — code selects edges by class, never by ad-hoc relation lists. Lineage edges are facts and are never disconnectable; edge-hover X-disconnect (D-36b) applies to input edges and arrives with pass 2.
+
+Edge rendering: hairline, low opacity, upgraded when either endpoint is selected — exact treatment in the design system §8.
 
 ### Decision 3 — Tool invocation: inline-first, root + view node model, refinement studio as the deep path *(locked, with 3c/3f revised)*
 
@@ -140,17 +142,17 @@ The user can, in any order, before hitting Run:
 
 **The empty node also carries the pick-existing path (D-28, founder-directed):** a quiet `or choose from your models` link in the placeholder image area opens the library picker (`DESIGN_SYSTEM.md` §7.3) directly at the node — create-new and pick-existing are both node-local, never split across menu surfaces alone. Picking fills *this* node in place (provenance → `library_cast`, image → the model's canonical headshot, initial version row) rather than spawning a sibling. The picker is constrained to canonical cast reference imagery — never outfitted, styled, or scene outputs, which would smuggle non-reference imagery into an identity slot (§1.5).
 
-#### 3b. Generating additional views spawns separate view nodes
+#### 3b. The package renders as a comp card; views pop out on demand *(rewritten with R5 per D-29 as amended by D-39, D-46, D-51)*
 
-Once a root exists, `+ Views` in the control strip opens a popover with checkboxes for the five canonical view types (headshot pre-checked and disabled — it's the root), a running cost total computed from real `CREDIT_COSTS` via the plan API, and Generate.
+Views are **model-level data** (`model_assets` — the single package ledger, D-39), not board rows. View generation lives in the **casting environment**: an empty slot's ghost opens the tiered mint/upgrade dialog (D-46 — one view system; the pre-D-46 views popover never shipped). The six canonical slots are **fixed and strict** — headshot, three-quarter, side profile, full front, walk, full back (D-39/D-44). No custom pose or framing options — see §1.5.
 
-**Each requested view spawns as its own node**: provenance `cast_view` with `rootItemId` and an `inputs` snapshot of the root image consumed; connected via a `generated_from_cast` edge; inheriting full identity from the root; auto-placed in a row to the right; each with its own version history, optional per-view pose prompt, and reduced toolbar. View nodes do NOT show the attribute block — identity edits happen at the root.
+**On the board, the root renders its package as a COMP CARD** (D-51 vocabulary — fashion's own word; "character sheet" is docs shorthand only): once ≥2 slots are filled, the root's image area becomes a headshot-dominant mosaic (headshot spans 2×2, views fill around it; empty slots render ghost add-view affordances — upgrade anytime, no re-cast, D-39c). Tiles are images only at rest; the one per-view surface is the tile-click popover (`Pop out` · `Refresh · ~cost` · `Pin`/`Unpin` · `Open in environment`). The headshot tile is never refreshable — it IS the minted identity (D-43); fork is the identity operation.
 
-Root control strip: `+ Views · v1 · ···` (no view-switcher dropdown — views are nodes). View control strip: `v1 · ···`.
+**Pop out** materializes a standard view card (200 wide, 3:4) as a board item *referencing* the model asset — provenance `cast_view` with `modelId`, `rootItemId`, `viewAngle`, and an `inputs` snapshot — connected by a `generated_from_cast` edge carrying `{ viewAngle }` metadata. The comp-card tile remains (package integrity) with a ⤢ corner glyph. **Collapse** dematerializes the placement and re-anchors any outgoing edges to the root, preserving `viewAngle` intent in edge metadata (D-30). Deleting a root cascades over its popped views (the one red confirm).
 
-The five canonical views are **fixed and strict**. No custom pose or framing options — see §1.5.
+Root control strip carries the package verb (D-51): `Build comp card` on drafts (opens the mint gate), `Complete card` on minted models with empty slots (opens upgrade), nothing when the card is complete. Popped-view strip: `v1 · ···`.
 
-#### 3c. Identity changes on the root — the stale flow *(revised: stale is informational; pinning)*
+#### 3c. Identity changes on the root — the stale flow *(revised: stale is informational; pinning)* — **scope reduced by D-43:** minted identities are immutable (fork is the only identity operation), so the identity-edit staleness trigger below no longer exists in pass 1. The stale *machinery* (badge, dim, pins, refresh, this dialog) stays built as pass-2 infrastructure, keyed off `model_assets.status`.
 
 When the user changes an identity-level attribute on the root (attribute-block popover or studio Attributes tab), the root regenerates and connected views become stale — they depict the previous person. The flow:
 
@@ -172,16 +174,17 @@ Editing a **root** exposes all identity-level attributes in the Attributes tab; 
 
 The current `ModelEditorOverlay.tsx` (a modal-with-scrim, 786 lines) is **rebuilt into** the studio shell, salvaging its zoom/pan viewer and mask-canvas internals — it is not a rename (audit N12).
 
-#### 3e. Interaction grammar summary *(revised Run semantics on roots — see 3f)*
+#### 3e. Interaction grammar summary *(rewritten with R5 — post-D-35 every placed cast is `library_cast` provenance and root-grade for the grammar; "view" now means a popped-out placement)*
 
-| Verb | On root cast | On view cast |
+| Verb | On a placed cast (root) | On a popped-out view |
 |---|---|---|
-| **Run** | **Identity event** — opens the fork/recast choice (3f) | New version on the same view; root and siblings unaffected |
-| **Variations** | N sibling roots spawn with `variant_of` edges, each a new identity interpretation | **Disabled** — views of a locked identity don't vary meaningfully |
+| **Run** | **Identity event** — fork-or-keep on minted (D-43; recast sealed), free rerun on drafts | N/A — per-tile **Refresh** lives in the comp-card tile popover (headshot excluded: it IS the identity) |
+| **Variations** | N sibling roots spawn below with `variant_of` edges (D-48 geometry), each a new identity interpretation | **Disabled** — views of a locked identity don't vary meaningfully |
 | **New node** | Fresh cast node at cursor, no relation | Same |
-| **Edit** | Refinement studio for the root | Refinement studio for the view |
+| **Edit** | Casting environment (takeover) on the model | Collapse into sheet / Download / Delete via strip + menu; identity work happens at the root |
+| **Delete** | Cascade dialog when popped views exist (the one red confirm); soft otherwise | Plain soft delete, undoable |
 
-View nodes show the full 6-icon toolbar with Variations and Duplicate disabled (tooltips explain why). Simple casts stay one prompt and one click; tactile adjustments two clicks; additional angles one popover; precision work one Edit click.
+Popped views carry the reduced toolbar (Variations/Rerun disabled with explanatory tooltips). Multi-select renders as a **group** (D-50): one container, one group toolbar (Duplicate · Download all · Focus · Delete · reserved Run all), right-click context menu in parity. Simple casts stay one prompt and one click; angles live in the environment one verb away; precision work one Edit click.
 
 #### 3f. Rerun on a root is fork or recast — never a silent new version *(new; ratified via decision log D-11)*
 
@@ -480,10 +483,10 @@ All demonstrable on a real board:
 2. A freshly-dropped cast node is auto-selected with the attribute rows visible (faint "Add" values); Run stays disabled until prompt text or a set attribute exists.
 3. A first-time user landing on an empty board sees the designed empty state / first-run intro (design system §11), dismissible and never seen again.
 4. Selecting a completed root reveals the specified chrome (1px border, `+ Views · vN · ···` strip, collapsed attribute summary line that expands to rows on tap, 6-icon toolbar). Every paid affordance shows its cost from plan data — no hardcoded credit numbers anywhere in the client.
-5. Attribute-row popovers Apply-and-run; identity-level changes with connected unpinned views surface the Update now / later / Cancel dialog with real counts and costs.
-6. `+ Views` spawns `cast_view` nodes with `generated_from_cast` edges and `InputSnapshot` provenance; view nodes have their own prompt, no attribute block, reduced toolbar.
+5. Identity work happens in the casting environment (takeover); saving changes to a placed cast routes through the D-11 dialog — **fork-or-keep on minted models (D-43), no update path, server-enforced**; drafts edit freely until mint.
+6. A minted model's root renders its package as the comp card (headshot-dominant mosaic, ghost tiles for empty slots); popping a tile out materializes a 200-wide view placement with `cast_view` provenance, an `InputSnapshot`, and a `generated_from_cast` edge carrying `{ viewAngle }` — and deleting the root then raises the red cascade dialog over it.
 7. Rerun on a completed root offers **Fork new cast / Recast this cast**; fork creates a `forked_from` sibling; recast routes through the stale flow. Rerun on a view is a plain new version.
-8. Update-later marks views stale (badge + dimmed image); **Keep old pins the view** and pinned views are exempt from all staleness pressure; bulk refresh exists on the root menu.
+8. Staleness is model-level (`model_assets.status`) and ships dormant in pass 1 (D-43 removed its trigger): stale tiles render dim + dotted, pinned slots are exempt from all staleness pressure (per-slot pin toggle works), per-tile quality refresh (headshot excluded) and the aggregate `{N} stale` → bulk-refresh dialog exist and are plan-priced.
 9. A failed generation renders the `error` status variant with a retry action — never a blank card.
 10. Edit opens the refinement studio (full-screen room, no scrim); all four tabs work on a root; Attributes is read-only on a view with a link to the root; `← Boards`/Esc returns with canvas state preserved. `RefinementStudio` is props-only (`itemId`, `onClose`), no router imports.
 11. "Add from library" places an existing model as a `library_cast` node (and a garment as `library_garment`, if pass-1 scope allows) — boards don't start from zero.
