@@ -1216,6 +1216,56 @@ let seededItemId = 0;
     }
   }
 
+  // N6/N7 — D-54 routing: a comp-card TILE double-click opens the
+  // ENVIRONMENT focused on that view (tiles are working objects); the D-52
+  // viewer stays reserved for image-class cards (popped views, image nodes).
+  {
+    const tiles = await tileInfo();
+    const side = tiles?.find((t) => t.area === "side"); // sideClose
+    if (!side) {
+      console.log("SKIP  N6/N7 — sideClose tile missing");
+    } else {
+      // count: 2 is the real double-click (clickCount is an internal event
+      // field and performs no extra clicks — puppeteer 25 API)
+      await page.mouse.click(side.x, side.y, { count: 2 });
+      // The takeover hydrates the edit session (same budget as D2)
+      let envOpen = false;
+      for (let i = 0; i < 30 && !envOpen; i++) {
+        await sleep(1000);
+        envOpen = await page.evaluate(() => {
+          const body = document.body.textContent ?? "";
+          const anchor = [...document.querySelectorAll("button")].some((b) => {
+            const t = b.textContent?.trim();
+            return t === "Save changes" || t === "Cast this model";
+          });
+          return anchor && !body.includes("Loading this cast") && !body.includes("Loading your draft");
+        });
+      }
+      // The D-52 viewer marks itself — the node pill also carries a Download
+      // aria-label, so button hunting false-positives on the board
+      const viewerOpen = await page.evaluate(() => !!document.querySelector("[data-canvas-viewer]"));
+      check(
+        "N6 tile dblclick opens the environment, not the viewer (D-54)",
+        envOpen && !viewerOpen,
+        JSON.stringify({ envOpen, viewerOpen }),
+      );
+      // The session STARTS on the clicked view: the Side thumbnail wears the
+      // active ink border (activeView === sideClose)
+      let activeSide = false;
+      for (let i = 0; i < 10 && !activeSide; i++) {
+        await sleep(500);
+        activeSide = await page.evaluate(() => {
+          const img = document.querySelector('img[alt="Side"]');
+          const btn = img?.closest("button");
+          return !!btn && getComputedStyle(btn).borderColor === "rgb(10, 10, 10)";
+        });
+      }
+      check("N7 environment opens focused on the clicked view (D-54 initialAngle)", activeSide);
+      await closeTakeoverCleanly();
+      await settleSheet();
+    }
+  }
+
   // O — pop out writes the cascade-bearing edge; the red dialog activates;
   // collapse re-anchors outgoing edges to the root with viewAngle intact
   {

@@ -42,6 +42,9 @@ export interface CastEditContext {
   /** R5/D-51: the board's package verb + ghost tiles open the takeover with
    *  the mint/upgrade dialog already up (mint gate for drafts, Rider 1). */
   openUpgrade?: boolean;
+  /** D-54: a comp-card tile was double-clicked — the environment opens
+   *  focused on that view (viewType, e.g. 'sideClose'). */
+  initialAngle?: string;
 }
 
 export interface CastingTakeoverProps {
@@ -159,6 +162,11 @@ export function CastingTakeover({
   // mode (stage-lock off, no direct Cast) rather than as a D-11 bypass.
   useEffect(() => {
     resetCastingSession();
+    // D-54: the session STARTS on the double-clicked view; without an intent
+    // it starts on the headshot. Explicit either way — resetCastingSession
+    // never touched activeView, so sessions inherited the previous session's
+    // view (a quiet bleed this closes).
+    useCastingUIStore.getState().setActiveView(editContext?.initialAngle ?? 'frontClose');
     if (editContext) {
       useStudioStore.getState().setCanvas({ castModelId: editContext.modelId });
       if (!editContext.draft) {

@@ -487,7 +487,7 @@ function BoardPageImpl() {
   // R3: the cast node's Edit action — the environment opens on the model
   useEffect(() => {
     const onEditCast = (e: Event) => {
-      const detail = (e as CustomEvent<{ itemId: number; modelId: number | null; draft: boolean; openUpgrade?: boolean }>).detail;
+      const detail = (e as CustomEvent<{ itemId: number; modelId: number | null; draft: boolean; openUpgrade?: boolean; initialAngle?: string }>).detail;
       if (!detail || typeof detail.itemId !== 'number' || !detail.modelId) return;
       setCastEditContext({
         boardId,
@@ -497,6 +497,8 @@ function BoardPageImpl() {
         // D-51: ghost tiles + the package verb open the takeover WITH the
         // mint/upgrade dialog already up (mint gate for drafts, Rider 1)
         openUpgrade: !!detail.openUpgrade,
+        // D-54: a tile double-click focuses the environment on that view
+        initialAngle: detail.initialAngle,
       });
     };
     window.addEventListener('board-edit-cast', onEditCast);
@@ -742,7 +744,9 @@ function BoardPageImpl() {
         flowY: detail.flowY,
       });
     };
-    // Comp-card tiles open the viewer on the CLICKED view (VC-R5 fix 5)
+    // Any node chrome can open the D-52 viewer explicitly. (Comp-card tiles
+    // no longer dispatch this — D-54 routes their dblclick into the
+    // environment; the event stays for future image-class chrome.)
     const onOpenViewer = (e: Event) => {
       const detail = (e as CustomEvent<{ url: string; label?: string | null }>).detail;
       if (!detail?.url) return;

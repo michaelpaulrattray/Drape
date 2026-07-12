@@ -69,7 +69,7 @@ export function CanvasImageViewer({ imageUrl, label, onClose }: CanvasImageViewe
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center">
+    <div data-canvas-viewer className="fixed inset-0 z-[80] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
       <div
         className="relative flex flex-col rounded-canvas-lg overflow-hidden border-hairline border-canvas-border-strong"

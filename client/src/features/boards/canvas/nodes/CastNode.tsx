@@ -109,10 +109,10 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // modelId > 0 — optimistic rows carry a -1 placeholder until the server
   // confirm swaps in the real id; acting on that would target a dead session
   const modelReady = typeof modelId === "number" && modelId > 0 && data.itemId > 0;
-  const openEdit = (openUpgrade = false) =>
+  const openEdit = (openUpgrade = false, initialAngle?: string) =>
     window.dispatchEvent(
       new CustomEvent("board-edit-cast", {
-        detail: { itemId: data.itemId, modelId, draft: isDraft, openUpgrade },
+        detail: { itemId: data.itemId, modelId, draft: isDraft, openUpgrade, initialAngle },
       }),
     );
   const hasEdit = Boolean(modelReady && data.imageUrl);
@@ -468,7 +468,21 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           <NodeStatusBadge status={data.status} onPrimary={controller.retry} />
         )}
 
-        <div className="relative" onMouseEnter={showSheet ? sheet.prefetchPlan : undefined}>
+        <div
+          className="relative"
+          onMouseEnter={showSheet ? sheet.prefetchPlan : undefined}
+          // D-54: root double-click opens the environment (tiles stop their
+          // own dblclick first, carrying the clicked view). Popped views have
+          // no handler here — they bubble to the board's D-52 viewer.
+          onDoubleClick={
+            hasEdit && !isView
+              ? (e) => {
+                  e.stopPropagation();
+                  openEdit();
+                }
+              : undefined
+          }
+        >
           {showSheet ? (
             // The comp card substitutes ONLY the completed image state —
             // empty/generating/error/draft paths keep §5.12 untouched. The
@@ -481,19 +495,14 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                 sheet.prefetchPlan();
                 sheet.setPopoverAngle(angle);
               }}
-              onTileDoubleClick={(angle, url) => {
-                // Viewer on the CLICKED view (fix 5); the single-click popover
-                // from the first click yields to it
+              onTileDoubleClick={(angle) => {
+                // D-54: tiles are WORKING objects — double-click opens the
+                // environment focused on that view. (The D-52 view-only
+                // viewer remains the double-click for image-class cards:
+                // popped views, future image nodes.) The single-click
+                // popover from the first click yields to it.
                 sheet.setPopoverAngle(null);
-                const slot = sheet.tiles.find((t) => t.angle === angle);
-                window.dispatchEvent(
-                  new CustomEvent("board-open-image-viewer", {
-                    detail: {
-                      url,
-                      label: `${data.label ?? "Cast"} · ${slot?.label ?? angle}`,
-                    },
-                  }),
-                );
+                openEdit(false, angle);
               }}
               onGhostClick={() => openEdit(true)}
             />
@@ -666,7 +675,8 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
                           onClick={() => {
                             close();
-                            openEdit();
+                            // D-54: focused on THIS view, same as tile dblclick
+                            openEdit(false, slot.angle);
                           }}
                         >
                           Open in environment
