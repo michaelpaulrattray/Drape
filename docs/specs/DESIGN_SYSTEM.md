@@ -222,7 +222,7 @@ Cast root: `prompt` at 22px + `image` at 40px (the image pin maps to the existin
 
 ### 5.5 `NodeLabelRow`
 
-Above-card label row, 10px ink-faint; type/title left (`Cast · Maya R.` / `Cast · Maya R. · Full front`), engine right (from `provenance.engine` — never hardcode an engine name; pass 1 has one engine, the slot is the multi-engine door). Selected nodes upgrade the type label to ink-soft. Implementation as in the original draft. **Zoom behavior per §12** (hidden below the mid tier).
+Above-card label row, 10px ink-faint; the label is the **NAME** — label grammar per the founder's drive-2 ruling: `jerrryt` / `jerrryt · Full front` / `jerrryt · Draft`; the type placeholder "Cast" appears only on unnamed empty nodes. Selected nodes upgrade the label to ink-soft. Renders at every zoom (D-37 constancy). **The engine right-slot is DEAD** (founder, C7 label pass): raw `provenance.engine` ids (`package`, `gemini-3-pro-image-preview`) were the D-41 leak class on chrome, and long ids truncated the name. `provenance.engine` stays for Info/audit; a designed engine vocabulary returns with pass-3 multi-engine (D-36c's control-strip dropdown). Drive invariant O4b guards the chrome permanently.
 
 ### 5.6 `CanvasNodeShell`
 
@@ -232,9 +232,9 @@ The generic white card every node composes. `relative bg-canvas-surface rounded-
 
 Prompt row at the card bottom: single-line input + right-aligned action button. States: `empty` (placeholder, Run disabled-ghost until input exists), `ready` (Run dark pill **with adjacent `CostLabel`**, §5.15), `generating` (input disabled, "Running" ghost), `complete` (button reads "Edit" → navigates to studio). `Enter` submits. Implementation as in the original draft, with one correction: in the `empty` state the Run button is **ghosted/disabled** (Run enables only when prompt text or a set attribute exists — foundations 3a); the original draft's "empty: Run dark and active, flashes red on press" contradicted the foundations and is dropped.
 
-### 5.8 `NodeControlStrip`
+### 5.8 `NodeControlStrip` *(DEAD for cast nodes — R6 consolidation, recorded C8)*
 
-Below-card pill strip, selected nodes only. Segments: `label` (plain), `dropdown`/`action` (buttons, hover inset). Root cast: `[+ Views] [vN] [···]`. View cast: `[vN] [···]` — plus a small pin glyph segment when `pinned` (filled `Pin` icon 10px, tooltip "Pinned — kept as finished work"). No view-switcher segment exists on any cast strip. Implementation as in the original draft.
+**Superseded by the R6 node-chrome consolidation (founder-directed, drive 2):** two toolbars around one node was archaic. The strip's contextual segments (the D-51 package verb, ledger `vN`, `{N} stale`, `···`) now ride as **trailing text segments on the ONE below-node pill** (§5.10) after a hairline divider. No separate strip renders on any cast node. The segment *behaviors* are unchanged (D-51 verb states, v-chip opens history at >1, stale segment → bulk-refresh dialog).
 
 ### 5.9 `NodeAttributeBlock` — identity attributes below the card *(rewritten per the VC1.5 ruling, 2026-07-10)*
 
@@ -270,11 +270,11 @@ Formatters:
 
 When a value was set by the parser rather than the user, it renders identically — parser output and user output are the same attribute surface; provenance of the value is not visually distinguished in pass 1.
 
-### 5.10 `NodeFloatingToolbar`
+### 5.10 `NodeFloatingToolbar` *(amended — R6 consolidation, recorded C8)*
 
-Above-card pill, selected + non-empty nodes only. Six 28px icon buttons: Rerun (`RefreshCw`), Variations (`Shuffle`), Duplicate (`Copy`), Download (`Download`), Delete (`Trash2`), Info (`Info`). Disabled = `opacity-40 pointer-events-none`, tooltip explains. `onMouseDown` stops propagation (React Flow drag). Tooltips: `bg-canvas-ink text-canvas-surface`, no shadow. Implementation as in the original draft.
+**THE node action pill — ONE pill per node, anchored BELOW it** (the R6 consolidation; the D-50 group toolbar keeps its ABOVE placement via `position="top"`). 28px icon buttons: Rerun (`RefreshCw`), Variations (`Shuffle`), **Edit (`Pencil`)**, Duplicate (`Copy`), Download (`Download`), Delete (`Trash2`), Info (`Info`) — type-scoped per node class. After a hairline divider, the **trailing contextual text segments** absorbed from the dead `NodeControlStrip` (§5.8): the D-51 package verb, ledger `vN`, `{N} stale`, `···`. Disabled = `opacity-40 pointer-events-none`, tooltip explains. `onMouseDown` stops propagation (React Flow drag). Tooltips: `bg-canvas-ink text-canvas-surface`, no shadow. Counter-scaled screen-legible below 1× zoom (§12).
 
-View-node action list keeps all six with Variations/Duplicate disabled (`"Not available on view nodes"`). **Root-node Rerun does not fire immediately — it opens the `ForkRecastPopover` (§7.4)** per foundations 3f.
+Popped views (VC-R5 fix 3 + the D-55 slimming ruling): first slot **Return to sheet** (`Minimize2`), then Download · Delete · Info — Edit is reserved for the root; Rerun is a root verb (views regenerate via per-tile Refresh, foundations 3e). Root Rerun opens the `ForkRecastPopover` (§7.4), never fires immediately. The group toolbar (D-50) carries Duplicate N · Download all · Focus · **Tidy up (`LayoutGrid`, D-50.3)** · reserved Run all · Delete N.
 
 ### 5.11 `CastNode` — the single React Flow node type for casts
 
@@ -298,9 +298,9 @@ export interface CastNodeData {
 Composition (**ratified 2026-07-11:** canonical/library casts **280** wide, true `cast_view` cards **200**; the image area is a **3:4 portrait** — the measured generation ratio, 896×1200 — through all states including empty and generating, so geometry never shifts and cover never crops):
 
 - `NodeFloatingToolbar` — selected && !isEmpty, **suppressed when selection >1 (D-50 — the group toolbar replaces it)**. **Amended with R4/R5 (supersedes the pre-D-35 line):** post-D-35 every placed cast is `library_cast` provenance and is **root-grade for the grammar** — Rerun (→ ForkRecastPopover; recast sealed on minted per D-43), Variations, Duplicate, Download, Delete, Info all active. Popped-out views (`cast_view`): Rerun/Variations disabled with explanatory tooltips.
-- `NodeLabelRow` — root `Cast · {name}` (`· Draft` per D-42); popped view `Cast · {name} · {viewLabel}`. Engine right-slot only when present.
+- `NodeLabelRow` — the NAME per the label grammar (§5.5): `jerrryt` / `jerrryt · Draft` (D-42) / `jerrryt · Full front`. No engine slot (C7 label pass).
 - `CanvasNodeShell` containing: `ConnectionDot`s, `NodeStatusBadge` when `status` set, and the image area — `CastImageArea` (§5.12) for single-image states, **`CharacterSheetImageArea` (§5.17) once the model's package has ≥2 filled slots**. *(The inline prompt and attribute block were deleted by D-33/D-34 — the picker modal is the front door.)*
-- Below, when selected: `NodeControlStrip` (!isEmpty), carrying the D-51 package verb (`Build comp card` / `Complete card` / nothing — §5.17).
+- Below, when selected: the ONE node pill (§5.10 as consolidated) — icon verbs + the trailing D-51 package verb (`Build comp card` / `Complete card` / nothing — §5.17), `vN`, `{N} stale`, `···`.
 
 State reference for `useCastNodeController` (the hook binds node → `boardOps` + `useGenerationJobs` + tRPC; all branching and mutation plumbing lives there, the component stays thin):
 

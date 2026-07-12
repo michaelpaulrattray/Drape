@@ -37,6 +37,29 @@ export async function getUserBoards(userId: number, status: "active" | "archived
     .orderBy(desc(boards.updatedAt));
 }
 
+/**
+ * Model ids with an ALIVE placement on any of the user's active boards —
+ * the Recent Work provenance rule (Group 6j item 4): a canvas-born cast is
+ * represented by its BOARD in the feed (the board IS the recent work);
+ * only standalone casts appear individually.
+ */
+export async function getPlacedModelIds(userId: number): Promise<Set<number>> {
+  const db = (await getDb())!;
+  const rows = await db
+    .selectDistinct({ modelId: boardItems.sourceModelId })
+    .from(boardItems)
+    .innerJoin(boards, eq(boardItems.boardId, boards.id))
+    .where(
+      and(
+        eq(boards.userId, userId),
+        eq(boards.status, "active"),
+        isNull(boardItems.deletedAt),
+        sql`${boardItems.sourceModelId} IS NOT NULL`,
+      ),
+    );
+  return new Set(rows.map((r) => r.modelId!).filter((id) => id != null));
+}
+
 export async function updateBoard(
   boardId: number,
   data: Partial<Pick<InsertBoard, "name" | "description" | "thumbnailUrl" | "thumbnailKey" | "status" | "viewportX" | "viewportY" | "viewportZoom">>

@@ -85,8 +85,8 @@ export function CreditModal({ open, onOpenChange, action, amount, onAmountChange
       <DialogContent className="bg-white border-[#E5E5E5] text-[#0A0A0A]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Coins className={action === "add" ? "text-emerald-600" : "text-amber-600"} />
-            {action === "add" ? "Add Credits" : "Deduct Credits"}
+            <Coins className="text-[#666]" />
+            {action === "add" ? "Add credits" : "Deduct credits"}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
@@ -113,12 +113,13 @@ export function CreditModal({ open, onOpenChange, action, amount, onAmountChange
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} className="border-[#E5E5E5] text-[#666]">Cancel</Button>
+          {/* R6 pile (b): money actions wear the house ink, not a color code */}
           <Button
             onClick={onConfirm}
             disabled={!amount || !reason.trim() || isPending}
-            className={action === "add" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-amber-600 hover:bg-amber-700 text-white"}
+            className="bg-[#0A0A0A] hover:bg-[#0A0A0A]/90 text-white"
           >
-            {isPending ? "Processing..." : action === "add" ? "Add Credits" : "Deduct Credits"}
+            {isPending ? "Processing..." : action === "add" ? "Add credits" : "Deduct credits"}
           </Button>
         </DialogFooter>
       </DialogContent>

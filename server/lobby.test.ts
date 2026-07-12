@@ -148,6 +148,22 @@ describe("mergeRecentWork", () => {
     expect(result.map((r) => (r.tool === "casting" ? r.modelId : -1)).sort((a, b) => a - b)).toEqual([9, 10]);
   });
 
+  it("represents canvas-born casts by their BOARD only (Group 6j item 4)", () => {
+    const now = new Date();
+    const placedCast = { id: 20, name: "Jerry", thumbnailUrl: "https://example.com/j.png", assetCount: 4, updatedAt: now };
+    const standaloneCast = { id: 21, name: "Vera", thumbnailUrl: "https://example.com/v.png", assetCount: 4, updatedAt: now };
+    const result = mergeRecentWork(
+      [boardRow(1, now)],
+      [],
+      [placedCast, standaloneCast],
+      12,
+      new Set([20]), // Jerry lives on board 1 — the board row represents him
+    );
+    const castingIds = result.filter((r) => r.tool === "casting").map((r) => (r as { modelId: number }).modelId);
+    expect(castingIds).toEqual([21]);
+    expect(result.some((r) => r.tool === "canvas")).toBe(true);
+  });
+
   it("maps per-tool card fields onto the union shape", () => {
     const now = new Date();
     const [canvas, wardrobe, casting] = mergeRecentWork(

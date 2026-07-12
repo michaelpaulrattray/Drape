@@ -489,7 +489,14 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 ### R6 C8-flex candidate
 
-4. **Recent Work draft rule**: canvas-born casts are represented by their BOARD only (the board IS the recent work); standalone-born casts appear individually. One provenance check on the feed source. *Take in C8 only if genuinely trivial; else joins the L batch.*
+4. **Recent Work draft rule**: canvas-born casts are represented by their BOARD only (the board IS the recent work); standalone-born casts appear individually. One provenance check on the feed source. *Take in C8 only if genuinely trivial; else joins the L batch.* **TAKEN in C8** — `getPlacedModelIds` (alive placements on active boards) filters the casting source in `mergeRecentWork`; unit-covered.
+
+### C8 record (docs batch + closures, 2026-07-13)
+
+- **Docs reconciled:** DS §5.5 (label grammar + engine-slot death), §5.8 (`NodeControlStrip` dead — segments ride the one node pill), §5.10 (consolidated pill + popped-view slimming + group Tidy up), §5.11 touches, §11.1 (comp-card captions, implemented) / §11.2 (ruling-A quiet line); build plan R6 build record + R7 additions (6j items 1–3, deploy-version-skew note) + migration-0004 gate. `HANDOFF_C6.md` deleted (served its purpose; git history keeps it).
+- **Toast audit (D-40):** no violations remain on in-scope surfaces — survivors are clipboard/download confirmations, closed-surface outcomes, and cross-surface notices (all sanctioned classes); `ModelEditorOverlay`'s toasts are in the orphaned file R7 sweeps. The takeover's zero-edit "No identity changes yet" stays as the E1b-asserted quiet note.
+- **Admin named debts (R6 pile b):** the emerald Add-Credits button (+ the credit modal's emerald/amber confirms) now wear the house ink; labels sentence-cased. The "stock error toast in admin" debt was already resolved app-wide by D-40's sonner restyle (one Toaster, verified) — recorded, no change needed.
+- **Engine-slot death (C7, founder-flagged):** raw `provenance.engine` ids on node chrome were the D-41 leak class; the label row is the NAME alone. Drive O4b guards it.
 
 ### Named batch — LOBBY & HOME POLISH *(post-R7 or alongside dogfood; founder briefs it properly when the design ideas form — these are the collected seeds)*
 

@@ -10,7 +10,7 @@
  */
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { getUserBoards } from "../db/boards";
+import { getUserBoards, getPlacedModelIds } from "../db/boards";
 import { getRecentUserSessions } from "../db/wardrobe";
 import { getUserDraftModelsWithThumbnail, getUserMintedModelsWithThumbnail } from "../db/models";
 import { DRAFT_AUTO_NAME } from "../lib/boardOps";
@@ -68,13 +68,19 @@ export function mergeRecentWork(
   sessions: WardrobeSessionRow[],
   casts: CastFeedRow[],
   limit: number,
+  /** Group 6j item 4 (C8): model ids alive on the user's active boards —
+   *  a canvas-born cast is represented by its BOARD row only (the board IS
+   *  the recent work); standalone casts appear individually. */
+  placedModelIds: Set<number> = new Set(),
 ): RecentWorkItem[] {
   // A2(b) as corrected by VC-R5 F3: the feed's casting rows are NAMED casts —
   // named drafts and minted models alike. Unnamed drafts (D-42's candidate
   // marker — every canvas cast/fork/variation) stay out: candidates live on
   // their board, and six of them were displacing the boards/sessions the
   // user actually returns to. The Models library is untouched.
-  const namedCasts = casts.filter((c) => c.name && c.name !== DRAFT_AUTO_NAME);
+  const namedCasts = casts.filter(
+    (c) => c.name && c.name !== DRAFT_AUTO_NAME && !placedModelIds.has(c.id),
+  );
   const items: RecentWorkItem[] = [
     ...boards.map((b): RecentWorkItem => ({
       tool: "canvas",
@@ -117,11 +123,12 @@ export const lobbyRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? DEFAULT_LIMIT;
-      const [boards, sessions, drafts, minted] = await Promise.all([
+      const [boards, sessions, drafts, minted, placedModelIds] = await Promise.all([
         getUserBoards(ctx.user.id, "active"),
         getRecentUserSessions(ctx.user.id),
         getUserDraftModelsWithThumbnail(ctx.user.id, CASTS_LIMIT),
         getUserMintedModelsWithThumbnail(ctx.user.id, CASTS_LIMIT),
+        getPlacedModelIds(ctx.user.id),
       ]);
       // One casting source: named drafts + minted models (F3). The merge's
       // named-filter drops unnamed candidates; minted are named at mint.
@@ -135,6 +142,6 @@ export const lobbyRouter = router({
           updatedAt: m.updatedAt,
         })),
       ];
-      return mergeRecentWork(boards, sessions, casts, limit);
+      return mergeRecentWork(boards, sessions, casts, limit, placedModelIds);
     }),
 });

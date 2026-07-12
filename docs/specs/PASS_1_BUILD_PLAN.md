@@ -158,11 +158,19 @@ Two named halves (restyle slot per founder ruling 2026-07-11 — not an unschedu
 
 Gate: full gates + studio smoke.
 
+> **R6 build record (C-slices, 2026-07-12/13 — Group 6j is the rulings ledger):**
+> - **C1–C5** (VC-R6a/b): environment restyle in place (DS §13 lifted components, panel header, donut, viewer chrome), R-1 FailedSlot red, R-2 spatial fallback (camera on the existing layout), R-3 Save/Cast anchor weights, R-4 shell unification (one chrome, two doors; wardrobe inherits, internals untouched), R-5 spawn-dot rename, D-53 rider (A1 stage 2 + A3 restore/thumb-strip + legacy undo retired), five VC-R6b fixes, four drive-2 fixes.
+> - **C6**: THE floor (R-7 one field+dot pair, R-9 dot step, ElevenLabs 24px rhythm), node-chrome consolidation (ONE below-node pill — DS §5.8/§5.10 amended), popped-view slimming, paste-selects-copies, D-55 stays-draft views (+ paid drive invariant Y), label grammar, **Tidy up (D-50.3, drive Z)**, **D-54 dblclick routing (drive N6/N7)**, **D-45(2) board header popover**, **notes pass (R-6 monochrome, drive I)**, **A4 belt-slimming rider** (export → ··· menu; NextStepChip/useCastingViewGeneration/nextStepOverlay deleted; casting menu-Retry retired; mask strokes monochrome halo; dead stage-lock plumbing removed per D-46 R7 log 4).
+> - **C7**: picker N+1 (two queries), D-27 live board thumbnails (debounced), AddNodeMenu reconciled to ruling B (Cast · Note; dead wardrobe/upload rows + legacy right panel deleted), **label pass — engine slot dead on all node chrome (founder note; drive O4b)**, **D-9 first-run intro** (`canvasIntroSeen` migration 0004 — **prod migration gates the deploy sync**; drive H1–H4), DS §11.1/§11.2 reconciled.
+> - **Founder confirmations en route:** R-7 floor verified unified across board/viewer/studio (screenshot set `docs/specs/references/r7-floor-*.png`); intro reference `d9-first-run-intro.png`.
+
 ## R7 — Hardening + success-criteria sweep → dogfood
 
 - Walk all 15 success criteria in `CANVAS_FOUNDATIONS.md` §10 (as rewritten in R5/R7 for the takeover + sheet model) on a real board; fails become fix-or-log decisions with the founder.
 - Full-suite gates; `pnpm build` sanity; headless golden path (drop → picker → cast in takeover → mint → land → views → stale → edit → back).
-- Sweep: dead code from retired components (`ModelEditorOverlay`, `NodeContextMenu` remnants, `AddNodeMenu` if superseded), TODO audit, `DECISION_LOG.md` updated with checkpoint-driven amendments.
+- Sweep: dead code from retired components (`ModelEditorOverlay`, `NodeContextMenu` remnants, `CanvasToolbar` — unrendered since the C7 menu reconcile), TODO audit, `DECISION_LOG.md` updated with checkpoint-driven amendments.
+- **Group 6j additions (founder driving notes, 2026-07-13):** model-deletion semantics as a cascade DESIGN question (placements + D-12 snapshots reference deleted assets; extends to garments/looks); back-navigation audit (library → draft → studio → back lands at lobby HOME, not the entry point); profile-popout wiring audit (settings/billing/security/usage — broken items are R7, redesign is L6).
+- **Deploy-version-skew note (C8):** every push to `local-migration` deploys mid-session for anyone driving prod — a client bundle from deploy N calling a server from deploy N+1 (or racing a migration) is live skew. Pass-1 exposure is founder-only and tolerable; before dogfooding widens, R7 should decide the discipline (deploy windows, or tRPC input changes treated as breaking during rapid pushes; migration-before-code is already law — 0003/0004 precedent).
 - Team dogfooding starts; friction notes accumulate for the polish pass.
 
 ---
@@ -171,6 +179,7 @@ Gate: full gates + studio smoke.
 
 - Hard chain: R1 → R3 (Edit needs the environment) → R3b (tier dialog sits in the takeover; the D-11 dialog shell precedes it) → R5 (the sheet reads R3b's package; stale flow needs R3's identity events). R2 ∥ R3 (server parser vs edit path — different layers). R4 mostly independent after R3 (rerun/recast route through the identity dialog). R6's restyle touches R1's surfaces — sequence after VC-R1 feedback settles. Everything → R7.
 - **Prod migration timing:** R3b added migration `0003` (additive `model_assets` changes: `threeQuarter` enum value + `pinned`/`status`/`provenance` columns; applied to dev 2026-07-11). It must run against prod (`pnpm db:push` with `MYSQL_PUBLIC_URL` pasted inline) **before** `local-migration` syncs past R3b — the new `createModelAsset` insert names those columns, so deploying first breaks every view generation. Deploys continue per-milestone to `local-migration` otherwise.
+- **Migration `0004` (C7, `users.canvasIntroSeen`) has the same gate:** applied to dev 2026-07-13; **prod pending**. `local-migration` is deliberately held at the last pre-0004 commit until the founder runs `pnpm db:push` against prod (MYSQL_PUBLIC_URL inline) — `auth.me` selects the full users row, so deploying first breaks every session lookup.
 
 ## Risks, with handles
 

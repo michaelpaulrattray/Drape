@@ -363,13 +363,15 @@ function CreditsTabContent({
         </div>
       </div>
       <div className="flex gap-2">
-        <Button onClick={onAddCredits} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+        {/* R6 pile (b): a colored action is off-language — the primary wears
+            ink like everywhere else in the house; green said nothing */}
+        <Button onClick={onAddCredits} className="bg-[#0A0A0A] hover:bg-[#0A0A0A]/90 text-white">
           <Plus className="w-4 h-4 mr-2" />
-          Add Credits
+          Add credits
         </Button>
         <Button onClick={onDeductCredits} variant="outline" className="border-[#E5E5E5] text-[#666] hover:bg-[#F0F0F0]">
           <Minus className="w-4 h-4 mr-2" />
-          Deduct Credits
+          Deduct credits
         </Button>
       </div>
     </div>
