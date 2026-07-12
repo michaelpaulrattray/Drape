@@ -97,6 +97,11 @@ type BoardCanvasProps = {
   onClearSelectionRef?: (clear: () => void) => void;
   /** Move-undo restore: set node positions imperatively */
   onSetPositionsRef?: (setter: (moves: Array<{ itemId: number; x: number; y: number }>) => void) => void;
+  /** D-50.3 Tidy up: read positions + MEASURED dims for a set of items (the
+   *  pack must respect real rendered heights, not stored ones) */
+  onGetNodeGeometryRef?: (
+    getter: (itemIds: number[]) => Array<{ itemId: number; x: number; y: number; width: number; height: number }>,
+  ) => void;
   /** VC-R4 ruling R1: 'select' = drag-on-empty marquees (Space or middle/right
    *  drag pans); 'hand' = drag pans. */
   pointerTool?: 'select' | 'hand';
@@ -104,7 +109,7 @@ type BoardCanvasProps = {
    *  ambient per DS §8; full opacity when either endpoint is selected. */
   lineageEdges?: Array<{ id: number; source: number; target: number; relation: string }>;
   /** D-50 group actions (Focus is handled internally via fitView). */
-  onGroupAction?: (action: 'duplicate' | 'download' | 'delete', itemIds: number[]) => void;
+  onGroupAction?: (action: 'duplicate' | 'download' | 'delete' | 'tidy', itemIds: number[]) => void;
   /** D-50.1 parity surface: right-click on the multi-selection. */
   onSelectionContextMenu?: (itemIds: number[], position: { x: number; y: number }) => void;
 };
@@ -280,6 +285,7 @@ export function BoardCanvas({
   onSelectAllRef,
   onClearSelectionRef,
   onSetPositionsRef,
+  onGetNodeGeometryRef,
   pointerTool = 'select',
   lineageEdges,
   onGroupAction,
@@ -399,8 +405,25 @@ export function BoardCanvas({
         }),
       );
     });
+    onGetNodeGeometryRef?.((itemIds) => {
+      const wanted = new Set(itemIds.map((id) => `item-${id}`));
+      const out: Array<{ itemId: number; x: number; y: number; width: number; height: number }> = [];
+      for (const n of nodesRef.current) {
+        if (!wanted.has(n.id)) continue;
+        const itemId = parseInt(n.id.replace('item-', ''), 10);
+        if (isNaN(itemId)) continue;
+        out.push({
+          itemId,
+          x: n.position.x,
+          y: n.position.y,
+          width: n.measured?.width ?? 280,
+          height: n.measured?.height ?? 420,
+        });
+      }
+      return out;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onNudgeSelectionRef, onSelectAllRef, onClearSelectionRef, onSetPositionsRef]);
+  }, [onNudgeSelectionRef, onSelectAllRef, onClearSelectionRef, onSetPositionsRef, onGetNodeGeometryRef]);
 
   /**
    * Smart sync: only update React Flow nodes when the item LIST actually changes

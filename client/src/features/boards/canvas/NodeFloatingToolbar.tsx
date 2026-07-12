@@ -11,7 +11,7 @@
  * with explanatory tooltips.
  */
 import { cn } from "@/lib/utils";
-import { RefreshCw, Shuffle, Copy, Download, Trash2, Info, Maximize, Play, Minimize2, Pencil } from "lucide-react";
+import { RefreshCw, Shuffle, Copy, Download, Trash2, Info, Maximize, Play, Minimize2, Pencil, LayoutGrid } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -23,7 +23,7 @@ import { useCanvasZoom, screenLegibleScale } from "./canvasZoom";
 export interface NodeToolbarAction {
   // focus/runAll belong to the D-50 group toolbar (GroupSelectionOverlay);
   // collapse is the popped-view slot (VC-R5 fix 3); edit is the pen (R6)
-  id: "rerun" | "variations" | "duplicate" | "download" | "delete" | "info" | "focus" | "runAll" | "collapse" | "edit";
+  id: "rerun" | "variations" | "duplicate" | "download" | "delete" | "info" | "focus" | "runAll" | "collapse" | "edit" | "tidy";
   label: string;
   onClick: () => void;
   disabled?: boolean;
@@ -43,6 +43,7 @@ const ICONS: Record<
   runAll: Play,
   collapse: Minimize2,
   edit: Pencil,
+  tidy: LayoutGrid,
 };
 
 export function NodeFloatingToolbar({

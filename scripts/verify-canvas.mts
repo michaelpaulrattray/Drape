@@ -1687,6 +1687,119 @@ let seededItemId = 0;
   }
 }
 
+// ── Invariant Z: Tidy up (D-50.3) — FREE ────────────────────────────────────
+// Row-major pack over measured dims, y-then-x reading order, 60px gutters,
+// row height = tallest in row — and ONE Cmd+Z reverses the WHOLE tidy
+// (ratified requirement, not an implementation detail).
+{
+  // Start from board truth: earlier legs clean up via direct DB writes,
+  // which leaves client-cache ghost nodes — tidying a ghost makes its
+  // moveNodes error → refetch → the ghost vanishes mid-leg and the
+  // before/after comparison lies (first Z run, item ghosted by X cleanup)
+  await conn.execute(`UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`, [boardId]);
+  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
+  await sleep(1000);
+  await page.keyboard.press("Escape");
+  await sleep(200);
+  await page.keyboard.down("Control");
+  await page.keyboard.press("a");
+  await page.keyboard.up("Control");
+  await sleep(500);
+
+  const readGeometry = () =>
+    page.evaluate(() => {
+      const out: Array<{ itemId: number; x: number; y: number; w: number; h: number }> = [];
+      for (const el of document.querySelectorAll<HTMLElement>(".react-flow__node.selected")) {
+        const id = parseInt((el.getAttribute("data-id") ?? "").replace("item-", ""), 10);
+        const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(el.style.transform ?? "");
+        if (isNaN(id) || !m) continue;
+        out.push({ itemId: id, x: parseFloat(m[1]), y: parseFloat(m[2]), w: el.offsetWidth, h: el.offsetHeight });
+      }
+      return out;
+    });
+
+  const before = await readGeometry();
+  const tidyClicked = await page.evaluate(() => {
+    const b = [...document.querySelectorAll("button")].find(
+      (x) => x.getAttribute("aria-label") === "Tidy up",
+    ) as HTMLElement | undefined;
+    b?.click();
+    return !!b;
+  });
+  check("Z1 Tidy up reachable on the group toolbar", tidyClicked);
+
+  if (tidyClicked && before.length >= 2) {
+    await sleep(600);
+    const after = await readGeometry();
+    const byId = new Map(after.map((g) => [g.itemId, g]));
+    // The pack contract: rows share a y; within a row consecutive nodes sit
+    // exactly 60px apart; every row starts at the same left edge; row tops
+    // step by tallest-in-previous-row + 60.
+    const GUTTER = 60;
+    const rows = new Map<number, Array<{ x: number; w: number; h: number }>>();
+    for (const g of after) {
+      const row = rows.get(g.y) ?? [];
+      row.push(g);
+      rows.set(g.y, row);
+    }
+    const rowYs = [...rows.keys()].sort((a, b) => a - b);
+    const leftEdge = Math.min(...after.map((g) => g.x));
+    let packed = true;
+    let expectY = rowYs[0];
+    for (const y of rowYs) {
+      if (Math.abs(y - expectY) > 1) packed = false;
+      const row = rows.get(y)!.sort((a, b) => a.x - b.x);
+      if (Math.abs(row[0].x - leftEdge) > 1) packed = false;
+      for (let i = 1; i < row.length; i++) {
+        if (Math.abs(row[i].x - (row[i - 1].x + row[i - 1].w + GUTTER)) > 1) packed = false;
+      }
+      expectY = y + Math.max(...row.map((g) => g.h)) + GUTTER;
+    }
+    check("Z2 tidy packs row-major with 60px gutters", packed, JSON.stringify(after));
+
+    // Persistence: the batched moveNodes must reach the DB
+    let persisted = false;
+    const sample = after.find((g) => g.itemId > 0);
+    for (let i = 0; i < 16 && !persisted && sample; i++) {
+      await sleep(500);
+      const [rows2] = await conn.execute(
+        `SELECT positionX, positionY FROM board_items WHERE id = ?`,
+        [sample.itemId],
+      );
+      const r = (rows2 as Array<{ positionX: number; positionY: number }>)[0];
+      if (r && Math.abs(r.positionX - sample.x) <= 1 && Math.abs(r.positionY - sample.y) <= 1) persisted = true;
+    }
+    check("Z3 tidy positions persisted (one batched moveNodes)", persisted);
+
+    // ONE Cmd+Z reverses the WHOLE tidy
+    await page.keyboard.down("Control");
+    await page.keyboard.press("z");
+    await page.keyboard.up("Control");
+    await sleep(600);
+    const restored = await page.evaluate(() => {
+      const out: Array<{ itemId: number; x: number; y: number }> = [];
+      for (const el of document.querySelectorAll<HTMLElement>(".react-flow__node")) {
+        const id = parseInt((el.getAttribute("data-id") ?? "").replace("item-", ""), 10);
+        const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(el.style.transform ?? "");
+        if (isNaN(id) || !m) continue;
+        out.push({ itemId: id, x: parseFloat(m[1]), y: parseFloat(m[2]) });
+      }
+      return out;
+    });
+    const restoredById = new Map(restored.map((g) => [g.itemId, g]));
+    const allBack = before.every((b) => {
+      const r = restoredById.get(b.itemId);
+      return r && Math.abs(r.x - b.x) <= 1 && Math.abs(r.y - b.y) <= 1;
+    });
+    check("Z4 ONE Cmd+Z reverses the whole tidy", allBack, JSON.stringify({ before, restored: [...restoredById.values()] }));
+    // The move-undo already persisted the restore through the same path;
+    // nothing to clean up — the board is back where this leg found it.
+  }
+  await page.keyboard.press("Escape");
+  await sleep(200);
+}
+
 // ── Invariant Y: the walkable loop (trap ruling (a)) — PAID (~1600cr) ───────
 // fork → views as DRAFT (mint:false — stays draft, gates still fire) →
 // identity iterate (free on drafts) → siblings STALE → bulk refresh offer →

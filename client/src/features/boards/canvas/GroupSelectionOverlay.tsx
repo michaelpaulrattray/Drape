@@ -32,7 +32,7 @@ const GROUP_PAD = 16;
 export function GroupSelectionOverlay({
   onGroupAction,
 }: {
-  onGroupAction: (action: "duplicate" | "download" | "focus" | "delete", itemIds: number[]) => void;
+  onGroupAction: (action: "duplicate" | "download" | "focus" | "delete" | "tidy", itemIds: number[]) => void;
 }) {
   // One subscription keyed on a bounds signature — drags re-render it, but
   // the math is a handful of comparisons
@@ -85,6 +85,9 @@ export function GroupSelectionOverlay({
               { id: "duplicate", label: `Duplicate ${itemIds.length}`, onClick: () => onGroupAction("duplicate", itemIds) },
               { id: "download", label: "Download all", onClick: () => onGroupAction("download", itemIds) },
               { id: "focus", label: "Focus", onClick: () => onGroupAction("focus", itemIds) },
+              // D-50.3: row-major pack over measured dims; Cmd+Z reverses the
+              // whole tidy (one move-undo entry — ratified requirement)
+              { id: "tidy", label: "Tidy up", onClick: () => onGroupAction("tidy", itemIds) },
               {
                 id: "runAll",
                 label: "Run all — arrives with consumer nodes",

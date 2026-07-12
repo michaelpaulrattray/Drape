@@ -4,14 +4,15 @@
  * · Focus · Delete, plus the reserved Run all slot (D-50.4).
  */
 import { useEffect, useRef } from "react";
-import { Copy, Download, Maximize, Play, Trash2, type LucideIcon } from "lucide-react";
+import { Copy, Download, LayoutGrid, Maximize, Play, Trash2, type LucideIcon } from "lucide-react";
 
-export type GroupAction = "duplicate" | "download" | "focus" | "delete";
+export type GroupAction = "duplicate" | "download" | "focus" | "delete" | "tidy";
 
 const ITEMS: Array<{ action: GroupAction | "runAll"; label: (n: number) => string; icon: LucideIcon; danger?: boolean; disabled?: boolean }> = [
   { action: "duplicate", label: (n) => `Duplicate ${n}`, icon: Copy },
   { action: "download", label: () => "Download all", icon: Download },
   { action: "focus", label: () => "Focus", icon: Maximize },
+  { action: "tidy", label: () => "Tidy up", icon: LayoutGrid },
   { action: "runAll", label: () => "Run all", icon: Play, disabled: true },
   { action: "delete", label: (n) => `Delete ${n}`, icon: Trash2, danger: true },
 ];

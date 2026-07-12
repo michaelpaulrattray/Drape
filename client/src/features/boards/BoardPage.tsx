@@ -103,6 +103,9 @@ function BoardPageImpl() {
   const selectAllRef = useRef<(() => void) | null>(null);
   const clearSelectionRef = useRef<(() => void) | null>(null);
   const setPositionsRef = useRef<((moves: Array<{ itemId: number; x: number; y: number }>) => void) | null>(null);
+  const nodeGeometryRef = useRef<
+    ((itemIds: number[]) => Array<{ itemId: number; x: number; y: number; width: number; height: number }>) | null
+  >(null);
   // Cmd+C/V alias Duplicate for same-board (D-39 ratification line 5)
   const clipboardRef = useRef<number[]>([]);
 
@@ -1059,7 +1062,7 @@ function BoardPageImpl() {
   handleDuplicateRef.current = handleDuplicateNode;
   // Group-action ref for the keyboard path (defined below; refs bridge the
   // declaration order the same way handleDuplicateRef does)
-  const handleGroupActionRef = useRef<(action: 'duplicate' | 'download' | 'delete', itemIds: number[]) => void>(() => {});
+  const handleGroupActionRef = useRef<(action: 'duplicate' | 'download' | 'delete' | 'tidy', itemIds: number[]) => void>(() => {});
 
   useEffect(() => {
     const onDuplicate = (e: Event) => {
@@ -1411,8 +1414,47 @@ function BoardPageImpl() {
   // ── D-50 group actions — one handler behind both surfaces (toolbar +
   // context menu; Focus never reaches here — it's viewport work in BoardCanvas)
   const handleGroupAction = useCallback(
-    (action: 'duplicate' | 'download' | 'delete', itemIds: number[]) => {
+    (action: 'duplicate' | 'download' | 'delete' | 'tidy', itemIds: number[]) => {
       switch (action) {
+        case 'tidy': {
+          // D-50.3 (banked v1 spec): row-major pack over MEASURED dims,
+          // reading-order sort (y then x), 60px gutters, row height = tallest
+          // node in row, wrapped at the selection's own footprint width.
+          // ONE batched moveNodes + ONE undo entry — Cmd+Z reverses the
+          // whole tidy (ratified requirement).
+          const geo = nodeGeometryRef.current?.(itemIds) ?? [];
+          if (geo.length < 2) break;
+          const GUTTER = 60;
+          const originX = Math.min(...geo.map((g) => g.x));
+          const originY = Math.min(...geo.map((g) => g.y));
+          const rowWidth = Math.max(
+            Math.max(...geo.map((g) => g.x + g.width)) - originX,
+            Math.max(...geo.map((g) => g.width)),
+          );
+          const sorted = [...geo].sort((a, b) => a.y - b.y || a.x - b.x);
+          const moves: Array<{ itemId: number; x: number; y: number }> = [];
+          let cursorX = originX;
+          let cursorY = originY;
+          let rowHeight = 0;
+          for (const g of sorted) {
+            if (cursorX > originX && cursorX + g.width > originX + rowWidth) {
+              cursorX = originX;
+              cursorY += rowHeight + GUTTER;
+              rowHeight = 0;
+            }
+            moves.push({ itemId: g.itemId, x: cursorX, y: cursorY });
+            cursorX += g.width + GUTTER;
+            rowHeight = Math.max(rowHeight, g.height);
+          }
+          const byId = new Map(geo.map((g) => [g.itemId, g]));
+          if (moves.every((m) => byId.get(m.itemId)!.x === m.x && byId.get(m.itemId)!.y === m.y)) break;
+          pushUndo({ kind: 'move', moves: geo.map((g) => ({ itemId: g.itemId, x: g.x, y: g.y })) });
+          setPositionsRef.current?.(moves);
+          for (const m of moves) recentMovesRef.current.set(m.itemId, { x: m.x, y: m.y });
+          const persistable = moves.filter((m) => m.itemId > 0);
+          if (persistable.length > 0) moveNodesMutation.mutate({ boardId, moves: persistable });
+          break;
+        }
         case 'duplicate': {
           // Single copy keeps the optimistic per-node path. A SET duplicates
           // with its relationships (VC-R6b bug 2): server-confirmed ids are
@@ -1762,6 +1804,9 @@ function BoardPageImpl() {
             }}
             onSetPositionsRef={(setter) => {
               setPositionsRef.current = setter;
+            }}
+            onGetNodeGeometryRef={(getter) => {
+              nodeGeometryRef.current = getter;
             }}
             pointerTool={activeTool === 'hand' ? 'hand' : 'select'}
             className="absolute inset-0"
