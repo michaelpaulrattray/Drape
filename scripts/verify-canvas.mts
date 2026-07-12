@@ -1575,6 +1575,93 @@ let seededItemId = 0;
   check("S4 Esc clears the group (container + toolbar gone)", cleared.selected === 0 && cleared.groupToolbars === 0, JSON.stringify(cleared));
 }
 
+// ── Invariant X: set-duplication carries lineage (VC-R6b bug 2) — FREE ──────
+// Duplicating a SET re-creates every edge whose BOTH endpoints were copied,
+// between the copies, with metadata carried — a duplicated parent+view pair
+// must not arrive lineage-less.
+{
+  // Seed one popped view (root → view + generated_from_cast edge)
+  const xPop = await page.evaluate(
+    async (bId: number, iId: number) => {
+      const r = await fetch("/api/trpc/boardOps.popOutView.execute", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { boardId: bId, itemId: iId, angle: "sideClose" } }),
+      });
+      const data = await r.json();
+      return data?.result?.data?.json ?? null;
+    },
+    boardId,
+    seededItemId,
+  );
+  if (!xPop?.itemId) {
+    console.log("SKIP  X — pop-out seed failed");
+  } else {
+    await sleep(1500);
+    const [maxRows] = await conn.execute(`SELECT MAX(id) AS m FROM board_items WHERE boardId = ?`, [boardId]);
+    const maxItemId = (maxRows as Array<{ m: number }>)[0].m;
+
+    // Select all, duplicate the set from the group toolbar
+    await page.keyboard.press("Escape");
+    await sleep(200);
+    await page.keyboard.down("Control");
+    await page.keyboard.press("a");
+    await page.keyboard.up("Control");
+    await sleep(600);
+    const dupClicked = await page.evaluate(() => {
+      const b = [...document.querySelectorAll("button")].find((x) =>
+        (x.getAttribute("aria-label") ?? "").startsWith("Duplicate"),
+      ) as HTMLElement | undefined;
+      b?.click();
+      return !!b;
+    });
+    check("X1 group Duplicate reachable", dupClicked);
+
+    // Poll: copies land AND a lineage edge exists between two NEW ids
+    let xState = { copies: 0, mappedEdges: 0, withMeta: 0 };
+    for (let i = 0; i < 24 && xState.mappedEdges === 0; i++) {
+      await sleep(500);
+      const [copyRows] = await conn.execute(
+        `SELECT COUNT(*) AS c FROM board_items WHERE boardId = ? AND id > ? AND deletedAt IS NULL`,
+        [boardId, maxItemId],
+      );
+      const [edgeRows] = await conn.execute(
+        `SELECT COUNT(*) AS c,
+                SUM(CASE WHEN metadata IS NOT NULL THEN 1 ELSE 0 END) AS m
+           FROM board_edges
+          WHERE boardId = ? AND relation = 'generated_from_cast'
+            AND sourceItemId > ? AND targetItemId > ?`,
+        [boardId, maxItemId, maxItemId],
+      );
+      xState = {
+        copies: (copyRows as Array<{ c: number }>)[0].c,
+        mappedEdges: Number((edgeRows as Array<{ c: number }>)[0].c),
+        withMeta: Number((edgeRows as Array<{ m: number | null }>)[0].m ?? 0),
+      };
+    }
+    check(
+      "X2 set duplicate lands copies WITH a mapped lineage edge (+ metadata)",
+      xState.copies >= 2 && xState.mappedEdges >= 1 && xState.withMeta >= 1,
+      JSON.stringify(xState),
+    );
+
+    // Cleanup: everything this leg created (copies + their edges + the seed)
+    await conn.execute(
+      `UPDATE board_items SET deletedAt = NOW() WHERE boardId = ? AND id > ?`,
+      [boardId, maxItemId],
+    );
+    await conn.execute(
+      `DELETE FROM board_edges WHERE boardId = ? AND (sourceItemId > ? OR targetItemId > ?)`,
+      [boardId, maxItemId, maxItemId],
+    );
+    await conn.execute(`UPDATE board_items SET deletedAt = NOW() WHERE id = ?`, [xPop.itemId]);
+    await conn.execute(`DELETE FROM board_edges WHERE id = ?`, [xPop.edgeId]);
+    await page.keyboard.press("Escape");
+    await sleep(200);
+  }
+}
+
 // ── Invariant F: fork landing stability — RUN_PAID_INVARIANTS=1 ────────────
 if (!paidEnabled("F")) {
   console.log("SKIP  F — paid invariant (set RUN_PAID_INVARIANTS=1; ~350 credits)");

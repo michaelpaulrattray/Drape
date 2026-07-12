@@ -349,6 +349,9 @@ export const boardOpsRouter = router({
         source: e.sourceItemId,
         target: e.targetItemId,
         relation: e.relation,
+        // Carried so set-duplication can re-create edges faithfully
+        // (viewAngle intent on generated_from_cast — D-30; VC-R6b bug 2)
+        metadata: (e.metadata ?? null) as Record<string, unknown> | null,
       }));
     }),
 

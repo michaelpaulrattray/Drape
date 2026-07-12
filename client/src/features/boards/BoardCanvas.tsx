@@ -159,6 +159,7 @@ function itemToNode(
         status: meta.status ?? null,
         pinned: meta.pinned === true,
         version: meta.version ?? 1, // stamped by landing ops (R3 fix — never hardcode)
+        onRename, // VC-R6b bug 4: cast nodes are renameable like every node
       } satisfies CastNodeData,
     } as CastFlowNode;
   }

@@ -51,6 +51,8 @@ export interface CastNodeData extends Record<string, unknown> {
   status?: NodeStatus | null;
   pinned?: boolean;
   version: number;
+  /** VC-R6b bug 4: rename commits through the host (boardOps label update) */
+  onRename?: (itemId: number, label: string) => void;
 }
 
 export type CastFlowNode = Node<CastNodeData, "cast">;
@@ -122,6 +124,31 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const tileAnchorRef = useRef<HTMLElement | null>(null);
   useRegisterCanvasLayer(`sheet-tile-${data.itemId}`, sheet.popoverAngle !== null);
 
+  // VC-R6b bug 4: cast nodes answer the rename event like every other node
+  const [renaming, setRenaming] = useState(false);
+  const [renameText, setRenameText] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onRenameEvent = (e: Event) => {
+      if ((e as CustomEvent<{ itemId: number }>).detail?.itemId === data.itemId) {
+        setRenameText(data.label ?? "");
+        setRenaming(true);
+        setTimeout(() => {
+          renameInputRef.current?.focus();
+          renameInputRef.current?.select();
+        }, 30);
+      }
+    };
+    window.addEventListener("board-rename-node", onRenameEvent);
+    return () => window.removeEventListener("board-rename-node", onRenameEvent);
+  }, [data.itemId, data.label]);
+  const commitRename = () => {
+    if (renaming && renameText.trim() && renameText.trim() !== data.label) {
+      data.onRename?.(data.itemId, renameText.trim());
+    }
+    setRenaming(false);
+  };
+
   // D-53 thumb-strip: the vN chip opens the angle's ledger history — filled
   // rows newest-first, "Use this version" on non-head rows (copy-forward)
   const [versionsOpen, setVersionsOpen] = useState(false);
@@ -159,18 +186,34 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         }]
       : [];
 
-  // D-43 v-chip ruling: hidden at v1; at >1 the chip itself opens history
+  // D-43 v-chip ruling: hidden at v1; at >1 the chip itself opens history.
+  // VC-R6b bug 1: model-backed nodes count from the LEDGER's headshot head
+  // (one version vocabulary, D-53) and the chip opens the headshot's
+  // thumb-strip popover — restore/refresh/iterate now move the chip. Non-
+  // model nodes keep the board-item version + VersionHistoryModal.
+  const ledgerChipVersion = modelReady ? sheet.headshotVersion : null;
   const versionSegment: ControlSegment[] =
-    (data.version || 1) > 1
-      ? [{
-          kind: "action",
-          content: `v${data.version}`,
-          onClick: () =>
-            window.dispatchEvent(
-              new CustomEvent("board-open-version-history", { detail: { itemId: data.itemId } }),
-            ),
-        }]
-      : [];
+    ledgerChipVersion !== null
+      ? ledgerChipVersion > 1
+        ? [{
+            kind: "action" as const,
+            content: `v${ledgerChipVersion}`,
+            onClick: () => {
+              tileAnchorRef.current = containerRef.current;
+              sheet.setPopoverAngle("frontClose");
+            },
+          }]
+        : []
+      : (data.version || 1) > 1
+        ? [{
+            kind: "action" as const,
+            content: `v${data.version}`,
+            onClick: () =>
+              window.dispatchEvent(
+                new CustomEvent("board-open-version-history", { detail: { itemId: data.itemId } }),
+              ),
+          }]
+        : [];
 
   // R4: the ··· segment opens the node menu (same surface as right-click)
   const openMenu = () => {
@@ -329,7 +372,28 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         )}
       </Popover>
 
-      <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
+      {renaming ? (
+        // VC-R6b bug 4: inline rename in the label row's place — Enter/blur
+        // commit through the host, Esc cancels (BoardItemNode's contract)
+        <div className="px-0.5 pb-1.5">
+          <input
+            ref={renameInputRef}
+            value={renameText}
+            onChange={(e) => setRenameText(e.target.value)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") commitRename();
+              if (e.key === "Escape") setRenaming(false);
+            }}
+            onBlur={commitRename}
+            className="w-full bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-sm px-1 py-0.5 text-canvas-xs text-canvas-ink outline-none"
+            placeholder="Name this cast..."
+          />
+        </div>
+      ) : (
+        <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
+      )}
 
       {/* Output pin — the lineage anchor AND the D-36a spawn gesture: drag
           into empty canvas to pop a package view out pre-connected (R5).
@@ -390,7 +454,9 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
             />
           ) : (
             <CastImageArea
-              imageUrl={data.imageUrl}
+              // VC-R6b bug 1: the ledger's headshot head wins when the model
+              // is live — item.imageUrl is only the landing-time snapshot
+              imageUrl={(modelReady ? sheet.headshotUrl : null) ?? data.imageUrl}
               promptState={controller.isEmpty && !errored ? "empty" : controller.promptState}
               progressFraction={controller.progressFraction}
               progressSeconds={controller.progressSeconds}

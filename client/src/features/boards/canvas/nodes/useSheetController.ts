@@ -181,6 +181,11 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
   return {
     isSheet,
     modelId,
+    // VC-R6b bug 1: the LEDGER's headshot head — model-backed nodes render
+    // and version-count from this, so restore/refresh/iterate reach the node
+    // (item.imageUrl is only the landing snapshot; no ledger op updates it)
+    headshotUrl: slots.find((s) => s.angle === "frontClose")?.url ?? null,
+    headshotVersion: slots.find((s) => s.angle === "frontClose")?.version ?? null,
     tiles,
     staleCount,
     completeCard,

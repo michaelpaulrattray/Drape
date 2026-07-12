@@ -10,6 +10,7 @@
  * takeover from its top bar.
  */
 import { useEffect, useMemo, useRef } from 'react';
+import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useStudioStore } from '../stores/useStudioStore';
 import { AnimatedPanel } from './AnimatedPanel';
@@ -147,11 +148,21 @@ export function CastingWorkspace({
   // utils.fetch() refetches whenever the entry is stale, so every hydration
   // starts from server truth; the takeover's loader covers the round trip.
   const utils = trpc.useUtils();
-  const hydratingRef = useRef(false);
+  // VC-R6b bug 3 (durable fix for the hydration-race family): the old
+  // boolean in-flight gate could be HELD by a stale first fire — child
+  // effects run before the parent takeover's reset-then-set, so the
+  // sequence [stale fetch starts] → [reset] → [real modelId set] found the
+  // gate still up and returned, leaving the session in DEFAULT state until
+  // a hard refresh. The gate is now keyed to the modelId and RELEASED BY
+  // EFFECT CLEANUP (which runs before the next effect pass by construction),
+  // so a superseding run always proceeds. Failures surface instead of
+  // vanishing into a silent catch.
+  const hydrationKeyRef = useRef<number | null>(null);
   useEffect(() => {
     const modelId = canvas.castModelId;
-    if (modelId === null || currentAssets.length > 0 || hydratingRef.current) return;
-    hydratingRef.current = true;
+    if (modelId === null || currentAssets.length > 0) return;
+    if (hydrationKeyRef.current === modelId) return; // this attempt is live
+    hydrationKeyRef.current = modelId;
     let cancelled = false;
     utils.models.get
       .fetch({ modelId })
@@ -195,12 +206,19 @@ export function CastingWorkspace({
           });
         }
       })
-      .catch(() => {})
-      .finally(() => {
-        hydratingRef.current = false;
+      .catch((err) => {
+        // Never silent: a failed hydration must be visible and retryable
+        if (hydrationKeyRef.current === modelId) hydrationKeyRef.current = null;
+        if (!cancelled) {
+          console.error('[CastingWorkspace] hydration failed', err);
+          toast.error("Couldn't load this cast — close and try again");
+        }
       });
     return () => {
       cancelled = true;
+      // Release the gate for whatever runs next — a superseded attempt must
+      // never block its successor (the bug-3 race)
+      if (hydrationKeyRef.current === modelId) hydrationKeyRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas.castModelId, currentAssets.length]);

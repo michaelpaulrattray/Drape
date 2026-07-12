@@ -33,7 +33,7 @@ import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { isLineageEdge, type CanonicalViewAngle } from '@shared/boardTypes';
 import { SpawnMenu } from './canvas/SpawnMenu';
 import { GroupContextMenu } from './canvas/GroupContextMenu';
-import { downloadImage } from './canvas/imageActions';
+import JSZip from 'jszip';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -633,7 +633,7 @@ function BoardPageImpl() {
       // it's popped now — not a remote-DB refetch round-trip later
       utils.boardOps.listEdges.setData({ boardId }, (old) => [
         ...(old ?? []),
-        { id: result.edgeId, source: vars.itemId, target: result.itemId, relation: 'generated_from_cast' },
+        { id: result.edgeId, source: vars.itemId, target: result.itemId, relation: 'generated_from_cast', metadata: null },
       ]);
       const source = items?.find((i) => i.id === vars.itemId);
       utils.boards.getItems.setData({ boardId }, (old) => {
@@ -1403,17 +1403,102 @@ function BoardPageImpl() {
   const handleGroupAction = useCallback(
     (action: 'duplicate' | 'download' | 'delete', itemIds: number[]) => {
       switch (action) {
-        case 'duplicate':
-          // Reuses the per-node duplicate path (offset + optimistic landing)
-          for (const id of itemIds) {
-            window.dispatchEvent(new CustomEvent('board-duplicate-node', { detail: { itemId: id } }));
+        case 'duplicate': {
+          // Single copy keeps the optimistic per-node path. A SET duplicates
+          // with its relationships (VC-R6b bug 2): server-confirmed ids are
+          // mapped old→new, then every edge whose BOTH endpoints were copied
+          // is re-created between the copies — provenance carried, lineage
+          // honest. (The set path trades the optimistic landing for id truth;
+          // copies appear on the confirm roundtrip.)
+          if (itemIds.length === 1) {
+            window.dispatchEvent(new CustomEvent('board-duplicate-node', { detail: { itemId: itemIds[0] } }));
+            break;
           }
+          void (async () => {
+            try {
+              const idMap = new Map<number, number>();
+              for (const id of itemIds) {
+                const item = itemsRef.current?.find((i) => i.id === id);
+                if (!item || id <= 0) continue;
+                const meta = (item.metadata ?? {}) as Record<string, unknown>;
+                const metadata: Record<string, unknown> = {};
+                if (meta.provenance) metadata.provenance = meta.provenance;
+                if (meta.attributes) metadata.attributes = meta.attributes;
+                if (meta.userPrompt) metadata.userPrompt = meta.userPrompt;
+                const result = await utils.client.boardOps.createNode.execute.mutate({
+                  boardId,
+                  kind: (item.kind ?? 'image') as 'image' | 'cast_config' | 'note' | 'frame',
+                  provenance: (meta.provenance as Record<string, unknown> | undefined) ?? null,
+                  position: { x: item.positionX + 40, y: item.positionY + 40 },
+                  size: { width: item.width, height: item.height },
+                  label: item.label ?? undefined,
+                  imageUrl: item.imageUrl ?? undefined,
+                  metadata,
+                });
+                idMap.set(id, result.itemId);
+              }
+              // Server truth, not the render cache — optimistic/raw-created
+              // edges may not have reached the client cache yet
+              const liveEdges = await utils.boardOps.listEdges.fetch({ boardId });
+              for (const edge of liveEdges ?? []) {
+                const s = idMap.get(edge.source);
+                const t = idMap.get(edge.target);
+                if (s && t) {
+                  await utils.client.boardOps.addEdge.mutate({
+                    boardId,
+                    sourceItemId: s,
+                    targetItemId: t,
+                    relation: edge.relation as never,
+                    metadata: (edge.metadata as Record<string, unknown> | null) ?? undefined,
+                  });
+                }
+              }
+              void utils.boards.getItems.invalidate({ boardId });
+              void utils.boardOps.listEdges.invalidate({ boardId });
+            } catch {
+              toast.error("Couldn't duplicate the selection — try again");
+              void utils.boards.getItems.invalidate({ boardId });
+            }
+          })();
           break;
+        }
         case 'download': {
-          for (const id of itemIds) {
-            const item = itemsRef.current?.find((i) => i.id === id);
-            if (item?.imageUrl) downloadImage(item.imageUrl, `drape-${id}.png`);
-          }
+          // VC-R6b bug 5: one ZIP, fetched through the image proxy — N direct
+          // cross-origin anchor downloads both spammed the browser and failed
+          // ("file wasn't available on site"). The export pack's pattern.
+          void (async () => {
+            const targets = itemIds
+              .map((id) => itemsRef.current?.find((i) => i.id === id))
+              .filter((i): i is NonNullable<typeof i> => !!i?.imageUrl);
+            if (targets.length === 0) return;
+            try {
+              const zip = new JSZip();
+              const used = new Set<string>();
+              for (const item of targets) {
+                const proxy = await utils.client.generation.proxyImage.mutate({
+                  imageUrl: item.imageUrl!,
+                });
+                if (!proxy.success || !proxy.base64) continue;
+                const b64 = proxy.base64.split(',')[1] ?? proxy.base64;
+                const bin = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                let name = `${(item.label ?? `item-${item.id}`).replace(/[^a-zA-Z0-9 _-]/g, '')}.png`;
+                if (used.has(name)) name = `${name.slice(0, -4)}-${item.id}.png`;
+                used.add(name);
+                zip.file(name, bytes);
+              }
+              const blob = await zip.generateAsync({ type: 'blob' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'drape-selection.zip';
+              a.click();
+              URL.revokeObjectURL(url);
+            } catch {
+              toast.error("Couldn't build the download — try again");
+            }
+          })();
           break;
         }
         case 'delete':
