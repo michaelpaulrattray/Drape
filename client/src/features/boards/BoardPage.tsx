@@ -21,6 +21,7 @@ import { DottedGridBackground } from './canvas/DottedGridBackground';
 import { BrandLoader } from '@/components/BrandLoader';
 import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
+import { FirstRunIntro } from './components/FirstRunIntro';
 import { useGenerationJobs } from './stores/useGenerationJobs';
 import { useOptimisticFills } from './stores/useOptimisticFills';
 import { hasOpenCanvasLayers } from './stores/useCanvasLayers';
@@ -80,6 +81,35 @@ function BoardPageImpl() {
   const [castEditContext, setCastEditContext] = useState<CastEditContext | null>(null);
   const { user, isAuthenticated } = useAuth();
   const { startJob, completeJob, failJob } = useGenerationJobs();
+
+  // D-9 first-run intro: shown once ever (profile flag), dismissed
+  // permanently by ANY board interaction. Local state hides it instantly;
+  // the mutation persists the dismissal (no need to refetch auth.me —
+  // the next session reads the flag).
+  const [introDismissed, setIntroDismissed] = useState(false);
+  const markIntroSeenMutation = trpc.profile.markCanvasIntroSeen.useMutation();
+  const dismissIntro = useCallback(() => {
+    setIntroDismissed(true);
+    markIntroSeenMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const introShowing =
+    !introDismissed && !!user && !(user as { canvasIntroSeen?: boolean }).canvasIntroSeen;
+  // "Interacting with anything else dismisses it permanently" (§11.1): any
+  // pointerdown outside the intro's own affordances — the tool pill, a
+  // right-click, the header — is a board interaction. Capture phase, so the
+  // interaction itself proceeds untouched; the intro's buttons handle their
+  // own dismissal.
+  useEffect(() => {
+    if (!introShowing) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[data-first-run-intro]')) return;
+      dismissIntro();
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => window.removeEventListener('pointerdown', onPointerDown, true);
+  }, [introShowing, dismissIntro]);
 
   // D-45(2): the header avatar's popover carries the balance + Top up —
   // no permanent number on the canvas. Same query the takeover refetches
@@ -1867,14 +1897,26 @@ function BoardPageImpl() {
               the invitation (ruling B) and D-9's ghost-composition first-run
               owns onboarding when it lands (R6). */}
           {canvasItems.length === 0 && !itemsLoading && !boardLoading && (
-            <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              style={{ zIndex: 5 }}
-            >
-              <p className="text-canvas-xs" style={{ color: '#a1a19a' }}>
-                Add a cast to begin
-              </p>
-            </div>
+            user && !(user as { canvasIntroSeen?: boolean }).canvasIntroSeen && !introDismissed ? (
+              // First ever empty board (D-9 / §11.1): the ghost composition
+              <FirstRunIntro
+                onCastFirst={() => {
+                  dismissIntro();
+                  handleAddCast(null);
+                }}
+                onDismiss={dismissIntro}
+              />
+            ) : (
+              // Returning user (§11.2 as amended by ruling A): one quiet line
+              <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                style={{ zIndex: 5 }}
+              >
+                <p className="text-canvas-xs" style={{ color: '#a1a19a' }}>
+                  Add a cast to begin
+                </p>
+              </div>
+            )
           )}
 
         </div>

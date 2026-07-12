@@ -160,6 +160,15 @@ export interface ProfileUpdateData {
   bannerKey?: string | null;
 }
 
+/** D-9 first-run intro: one-way flag — the intro never returns once any
+ *  board interaction dismisses it (profile-persisted, survives devices). */
+export async function markCanvasIntroSeen(userId: number): Promise<{ success: boolean }> {
+  const db = await getDb();
+  if (!db) return { success: false };
+  await db.update(users).set({ canvasIntroSeen: true }).where(eq(users.id, userId));
+  return { success: true };
+}
+
 export async function updateUserProfile(
   userId: number,
   data: ProfileUpdateData

@@ -170,6 +170,52 @@ await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", tim
 await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
 await sleep(500);
 
+// ── Invariant H: D-9 first-run intro — FREE ─────────────────────────────────
+// First-ever empty board shows the ghost composition; "Start with a blank
+// board" dismisses it PERMANENTLY (profile flag, survives reload). Runs
+// first so the flag ends the leg SET — the rest of the drive never sees
+// the overlay.
+{
+  await conn.execute(`UPDATE users SET canvasIntroSeen = 0 WHERE id = ?`, [userId]);
+  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
+  await sleep(800);
+  const introUp = await page.evaluate(() => ({
+    intro: !!document.querySelector("[data-first-run-intro]"),
+    pill: [...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Cast your first model"),
+  }));
+  check("H1 first-ever empty board shows the intro (D-9)", introUp.intro && introUp.pill, JSON.stringify(introUp));
+  if (introUp.intro) {
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll("button")].find(
+        (x) => x.textContent?.trim() === "Start with a blank board",
+      ) as HTMLElement | undefined;
+      b?.click();
+    });
+    await sleep(600);
+    const gone = await page.evaluate(() => !document.querySelector("[data-first-run-intro]"));
+    check("H2 blank-board exit dismisses the intro", gone);
+    let flagSet = false;
+    for (let i = 0; i < 12 && !flagSet; i++) {
+      await sleep(500);
+      const [rows] = await conn.execute(`SELECT canvasIntroSeen AS s FROM users WHERE id = ?`, [userId]);
+      flagSet = Boolean((rows as Array<{ s: number }>)[0]?.s);
+    }
+    check("H3 dismissal persists on the profile (never returns)", flagSet);
+    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
+    await sleep(800);
+    const after = await page.evaluate(() => ({
+      intro: !!document.querySelector("[data-first-run-intro]"),
+      hint: (document.body.textContent ?? "").includes("Add a cast to begin"),
+    }));
+    check("H4 returning user gets the quiet hint, not the intro (§11.2)", !after.intro && after.hint, JSON.stringify(after));
+  } else {
+    // Leave the flag set regardless — the drive must never race the overlay
+    await conn.execute(`UPDATE users SET canvasIntroSeen = 1 WHERE id = ?`, [userId]);
+  }
+}
+
 const nodeCount = () => page.evaluate(() => document.querySelectorAll(".react-flow__node").length);
 const nodeRects = () =>
   page.evaluate(() =>

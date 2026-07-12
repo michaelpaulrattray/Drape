@@ -26,6 +26,7 @@ export {
   getUserStorageInfo,
   updateUserStorageUsed,
   updateUserProfile,
+  markCanvasIntroSeen,
   type ProfileUpdateData,
 } from "./users";
 

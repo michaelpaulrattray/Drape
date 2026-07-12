@@ -45,6 +45,9 @@ export const users = mysqlTable("users", {
   // Account lockout fields (for failed login protection)
   failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
   lockedUntil: timestamp("lockedUntil"), // Temporary lockout expiry
+  // Canvas first-run intro (D-9): profile-persisted so it survives devices;
+  // dismissed permanently by any board interaction
+  canvasIntroSeen: boolean("canvasIntroSeen").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

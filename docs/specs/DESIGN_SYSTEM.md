@@ -607,14 +607,15 @@ Empty states are part of the product's voice: calm, capable, specific. Never a b
 
 Shown the first time a user opens any board with zero items and has never dismissed it (persist a `canvasIntroSeen` flag on the user profile via the existing profile router — not localStorage, so it survives devices). In the spirit of Higgsfield's canvas intro, executed in Drape's restrained language: **not** a modal tour, **not** coach marks — a quiet arrangement *on the canvas itself*, in canvas tokens:
 
-- Centered composition of three ghost cards (dashed hairline borders, inset placeholder art at 50% opacity) laid out like a real workflow: a cast card, an arrow-less gap, a views row — each with a one-line 11px ink-soft caption beneath: `Cast a model from a sentence`, `Generate their five views`, `Everything stays connected`.
+- Centered composition of three ghost cards (dashed hairline borders, inset placeholder art at 50% opacity) laid out like a real workflow: a cast card, an arrow-less gap, a comp-card mosaic — each with a one-line 11px ink-soft caption beneath: `Cast a model from a sentence`, `Build their comp card`, `Everything stays connected`. *(Caption language amended with C7 — the pre-R3b "five views" vocabulary is dead; the comp card is the D-51 word.)*
 - Beneath the composition, one dark pill: `Cast your first model` (drops a cast node at center, auto-focused — the same action as the tool pill's Add → Cast) and a ghost text button `Start with a blank board`.
 - Interacting with anything else (tool pill, dropping any node, clicking a ghost card) dismisses it permanently. It never returns; it does not animate in (it is simply *there*, first).
 - The ghost cards are static art, not live nodes — no chrome, no selection.
+- *Implemented C7 (`FirstRunIntro`); drive invariant H covers show → dismiss → persist → never-returns.*
 
 ### 11.2 Empty board — returning user
 
-Zero items, intro already seen: a single centered hint, nothing else. `Plus` icon 16px ink-faint over `Add a cast, note, or frame from the toolbar` (11px ink-faint). Vertically centered, fades on first node.
+Zero items, intro already seen: a single centered tertiary line, nothing else — `Add a cast to begin` (11px ink-faint), vertically centered, gone on first node. *(Amended per the VC-R5 follow-up ruling A — the empty board is QUIET: no icon, no floating affordance; the pill carries the invitation. The earlier `Plus` icon + "Add a cast, note, or frame" copy is dead — frames retired with D-49.)*
 
 ### 11.3 Node with no output
 

@@ -1,5 +1,5 @@
 import { protectedProcedure, router } from "../_core/trpc";
-import { getUserById, updateUserProfile, getUserStorageInfo, updateUserStorageUsed } from "../db";
+import { getUserById, updateUserProfile, getUserStorageInfo, updateUserStorageUsed, markCanvasIntroSeen } from "../db";
 import { storagePut, storageDelete } from "../storage";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -50,6 +50,12 @@ export const profileRouter = router({
       
       return { success: true };
     }),
+
+  // D-9 first-run intro: permanent dismissal (any board interaction fires it)
+  markCanvasIntroSeen: protectedProcedure.mutation(async ({ ctx }) => {
+    await markCanvasIntroSeen(ctx.user.id);
+    return { success: true };
+  }),
 
   // Upload avatar image
   uploadAvatar: protectedProcedure
