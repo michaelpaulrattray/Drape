@@ -30,7 +30,8 @@ import { CanvasChatToggle } from './components/CanvasChatToggle';
 import { NodeContextMenu, type NodeContextAction } from './components/NodeContextMenu';
 import { NodeInfoPanel } from './components/NodeInfoPanel';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
-import { isLineageEdge } from '@shared/boardTypes';
+import { isLineageEdge, type CanonicalViewAngle } from '@shared/boardTypes';
+import { PinSpawnMenu } from './canvas/PinSpawnMenu';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -58,6 +59,15 @@ function BoardPageImpl() {
     y: number;
     nodeId: number;
     imageUrl: string | null;
+  } | null>(null);
+  // R5 pin-spawn (D-36a): drag from a cast's out-pin into empty canvas
+  const [pinSpawnMenu, setPinSpawnMenu] = useState<{
+    itemId: number;
+    modelId: number;
+    x: number;
+    y: number;
+    flowX: number;
+    flowY: number;
   } | null>(null);
   const [infoPanel, setInfoPanel] = useState<{ itemId: number; position: { x: number; y: number } } | null>(null);
   const [versionHistoryItemId, setVersionHistoryItemId] = useState<number | null>(null);
@@ -652,14 +662,48 @@ function BoardPageImpl() {
       if (!detail || typeof detail.itemId !== 'number' || detail.itemId <= 0) return;
       collapseMutation.mutate({ boardId, itemId: detail.itemId });
     };
+    const onPinSpawn = (e: Event) => {
+      const detail = (e as CustomEvent<{ itemId: number; x: number; y: number; flowX: number; flowY: number }>).detail;
+      if (!detail || typeof detail.itemId !== 'number' || detail.itemId <= 0) return;
+      const item = itemsRef.current?.find((i) => i.id === detail.itemId);
+      const meta = (item?.metadata ?? {}) as { provenance?: { type?: string; modelId?: number } };
+      const p = meta.provenance;
+      if (!p || (p.type !== 'cast_root' && p.type !== 'library_cast') || !p.modelId || p.modelId <= 0) return;
+      setPinSpawnMenu({
+        itemId: detail.itemId,
+        modelId: p.modelId,
+        x: detail.x,
+        y: detail.y,
+        flowX: detail.flowX,
+        flowY: detail.flowY,
+      });
+    };
     window.addEventListener('board-pop-out-view', onPopOut);
     window.addEventListener('board-collapse-view', onCollapse);
+    window.addEventListener('board-open-pin-spawn', onPinSpawn);
     return () => {
       window.removeEventListener('board-pop-out-view', onPopOut);
       window.removeEventListener('board-collapse-view', onCollapse);
+      window.removeEventListener('board-open-pin-spawn', onPinSpawn);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId]);
+
+  // Which angles this root already popped out (the spawn menu disables them)
+  const pinSpawnPopped = useMemo(() => {
+    const set = new Set<CanonicalViewAngle>();
+    if (!pinSpawnMenu || !boardEdges || !items) return set;
+    const itemById = new Map(items.map((i) => [i.id, i]));
+    for (const edge of boardEdges) {
+      if (edge.relation !== 'generated_from_cast' || edge.source !== pinSpawnMenu.itemId) continue;
+      const target = itemById.get(edge.target);
+      const meta = (target?.metadata ?? {}) as { provenance?: { type?: string; viewAngle?: CanonicalViewAngle } };
+      if (meta.provenance?.type === 'cast_view' && meta.provenance.viewAngle) {
+        set.add(meta.provenance.viewAngle);
+      }
+    }
+    return set;
+  }, [pinSpawnMenu, boardEdges, items]);
 
   // R5 prefetch (D-38): comp cards must paint from cache, never open
   // empty-then-load — warm every placed cast's packageState as items arrive
@@ -1641,6 +1685,20 @@ function BoardPageImpl() {
           position={addNodeMenu}
           onSelect={handleAddNodeAction}
           onClose={() => setAddNodeMenu(null)}
+        />
+      )}
+
+      {/* Pin-spawn menu (R5/D-36a) — drag from an out-pin into empty canvas */}
+      {pinSpawnMenu && (
+        <PinSpawnMenu
+          itemId={pinSpawnMenu.itemId}
+          modelId={pinSpawnMenu.modelId}
+          x={pinSpawnMenu.x}
+          y={pinSpawnMenu.y}
+          flowX={pinSpawnMenu.flowX}
+          flowY={pinSpawnMenu.flowY}
+          poppedAngles={pinSpawnPopped}
+          onClose={() => setPinSpawnMenu(null)}
         />
       )}
 

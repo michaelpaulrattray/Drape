@@ -291,8 +291,27 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
       <CanvasNodeShell selected={selected}>
         <ConnectionDot kind="prompt" id="prompt-in" top={22} />
         {isRoot && !isLibrary && <ConnectionDot kind="image" id="ref-in" top={40} />}
-        {/* Output anchor — edges need a source handle to render (M1 finding) */}
-        <Handle type="source" position={Position.Right} id="out" style={{ opacity: 0, right: -2 }} />
+        {/* Output pin — the lineage anchor AND the D-36a spawn gesture: drag
+            into empty canvas to pop a package view out pre-connected (R5).
+            Monochrome (D-7): outputs have no type color; the typed hues stay
+            on inputs. Hidden until the node has output to offer. */}
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="out"
+          isConnectable={modelReady && !!data.imageUrl}
+          className="!transform-none"
+          style={{
+            top: 40,
+            right: -5,
+            width: 10,
+            height: 10,
+            background: "var(--color-canvas-surface)",
+            border: "1.5px solid var(--color-canvas-border-strong)",
+            borderRadius: "50%",
+            opacity: modelReady && data.imageUrl ? 1 : 0,
+          }}
+        />
         {/* Input anchor (R5): lineage edges land here — invisible; the typed
             ConnectionDots above are pass-2 wiring surfaces, not lineage ends */}
         <Handle type="target" position={Position.Left} id="in" style={{ opacity: 0, left: -2 }} isConnectable={false} />

@@ -505,6 +505,29 @@ export function BoardCanvas({
           }
         }}
         onMoveEnd={handleMoveEnd}
+        // R5 pin-spawn (D-36a, scoped): dragging from a cast's out-pin into
+        // empty canvas opens the six-slot menu at the drop point — the one
+        // thing pass 1 can honestly spawn is a popped-out package view
+        onConnectEnd={(event, connectionState) => {
+          if (connectionState.isValid) return; // dropped on a real handle — pass-2 wiring, not ours
+          const fromNode = connectionState.fromNode;
+          if (!fromNode || connectionState.fromHandle?.id !== 'out') return;
+          const itemId = parseInt(fromNode.id.replace('item-', ''), 10);
+          if (isNaN(itemId)) return;
+          const point = 'changedTouches' in event ? event.changedTouches[0] : event;
+          const flow = rfInstance.current?.screenToFlowPosition({ x: point.clientX, y: point.clientY });
+          window.dispatchEvent(
+            new CustomEvent('board-open-pin-spawn', {
+              detail: {
+                itemId,
+                x: point.clientX,
+                y: point.clientY,
+                flowX: Math.round(flow?.x ?? 0),
+                flowY: Math.round(flow?.y ?? 0),
+              },
+            }),
+          );
+        }}
         onPaneClick={(event) => {
           onPaneClick?.();
           // Convert screen click to flow coordinates for placement mode
