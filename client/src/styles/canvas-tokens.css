@@ -92,4 +92,8 @@
 .canvas-scope .react-flow__nodesselection-rect {
   background: transparent;
   border: none;
+  /* VC-R5 fix 4: the invisible rect must not eat clicks — a marquee of ONE
+     node is a single selection whose strip/toolbar must stay pressable.
+     Group-drag survives: dragging any selected node moves the selection. */
+  pointer-events: none;
 }

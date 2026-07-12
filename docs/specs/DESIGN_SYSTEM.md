@@ -519,13 +519,15 @@ const nodeTypes = {
 **Edges:**
 
 ```ts
-const defaultEdgeOptions = {
+const edgeStyle = {
   type: "smoothstep",
-  style: { stroke: "var(--color-canvas-border-strong)", strokeWidth: 1, opacity: 0.4 },
+  // ink-soft (VC-R5 fix 2): border-grey on the grey board was nearly
+  // invisible — lineage stays quiet but findable
+  style: { stroke: "var(--color-canvas-ink-soft)", strokeWidth: 1, opacity: 0.4 },
 };
 ```
 
-Edge opacity upgrades to 1 when either endpoint is selected (selection-change listener in `useBoardCanvasController`). Edges are otherwise ambient — they are lineage, not wiring diagrams.
+Edge opacity upgrades to 1 when either endpoint is selected. Edges are otherwise ambient — they are lineage, not wiring diagrams — and never selectable or disconnectable (D-50.5: lineage edges are facts).
 
 ---
 

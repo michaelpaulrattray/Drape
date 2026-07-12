@@ -340,7 +340,9 @@ export function BoardCanvas({
         selectable: false,
         focusable: false,
         style: {
-          stroke: 'var(--color-canvas-border-strong)',
+          // ink-soft, not border-strong (VC-R5 fix 2): border-grey on the
+          // grey board was nearly invisible — lineage stays quiet but findable
+          stroke: 'var(--color-canvas-ink-soft)',
           strokeWidth: 1,
           opacity: active ? 1 : 0.4,
         },

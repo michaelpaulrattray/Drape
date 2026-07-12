@@ -5,7 +5,7 @@
  * stay visible with explanatory tooltips.
  */
 import { cn } from "@/lib/utils";
-import { RefreshCw, Shuffle, Copy, Download, Trash2, Info, Maximize, Play } from "lucide-react";
+import { RefreshCw, Shuffle, Copy, Download, Trash2, Info, Maximize, Play, Minimize2 } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -15,8 +15,9 @@ import {
 import { useCanvasZoom, screenLegibleScale } from "./canvasZoom";
 
 export interface NodeToolbarAction {
-  // focus/runAll belong to the D-50 group toolbar (GroupSelectionOverlay)
-  id: "rerun" | "variations" | "duplicate" | "download" | "delete" | "info" | "focus" | "runAll";
+  // focus/runAll belong to the D-50 group toolbar (GroupSelectionOverlay);
+  // collapse is the popped-view slot (VC-R5 fix 3)
+  id: "rerun" | "variations" | "duplicate" | "download" | "delete" | "info" | "focus" | "runAll" | "collapse";
   label: string;
   onClick: () => void;
   disabled?: boolean;
@@ -34,6 +35,7 @@ const ICONS: Record<
   info: Info,
   focus: Maximize,
   runAll: Play,
+  collapse: Minimize2,
 };
 
 export function NodeFloatingToolbar({ actions }: { actions: NodeToolbarAction[] }) {

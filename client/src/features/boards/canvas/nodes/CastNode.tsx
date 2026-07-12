@@ -196,12 +196,22 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
     window.dispatchEvent(new CustomEvent(name, { detail: { itemId: data.itemId } }));
 
   const toolbarActions: NodeToolbarAction[] = [
-    {
-      id: "rerun",
-      label: modelReady ? "Rerun" : "Rerun — still landing",
-      disabled: !modelReady,
-      onClick: () => setPopover((p) => (p === "forkRecast" ? null : "forkRecast")),
-    },
+    // Popped views (VC-R5 fix 3): the first slot is Collapse — right-click-
+    // only was a hidden verb, and Rerun's fork/recast is a ROOT verb (a view
+    // regenerates via the comp card's per-tile Refresh, foundations 3e)
+    isView
+      ? {
+          id: "collapse" as const,
+          label: "Return to sheet",
+          disabled: data.itemId <= 0,
+          onClick: () => dispatchNodeEvent("board-collapse-view"),
+        }
+      : {
+          id: "rerun" as const,
+          label: modelReady ? "Rerun" : "Rerun — still landing",
+          disabled: !modelReady,
+          onClick: () => setPopover((p) => (p === "forkRecast" ? null : "forkRecast")),
+        },
     {
       id: "variations",
       label: isView
