@@ -84,6 +84,11 @@ export interface MintPackageInput {
   modelId: number;
   tier: MintTier;
   characterName: string;
+  /** Trap ruling (a), amending D-46 rider 1: false = generate the tier's
+   *  slots (same pricing, same identity gates — they key off the CURRENT
+   *  headshot, never mint state) but the model STAYS A DRAFT. Minting is a
+   *  separate deliberate act; identity iteration stays free until it. */
+  mint?: boolean;
 }
 
 /** What one slot generation needs — shared by mint (R3b) and refresh (R5). */
@@ -235,6 +240,17 @@ export async function executeMintPackage(input: MintPackageInput) {
     .filter((r): r is Extract<SlotGenResult, { ok: false }> => !r.ok)
     .map(({ angle, label, reason, refunded }) => ({ angle, label, reason, refunded }));
 
+  // Trap ruling (a): views without minting — the slots landed above with
+  // full gates and pricing; the model stays a draft, freely iterable, until
+  // the user names-and-mints deliberately.
+  if (input.mint === false) {
+    log.info(
+      { modelId: input.modelId, tier: input.tier, generated: generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
+      "[MintPackage] views added, stays a draft",
+    );
+    return { agencyId: model.agencyId ?? null, minted: false, tier: input.tier, generated, failed };
+  }
+
   // Name + mint (identity becomes real and immutable, D-43)
   await updateModel(input.modelId, { name: input.characterName });
   let agencyId = model.agencyId;
@@ -253,7 +269,7 @@ export async function executeMintPackage(input: MintPackageInput) {
     { modelId: input.modelId, tier: input.tier, generated: generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
     "[MintPackage] minted",
   );
-  return { agencyId, tier: input.tier, generated, failed };
+  return { agencyId, minted: true, tier: input.tier, generated, failed };
 }
 
 /** A slot's failure marker, read from the durable status row. */

@@ -46,7 +46,7 @@ export function useCastGate({
   );
 
   const handleCastAndContinue = useCallback(
-    async (characterName: string, tier: MintTier = 'core', upgrade = false) => {
+    async (characterName: string, tier: MintTier = 'core', upgrade = false, stayDraft = false) => {
       if (!currentModelId) {
         toast.error('No model to cast');
         return;
@@ -59,10 +59,12 @@ export function useCastGate({
           : 'Saving identity...'
       );
       try {
+        // Trap ruling (a): stayDraft = generate the tier's views, model stays
+        // a draft (no name, no mint) — identity iteration stays free
         const result = await mintPackageMutation.mutateAsync({
           modelId: currentModelId,
           tier,
-          characterName,
+          ...(stayDraft ? { mint: false as const } : { characterName }),
         });
 
         // Land freshly generated views in the studio viewer state
@@ -83,8 +85,10 @@ export function useCastGate({
           castStore.pushHistory(newAssets);
         }
 
-        // Mark as minted in canvas state
-        setCanvas({ isMinted: true, castModelId: currentModelId });
+        // Mark as minted in canvas state — NOT for stays-draft views (a)
+        if (!stayDraft) {
+          setCanvas({ isMinted: true, castModelId: currentModelId });
+        }
 
         // Named-and-refunded slot failures surface honestly (D-39/D-40). A
         // long duration: the takeover may be closing under this toast, and a
@@ -102,8 +106,8 @@ export function useCastGate({
         utils.generation.packageState.invalidate({ modelId: currentModelId });
         utils.generation.mintPackagePlan.invalidate({ modelId: currentModelId });
 
-        if (upgrade) {
-          // D-39c upgrade: already minted and placed — stay in the session;
+        if (upgrade || stayDraft) {
+          // D-39c upgrade / trap-(a) stays-draft views: stay in the session;
           // the new views filling the strip ARE the feedback (D-40, no toast).
         } else {
           // D-40: the node landing on the board IS the feedback — no

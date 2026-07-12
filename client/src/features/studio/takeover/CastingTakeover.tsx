@@ -514,7 +514,7 @@ export function CastingTakeover({
       <CastModelModal
         isOpen={showCastModal}
         onClose={() => setShowCastModal(false)}
-        onConfirm={(name, tier) => handleCastAndContinue(name, tier, upgradeMode)}
+        onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, upgradeMode, stayDraft)}
         tiers={tierPlan}
         isCasting={isCasting}
         castingMessage={castingMessage}

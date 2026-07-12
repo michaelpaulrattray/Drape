@@ -273,7 +273,7 @@ export default function DrapeStudio() {
       <CastModelModal
         isOpen={showCastModal}
         onClose={() => setShowCastModal(false)}
-        onConfirm={handleCastAndContinue}
+        onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, false, stayDraft)}
         tiers={tierPlan}
         isCasting={isCasting}
         castingMessage={castingMessage}

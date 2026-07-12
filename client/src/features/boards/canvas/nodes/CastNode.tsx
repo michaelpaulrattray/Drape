@@ -86,15 +86,19 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const isDraft = isLibrary && prov?.type === "library_cast" && prov.draft === true;
   // D-43: a non-draft library cast is a MINTED identity — recast is sealed
   const isMinted = isLibrary && !isDraft;
-  const baseLabel = data.label ? `Cast · ${data.label}` : "Cast";
+  // Label grammar (founder, drive 2): the NAME is the label — "jerrryt",
+  // "jerrryt · Full front", "jerrryt · Draft". The old "Cast · … · Library"
+  // spelled out provenance vocabulary nobody needed on chrome; "Cast" now
+  // appears only on unnamed empty nodes (a type placeholder, not a prefix).
+  const baseLabel = data.label || "Cast";
   const typeLabel = isDraft
     ? `${baseLabel} · Draft`
-    : isLibrary
-      ? `${baseLabel} · Library`
-      : prov?.type === "cast_view"
-        ? `${baseLabel} · ${VIEW_ANGLE_LABEL[prov.viewAngle] ?? prov.viewAngle}`
-        : baseLabel;
-  const engine = prov && "engine" in prov ? prov.engine : undefined;
+    : prov?.type === "cast_view"
+      ? `${baseLabel} · ${VIEW_ANGLE_LABEL[prov.viewAngle] ?? prov.viewAngle}`
+      : baseLabel;
+  const rawEngine = prov && "engine" in prov ? prov.engine : undefined;
+  // 'restore' is ledger plumbing, not an engine — never chrome (D-41 class)
+  const engine = rawEngine === "restore" ? undefined : rawEngine;
   const errored = data.status?.type === "error";
   const showFrontDoor =
     controller.isEmpty && !errored && controller.promptState !== "generating";

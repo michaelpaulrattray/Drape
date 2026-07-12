@@ -471,7 +471,15 @@ Consider making the environment's work area a spatial surface in the canvas imag
 | R-10 | Version-chip UX is failing its job — **no redesign now**; "version surfacing rethink" joins the A4 mask-rebuild as ONE named post-pass item (the thumb-strip data model is right, the chrome isn't) | logged |
 | A4 | Belt-slimming rider **APPROVED**: export chip → `···` menu row (chip + `useCastingViewGeneration` deleted), menu Retry retired, mask stroke language conformant; mask-model rebuild = named post-pass item | rides C6 |
 
-Open for ruling: the **draft-state trap** (`DRAFT_STATE_TRAP_ASSESSMENT.md` — recommendation (a): views without minting, amending D-46 rider 1) and the folded **popped-view toolbar slimming** (Return to sheet · Download · Delete · Info; Edit reserved for the root).
+### D-55 — Views decouple from minting *(founder-ratified 2026-07-13; trap ruling (a); KNOWINGLY AMENDS D-46 rider 1)*
+
+**What:** a draft may hold a full package — the tier flow gains a stays-draft path (`mintPackage` `mint: false`): same slots, same pricing, same identity gates (they key off the CURRENT headshot, never mint state — verified through the decoupling). The model stays a draft, freely identity-iterable, until deliberately named-and-minted. The name belongs to the mint moment, not to adding views.
+
+**Why (founder's rationale, verbatim intent):** view generation fused to minting was belt-plumbing — the conveyor's "views = done" assumption. (a) is the only resolution where the stale-writer, the fork door, and bulk refresh form a closed loop on flows that actually exist. The F4 copy's "fork to explore it" becomes true: fork → draft-with-views → iterate freely → siblings stale → refresh → re-mint.
+
+**Affects:** D-46 rider 1 (reversed, knowingly); `executeMintPackage` (+`mint` flag), `generation.mintPackage` input (name optional when staying draft), `CastModelModal` (stays-draft path in mint mode), `useCastGate` (stayDraft threading, no isMinted flip, stays in session). Drive invariant **Y** (paid): the full walkable loop incl. Y5 — after mint the same edit is refused. D-43 untouched: mint remains the immutability moment.
+
+**Popped-view toolbar slimming ruled YES alongside** (Return to sheet · Download · Delete · Info; Edit reserved for the root) — shipped with the C6 consolidation.
 
 ### R7 additions (hardening list, founder driving notes 2026-07-13)
 

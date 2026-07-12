@@ -23,8 +23,9 @@ const TIER_ORDER: MintTier[] = ['draft', 'core', 'production'];
 export interface CastModelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Called with (characterName, tier) when user confirms */
-  onConfirm: (characterName: string, tier: MintTier) => void;
+  /** Called with (characterName, tier, stayDraft) — stayDraft = trap ruling
+   *  (a): generate the tier's views, the model STAYS a draft (no name). */
+  onConfirm: (characterName: string, tier: MintTier, stayDraft?: boolean) => void;
   /** Plan-derived tier costs; undefined while the plan loads */
   tiers?: TierPlan;
   /** Whether the casting process is in progress */
@@ -180,6 +181,20 @@ export function CastModelModal({
               );
             })}
           </div>
+
+          {/* Trap ruling (a): views without minting — exploration keeps its
+              freedom. Only in mint mode (an upgrade is already minted), and
+              only when the picked tier actually generates something. */}
+          {!upgrade && tier !== 'draft' && (tiers?.[tier]?.cost ?? 0) > 0 && (
+            <button
+              type="button"
+              disabled={isCasting}
+              onClick={() => onConfirm('', tier, true)}
+              className="w-full text-left mb-3.5 -mt-1 text-canvas-sm text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors disabled:opacity-40"
+            >
+              Or add these views and keep exploring — stays a draft, same price
+            </button>
+          )}
 
           {/* Casting progress */}
           {isCasting && castingMessage && (

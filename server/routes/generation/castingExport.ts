@@ -134,9 +134,15 @@ export const castingExportRouter = router({
     .input(z.object({
       modelId: z.number().int().positive(),
       tier: z.enum(["draft", "core", "production"]),
-      characterName: z.string().trim().min(1).max(128),
+      // Optional when staying a draft (trap ruling (a)) — the name belongs
+      // to the deliberate mint moment, not to adding views
+      characterName: z.string().trim().min(1).max(128).optional(),
+      mint: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      if (input.mint !== false && !input.characterName) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "A name is required to mint" });
+      }
       const rate = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
       if (!rate.allowed) {
         throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
@@ -146,7 +152,8 @@ export const castingExportRouter = router({
         userId: ctx.user.id,
         modelId: input.modelId,
         tier: input.tier,
-        characterName: input.characterName,
+        characterName: input.characterName ?? "",
+        mint: input.mint,
       });
     }),
 

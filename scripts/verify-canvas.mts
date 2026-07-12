@@ -1687,6 +1687,123 @@ let seededItemId = 0;
   }
 }
 
+// ── Invariant Y: the walkable loop (trap ruling (a)) — PAID (~1600cr) ───────
+// fork → views as DRAFT (mint:false — stays draft, gates still fire) →
+// identity iterate (free on drafts) → siblings STALE → bulk refresh offer →
+// mint → the seal closes. The F6 story on flows a user can actually walk.
+if (!paidEnabled("Y")) {
+  console.log("SKIP  Y — paid invariant (walkable loop; ~1600 credits)");
+} else {
+  const yFork = await page.evaluate(
+    async (bId: number) => {
+      const nodes = [...document.querySelectorAll(".react-flow__node")].filter((n) =>
+        n.querySelector("img")?.getAttribute("src"),
+      );
+      const id = parseInt((nodes[nodes.length - 1]?.getAttribute("data-id") ?? "").replace("item-", ""), 10);
+      const r = await fetch("/api/trpc/boardOps.applyModelEdit.execute", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { boardId: bId, itemId: id, decision: "fork", changes: { hairColor: "Jet Black" } } }),
+      });
+      const data = await r.json();
+      return data?.result?.data?.json ?? null;
+    },
+    boardId,
+  );
+  if (!yFork?.modelId) {
+    check("Y1 fork lands (draft, headshot-only)", false, JSON.stringify(yFork));
+  } else {
+    const [f1] = await conn.execute(`SELECT status FROM models WHERE id = ?`, [yFork.modelId]);
+    check("Y1 fork lands as a DRAFT", (f1 as Array<{ status: string }>)[0]?.status === "draft");
+
+    // Views WITHOUT minting (the (a) decoupling)
+    const yViews = await page.evaluate(async (mid: number) => {
+      const r = await fetch("/api/trpc/generation.mintPackage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { modelId: mid, tier: "core", mint: false } }),
+      });
+      const data = await r.json();
+      return data?.result?.data?.json ?? null;
+    }, yFork.modelId);
+    const [f2] = await conn.execute(`SELECT status FROM models WHERE id = ?`, [yFork.modelId]);
+    check(
+      "Y2 views generate with mint:false and the model STAYS a draft",
+      !!yViews && yViews.minted === false && (yViews.generated?.length ?? 0) >= 2 &&
+        (f2 as Array<{ status: string }>)[0]?.status === "draft",
+      JSON.stringify({ minted: yViews?.minted, generated: yViews?.generated?.length, failed: yViews?.failed?.length }),
+    );
+
+    // Identity iterate on ONE draft view → the stale-writer marks siblings
+    const [assetRows] = await conn.execute(
+      `SELECT id, viewType FROM model_assets WHERE modelId = ? AND storageUrl != '' ORDER BY id DESC`,
+      [yFork.modelId],
+    );
+    const yAssets = assetRows as Array<{ id: number; viewType: string }>;
+    const target = yAssets.find((a) => a.viewType === "frontFull");
+    if (!target) {
+      check("Y3 identity iterate stales the siblings", false, "no frontFull to iterate");
+    } else {
+      await page.evaluate(async (args: { mid: number; aid: number }) => {
+        await fetch("/api/trpc/generation.iterate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ json: { modelId: args.mid, assetId: args.aid, feedback: "add a large dragon tattoo across the chest and both arms" } }),
+        });
+      }, { mid: yFork.modelId, aid: target.id });
+      let staleCount = 0;
+      for (let i = 0; i < 10 && staleCount === 0; i++) {
+        await sleep(1000);
+        const [staleRows] = await conn.execute(
+          `SELECT COUNT(*) AS c FROM model_assets WHERE modelId = ? AND JSON_EXTRACT(status, '$.state') = 'stale'`,
+          [yFork.modelId],
+        );
+        staleCount = Number((staleRows as Array<{ c: number }>)[0].c);
+      }
+      check("Y3 identity iterate on a draft view STALES the siblings (F6 writer)", staleCount >= 2, `${staleCount} stale`);
+
+      // The bulk-refresh offer exists (plan flags the stale slots refreshable)
+      const yPlan = await page.evaluate(async (mid: number) => {
+        const q = encodeURIComponent(JSON.stringify({ json: { modelId: mid } }));
+        const r = await fetch(`/api/trpc/generation.refreshSlotsPlan?input=${q}`, { credentials: "include" });
+        const data = await r.json();
+        return data?.result?.data?.json ?? null;
+      }, yFork.modelId);
+      const refreshableStale = (yPlan?.slots ?? []).filter((s: { stale: boolean; refusal: string | null }) => s.stale && s.refusal === null).length;
+      check("Y4 bulk refresh OFFERS the stale slots (plan-priced)", refreshableStale >= 2, `${refreshableStale} offered`);
+
+      // Mint → the seal closes: the same identity edit is now REFUSED
+      await page.evaluate(async (mid: number) => {
+        await fetch("/api/trpc/generation.mintPackage", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ json: { modelId: mid, tier: "draft", characterName: "Loop Test" } }),
+        });
+      }, yFork.modelId);
+      const [f3] = await conn.execute(`SELECT status FROM models WHERE id = ?`, [yFork.modelId]);
+      const sealAfter = await page.evaluate(async (args: { mid: number; aid: number }) => {
+        const r = await fetch("/api/trpc/generation.iterate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ json: { modelId: args.mid, assetId: args.aid, feedback: "add a large dragon tattoo across the chest and both arms" } }),
+        });
+        const text = await r.text();
+        return { status: r.status, refused: text.includes("identity is minted") };
+      }, { mid: yFork.modelId, aid: target.id });
+      check(
+        "Y5 after mint the SAME edit is refused — the loop closes",
+        (f3 as Array<{ status: string }>)[0]?.status !== "draft" && sealAfter.status >= 400 && sealAfter.refused,
+        JSON.stringify(sealAfter),
+      );
+    }
+  }
+}
+
 // ── Invariant F: fork landing stability — RUN_PAID_INVARIANTS=1 ────────────
 if (!paidEnabled("F")) {
   console.log("SKIP  F — paid invariant (set RUN_PAID_INVARIANTS=1; ~350 credits)");
