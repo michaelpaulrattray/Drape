@@ -57,6 +57,7 @@ export {
   setModelAssetPinned,
   markModelAssetsStale,
   getModelAssets,
+  getHeadshotsForModels,
   getModelAssetByView,
   getModelAssetsForCleanup,
   deleteModelWithAssetKeys,

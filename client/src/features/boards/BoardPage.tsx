@@ -36,10 +36,6 @@ import { SpawnMenu } from './canvas/SpawnMenu';
 import { GroupContextMenu } from './canvas/GroupContextMenu';
 import JSZip from 'jszip';
 
-/* ── Types ────────────────────────────────────────────────── */
-
-type ToolPanelId = 'casting' | 'wardrobe' | 'export' | null;
-
 /* ── Component ────────────────────────────────────────────── */
 
 export function BoardPage() {
@@ -51,7 +47,6 @@ function BoardPageImpl() {
   const [, navigate] = useLocation();
   const boardId = params?.id ? parseInt(params.id, 10) : NaN;
 
-  const [activePanel, setActivePanel] = useState<ToolPanelId>(null);
   // 'hand' joins the legacy tool ids per VC-R4 ruling R1 (Select/Hand split)
   const [activeTool, setActiveTool] = useState<CanvasToolId | 'hand'>('select');
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -166,6 +161,31 @@ function BoardPageImpl() {
   });
 
   const saveViewportMutation = trpc.boards.saveViewport.useMutation();
+
+  // D-27: the lobby card stays fresh from canvas work — the newest
+  // image-bearing node becomes the board thumbnail, debounced so a burst of
+  // landings writes once. Quiet on failure (a stale thumbnail is cosmetic).
+  const thumbnailMutation = trpc.boards.update.useMutation();
+  const thumbnailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastThumbnailRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!board || !items) return;
+    const newest = [...items]
+      .filter((i) => i.id > 0 && !!i.imageUrl && /^https?:\/\//.test(i.imageUrl))
+      .sort((a, b) => b.id - a.id)[0];
+    if (!newest?.imageUrl) return;
+    const current = lastThumbnailRef.current ?? board.thumbnailUrl;
+    if (newest.imageUrl === current) return;
+    if (thumbnailTimerRef.current) clearTimeout(thumbnailTimerRef.current);
+    thumbnailTimerRef.current = setTimeout(() => {
+      lastThumbnailRef.current = newest.imageUrl;
+      thumbnailMutation.mutate({ boardId, thumbnailUrl: newest.imageUrl! });
+    }, 4000);
+    return () => {
+      if (thumbnailTimerRef.current) clearTimeout(thumbnailTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, board, boardId]);
 
   const updateItemMutation = trpc.boards.updateItem.useMutation({
     onSuccess: () => utils.boards.getItems.invalidate({ boardId }),
@@ -1360,17 +1380,9 @@ function BoardPageImpl() {
           handleAddCast(contextMenuFlowPosRef.current);
           contextMenuFlowPosRef.current = null;
           break;
-        case 'wardrobe':
-          setActivePanel('wardrobe');
-          setActiveTool('wardrobe');
-          break;
         case 'note':
           setPlacementMode('note');
           setActiveTool('note');
-          break;
-        case 'upload':
-        case 'reference':
-          toast.info('Feature coming soon');
           break;
       }
       setAddNodeMenu(null);
@@ -1387,19 +1399,8 @@ function BoardPageImpl() {
         setPlacementMode(null);
       }
       switch (tool) {
-        case 'select':
-        case 'hand': // R1 pointer cluster — pan tool, no panel
-          setActivePanel(null);
-          break;
         case 'cast':
           handleAddCast();
-          break;
-        case 'wardrobe':
-          setActivePanel('wardrobe');
-          break;
-        case 'reference':
-        case 'upload':
-          toast.info('Feature coming soon');
           break;
         case 'note':
           setPlacementMode('note');
@@ -1865,7 +1866,7 @@ function BoardPageImpl() {
               tertiary line. No floating affordance, no modal; the pill carries
               the invitation (ruling B) and D-9's ghost-composition first-run
               owns onboarding when it lands (R6). */}
-          {canvasItems.length === 0 && !itemsLoading && !boardLoading && !activePanel && (
+          {canvasItems.length === 0 && !itemsLoading && !boardLoading && (
             <div
               className="absolute inset-0 flex items-center justify-center pointer-events-none"
               style={{ zIndex: 5 }}
@@ -1877,62 +1878,9 @@ function BoardPageImpl() {
           )}
 
         </div>
-
-        {/* Right tool panel */}
-        {activePanel && (
-          <div
-            className="flex flex-col flex-shrink-0 overflow-y-auto"
-            style={{
-              width: 380,
-              background: '#fff',
-              borderLeft: '1px solid rgba(0,0,0,0.06)',
-            }}
-          >
-            {/* Panel header */}
-            <div
-              className="flex items-center justify-between px-5 flex-shrink-0"
-              style={{
-                height: 52,
-                borderBottom: '1px solid rgba(0,0,0,0.06)',
-              }}
-            >
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
-                {activePanel === 'wardrobe' && 'Style an Outfit'}
-                {activePanel === 'export' && 'Export'}
-              </span>
-              <button
-                onClick={() => {
-                  setActivePanel(null);
-                  setActiveTool('select');
-                }}
-                className="w-7 h-7 rounded-md flex items-center justify-center"
-                style={{
-                  color: '#71716A',
-                  fontSize: 16,
-                  transition: 'background 0.15s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Panel body — casting is now inline on the canvas (M4);
-                wardrobe arrives as canvas nodes in pass 2 */}
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center">
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
-                  {activePanel === 'wardrobe' && 'Wardrobe Panel'}
-                  {activePanel === 'export' && 'Export Panel'}
-                </p>
-                <p style={{ fontSize: 13, color: '#a1a19a' }}>
-                  Tool integration coming soon.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* (The legacy right tool panel — a "coming soon" wardrobe/export
+            stub from the pre-canvas conveyor — died with the C7 reconcile.
+            Wardrobe arrives as canvas nodes in pass 2.) */}
       </div>
 
       {/* Add Node Menu — appears on + click or right-click */}

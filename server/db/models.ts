@@ -340,6 +340,34 @@ export async function getModelAssets(modelId: number) {
     .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
 }
 
+/**
+ * Newest frontClose asset per model, ONE query (the picker's N+1 fix —
+ * one getModelAssets roundtrip per model put the picker's first paint
+ * past 10s at ~30 models on the remote dev DB). Newest-wins per the
+ * package read model (createdAt DESC, id DESC tiebreak).
+ */
+export async function getHeadshotsForModels(
+  modelIds: number[]
+): Promise<Map<number, string>> {
+  const out = new Map<number, string>();
+  if (modelIds.length === 0) return out;
+  const db = await getDb();
+  if (!db) return out;
+
+  const rows = await db
+    .select({
+      modelId: modelAssets.modelId,
+      storageUrl: modelAssets.storageUrl,
+    })
+    .from(modelAssets)
+    .where(and(inArray(modelAssets.modelId, modelIds), eq(modelAssets.viewType, "frontClose")))
+    .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+  for (const row of rows) {
+    if (!out.has(row.modelId) && row.storageUrl) out.set(row.modelId, row.storageUrl);
+  }
+  return out;
+}
+
 /** R5 per-slot pin (D-21 on the package ledger): flips `pinned` on ONE asset
  *  row — callers resolve which row via the newest-filled rule (mintPackage's
  *  newestFilledAssetId) so pin state always rides the row the read model shows. */

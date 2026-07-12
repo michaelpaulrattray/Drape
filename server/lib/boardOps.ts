@@ -495,19 +495,21 @@ export async function executeFillFromLibrary(input: {
 export const DRAFT_AUTO_NAME = "Draft Model";
 
 export async function listCastableModels(userId: number, limit = 30) {
-  const { getUserModels } = await import("../db");
+  const { getUserModels, getHeadshotsForModels } = await import("../db");
   const models = await getUserModels(userId, limit * 2); // headroom for filtering
+  // TWO queries total (R5 build-log N+1 fix): the per-model getModelAssets
+  // loop put the picker's first paint past 10s at ~30 models on a remote DB
+  const headshots = await getHeadshotsForModels(models.map((m) => m.id));
   const out: Array<{ id: number; name: string | null; headshotUrl: string; draft: boolean }> = [];
   for (const model of models) {
     if (out.length >= limit) break;
-    const assets = await getModelAssets(model.id);
-    const headshot = assets.find((a) => a.viewType === "frontClose");
-    if (headshot?.storageUrl) {
+    const headshotUrl = headshots.get(model.id);
+    if (headshotUrl) {
       const draft = model.status !== "active" && model.status !== "locked";
       out.push({
         id: model.id,
         name: draft && model.name === DRAFT_AUTO_NAME ? null : model.name,
-        headshotUrl: headshot.storageUrl,
+        headshotUrl,
         draft,
       });
     }

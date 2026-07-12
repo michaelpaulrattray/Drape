@@ -241,7 +241,7 @@ const addCastViaPill = async () => {
   await sleep(500);
   const item = await page.evaluate(() => {
     const els = [...document.querySelectorAll("button, [role=menuitem], div")].filter(
-      (el) => el.textContent?.trim() === "Cast Model",
+      (el) => el.textContent?.trim() === "Cast model", // sentence case (C7 menu reconcile)
     );
     const el = els[els.length - 1];
     if (!el) return null;

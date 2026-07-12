@@ -1,57 +1,22 @@
 /**
- * AddNodeMenu — Light frosted glass context menu for adding nodes to the board canvas.
+ * AddNodeMenu — the right-click at-cursor add path (ruling B: the flat pill
+ * is the stable anchor; this menu survives as the at-cursor accelerator).
  *
- * Light theme matching the app's warm/clean aesthetic:
- *  - White frosted glass background with subtle shadow
- *  - Clean icon + label rows with soft hover highlights
- *  - Subtle dividers between groups
- *  - Appears on "+" click or right-click on canvas
+ * Offers exactly the pill's addable node types (Cast · Note today — new
+ * types join as passes land). The legacy frosted-glass surface with its
+ * search box and dead rows (wardrobe panel, coming-soon uploads) retired
+ * with the C7 reconcile — a two-row menu needs no search, and an
+ * affordance that toasts "coming soon" is a broken promise, not a feature.
+ * Canvas tokens throughout (GroupContextMenu's conventions).
  */
-import { useEffect, useRef, useState } from 'react';
-import { User, Shirt, Upload, StickyNote, Image, Search } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { User, StickyNote, type LucideIcon } from 'lucide-react';
 
-// Frames removed per VC-R4 ruling R3 — they return at pass 3 as export units
-// (D-20) wearing their real job. Existing frame nodes still render.
-export type AddNodeAction = 'cast' | 'wardrobe' | 'upload' | 'note' | 'reference';
+export type AddNodeAction = 'cast' | 'note';
 
-type MenuItem = {
-  action: AddNodeAction;
-  label: string;
-  icon: React.ReactNode;
-  group: 'create' | 'media';
-};
-
-const MENU_ITEMS: MenuItem[] = [
-  {
-    action: 'cast',
-    label: 'Cast Model',
-    icon: <User className="w-[15px] h-[15px]" />,
-    group: 'create',
-  },
-  {
-    action: 'wardrobe',
-    label: 'Style Outfit',
-    icon: <Shirt className="w-[15px] h-[15px]" />,
-    group: 'create',
-  },
-  {
-    action: 'reference',
-    label: 'Add Reference',
-    icon: <Image className="w-[15px] h-[15px]" />,
-    group: 'create',
-  },
-  {
-    action: 'note',
-    label: 'Add Note',
-    icon: <StickyNote className="w-[15px] h-[15px]" />,
-    group: 'media',
-  },
-  {
-    action: 'upload',
-    label: 'Upload Media',
-    icon: <Upload className="w-[15px] h-[15px]" />,
-    group: 'media',
-  },
+const MENU_ITEMS: Array<{ action: AddNodeAction; label: string; icon: LucideIcon }> = [
+  { action: 'cast', label: 'Cast model', icon: User },
+  { action: 'note', label: 'Add note', icon: StickyNote },
 ];
 
 type AddNodeMenuProps = {
@@ -62,31 +27,18 @@ type AddNodeMenuProps = {
 
 export function AddNodeMenu({ position, onSelect, onClose }: AddNodeMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [filter, setFilter] = useState('');
 
-  // Auto-focus search input on mount
-  useEffect(() => {
-    const timer = setTimeout(() => inputRef.current?.focus(), 50);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Close on click outside or Escape
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as HTMLElement)) {
-        onClose();
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as HTMLElement)) onClose();
     }
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
     }
-
     const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
     }, 10);
-
     return () => {
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -94,215 +46,28 @@ export function AddNodeMenu({ position, onSelect, onClose }: AddNodeMenuProps) {
     };
   }, [onClose]);
 
-  // Clamp position to viewport so menu doesn't overflow
-  const adjustedPosition = (() => {
-    const menuW = 220;
-    const menuH = 320;
-    const pad = 12;
-    let x = position.x;
-    let y = position.y;
-    if (typeof window !== 'undefined') {
-      if (x + menuW + pad > window.innerWidth) x = window.innerWidth - menuW - pad;
-      if (y + menuH + pad > window.innerHeight) y = window.innerHeight - menuH - pad;
-      if (x < pad) x = pad;
-      if (y < pad) y = pad;
-    }
-    return { x, y };
-  })();
-
-  const filtered = filter.trim()
-    ? MENU_ITEMS.filter((item) =>
-        item.label.toLowerCase().includes(filter.toLowerCase()),
-      )
-    : MENU_ITEMS;
-
-  const createItems = filtered.filter((i) => i.group === 'create');
-  const mediaItems = filtered.filter((i) => i.group === 'media');
+  const menuW = 180;
+  const pad = 12;
+  const left = Math.max(pad, Math.min(position.x, window.innerWidth - menuW - pad));
+  const top = Math.max(pad, Math.min(position.y, window.innerHeight - 100 - pad));
 
   return (
     <div
       ref={menuRef}
-      className="fixed z-[100]"
-      style={{
-        left: adjustedPosition.x,
-        top: adjustedPosition.y,
-        animation: 'addNodeMenuIn 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
-      }}
+      className="fixed z-[100] bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-md py-1"
+      style={{ left, top, width: menuW }}
     >
-      <style>{`
-        @keyframes addNodeMenuIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95) translateY(-4px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-      `}</style>
-
-      <div
-        className="overflow-hidden"
-        style={{
-          width: 220,
-          borderRadius: 12,
-          background: 'rgba(255, 255, 255, 0.92)',
-          backdropFilter: 'blur(20px) saturate(1.3)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.3)',
-          border: '1px solid rgba(0, 0, 0, 0.08)',
-          boxShadow:
-            '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06)',
-        }}
-      >
-        {/* Search input */}
-        <div style={{ padding: '8px 8px 4px' }}>
-          <div
-            className="flex items-center gap-2"
-            style={{
-              height: 32,
-              borderRadius: 8,
-              background: 'rgba(0, 0, 0, 0.04)',
-              padding: '0 10px',
-            }}
-          >
-            <Search
-              className="flex-shrink-0"
-              style={{ width: 13, height: 13, color: 'rgba(0, 0, 0, 0.3)' }}
-            />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none"
-              style={{
-                fontSize: 13,
-                color: '#1a1a1a',
-                caretColor: '#1a1a1a',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Section label */}
-        {createItems.length > 0 && (
-          <div
-            style={{
-              padding: '6px 18px 2px',
-              fontSize: 11,
-              fontWeight: 500,
-              color: 'rgba(0, 0, 0, 0.35)',
-              letterSpacing: '0.02em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Create
-          </div>
-        )}
-
-        {/* Create group */}
-        {createItems.length > 0 && (
-          <div style={{ padding: '2px 6px' }}>
-            {createItems.map((item) => (
-              <button
-                key={item.action}
-                onClick={() => {
-                  onSelect(item.action);
-                  onClose();
-                }}
-                className="w-full flex items-center gap-2.5 cursor-pointer"
-                style={{
-                  height: 34,
-                  padding: '0 12px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: '#2a2a2a',
-                  background: 'transparent',
-                  border: 'none',
-                  transition: 'background 0.1s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                <span style={{ color: 'rgba(0, 0, 0, 0.4)', display: 'flex' }}>
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Divider */}
-        {createItems.length > 0 && mediaItems.length > 0 && (
-          <div
-            style={{
-              height: 1,
-              margin: '4px 14px',
-              background: 'rgba(0, 0, 0, 0.06)',
-            }}
-          />
-        )}
-
-        {/* Media group */}
-        {mediaItems.length > 0 && (
-          <div style={{ padding: '2px 6px 8px' }}>
-            {mediaItems.map((item) => (
-              <button
-                key={item.action}
-                onClick={() => {
-                  onSelect(item.action);
-                  onClose();
-                }}
-                className="w-full flex items-center gap-2.5 cursor-pointer"
-                style={{
-                  height: 34,
-                  padding: '0 12px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: '#2a2a2a',
-                  background: 'transparent',
-                  border: 'none',
-                  transition: 'background 0.1s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                <span style={{ color: 'rgba(0, 0, 0, 0.4)', display: 'flex' }}>
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {filtered.length === 0 && (
-          <div
-            style={{
-              padding: '16px 16px 20px',
-              textAlign: 'center',
-              fontSize: 13,
-              color: 'rgba(0, 0, 0, 0.35)',
-            }}
-          >
-            No matching tools
-          </div>
-        )}
-      </div>
+      {MENU_ITEMS.map(({ action, label, icon: Icon }) => (
+        <button
+          key={action}
+          type="button"
+          className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
+          onClick={() => onSelect(action)}
+        >
+          <Icon className="w-3.5 h-3.5 opacity-60" strokeWidth={1.6} />
+          <span>{label}</span>
+        </button>
+      ))}
     </div>
   );
 }
