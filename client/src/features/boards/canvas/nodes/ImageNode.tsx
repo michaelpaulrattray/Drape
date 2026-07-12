@@ -41,10 +41,7 @@ function ImageNodeInner({ data, selected }: NodeProps<ImageFlowNode>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const typeName = data.provenance ? PROVENANCE_LABEL[data.provenance.type] ?? "Image" : "Image";
   const typeLabel = data.label ? `${typeName} · ${data.label}` : typeName;
-  const engine =
-    data.provenance && "engine" in data.provenance && data.provenance.engine !== "unknown"
-      ? data.provenance.engine
-      : undefined;
+  // (Engine slot dead — C7 label pass, D-41 leak class; see NodeLabelRow)
 
   const dispatchNodeEvent = (name: string) =>
     window.dispatchEvent(new CustomEvent(name, { detail: { itemId: data.itemId } }));
@@ -97,7 +94,7 @@ function ImageNodeInner({ data, selected }: NodeProps<ImageFlowNode>) {
   return (
     <div ref={containerRef} className="relative" style={{ width: data.width }}>
       {selected && !multiSelect && <NodeFloatingToolbar actions={toolbarActions} />}
-      <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
+      <NodeLabelRow type={typeLabel} selected={selected} />
       <CanvasNodeShell selected={selected}>
         <Handle type="target" position={Position.Left} id="in" style={{ opacity: 0, left: -2 }} />
         <Handle type="source" position={Position.Right} id="out" style={{ opacity: 0, right: -2 }} />

@@ -96,9 +96,8 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
     : prov?.type === "cast_view"
       ? `${baseLabel} · ${VIEW_ANGLE_LABEL[prov.viewAngle] ?? prov.viewAngle}`
       : baseLabel;
-  const rawEngine = prov && "engine" in prov ? prov.engine : undefined;
-  // 'restore' is ledger plumbing, not an engine — never chrome (D-41 class)
-  const engine = rawEngine === "restore" ? undefined : rawEngine;
+  // (The label row's engine slot is dead — C7 label pass; raw engine ids
+  // were the D-41 leak class. provenance.engine stays for Info/audit.)
   const errored = data.status?.type === "error";
   const showFrontDoor =
     controller.isEmpty && !errored && controller.promptState !== "generating";
@@ -437,7 +436,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           />
         </div>
       ) : (
-        <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
+        <NodeLabelRow type={typeLabel} selected={selected} />
       )}
 
       {/* Output pin — the lineage anchor AND the D-36a spawn gesture: drag

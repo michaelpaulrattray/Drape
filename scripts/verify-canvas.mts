@@ -1313,6 +1313,16 @@ let seededItemId = 0;
       const renderedEdges = await page.evaluate(() => document.querySelectorAll(".react-flow__edge").length);
       check("O4 lineage edge renders on the canvas (DS §8)", renderedEdges >= 1, `${renderedEdges} edges`);
 
+      // C7 label pass (founder): node chrome NEVER wears raw engine ids —
+      // 'package' / 'gemini-…' / 'restore' are internal vocabulary (the
+      // D-41 leak class). The popped view is exactly where they leaked.
+      const popLabel = await page.evaluate((id: number) => {
+        const el = document.querySelector(`.react-flow__node[data-id="item-${id}"]`);
+        const t = el?.textContent ?? "";
+        return { t: t.slice(0, 60), clean: !/package|gemini|restore/i.test(t) };
+      }, edgeRow?.targetItemId ?? 0);
+      check("O4b popped-view chrome carries no engine vocabulary", !!popLabel?.clean, JSON.stringify(popLabel));
+
       // R4 activation: deleting the root now raises the ONE red cascade dialog
       await page.keyboard.press("Escape");
       await sleep(200);

@@ -1,17 +1,22 @@
 /**
  * The tiny label row OUTSIDE and above the card — DESIGN_SYSTEM.md §5.5.
- * Type/title left, engine right. Renders at every zoom (D-37): small text at
- * far zoom simply reads small.
+ * Renders at every zoom (D-37): small text at far zoom simply reads small.
+ *
+ * The engine slot is DEAD (founder, C7 label pass): raw provenance.engine
+ * values ('package', 'gemini-3-pro-image-preview') are internal identifiers
+ * — the D-41 leak class — and they truncated the name they shared a row
+ * with. The label is the NAME (· view / · Draft), nothing else. Engine
+ * stays truthful in provenance + the Info panel; a designed engine
+ * vocabulary returns with pass-3 multi-engine (D-36c's dropdown).
  */
 import { cn } from "@/lib/utils";
 
 export interface NodeLabelRowProps {
   type: string; // "Cast · Maya R." or "Cast · Maya R. · Full front"
-  engine?: string; // from provenance.engine — never hardcoded
   selected?: boolean;
 }
 
-export function NodeLabelRow({ type, engine, selected }: NodeLabelRowProps) {
+export function NodeLabelRow({ type, selected }: NodeLabelRowProps) {
   return (
     <div className="flex justify-between items-center px-0.5 pb-1.5">
       <span
@@ -22,9 +27,6 @@ export function NodeLabelRow({ type, engine, selected }: NodeLabelRowProps) {
       >
         {type}
       </span>
-      {engine && (
-        <span className="text-canvas-xs text-canvas-ink-faint shrink-0 pl-2">{engine}</span>
-      )}
     </div>
   );
 }
