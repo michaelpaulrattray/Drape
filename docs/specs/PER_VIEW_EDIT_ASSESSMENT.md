@@ -1,6 +1,6 @@
 # Per-view edit coherence — assessment (VC-R5 A1)
 
-**Status: REPORT ONLY — awaiting the founder's ruling.** Commissioned at VC-R5 (Group 6h). Question: the casting environment lets you type edits against a single generated view; an edit like "add tattoos" on the full-body diverges that view from the rest of the package. What does the current path actually do, what guards coherence, and what's the right model?
+**Status: RATIFIED (founder, 2026-07-12 — D-53, combined with A3).** Stage 1 (the seal: identity-level edits refused on minted via `editClassifier`) shipped same day; stage 2 (fork-guidance UI + the draft stale-writer, Option A + B-lite) lands as part of the D-53 rider on R6's environment-restyle slot. Original question: the casting environment lets you type edits against a single generated view; an edit like "add tattoos" on the full-body diverges that view from the rest of the package. What does the current path actually do, what guards coherence, and what's the right model?
 
 ---
 

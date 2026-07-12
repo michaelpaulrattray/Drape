@@ -1,6 +1,6 @@
 # Slot versions vs legacy studio undo — assessment (VC-R5 follow-up A3)
 
-**Status: REPORT ONLY — awaiting the founder's combined A1/A3 ruling.** Commissioned in Group 6i. Question: the slot ledger (`Three-quarter · v3`, newest-wins asset rows) and the studio's in-session undo are two version systems unaware of each other — is the right model a REVERT verb on the ledger, with the legacy undo retired or scoped?
+**Status: RATIFIED (founder, 2026-07-12 — D-53, combined with A1).** The §3 governance model is now law verbatim; `restoreSlotVersion` naming, unpinned-restore, the tile-popover thumb-strip, legacy-undo retirement (hold-to-compare kept), and vN unification all ratified as recommended; builds as one rider on R6's environment-restyle slot. Original question: the slot ledger (`Three-quarter · v3`, newest-wins asset rows) and the studio's in-session undo are two version systems unaware of each other — is the right model a REVERT verb on the ledger, with the legacy undo retired or scoped?
 
 ---
 

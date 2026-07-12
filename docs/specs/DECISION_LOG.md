@@ -407,6 +407,22 @@ Rulings on the Group 6h assessments plus a driving batch that hadn't reached the
 
 - **A3 — slot versions vs legacy studio undo** (report only, → `SLOT_VERSION_REVERT_ASSESSMENT.md`): the slot ledger (Three-quarter · v3, newest-wins rows) and the studio's in-session undo are two version systems unaware of each other. Assess: what the legacy undo actually controls; revert-as-copy-forward on the ledger (tile popover version row → "Use this version", zero generation cost, pin-compatible); collisions with pins/staleness/D-12 snapshots; whether it folds into A1's coherence question. Founder rules on the combined A1/A3 picture.
 
+> **RATIFICATION RECORD (founder, 2026-07-12, post-re-drive):** re-drive PASSED — the seal refuses identity edits and allows cosmetic tweaks correctly, pin-drag works, the phantom cascade is gone, quiet board + flat pill + feed all correct. **Combined A1/A3 ruling: RATIFIED as recommended → D-53.** Both assessment docs marked RATIFIED.
+
+### D-53 — The slot ledger governs generated views *(founder-ratified 2026-07-12; combines A1 + A3; assessments: `PER_VIEW_EDIT_ASSESSMENT.md`, `SLOT_VERSION_REVERT_ASSESSMENT.md`)*
+
+**Canonical statement (law):** *"Every change to a slot is a new ledger row (cosmetic iterate / refresh / restore); identity changes fork; the ledger is the single version history; pins mark accepted-final."*
+
+Ratified specifics:
+- **`restoreSlotVersion`** naming approved — never "revert" (boards' `revertItemVersion` mutates the head backward; two same-named verbs with opposite semantics is the confusion to avoid; the board-side verb keeps its name and its 3f identity-event routing). UI verb: **"Use this version."** Copy-forward append, zero generation cost; restored rows arrive **unpinned** with `restoredFromAssetId` provenance (D-12 audit chain intact).
+- **Surface:** the tile popover's version thumb-strip (the D-29 per-view surface — no new chrome class).
+- **Legacy casting undo/redo retired** for generated views; **hold-to-compare kept** (honest preview, no persistence pretense); the viewer's vN **unifies onto the ledger count** (one version vocabulary; the client-stack denominator dies). Wardrobe's separate VTO undo untouched.
+- **Lands as ONE rider (~2–2.75d, incl. A1 stage 2:** designed fork-guidance UI + the stale-writer for identity-classified draft edits**) on R6's environment-restyle slot** — the restyle reworks these exact surfaces; three separate touches would be waste.
+
+### R6 design-direction note — the environment as a SPATIAL surface *(founder-directed 2026-07-12; price in the R6 plan, both versions)*
+
+Consider making the environment's work area a spatial surface in the canvas image viewer's exact language — scroll-zoom, pan, the `#FAFAF8` + dot grid, the fluidity — rather than the current fixed-frame page. **Scope: camera-on-a-fixed-composition** — the panel stays docked, views hold canonical arrangement, no board grammar transfers; only the viewer's camera and feel. Rationale: closes the last dialect gap (board → environment currently reads canvas → webpage), and post-R5 the environment's content is a package + version strips + compare — spatial inspection handles that natively. **The R6 plan must price both the full version and the cheap fallback** (viewer background + scroll-zoom on the existing layout).
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
