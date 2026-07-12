@@ -32,6 +32,8 @@ import { NodeInfoPanel } from './components/NodeInfoPanel';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { isLineageEdge, type CanonicalViewAngle } from '@shared/boardTypes';
 import { PinSpawnMenu } from './canvas/PinSpawnMenu';
+import { GroupContextMenu } from './canvas/GroupContextMenu';
+import { downloadImage } from './canvas/imageActions';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -1333,6 +1335,36 @@ function BoardPageImpl() {
     [items],
   );
 
+  // ── D-50 group actions — one handler behind both surfaces (toolbar +
+  // context menu; Focus never reaches here — it's viewport work in BoardCanvas)
+  const handleGroupAction = useCallback(
+    (action: 'duplicate' | 'download' | 'delete', itemIds: number[]) => {
+      switch (action) {
+        case 'duplicate':
+          // Reuses the per-node duplicate path (offset + optimistic landing)
+          for (const id of itemIds) {
+            window.dispatchEvent(new CustomEvent('board-duplicate-node', { detail: { itemId: id } }));
+          }
+          break;
+        case 'download': {
+          for (const id of itemIds) {
+            const item = itemsRef.current?.find((i) => i.id === id);
+            if (item?.imageUrl) downloadImage(item.imageUrl, `drape-${id}.png`);
+          }
+          break;
+        }
+        case 'delete':
+          // The existing trust net: cascade prediction + the one red confirm
+          // covers the whole set (D-50.2)
+          handleDeleteRef.current(itemIds);
+          break;
+      }
+    },
+    [],
+  );
+
+  const [groupContextMenu, setGroupContextMenu] = useState<{ x: number; y: number; itemIds: number[] } | null>(null);
+
   const handleNodeContextAction = useCallback(
     (action: NodeContextAction, nodeId: number) => {
       switch (action) {
@@ -1524,9 +1556,16 @@ function BoardPageImpl() {
             onNodeSelect={handleNodeSelect}
             onNodeDoubleClick={handleNodeDoubleClick}
             onNodeContextMenu={handleNodeContextMenu}
+            onGroupAction={handleGroupAction}
+            onSelectionContextMenu={(itemIds, position) => {
+              setAddNodeMenu(null);
+              setNodeContextMenu(null);
+              setGroupContextMenu({ x: position.x, y: position.y, itemIds });
+            }}
             onPaneClick={() => {
               setAddNodeMenu(null);
               setNodeContextMenu(null);
+              setGroupContextMenu(null);
             }}
             onPaneClickWithPosition={placementMode ? handlePlacementClick : undefined}
             crosshairCursor={!!placementMode}
@@ -1685,6 +1724,25 @@ function BoardPageImpl() {
           position={addNodeMenu}
           onSelect={handleAddNodeAction}
           onClose={() => setAddNodeMenu(null)}
+        />
+      )}
+
+      {/* Group context menu (D-50.1) — parity with the group toolbar */}
+      {groupContextMenu && (
+        <GroupContextMenu
+          x={groupContextMenu.x}
+          y={groupContextMenu.y}
+          itemIds={groupContextMenu.itemIds}
+          onAction={(action, itemIds) => {
+            if (action === 'focus') {
+              // Focus routes through the canvas' viewport — reuse scroll-to on
+              // the first node then let fitView handle it via the toolbar path
+              window.dispatchEvent(new CustomEvent('board-group-focus', { detail: { itemIds } }));
+              return;
+            }
+            handleGroupAction(action, itemIds);
+          }}
+          onClose={() => setGroupContextMenu(null)}
         />
       )}
 

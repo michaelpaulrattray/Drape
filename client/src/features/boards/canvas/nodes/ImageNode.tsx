@@ -13,6 +13,7 @@ import { CanvasNodeShell } from "../CanvasNodeShell";
 import { NodeLabelRow } from "../NodeLabelRow";
 import { SafeImage } from "../ImageFallback";
 import { NodeFloatingToolbar, type NodeToolbarAction } from "../NodeFloatingToolbar";
+import { useIsMultiSelect } from "../GroupSelectionOverlay";
 import { downloadImage } from "../imageActions";
 import type { Provenance } from "@shared/boardTypes";
 
@@ -90,9 +91,12 @@ function ImageNodeInner({ data, selected }: NodeProps<ImageFlowNode>) {
     },
   ];
 
+  // D-50: in a multi-selection the group toolbar replaces per-node toolbars
+  const multiSelect = useIsMultiSelect();
+
   return (
     <div ref={containerRef} className="relative" style={{ width: data.width }}>
-      {selected && <NodeFloatingToolbar actions={toolbarActions} />}
+      {selected && !multiSelect && <NodeFloatingToolbar actions={toolbarActions} />}
       <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
       <CanvasNodeShell selected={selected}>
         <Handle type="target" position={Position.Left} id="in" style={{ opacity: 0, left: -2 }} />

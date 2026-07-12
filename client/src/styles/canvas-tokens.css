@@ -79,3 +79,17 @@
   background: var(--color-canvas-bg);
   color: var(--color-canvas-ink);
 }
+
+/* D-50: selection surfaces speak the ink language — no blue, ever.
+   The marquee drag rect gets a quiet ink wash; React Flow's post-marquee
+   nodes-selection rect stays functional (it drags the group) but invisible —
+   GroupSelectionOverlay renders the one padded group container. */
+.canvas-scope .react-flow__selection {
+  background: rgba(10, 10, 10, 0.04);
+  border: 1px dashed var(--color-canvas-border-strong);
+  border-radius: 2px;
+}
+.canvas-scope .react-flow__nodesselection-rect {
+  background: transparent;
+  border: none;
+}

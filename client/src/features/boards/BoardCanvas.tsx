@@ -31,6 +31,7 @@ import { NoteNode, type NoteFlowNode } from './nodes/NoteNode';
 import { CastNode, type CastFlowNode, type CastNodeData } from './canvas/nodes/CastNode';
 import { ImageNode, type ImageFlowNode } from './canvas/nodes/ImageNode';
 import { CanvasZoomContext, useLiveCanvasZoom } from './canvas/canvasZoom';
+import { GroupSelectionOverlay } from './canvas/GroupSelectionOverlay';
 import type { BoardItemCanvasMetadata, Provenance } from '@shared/boardTypes';
 
 /* ── Types ────────────────────────────────────────────────── */
@@ -101,6 +102,10 @@ type BoardCanvasProps = {
   /** R5 lineage edges (D-50.5 lineage class only, endpoints alive) — rendered
    *  ambient per DS §8; full opacity when either endpoint is selected. */
   lineageEdges?: Array<{ id: number; source: number; target: number; relation: string }>;
+  /** D-50 group actions (Focus is handled internally via fitView). */
+  onGroupAction?: (action: 'duplicate' | 'download' | 'delete', itemIds: number[]) => void;
+  /** D-50.1 parity surface: right-click on the multi-selection. */
+  onSelectionContextMenu?: (itemIds: number[], position: { x: number; y: number }) => void;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -275,6 +280,8 @@ export function BoardCanvas({
   onSetPositionsRef,
   pointerTool = 'select',
   lineageEdges,
+  onGroupAction,
+  onSelectionContextMenu,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -296,6 +303,22 @@ export function BoardCanvas({
   }, [onSelectNodeRef]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>([]);
+
+  // D-50 Focus from the group context menu (the toolbar path calls fitView
+  // directly) — zoom-to-selection is a viewport concern, so it lives here
+  useEffect(() => {
+    const onGroupFocus = (e: Event) => {
+      const ids = (e as CustomEvent<{ itemIds: number[] }>).detail?.itemIds;
+      if (!ids?.length) return;
+      void rfInstance.current?.fitView({
+        nodes: ids.map((id) => ({ id: `item-${id}` })),
+        padding: 0.3,
+        duration: 500,
+      });
+    };
+    window.addEventListener('board-group-focus', onGroupFocus);
+    return () => window.removeEventListener('board-group-focus', onGroupFocus);
+  }, []);
 
   // R5 edge rendering (DS §8): lineage is ambient structure — hairline-strong
   // smoothstep at 40%, upgraded to full opacity when either endpoint is
@@ -497,11 +520,31 @@ export function BoardCanvas({
           // Prevent the canvas-level context menu from also firing
           event.preventDefault();
           event.stopPropagation();
-          if (onNodeContextMenu) {
-            const itemId = parseInt(node.id.replace('item-', ''), 10);
-            if (!isNaN(itemId)) {
-              onNodeContextMenu(itemId, event as unknown as React.MouseEvent);
-            }
+          const itemId = parseInt(node.id.replace('item-', ''), 10);
+          if (isNaN(itemId)) return;
+          // D-50.1: right-clicking a node inside a multi-selection opens the
+          // GROUP menu (parity with the group toolbar), not the node menu
+          const selectedIds = nodesRef.current
+            .filter((n) => n.selected)
+            .map((n) => parseInt(n.id.replace('item-', ''), 10))
+            .filter((id) => !isNaN(id));
+          if (selectedIds.length > 1 && selectedIds.includes(itemId) && onSelectionContextMenu) {
+            const point = event as unknown as React.MouseEvent;
+            onSelectionContextMenu(selectedIds, { x: point.clientX, y: point.clientY });
+            return;
+          }
+          onNodeContextMenu?.(itemId, event as unknown as React.MouseEvent);
+        }}
+        onSelectionContextMenu={(event) => {
+          // Right-click on the selection rect itself — same parity surface
+          event.preventDefault();
+          const selectedIds = nodesRef.current
+            .filter((n) => n.selected)
+            .map((n) => parseInt(n.id.replace('item-', ''), 10))
+            .filter((id) => !isNaN(id));
+          if (selectedIds.length > 1 && onSelectionContextMenu) {
+            const point = event as unknown as React.MouseEvent;
+            onSelectionContextMenu(selectedIds, { x: point.clientX, y: point.clientY });
           }
         }}
         onMoveEnd={handleMoveEnd}
@@ -610,6 +653,21 @@ export function BoardCanvas({
           gap={20}
           size={1.3}
           color="#c4c4c4"
+        />
+        {/* D-50: selection >1 renders as a GROUP — one container, one toolbar */}
+        <GroupSelectionOverlay
+          onGroupAction={(action, itemIds) => {
+            if (action === 'focus') {
+              // Zoom-to-selection lives here — it's a viewport concern
+              void rfInstance.current?.fitView({
+                nodes: itemIds.map((id) => ({ id: `item-${id}` })),
+                padding: 0.3,
+                duration: 500,
+              });
+              return;
+            }
+            onGroupAction?.(action, itemIds);
+          }}
         />
         {children}
       </ReactFlow>

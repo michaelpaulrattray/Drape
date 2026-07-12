@@ -33,6 +33,7 @@ import { downloadImage } from "../imageActions";
 import { useRegisterCanvasLayer } from "../../stores/useCanvasLayers";
 import { useCastNodeController } from "./useCastNodeController";
 import { CharacterSheetImageArea } from "../CharacterSheetImageArea";
+import { useIsMultiSelect } from "../GroupSelectionOverlay";
 import { BulkRefreshDialog } from "../BulkRefreshDialog";
 import { CostLabel } from "../CostLabel";
 import { useSheetController } from "./useSheetController";
@@ -250,8 +251,10 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
     },
   ];
 
+  // D-50: in a multi-selection the group toolbar replaces per-node toolbars
+  const multiSelect = useIsMultiSelect();
   const showToolbar =
-    selected && !controller.isEmpty && controller.promptState !== "generating";
+    selected && !multiSelect && !controller.isEmpty && controller.promptState !== "generating";
 
   return (
     <div ref={containerRef} className="relative" style={{ width: cardWidth }}>
