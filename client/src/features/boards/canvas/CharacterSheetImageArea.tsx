@@ -80,11 +80,13 @@ export function CharacterSheetImageArea({
         const area = TILE_AREAS[tile.angle];
         if (!tile.filled) {
           return (
+            // No mousedown stopPropagation: the card must stay selectable and
+            // draggable by its face (the tiles ARE the face); the 4px
+            // click-vs-drag threshold (VC-R4 fix 4) keeps clicks clean
             <button
               key={tile.angle}
               type="button"
               style={{ gridArea: area }}
-              onMouseDown={(e) => e.stopPropagation()}
               onClick={tile.failed ? (e) => onTileClick(tile.angle, e.currentTarget) : onGhostClick}
               className={cn(
                 "relative bg-canvas-surface-inset flex flex-col items-center justify-center gap-0.5",
@@ -109,7 +111,6 @@ export function CharacterSheetImageArea({
             key={tile.angle}
             type="button"
             style={{ gridArea: area }}
-            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => onTileClick(tile.angle, e.currentTarget)}
             className="relative bg-canvas-surface-inset overflow-hidden group"
           >

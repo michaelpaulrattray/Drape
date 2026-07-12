@@ -615,12 +615,48 @@ function BoardPageImpl() {
           ),
         );
       }
-      // The cascade-bearing edge enters the cache immediately — a delete in
-      // the refetch window must still predict the popped child (R4 trust net)
+      // The cascade-bearing edge AND the confirmed row enter the caches
+      // immediately (D-38): a delete in the refetch window must still predict
+      // the popped child (R4 trust net), and the comp-card tile must learn
+      // it's popped now — not a remote-DB refetch round-trip later
       utils.boardOps.listEdges.setData({ boardId }, (old) => [
         ...(old ?? []),
         { id: result.edgeId, source: vars.itemId, target: result.itemId, relation: 'generated_from_cast' },
       ]);
+      const source = items?.find((i) => i.id === vars.itemId);
+      utils.boards.getItems.setData({ boardId }, (old) => {
+        if (!old || old.some((i) => i.id === result.itemId)) return old;
+        const template = old[0];
+        if (!template) return old;
+        return [
+          ...old,
+          {
+            ...template,
+            id: result.itemId,
+            type: 'model',
+            kind: 'image',
+            label: source?.label ?? null,
+            imageUrl: result.imageUrl,
+            positionX: result.position.x,
+            positionY: result.position.y,
+            width: 200,
+            height: 360,
+            zIndex: 0,
+            metadata: {
+              provenance: {
+                type: 'cast_view',
+                modelId: -1, // reconciled by the refetch; display-only until then
+                rootItemId: vars.itemId,
+                viewAngle: result.viewAngle,
+                attributes: {},
+                engine: 'package',
+                inputs: [],
+              },
+              version: 1,
+            },
+          } as (typeof old)[number],
+        ];
+      });
       utils.boards.getItems.invalidate({ boardId });
       utils.boardOps.listEdges.invalidate({ boardId });
     },

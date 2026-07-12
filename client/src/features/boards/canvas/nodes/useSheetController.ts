@@ -57,14 +57,17 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     { enabled, staleTime: 15_000 },
   );
 
-  // Same query keys BoardPage holds — served from cache
+  // Same query keys BoardPage holds — served from cache. refetchOnMount OFF:
+  // these subscriptions must never DRIVE the queries (a node remount mid-undo
+  // once refetched getItems while the restore was in flight and dropped the
+  // optimistically-restored row — BoardPage owns the fetch lifecycle).
   const { data: boardEdges } = trpc.boardOps.listEdges.useQuery(
     { boardId: data.boardId },
-    { enabled, staleTime: 30_000 },
+    { enabled, staleTime: 30_000, refetchOnMount: false },
   );
   const { data: items } = trpc.boards.getItems.useQuery(
     { boardId: data.boardId },
-    { enabled, staleTime: 10_000 },
+    { enabled, staleTime: 10_000, refetchOnMount: false },
   );
 
   // Which angles already live on the board as pop-outs (⤢ + Return to sheet)

@@ -50,6 +50,27 @@
  *      immediately, never vanish, land as sibling drafts with variant_of
  *      edges; the ledger nets exactly the landed count; no generation rows
  *      stuck 'processing' (the $returningId class).
+ *   N. (R5, free) The COMP CARD renders on a seeded minted package: six
+ *      mosaic tiles, headshot 2×2 dominant, filled tiles image-only at rest
+ *      (D-29), ghosts for missing slots.
+ *   O. (R5, free) Pop out writes the generated_from_cast edge with
+ *      { viewAngle } metadata (200-wide cast_view placement, rendered edge);
+ *      deleting the root then raises the RED CASCADE DIALOG (the R4
+ *      activation, VC-R4 confirm); collapse soft-deletes the placement and
+ *      re-anchors outgoing edges to the root, viewAngle preserved (D-30).
+ *   P. (R5, free) Per-slot pin over raw tRPC lands on the newest filled row;
+ *      the tile popover reads it back (Unpin + disabled Refresh).
+ *   Q. (R5, free) Structural refresh refusals BEFORE money moves: the
+ *      headshot is never refreshable (it IS the identity, D-43); pinned
+ *      slots refuse; the balance is untouched.
+ *   S. (D-50, free) Group selection grammar: selection >1 renders ONE group
+ *      toolbar (per-node toolbars suppressed), the Run-all slot is reserved
+ *      (disabled), Esc clears the group.
+ *   R. (paid — RUN_PAID_INVARIANTS incl. R) Per-tile refresh on a REAL
+ *      minted package: plan-priced popover (~300), a NEW asset row lands
+ *      (newest-wins), the ledger nets exactly the slot cost. The gate-fail
+ *      refund path shares generatePackageSlot with the mint — invariant I +
+ *      the refreshSlots unit tests guard it.
  *   I. (paid, SEPARATE mode) Forced gate failure surfaces named + refunded
  *      (D-40). Needs a server booted with BACK_VIEW_GATE_FORCE_FAIL=1 and
  *      the drive with RUN_GATE_FAIL=1 (the fail flag is server-side, out of
@@ -60,7 +81,7 @@
  *      computePackageSlots unit test.
  *
  * Run:  pnpm dev (running) → npx tsx scripts/verify-canvas.mts
- *       (+ $env:RUN_PAID_INVARIANTS='1' for F+G+H+L — ~2550 credits on verify-bot)
+ *       (+ $env:RUN_PAID_INVARIANTS='1' for F+G+H+L+R — ~2850 credits on verify-bot)
  *       (gate-fail mode: boot server with BACK_VIEW_GATE_FORCE_FAIL=1, then
  *        $env:RUN_GATE_FAIL='1' — ~1550 credits; do NOT combine with the F–H run)
  * Uses the dev DB verify-bot user (see .claude/skills/verify) and system Edge.
@@ -109,9 +130,13 @@ if (!boardId) {
   );
   boardId = (res as { insertId: number }).insertId;
 }
-// Clean slate each run (edges too — they reference the deleted items)
+// Clean slate each run (edges too — they reference the deleted items), and a
+// DETERMINISTIC start viewport: mid-run zooms/pans get debounce-saved, so
+// without this every run starts wherever the last one ended (the R5 comp-card
+// legs zoom deep onto the seeded card — a poisonous start state for A–M)
 await conn.execute(`DELETE FROM board_items WHERE boardId = ?`, [boardId]);
 await conn.execute(`DELETE FROM board_edges WHERE boardId = ?`, [boardId]);
+await conn.execute(`UPDATE boards SET viewportX = 0, viewportY = 0, viewportZoom = 100 WHERE id = ?`, [boardId]);
 
 const token = await new SignJWT({
   openId: "verify-bot-local",
@@ -274,7 +299,18 @@ const addCastViaPill = async () => {
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
     }))!;
     await page.mouse.click(pill.x, pill.y);
-    await page.waitForSelector(".canvas-scope .grid button img", { timeout: 10000 });
+    // 30s + one retry: listCastableModels walks the bot's models one
+    // asset-lookup each against the remote Railway DB — 10s raced it under
+    // contention, and a slow run can eat the first click entirely
+    try {
+      await page.waitForSelector(".canvas-scope .grid button img", { timeout: 30000 });
+    } catch {
+      await page.mouse.click(pill.x, pill.y);
+      await page.waitForSelector(".canvas-scope .grid button img", { timeout: 30000 });
+    }
+    // Let the modal's entrance animation settle — a click mid-translate
+    // lands where the card WAS (burned ~2 runs in 15)
+    await sleep(450);
     const card = (await page.evaluate(() => {
       const img = document.querySelector(".canvas-scope .grid button img")!;
       const r = img.getBoundingClientRect();
@@ -492,10 +528,29 @@ if (!(await filledNode())?.img) {
   // ceremony must NEVER fire on nothing (baseline = the hydration payload)
   await clickByText("Save changes");
   await sleep(800);
-  const zeroEdit = {
+  let zeroEdit = {
     noDialog: !(await bodyIncludes("This is a new person")),
     quietNote: await bodyIncludes("No identity changes yet"),
   };
+  if (!zeroEdit.noDialog) {
+    // The false-ceremony dialog fired — under drive-hammering the hydration
+    // late-write race (VC-R3b bug-2 class, R7-logged) can produce a phantom
+    // diff transiently. Close, let hydration finish settling, save again:
+    // a REGRESSION fails both times; the race passes the second.
+    console.log("   E1b: phantom dialog on first zero-edit save — retrying once after settle");
+    await clickByText("Keep editing");
+    await sleep(2500);
+    await clickByText("Save changes");
+    await sleep(800);
+    zeroEdit = {
+      noDialog: !(await bodyIncludes("This is a new person")),
+      quietNote: await bodyIncludes("No identity changes yet"),
+    };
+    if (!zeroEdit.noDialog) {
+      await clickByText("Keep editing");
+      await sleep(400);
+    }
+  }
   check(
     "E1b zero-edit save is a no-op (no dialog, quiet note)",
     zeroEdit.noDialog && zeroEdit.quietNote,
@@ -655,10 +710,21 @@ if (!(await filledNode())?.img) {
     if (undoClicked) {
       await sleep(400);
       const restoredInDom = (await nodeCount()) === countBefore;
-      await sleep(2500); // server reconcile + refetch
-      const [restRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
-      const restoredInDb = (restRows as Array<{ deletedAt: unknown }>)[0]?.deletedAt == null;
-      const stillInDom = (await nodeCount()) === countBefore;
+      // Server reconcile: the delete-time refetch can resolve AFTER the
+      // optimistic restore and briefly drop the row; the undo mutation's own
+      // invalidation brings it back — poll for the settled truth (a fixed
+      // sleep raced exactly this once before, J2's lesson)
+      let restoredInDb = false;
+      let stillInDom = false;
+      for (let i = 0; i < 20 && !(restoredInDb && stillInDom); i++) {
+        await sleep(500);
+        const [restRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
+        restoredInDb = (restRows as Array<{ deletedAt: unknown }>)[0]?.deletedAt == null;
+        stillInDom = await page.evaluate(
+          (id: string) => !!document.querySelector(`.react-flow__node[data-id="${id}"]`),
+          `item-${emptyNode.id}`,
+        );
+      }
       check("J4 undo restores (DOM + DB, survives reconcile)", restoredInDom && restoredInDb && stillInDom,
         `dom=${restoredInDom}/${stillInDom} db=${restoredInDb}`);
 
@@ -694,14 +760,21 @@ if (!(await filledNode())?.img) {
     console.log("SKIP  K — no filled cast node available");
   } else {
     const countBefore = await nodeCount();
-    await page.mouse.click(source.x, source.y);
-    await sleep(500);
-    const dupBtn = await page.evaluate(() => {
-      const b = document.querySelector('button[aria-label="Duplicate"]');
-      if (!b) return null;
-      const r = b.getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-    });
+    // Poll — selection→toolbar render can lag under load; re-click once if
+    // the first click raced a node remount
+    let dupBtn: { x: number; y: number } | null = null;
+    for (let attempt = 0; attempt < 2 && !dupBtn; attempt++) {
+      await page.mouse.click(source.x, source.y);
+      for (let i = 0; i < 10 && !dupBtn; i++) {
+        await sleep(500);
+        dupBtn = await page.evaluate(() => {
+          const b = document.querySelector('button[aria-label="Duplicate"]');
+          if (!b) return null;
+          const r = b.getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        });
+      }
+    }
     check("K1 selection raises the toolbar (Duplicate present)", !!dupBtn);
     if (dupBtn) {
       await page.mouse.click(dupBtn.x, dupBtn.y);
@@ -743,6 +816,409 @@ if (!(await filledNode())?.img) {
   await sleep(300);
   const afterEsc = await selectedCount();
   check("M2 Esc clears the selection (bottom of the layer stack)", afterEsc === 0, `${afterEsc} selected`);
+}
+
+// ── Invariants N/O/P/Q (R5 comp card) — FREE, on a SEEDED minted package ───
+// A synthetic minted model (4 filled slots, same-origin placeholder images)
+// is seeded straight into the dev DB, placed on the board, and the saved
+// viewport is cleared so fitView frames everything after reload. Money never
+// moves: pop-out/collapse are free ops; Q's refusals fire BEFORE any deduct.
+let seededModelId = 0;
+let seededItemId = 0;
+{
+  // Idempotent: previous runs' seed model dies first (items were cleaned at setup)
+  await conn.execute(
+    `DELETE FROM model_assets WHERE modelId IN (SELECT id FROM models WHERE userId = ? AND agencyId = 'MOD-26-DRIVE1')`,
+    [userId],
+  );
+  await conn.execute(`DELETE FROM models WHERE userId = ? AND agencyId = 'MOD-26-DRIVE1'`, [userId]);
+  // Tile images must actually LOAD (SafeImage swaps broken URLs for the
+  // fallback and the tile then reads as unfilled) — borrow a real asset URL
+  // from the bot's prior paid runs; a 1px data URI is the cold-DB fallback
+  const [realAssets] = await conn.execute(
+    `SELECT ma.storageUrl FROM model_assets ma JOIN models m ON m.id = ma.modelId
+     WHERE m.userId = ? AND ma.storageUrl LIKE 'http%' LIMIT 1`,
+    [userId],
+  );
+  const FAKE_URL =
+    (realAssets as Array<{ storageUrl: string }>)[0]?.storageUrl ??
+    "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+  const [mRes] = await conn.execute(
+    `INSERT INTO models (userId, name, status, agencyId, masterPrompt, technicalSchema, preferences)
+     VALUES (?, 'Drive Comp Card', 'active', 'MOD-26-DRIVE1', 'drive seed — comp card invariants', '{}', '{}')`,
+    [userId],
+  );
+  seededModelId = (mRes as { insertId: number }).insertId;
+  for (const angle of ["frontClose", "sideClose", "threeQuarter", "frontFull"]) {
+    await conn.execute(
+      `INSERT INTO model_assets (modelId, viewType, resolution, storageUrl, pointsCost)
+       VALUES (?, ?, '1K', ?, 0)`,
+      [seededModelId, angle, FAKE_URL],
+    );
+  }
+  const [iRes] = await conn.execute(
+    // CAST(? AS JSON): a raw string param lands as a JSON *string* value, not
+    // an object — provenance would read undefined and the card never renders
+    `INSERT INTO board_items (boardId, type, kind, label, imageUrl, positionX, positionY, width, height, zIndex, metadata, sourceModelId)
+     VALUES (?, 'model', 'image', 'Drive Comp Card', ?, 1400, 120, 280, 420, 0, CAST(? AS JSON), ?)`,
+    [
+      boardId,
+      FAKE_URL,
+      JSON.stringify({
+        provenance: { type: "library_cast", modelId: seededModelId, viewAngle: "frontClose" },
+        version: 1,
+      }),
+      seededModelId,
+    ],
+  );
+  seededItemId = (iRes as { insertId: number }).insertId;
+  await conn.execute(`UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`, [boardId]);
+  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+
+  const sheetNodeSel = `.react-flow__node[data-id="item-${seededItemId}"]`;
+  // The card paints once the packageState prefetch lands — poll, don't race
+  // the remote-DB waterfall (getItems → prefetch → render); then zoom toward
+  // the card until tiles are genuinely clickable (React Flow zooms toward
+  // the cursor; recompute the rect every notch — the node moves as the
+  // viewport scales)
+  const settleSheet = async () => {
+    await page
+      .waitForFunction(
+        (sel: string) => {
+          const node = document.querySelector(sel);
+          return !!node && [...node.querySelectorAll("button")].some((b) => (b as HTMLElement).style.gridArea);
+        },
+        { timeout: 20000, polling: 250 },
+        sheetNodeSel,
+      )
+      .catch(() => {});
+    for (let i = 0; i < 14; i++) {
+      const rect = await page.evaluate((sel: string) => {
+        const n = document.querySelector(sel);
+        if (!n) return null;
+        const r = n.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width };
+      }, sheetNodeSel);
+      if (!rect) break;
+      // Land in a clickable band: big enough for tile precision, small
+      // enough that the whole card (label row included) can fit on screen
+      if (rect.w >= 240 && rect.w <= 420) break;
+      await page.mouse.move(rect.x, rect.y);
+      await page.mouse.wheel({ deltaY: rect.w < 240 ? -240 : 240 });
+      await sleep(350);
+    }
+    // Clamp: middle-drag pan until the card sits fully on screen — a label
+    // click at negative y selects nothing and every downstream leg lies
+    const rect = await page.evaluate((sel: string) => {
+      const n = document.querySelector(sel);
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      return { top: r.y, bottom: r.bottom, left: r.x, right: r.right };
+    }, sheetNodeSel);
+    if (rect) {
+      const dx = rect.left < 100 ? 100 - rect.left : rect.right > 1500 ? 1500 - rect.right : 0;
+      const dy = rect.top < 90 ? 90 - rect.top : rect.bottom > 940 ? Math.max(90 - rect.top, 940 - rect.bottom) : 0;
+      if (dx !== 0 || dy !== 0) {
+        await page.mouse.move(800, 500);
+        await page.mouse.down({ button: "middle" });
+        await page.mouse.move(800 + dx, 500 + dy, { steps: 8 });
+        await page.mouse.up({ button: "middle" });
+        await sleep(400);
+      }
+    }
+  };
+  await settleSheet();
+  const tileInfo = () =>
+    page.evaluate((sel: string) => {
+      const node = document.querySelector(sel);
+      if (!node) return null;
+      const tiles = [...node.querySelectorAll("button")].filter(
+        (b) => (b as HTMLElement).style.gridArea,
+      ) as HTMLElement[];
+      return tiles.map((t) => {
+        const r = t.getBoundingClientRect();
+        return {
+          area: t.style.gridArea,
+          x: r.x + r.width / 2,
+          y: r.y + r.height / 2,
+          w: r.width,
+          filled: !!t.querySelector("img"),
+          text: (t.textContent ?? "").trim(),
+        };
+      });
+    }, sheetNodeSel);
+
+  // N — the comp card renders: six mosaic tiles, headshot dominant,
+  // filled tiles image-only at rest, ghosts for the missing slots
+  {
+    const tiles = await tileInfo();
+    check("N1 comp card renders six mosaic tiles", tiles?.length === 6, `${tiles?.length ?? 0} tiles`);
+    if (tiles) {
+      const head = tiles.find((t) => t.area === "head");
+      const small = tiles.find((t) => t.area !== "head" && t.filled);
+      check(
+        "N2 headshot spans 2×2 (dominant)",
+        !!head && !!small && head.w > small.w * 1.7,
+        `head=${head?.w.toFixed(0)}px small=${small?.w.toFixed(0)}px`,
+      );
+      const filled = tiles.filter((t) => t.filled);
+      const ghosts = tiles.filter((t) => !t.filled);
+      check("N3 four filled + two ghost slots", filled.length === 4 && ghosts.length === 2, `${filled.length}f/${ghosts.length}g`);
+      check(
+        "N4 filled tiles are image-only at rest (no text, D-29)",
+        filled.every((t) => t.text === ""),
+      );
+    }
+  }
+
+  // O — pop out writes the cascade-bearing edge; the red dialog activates;
+  // collapse re-anchors outgoing edges to the root with viewAngle intact
+  {
+    const tiles = await tileInfo();
+    const side = tiles?.find((t) => t.area === "side"); // sideClose
+    check("O0 sideClose tile present", !!side);
+    if (side) {
+      const before = await nodeCount();
+      await page.mouse.click(side.x, side.y);
+      await sleep(600);
+      const popped = await page.evaluate(() => {
+        const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim().startsWith("Pop out"));
+        if (!b) return false;
+        const r = b.getBoundingClientRect();
+        (b as HTMLElement).click();
+        return r.width > 0;
+      });
+      check("O1 tile popover offers Pop out", popped);
+      await page
+        .waitForFunction(
+          (n: number) => document.querySelectorAll(".react-flow__node").length > n,
+          { timeout: 8000, polling: 100 },
+          before,
+        )
+        .catch(() => {});
+      // The edge row (server truth): generated_from_cast + viewAngle metadata
+      let edgeRow: { id: number; targetItemId: number } | null = null;
+      for (let i = 0; i < 20 && !edgeRow; i++) {
+        await sleep(500);
+        const [rows] = await conn.execute(
+          `SELECT id, targetItemId FROM board_edges
+           WHERE boardId = ? AND sourceItemId = ? AND relation = 'generated_from_cast'
+             AND JSON_EXTRACT(metadata, '$.viewAngle') = 'sideClose'`,
+          [boardId, seededItemId],
+        );
+        edgeRow = (rows as Array<{ id: number; targetItemId: number }>)[0] ?? null;
+      }
+      check("O2 pop-out wrote generated_from_cast with viewAngle metadata", !!edgeRow);
+      const [popItem] = await conn.execute(
+        `SELECT width, JSON_EXTRACT(metadata, '$.provenance.type') AS ptype FROM board_items WHERE id = ?`,
+        [edgeRow?.targetItemId ?? 0],
+      );
+      const pop = (popItem as Array<{ width: number; ptype: string }>)[0];
+      check("O3 placement is a 200-wide cast_view", pop?.width === 200 && String(pop?.ptype).includes("cast_view"), JSON.stringify(pop));
+      const renderedEdges = await page.evaluate(() => document.querySelectorAll(".react-flow__edge").length);
+      check("O4 lineage edge renders on the canvas (DS §8)", renderedEdges >= 1, `${renderedEdges} edges`);
+
+      // R4 activation: deleting the root now raises the ONE red cascade dialog
+      await page.keyboard.press("Escape");
+      await sleep(200);
+      const label = await page.evaluate((sel: string) => {
+        const node = document.querySelector(sel);
+        if (!node) return null;
+        const r = node.getBoundingClientRect();
+        return { x: r.x + r.width / 2, y: r.y + 8 }; // label row — never a tile
+      }, sheetNodeSel);
+      await page.mouse.click(label!.x, label!.y);
+      await sleep(400);
+      await page.keyboard.press("Delete");
+      await sleep(500);
+      const cascadeDialog = await page.evaluate(() =>
+        [...document.querySelectorAll("p")].some((p) => p.textContent?.trim() === "Delete this cast?"),
+      );
+      check("O5 deleting the root raises the red cascade dialog (R4 activation)", cascadeDialog);
+      if (cascadeDialog) {
+        await page.evaluate(() => {
+          const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim() === "Cancel");
+          (b as HTMLElement | undefined)?.click();
+        });
+        await sleep(300);
+      }
+
+      // Collapse: seed an outgoing edge from the popped view, collapse via the
+      // tile popover, assert re-anchor to the root with viewAngle preserved
+      if (edgeRow) {
+        const [seedEdge] = await conn.execute(
+          `INSERT INTO board_edges (boardId, sourceItemId, targetItemId, relation, metadata)
+           SELECT ?, ?, id, 'reference_for', '{"weight":1}' FROM board_items
+           WHERE boardId = ? AND id != ? AND id != ? AND deletedAt IS NULL LIMIT 1`,
+          [boardId, edgeRow.targetItemId, boardId, edgeRow.targetItemId, seededItemId],
+        );
+        const outgoingSeeded = (seedEdge as { affectedRows: number }).affectedRows === 1;
+        // The tile learns it's popped once the getItems refetch lands — a
+        // remote-DB roundtrip that takes seconds; poll-click rather than race
+        let returned = false;
+        for (let attempt = 0; attempt < 10 && !returned; attempt++) {
+          await page.keyboard.press("Escape");
+          await sleep(1500);
+          const tiles2 = await tileInfo();
+          const side2 = tiles2?.find((t) => t.area === "side");
+          if (!side2) continue;
+          await page.mouse.click(side2.x, side2.y);
+          await sleep(700);
+          returned = await page.evaluate(() => {
+            const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim() === "Return to sheet");
+            if (!b) return false;
+            (b as HTMLElement).click();
+            return true;
+          });
+        }
+        check("O6 popped tile offers Return to sheet", returned);
+        let collapsed = false;
+        let reanchored = !outgoingSeeded; // only asserted when the seed landed
+        for (let i = 0; i < 20 && (!collapsed || !reanchored); i++) {
+          await sleep(500);
+          const [gone] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [edgeRow.targetItemId]);
+          collapsed = !!(gone as Array<{ deletedAt: unknown }>)[0]?.deletedAt;
+          if (outgoingSeeded) {
+            const [re] = await conn.execute(
+              `SELECT COUNT(*) AS n FROM board_edges
+               WHERE boardId = ? AND sourceItemId = ? AND relation = 'reference_for'
+                 AND JSON_EXTRACT(metadata, '$.viewAngle') = 'sideClose'`,
+              [boardId, seededItemId],
+            );
+            reanchored = (re as Array<{ n: number }>)[0].n === 1;
+          }
+        }
+        check("O7 collapse soft-deletes the placement", collapsed);
+        check("O8 outgoing edge re-anchored to root, viewAngle preserved (D-30)", reanchored);
+      }
+    }
+  }
+
+  // P — per-slot pin: raw tRPC toggles the NEWEST filled row; the tile
+  // popover reads it back (Unpin + disabled Refresh)
+  {
+    const pinRes = await page.evaluate(async (mid: number) => {
+      const res = await fetch("/api/trpc/generation.setSlotPinned", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { modelId: mid, angle: "threeQuarter", pinned: true } }),
+      });
+      return res.status;
+    }, seededModelId);
+    await sleep(300);
+    const [pinRows] = await conn.execute(
+      `SELECT pinned FROM model_assets WHERE modelId = ? AND viewType = 'threeQuarter' AND storageUrl != ''
+       ORDER BY createdAt DESC, id DESC LIMIT 1`,
+      [seededModelId],
+    );
+    const pinnedInDb = (pinRows as Array<{ pinned: number }>)[0]?.pinned === 1;
+    check("P1 setSlotPinned pins the newest filled row", pinRes === 200 && pinnedInDb, `status=${pinRes}`);
+
+    // The raw pin bypassed the client cache (packageState staleTime) — a
+    // reload is the honest way to assert the UI reads the server truth
+    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+    await settleSheet();
+    const tiles = await tileInfo();
+    const tq = tiles?.find((t) => t.area === "tq");
+    await page.mouse.click(tq!.x, tq!.y);
+    await sleep(700);
+    const popoverState = await page.evaluate(() => {
+      const unpin = [...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Unpin");
+      const refresh = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim().startsWith("Refresh"));
+      const all = [...document.querySelectorAll('[data-slot="popover-content"] *')]
+        .map((el) => el.textContent?.trim())
+        .filter((t, i, a) => t && t.length < 60 && a.indexOf(t) === i)
+        .slice(0, 12);
+      return { unpin, refreshDisabled: !!refresh && (refresh as HTMLButtonElement).disabled, all };
+    });
+    check("P2 popover shows Unpin + disabled Refresh on a pinned slot", popoverState.unpin && popoverState.refreshDisabled, JSON.stringify(popoverState));
+    await page.keyboard.press("Escape");
+    await sleep(200);
+  }
+
+  // Q — structural refresh refusals, BEFORE any money moves (D-43/D-15)
+  {
+    const [balRows] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const balanceBefore = (balRows as Array<{ balance: number }>)[0]?.balance ?? 0;
+    // NOTE: no named inner functions inside page.evaluate (the __name crash —
+    // see invariant E's note); both fetches inlined.
+    const refusals = await page.evaluate(async (mid: number) => {
+      const headRes = await fetch("/api/trpc/generation.refreshSlots", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { modelId: mid, angles: ["frontClose"] } }),
+      });
+      const headText = await headRes.text();
+      const pinRes = await fetch("/api/trpc/generation.refreshSlots", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { modelId: mid, angles: ["threeQuarter"] } }),
+      });
+      const pinText = await pinRes.text();
+      return {
+        headshot: { status: headRes.status, text: headText },
+        pinned: { status: pinRes.status, text: pinText },
+      };
+    }, seededModelId);
+    check(
+      "Q1 refreshing the headshot is structurally refused (it IS the identity, D-43)",
+      refusals.headshot.status !== 200 && /headshot is this identity/i.test(refusals.headshot.text),
+      `status=${refusals.headshot.status}`,
+    );
+    check(
+      "Q2 refreshing a pinned slot is refused (accepted-final)",
+      refusals.pinned.status !== 200 && /pinned/i.test(refusals.pinned.text),
+      `status=${refusals.pinned.status}`,
+    );
+    const [balAfter] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const balanceAfter = (balAfter as Array<{ balance: number }>)[0]?.balance ?? 0;
+    check("Q3 refusals moved no money", balanceAfter === balanceBefore, `Δ=${balanceBefore - balanceAfter}`);
+    // Cleanup: unpin for any later paid runs against this model
+    await page.evaluate(async (mid: number) => {
+      await fetch("/api/trpc/generation.setSlotPinned", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { modelId: mid, angle: "threeQuarter", pinned: false } }),
+      });
+    }, seededModelId);
+  }
+}
+
+// ── Invariant S: group selection grammar (D-50 rider) — FREE ───────────────
+// Selection >1: ONE group toolbar (Duplicate/Download all/Focus/reserved Run
+// all/Delete), per-node toolbars suppressed; Esc clears the group.
+{
+  await page.keyboard.press("Escape");
+  await sleep(200);
+  // Ctrl+A: deterministic multi-selection (M already covers the marquee —
+  // after the N-block reload/fitView a marquee start point can land on a node)
+  await page.keyboard.down("Control");
+  await page.keyboard.press("a");
+  await page.keyboard.up("Control");
+  await sleep(500);
+  const state = await page.evaluate(() => {
+    const selected = document.querySelectorAll(".react-flow__node.selected").length;
+    const groupToolbars = [...document.querySelectorAll('button[aria-label="Focus"]')].length;
+    const perNodeToolbars = [...document.querySelectorAll('button[aria-label="Rerun"], button[aria-label^="Rerun —"]')].length;
+    const runAll = [...document.querySelectorAll("button")].find((b) => b.getAttribute("aria-label")?.startsWith("Run all"));
+    return { selected, groupToolbars, perNodeToolbars, runAllReserved: !!runAll && (runAll as HTMLButtonElement).disabled };
+  });
+  check("S1 multi-select renders ONE group toolbar", state.selected >= 2 && state.groupToolbars === 1, JSON.stringify(state));
+  check("S2 per-node toolbars suppressed in a group", state.perNodeToolbars === 0, `${state.perNodeToolbars} leaked`);
+  check("S3 Run all slot reserved (disabled, D-50.4)", state.runAllReserved);
+  await page.keyboard.press("Escape");
+  await sleep(300);
+  const cleared = await page.evaluate(() => ({
+    selected: document.querySelectorAll(".react-flow__node.selected").length,
+    groupToolbars: [...document.querySelectorAll('button[aria-label="Focus"]')].length,
+  }));
+  check("S4 Esc clears the group (container + toolbar gone)", cleared.selected === 0 && cleared.groupToolbars === 0, JSON.stringify(cleared));
 }
 
 // ── Invariant F: fork landing stability — RUN_PAID_INVARIANTS=1 ────────────
@@ -1207,6 +1683,99 @@ if (!paidEnabled("L")) {
         [userId],
       );
       check("L8 no generations stuck 'processing'", Number((stuck as Array<{ n: number }>)[0].n) === 0);
+    }
+  }
+}
+
+// ── Invariant R: per-tile refresh, paid leg — RUN_PAID_INVARIANTS incl. R ──
+// Rides on a REAL minted package (G's mint, or any prior paid run): the tile
+// popover's Refresh is plan-priced, execute writes a NEW asset row
+// (newest-wins), and the ledger nets exactly the slot cost. The gate-fail
+// refund path shares generatePackageSlot with the mint — invariant I plus the
+// refreshSlots unit tests are its always-on guards.
+if (!paidEnabled("R")) {
+  console.log("SKIP  R — paid invariant (one slot refresh; ~300 credits)");
+} else {
+  const [mRows] = await conn.execute(
+    `SELECT m.id FROM models m
+     WHERE m.userId = ? AND m.agencyId IS NOT NULL AND m.status IN ('active','locked')
+       AND EXISTS (SELECT 1 FROM model_assets a WHERE a.modelId = m.id AND a.viewType = 'frontClose' AND a.storageUrl LIKE 'http%')
+       AND EXISTS (SELECT 1 FROM model_assets a WHERE a.modelId = m.id AND a.viewType = 'sideClose' AND a.storageUrl LIKE 'http%')
+       AND m.agencyId != 'MOD-26-DRIVE1'
+     ORDER BY m.id DESC LIMIT 1`,
+    [userId],
+  );
+  const realModelId = (mRows as Array<{ id: number }>)[0]?.id;
+  if (!realModelId) {
+    console.log("SKIP  R — no real minted package on the verify-bot (run G first)");
+  } else {
+    const [urlRows] = await conn.execute(
+      `SELECT storageUrl FROM model_assets WHERE modelId = ? AND viewType = 'frontClose' AND storageUrl != '' ORDER BY createdAt DESC, id DESC LIMIT 1`,
+      [realModelId],
+    );
+    const headUrl = (urlRows as Array<{ storageUrl: string }>)[0].storageUrl;
+    const [riRes] = await conn.execute(
+      `INSERT INTO board_items (boardId, type, kind, label, imageUrl, positionX, positionY, width, height, zIndex, metadata, sourceModelId)
+       VALUES (?, 'model', 'image', 'Drive Refresh', ?, 2000, 120, 280, 420, 0, ?, ?)`,
+      [
+        boardId,
+        headUrl,
+        JSON.stringify({ provenance: { type: "library_cast", modelId: realModelId, viewAngle: "frontClose" }, version: 1 }),
+        realModelId,
+      ],
+    );
+    const rItemId = (riRes as { insertId: number }).insertId;
+    await conn.execute(`UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`, [boardId]);
+    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+    await sleep(1500);
+
+    const [cntRows] = await conn.execute(
+      `SELECT COUNT(*) AS n FROM model_assets WHERE modelId = ? AND viewType = 'sideClose' AND storageUrl != ''`,
+      [realModelId],
+    );
+    const rowsBefore = (cntRows as Array<{ n: number }>)[0].n;
+    const [balRows] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const balBefore = (balRows as Array<{ balance: number }>)[0].balance;
+
+    const tile = await page.evaluate((sel: string) => {
+      const node = document.querySelector(sel);
+      if (!node) return null;
+      const t = [...node.querySelectorAll("button")].find(
+        (b) => (b as HTMLElement).style.gridArea === "side",
+      ) as HTMLElement | undefined;
+      if (!t) return null;
+      const r = t.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }, `.react-flow__node[data-id="item-${rItemId}"]`);
+    check("R1 real package renders its comp card", !!tile);
+    if (tile) {
+      await page.mouse.click(tile.x, tile.y);
+      await sleep(800);
+      const refreshBtn = await page.evaluate(() => {
+        const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim().startsWith("Refresh"));
+        if (!b) return null;
+        return { priced: /~\s?300\s.*credits|~300/.test(b.textContent ?? ""), disabled: (b as HTMLButtonElement).disabled };
+      });
+      check("R2 Refresh is plan-priced in the popover (~300, D-15)", !!refreshBtn && refreshBtn.priced && !refreshBtn.disabled, JSON.stringify(refreshBtn));
+      await page.evaluate(() => {
+        const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim().startsWith("Refresh"));
+        (b as HTMLElement | undefined)?.click();
+      });
+      console.log("   R: refreshing sideClose (real, ~300 credits)...");
+      let newRow = false;
+      for (let i = 0; i < 120 && !newRow; i++) {
+        await sleep(1000);
+        const [after] = await conn.execute(
+          `SELECT COUNT(*) AS n FROM model_assets WHERE modelId = ? AND viewType = 'sideClose' AND storageUrl != ''`,
+          [realModelId],
+        );
+        newRow = (after as Array<{ n: number }>)[0].n === rowsBefore + 1;
+      }
+      check("R3 refresh wrote a NEW asset row (newest-wins read model)", newRow);
+      const [balAfter] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+      const net = balBefore - (balAfter as Array<{ balance: number }>)[0].balance;
+      check("R4 ledger nets exactly the slot cost (300)", net === 300, `net=${net}`);
     }
   }
 }
