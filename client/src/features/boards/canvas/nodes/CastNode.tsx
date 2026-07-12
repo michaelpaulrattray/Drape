@@ -15,6 +15,7 @@
  * landings); Download acts directly.
  */
 import { memo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { trpc } from "@/lib/trpc";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
@@ -32,6 +33,7 @@ import { downloadImage } from "../imageActions";
 import { useRegisterCanvasLayer } from "../../stores/useCanvasLayers";
 import { useCastNodeController } from "./useCastNodeController";
 import { CharacterSheetImageArea } from "../CharacterSheetImageArea";
+import { BulkRefreshDialog } from "../BulkRefreshDialog";
 import { CostLabel } from "../CostLabel";
 import { useSheetController } from "./useSheetController";
 import type { Provenance, NodeStatus, CastAttributes } from "@shared/boardTypes";
@@ -130,6 +132,20 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           : [] // complete six-slot card: the verb disappears entirely
       : [];
 
+  // Aggregate refresh entry (dormant in pass 1 — D-43 removed the trigger;
+  // renders only when model_assets carry stale, i.e. pass 2)
+  const staleSegment: ControlSegment[] =
+    showSheet && sheet.staleCount > 0
+      ? [{
+          kind: "action",
+          content: `${sheet.staleCount} stale`,
+          onClick: () => {
+            sheet.prefetchPlan();
+            sheet.setBulkRefreshOpen(true);
+          },
+        }]
+      : [];
+
   // D-43 v-chip ruling: hidden at v1; at >1 the chip itself opens history
   const versionSegment: ControlSegment[] =
     (data.version || 1) > 1
@@ -161,6 +177,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
     ? [
         ...editSegment,
         ...packageVerb,
+        ...staleSegment,
         ...versionSegment,
         { kind: "action", content: "···", onClick: openMenu },
       ]
@@ -168,6 +185,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         ...(data.pinned ? [{ kind: "pin", content: "Pinned — kept as finished work" } as ControlSegment] : []),
         ...editSegment,
         ...packageVerb,
+        ...staleSegment,
         ...versionSegment,
         { kind: "action", content: "···", onClick: openMenu },
       ];
@@ -476,6 +494,26 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
       </CanvasNodeShell>
 
       {selected && !controller.isEmpty && <NodeControlStrip segments={controlSegments} />}
+
+      {/* Aggregate refresh confirm — portaled: fixed positioning can't live
+          inside React Flow's transformed node tree */}
+      {sheet.bulkRefreshOpen &&
+        createPortal(
+          <BulkRefreshDialog
+            slots={sheet.bulkStaleRows}
+            totalCost={
+              sheet.refreshPlan
+                ? sheet.bulkStaleRows.reduce((sum, s) => sum + s.cost, 0)
+                : null
+            }
+            onConfirm={() => {
+              sheet.refreshSlots(sheet.bulkStaleRows.map((s) => s.angle));
+              sheet.setBulkRefreshOpen(false);
+            }}
+            onCancel={() => sheet.setBulkRefreshOpen(false)}
+          />,
+          document.body,
+        )}
     </div>
   );
 }

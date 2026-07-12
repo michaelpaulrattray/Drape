@@ -86,6 +86,7 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
 
   const [refreshingAngles, setRefreshingAngles] = useState<ReadonlySet<CanonicalViewAngle>>(new Set());
   const [popoverAngle, setPopoverAngle] = useState<CanonicalViewAngle | null>(null);
+  const [bulkRefreshOpen, setBulkRefreshOpen] = useState(false);
 
   const slots = (packageQuery.data?.slots ?? []) as SheetSlotState[];
   const filledCount = slots.filter((s) => s.filled).length;
@@ -105,7 +106,7 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
   // ── Refresh plan (D-15: every cost is plan-derived) ────────────────────
   const planQuery = trpc.generation.refreshSlotsPlan.useQuery(
     { modelId: modelId ?? 0 },
-    { enabled: enabled && isSheet && popoverAngle !== null, staleTime: 15_000 },
+    { enabled: enabled && isSheet && (popoverAngle !== null || bulkRefreshOpen), staleTime: 15_000 },
   );
   const prefetchPlan = useCallback(() => {
     if (enabled && modelId) void utils.generation.refreshSlotsPlan.prefetch({ modelId });
@@ -166,6 +167,14 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     poppedItemId: popoverAngle ? poppedByAngle.get(popoverAngle) ?? null : null,
     refreshPlan: planQuery.data,
     prefetchPlan,
+    // Aggregate refresh (dormant pass-2 machinery — nothing sets stale in
+    // pass 1; the {N} stale segment + this dialog light up with pass 2's
+    // stale-writer). Rows = unpinned stale slots the plan allows.
+    bulkRefreshOpen,
+    setBulkRefreshOpen,
+    bulkStaleRows: (planQuery.data?.slots ?? [])
+      .filter((s) => s.stale && s.refusal === null)
+      .map((s) => ({ angle: s.angle, label: s.label, cost: s.cost })),
     refreshSlot: (angle: CanonicalViewAngle) => {
       if (modelId) refreshMutation.mutate({ modelId, angles: [angle] });
     },
