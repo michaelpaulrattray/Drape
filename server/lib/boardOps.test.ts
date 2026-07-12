@@ -55,24 +55,56 @@ describe("boardOps plans (foundations §4 / Decision 6)", () => {
   });
 });
 
-describe("popOutPlacement (R5 — right of root, stacking downward)", () => {
+describe("popOutPlacement (R5, close-out bug 0 — nearest free slot, 2 rows then wrap)", () => {
   const root = { positionX: 100, positionY: 200, width: 280 };
+  const VIEW = { width: 200, height: 360 };
+  const place = (positions: Array<{ x: number; y: number }>) =>
+    popOutPlacement(root, positions.map((p) => ({ ...p, ...VIEW })));
 
-  it("first pop-out lands right of the root", () => {
-    const p = popOutPlacement(root, 0);
+  it("first pop-out lands right of the root, level with it", () => {
+    const p = place([]);
     expect(p.x).toBeGreaterThan(root.positionX + 280);
     expect(p.y).toBe(root.positionY);
   });
 
-  it("subsequent pop-outs stack downward, never overlapping", () => {
-    const first = popOutPlacement(root, 0);
-    const second = popOutPlacement(root, 1);
+  it("skips occupied slots — second lands below the first", () => {
+    const first = place([]);
+    const second = place([first]);
     expect(second.x).toBe(first.x);
-    expect(second.y - first.y).toBeGreaterThanOrEqual(360); // ≥ one view card
+    expect(second.y - first.y).toBeGreaterThanOrEqual(360);
+  });
+
+  it("wraps to a new column after two rows — NEVER an unbounded downward run", () => {
+    const first = place([]);
+    const second = place([first]);
+    const third = place([first, second]);
+    expect(third.y).toBe(root.positionY); // back to the top row
+    expect(third.x).toBeGreaterThan(first.x); // one column right
+  });
+
+  it("five pop-outs all stay within 1.5 view-heights of their predecessor and near the root", () => {
+    const placed: Array<{ x: number; y: number }> = [];
+    for (let i = 0; i < 5; i++) placed.push(place(placed));
+    for (let i = 1; i < 5; i++) {
+      const dist = Math.hypot(placed[i].x - placed[i - 1].x, placed[i].y - placed[i - 1].y);
+      expect(dist).toBeLessThanOrEqual(1.5 * VIEW.height);
+    }
+    for (const p of placed) {
+      expect(Math.abs(p.y - root.positionY)).toBeLessThanOrEqual(2 * VIEW.height);
+      expect(p.x - root.positionX).toBeLessThanOrEqual(1200);
+    }
+  });
+
+  it("avoids OTHER nodes, not just siblings — a stranger blocking column one wraps the pop-out right", () => {
+    const first = place([]);
+    const stranger = { x: first.x - 20, y: first.y + 40 }; // spans both rows of column one
+    const p = place([stranger]);
+    expect(p).not.toEqual(first); // slot one refused
+    expect(p.x).toBeGreaterThan(first.x); // wrapped to the next column
   });
 
   it("falls back to canonical width when the row has none", () => {
-    const p = popOutPlacement({ positionX: 0, positionY: 0, width: null }, 0);
+    const p = popOutPlacement({ positionX: 0, positionY: 0, width: null }, []);
     expect(p.x).toBeGreaterThan(280);
   });
 });

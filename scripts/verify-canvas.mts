@@ -1270,6 +1270,68 @@ let seededItemId = 0;
   }
 }
 
+// ── Invariant U: pop-out placement stays NEAR the root — FREE ──────────────
+// VC-R5 close-out bug 0: the old placement stacked one unbounded column —
+// a fifth view landed half a screen down. Placement is now the nearest free
+// slot (2 rows per column, wrap right, collision-aware). Pops every filled
+// view of the seeded package over raw tRPC (the server formula under test)
+// and asserts each placement lands within 1.5 view-heights of its
+// predecessor and within a sane radius of the root.
+{
+  const [rootRows] = await conn.execute(
+    `SELECT positionX, positionY FROM board_items WHERE id = ?`,
+    [seededItemId],
+  );
+  const rootPos = (rootRows as Array<{ positionX: number; positionY: number }>)[0];
+  const angles = ["sideClose", "threeQuarter", "frontFull", "frontClose"];
+  const placements: Array<{ x: number; y: number }> = [];
+  const popped: Array<{ itemId: number; edgeId: number }> = [];
+  for (const angle of angles) {
+    const res = await page.evaluate(
+      async (bId: number, iId: number, a: string) => {
+        const r = await fetch("/api/trpc/boardOps.popOutView.execute", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ json: { boardId: bId, itemId: iId, angle: a } }),
+        });
+        const data = await r.json();
+        return data?.result?.data?.json ?? null;
+      },
+      boardId,
+      seededItemId,
+      angle,
+    );
+    if (res?.position) {
+      placements.push(res.position);
+      popped.push({ itemId: res.itemId, edgeId: res.edgeId });
+    }
+  }
+  check("U1 all filled views popped out", placements.length === 4, `${placements.length}/4`);
+  const VIEW_H = 360;
+  let hops = true;
+  for (let i = 1; i < placements.length; i++) {
+    const d = Math.hypot(placements[i].x - placements[i - 1].x, placements[i].y - placements[i - 1].y);
+    if (d > 1.5 * VIEW_H) hops = false;
+  }
+  check("U2 every placement within 1.5 view-heights of its predecessor", hops, JSON.stringify(placements));
+  const nearRoot = placements.every(
+    (p) => Math.abs(p.y - rootPos.positionY) <= 2 * VIEW_H && p.x - rootPos.positionX <= 1400 && p.x > rootPos.positionX,
+  );
+  check("U3 every placement within a sane radius of the root", nearRoot);
+  // Cleanup — the placements were the test, not board furniture
+  if (popped.length > 0) {
+    await conn.execute(
+      `UPDATE board_items SET deletedAt = NOW() WHERE id IN (${popped.map(() => "?").join(",")})`,
+      popped.map((p) => p.itemId),
+    );
+    await conn.execute(
+      `DELETE FROM board_edges WHERE id IN (${popped.map(() => "?").join(",")})`,
+      popped.map((p) => p.edgeId),
+    );
+  }
+}
+
 // ── Invariant S: group selection grammar (D-50 rider) — FREE ───────────────
 // Selection >1: ONE group toolbar (Duplicate/Download all/Focus/reserved Run
 // all/Delete), per-node toolbars suppressed; Esc clears the group.

@@ -11,6 +11,7 @@
 import { TRPCError } from "@trpc/server";
 import {
   addBoardItem,
+  getBoardItems,
   getBoardItemById,
   updateBoardItem,
   batchUpdateBoardItemPositions,
@@ -915,18 +916,50 @@ export const VIEW_CARD_WIDTH = 200;
 const VIEW_CARD_HEIGHT = 360; // label row + 3:4 image (267) + strip allowance
 const POP_OUT_GAP_X = 60;
 const POP_OUT_STEP_Y = VIEW_CARD_HEIGHT + 30;
+/** Rows per column before wrapping right (VC-R5 close-out bug 0): two rows
+ *  keeps every placement within ~1.5 view-card heights of its predecessor —
+ *  the old unbounded single-column stack sent a fifth view half a screen
+ *  down. Columns advance right, staying visually near the root. */
+const POP_OUT_ROWS_PER_COLUMN = 2;
+const POP_OUT_MAX_COLUMNS = 8;
 
-/** Pop-outs land right of the root, stacking downward (founder-ruled at R5
- *  planning; shares fork's "beside" axis — flagged for the VC-R5 feel ruling
- *  per D-48; this constant is the one tuning point). Exported for tests. */
+export interface OccupiedRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function rectsOverlap(a: OccupiedRect, b: OccupiedRect, margin: number): boolean {
+  return (
+    a.x < b.x + b.width + margin &&
+    a.x + a.width + margin > b.x &&
+    a.y < b.y + b.height + margin &&
+    a.y + a.height + margin > b.y
+  );
+}
+
+/** Pop-outs land right of the root (founder-ruled at R5 planning; VC-R5 R2
+ *  approved the geometry): the NEAREST FREE SLOT scanning a 2-rows-then-wrap
+ *  grid of columns, skipping slots that collide with existing nodes — never
+ *  an unbounded downward run (close-out bug 0). Pure; exported for tests. */
 export function popOutPlacement(
   root: { positionX: number; positionY: number; width: number | null },
-  existingPoppedCount: number,
+  occupied: OccupiedRect[],
 ): { x: number; y: number } {
-  return {
-    x: root.positionX + (root.width ?? 280) + POP_OUT_GAP_X,
-    y: root.positionY + existingPoppedCount * POP_OUT_STEP_Y,
-  };
+  const startX = root.positionX + (root.width ?? 280) + POP_OUT_GAP_X;
+  let candidate = { x: startX, y: root.positionY };
+  for (let col = 0; col < POP_OUT_MAX_COLUMNS; col++) {
+    for (let row = 0; row < POP_OUT_ROWS_PER_COLUMN; row++) {
+      candidate = {
+        x: startX + col * (VIEW_CARD_WIDTH + POP_OUT_GAP_X),
+        y: root.positionY + row * POP_OUT_STEP_Y,
+      };
+      const slot: OccupiedRect = { ...candidate, width: VIEW_CARD_WIDTH, height: VIEW_CARD_HEIGHT };
+      if (!occupied.some((r) => rectsOverlap(slot, r, 8))) return candidate;
+    }
+  }
+  return candidate; // a full 8-column shelf — take the last slot rather than run away
 }
 
 export async function planPopOutView(input: { itemId: number; angle: CanonicalViewAngle }): Promise<OperationPlan> {
@@ -943,7 +976,7 @@ export async function planPopOutView(input: { itemId: number; angle: CanonicalVi
         provenance: modelId
           ? { type: "cast_view", modelId, rootItemId: input.itemId, viewAngle: input.angle, attributes: meta.attributes ?? {}, engine: "package", inputs: [] }
           : null,
-        position: popOutPlacement(item, 0),
+        position: popOutPlacement(item, []),
       },
     ],
     addEdges: [{ source: input.itemId, target: -1, relation: "generated_from_cast" }],
@@ -983,18 +1016,25 @@ export async function executePopOutView(input: {
   // One placement per angle per root (package integrity — the tile keeps
   // rendering; a second identical card would just be a duplicate)
   const viewEdges = await getEdgesFrom(input.itemId, "generated_from_cast");
-  let alivePopped = 0;
   for (const edge of viewEdges) {
     const target = await getBoardItemById(edge.targetItemId);
     if (!target || target.deletedAt) continue;
-    alivePopped += 1;
     const targetProv = readMeta(target).provenance;
     if (targetProv?.type === "cast_view" && targetProv.viewAngle === input.angle) {
       throw new TRPCError({ code: "CONFLICT", message: `${VIEW_ANGLE_LABELS[input.angle]} is already on the board` });
     }
   }
 
-  const position = input.position ?? popOutPlacement(item, alivePopped);
+  // Collision-aware placement against every alive node (close-out bug 0):
+  // the nearest free slot beside the root, never an unbounded downward run
+  const aliveItems = await getBoardItems(input.boardId);
+  const occupied: OccupiedRect[] = aliveItems.map((i) => ({
+    x: i.positionX,
+    y: i.positionY,
+    width: i.width ?? 280,
+    height: i.height ?? 420,
+  }));
+  const position = input.position ?? popOutPlacement(item, occupied);
   const assetProv = assetRow.provenance as { engine?: string } | null;
   const { itemId: newItemId } = await executeCreateNode({
     boardId: input.boardId,
