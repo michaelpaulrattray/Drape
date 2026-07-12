@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback, RefObject } from "react";
-import { ViewTabs, RefinePanel, WarmEmptyState, RotatingSuggestions, ToolButton, NextStepChip } from "./components/ImageViewer";
+import { ViewTabs, RefinePanel, WarmEmptyState, RotatingSuggestions, ToolButton } from "./components/ImageViewer";
 import { MaskCanvas } from "./components/ImageViewer/MaskCanvas";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
@@ -31,10 +31,6 @@ interface ImageViewerPanelProps {
   isMasking: boolean;
   maskPathsCount: number;
   formProgress: number;
-  nextStage: {
-    label: string;
-    action: () => void;
-  } | null;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   imageRef: RefObject<HTMLImageElement | null>;
   handlePointerDown: (e: React.PointerEvent<HTMLCanvasElement>) => void;
@@ -61,7 +57,6 @@ export function ImageViewerPanel({
   isMasking,
   maskPathsCount,
   formProgress,
-  nextStage,
   canvasRef,
   imageRef,
   handlePointerDown,
@@ -96,7 +91,13 @@ export function ImageViewerPanel({
     activeTool,
     unlockMode,
     setRefineInput,
+    setShowExportModal,
   } = useCastingUIStore();
+
+  // A4 belt-slimming: the export VERB rides the ··· menu (the floating
+  // NextStepChip and its hook are dead). Same availability rule the chip
+  // had — a full-body view exists, so the identity pack is exportable.
+  const canExportPack = currentAssets.some((a) => a.viewType === 'frontFull');
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
@@ -492,19 +493,20 @@ export function ImageViewerPanel({
       sideOverlay={sideOverlay}
       statusOverlay={statusOverlay}
       bottomOverlay={bottomOverlay}
-      nextStepOverlay={
-        !genState.isGenerating && nextStage ? (
-          <NextStepChip nextStage={nextStage} />
-        ) : undefined
-      }
       actionBar={
         hasAssets && !genState.isGenerating ? (
           <ImageActionBar
             visible={imageAreaHovered}
             showHeart={false}
             imageUrl={currentImageUrl ?? null}
-            onRetry={isReadOnly ? undefined : handleRetry}
+            // Menu Retry retired for casting (A4) — the error state's named
+            // retry (StudioCanvas onRetry) is the one retry surface
             isGenerating={genState.isGenerating}
+            extraMenuItems={
+              !isReadOnly && canExportPack
+                ? [{ label: 'Export identity pack', onClick: () => setShowExportModal(true) }]
+                : undefined
+            }
             shortcuts={isReadOnly
               ? [...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : [])]
               : [

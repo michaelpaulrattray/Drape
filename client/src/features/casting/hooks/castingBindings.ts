@@ -1,9 +1,10 @@
 /**
  * CastingBindings — the state/action surface the generation hooks consume.
  *
- * Audit A1 (CANVAS_AUDIT_ADDENDUM_V2) prerequisite: `useCastingGeneration` and
- * `useCastingViewGeneration` read the three casting Zustand stores directly,
- * which makes them uncallable from a node-local canvas context. This module
+ * Audit A1 (CANVAS_AUDIT_ADDENDUM_V2) prerequisite: `useCastingGeneration`
+ * read the three casting Zustand stores directly, which made it uncallable
+ * from a node-local canvas context. (`useCastingViewGeneration` died with the
+ * A4 belt-slimming — the export verb lives in the viewer's ··· menu.) This module
  * inverts that: the hooks take a `CastingBindings` object and never import a
  * store; the *caller* decides where state lives.
  *
@@ -34,13 +35,6 @@ export type FailedAction = {
   type: "NEW" | "ITERATE" | "BODY" | "SIDE";
   args?: { text: string; view: string; mask?: string };
 };
-
-export interface LockModalState {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-}
 
 export interface CastingBindings {
   /* ── Form ─────────────────────────────────────────────── */
@@ -105,13 +99,8 @@ export interface CastingBindings {
   setIsEnhancing: (b: boolean) => void;
   setIsTopupOpen: (b: boolean) => void;
 
-  /* ── Staged view generation UI (useCastingViewGeneration) ─ */
+  /* ── Export ────────────────────────────────────────────── */
   setShowExportModal: (b: boolean) => void;
-  setLockModal: (m: LockModalState) => void;
-  closeLockModal: () => void;
-  isAutoGenerating: boolean;
-  setIsAutoGenerating: (b: boolean) => void;
-  setAutoGenCancelled: (b: boolean) => void;
 }
 
 /**
@@ -158,11 +147,6 @@ export function useLegacyCastingBindings(): CastingBindings {
     setIsEnhancing,
     setIsTopupOpen,
     setShowExportModal,
-    setLockModal,
-    closeLockModal,
-    isAutoGenerating,
-    setIsAutoGenerating,
-    setAutoGenCancelled,
   } = useCastingUIStore();
 
   return {
@@ -215,10 +199,5 @@ export function useLegacyCastingBindings(): CastingBindings {
     setIsTopupOpen,
 
     setShowExportModal,
-    setLockModal,
-    closeLockModal,
-    isAutoGenerating,
-    setIsAutoGenerating,
-    setAutoGenCancelled,
   };
 }

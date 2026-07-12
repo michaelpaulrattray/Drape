@@ -5,4 +5,4 @@ export { ViewTabs } from './ViewTabs';
 export { RefinePanel } from './RefinePanel';
 export { LoadingOverlay } from './LoadingOverlay';
 export { WarmEmptyState } from './WarmEmptyState';
-export { SlotChip, RotatingSuggestions, ToolButton, NextStepChip } from './CanvasHelpers';
+export { SlotChip, RotatingSuggestions, ToolButton } from './CanvasHelpers';

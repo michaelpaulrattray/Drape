@@ -96,8 +96,6 @@ export interface StudioCanvasProps {
   floatingOverlay?: ReactNode;
   /** ImageActionBar rendered in top-right of image (download, copy, menu, optional heart) */
   actionBar?: ReactNode;
-  /** NextStepChip rendered at bottom-right of image (contextual next step CTA) */
-  nextStepOverlay?: ReactNode;
 
   // ── Keyboard ──
   /** Extra keyboard handler; return true if the event was consumed */
@@ -151,7 +149,6 @@ export function StudioCanvas({
   statusOverlay,
   floatingOverlay,
   actionBar,
-  nextStepOverlay,
   extraKeyHandler,
   onImageLoad,
   onImageMouseDown,
@@ -419,20 +416,6 @@ export function StudioCanvas({
 
               {/* ── ImageActionBar slot (top-right, Higgsfield-style) ── */}
               {actionBar}
-
-              {/* ── NextStep chip (bottom-right of image) ── */}
-              {nextStepOverlay && !isGenerating && !isComparing && (
-                <div
-                  className="absolute bottom-3 right-3 z-20 pointer-events-auto transition-all duration-300 ease-out"
-                  style={{
-                    opacity: imageAreaHovered ? 1 : 0,
-                    transform: imageAreaHovered ? 'translateY(0) scale(1)' : 'translateY(6px) scale(0.95)',
-                    pointerEvents: imageAreaHovered ? 'auto' : 'none',
-                  }}
-                >
-                  {nextStepOverlay}
-                </div>
-              )}
 
               {/* ── Undo/Redo floating pill (bottom-left of image) ── */}
               {toolbarVisible && !isGenerating && !isComparing && (canUndo || canRedo) && (

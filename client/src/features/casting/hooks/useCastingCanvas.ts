@@ -1,6 +1,49 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { EditTool } from "@/features/casting/constants";
 
+type MaskPath = Array<{ x: number; y: number }>;
+
+/**
+ * House-language mask strokes (A4): a monochrome halo — ink core over a
+ * white casing — stays visible on any photograph without leaving the
+ * palette (red belongs to delete-cascade and error glyphs alone, D-8; the
+ * old salmon/lavender pair was off-language). The eraser inverts the
+ * halo (white core, ink casing) so removal reads as the negative of
+ * drawing. UI-only: the ENGINE payload in getGuideOverlayDataUrl keeps
+ * its red marks — that's the generation contract, not chrome.
+ */
+function drawMaskPaths(
+  ctx: CanvasRenderingContext2D,
+  paths: MaskPath[],
+  w: number,
+  h: number,
+  tool: EditTool,
+) {
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const passes =
+    tool === "eraser"
+      ? [
+          { style: "rgba(10, 10, 10, 0.55)", width: 24 },
+          { style: "rgba(255, 255, 255, 0.9)", width: 14 },
+        ]
+      : [
+          { style: "rgba(255, 255, 255, 0.9)", width: 24 },
+          { style: "rgba(10, 10, 10, 0.55)", width: 14 },
+        ];
+  for (const pass of passes) {
+    ctx.strokeStyle = pass.style;
+    ctx.lineWidth = pass.width;
+    for (const path of paths) {
+      if (path.length < 1) continue;
+      ctx.beginPath();
+      ctx.moveTo(path[0].x * w, path[0].y * h);
+      path.forEach((p) => ctx.lineTo(p.x * w, p.y * h));
+      ctx.stroke();
+    }
+  }
+}
+
 export function useCastingCanvas(
   activeTool: EditTool,
   activeView: string,
@@ -43,23 +86,8 @@ export function useCastingCanvas(
         canvasRef.current.height = height;
         
         const ctx = canvasRef.current.getContext('2d');
-        if (ctx && isMasking) {
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.lineWidth = 20; 
-          ctx.strokeStyle = activeTool === 'eraser' 
-            ? 'rgba(216, 180, 254, 0.8)'
-            : 'rgba(255, 100, 100, 0.8)';
-          
-          if (maskPaths.length > 0) {
-            maskPaths.forEach(path => {
-              if (path.length < 1) return;
-              ctx.beginPath();
-              ctx.moveTo(path[0].x * width, path[0].y * height);
-              path.forEach(p => ctx.lineTo(p.x * width, p.y * height));
-              ctx.stroke();
-            });
-          }
+        if (ctx && isMasking && maskPaths.length > 0) {
+          drawMaskPaths(ctx, maskPaths, width, height, activeTool);
         }
       }
     };
@@ -94,25 +122,17 @@ export function useCastingCanvas(
 
     const ctx = canvasRef.current?.getContext('2d');
     if (ctx) {
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = 20;
-      ctx.strokeStyle = activeTool === 'eraser'
-        ? 'rgba(216, 180, 254, 0.8)'
-        : 'rgba(255, 100, 100, 0.8)';
-
       // Backing dims, NOT rect dims: the rect is camera-scaled — mixing it
-      // with the layout-sized backing store drew strokes zoom× displaced
+      // with the layout-sized backing store drew strokes zoom× displaced.
+      // Full redraw per move (not per-segment strokes): the two-pass halo
+      // would bead at segment joins if drawn incrementally; the canvas is
+      // layout-sized and a few paths, so the redraw is trivial.
       const w = canvasRef.current!.width;
       const h = canvasRef.current!.height;
-
-      ctx.beginPath();
-      const prev = currentPath[currentPath.length - 1] || newPoint;
-      ctx.moveTo(prev.x * w, prev.y * h);
-      ctx.lineTo(x * w, y * h);
-      ctx.stroke();
+      ctx.clearRect(0, 0, w, h);
+      drawMaskPaths(ctx, [...maskPaths, [...currentPath, newPoint]], w, h, activeTool);
     }
-  }, [isMasking, isDrawing, activeTool, currentPath]);
+  }, [isMasking, isDrawing, activeTool, currentPath, maskPaths]);
 
   const handlePointerUp = useCallback(() => {
     if (!isMasking || !isDrawing) return;

@@ -2,15 +2,9 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { type EditTool, ImageResolution } from '../constants';
 
-// View type for the image viewer (using string for compatibility with ViewTabs)
-
-// Lock modal state
-interface LockModalState {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-}
+// (Stage-lock modal + auto-generation state removed with the D-46/A4
+// belt-slimming — the ladder died at the unification; this was its last
+// dead plumbing, per the D-46 R7 log item 4.)
 
 // UI State interface
 interface CastingUIState {
@@ -44,27 +38,10 @@ interface CastingUIState {
   setIsTopupOpen: (open: boolean) => void;
   showExportModal: boolean;
   setShowExportModal: (show: boolean) => void;
-  lockModal: LockModalState;
-  setLockModal: (modal: LockModalState) => void;
-  closeLockModal: () => void;
-  
-  // Auto-generation state
-  isAutoGenerating: boolean;
-  setIsAutoGenerating: (generating: boolean) => void;
-  autoGenCancelled: boolean;
-  setAutoGenCancelled: (cancelled: boolean) => void;
-  
+
   // Reset UI state
   resetUI: () => void;
 }
-
-// Default lock modal state
-const defaultLockModal: LockModalState = {
-  isOpen: false,
-  title: '',
-  message: '',
-  onConfirm: () => {},
-};
 
 // Create the store
 export const useCastingUIStore = create<CastingUIState>()(
@@ -100,16 +77,7 @@ export const useCastingUIStore = create<CastingUIState>()(
       setIsTopupOpen: (open) => set({ isTopupOpen: open }, false, 'setIsTopupOpen'),
       showExportModal: false,
       setShowExportModal: (show) => set({ showExportModal: show }, false, 'setShowExportModal'),
-      lockModal: defaultLockModal,
-      setLockModal: (modal) => set({ lockModal: modal }, false, 'setLockModal'),
-      closeLockModal: () => set({ lockModal: defaultLockModal }, false, 'closeLockModal'),
-      
-      // Auto-generation state
-      isAutoGenerating: false,
-      setIsAutoGenerating: (generating) => set({ isAutoGenerating: generating }, false, 'setIsAutoGenerating'),
-      autoGenCancelled: false,
-      setAutoGenCancelled: (cancelled) => set({ autoGenCancelled: cancelled }, false, 'setAutoGenCancelled'),
-      
+
       // Reset UI state
       resetUI: () => set({
         activeView: 'frontClose',
@@ -121,9 +89,6 @@ export const useCastingUIStore = create<CastingUIState>()(
         unlockMode: false,
         isTopupOpen: false,
         showExportModal: false,
-        lockModal: defaultLockModal,
-        isAutoGenerating: false,
-        autoGenCancelled: false,
       }, false, 'resetUI'),
     }),
     { name: 'CastingUIStore' }

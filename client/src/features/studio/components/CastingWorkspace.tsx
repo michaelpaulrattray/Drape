@@ -27,7 +27,6 @@ import { ExportModal } from '@/features/casting/ExportModal';
 import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
-import { useCastingViewGeneration } from '@/features/casting/hooks/useCastingViewGeneration';
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 
 export interface CastingWorkspaceProps {
@@ -128,9 +127,6 @@ export function CastingWorkspace({
     clearMask,
     bindings: castingBindings,
   });
-
-  // Post-headshot "next step" affordance (Export). Stage-lock retired (D-46).
-  const { nextStage } = useCastingViewGeneration({ bindings: castingBindings });
 
   // Export hook
   const { handleExport } = useCastingExport({
@@ -276,7 +272,6 @@ export function CastingWorkspace({
           isMasking={isMasking}
           maskPathsCount={maskPaths.length}
           formProgress={formProgress}
-          nextStage={nextStage}
           canvasRef={canvasRef}
           imageRef={imageRef}
           handlePointerDown={handlePointerDown}

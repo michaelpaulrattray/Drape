@@ -4,7 +4,6 @@
  * Extracted to keep ImageViewerPanel under the 500-line limit.
  */
 import { useState, useEffect, useMemo } from "react";
-import { ArrowRight } from "lucide-react";
 
 // ============ SlotChip + RotatingSuggestions ============
 
@@ -80,27 +79,5 @@ export function ToolButton({ active, onClick, icon, title }: { active: boolean; 
   );
 }
 
-// ============ NextStepChip ============
-
-/** Contextual verb nudge — dark floating badge with animated arrow. The old
- *  stage routing (Full Body / Side View / Export TOOL) died with the linear
- *  pipeline; the chip carries its verb's own action, in place. */
-export function NextStepChip({ nextStage }: {
-  nextStage: { label: string; action: () => void };
-}) {
-  const chipLabel = nextStage.label;
-  const handleClick = () => nextStage.action();
-
-  return (
-    <button
-      onClick={handleClick}
-      className="group flex items-center gap-2 pointer-events-auto transition-colors duration-200 rounded-canvas-md bg-canvas-ink text-canvas-surface text-canvas-md font-medium whitespace-nowrap cursor-pointer hover:opacity-90"
-      style={{ padding: '7px 14px 7px 16px' }}
-    >
-      {chipLabel}
-      <span className="inline-flex animate-[nudge_1.8s_ease-in-out_infinite]">
-        <ArrowRight size={13} strokeWidth={2.5} />
-      </span>
-    </button>
-  );
-}
+// (NextStepChip died with the A4 belt-slimming — the export verb lives in
+// the viewer's ··· menu; the floating chip was the last belt nudge.)
