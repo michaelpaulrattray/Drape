@@ -1121,27 +1121,34 @@ let seededItemId = 0;
           await page.mouse.click(label9!.x, label9!.y);
           await sleep(400);
           await page.keyboard.press("Delete");
-          await sleep(700);
-          const afterDelete = await page.evaluate(() => ({
-            dialog: [...document.querySelectorAll("p")].some((p) => p.textContent?.trim() === "Delete this cast?"),
-            undoToast: [...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Undo"),
-          }));
+          // Poll: the dialog must NEVER appear; the soft delete lands on the
+          // remote DB in its own time (SQL is the authority, not the toast)
+          let dialogSeen = false;
+          let softDeleted = false;
+          for (let i = 0; i < 12 && !softDeleted; i++) {
+            await sleep(500);
+            dialogSeen =
+              dialogSeen ||
+              (await page.evaluate(() =>
+                [...document.querySelectorAll("p")].some((p) => p.textContent?.trim() === "Delete this cast?"),
+              ));
+            if (dialogSeen) break;
+            const [delRow] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [seededItemId]);
+            softDeleted = (delRow as Array<{ deletedAt: unknown }>)[0]?.deletedAt != null;
+          }
           check(
             "O9 delete after collapse: NO phantom cascade dialog, plain soft delete",
-            !afterDelete.dialog && afterDelete.undoToast,
-            JSON.stringify(afterDelete),
+            !dialogSeen && softDeleted,
+            JSON.stringify({ dialogSeen, softDeleted }),
           );
-          if (afterDelete.dialog) {
+          if (dialogSeen) {
             await page.evaluate(() => {
               const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim() === "Cancel");
               (b as HTMLElement | undefined)?.click();
             });
-          } else {
-            // Restore for the legs that follow
-            await page.keyboard.down("Control");
-            await page.keyboard.press("z");
-            await page.keyboard.up("Control");
-            await sleep(1500);
+          } else if (softDeleted) {
+            // Deterministic restore for the legs that follow (P reloads anyway)
+            await conn.execute(`UPDATE board_items SET deletedAt = NULL WHERE id = ?`, [seededItemId]);
           }
         }
       }
