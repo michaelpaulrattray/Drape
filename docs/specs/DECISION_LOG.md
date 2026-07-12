@@ -386,6 +386,27 @@ Ghost tiles remain the in-card accelerator; the strip verb is the stable anchor 
 - **Engine-aware payload + two comp-card classes** (extends D-30; pass 3/4): image engines get individual references (unchanged); video engines get one sheet per character — usually the STYLED comp card, itself a pass-3 generation ("Make styled comp card": dressed output + canonical references → multi-angle dressed sheet, paid + identity-gated). Canonical vs styled sheet classes; manifest records which fed each generation. **Design principle rider: node inputs are never prescriptive — the composer adapts to whatever the user wired and degrades gracefully; guarantees over workflows.**
 - **Pass-4 planning pointer:** the founder's Seedance conventions are a snapshot — pass-4 planning starts with a fresh capability review + a working session to extract what still holds; aesthetic layer builds from TOOL_PROTOTYPES_NOTES.md regardless.
 
+## Group 6i — Post-VC-R5 follow-up batch (founder, 2026-07-12)
+
+Rulings on the Group 6h assessments plus a driving batch that hadn't reached the build session. All fixes-1–5 acknowledged; the A1/A3 combined ruling is pending A3's report.
+
+### Rulings applied
+
+- **A1 — SEAL NOW, DESIGN IN R6 (two stages, both logged):** *Stage 1 (applied)* — `generation.iterate` refuses identity-level edits on non-draft models BEFORE money moves, via a TEXT_ECONOMY edit classifier (`server/casting/editClassifier.ts`; fail-open like the back gate; `ITERATE_CLASSIFY_FORCE_IDENTITY=1` hook; refusal copy carries fork guidance). Cosmetic refinements stay allowed (D-43.2); drafts stay freely editable. The bypass was the same ungated-write class as D-46's rider-2 endpoints and did not outlive its milestone. *Stage 2 (R6, with the surface restyle):* the full A + B-lite — designed fork-guidance UI, and the stale-writer lit for identity-classified draft edits (siblings marked on `model_assets`; the dormant read side activates).
+- **A2(b) applied:** UNNAMED drafts excluded from the lobby Recent Work feed (`mergeRecentWork` filters to honestly-named drafts; `DRAFT_AUTO_NAME` sentinel exported) — canvas candidates live on their board (D-42's marker). Grouping/per-source caps remain the escalations. **A2(a) → R6:** modal-class library-card chooser (View comp card / Open in casting / Dress in wardrobe).
+- **Ruling A — the empty board is QUIET (applied):** the floating "+ / click to add" affordance is dead; dotted grid + one tertiary line ("Add a cast to begin"); no introductory modal (workspaces-never-modals; D-9's ratified ghost-composition first-run owns onboarding at R6). The pill carries the invitation.
+- **Ruling B — the pill is FLAT (applied):** no + → popup; every addable node type is its own segment (Cast · Note today; Image/Video/etc. join as passes land — one ToolButton each, nothing sized to the segment count per D-18). Right-click `AddNodeMenu` survives as the at-cursor path. DS §5.3 amended.
+
+### R6 log additions
+
+- **Note nodes need a design pass** — current rendering is unconsidered; fold into R6's restyle sweep (typography, sizing, the yellow).
+- **Out-pin discoverability** — the D-36a spawn pin (10px monochrome dot, card's right edge at label height) is easy to miss; consider grow/ink on hover or selection at the restyle.
+- (Carried from 6h: A1 stage 2, A2(a) chooser, viewer background as board restyle reference.)
+
+### Assessment commissioned
+
+- **A3 — slot versions vs legacy studio undo** (report only, → `SLOT_VERSION_REVERT_ASSESSMENT.md`): the slot ledger (Three-quarter · v3, newest-wins rows) and the studio's in-session undo are two version systems unaware of each other. Assess: what the legacy undo actually controls; revert-as-copy-forward on the ledger (tile popover version row → "Use this version", zero generation cost, pin-compatible); collisions with pins/staleness/D-12 snapshots; whether it folds into A1's coherence question. Founder rules on the combined A1/A3 picture.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
