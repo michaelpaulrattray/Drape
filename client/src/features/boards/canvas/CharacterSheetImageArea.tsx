@@ -51,6 +51,8 @@ export interface CharacterSheetImageAreaProps {
   activeTileAngle: CanonicalViewAngle | null;
   /** Tile click — CastNode anchors the per-view popover to the element. */
   onTileClick: (angle: CanonicalViewAngle, el: HTMLElement) => void;
+  /** Tile double-click — opens the viewer on the CLICKED view (VC-R5 fix 5). */
+  onTileDoubleClick: (angle: CanonicalViewAngle, url: string) => void;
   /** Ghost click — opens the takeover with upgrade intent (D-39c/D-51). */
   onGhostClick: () => void;
 }
@@ -59,6 +61,7 @@ export function CharacterSheetImageArea({
   tiles,
   activeTileAngle,
   onTileClick,
+  onTileDoubleClick,
   onGhostClick,
 }: CharacterSheetImageAreaProps) {
   const { zoom } = useCanvasZoom();
@@ -112,6 +115,12 @@ export function CharacterSheetImageArea({
             type="button"
             style={{ gridArea: area }}
             onClick={(e) => onTileClick(tile.angle, e.currentTarget)}
+            onDoubleClick={(e) => {
+              // stopPropagation: React Flow's node dblclick would otherwise
+              // open the viewer on the ROOT headshot over this one (fix 5)
+              e.stopPropagation();
+              onTileDoubleClick(tile.angle, tile.url!);
+            }}
             className="relative bg-canvas-surface-inset overflow-hidden group"
           >
             <SafeImage

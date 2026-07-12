@@ -364,6 +364,20 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                 sheet.prefetchPlan();
                 sheet.setPopoverAngle(angle);
               }}
+              onTileDoubleClick={(angle, url) => {
+                // Viewer on the CLICKED view (fix 5); the single-click popover
+                // from the first click yields to it
+                sheet.setPopoverAngle(null);
+                const slot = sheet.tiles.find((t) => t.angle === angle);
+                window.dispatchEvent(
+                  new CustomEvent("board-open-image-viewer", {
+                    detail: {
+                      url,
+                      label: `${data.label ?? "Cast"} · ${slot?.label ?? angle}`,
+                    },
+                  }),
+                );
+              }}
               onGhostClick={() => openEdit(true)}
             />
           ) : (

@@ -12,7 +12,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
-import { ModelEditorOverlay } from './overlays/ModelEditorOverlay';
+import { CanvasImageViewer } from './canvas/CanvasImageViewer';
 import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 import { type CanvasToolId } from './components/CanvasToolbar';
 import { FloatingToolPill, type PillTool } from './canvas/FloatingToolPill';
@@ -54,7 +54,8 @@ function BoardPageImpl() {
   // 'hand' joins the legacy tool ids per VC-R4 ruling R1 (Select/Hand split)
   const [activeTool, setActiveTool] = useState<CanvasToolId | 'hand'>('select');
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-  const [editorItemId, setEditorItemId] = useState<number | null>(null);
+  // Double-click viewer — VIEW-ONLY by ruling (VC-R5 R3): zoom/pan/download
+  const [imageViewer, setImageViewer] = useState<{ url: string; label: string | null } | null>(null);
   const [addNodeMenu, setAddNodeMenu] = useState<{ x: number; y: number } | null>(null);
   const [nodeContextMenu, setNodeContextMenu] = useState<{
     x: number;
@@ -440,9 +441,11 @@ function BoardPageImpl() {
   }, []);
 
   const handleNodeDoubleClick = useCallback((itemId: number) => {
+    // Any image-bearing node opens the view-only viewer (VC-R5 R3); comp-card
+    // tiles dispatch their own event with the CLICKED view's image (fix 5)
     const item = items?.find((i) => i.id === itemId);
-    if (item?.type === 'model') {
-      setEditorItemId(itemId);
+    if (item?.imageUrl) {
+      setImageViewer({ url: item.imageUrl, label: item.label ?? null });
     }
   }, [items]);
 
@@ -732,13 +735,21 @@ function BoardPageImpl() {
         flowY: detail.flowY,
       });
     };
+    // Comp-card tiles open the viewer on the CLICKED view (VC-R5 fix 5)
+    const onOpenViewer = (e: Event) => {
+      const detail = (e as CustomEvent<{ url: string; label?: string | null }>).detail;
+      if (!detail?.url) return;
+      setImageViewer({ url: detail.url, label: detail.label ?? null });
+    };
     window.addEventListener('board-pop-out-view', onPopOut);
     window.addEventListener('board-collapse-view', onCollapse);
     window.addEventListener('board-open-pin-spawn', onPinSpawn);
+    window.addEventListener('board-open-image-viewer', onOpenViewer);
     return () => {
       window.removeEventListener('board-pop-out-view', onPopOut);
       window.removeEventListener('board-collapse-view', onCollapse);
       window.removeEventListener('board-open-pin-spawn', onPinSpawn);
+      window.removeEventListener('board-open-image-viewer', onOpenViewer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId]);
@@ -1095,7 +1106,7 @@ function BoardPageImpl() {
       // The takeover captures its own Esc; every other overlay makes the
       // board's keyboard inert (their own handlers own the keys)
       const overlayOpen =
-        editorItemId !== null || castTakeoverItemId !== null || castEditContext !== null;
+        imageViewer !== null || castTakeoverItemId !== null || castEditContext !== null;
 
       // Esc — strictly the topmost layer (Decision 7 / DS §9)
       if (e.key === 'Escape') {
@@ -1188,7 +1199,7 @@ function BoardPageImpl() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
-    editorItemId, castTakeoverItemId, castEditContext, placementMode,
+    imageViewer, castTakeoverItemId, castEditContext, placementMode,
     addNodeMenu, nodeContextMenu, infoPanel, versionHistoryItemId,
     castPickerItemId, deleteConfirm, flushNudgeBatch,
   ]);
@@ -1850,20 +1861,15 @@ function BoardPageImpl() {
         />
       )}
 
-      {/* Model Editor Overlay — popout, triggered by double-clicking a model card */}
-      {editorItemId !== null && (() => {
-        const editorItem = canvasItems.find((i) => i.id === editorItemId);
-        return (
-          <ModelEditorOverlay
-            itemId={editorItemId}
-            boardId={boardId}
-            imageUrl={editorItem?.imageUrl ?? null}
-            label={editorItem?.label}
-            sourceModelId={editorItem?.sourceModelId ?? null}
-            onClose={() => setEditorItemId(null)}
-          />
-        );
-      })()}
+      {/* Double-click image viewer — VIEW-ONLY on the canvas (VC-R5 R3):
+          zoom/pan/download; editing lives in the environment via Edit */}
+      {imageViewer && (
+        <CanvasImageViewer
+          imageUrl={imageViewer.url}
+          label={imageViewer.label}
+          onClose={() => setImageViewer(null)}
+        />
+      )}
 
       {/* Cast picker — the empty cast node's front door (D-32/D-33) */}
       {castPickerItemId !== null && (
