@@ -359,6 +359,33 @@ Ghost tiles remain the in-card accelerator; the strip verb is the stable anchor 
 - **R6/R7, perf — `packageState` fan-out:** one query per model per board (prefetched, D-38). Fine at pass-1 board sizes; a batched `packageStates(modelIds[])` is the fix if boards grow.
 - **Drive lesson (encoded in the script):** mid-run zoom/pan gets debounce-saved to the board, so the drive now resets the viewport at setup — without it, runs start wherever the previous one ended and every position-sensitive leg lies.
 
+## Group 6h — VC-R5 rulings (founder, 2026-07-12)
+
+**Verdict: the comp card lands** — mosaic reads as one object, pop-out/collapse, ledger-exact refresh, pin, group selection, strip verb states, and the D-51 vocabulary all pass. Five fixes shipped same day:
+
+1. **BUG (trust layer): cascade prediction counted phantom views** — the red dialog claimed "2 connected views" over an empty cascade after a pop-out/collapse cycle. Two holes closed: server `cascadeUnit` now alive-filters `generated_from_cast` targets (edges survive soft deletes by design — a directly deleted popped view left a phantom), and the client prediction requires the target alive in the items cache (the edge cache holds optimistic appends + stale rows at AU latency); collapse also prunes its lineage edge from the edge cache optimistically. Drive: O7b (collapse removes the edge server-side), O9 (pop-out → collapse → delete root = NO dialog, plain soft delete). **The one red mark in the app must never lie about its blast radius.**
+2. Lineage edges stroke `ink-soft` (border-grey on the grey board was nearly invisible); DS §8 amended. Curve rigidity accepted as-is for lineage.
+3. Popped views' first toolbar slot = **Return to sheet** (right-click-only was a hidden verb) — replacing Rerun, which is a root verb (views regenerate via per-tile Refresh, foundations 3e).
+4. Marquee of ONE = a single selection: React Flow's invisible nodes-selection rect gets `pointer-events: none` (it was eating strip/toolbar clicks); group-drag survives via node-drag.
+5. Comp-card tile double-click opens the viewer on the CLICKED view (tile dblclick stops propagation past React Flow's node handler).
+
+### Rulings
+
+- **R1 — mosaic feel: PASS as built** (reads as one comp card).
+- **R2 — D-48 pop-out geometry flag CLOSED:** right-of-root approved; no hand-confusion with fork-beside in practice.
+- **R3 / D-52 — the canvas double-click viewer is VIEW-ONLY:** zoom, pan, download, full stop. It exposed editing/refine affordances with no Edit intent and outside the D-11 ceremony; editing lives in the environment via Edit. Implemented as `CanvasImageViewer` (replaces `ModelEditorOverlay` on the board — that file is now orphaned; R7 sweeps it, closing the D-25 remnant). **R6 note:** the viewer's background (`#FAFAF8` + dot grid) is founder-flagged as better than the board's — restyle reference.
+
+### Assessments commissioned (report-only, founder rules)
+
+- **A1 — per-view edit coherence:** the environment's per-view refine path can diverge one view from the package (e.g. tattoos added on the full-body only). Assess what the current path does, what guards coherence, and the right model (package-level edits / divergence marking / cross-package identityCheck); fold into R6's environment-restyle scope if that's the home. → `PER_VIEW_EDIT_ASSESSMENT.md`.
+- **A2 — lobby grace (R6-adjacent, sizing):** (a) Library → Models → clicking a cast teleports into the wardrobe studio — should offer options (view / open in casting / dress); (b) every canvas cast floods the lobby Recent Work feed — needs curation (group by board, exclude unnamed drafts, or cap per source).
+
+### Logged for future passes (VC-R5 batch — encoded in `PASS_4_VIDEO_NOTES.md`)
+
+- **Voice as identity attribute** (pass 4): voiceId + provider on the model record, assigned in the casting environment; comp card voice affordance; D-30 composer includes the voice reference on video-with-dialogue — identity lock extends to audio.
+- **Engine-aware payload + two comp-card classes** (extends D-30; pass 3/4): image engines get individual references (unchanged); video engines get one sheet per character — usually the STYLED comp card, itself a pass-3 generation ("Make styled comp card": dressed output + canonical references → multi-angle dressed sheet, paid + identity-gated). Canonical vs styled sheet classes; manifest records which fed each generation. **Design principle rider: node inputs are never prescriptive — the composer adapts to whatever the user wired and degrades gracefully; guarantees over workflows.**
+- **Pass-4 planning pointer:** the founder's Seedance conventions are a snapshot — pass-4 planning starts with a fresh capability review + a working session to extract what still holds; aesthetic layer builds from TOOL_PROTOTYPES_NOTES.md regardless.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
