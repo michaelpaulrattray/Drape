@@ -1,19 +1,18 @@
 /**
- * NoteNode — editable note on the canvas, in the canvas language (R6 design
- * pass). Double-click to edit, click away to save.
+ * NoteNode — editable note on the canvas, in the canvas language.
  *
- * RULING R-6 (VC-R6b, in situ): the yellow's fate. Two variants behind ONE
- * constant — flip NOTE_SURFACE to compare live:
- *  - 'monochrome': plain surface card — D-7's position (silhouette
- *    distinguishes types; a bare text card reads as a note).
- *  - 'paper': one muted paper tint as the single sanctioned note surface
- *    (would need a §2.1 sentence if ruled in).
+ * RULING R-6 (VC-R6b): MONOCHROME — the note is a plain surface card;
+ * silhouette distinguishes types (D-7), and a bare text card reads as a
+ * note. The 'paper' tint variant is dead.
+ *
+ * Interaction contract (the "actually good" pass, C6): a fresh note opens
+ * ready to write (the host dispatches board-rename-node on the confirmed
+ * id); double-click anywhere on the card edits; text-selection drags never
+ * move the node; Esc cancels, click-away and Cmd/Ctrl+Enter commit; the
+ * editing card wears the engaged ink border.
  */
 import { memo, useState, useEffect, useRef } from 'react';
 import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
-
-const NOTE_SURFACE = 'monochrome' as 'monochrome' | 'paper';
-const NOTE_BG = NOTE_SURFACE === 'paper' ? '#FBF8EF' : 'var(--color-canvas-surface)';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -34,7 +33,7 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
   const [editText, setEditText] = useState(data.label ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Listen for rename trigger from context menu
+  // Rename trigger — context menu, and the host's fresh-note auto-open
   useEffect(() => {
     function handleRenameEvent(e: Event) {
       const detail = (e as CustomEvent).detail;
@@ -66,6 +65,11 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
     setIsEditing(false);
   };
 
+  const startEditing = () => {
+    setEditText(data.label ?? '');
+    setIsEditing(true);
+  };
+
   return (
     <div
       style={{
@@ -78,7 +82,7 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
       <NodeResizer
         isVisible={selected}
         minWidth={140}
-        minHeight={80}
+        minHeight={72}
         handleStyle={{
           width: 8,
           height: 8,
@@ -95,18 +99,24 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
         }}
       />
 
-      {/* Note card */}
+      {/* Note card — dblclick anywhere edits (not just the text region) */}
       <div
+        onDoubleClick={(e) => {
+          if (isEditing) return;
+          e.stopPropagation();
+          startEditing();
+        }}
         style={{
           width: '100%',
           height: '100%',
           borderRadius: 'var(--radius-canvas-md)',
-          background: NOTE_BG,
-          // Selection = 1px ink, resting = hairline — the CanvasNodeShell
-          // language (no shadows, no gold)
-          border: selected
-            ? '1px solid var(--color-canvas-ink)'
-            : '0.5px solid var(--color-canvas-border)',
+          background: 'var(--color-canvas-surface)',
+          // Selection/editing = 1px ink, resting = hairline — the
+          // CanvasNodeShell language (no shadows, no gold)
+          border:
+            selected || isEditing
+              ? '1px solid var(--color-canvas-ink)'
+              : '0.5px solid var(--color-canvas-border)',
           overflow: 'hidden',
           transition: 'border-color 150ms ease',
           display: 'flex',
@@ -117,7 +127,7 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
         <div
           style={{
             flex: 1,
-            padding: '14px 16px',
+            padding: '12px 14px',
             display: 'flex',
             flexDirection: 'column' as const,
           }}
@@ -128,6 +138,8 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               onBlur={handleSave}
+              // Text-selection drags must never move the node
+              onMouseDown={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 e.stopPropagation();
                 if (e.key === 'Escape') {
@@ -155,10 +167,6 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
             />
           ) : (
             <div
-              onDoubleClick={() => {
-                setEditText(data.label ?? '');
-                setIsEditing(true);
-              }}
               style={{
                 flex: 1,
                 fontSize: 13,
@@ -170,7 +178,7 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
                 userSelect: 'none',
               }}
             >
-              {data.label || 'Double-click to edit...'}
+              {data.label || 'Double-click to write'}
             </div>
           )}
         </div>

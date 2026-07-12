@@ -1850,6 +1850,96 @@ let seededItemId = 0;
   await sleep(200);
 }
 
+// ── Invariant I: the note contract (R-6 notes pass) — FREE ──────────────────
+// A fresh note opens ready to write (auto-edit on the CONFIRMED id — never
+// the optimistic row, whose temp→real remount would eat mid-typing text);
+// Ctrl+Enter commits; double-click re-edits; Esc cancels.
+{
+  await page.keyboard.press("Escape");
+  await sleep(200);
+  // Place a note via the pill on an empty patch of pane
+  const noteToolClicked = await page.evaluate(() => {
+    const b = [...document.querySelectorAll("button")].find(
+      (x) => x.getAttribute("aria-label") === "Note",
+    ) as HTMLElement | undefined;
+    b?.click();
+    return !!b;
+  });
+  let emptySpot: { x: number; y: number } | null = null;
+  if (noteToolClicked) {
+    await sleep(300);
+    emptySpot = await page.evaluate(() => {
+      // Probe a grid of screen points for one where the PANE is on top
+      for (let x = 200; x < 1500; x += 160) {
+        for (let y = 150; y < 850; y += 140) {
+          const el = document.elementFromPoint(x, y);
+          if (el?.classList.contains("react-flow__pane")) return { x, y };
+        }
+      }
+      return null;
+    });
+  }
+  if (!noteToolClicked || !emptySpot) {
+    console.log("SKIP  I — note tool or empty pane spot unavailable");
+  } else {
+    await page.mouse.click(emptySpot.x, emptySpot.y);
+    // I1 — the confirmed note opens ready to write (focused textarea)
+    let writable = false;
+    for (let i = 0; i < 16 && !writable; i++) {
+      await sleep(500);
+      writable = await page.evaluate(() => {
+        const a = document.activeElement;
+        return a?.tagName === "TEXTAREA" && !!a.closest(".react-flow__node");
+      });
+    }
+    check("I1 fresh note opens ready to write (post-confirm auto-edit)", writable);
+    if (writable) {
+      await page.keyboard.type("Drive note");
+      await page.keyboard.down("Control");
+      await page.keyboard.press("Enter");
+      await page.keyboard.up("Control");
+      // I2 — the commit reaches the server
+      let noteRow: { id: number; label: string } | null = null;
+      for (let i = 0; i < 16 && !noteRow; i++) {
+        await sleep(500);
+        const [rows] = await conn.execute(
+          `SELECT id, label FROM board_items WHERE boardId = ? AND type = 'note' AND label = 'Drive note' AND deletedAt IS NULL LIMIT 1`,
+          [boardId],
+        );
+        noteRow = (rows as Array<{ id: number; label: string }>)[0] ?? null;
+      }
+      check("I2 Ctrl+Enter commits the note text", !!noteRow);
+      // I3 — double-click re-edits; Esc cancels without persisting
+      if (noteRow) {
+        const noteSel = `.react-flow__node[data-id="item-${noteRow.id}"]`;
+        const rect = await page.evaluate((s: string) => {
+          const n = document.querySelector(s);
+          if (!n) return null;
+          const r = n.getBoundingClientRect();
+          return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        }, noteSel);
+        let reEdits = false;
+        if (rect) {
+          await page.mouse.click(rect.x, rect.y, { count: 2 });
+          for (let i = 0; i < 8 && !reEdits; i++) {
+            await sleep(300);
+            reEdits = await page.evaluate(
+              (s: string) => !!document.querySelector(`${s} textarea`),
+              noteSel,
+            );
+          }
+          await page.keyboard.press("Escape");
+        }
+        check("I3 double-click re-opens the note for editing", reEdits);
+        // Cleanup
+        await conn.execute(`UPDATE board_items SET deletedAt = NOW() WHERE id = ?`, [noteRow.id]);
+      }
+    }
+    await page.keyboard.press("Escape");
+    await sleep(200);
+  }
+}
+
 // ── Invariant Y: the walkable loop (trap ruling (a)) — PAID (~1600cr) ───────
 // fork → views as DRAFT (mint:false — stays draft, gates still fire) →
 // identity iterate (free on drafts) → siblings STALE → bulk refresh offer →

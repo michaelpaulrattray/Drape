@@ -352,6 +352,14 @@ function BoardPageImpl() {
             : i,
         ),
       );
+      // Notes pass (R-6): a fresh empty note opens ready to write. AFTER the
+      // confirm, on the real id — auto-editing the optimistic row would lose
+      // the text when the temp→real id swap remounts the node mid-typing.
+      if (_vars.type === 'note' && !_vars.label) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('board-rename-node', { detail: { itemId: result.id } }));
+        }, 120);
+      }
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
@@ -1243,8 +1251,10 @@ function BoardPageImpl() {
           boardId,
           type: 'note',
           label: '',
-          width: 280,
-          height: 200,
+          // Notes pass (R-6 sizing): a note is a remark, not a document —
+          // it starts modest and grows by resize
+          width: 260,
+          height: 150,
           positionX: flowPos.x,
           positionY: flowPos.y,
         });
