@@ -352,6 +352,13 @@ Issued at R5 plan approval (the comp-card milestone). Reference screenshots `rul
 
 Ghost tiles remain the in-card accelerator; the strip verb is the stable anchor (the R4 grammar philosophy: stable locations anchor, in-context affordances accelerate). **Scope guard:** only the vocabulary and state logic land in R5 — the strip's visual treatment stays R6's restyle problem.
 
+### R5 build log (for R6/R7)
+
+- **R7, trust surface — E1b phantom-diff race:** under bot-speed interaction (the drive, ~50% of runs on a loaded machine), opening Edit on a minted model and saving with ZERO changes intermittently raises the D-11 fork ceremony — the VC-R3b bug-2 class surviving as a hydration late-write race (baseline vs a post-hydration prefs write; the drive's E1b leg now retries once and still catches it). Pre-existing surface (R5 didn't touch hydration); at human speed it needs a fast save right after open. Diagnose which field drifts (suspects: the D-41 Open-state gender/brand normalization) before R7 closes.
+- **R6/R7, perf — `listCastableModels` N+1:** one `getModelAssets` roundtrip per model; at ~30 models on the remote dev DB the picker's first paint exceeded 10s under load. One joined query fixes it.
+- **R6/R7, perf — `packageState` fan-out:** one query per model per board (prefetched, D-38). Fine at pass-1 board sizes; a batched `packageStates(modelIds[])` is the fix if boards grow.
+- **Drive lesson (encoded in the script):** mid-run zoom/pan gets debounce-saved to the board, so the drive now resets the viewport at setup — without it, runs start wherever the previous one ended and every position-sensitive leg lies.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
