@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
-import { getToolAvailability, type CanvasState } from '@/features/studio/types';
+import { type CanvasState } from '@/features/studio/types';
 
 // Reset store between tests
 beforeEach(() => {
@@ -60,83 +60,3 @@ describe('useStudioStore', () => {
 
 // ─── getToolAvailability ──────────────────────────────────────────
 
-describe('getToolAvailability', () => {
-  const emptyCanvas: CanvasState = {
-    hasModel: false,
-    hasFullBody: false,
-    hasAllViews: false,
-    modelSource: null,
-  };
-
-  const frontCloseOnly: CanvasState = {
-    hasModel: true,
-    hasFullBody: false,
-    hasAllViews: false,
-    modelSource: 'cast',
-  };
-
-  const withFullBody: CanvasState = {
-    hasModel: true,
-    hasFullBody: true,
-    hasAllViews: false,
-    modelSource: 'cast',
-  };
-
-  const allViewsCast: CanvasState = {
-    hasModel: true,
-    hasFullBody: true,
-    hasAllViews: true,
-    modelSource: 'cast',
-  };
-
-  const uploadedModel: CanvasState = {
-    hasModel: true,
-    hasFullBody: true,
-    hasAllViews: true,
-    modelSource: 'uploaded',
-  };
-
-  // Casting is always available
-  it('casting is always enabled', () => {
-    expect(getToolAvailability('casting', emptyCanvas).enabled).toBe(true);
-    expect(getToolAvailability('casting', allViewsCast).enabled).toBe(true);
-  });
-
-  // Wardrobe requires model + full body
-  it('wardrobe is disabled with empty canvas', () => {
-    const result = getToolAvailability('wardrobe', emptyCanvas);
-    expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain('Load a model');
-  });
-
-  it('wardrobe is disabled with front close only', () => {
-    const result = getToolAvailability('wardrobe', frontCloseOnly);
-    expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain('full body');
-  });
-
-  it('wardrobe is enabled once full body exists', () => {
-    expect(getToolAvailability('wardrobe', withFullBody).enabled).toBe(true);
-  });
-
-  // Export requires full body + cast model
-  it('export is disabled without full body', () => {
-    const result = getToolAvailability('export', frontCloseOnly);
-    expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain('full body');
-  });
-
-  it('export is enabled once full body exists for cast model', () => {
-    expect(getToolAvailability('export', withFullBody).enabled).toBe(true);
-  });
-
-  it('export is also enabled with all views from cast model', () => {
-    expect(getToolAvailability('export', allViewsCast).enabled).toBe(true);
-  });
-
-  it('export is disabled for uploaded models', () => {
-    const result = getToolAvailability('export', uploadedModel);
-    expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain('cast model');
-  });
-});

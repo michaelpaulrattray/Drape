@@ -5,7 +5,7 @@
  * and tool availability for gallery-loaded models.
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { getToolAvailability, type CanvasState } from "../client/src/features/studio/types";
+import { type CanvasState } from "../client/src/features/studio/types";
 
 // ── Canvas State Fixtures ──────────────────────────────────────────────────
 
@@ -68,37 +68,6 @@ describe("CanvasState with cast fields", () => {
 
 // ── Tool Availability for Gallery-Loaded Models ────────────────────────────
 
-describe("Tool availability for gallery-loaded models", () => {
-  it("enables Casting for gallery-loaded models without confirmation (read-only view)", () => {
-    const result = getToolAvailability("casting", galleryLoadedCanvas);
-    expect(result.enabled).toBe(true);
-    // Gallery-loaded models switch seamlessly to read-only Casting overview
-    expect(result.needsConfirm).toBeFalsy();
-  });
-
-  it("enables Wardrobe for gallery-loaded models", () => {
-    const result = getToolAvailability("wardrobe", galleryLoadedCanvas);
-    expect(result.enabled).toBe(true);
-  });
-
-  it("enables Export for gallery-loaded models with full body", () => {
-    // Export gate is hasFullBody + cast model — galleryLoadedCanvas has both
-    const result = getToolAvailability("export", galleryLoadedCanvas);
-    expect(result.enabled).toBe(true);
-  });
-
-  it("disables Export for gallery-loaded models without full body", () => {
-    const noFullBody: CanvasState = {
-      ...galleryLoadedCanvas,
-      hasFullBody: false,
-    };
-    const result = getToolAvailability("export", noFullBody);
-    expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain("full body");
-  });
-});
-
-// ── loadModelFromCast Store Action ─────────────────────────────────────────
 
 describe("loadModelFromCast store action", () => {
   let store: typeof import("../client/src/features/studio/stores/useStudioStore").useStudioStore;

@@ -33,10 +33,6 @@ interface ImageViewerPanelProps {
   nextStage: {
     label: string;
     action: () => void;
-    step: number;
-    total: number;
-    isAutoGen?: boolean;
-    isProgress?: boolean;
   } | null;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   imageRef: RefObject<HTMLImageElement | null>;

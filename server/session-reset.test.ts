@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useStudioStore } from '../client/src/features/studio/stores/useStudioStore';
 import { useWardrobeStore } from '../client/src/features/wardrobe/stores/useWardrobeStore';
-import { getToolAvailability } from '../client/src/features/studio/types';
+
 
 /** Reset both stores before each test */
 beforeEach(() => {
@@ -297,68 +297,4 @@ describe('Session Reset — useSessionReset actions', () => {
     });
   });
 
-  describe('Tool availability with confirmation', () => {
-    it('does NOT require confirmation for Casting when uploaded model exists (shows placeholder)', () => {
-      const uploadedCanvas = {
-        hasModel: true,
-        hasFullBody: true,
-        hasAllViews: false,
-        modelSource: 'uploaded' as const,
-        uploadedModelUrl: 'https://s3.example.com/upload.jpg',
-        castModelId: null,
-        castMasterPrompt: null,
-        castFullBodyUrl: null,
-      };
-      
-      const result = getToolAvailability('casting', uploadedCanvas);
-      expect(result.enabled).toBe(true);
-      expect(result.needsConfirm).toBeFalsy();
-    });
-
-    it('does NOT require confirmation for Casting when gallery model is loaded (read-only view)', () => {
-      const galleryCanvas = {
-        hasModel: true,
-        hasFullBody: true,
-        hasAllViews: false,
-        modelSource: 'cast' as const,
-        uploadedModelUrl: null,
-        castModelId: 50,
-        castMasterPrompt: 'A model',
-        castFullBodyUrl: 'https://s3.example.com/gallery.jpg',
-      };
-      
-      const result = getToolAvailability('casting', galleryCanvas);
-      expect(result.enabled).toBe(true);
-      expect(result.needsConfirm).toBeFalsy();
-    });
-
-    it('does NOT require confirmation for Casting when canvas is from active casting', () => {
-      const castingCanvas = {
-        hasModel: true,
-        hasFullBody: true,
-        hasAllViews: false,
-        modelSource: 'cast' as const,
-        uploadedModelUrl: null,
-        castModelId: null,
-        castMasterPrompt: null,
-        castFullBodyUrl: null,
-      };
-      
-      const result = getToolAvailability('casting', castingCanvas);
-      expect(result.enabled).toBe(true);
-      expect(result.needsConfirm).toBeUndefined();
-    });
-
-    it('Home button should trigger confirmation when any model is loaded', () => {
-      // This is tested by the hasActiveSession check in ToolRail
-      const canvas = useStudioStore.getState().canvas;
-      const hasActiveSession = canvas.hasModel || canvas.uploadedModelUrl !== null || canvas.castModelId !== null;
-      expect(hasActiveSession).toBe(false); // No model = no confirmation needed
-      
-      useStudioStore.getState().loadModelFromUpload('https://s3.example.com/upload.jpg');
-      const canvas2 = useStudioStore.getState().canvas;
-      const hasActiveSession2 = canvas2.hasModel || canvas2.uploadedModelUrl !== null || canvas2.castModelId !== null;
-      expect(hasActiveSession2).toBe(true); // Model loaded = confirmation needed
-    });
-  });
 });

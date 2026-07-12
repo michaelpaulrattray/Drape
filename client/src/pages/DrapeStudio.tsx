@@ -7,11 +7,8 @@ import { Camera, Loader2 } from 'lucide-react';
 
 // Studio infrastructure
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
-import { AppSidebar } from '@/features/studio/components/AppSidebar';
-import { StudioHeader } from '@/features/studio/components/StudioHeader';
+import { StudioSlimHeader } from '@/features/studio/components/StudioSlimHeader';
 import { WardrobeStart } from '@/features/studio/components/WardrobeStart';
-import { AnimatedPanel } from '@/features/studio/components/AnimatedPanel';
-import { StudioSidePanel } from '@/features/studio/components/StudioSidePanel';
 import { CastingWorkspace } from '@/features/studio/components/CastingWorkspace';
 import { useStudioTransition } from '@/features/studio/hooks/useStudioTransition';
 import { useStudioEntry } from '@/features/studio/hooks/useStudioEntry';
@@ -19,9 +16,6 @@ import { useStudioEntry } from '@/features/studio/hooks/useStudioEntry';
 // Wardrobe tool imports
 import { WardrobeWorkspaceSection } from '@/features/wardrobe';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
-
-// Export tool imports
-import { ExportPanel, ExportHeroPreview } from '@/features/export';
 
 // Casting tool imports
 import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
@@ -185,23 +179,21 @@ export default function DrapeStudio() {
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ background: 'var(--color-canvas-field)' }}>
-      {/* App Sidebar — full viewport height */}
-      <AppSidebar
-        canvas={canvas}
-        onWardrobeGate={() => setShowCastModal(true)}
-        user={user}
-        profileImage={profileImage}
-        creditsBalance={creditsData?.balance || 0}
-        onOpenSettings={() => setShowSettings(true)}
-        onOpenBilling={() => setIsBillingOpen(true)}
-        onOpenReferral={() => setIsReferralOpen(true)}
-        onLogout={logout}
-      />
-
-      {/* Right side: Header + Content */}
+      {/* One environment chrome, two doors (R6 shell unification, R-4a):
+          the same slim header regardless of tool — casting AND wardrobe.
+          The legacy sidebar's load-bearing functions live in it now. */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0">
-        {/* Studio Header — spans content area only */}
-        <StudioHeader />
+        <StudioSlimHeader
+          title={activeTool === 'wardrobe' ? 'Wardrobe' : activeTool === 'casting' ? 'Casting' : 'Studio'}
+          user={user}
+          profileImage={profileImage}
+          creditsBalance={creditsData?.balance || 0}
+          onOpenTopup={() => setIsTopupOpen(true)}
+          onOpenSettings={() => setShowSettings(true)}
+          onOpenBilling={() => setIsBillingOpen(true)}
+          onOpenReferral={() => setIsReferralOpen(true)}
+          onLogout={logout}
+        />
 
         {/* Tool Content Area */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
@@ -275,29 +267,6 @@ export default function DrapeStudio() {
             />
           )}
 
-          {activeTool === 'export' && (
-            <>
-              {/* Center — Model preview (largest view or latest saved look) */}
-              <ExportHeroPreview
-                assets={currentAssets}
-                modelId={canvas.castModelId || currentModelId}
-                centerReady={transition.centerReady}
-              />
-
-              {/* Right Panel — Export controls */}
-              <AnimatedPanel
-                ready={transition.rightReady}
-                from="right"
-                offset={60}
-                duration={500}
-                className="hidden lg:block flex-shrink-0"
-              >
-                <StudioSidePanel side="right" width={320}>
-                  <ExportPanel modelId={canvas.castModelId || currentModelId} assets={currentAssets} />
-                </StudioSidePanel>
-              </AnimatedPanel>
-            </>
-          )}
         </div>
       </div>
 

@@ -18,16 +18,15 @@ interface UseCastingViewGenerationParams {
 export function useCastingViewGeneration({ bindings }: UseCastingViewGenerationParams) {
   const { genState, currentAssets, setShowExportModal } = bindings;
 
-  // The only remaining "next step": export the character pack. View
-  // generation is not a staged ladder anymore — it's the mint gate.
+  // The only remaining affordance: the export VERB, in place (the export
+  // TOOL retired with R6's shell unification). View generation is not a
+  // staged ladder anymore — it's the mint gate.
   const nextStage = useMemo(() => {
     if (currentAssets.length === 0 || genState.isGenerating) return null;
     if (!currentAssets.some((a) => a.viewType === "frontFull")) return null;
     return {
-      label: "Export Character Pack",
+      label: "Export identity pack",
       action: () => setShowExportModal(true),
-      step: 4,
-      total: 3,
     };
   }, [currentAssets, genState.isGenerating, setShowExportModal]);
 

@@ -5,7 +5,6 @@
  */
 import { useState, useEffect, useMemo } from "react";
 import { ArrowRight } from "lucide-react";
-import { useStudioStore } from "@/features/studio/stores/useStudioStore";
 
 // ============ SlotChip + RotatingSuggestions ============
 
@@ -82,26 +81,14 @@ export function ToolButton({ active, onClick, icon }: { active: boolean; onClick
 
 // ============ NextStepChip ============
 
-/** Contextual next-step nudge — dark floating badge with animated arrow. */
+/** Contextual verb nudge — dark floating badge with animated arrow. The old
+ *  stage routing (Full Body / Side View / Export TOOL) died with the linear
+ *  pipeline; the chip carries its verb's own action, in place. */
 export function NextStepChip({ nextStage }: {
-  nextStage: { label: string; action: () => void; step: number; total: number };
+  nextStage: { label: string; action: () => void };
 }) {
-  const chipLabel = (() => {
-    switch (nextStage.step) {
-      case 2: return 'Full Body';
-      case 3: return 'Side View';
-      case 4: return 'Export Pack';
-      default: return nextStage.label;
-    }
-  })();
-
-  const handleClick = () => {
-    if (nextStage.step === 4) {
-      useStudioStore.getState().setActiveTool('export');
-    } else {
-      nextStage.action();
-    }
-  };
+  const chipLabel = nextStage.label;
+  const handleClick = () => nextStage.action();
 
   return (
     <button

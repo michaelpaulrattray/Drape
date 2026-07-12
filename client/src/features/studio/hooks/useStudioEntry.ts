@@ -35,7 +35,10 @@ import { useCastingFormStore } from '@/features/casting/stores/useCastingFormSto
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
 import type { StudioTool } from '../types';
 
-const VALID_TOOLS: StudioTool[] = ['casting', 'wardrobe', 'export'];
+// 'export' is gone (R6 close-out (b)): export is a verb on the model wherever
+// you meet it, never a destination — legacy ?tool=export links land in the
+// lobby via the invalid-tool redirect below.
+const VALID_TOOLS: StudioTool[] = ['casting', 'wardrobe'];
 
 export type EntryStatus = 'resolving' | 'settled';
 
@@ -81,12 +84,6 @@ export function useStudioEntry({ isAuthenticated, isRestoring }: UseStudioEntryO
     }
 
     const finish = () => setEntryStatus('settled');
-
-    if (tool === 'export') {
-      setActiveTool('export');
-      finish();
-      return;
-    }
 
     if (tool === 'casting') {
       const modelId = positiveIntParam(params, 'modelId');

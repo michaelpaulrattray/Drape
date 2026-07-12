@@ -14,6 +14,7 @@ import { Download, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { SearchField } from './SearchField';
 import { NewItemTile } from './NewItemTile';
+import { ModelCardChooser, type ChooserModel } from './ModelCardChooser';
 
 export type LibraryKind = 'models' | 'garments' | 'looks';
 
@@ -23,6 +24,8 @@ interface LibraryItem {
   title: string;
   tag?: string;
   onClick: () => void;
+  /** Right-click parity with the chooser (A2(a) + close-out (b)). */
+  onContextMenu?: () => void;
 }
 
 interface LibrarySection {
@@ -64,6 +67,9 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
   const [, navigate] = useLocation();
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [query, setQuery] = useState('');
+  // A2(a): a minted card opens the chooser (View comp card / Open in casting /
+  // Dress in wardrobe / Export identity pack) — never a silent teleport
+  const [chooser, setChooser] = useState<ChooserModel | null>(null);
 
   const { data: models, isLoading: modelsLoading } = trpc.wardrobe.model.listMinted.useQuery(
     undefined,
@@ -116,12 +122,17 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
       tag: 'Draft',
       onClick: () => navigate(`/studio?tool=casting&modelId=${d.id}`),
     }));
-    const mintedItems: LibraryItem[] = (models ?? []).map((m) => ({
-      key: `model-${m.id}`,
-      imageUrl: m.thumbnailUrl,
-      title: m.name ?? 'Untitled',
-      onClick: () => navigate(`/studio?tool=wardrobe&modelId=${m.id}`),
-    }));
+    const mintedItems: LibraryItem[] = (models ?? []).map((m) => {
+      const open = () =>
+        setChooser({ id: m.id, name: m.name ?? 'Untitled', imageUrl: m.thumbnailUrl });
+      return {
+        key: `model-${m.id}`,
+        imageUrl: m.thumbnailUrl,
+        title: m.name ?? 'Untitled',
+        onClick: open,
+        onContextMenu: open,
+      };
+    });
     if (draftItems.length > 0) sections.push({ label: 'In progress', items: draftItems });
     if (mintedItems.length > 0)
       sections.push({ label: draftItems.length > 0 ? 'Minted' : undefined, items: mintedItems });
@@ -280,7 +291,19 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                   />
                 )}
                 {section.items.map((item) => (
-                  <button key={item.key} onClick={item.onClick} className="group/thumb text-left">
+                  <button
+                    key={item.key}
+                    onClick={item.onClick}
+                    onContextMenu={
+                      item.onContextMenu
+                        ? (e) => {
+                            e.preventDefault();
+                            item.onContextMenu!();
+                          }
+                        : undefined
+                    }
+                    className="group/thumb text-left"
+                  >
                     <div
                       className="relative overflow-hidden rounded-xl w-full"
                       style={{
@@ -330,6 +353,9 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
           ))}
         </div>
       )}
+
+      {/* A2(a) chooser — minted model cards */}
+      <ModelCardChooser model={chooser} onClose={() => setChooser(null)} />
 
       {/* Preview overlay */}
       {preview && (

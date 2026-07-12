@@ -1,15 +1,18 @@
 /**
  * Drape Studio — Unified workspace types
  *
- * The studio is a single workspace where tools operate on a shared canvas (the model).
- * Tools slide in/out via the ToolRail; the canvas persists across tool switches.
- * When activeTool is null, the lobby/landing state is shown.
+ * The studio hosts two environments under one slim chrome (R6 shell
+ * unification): casting and wardrobe. There is no tool rail and no export
+ * tool — export is a verb on the model (library chooser, card right-click,
+ * the environment's Export action), and navigation between environments
+ * happens via the lobby, never a stage switcher (the decomposition law:
+ * the USER composes the sequence).
  */
 
-/** Available tools in the studio tool rail */
-export type StudioTool = 'casting' | 'wardrobe' | 'export';
+/** Available studio environments */
+export type StudioTool = 'casting' | 'wardrobe';
 
-/** Active tool state — null means lobby (no tool selected) */
+/** Active tool state — null means no environment mounted */
 export type ActiveTool = StudioTool | null;
 
 /** How the model was loaded into the canvas */
@@ -21,7 +24,7 @@ export interface CanvasState {
   hasModel: boolean;
   /** Whether the full body view has been generated (required for wardrobe) */
   hasFullBody: boolean;
-  /** Whether all 3 views exist (required for export) */
+  /** Whether all 3 views exist */
   hasAllViews: boolean;
   /** How the model was loaded */
   modelSource: ModelSource;
@@ -36,62 +39,3 @@ export interface CanvasState {
   /** Whether the model has been minted (identity locked, status: active) */
   isMinted: boolean;
 }
-
-/** Tool availability derived from canvas state */
-export interface ToolAvailability {
-  enabled: boolean;
-  tooltip: string;
-  /** Whether switching to this tool requires a confirmation (e.g. will reset progress) */
-  needsConfirm?: boolean;
-  /** Message to show in the confirmation dialog */
-  confirmMessage?: string;
-}
-
-/** Derive tool availability from canvas state */
-export function getToolAvailability(
-  tool: StudioTool,
-  canvas: CanvasState
-): ToolAvailability {
-  switch (tool) {
-    case 'casting':
-      // Cast/saved models — switch seamlessly to read-only Casting overview
-      // No confirmation needed; "New Model" button inside Casting handles reset
-      return { enabled: true, tooltip: 'Cast' };
-
-    case 'wardrobe':
-      if (!canvas.hasModel) {
-        return { enabled: false, tooltip: 'Load a model first' };
-      }
-      if (!canvas.hasFullBody) {
-        return { enabled: false, tooltip: 'Generate full body first' };
-      }
-      return { enabled: true, tooltip: 'Style' };
-
-    case 'export':
-      if (!canvas.hasFullBody) {
-        return { enabled: false, tooltip: 'Generate full body to unlock export' };
-      }
-      // Export is only available for cast models (not uploaded)
-      if (canvas.modelSource !== 'cast') {
-        return { enabled: false, tooltip: 'Export requires a cast model' };
-      }
-      return { enabled: true, tooltip: 'Export' };
-
-    default:
-      return { enabled: false, tooltip: '' };
-  }
-}
-
-/** Tool metadata for rendering the tool rail */
-export interface ToolMeta {
-  id: StudioTool;
-  label: string;
-  shortLabel: string;
-}
-
-/** Ordered list of tools for the rail */
-export const STUDIO_TOOLS: ToolMeta[] = [
-  { id: 'casting', label: 'Casting Studio', shortLabel: 'Cast' },
-  { id: 'wardrobe', label: 'Wardrobe Studio', shortLabel: 'Wardrobe' },
-  { id: 'export', label: 'Export Pack', shortLabel: 'Export' },
-];
