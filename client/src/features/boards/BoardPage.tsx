@@ -419,35 +419,13 @@ function BoardPageImpl() {
 
   const handleItemRename = useCallback(
     (itemId: number, label: string) => {
-      // One identity, one name (VC-R6b drive 2): renaming a MODEL-BACKED node
-      // renames the MODEL — a board label diverging from the model's name is
-      // nonsense ("Jeettttyy sewttyy" beside "Jett"). Every placement of the
-      // model on this board takes the new name; the library follows via
-      // invalidation. Non-model nodes stay plain label edits.
-      const item = itemsRef.current?.find((i) => i.id === itemId);
-      const meta = (item?.metadata ?? {}) as { provenance?: { modelId?: number } };
-      const modelId = meta.provenance?.modelId;
-      if (typeof modelId === 'number' && modelId > 0) {
-        void (async () => {
-          try {
-            await utils.client.models.update.mutate({ modelId, name: label });
-            const placements = (itemsRef.current ?? []).filter((i) => {
-              const m = (i.metadata ?? {}) as { provenance?: { modelId?: number } };
-              return m.provenance?.modelId === modelId && !i.deletedAt;
-            });
-            for (const p of placements) {
-              updateItemMutation.mutate({ itemId: p.id, label });
-            }
-            void utils.boardOps.listCastableModels.invalidate();
-          } catch {
-            toast.error("Couldn't rename the model — try again");
-          }
-        })();
-        return;
-      }
+      // A NODE-LABEL tool, nothing more (founder-corrected, drive 2): the
+      // node's label is board annotation ("character 1"), independent of the
+      // model's name. Renaming the MODEL happens in the environment/library,
+      // never from a placement.
       updateItemMutation.mutate({ itemId, label });
     },
-    [updateItemMutation, utils],
+    [updateItemMutation],
   );
 
   const handleViewportChange = useCallback(
