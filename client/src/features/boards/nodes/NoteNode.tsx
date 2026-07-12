@@ -12,7 +12,7 @@
 import { memo, useState, useEffect, useRef } from 'react';
 import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
 
-const NOTE_SURFACE: 'monochrome' | 'paper' = 'monochrome';
+const NOTE_SURFACE = 'monochrome' as 'monochrome' | 'paper';
 const NOTE_BG = NOTE_SURFACE === 'paper' ? '#FBF8EF' : 'var(--color-canvas-surface)';
 
 /* ── Types ────────────────────────────────────────────────── */
