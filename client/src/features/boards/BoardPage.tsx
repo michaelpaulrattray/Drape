@@ -20,6 +20,7 @@ import { CastPickerModal } from './canvas/CastPickerModal';
 import { DottedGridBackground } from './canvas/DottedGridBackground';
 import { BrandLoader } from '@/components/BrandLoader';
 import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
+import { CreditTopupModal } from '@/features/billing/CreditTopupModal';
 import { useGenerationJobs } from './stores/useGenerationJobs';
 import { useOptimisticFills } from './stores/useOptimisticFills';
 import { hasOpenCanvasLayers } from './stores/useCanvasLayers';
@@ -84,6 +85,17 @@ function BoardPageImpl() {
   const [castEditContext, setCastEditContext] = useState<CastEditContext | null>(null);
   const { user, isAuthenticated } = useAuth();
   const { startJob, completeJob, failJob } = useGenerationJobs();
+
+  // D-45(2): the header avatar's popover carries the balance + Top up —
+  // no permanent number on the canvas. Same query the takeover refetches
+  // after every generation, so the figure stays honest across surfaces.
+  const [isTopupOpen, setIsTopupOpen] = useState(false);
+  const { data: headerCredits } = trpc.credits.getBalance.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: headerProfile } = trpc.profile.get.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   // Viewport center getter exposed by BoardCanvas
   const viewportCenterGetterRef = useRef<(() => { x: number; y: number }) | null>(null);
@@ -1743,6 +1755,10 @@ function BoardPageImpl() {
         name={board.name}
         onRename={handleRename}
         isSaving={isSaving}
+        user={user}
+        profileImage={headerProfile?.avatarUrl ?? null}
+        creditsBalance={headerCredits?.balance ?? null}
+        onOpenTopup={() => setIsTopupOpen(true)}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -2044,6 +2060,13 @@ function BoardPageImpl() {
           }}
         />
       )}
+
+      {/* D-45(2): top-up from the header popover */}
+      <CreditTopupModal
+        isOpen={isTopupOpen}
+        onClose={() => setIsTopupOpen(false)}
+        currentBalance={headerCredits?.balance || 0}
+      />
 
       {/* Version history modal */}
       {versionHistoryItemId !== null && (() => {
