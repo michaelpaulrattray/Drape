@@ -303,15 +303,14 @@ const addCastViaPill = async () => {
       await page.mouse.click(pill.x, pill.y);
       await page.waitForSelector(".canvas-scope .grid button img", { timeout: 30000 });
     }
-    // Let the modal's entrance animation settle — a click mid-translate
-    // lands where the card WAS (burned ~2 runs in 15)
+    // DOM click, not coordinates: the grid re-renders as thumbnails and
+    // refetches land, and a coordinate click mid-move hits nothing (burned
+    // three runs). Same handler path; C1's optimistic timing stays honest.
     await sleep(450);
-    const card = (await page.evaluate(() => {
+    await page.evaluate(() => {
       const img = document.querySelector(".canvas-scope .grid button img")!;
-      const r = img.getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-    }))!;
-    await page.mouse.click(card.x, card.y);
+      (img.closest("button") as HTMLElement).click();
+    });
 
     // The node must show the image essentially immediately (optimistic fill)
     let filledAtMs = -1;
