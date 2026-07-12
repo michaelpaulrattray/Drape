@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { planCreateNode, planRunGeneration, buildVariationsPlan, MAX_VARIATIONS } from "./boardOps";
+import {
+  planCreateNode,
+  planRunGeneration,
+  buildVariationsPlan,
+  MAX_VARIATIONS,
+  popOutPlacement,
+  planCollapseEdgeMoves,
+} from "./boardOps";
 import { CREDIT_COSTS } from "../casting/aiService";
 import { EDGE_CLASS, isLineageEdge } from "../../shared/boardTypes";
 import { BOARD_EDGE_RELATIONS } from "../../drizzle/schema";
@@ -45,6 +52,93 @@ describe("boardOps plans (foundations §4 / Decision 6)", () => {
     expect(buildVariationsPlan(1, item, 0).creates).toHaveLength(1);
     expect(buildVariationsPlan(1, item, 99).creates).toHaveLength(MAX_VARIATIONS);
     expect(buildVariationsPlan(1, item, 99).estimatedCreditCost).toBe(MAX_VARIATIONS * CREDIT_COSTS.castingImage);
+  });
+});
+
+describe("popOutPlacement (R5 — right of root, stacking downward)", () => {
+  const root = { positionX: 100, positionY: 200, width: 280 };
+
+  it("first pop-out lands right of the root", () => {
+    const p = popOutPlacement(root, 0);
+    expect(p.x).toBeGreaterThan(root.positionX + 280);
+    expect(p.y).toBe(root.positionY);
+  });
+
+  it("subsequent pop-outs stack downward, never overlapping", () => {
+    const first = popOutPlacement(root, 0);
+    const second = popOutPlacement(root, 1);
+    expect(second.x).toBe(first.x);
+    expect(second.y - first.y).toBeGreaterThanOrEqual(360); // ≥ one view card
+  });
+
+  it("falls back to canonical width when the row has none", () => {
+    const p = popOutPlacement({ positionX: 0, positionY: 0, width: null }, 0);
+    expect(p.x).toBeGreaterThan(280);
+  });
+});
+
+describe("planCollapseEdgeMoves (R5 — D-30 re-anchoring contract)", () => {
+  const ROOT = 10;
+  const POPPED = 20;
+  const edge = (id: number, source: number, target: number, relation: string, metadata: unknown = null) =>
+    ({ id, sourceItemId: source, targetItemId: target, relation: relation as never, metadata });
+
+  it("removes the lineage edge and re-anchors outgoing edges to the root with viewAngle", () => {
+    const moves = planCollapseEdgeMoves(
+      [
+        edge(1, ROOT, POPPED, "generated_from_cast", { viewAngle: "sideClose" }),
+        edge(2, POPPED, 99, "reference_for", { weight: 0.5 }),
+      ],
+      ROOT,
+      POPPED,
+      "sideClose",
+    );
+    expect(moves.removeEdgeIds.sort()).toEqual([1, 2]);
+    expect(moves.addEdges).toEqual([
+      {
+        sourceItemId: ROOT,
+        targetItemId: 99,
+        relation: "reference_for",
+        // Existing metadata survives; the view intent is preserved (D-30)
+        metadata: { weight: 0.5, viewAngle: "sideClose" },
+      },
+    ]);
+  });
+
+  it("leaves incoming third-party edges alone (orphaned by the soft delete, like deleteNodes)", () => {
+    const moves = planCollapseEdgeMoves(
+      [
+        edge(1, ROOT, POPPED, "generated_from_cast"),
+        edge(3, 77, POPPED, "reference_for"),
+      ],
+      ROOT,
+      POPPED,
+      "backFull",
+    );
+    expect(moves.removeEdgeIds).toEqual([1]);
+    expect(moves.addEdges).toEqual([]);
+  });
+
+  it("never creates a root→root self-loop", () => {
+    const moves = planCollapseEdgeMoves(
+      [
+        edge(1, ROOT, POPPED, "generated_from_cast"),
+        edge(4, POPPED, ROOT, "reference_for"),
+      ],
+      ROOT,
+      POPPED,
+      "frontFull",
+    );
+    expect(moves.addEdges).toEqual([]);
+    // The would-be self-loop edge is simply not re-anchored (it stays put,
+    // orphaned by the soft delete)
+    expect(moves.removeEdgeIds).toEqual([1]);
+  });
+
+  it("collapse with no outgoing edges removes only the lineage edge", () => {
+    const moves = planCollapseEdgeMoves([edge(1, ROOT, POPPED, "generated_from_cast")], ROOT, POPPED, "sideFull");
+    expect(moves.removeEdgeIds).toEqual([1]);
+    expect(moves.addEdges).toEqual([]);
   });
 });
 

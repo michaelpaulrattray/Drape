@@ -13,6 +13,7 @@ import { getBoardEdges } from "../db/boardEdges";
 import * as boardOps from "../lib/boardOps";
 import { getSnapshot } from "../lib/boardState";
 import { BOARD_ITEM_KINDS, BOARD_EDGE_RELATIONS } from "../../drizzle/schema";
+import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import type { Provenance, NodeStatus } from "../../shared/boardTypes";
 
 async function requireBoardOwnership(boardId: number, userId: number) {
@@ -282,6 +283,59 @@ export const boardOpsRouter = router({
         });
       }),
   }),
+
+  /** R5 (D-29/D-39): pop a comp-card tile out as a board placement referencing
+   *  the model asset, connected by the cascade-bearing generated_from_cast
+   *  edge with { viewAngle } metadata. Free — placements cost nothing. */
+  popOutView: router({
+    plan: protectedProcedure
+      .input(z.object({
+        boardId: z.number().int().positive(),
+        itemId: z.number().int().positive(),
+        angle: z.enum(CANONICAL_VIEW_ANGLES),
+      }))
+      .query(async ({ ctx, input }) => {
+        await requireBoardOwnership(input.boardId, ctx.user.id);
+        await boardOps.requireItemInBoard(input.itemId, input.boardId);
+        return boardOps.planPopOutView({ itemId: input.itemId, angle: input.angle });
+      }),
+    execute: protectedProcedure
+      .input(z.object({
+        boardId: z.number().int().positive(),
+        itemId: z.number().int().positive(),
+        angle: z.enum(CANONICAL_VIEW_ANGLES),
+        position: positionSchema.optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await requireBoardOwnership(input.boardId, ctx.user.id);
+        await boardOps.requireItemInBoard(input.itemId, input.boardId);
+        return boardOps.executePopOutView({
+          userId: ctx.user.id,
+          boardId: input.boardId,
+          itemId: input.itemId,
+          angle: input.angle,
+          position: input.position,
+        });
+      }),
+  }),
+
+  /** R5: dematerialize a popped view — outgoing edges re-anchor to the root
+   *  (viewAngle preserved in metadata, D-30); the placement soft-deletes.
+   *  Not Cmd+Z-undoable in pass 1; re-pop-out is the free recovery. */
+  collapseView: protectedProcedure
+    .input(z.object({
+      boardId: z.number().int().positive(),
+      itemId: z.number().int().positive(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await requireBoardOwnership(input.boardId, ctx.user.id);
+      await boardOps.requireItemInBoard(input.itemId, input.boardId);
+      return boardOps.executeCollapseView({
+        userId: ctx.user.id,
+        boardId: input.boardId,
+        itemId: input.itemId,
+      });
+    }),
 
   /** Board edges — light read for client cascade knowledge (R4) and edge
    *  rendering (R5). Invalidate alongside getItems when ops add edges. */

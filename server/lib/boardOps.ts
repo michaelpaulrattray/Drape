@@ -43,7 +43,9 @@ import type {
   Provenance,
   NodeStatus,
   BoardItemCanvasMetadata,
+  CanonicalViewAngle,
 } from "../../shared/boardTypes";
+import { VIEW_ANGLE_LABELS } from "../../shared/boardTypes";
 import type { BoardItemKind, BoardEdgeRelation } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 
@@ -886,6 +888,181 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
 
   log.info({ itemId: input.itemId, requested: count, landed: variations.length }, "Variations cast");
   return { itemId: input.itemId, variations, failures, creditCost: variations.length * unitCost };
+}
+
+// ── popOutView / collapseView (R5 — the comp card's board placements) ──────
+//
+// D-39 ratification: the package lives on model_assets; a pop-out is a board
+// PLACEMENT that references a model asset — `cast_view` board rows never
+// carry package state. The generated_from_cast edge written here is exactly
+// what the R4 delete-cascade dialog keys off (predictDeleteUnit client-side,
+// cascadeUnit above) — it activates with no further wiring (VC-R4 confirm).
+
+export const VIEW_CARD_WIDTH = 200;
+const VIEW_CARD_HEIGHT = 360; // label row + 3:4 image (267) + strip allowance
+const POP_OUT_GAP_X = 60;
+const POP_OUT_STEP_Y = VIEW_CARD_HEIGHT + 30;
+
+/** Pop-outs land right of the root, stacking downward (founder-ruled at R5
+ *  planning; shares fork's "beside" axis — flagged for the VC-R5 feel ruling
+ *  per D-48; this constant is the one tuning point). Exported for tests. */
+export function popOutPlacement(
+  root: { positionX: number; positionY: number; width: number | null },
+  existingPoppedCount: number,
+): { x: number; y: number } {
+  return {
+    x: root.positionX + (root.width ?? 280) + POP_OUT_GAP_X,
+    y: root.positionY + existingPoppedCount * POP_OUT_STEP_Y,
+  };
+}
+
+export async function planPopOutView(input: { itemId: number; angle: CanonicalViewAngle }): Promise<OperationPlan> {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  const meta = readMeta(item);
+  const prov = meta.provenance;
+  const modelId = prov && "modelId" in prov ? prov.modelId : null;
+  return {
+    ...emptyPlan("popOutView"),
+    creates: [
+      {
+        kind: "image",
+        provenance: modelId
+          ? { type: "cast_view", modelId, rootItemId: input.itemId, viewAngle: input.angle, attributes: meta.attributes ?? {}, engine: "package", inputs: [] }
+          : null,
+        position: popOutPlacement(item, 0),
+      },
+    ],
+    addEdges: [{ source: input.itemId, target: -1, relation: "generated_from_cast" }],
+  };
+}
+
+export async function executePopOutView(input: {
+  userId: number;
+  boardId: number;
+  itemId: number; // the root placement
+  angle: CanonicalViewAngle;
+  position?: { x: number; y: number }; // pin-spawn passes the drop point
+}) {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  const meta = readMeta(item);
+  const prov = meta.provenance;
+  if (!prov || (prov.type !== "cast_root" && prov.type !== "library_cast") || !("modelId" in prov)) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only a placed cast can pop views out" });
+  }
+  const modelId = prov.modelId;
+
+  const model = await getModelById(modelId);
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+
+  // The angle's CURRENT image — newest filled row (the read model's rule)
+  const assets = await getModelAssets(modelId);
+  const assetRow = assets.find((a) => a.viewType === input.angle && a.storageUrl);
+  if (!assetRow) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: `${VIEW_ANGLE_LABELS[input.angle]} hasn't been cast yet — add it from the comp card`,
+    });
+  }
+
+  // One placement per angle per root (package integrity — the tile keeps
+  // rendering; a second identical card would just be a duplicate)
+  const viewEdges = await getEdgesFrom(input.itemId, "generated_from_cast");
+  let alivePopped = 0;
+  for (const edge of viewEdges) {
+    const target = await getBoardItemById(edge.targetItemId);
+    if (!target || target.deletedAt) continue;
+    alivePopped += 1;
+    const targetProv = readMeta(target).provenance;
+    if (targetProv?.type === "cast_view" && targetProv.viewAngle === input.angle) {
+      throw new TRPCError({ code: "CONFLICT", message: `${VIEW_ANGLE_LABELS[input.angle]} is already on the board` });
+    }
+  }
+
+  const position = input.position ?? popOutPlacement(item, alivePopped);
+  const assetProv = assetRow.provenance as { engine?: string } | null;
+  const { itemId: newItemId } = await executeCreateNode({
+    boardId: input.boardId,
+    kind: "image",
+    provenance: {
+      type: "cast_view",
+      modelId,
+      rootItemId: input.itemId,
+      viewAngle: input.angle,
+      attributes: meta.attributes ?? {},
+      engine: assetProv?.engine ?? "package",
+      // D-12: the exact image this placement consumed, at pop-out time
+      inputs: [{ itemId: input.itemId, imageUrl: assetRow.storageUrl }],
+    },
+    position,
+    size: { width: VIEW_CARD_WIDTH, height: VIEW_CARD_HEIGHT },
+    label: item.label ?? undefined,
+    imageUrl: assetRow.storageUrl,
+  });
+  // The cascade-bearing lineage edge, with D-30's viewAngle intent metadata
+  const edgeId = await addBoardEdge({
+    boardId: input.boardId,
+    sourceItemId: input.itemId,
+    targetItemId: newItemId,
+    relation: "generated_from_cast",
+    metadata: { viewAngle: input.angle },
+  });
+  log.info({ rootItemId: input.itemId, newItemId, angle: input.angle }, "View popped out");
+  return { itemId: newItemId, imageUrl: assetRow.storageUrl, edgeId, viewAngle: input.angle, position };
+}
+
+/** Collapse's edge moves, pure (exported for tests): the root→popped lineage
+ *  edge is removed; every OUTGOING edge re-anchors to the root with the
+ *  popped view's angle preserved in metadata — D-30's weighted-reference
+ *  contract survives the collapse with no data loss. Incoming third-party
+ *  edges are left in place (orphaned by the soft delete, same as deleteNodes). */
+export function planCollapseEdgeMoves(
+  edges: Array<{ id: number; sourceItemId: number; targetItemId: number; relation: BoardEdgeRelation; metadata: unknown }>,
+  rootItemId: number,
+  poppedItemId: number,
+  viewAngle: CanonicalViewAngle,
+): {
+  removeEdgeIds: number[];
+  addEdges: Array<{ sourceItemId: number; targetItemId: number; relation: BoardEdgeRelation; metadata: Record<string, unknown> }>;
+} {
+  const removeEdgeIds: number[] = [];
+  const addEdges: Array<{ sourceItemId: number; targetItemId: number; relation: BoardEdgeRelation; metadata: Record<string, unknown> }> = [];
+  for (const edge of edges) {
+    if (edge.relation === "generated_from_cast" && edge.sourceItemId === rootItemId && edge.targetItemId === poppedItemId) {
+      removeEdgeIds.push(edge.id); // the lineage edge dematerializes with the card
+      continue;
+    }
+    if (edge.sourceItemId === poppedItemId && edge.targetItemId !== rootItemId) {
+      removeEdgeIds.push(edge.id);
+      addEdges.push({
+        sourceItemId: rootItemId,
+        targetItemId: edge.targetItemId,
+        relation: edge.relation,
+        metadata: { ...(edge.metadata && typeof edge.metadata === "object" ? edge.metadata as Record<string, unknown> : {}), viewAngle },
+      });
+    }
+  }
+  return { removeEdgeIds, addEdges };
+}
+
+/** NOTE: collapse is not Cmd+Z-undoable in pass 1 (edge moves aren't
+ *  versioned); recovery is a free re-pop-out. */
+export async function executeCollapseView(input: { userId: number; boardId: number; itemId: number }) {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  const prov = readMeta(item).provenance;
+  if (prov?.type !== "cast_view") {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only a popped-out view can collapse into its comp card" });
+  }
+  const edges = await getEdgesForItem(input.itemId);
+  const moves = planCollapseEdgeMoves(edges, prov.rootItemId, input.itemId, prov.viewAngle);
+  for (const edgeId of moves.removeEdgeIds) await removeBoardEdge(edgeId);
+  for (const add of moves.addEdges) await addBoardEdge({ boardId: input.boardId, ...add });
+  await softDeleteBoardItems([input.itemId]);
+  log.info({ itemId: input.itemId, reanchored: moves.addEdges.length }, "View collapsed into sheet");
+  return { collapsed: true, rootItemId: prov.rootItemId, reanchored: moves.addEdges.length };
 }
 
 // ── Shared read helper for the router ──────────────────────────────────────
