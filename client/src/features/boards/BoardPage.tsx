@@ -1631,14 +1631,14 @@ function BoardPageImpl() {
     // dotted grid immediately, centered mark, hairline progress. Never a bare
     // spinner.
     return (
-      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFAF8' }}>
+      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: 'var(--color-canvas-field)' }}>
         <div
           className="flex items-center gap-3 px-4 flex-shrink-0"
           style={{ height: 52, borderBottom: '1px solid rgba(0,0,0,0.06)' }}
         >
           <div className="rounded animate-pulse" style={{ width: 80, height: 20, background: 'rgba(0,0,0,0.06)' }} />
         </div>
-        <div className="flex-1 relative" style={{ background: '#DFDFDF' }}>
+        <div className="flex-1 relative" style={{ background: 'var(--color-canvas-field)' }}>
           <DottedGridBackground />
           <BrandLoader />
         </div>
@@ -1674,7 +1674,7 @@ function BoardPageImpl() {
     // canvas-scope: light theme container for the canvas + its primitives (D-22).
     // overflow-hidden: the board page owns the viewport — page scroll must not
     // exist, so the wheel always reaches React Flow as zoom (VC2 fix #2).
-    <div className="canvas-scope flex flex-col overflow-hidden" style={{ height: '100vh', background: '#FAFAF8' }}>
+    <div className="canvas-scope flex flex-col overflow-hidden" style={{ height: '100vh', background: 'var(--color-canvas-field)' }}>
       <BoardHeader
         name={board.name}
         onRename={handleRename}

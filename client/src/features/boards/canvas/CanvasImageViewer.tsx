@@ -104,7 +104,7 @@ export function CanvasImageViewer({ imageUrl, label, onClose }: CanvasImageViewe
         <div
           className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing select-none"
           style={{
-            backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 0.8px, transparent 0.8px)",
+            backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 1px, transparent 1px)",
             backgroundSize: "20px 20px",
           }}
           onWheel={onWheel}
