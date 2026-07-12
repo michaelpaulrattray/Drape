@@ -62,26 +62,14 @@ function ActionButton({
       onClick={(e) => { e.stopPropagation(); if (!disabled) onClick(); }}
       disabled={disabled}
       title={title}
-      className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+      className={
+        active
+          ? "w-9 h-9 rounded-canvas-md flex items-center justify-center transition-colors bg-canvas-ink text-canvas-surface"
+          : "w-9 h-9 rounded-canvas-md flex items-center justify-center transition-colors bg-canvas-surface border-hairline border-canvas-border text-canvas-ink-soft hover:text-canvas-ink hover:border-canvas-border-strong"
+      }
       style={{
-        background: active ? "#1a1a1a" : "rgba(255,255,255,0.85)",
-        color: active ? "#fff" : "#71716A",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-        backdropFilter: "blur(8px)",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.4 : 1,
-      }}
-      onMouseEnter={(e) => {
-        if (!disabled && !active) {
-          e.currentTarget.style.background = "rgba(255,255,255,0.95)";
-          e.currentTarget.style.color = "#1a1a1a";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = "rgba(255,255,255,0.85)";
-          e.currentTarget.style.color = "#71716A";
-        }
       }}
     >
       {children}
@@ -133,15 +121,8 @@ function ActionMenu({
   return (
     <div
       ref={menuRef}
-      className="absolute top-0 right-full mr-2 z-50"
-      style={{
-        minWidth: 170,
-        background: "rgba(255,255,255,0.92)",
-        backdropFilter: "blur(16px)",
-        borderRadius: 12,
-        padding: "6px 0",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)",
-      }}
+      className="absolute top-0 right-full mr-2 z-50 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border-strong"
+      style={{ minWidth: 170, padding: "6px 0" }}
       onClick={(e) => e.stopPropagation()}
     >
       {onRetry && (
@@ -162,28 +143,17 @@ function ActionMenu({
 
       {shortcuts && shortcuts.length > 0 && (
         <>
-          <div style={{ height: 1, background: "rgba(0,0,0,0.06)", margin: "4px 0" }} />
-          <div style={{ padding: "6px 12px 4px", fontSize: 10, fontWeight: 600, color: "#A09E96", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          <div className="border-t-hairline border-canvas-border my-1" />
+          <div className="px-3 pt-1.5 pb-1 text-canvas-xs font-medium text-canvas-ink-faint">
             Shortcuts
           </div>
           {shortcuts.map((s) => (
             <div
               key={s.key}
-              className="flex items-center justify-between px-3 py-1.5"
-              style={{ fontSize: 12, color: "#52524B" }}
+              className="flex items-center justify-between px-3 py-1.5 text-canvas-md text-canvas-ink-soft"
             >
               <span>{s.label}</span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  fontFamily: "monospace",
-                  padding: "1px 5px",
-                  borderRadius: 4,
-                  background: "rgba(0,0,0,0.05)",
-                  color: "#A09E96",
-                }}
-              >
+              <span className="text-canvas-sm font-medium font-mono px-[5px] py-px rounded-sm bg-canvas-surface-inset text-canvas-ink-faint">
                 {s.key}
               </span>
             </div>
@@ -206,10 +176,8 @@ function MenuButton({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2 px-3 py-2 transition-colors"
-      style={{ fontSize: 13, color: "#52524B", background: "transparent" }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+      className="w-full flex items-center gap-2 px-3 py-2 transition-colors bg-transparent text-canvas-ink-soft hover:bg-canvas-surface-inset"
+      style={{ fontSize: 13 }}
     >
       {icon}
       {label}
@@ -314,7 +282,7 @@ export function ImageActionBar({
         disabled={!imageUrl || isGenerating || isDownloading}
       >
         {isDownloading ? (
-          <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#E8E4DF", borderTopColor: "#71716A" }} />
+          <div className="w-4 h-4 rounded-full border-2 border-canvas-border animate-spin" style={{ borderTopColor: "var(--color-canvas-ink-soft)" }} />
         ) : (
           <Download size={ICON_SIZE} strokeWidth={2} />
         )}
@@ -330,7 +298,7 @@ export function ImageActionBar({
             <polyline points="20 6 9 17 4 12" />
           </svg>
         ) : isCopying ? (
-          <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#E8E4DF", borderTopColor: "#71716A" }} />
+          <div className="w-4 h-4 rounded-full border-2 border-canvas-border animate-spin" style={{ borderTopColor: "var(--color-canvas-ink-soft)" }} />
         ) : (
           <Copy size={ICON_SIZE} strokeWidth={2} />
         )}

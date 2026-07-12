@@ -1,34 +1,47 @@
 /**
- * Warm-theme UI primitives for the v3 Casting Studio ControlPanel.
- * These small building blocks (ChipRow, OptionGrid, SelectControl, etc.)
- * are shared across multiple sections of the ControlPanel.
+ * Casting ControlPanel section/row primitives (ChipRow, OptionGrid,
+ * SelectControl, etc.), shared across the panel's sections.
+ * Restyled to the canvas language per DESIGN_SYSTEM.md §13 (R6) —
+ * behavior (drag, snap, blend manipulation, selection) unchanged.
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { ChevronRight, RotateCcw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 // Canonical option lists — single source (R2 dedupe; audit H). The old local
 // copies drifted (this file's EYE_PRESETS lacked the `image` field).
 import { ETHNICITIES, EYE_PRESETS, SKIN_TONES } from "../constants";
 
 export { ETHNICITIES };
 
-const ETH_COLORS: Record<string, string> = {
-  "Slavic": "#b8a080", "Nordic": "#8fb6cd", "Mediterranean": "#c2a377",
-  "East Asian": "#c49647", "South Asian": "#d9ae88", "Afro-Caribbean": "#8d5e42",
-  "West African": "#593b2b", "Latino": "#c08a65", "Middle Eastern": "#a06d48",
-  "Polynesian": "#947846",
-};
-
 // ── Tiny Helpers ──────────────────────────────
 
 const ReqDot = ({ filled }: { filled: boolean }) => (
-  !filled ? <span className="inline-block w-1 h-1 rounded-full bg-[#e07c5a] ml-1 align-middle" /> : null
+  !filled ? <span className="inline-block w-1 h-1 rounded-full bg-canvas-warning ml-1 align-middle" /> : null
 );
 
 export const FieldLabel = ({ children, filled = true }: { children: React.ReactNode; filled?: boolean }) => (
-  <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 6 }}>
+  <div className="text-canvas-xs font-medium text-canvas-ink-soft mb-1.5">
     {children}<ReqDot filled={filled} />
   </div>
 );
+
+// The standard chip pattern (DS §13.1) — shared by ChipRow, OptionGrid,
+// EthnicityBlender's grid, and TriBlendSelector's presets.
+export const chipClass = (active: boolean) =>
+  cn(
+    "py-2 rounded-canvas-md text-center text-canvas-xs transition-colors",
+    active
+      ? "bg-canvas-surface-inset border border-canvas-ink text-canvas-ink font-medium"
+      : "bg-canvas-surface border-hairline border-canvas-border text-canvas-ink-soft hover:border-canvas-border-strong",
+  );
 
 // ── ChipRow ───────────────────────────────────
 
@@ -42,16 +55,7 @@ export const ChipRow = ({ options, selected, onSelect, allowDeselect = false }: 
         <button
           key={opt}
           onClick={() => allowDeselect && selected === opt ? onSelect('') : onSelect(opt)}
-          className="py-2 rounded-xl text-center transition-all"
-          style={{
-            fontSize: 12, fontWeight: selected === opt ? 600 : 500,
-            background: selected === opt ? '#1a1a1a' : '#ffffff',
-            color: selected === opt ? '#fff' : '#52524B',
-            border: selected === opt ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
-            boxShadow: selected === opt ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
-          }}
-          onMouseEnter={(e) => { if (selected !== opt) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
-          onMouseLeave={(e) => { if (selected !== opt) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
+          className={chipClass(selected === opt)}
         >
           {opt}
         </button>
@@ -74,37 +78,24 @@ export const OptionGrid = ({ options, selected, onSelect, cols = 3, showAutoRese
           <button
             key={opt}
             onClick={() => showAutoReset && selected === opt ? onSelect('Auto') : onSelect(opt)}
-            className="py-2.5 rounded-xl text-center transition-all"
-            style={{
-              fontSize: 12, fontWeight: selected === opt ? 600 : 500,
-              background: selected === opt ? '#1a1a1a' : '#ffffff',
-              color: selected === opt ? '#fff' : '#52524B',
-              border: selected === opt ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
-              boxShadow: selected === opt ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
-            }}
-            onMouseEnter={(e) => { if (selected !== opt) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
-            onMouseLeave={(e) => { if (selected !== opt) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
+            className={cn(chipClass(selected === opt), "py-2.5")}
           >
             {opt}
           </button>
         ))}
       </div>
       {showAutoReset && (
-        <div style={{ marginTop: 6, minHeight: 16 }}>
+        <div className="mt-1.5 min-h-4">
           {!isAuto ? (
             <button
               onClick={() => onSelect('Auto')}
-              className="flex items-center gap-1 transition-colors hover:text-[#52524B]"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: '#71716A' }}
+              className="flex items-center gap-1 p-0 bg-transparent border-none cursor-pointer text-canvas-sm text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors"
             >
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-              Reset to Auto
+              <RotateCcw className="w-2 h-2" strokeWidth={2.5} />
+              Reset to auto
             </button>
           ) : (
-            <span style={{ fontSize: 11, color: '#d8d4ce' }}>Guided by casting direction</span>
+            <span className="text-canvas-sm text-canvas-ink-faint">Guided by casting direction</span>
           )}
         </div>
       )}
@@ -118,25 +109,19 @@ export const WarmSelectControl = ({ label, options, value, onChange }: {
   label: string; options: string[]; value: string; onChange: (v: string) => void;
 }) => (
   <div>
-    <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 4 }}>{label}</div>
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full py-2 px-2.5 rounded-xl outline-none cursor-pointer appearance-none"
-        style={{ background: '#ffffff', border: '1px solid #E8E4DF', fontSize: 13, color: value ? '#1a1a1a' : '#999' }}
-      >
-        <option value="">—</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#71716A' }}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-      </div>
-    </div>
+    <div className="text-canvas-xs font-medium text-canvas-ink-soft mb-1">{label}</div>
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger className="w-full h-9 bg-canvas-surface border-hairline border-canvas-border rounded-canvas-md text-canvas-sm shadow-none focus:ring-0 focus:border-canvas-ink">
+        <SelectValue placeholder="—" />
+      </SelectTrigger>
+      <SelectContent className="shadow-none border-hairline border-canvas-border-strong">
+        {options.map(o => <SelectItem key={o} value={o} className="text-canvas-sm">{o}</SelectItem>)}
+      </SelectContent>
+    </Select>
   </div>
 );
 
-// ── EyeGrid ───────────────────────────────────
+// ── EyeGrid (color-data exception — the iris gradient is data) ──
 
 export const EyeGrid = ({ selected, onSelect }: {
   selected: string; onSelect: (v: string) => void;
@@ -148,16 +133,15 @@ export const EyeGrid = ({ selected, onSelect }: {
         <button
           key={opt.label}
           onClick={() => onSelect(opt.label)}
-          className="relative w-full aspect-square rounded-full overflow-hidden transition-all"
-          style={{
-            border: isSelected ? '2px solid #1a1a1a' : '2px solid rgba(0,0,0,0.06)',
-            transform: isSelected ? 'scale(1.1)' : 'scale(1)',
-            boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-          }}
+          className={cn(
+            "relative w-full aspect-square rounded-full overflow-hidden transition-all",
+            isSelected
+              ? "border border-canvas-ink ring-1 ring-canvas-ink ring-offset-1 ring-offset-canvas-surface"
+              : "border-hairline border-canvas-border hover:border-canvas-border-strong",
+          )}
           title={opt.label}
         >
           <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 35% 35%, ${opt.hex} 0%, #333 80%)` }} />
-          <div className="absolute top-[25%] left-[25%] w-[15%] h-[15%] bg-white rounded-full blur-[1px] opacity-50" />
         </button>
       );
     })}
@@ -165,6 +149,8 @@ export const EyeGrid = ({ selected, onSelect }: {
 );
 
 // ── Ethnicity Blender ─────────────────────────
+// The blend bar shows proportion; the labels show identity (DS §13.2 —
+// per-ethnicity color coding removed).
 
 export const EthnicityBlender = ({ selected, onChange }: {
   selected: { name: string; pct: number }[];
@@ -215,57 +201,56 @@ export const EthnicityBlender = ({ selected, onChange }: {
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="grid grid-cols-3 gap-1.5">
         {ETHNICITIES.map(eth => {
           const active = selected.some(e => e.name === eth);
           return (
-            <button key={eth} onClick={() => toggleEth(eth)}
-              className="py-2.5 rounded-xl text-center transition-all"
-              style={{
-                fontSize: 12, fontWeight: active ? 600 : 500,
-                background: active ? '#1a1a1a' : '#ffffff',
-                color: active ? '#fff' : '#52524B',
-                border: active ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
-                boxShadow: active ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
-              }}
-              onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
-              onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
-            >{eth}</button>
+            <button key={eth} onClick={() => toggleEth(eth)} className={cn(chipClass(active), "py-2.5")}>
+              {eth}
+            </button>
           );
         })}
       </div>
       {selected.length === 2 && (
         <div className="space-y-1 pt-1">
-          <div ref={barRef} className="relative flex" style={{ height: 30, borderRadius: 8, userSelect: 'none', cursor: dragging ? 'col-resize' : 'default' }}>
+          <div
+            ref={barRef}
+            className="relative flex h-8 rounded-canvas-md overflow-hidden border-hairline border-canvas-border select-none"
+            style={{ cursor: dragging ? "col-resize" : "default" }}
+          >
             {selected.map((eth, i) => (
-              <div key={eth.name} style={{
-                width: `${eth.pct}%`, height: '100%',
-                background: `linear-gradient(135deg, ${ETH_COLORS[eth.name] || '#888'}38, ${ETH_COLORS[eth.name] || '#888'}18)`,
-                borderRadius: i === 0 ? '8px 0 0 8px' : '0 8px 8px 0',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                position: 'relative', transition: dragging ? 'none' : 'width 0.2s ease',
-              }}>
+              <div
+                key={eth.name}
+                className="h-full flex items-center justify-center relative bg-canvas-surface-inset"
+                style={{
+                  width: `${eth.pct}%`,
+                  transition: dragging ? "none" : "width 200ms ease",
+                  ...(i === 0 ? { borderRight: "0.5px solid var(--color-canvas-border)" } : {}),
+                }}
+              >
                 {eth.pct > 20 && (
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: ETH_COLORS[eth.name] || '#888', opacity: 0.9 }}>
-                    {eth.name.length > 8 ? eth.name.split(' ')[0].slice(0, 6).toUpperCase() : eth.name.toUpperCase()}
-                  </span>
+                  <span className="text-canvas-xs font-medium text-canvas-ink-soft">{eth.name}</span>
                 )}
-                <span style={{ position: 'absolute', bottom: -14, left: '50%', transform: 'translateX(-50%)', fontSize: 11, fontWeight: 600, color: ETH_COLORS[eth.name] || '#888', opacity: 0.7, whiteSpace: 'nowrap' }}>{eth.pct}%</span>
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-canvas-xs text-canvas-ink-faint whitespace-nowrap">
+                  {eth.pct}%
+                </span>
               </div>
             ))}
             <div
               onMouseDown={(e) => { e.preventDefault(); setDragging(true); }}
               onTouchStart={() => setDragging(true)}
-              style={{ position: 'absolute', left: `${selected[0].pct}%`, top: 0, width: 14, height: '100%', marginLeft: -7, cursor: 'col-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, touchAction: 'none' }}
+              className="absolute top-0 h-full w-3.5 -ml-1.5 cursor-col-resize flex items-center justify-center z-10 touch-none"
+              style={{ left: `${selected[0].pct}%` }}
             >
-              <div style={{ width: 3, height: 14, borderRadius: 2, background: dragging ? '#1a1a1a' : 'rgba(0,0,0,0.15)', transition: 'all 0.15s' }} />
+              <div className={cn("w-0.5 h-3.5 rounded-full transition-colors", dragging ? "bg-canvas-ink" : "bg-canvas-border-strong")} />
             </div>
           </div>
-          <div style={{ height: 14 }} />
+          {/* spacer: percentage labels are absolutely positioned below the bar */}
+          <div className="h-3.5" />
         </div>
       )}
       {selected.length === 1 && (
-        <div style={{ fontSize: 11, color: '#52524B', paddingLeft: 2, marginTop: 2 }}>Tap a second ethnicity to create a blend</div>
+        <div className="text-canvas-xs text-canvas-ink-soft pl-0.5 mt-0.5">Tap a second ethnicity to create a blend</div>
       )}
     </div>
   );
@@ -301,19 +286,22 @@ export const CollapsibleSection = ({ id, title, icon, isOpen, onToggle, completi
   const filled = Math.round(completionRatio * dots);
 
   return (
-    <div style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-      <button onClick={() => onToggle(id)} className="w-full flex items-center justify-between px-4 py-3" style={{ cursor: 'pointer', background: 'transparent', border: 'none' }}>
+    <div className="border-t-hairline border-canvas-border">
+      <button
+        onClick={() => onToggle(id)}
+        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer bg-transparent border-none hover:bg-canvas-surface-inset/50 transition-colors"
+      >
         <div className="flex items-center gap-2.5">
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="3" strokeLinecap="round"
-            style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-          {icon && <span style={{ color: isOpen ? '#1a1a1a' : '#bbb', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}>{icon}</span>}
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#52524B', letterSpacing: '0.06em' }}>{title.toUpperCase()}</span>
+          <ChevronRight
+            className={cn("w-3 h-3 text-canvas-ink-faint transition-transform duration-200", isOpen && "rotate-90")}
+            strokeWidth={2}
+          />
+          {icon && <span className={cn("flex items-center transition-colors duration-200", isOpen ? "text-canvas-ink" : "text-canvas-ink-faint")}>{icon}</span>}
+          <span className="text-canvas-sm font-medium text-canvas-ink-soft">{title}</span>
         </div>
         <div className="flex items-center gap-1">
           {Array.from({ length: dots }).map((_, i) => (
-            <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: i < filled ? '#1a1a1a' : 'rgba(0,0,0,0.08)', transition: 'background 0.3s' }} />
+            <div key={i} className={cn("w-1 h-1 rounded-full transition-colors duration-300", i < filled ? "bg-canvas-ink" : "bg-canvas-border")} />
           ))}
         </div>
       </button>
@@ -428,35 +416,17 @@ export const SummaryStrip = ({ prefs, ethnicityBlend }: {
 
   return (
     <div
-      className="custom-scrollbar"
-      style={{
-        borderBottom: '1px solid rgba(0,0,0,0.04)',
-        background: 'rgba(245,243,239,0.5)',
-        display: 'flex',
-        gap: 4,
-        padding: '6px 16px',
-        overflowX: 'auto',
-        scrollbarWidth: 'none',
-      }}
+      className="custom-scrollbar flex gap-1 px-4 py-1.5 overflow-x-auto bg-canvas-surface-inset border-b-hairline border-canvas-border"
+      style={{ scrollbarWidth: 'none' }}
     >
       {items.map((item, i) => {
         const IconComp = SUMMARY_ICON_MAP[item.iconKey];
         return (
           <span
             key={i}
-            className="flex items-center gap-1 shrink-0"
-            style={{
-              padding: '3px 8px',
-              borderRadius: 20,
-              background: 'rgba(0,0,0,0.04)',
-              fontSize: 11,
-              fontWeight: 500,
-              color: '#52524B',
-              whiteSpace: 'nowrap',
-              letterSpacing: '0.01em',
-            }}
+            className="flex items-center gap-1 shrink-0 px-2 py-[3px] rounded-canvas-pill bg-canvas-surface border-hairline border-canvas-border text-canvas-xs font-medium text-canvas-ink-soft whitespace-nowrap"
           >
-            <span style={{ opacity: 0.55, display: 'flex', alignItems: 'center' }}>{IconComp && <IconComp />}</span>
+            <span className="opacity-55 flex items-center">{IconComp && <IconComp />}</span>
             {item.label}
           </span>
         );
@@ -465,18 +435,22 @@ export const SummaryStrip = ({ prefs, ethnicityBlend }: {
   );
 };
 
-// ── Skin Tone Grid ────────────────────────────
+// ── Skin Tone Grid (color-data exception — swatches stay chromatic) ──
 
 export const SkinToneGrid = ({ selected, onSelect }: { selected: string; onSelect: (v: string) => void }) => (
   <div className="grid grid-cols-6 gap-2">
     {SKIN_TONES.map(tone => (
-      <button key={tone.label} onClick={() => onSelect(tone.value)} title={tone.label}
-        className="h-8 rounded-lg overflow-hidden transition-all"
-        style={{
-          background: `linear-gradient(135deg, ${tone.base} 0%, ${tone.shadow} 100%)`,
-          border: selected === tone.value ? '2.5px solid #1a1a1a' : '2px solid rgba(0,0,0,0.06)',
-          transform: selected === tone.value ? 'scale(1.1)' : 'scale(1)',
-        }}
+      <button
+        key={tone.label}
+        onClick={() => onSelect(tone.value)}
+        title={tone.label}
+        className={cn(
+          "h-9 rounded-canvas-md transition-all",
+          selected === tone.value
+            ? "border border-canvas-ink ring-1 ring-canvas-ink ring-offset-1 ring-offset-canvas-surface"
+            : "border-hairline border-canvas-border hover:border-canvas-border-strong",
+        )}
+        style={{ background: tone.base }}
       />
     ))}
   </div>

@@ -422,7 +422,9 @@ const selectedGender = () =>
     const buttons = [...document.querySelectorAll("button")];
     for (const name of ["Female", "Male", "Non-Binary"]) {
       const b = buttons.find((el) => el.textContent?.trim() === name);
-      if (b && getComputedStyle(b).backgroundColor === "rgb(26, 26, 26)") return name;
+      // Active chip encoding per DS §13.1 (R6 restyle): inset surface + 1px
+      // ink border (the pre-R6 dark fill rgb(26,26,26) is dead)
+      if (b && getComputedStyle(b).borderColor === "rgb(10, 10, 10)") return name;
     }
     return null;
   });
@@ -760,11 +762,34 @@ if (!(await filledNode())?.img) {
     console.log("SKIP  K — no filled cast node available");
   } else {
     const countBefore = await nodeCount();
+    // On drive layouts other nodes can stack ON TOP of the measured card and
+    // eat the click (selecting the topmost node is correct product behavior).
+    // Probe with elementFromPoint for a spot where THIS card is the visible
+    // topmost node — the point a real user would click to select it.
+    const clickPoint = await page.evaluate(() => {
+      const nodes = [...document.querySelectorAll(".react-flow__node")].filter((n) =>
+        n.querySelector("img")?.getAttribute("src"),
+      );
+      const el = nodes[nodes.length - 1];
+      if (!el) return null;
+      el.scrollIntoView({ block: "center" });
+      const r = el.getBoundingClientRect();
+      for (const fy of [0.05, 0.15, 0.3, 0.5, 0.7, 0.9]) {
+        for (const fx of [0.5, 0.15, 0.85]) {
+          const x = r.x + r.width * fx;
+          const y = r.y + r.height * fy;
+          const hit = document.elementFromPoint(x, y);
+          if (hit && el.contains(hit)) return { x, y };
+        }
+      }
+      return null;
+    });
+    if (!clickPoint) console.log("   K1: no unobstructed point on the filled card (fully covered)");
     // Poll — selection→toolbar render can lag under load; re-click once if
     // the first click raced a node remount
     let dupBtn: { x: number; y: number } | null = null;
-    for (let attempt = 0; attempt < 2 && !dupBtn; attempt++) {
-      await page.mouse.click(source.x, source.y);
+    for (let attempt = 0; attempt < 2 && !dupBtn && clickPoint; attempt++) {
+      await page.mouse.click(clickPoint.x, clickPoint.y);
       for (let i = 0; i < 10 && !dupBtn; i++) {
         await sleep(500);
         dupBtn = await page.evaluate(() => {
@@ -774,6 +799,19 @@ if (!(await filledNode())?.img) {
           return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
         });
       }
+    }
+    if (!dupBtn) {
+      // Failure forensics: what IS on screen when the toolbar never appears?
+      const k1Debug = await page.evaluate(() => ({
+        selectedIds: [...document.querySelectorAll(".react-flow__node.selected")].map((n) => ({
+          id: n.getAttribute("data-id"),
+          hasImg: !!n.querySelector("img")?.getAttribute("src"),
+          text: (n.textContent ?? "").slice(0, 60),
+        })),
+        ariaButtons: [...document.querySelectorAll("button[aria-label]")].map((b) => b.getAttribute("aria-label")),
+        tilePopover: (document.body.textContent ?? "").includes("Open in environment"),
+      }));
+      console.log("   K1 debug:", JSON.stringify(k1Debug), "clicked:", JSON.stringify(source));
     }
     check("K1 selection raises the toolbar (Duplicate present)", !!dupBtn);
     if (dupBtn) {

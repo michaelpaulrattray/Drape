@@ -336,12 +336,11 @@ export function CastingTakeover({
             type="button"
             onClick={attemptClose}
             aria-label="Back to board"
-            className="w-7 h-7 rounded-md flex items-center justify-center transition-colors hover:bg-black/[0.04]"
-            style={{ color: '#71716A' }}
+            className="w-7 h-7 rounded-canvas-sm flex items-center justify-center transition-colors text-canvas-ink-soft hover:bg-canvas-surface-inset"
           >
             <ArrowLeft size={15} strokeWidth={1.8} />
           </button>
-          <span className="truncate" style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>{title}</span>
+          <span className="truncate text-canvas-lg font-medium text-canvas-ink">{title}</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -356,21 +355,26 @@ export function CastingTakeover({
                 type="button"
                 onClick={() => setIsTopupOpen(true)}
                 title="Credit balance — top up"
-                className="px-2 py-1 rounded-md transition-colors hover:bg-black/[0.04]"
-                style={{ fontSize: 12, color: '#71716A', fontVariantNumeric: 'tabular-nums' }}
+                className="px-2 py-1 rounded-canvas-sm transition-colors text-canvas-md text-canvas-ink-soft hover:bg-canvas-surface-inset"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {creditsData.balance.toLocaleString()} credits
               </button>
-              <span aria-hidden style={{ width: 1, height: 16, background: 'rgba(0,0,0,0.08)', marginRight: 4 }} />
+              <span aria-hidden className="w-px h-4 mr-1 bg-canvas-border" />
             </>
           )}
+          {/* R6 ruling R-3(a): same anchor, different weight. The paid path
+              ("Cast this model" → the plan-priced tier dialog) wears the dark
+              pill; "Save changes" (→ the D-11 decision dialog) wears a quiet
+              outline — different action weights, same stable coordinates. No
+              cost on the header pill: the tier dialog is the D-15 cost
+              surface, and a header label would have to guess a tier. */}
           {isMintedEdit ? (
             <button
               type="button"
               disabled={!hydrated || genState.isGenerating}
               onClick={handleSaveChanges}
-              className="px-4 py-1.5 rounded-full transition-all duration-200 disabled:opacity-40"
-              style={{ fontSize: 12, fontWeight: 500, color: '#fff', background: '#1a1a1a' }}
+              className="px-4 py-1.5 rounded-canvas-pill transition-colors duration-200 disabled:opacity-40 text-canvas-md font-medium text-canvas-ink-soft bg-canvas-surface border-hairline border-canvas-border-strong hover:text-canvas-ink hover:border-canvas-ink"
             >
               Save changes
             </button>
@@ -379,8 +383,8 @@ export function CastingTakeover({
               type="button"
               disabled={!hasHeadshot || isCasting || genState.isGenerating}
               onClick={() => setShowCastModal(true)}
-              className="px-4 py-1.5 rounded-full transition-all duration-200 disabled:opacity-40"
-              style={{ fontSize: 12, fontWeight: 500, color: '#fff', background: '#1a1a1a' }}
+              className="px-4 py-1.5 rounded-canvas-pill transition-opacity duration-200 disabled:opacity-40 text-canvas-md font-medium bg-canvas-ink hover:opacity-90"
+              style={{ color: 'var(--color-canvas-surface)' }}
             >
               {isCasting ? 'Casting…' : 'Cast this model'}
             </button>
@@ -389,8 +393,7 @@ export function CastingTakeover({
             type="button"
             onClick={attemptClose}
             aria-label="Close"
-            className="w-7 h-7 rounded-md flex items-center justify-center transition-colors hover:bg-black/[0.04]"
-            style={{ color: '#71716A' }}
+            className="w-7 h-7 rounded-canvas-sm flex items-center justify-center transition-colors text-canvas-ink-soft hover:bg-canvas-surface-inset"
           >
             <X size={15} strokeWidth={1.8} />
           </button>
@@ -421,13 +424,13 @@ export function CastingTakeover({
         <div className="absolute inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0" style={{ background: 'rgba(10,10,10,0.3)' }} onClick={() => setConfirmingLeave(false)} />
           <div
-            className="relative rounded-xl p-5"
-            style={{ width: 380, background: '#fff', border: '1px solid rgba(0,0,0,0.08)' }}
+            className="relative rounded-canvas-lg p-5 bg-canvas-surface border-hairline border-canvas-border-strong"
+            style={{ width: 380 }}
           >
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
+            <p className="text-canvas-lg font-medium text-canvas-ink mb-1.5">
               {isMintedEdit ? 'Leave editing?' : 'Leave casting?'}
             </p>
-            <p style={{ fontSize: 12.5, color: '#71716A', lineHeight: 1.55, marginBottom: 18 }}>
+            <p className="text-canvas-md text-canvas-ink-soft mb-4" style={{ lineHeight: 1.55 }}>
               {isMintedEdit
                 ? 'Unsaved identity changes are discarded — the placed cast stays as it is.'
                 : genState.isGenerating
@@ -441,16 +444,15 @@ export function CastingTakeover({
                   setConfirmingLeave(false);
                   startClose();
                 }}
-                className="px-3.5 py-1.5 rounded-full transition-colors hover:bg-black/[0.04]"
-                style={{ fontSize: 12, fontWeight: 500, color: '#52524B', border: '1px solid rgba(0,0,0,0.12)' }}
+                className="px-3.5 py-1.5 rounded-canvas-pill transition-colors text-canvas-md font-medium text-canvas-ink-soft border-hairline border-canvas-border-strong hover:bg-canvas-surface-inset"
               >
                 Leave
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingLeave(false)}
-                className="px-3.5 py-1.5 rounded-full transition-opacity hover:opacity-90"
-                style={{ fontSize: 12, fontWeight: 500, color: '#fff', background: '#1a1a1a' }}
+                className="px-3.5 py-1.5 rounded-canvas-pill transition-opacity hover:opacity-90 text-canvas-md font-medium bg-canvas-ink"
+                style={{ color: 'var(--color-canvas-surface)' }}
               >
                 {isMintedEdit ? 'Keep editing' : 'Keep casting'}
               </button>

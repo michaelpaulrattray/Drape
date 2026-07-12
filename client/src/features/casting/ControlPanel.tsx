@@ -108,25 +108,18 @@ function CastingProgressRing({ completions }: { completions: Record<string, numb
   return (
     <div className="relative flex items-center justify-center" style={{ width: 40, height: 40 }}>
       <svg width="40" height="40" viewBox="0 0 40 40" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="20" cy="20" r={r} fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="3" />
+        <circle cx="20" cy="20" r={r} fill="none" stroke="var(--color-canvas-border)" strokeWidth="2" />
         <circle
           cx="20" cy="20" r={r} fill="none"
-          stroke={pct === 100 ? '#1a1a1a' : '#71716A'}
-          strokeWidth="3" strokeLinecap="round"
+          stroke={pct === 100 ? 'var(--color-canvas-ink)' : 'var(--color-canvas-ink-soft)'}
+          strokeWidth="2" strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           style={{ transition: 'stroke-dashoffset 0.4s ease, stroke 0.3s' }}
         />
       </svg>
       <span
-        className="absolute"
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: pct === 100 ? '#1a1a1a' : '#52524B',
-          fontFamily: 'ui-monospace, monospace',
-          transition: 'color 0.3s',
-        }}
+        className={`absolute text-canvas-sm font-medium tabular-nums transition-colors ${pct === 100 ? 'text-canvas-ink' : 'text-canvas-ink-soft'}`}
       >
         {pct}%
       </span>
@@ -269,24 +262,23 @@ export function ControlPanel({
     <div className={`
       ${showMobilePanel ? 'fixed inset-0 z-50 pt-11' : 'hidden'}
       lg:relative lg:flex lg:flex-col lg:pt-0
-      h-full flex flex-col
+      h-full flex flex-col bg-canvas-surface
     `}
-      style={{ background: '#F5F3F0' }}
     >
       {/* Header */}
       <div className="p-4 pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <div style={{ fontSize: 17, fontWeight: 600, color: '#1a1a1a' }}>
-              {isReadOnly ? (modelName || 'Cast Model') : 'Casting'}
+            <div className="text-canvas-xl font-medium text-canvas-ink">
+              {isReadOnly ? (modelName || 'Cast model') : 'Casting'}
             </div>
-            <div style={{ fontSize: 12, color: '#52524B' }}>
+            <div className="text-canvas-md text-canvas-ink-soft">
               {isReadOnly ? 'Identity locked' : 'Build your model from scratch'}
             </div>
           </div>
           {isReadOnly ? (
             <div className="flex items-center justify-center" style={{ width: 40, height: 40 }}>
-              <Lock size={16} strokeWidth={1.5} style={{ color: '#71716A' }} />
+              <Lock size={16} strokeWidth={1.5} className="text-canvas-ink-soft" />
             </div>
           ) : (
             <CastingProgressRing completions={completions} />
@@ -321,8 +313,8 @@ export function ControlPanel({
 
       {/* Read-only banner */}
       {isReadOnly && (
-        <div className="mx-4 mb-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(26,26,26,0.04)', border: '1px solid rgba(26,26,26,0.06)' }}>
-          <p style={{ fontSize: 12, fontWeight: 500, color: '#52524B', lineHeight: 1.5 }}>
+        <div className="mx-4 mb-2 px-3 py-2.5 rounded-canvas-md bg-canvas-surface-inset border-hairline border-canvas-border">
+          <p className="text-canvas-md font-medium text-canvas-ink-soft leading-normal">
             This model has been cast and their identity is locked. You can still export or dress them.
           </p>
         </div>
@@ -335,11 +327,11 @@ export function ControlPanel({
       >
 
         {/* ═══ CASTING BASICS ═══ */}
-        <CollapsibleSection id="basics" title="Casting Basics" icon={<Palette size={12} strokeWidth={1.8} />} isOpen={openSections.basics} onToggle={toggleSection} completionRatio={completions.basics}>
+        <CollapsibleSection id="basics" title="Casting basics" icon={<Palette size={12} strokeWidth={1.8} />} isOpen={openSections.basics} onToggle={toggleSection} completionRatio={completions.basics}>
           <div className="space-y-4">
             <div data-sweep-field="brand">
               <div className="flex items-center justify-between">
-                <FieldLabel filled={!!prefs.castingBrand || !!ec.castingBrand}>Brand Direction</FieldLabel>
+                <FieldLabel filled={!!prefs.castingBrand || !!ec.castingBrand}>Brand direction</FieldLabel>
                 <EngineChoiceChip field="castingBrand" />
               </div>
               <BrandSelector
@@ -348,14 +340,14 @@ export function ControlPanel({
               />
             </div>
 
-            <div className="pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }} data-sweep-field="vibe">
+            <div className="pt-4 border-t-hairline border-canvas-border" data-sweep-field="vibe">
               <TriBlendSelector
                 value={prefs.castingVibe || { commercial: 0.34, editorial: 0.33, runway: 0.33 }}
                 onChange={(val) => updatePref('castingVibe', val)}
               />
             </div>
 
-            <div className="pt-4 space-y-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+            <div className="pt-4 space-y-4 border-t-hairline border-canvas-border">
               <div className="space-y-2" data-sweep-field="gender">
                 <div className="flex items-center justify-between">
                   <FieldLabel filled={!!prefs.gender || !!ec.gender}>Gender</FieldLabel>
@@ -372,22 +364,22 @@ export function ControlPanel({
               <div className="space-y-2" data-sweep-field="age">
                 <div className="flex justify-between items-end">
                   <div className="flex items-center gap-2">
-                    <span style={{ fontSize: 12, fontWeight: 500, color: '#52524B' }}>Age</span>
+                    <span className="text-canvas-xs font-medium text-canvas-ink-soft">Age</span>
                     <EngineChoiceChip field="age" />
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: prefs.age ? '#1a1a1a' : '#a1a19a' }}>
+                  <span className={`text-canvas-lg font-medium ${prefs.age ? 'text-canvas-ink' : 'text-canvas-ink-faint'}`}>
                     {prefs.age || (ec.age ? 'Open' : '—')}
                   </span>
                 </div>
                 <input type="range" min="18" max="85" step="1" value={prefs.age || "23"}
                   onChange={(e) => updatePref('age', e.target.value)}
                   className="w-full h-1 rounded-full appearance-none cursor-pointer"
-                  style={{ background: '#E8E4DF', accentColor: '#1a1a1a' }}
+                  style={{ background: 'var(--color-canvas-border)', accentColor: 'var(--color-canvas-ink)' }}
                 />
               </div>
             </div>
 
-            <div className="pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }} data-sweep-field="ethnicity">
+            <div className="pt-4 border-t-hairline border-canvas-border" data-sweep-field="ethnicity">
               <div className="flex items-center justify-between">
                 <FieldLabel filled={ethnicityBlend.length > 0 || !!ec.ethnicity}>Ethnicity</FieldLabel>
                 <EngineChoiceChip field="ethnicity" />
@@ -406,46 +398,45 @@ export function ControlPanel({
         </CollapsibleSection>
 
         {/* ═══ FACE STRUCTURE ═══ */}
-        <CollapsibleSection id="face" title="Face Structure" icon={<ScanFace size={12} strokeWidth={1.8} />} isOpen={openSections.face} onToggle={toggleSection} completionRatio={completions.face}>
+        <CollapsibleSection id="face" title="Face structure" icon={<ScanFace size={12} strokeWidth={1.8} />} isOpen={openSections.face} onToggle={toggleSection} completionRatio={completions.face}>
           <div className="space-y-5">
             <div className="space-y-2" data-sweep-field="face-shape">
-              <FieldLabel>Face Shape</FieldLabel>
+              <FieldLabel>Face shape</FieldLabel>
               <OptionGrid options={["Oval", "Round", "Square", "Heart", "Diamond", "Auto"]}
                 selected={prefs.faceShape || "Auto"} onSelect={(val) => updatePref('faceShape', val)} showAutoReset />
             </div>
             <div className="space-y-2" data-sweep-field="brows">
-              <FieldLabel>Eyebrow Style</FieldLabel>
+              <FieldLabel>Eyebrow style</FieldLabel>
               <OptionGrid options={CHAR_OPTIONS.eyebrows} selected={prefs.eyebrowStyle || "Auto"}
                 onSelect={(val) => updatePref('eyebrowStyle', val)} cols={2} showAutoReset />
             </div>
             <button onClick={() => setShowAdvancedFace(!showAdvancedFace)}
-              className="flex items-center gap-1.5 transition-colors"
-              style={{ fontSize: 11, fontWeight: 600, color: '#71716A', letterSpacing: '0.04em', background: 'none', border: 'none', cursor: 'pointer' }}>
+              className="flex items-center gap-1.5 p-0 bg-transparent border-none cursor-pointer text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors">
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
                 style={{ transform: showAdvancedFace ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
                 <polyline points="9 18 15 12 9 6" />
               </svg>
-              {showAdvancedFace ? 'LESS' : 'ADVANCED'}
+              {showAdvancedFace ? 'Less' : 'Advanced'}
             </button>
             {showAdvancedFace && (
               <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-top-2 duration-200" data-sweep-field="face-advanced">
                 <WarmSelectControl label="Jawline" options={CHAR_OPTIONS.jawline} value={prefs.jawline || ""} onChange={v => updatePref('jawline', v)} />
                 <WarmSelectControl label="Cheekbones" options={CHAR_OPTIONS.cheekbones} value={prefs.cheekbones || ""} onChange={v => updatePref('cheekbones', v)} />
-                <WarmSelectControl label="Cheek Shape" options={CHAR_OPTIONS.cheeks} value={prefs.cheeks || ""} onChange={v => updatePref('cheeks', v)} />
-                <WarmSelectControl label="Eye Shape" options={CHAR_OPTIONS.eyeShape} value={prefs.eyeShape || ""} onChange={v => updatePref('eyeShape', v)} />
-                <WarmSelectControl label="Nose Shape" options={CHAR_OPTIONS.noseShape} value={prefs.noseShape || ""} onChange={v => updatePref('noseShape', v)} />
-                <WarmSelectControl label="Lip Shape" options={CHAR_OPTIONS.lipShape} value={prefs.lipShape || ""} onChange={v => updatePref('lipShape', v)} />
+                <WarmSelectControl label="Cheek shape" options={CHAR_OPTIONS.cheeks} value={prefs.cheeks || ""} onChange={v => updatePref('cheeks', v)} />
+                <WarmSelectControl label="Eye shape" options={CHAR_OPTIONS.eyeShape} value={prefs.eyeShape || ""} onChange={v => updatePref('eyeShape', v)} />
+                <WarmSelectControl label="Nose shape" options={CHAR_OPTIONS.noseShape} value={prefs.noseShape || ""} onChange={v => updatePref('noseShape', v)} />
+                <WarmSelectControl label="Lip shape" options={CHAR_OPTIONS.lipShape} value={prefs.lipShape || ""} onChange={v => updatePref('lipShape', v)} />
               </div>
             )}
           </div>
         </CollapsibleSection>
 
         {/* ═══ SKIN & COMPLEXION ═══ */}
-        <CollapsibleSection id="skin" title="Skin & Complexion" icon={<Droplets size={12} strokeWidth={1.8} />} isOpen={openSections.skin} onToggle={toggleSection} completionRatio={completions.skin}>
+        <CollapsibleSection id="skin" title="Skin & complexion" icon={<Droplets size={12} strokeWidth={1.8} />} isOpen={openSections.skin} onToggle={toggleSection} completionRatio={completions.skin}>
           <div className="space-y-5">
             <div className="space-y-2" data-sweep-field="skin-tone">
               <div className="flex items-center justify-between">
-                <FieldLabel filled={!!prefs.skinTone || !!ec.skinTone}>Skin Tone</FieldLabel>
+                <FieldLabel filled={!!prefs.skinTone || !!ec.skinTone}>Skin tone</FieldLabel>
                 <EngineChoiceChip field="skinTone" />
               </div>
               <SkinToneGrid selected={prefs.skinTone || ''} onSelect={(v) => updatePref('skinTone', v)} />
@@ -458,30 +449,30 @@ export function ControlPanel({
         </CollapsibleSection>
 
         {/* ═══ EYES & HAIR ═══ */}
-        <CollapsibleSection id="hair" title="Eyes & Hair" icon={<Scissors size={12} strokeWidth={1.8} />} isOpen={openSections.hair} onToggle={toggleSection} completionRatio={completions.hair}>
+        <CollapsibleSection id="hair" title="Eyes & hair" icon={<Scissors size={12} strokeWidth={1.8} />} isOpen={openSections.hair} onToggle={toggleSection} completionRatio={completions.hair}>
           <div className="space-y-5">
             <div className="space-y-2" data-sweep-field="eyes">
               <div className="flex items-center justify-between">
-                <FieldLabel filled={!!prefs.eyeColor || !!ec.eyeColor}>Iris Color</FieldLabel>
+                <FieldLabel filled={!!prefs.eyeColor || !!ec.eyeColor}>Iris color</FieldLabel>
                 <EngineChoiceChip field="eyeColor" />
               </div>
               <EyeGrid selected={prefs.eyeColor} onSelect={(val) => updatePref('eyeColor', val)} />
             </div>
 
-            <div className="space-y-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }} data-sweep-field="hair-color">
+            <div className="space-y-2 pt-2 border-t-hairline border-canvas-border" data-sweep-field="hair-color">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <FieldLabel filled={!!prefs.hairColor || !!ec.hairColor}>Hair Color</FieldLabel>
+                  <FieldLabel filled={!!prefs.hairColor || !!ec.hairColor}>Hair color</FieldLabel>
                   <EngineChoiceChip field="hairColor" />
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 500, color: prefs.hairColor ? '#52524B' : '#a1a19a' }}>
+                <span className={`text-canvas-sm font-medium ${prefs.hairColor ? 'text-canvas-ink-soft' : 'text-canvas-ink-faint'}`}>
                   {prefs.hairColor || (ec.hairColor ? 'Open' : '')}
                 </span>
               </div>
               <HairColorWheel currentColor={prefs.hairColor || "Natural"} onColorSelect={(c) => updatePref('hairColor', c)} />
             </div>
 
-            <div className="space-y-4 pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }} data-sweep-field="hair-style">
+            <div className="space-y-4 pt-4 border-t-hairline border-canvas-border" data-sweep-field="hair-style">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <FieldLabel filled={!!prefs.hairStyle || !!ec.hairStyle}>Style</FieldLabel>
@@ -504,19 +495,19 @@ export function ControlPanel({
                 <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
                   {activeHairConfig.lengths && (
                     <div>
-                      <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 5 }}>Length</div>
+                      <div className="text-canvas-xs font-medium text-canvas-ink-soft mb-1">Length</div>
                       <ChipRow options={activeHairConfig.lengths} selected={prefs.hairLength || ''} onSelect={v => updatePref('hairLength', v)} />
                     </div>
                   )}
                   {activeHairConfig.textures && (
                     <div>
-                      <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 5 }}>Texture</div>
+                      <div className="text-canvas-xs font-medium text-canvas-ink-soft mb-1">Texture</div>
                       <ChipRow options={activeHairConfig.textures} selected={prefs.hairTexture || ''} onSelect={v => updatePref('hairTexture', v)} />
                     </div>
                   )}
                   {activeHairConfig.fringes && (
                     <div>
-                      <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 5 }}>Bangs</div>
+                      <div className="text-canvas-xs font-medium text-canvas-ink-soft mb-1">Bangs</div>
                       <ChipRow options={activeHairConfig.fringes} selected={prefs.hairFringe || ''} onSelect={v => updatePref('hairFringe', v)} />
                     </div>
                   )}
@@ -524,32 +515,31 @@ export function ControlPanel({
                   {(activeHairConfig.partings || activeHairConfig.volumes || prefs.gender === 'Male') && (
                     <>
                       <button onClick={() => setShowAdvancedHair(!showAdvancedHair)}
-                        className="flex items-center gap-1.5 transition-colors"
-                        style={{ fontSize: 11, fontWeight: 600, color: '#71716A', letterSpacing: '0.04em', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        className="flex items-center gap-1.5 p-0 bg-transparent border-none cursor-pointer text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors">
                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
                           style={{ transform: showAdvancedHair ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
                           <polyline points="9 18 15 12 9 6" />
                         </svg>
-                        {showAdvancedHair ? 'LESS' : 'MORE'}
+                        {showAdvancedHair ? 'Less' : 'More'}
                       </button>
                       {showAdvancedHair && (
                         <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
                           {activeHairConfig.partings && (
                             <div>
-                              <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 5 }}>Parting</div>
+                              <div className="text-canvas-xs font-medium text-canvas-ink-soft mb-1">Parting</div>
                               <ChipRow options={activeHairConfig.partings} selected={prefs.hairParting || ''} onSelect={v => updatePref('hairParting', v)} />
                             </div>
                           )}
                           {activeHairConfig.volumes && (
                             <div>
-                              <div style={{ fontSize: 11, fontWeight: 500, color: '#52524B', marginBottom: 5 }}>Volume</div>
+                              <div className="text-canvas-xs font-medium text-canvas-ink-soft mb-1">Volume</div>
                               <ChipRow options={activeHairConfig.volumes} selected={prefs.hairVolume || ''} onSelect={v => updatePref('hairVolume', v)} />
                             </div>
                           )}
                           <WarmSelectControl label="Flyaways" options={["None", "Natural", "Intentional"]} value={prefs.hairFlyaways || ""} onChange={v => updatePref('hairFlyaways', v)} />
                           <WarmSelectControl label="Tuck" options={HAIR_TUCKS} value={prefs.hairTuck || ""} onChange={v => updatePref('hairTuck', v)} />
                           {prefs.gender === 'Male' && (
-                            <WarmSelectControl label="Facial Hair" options={CHAR_OPTIONS.facialHair} value={prefs.facialHair || ""} onChange={v => updatePref('facialHair', v)} />
+                            <WarmSelectControl label="Facial hair" options={CHAR_OPTIONS.facialHair} value={prefs.facialHair || ""} onChange={v => updatePref('facialHair', v)} />
                           )}
                           {(prefs.gender === 'Male' || prefs.hairStyle?.includes('Fade') || prefs.hairStyle?.includes('Buzz')) && (
                             <WarmSelectControl label="Fade / Taper" options={HAIR_FADES} value={prefs.hairFade || ""} onChange={v => updatePref('hairFade', v)} />
@@ -567,33 +557,25 @@ export function ControlPanel({
       </div>
 
       {/* ═══ FOOTER ═══ */}
-      <div className="px-4 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 -4px 16px rgba(0,0,0,0.03)' }}>
+      <div className="px-4 py-4 flex-shrink-0 border-t-hairline border-canvas-border">
         {isReadOnly ? (
           <button
             onClick={onNewModel}
-            className="w-full py-3.5 rounded-xl transition-all duration-300"
-            style={{
-              background: '#1a1a1a',
-              color: '#FAFAFA',
-              fontSize: 15, fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
+            className="w-full py-3.5 rounded-canvas-md bg-canvas-ink text-canvas-surface text-canvas-lg font-medium cursor-pointer flex items-center justify-center gap-2 transition-colors duration-300"
           >
             <Plus size={14} strokeWidth={2} />
-            <span>New Model</span>
+            <span>New model</span>
           </button>
         ) : mintedEdit ? (
           // R3: identity changes save from the takeover's top bar — every
           // save is an identity event (D-11); no direct generate here
-          <p style={{ fontSize: 12, color: '#71716A', lineHeight: 1.5, textAlign: 'center', padding: '4px 8px' }}>
+          <p className="text-canvas-md text-canvas-ink-soft leading-normal text-center px-2 py-1">
             Adjust the identity, then save from the top bar — changing a cast is an identity event.
           </p>
         ) : (
           <>
             {prefs.referenceImage && (
-              <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: '#F5F3F0', fontSize: 12, color: '#52524B', lineHeight: 1.5 }}>
+              <div className="mb-3 px-3 py-2 rounded-canvas-md bg-canvas-surface-inset text-canvas-md text-canvas-ink-soft leading-normal">
                 Reference will be used for feature transfer on next iteration. Press F to toggle visibility.
               </div>
             )}
@@ -602,16 +584,11 @@ export function ControlPanel({
               data-debug-generate
               onClick={handleGenerate}
               disabled={genState.isGenerating || !isFormValid}
-              className="w-full py-3.5 rounded-xl transition-all duration-300"
-              style={{
-                background: !genState.isGenerating && isFormValid ? '#1a1a1a' : '#E8E4DF',
-                color: !genState.isGenerating && isFormValid ? '#FAFAFA' : '#aaa',
-                fontSize: 15, fontWeight: 600,
-                cursor: !genState.isGenerating && isFormValid ? 'pointer' : 'not-allowed',
-                boxShadow: !genState.isGenerating && isFormValid ? '0 4px 24px rgba(0,0,0,0.12)' : 'none',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                opacity: isFormValid ? 1 : 0.5,
-              }}
+              className={`w-full py-3.5 rounded-canvas-md text-canvas-lg font-medium flex items-center justify-center gap-2 transition-colors duration-300 ${
+                !genState.isGenerating && isFormValid
+                  ? 'bg-canvas-ink text-canvas-surface cursor-pointer'
+                  : 'bg-canvas-border text-canvas-ink-faint cursor-not-allowed'
+              }`}
             >
               {genState.isGenerating ? (
                 <>
@@ -621,11 +598,11 @@ export function ControlPanel({
               ) : (
                 <>
                   <Sparkles size={14} strokeWidth={2} />
-                  <span>{isFormValid ? (currentAssets.length > 0 ? 'Recast Model' : 'Cast Model') : 'Fill Required Fields'}</span>
+                  <span>{isFormValid ? (currentAssets.length > 0 ? 'Recast model' : 'Cast model') : 'Fill required fields'}</span>
                   {isFormValid && (
                     // Cost visible on the armed button (D-15/D-41): the
                     // confirm-glance before the second keystroke
-                    <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(240,237,232,0.6)', marginLeft: 2 }}>
+                    <span className="text-canvas-sm font-medium ml-0.5 opacity-60">
                       · ~{CREDIT_COSTS.castingImage} credits
                     </span>
                   )}
@@ -640,25 +617,23 @@ export function ControlPanel({
                 toast('Preferences randomized', { duration: 1500 });
               }}
               disabled={genState.isGenerating}
-              className="w-full mt-2 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-30"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 500, color: '#71716A', letterSpacing: '0.02em' }}
+              className="w-full mt-2 flex items-center justify-center gap-1.5 p-0 bg-transparent border-none cursor-pointer text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors disabled:opacity-30"
             >
-              <Dices size={10} strokeWidth={1.8} style={{ opacity: 0.6 }} />
+              <Dices size={10} strokeWidth={1.8} className="opacity-60" />
               Randomize
             </button>
 
             {user?.role === 'admin' && (
-              <details className="mt-3 pt-3 border-t border-[rgba(0,0,0,0.05)] group">
-                <summary className="text-[11px] text-[#52524B] cursor-pointer hover:text-[#1a1a1a] transition-colors flex items-center gap-1.5 select-none">
+              <details className="mt-3 pt-3 border-t-hairline border-canvas-border group">
+                <summary className="text-canvas-sm text-canvas-ink-soft cursor-pointer hover:text-canvas-ink transition-colors flex items-center gap-1.5 select-none">
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
                     className="transition-transform group-open:rotate-90"><polyline points="9 18 15 12 9 6" /></svg>
                   Admin Tools
                 </summary>
                 <div className="mt-2 flex gap-2">
                   <button onClick={handleDebugFill} disabled={genState.isGenerating}
-                    className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
-                    style={{ background: '#ffffff', fontSize: 11, fontWeight: 500, color: '#52524B', cursor: 'pointer', border: '1px solid #E8E4DF' }}>
-                    Random Fill
+                    className="flex-1 py-1.5 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border text-canvas-sm font-medium text-canvas-ink-soft cursor-pointer hover:border-canvas-border-strong transition-colors disabled:opacity-50">
+                    Random fill
                   </button>
                   <button
                     onClick={() => {
@@ -671,9 +646,8 @@ export function ControlPanel({
                       }, 200);
                     }}
                     disabled={genState.isGenerating}
-                    className="flex-1 py-1.5 rounded-xl transition-all disabled:opacity-50"
-                    style={{ background: '#ffffff', fontSize: 11, fontWeight: 500, color: '#52524B', cursor: 'pointer', border: '1px solid #E8E4DF' }}>
-                    Auto Generate
+                    className="flex-1 py-1.5 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border text-canvas-sm font-medium text-canvas-ink-soft cursor-pointer hover:border-canvas-border-strong transition-colors disabled:opacity-50">
+                    Auto generate
                   </button>
                 </div>
               </details>

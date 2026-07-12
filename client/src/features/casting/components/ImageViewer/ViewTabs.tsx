@@ -32,38 +32,28 @@ function ViewThumbnail({
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="relative overflow-hidden transition-all duration-200"
+      className="relative overflow-hidden transition-all duration-200 rounded-canvas-md bg-canvas-surface"
       style={{
         width: 72,
         height: 90,
-        borderRadius: 12,
-        border: isActive ? '2px solid #1a1a1a' : '2px solid rgba(255,255,255,0.6)',
-        boxShadow: isActive
-          ? '0 4px 16px rgba(0,0,0,0.15)'
-          : '0 2px 10px rgba(0,0,0,0.08)',
-        background: '#fff',
-        transform: isActive ? 'scale(1.05)' : 'scale(1)',
+        border: isActive
+          ? '1px solid var(--color-canvas-ink)'
+          : '0.5px solid var(--color-canvas-border)',
         opacity: isHovered || isActive ? 1 : 0.75,
       }}
       onMouseEnter={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.transform = 'scale(1.08)';
-          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)';
-        }
+        if (!isActive) e.currentTarget.style.borderColor = 'var(--color-canvas-border-strong)';
       }}
       onMouseLeave={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.08)';
-        }
+        if (!isActive) e.currentTarget.style.borderColor = 'var(--color-canvas-border)';
       }}
     >
       <img src={src} alt={label} className="w-full h-full object-cover" />
       <div
         className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-center"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)' }}
+        style={{ background: 'rgba(10,10,10,0.55)' }}
       >
-        <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', textTransform: 'uppercase' }}>
+        <span className="text-canvas-xs font-medium" style={{ color: 'var(--color-canvas-surface)' }}>
           {label}
         </span>
       </div>
@@ -79,64 +69,47 @@ function GhostSlot({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className="flex flex-col items-center justify-center gap-1 transition-all duration-200"
-      title="Add this view — complete the package"
+      className="flex flex-col items-center justify-center gap-1 transition-colors duration-200 rounded-canvas-md text-canvas-ink-soft bg-canvas-surface/60 hover:bg-canvas-surface"
+      title="Add this view — complete the comp card"
       style={{
         width: 72,
         height: 90,
-        borderRadius: 12,
-        border: '2px dashed rgba(0,0,0,0.12)',
-        background: 'rgba(255,255,255,0.5)',
-        backdropFilter: 'blur(8px)',
-        color: '#71716A',
+        border: '1px dashed var(--color-canvas-border-strong)',
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.85)';
-        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.25)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.5)';
-        e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)';
-      }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-canvas-ink-faint)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-canvas-border-strong)'; }}
     >
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
         <path d="M12 5v14M5 12h14" />
       </svg>
-      <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        {label}
-      </span>
+      <span className="text-canvas-xs font-medium">{label}</span>
     </button>
   );
 }
 
-// ============ FailedSlot (D-40) ============
+// ============ FailedSlot (D-40; hue per R6 ruling R-1) ============
 // A slot whose generation failed the identity gate — named + refunded, and
 // retryable. Distinct from an empty ghost: the user was told, not charged.
+// Failure wears the destructive-red glyph (§2.1.3) — the board's failed tile
+// and this slot agree on what failure looks like; no third hue.
 
 function FailedSlot({ label, reason, onRetry }: { label: string; reason: string; onRetry: () => void }) {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onRetry(); }}
-      className="flex flex-col items-center justify-center gap-1 transition-all duration-200"
+      className="flex flex-col items-center justify-center gap-1 transition-colors duration-200 rounded-canvas-md bg-canvas-surface-inset hover:bg-canvas-surface text-canvas-ink-soft"
       title={`${label} didn't pass the identity check — ${reason}. You weren't charged. Click to try again.`}
       style={{
         width: 72,
         height: 90,
-        borderRadius: 12,
-        border: '2px solid rgba(180,90,20,0.35)',
-        background: 'rgba(180,90,20,0.06)',
-        color: '#8a4a10',
+        border: '0.5px solid var(--color-canvas-border-strong)',
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(180,90,20,0.12)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(180,90,20,0.06)'; }}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d="M23 4v6h-6M1 20v-6h6" />
-        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-destructive)" strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="m15 9-6 6M9 9l6 6" />
       </svg>
-      <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        {label} · Retry
-      </span>
+      <span className="text-canvas-xs font-medium">{label} · Retry</span>
     </button>
   );
 }

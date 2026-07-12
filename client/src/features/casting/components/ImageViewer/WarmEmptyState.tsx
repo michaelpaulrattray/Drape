@@ -3,6 +3,12 @@ interface WarmEmptyStateProps {
   onGenerate: () => void;
 }
 
+/**
+ * Empty casting work area — a quiet ghost card in the canvas language
+ * (DS §11 posture: dashed hairline, inset surface, no gradients/shadows).
+ * The old Identity·Views·Export footer strip narrated the retired linear
+ * pipeline and was removed as belt-plumbing (Group 6i framing note).
+ */
 export function WarmEmptyState({ canGenerate, onGenerate }: WarmEmptyStateProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -12,46 +18,20 @@ export function WarmEmptyState({ canGenerate, onGenerate }: WarmEmptyStateProps)
         style={{ width: 340, maxWidth: '100%' }}
       >
         <div
-          className="w-full flex flex-col items-center justify-center transition-all duration-500 group-hover:shadow-xl group-hover:scale-[1.02]"
+          className="w-full flex flex-col items-center justify-center transition-colors duration-300 bg-canvas-surface/50 group-hover:bg-canvas-surface rounded-canvas-lg relative overflow-hidden"
           style={{
             aspectRatio: '3 / 4',
-            borderRadius: 24,
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.6), rgba(255,255,255,0.3))',
-            border: '1.5px dashed rgba(0,0,0,0.08)',
-            position: 'relative',
-            overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+            border: '1px dashed var(--color-canvas-border-strong)',
           }}
         >
-          {/* Subtle dot grid */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              opacity: 0.4,
-              backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-            }}
-          />
-
           <div className="relative z-10 flex flex-col items-center">
-            <div
-              className="flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 20,
-                background: 'rgba(255,255,255,0.85)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
+            <div className="flex items-center justify-center w-16 h-16 rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border">
               <svg
                 width="28"
                 height="28"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke={canGenerate ? '#1a1a1a' : '#aaa'}
+                stroke={canGenerate ? 'var(--color-canvas-ink)' : 'var(--color-canvas-ink-faint)'}
                 strokeWidth="1.5"
                 strokeLinecap="round"
               >
@@ -62,52 +42,18 @@ export function WarmEmptyState({ canGenerate, onGenerate }: WarmEmptyStateProps)
                 )}
               </svg>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#52524B', marginTop: 16 }}>
-              {canGenerate ? (
-                <>Ready to <span className="font-heading italic" style={{ fontWeight: 400 }}>Cast</span></>
-              ) : (
-                <>New <span className="font-heading italic" style={{ fontWeight: 400 }}>Model</span></>
-              )}
+            <div className="mt-4 font-medium text-canvas-ink-soft" style={{ fontSize: 16 }}>
+              {canGenerate ? 'Ready to cast' : 'New model'}
             </div>
             <div
-              style={{
-                fontSize: 13,
-                color: '#52524B',
-                marginTop: 4,
-                textAlign: 'center',
-                maxWidth: 200,
-                lineHeight: 1.4,
-              }}
+              className="mt-1 text-center text-canvas-ink-faint"
+              style={{ fontSize: 13, maxWidth: 200, lineHeight: 1.4 }}
             >
               {canGenerate
                 ? 'Tap to generate your first casting'
                 : 'Configure parameters in the sidebar to begin'}
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-4 mt-6" style={{ color: '#71716A', fontSize: 12, fontWeight: 500, opacity: 0.5, pointerEvents: 'none', userSelect: 'none' }}>
-          <span className="flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Identity
-          </span>
-          <span style={{ width: 1, height: 10, background: 'rgba(0,0,0,0.06)' }} />
-          <span className="flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M9 3v18M3 9h18" />
-            </svg>
-            Views
-          </span>
-          <span style={{ width: 1, height: 10, background: 'rgba(0,0,0,0.06)' }} />
-          <span className="flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-            </svg>
-            Export
-          </span>
         </div>
       </div>
     </div>

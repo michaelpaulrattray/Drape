@@ -34,21 +34,13 @@ export function SlotChip({ slotIdeas, intervalMs, onSelect }: { slotIdeas: strin
     <button
       onClick={() => onSelect(idea)}
       title={idea}
-      className="px-3 py-1.5 rounded-full transition-all"
+      className="px-3 py-1.5 rounded-canvas-pill bg-canvas-surface border-hairline border-canvas-border text-canvas-md text-canvas-ink-soft hover:border-canvas-border-strong hover:text-canvas-ink flex-shrink-0"
       style={{
-        background: 'rgba(255,255,255,0.8)',
-        backdropFilter: 'blur(8px)',
-        boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
-        fontSize: 12, color: '#52524B',
-        border: '1px solid rgba(0,0,0,0.04)',
         maxWidth: 200, overflow: 'hidden',
         textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         opacity: visible ? 1 : 0,
-        transition: 'opacity 0.3s ease',
-        flexShrink: 0,
+        transition: 'opacity 0.3s ease, color 0.15s ease, border-color 0.15s ease',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#1a1a1a'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.8)'; e.currentTarget.style.color = '#777'; }}
     >
       {idea}
     </button>
@@ -77,30 +69,11 @@ export function ToolButton({ active, onClick, icon }: { active: boolean; onClick
   return (
     <button
       onClick={onClick}
-      className="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
-      style={{
-        background: active ? '#1a1a1a' : 'rgba(255,255,255,0.85)',
-        color: active ? '#fff' : '#71716A',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
-        backdropFilter: 'blur(8px)',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
-          e.currentTarget.style.color = '#1a1a1a';
-          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)';
-          e.currentTarget.style.transform = 'scale(1.06)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.85)';
-          e.currentTarget.style.color = '#71716A';
-          e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.06)';
-          e.currentTarget.style.transform = 'scale(1)';
-        }
-      }}
+      className={
+        active
+          ? "w-10 h-10 rounded-canvas-md flex items-center justify-center cursor-pointer transition-colors bg-canvas-ink text-canvas-surface"
+          : "w-10 h-10 rounded-canvas-md flex items-center justify-center cursor-pointer transition-colors bg-canvas-surface border-hairline border-canvas-border text-canvas-ink-soft hover:text-canvas-ink hover:border-canvas-border-strong"
+      }
     >
       {icon}
     </button>
@@ -133,27 +106,8 @@ export function NextStepChip({ nextStage }: {
   return (
     <button
       onClick={handleClick}
-      className="group flex items-center gap-2 pointer-events-auto transition-all duration-200"
-      style={{
-        padding: '7px 14px 7px 16px',
-        borderRadius: 12,
-        background: '#1a1a1a',
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: 600,
-        letterSpacing: '0.01em',
-        whiteSpace: 'nowrap',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.08) inset',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = '#333';
-        e.currentTarget.style.transform = 'scale(1.03)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = '#1a1a1a';
-        e.currentTarget.style.transform = 'scale(1)';
-      }}
+      className="group flex items-center gap-2 pointer-events-auto transition-colors duration-200 rounded-canvas-md bg-canvas-ink text-canvas-surface text-canvas-md font-medium whitespace-nowrap cursor-pointer hover:opacity-90"
+      style={{ padding: '7px 14px 7px 16px' }}
     >
       {chipLabel}
       <span className="inline-flex animate-[nudge_1.8s_ease-in-out_infinite]">

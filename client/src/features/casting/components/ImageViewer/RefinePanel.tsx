@@ -16,6 +16,10 @@ interface RefinePanelProps {
   referenceImage?: string;
 }
 
+// The floating bar shell — flat surface, hairline border, no shadow (D-40 language)
+const barShellClass =
+  'rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border-strong';
+
 // ============ Main Component ============
 
 export function RefinePanel({
@@ -89,18 +93,14 @@ export function RefinePanel({
   if (activeTool === 'eraser') {
     return (
       <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
-        <div
-          className="flex items-center justify-center gap-2 p-2 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
-        >
-          <span style={{ fontSize: 13, color: '#7c6bef', fontWeight: 500 }}>
-            {hasMask ? 'Ready to Erase' : 'Paint Area to Erase'}
+        <div className={`flex items-center justify-center gap-2 p-2 ${barShellClass}`}>
+          <span className="text-canvas-lg font-medium text-canvas-ink-soft">
+            {hasMask ? 'Ready to erase' : 'Paint an area to erase'}
           </span>
           {hasMask && (
             <button
               onClick={handleSubmit}
-              className="px-4 py-1.5 rounded-lg transition-all"
-              style={{ background: '#7c6bef', color: '#fff', fontSize: 12, fontWeight: 600 }}
+              className="px-4 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-surface text-canvas-md font-medium transition-colors"
             >
               Erase
             </button>
@@ -114,12 +114,9 @@ export function RefinePanel({
   if (!isIterationAllowed && iterationDisabledReason) {
     return (
       <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
-        <div
-          className="flex items-center justify-center gap-2 p-3 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-          <span style={{ fontSize: 13, color: '#52524B' }}>{iterationDisabledReason}</span>
+        <div className={`flex items-center justify-center gap-2 p-3 ${barShellClass}`}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-ink-faint)" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+          <span className="text-canvas-lg text-canvas-ink-soft">{iterationDisabledReason}</span>
         </div>
       </div>
     );
@@ -129,17 +126,14 @@ export function RefinePanel({
   if (isLocked) {
     return (
       <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
-        <div
-          className="flex items-center justify-between p-3 rounded-2xl"
-          style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
-        >
+        <div className={`flex items-center justify-between p-3 ${barShellClass}`}>
           <div className="flex items-center gap-2">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-            <span style={{ fontSize: 13, color: '#52524B' }}>View Locked</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-ink-faint)" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+            <span className="text-canvas-lg text-canvas-ink-soft">View locked</span>
           </div>
           <button
             onClick={() => setUnlockMode(true)}
-            style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', textDecoration: 'underline' }}
+            className="text-canvas-md font-medium text-canvas-ink underline"
           >
             Unlock
           </button>
@@ -157,10 +151,7 @@ export function RefinePanel({
 
   return (
     <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
-      <div
-        className="flex items-end gap-2 p-1.5 rounded-2xl"
-        style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.4)' }}
-      >
+      <div className={`flex items-end gap-2 p-1.5 ${barShellClass}`}>
         {/* Enhance */}
         {isIterationAllowed && (
           <>
@@ -168,16 +159,15 @@ export function RefinePanel({
             <button
               onClick={handleEnhance}
               disabled={!refineInput.trim() || isEnhancing}
-              className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+              className={`flex-shrink-0 w-8 h-8 rounded-canvas-md flex items-center justify-center ${glowActive ? 'text-canvas-ink' : 'text-canvas-ink-faint'}`}
               style={{
-                color: glowActive ? '#a89cf5' : '#bbb',
                 animation: glowActive ? 'enhanceFloat 1.4s ease-in-out infinite' : 'none',
                 transition: 'color 0.4s ease',
               }}
               title="Enhance with AI"
             >
               {isEnhancing ? (
-                <div className="w-3 h-3 border-2 border-t-transparent border-gray-400 rounded-full animate-spin" />
+                <div className="w-3 h-3 border-2 border-t-transparent border-canvas-border-strong rounded-full animate-spin" />
               ) : (
                 <Sparkles size={14} strokeWidth={2} />
               )}
@@ -185,12 +175,12 @@ export function RefinePanel({
           </>
         )}
 
-        <div style={{ width: 1, height: 20, background: 'rgba(0,0,0,0.06)', marginBottom: 6 }} />
+        <div className="w-px h-5 mb-1.5 bg-canvas-border" />
 
         {/* Reference thumbnail */}
         {referenceImage && (
           <div className="flex-shrink-0 mb-0.5" title="Reference image attached — mention it in your instruction">
-            <div className="w-7 h-7 rounded-lg overflow-hidden" style={{ border: '1.5px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div className="w-7 h-7 rounded-canvas-sm overflow-hidden border-hairline border-canvas-border-strong">
               <img src={referenceImage} alt="Ref" className="w-full h-full object-cover" />
             </div>
           </div>
@@ -205,8 +195,8 @@ export function RefinePanel({
           placeholder={getPlaceholder()}
           rows={1}
           disabled={!isIterationAllowed}
-          className="flex-1 outline-none resize-none bg-transparent placeholder-[#52524B]"
-          style={{ border: 'none', fontSize: 14, color: '#1a1a1a', lineHeight: 1.5, padding: '8px 8px', minHeight: 34, maxHeight: 80 }}
+          className="flex-1 outline-none resize-none bg-transparent border-none text-canvas-ink placeholder:text-canvas-ink-faint"
+          style={{ fontSize: 14, lineHeight: 1.5, padding: '8px 8px', minHeight: 34, maxHeight: 80 }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -219,13 +209,11 @@ export function RefinePanel({
         <button
           onClick={handleSubmit}
           disabled={!refineInput.trim()}
-          className="flex-shrink-0 px-4 py-2 rounded-lg transition-all mb-0.5 flex items-center gap-1.5"
-          style={{
-            background: refineInput.trim() ? '#1a1a1a' : '#E8E4DF',
-            color: refineInput.trim() ? '#fff' : '#aaa',
-            fontSize: 12,
-            fontWeight: 600,
-          }}
+          className={`flex-shrink-0 px-4 py-2 rounded-canvas-md transition-colors mb-0.5 flex items-center gap-1.5 text-canvas-md font-medium ${
+            refineInput.trim()
+              ? 'bg-canvas-ink text-canvas-surface'
+              : 'bg-canvas-border text-canvas-ink-faint'
+          }`}
         >
           <SendHorizontal size={12} strokeWidth={2} style={{ marginRight: -2 }} />
           <span>Apply</span>

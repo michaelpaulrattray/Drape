@@ -3,8 +3,7 @@
  * A sentence goes to the server parser; the host (ControlPanel) applies the
  * result with the D-41 choreography: visible fill sweep, summary strip where
  * the action happened (no corner toast — D-40), Engine's-choice on the rest,
- * Cast button armed. Warm-styled to match the current environment; restyles
- * with R6.
+ * Cast button armed.
  */
 import { useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
@@ -38,8 +37,8 @@ export function FromPromptField({ onParsed }: { onParsed: (result: ParsePromptRe
   return (
     <div className="px-4 pb-3">
       <div
-        className="flex items-center gap-2 rounded-xl px-3"
-        style={{ background: "#ffffff", border: "1px solid #E8E4DF", height: 38 }}
+        className="flex items-center gap-2 rounded-canvas-md px-3 bg-canvas-surface border-hairline border-canvas-border focus-within:border-canvas-ink transition-colors"
+        style={{ height: 38 }}
       >
         <input
           type="text"
@@ -53,16 +52,15 @@ export function FromPromptField({ onParsed }: { onParsed: (result: ParsePromptRe
           }}
           placeholder="Describe your model — the form fills itself..."
           disabled={parseMutation.isPending}
-          className="flex-1 min-w-0 bg-transparent focus:outline-none disabled:opacity-50"
-          style={{ fontSize: 12.5, color: "#1a1a1a" }}
+          className="flex-1 min-w-0 bg-transparent focus:outline-none disabled:opacity-50 text-canvas-ink placeholder:text-canvas-ink-faint"
+          style={{ fontSize: 12.5 }}
         />
         <button
           type="button"
           onClick={submit}
           disabled={!value.trim() || parseMutation.isPending}
           aria-label="Translate brief"
-          className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-opacity disabled:opacity-30"
-          style={{ background: "#1a1a1a", color: "#fff" }}
+          className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-opacity disabled:opacity-30 bg-canvas-ink text-canvas-surface"
         >
           {parseMutation.isPending ? (
             <Loader2 className="w-3 h-3 animate-spin" />

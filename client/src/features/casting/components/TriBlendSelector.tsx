@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { ChevronRight } from 'lucide-react';
 import Tooltip from '@/components/Tooltip';
+import { cn } from '@/lib/utils';
+import { chipClass } from './WarmPrimitives';
 
 interface TriBlendSelectorProps {
   value: { editorial: number; commercial: number; runway: number };
@@ -96,6 +99,45 @@ function useSliderDrag(
   return onDown;
 }
 
+// ── Slider (DS §13.1: 4px inset track, hairline border, flat ink fill,
+//    14px ink thumb with 2px surface border — the ConnectionDot ring trick) ──
+const BlendSlider = ({ trackRef, onDrag, pct, endLabels }: {
+  trackRef: React.RefObject<HTMLDivElement | null>;
+  onDrag: (e: React.MouseEvent | React.TouchEvent) => void;
+  pct: number;
+  endLabels: [string, string];
+}) => (
+  <div>
+    <div
+      ref={trackRef}
+      onMouseDown={onDrag}
+      onTouchStart={onDrag}
+      className="relative h-7 flex items-center cursor-pointer touch-none"
+    >
+      <div className="w-full h-1 rounded-canvas-pill relative bg-canvas-surface-inset border-hairline border-canvas-border overflow-hidden">
+        <div
+          className="absolute top-0 left-0 h-full bg-canvas-ink"
+          style={{ width: `${pct}%`, transition: 'width 0.12s ease-out' }}
+        />
+      </div>
+      <div
+        className="absolute w-3.5 h-3.5 rounded-full bg-canvas-ink cursor-grab z-[3]"
+        style={{
+          top: '50%',
+          left: `${pct}%`,
+          transform: 'translate(-50%, -50%)',
+          border: '2px solid var(--color-canvas-surface)',
+          transition: 'left 0.12s ease-out',
+        }}
+      />
+    </div>
+    <div className="flex justify-between mt-1">
+      <span className="text-canvas-xs text-canvas-ink-faint">{endLabels[0]}</span>
+      <span className="text-canvas-xs text-canvas-ink-faint">{endLabels[1]}</span>
+    </div>
+  </div>
+);
+
 // ── Main Component ────────────────────────────
 const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) => {
   const [presetsOpen, setPresetsOpen] = useState(false);
@@ -138,160 +180,79 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
   const pctEdge = (edge / 1000) * 100;
   const pctHeat = (heat / 1000) * 100;
 
+  const numberInputClass =
+    "w-[42px] text-right font-medium text-canvas-lg text-canvas-ink bg-transparent border-none outline-none p-0 pb-px " +
+    "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+
   return (
-    <div
-      style={{
-        background: '#FAFAF8',
-        border: '1px solid #E8E4DF',
-        borderRadius: 14,
-        padding: '14px 14px 12px',
-      }}
-      className="w-full select-none"
-    >
+    // Outer container deleted per DS §13.1 — the host section provides the surface.
+    <div className="w-full select-none">
       {/* Header */}
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-1.5">
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>Tone & Energy</span>
+          <span className="text-canvas-md font-medium text-canvas-ink">Tone & energy</span>
           <Tooltip content="Drag the sliders or type a value (0-1000). Tap a preset to snap to a known vibe." />
         </div>
-        <span style={{
-          fontSize: 12, fontWeight: 400, color: '#52524B',
-          fontStyle: 'italic', opacity: activePreset ? 1 : 0.5,
-        }}>
+        <span className={cn("text-canvas-xs italic", activePreset ? "text-canvas-ink-soft" : "text-canvas-ink-faint")}>
           {activePreset ? activePreset.label : 'Custom'}
         </span>
       </div>
 
       {/* EDGE SLIDER */}
-      <div style={{ marginBottom: 16 }}>
-        <div className="flex items-baseline justify-between" style={{ marginBottom: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', color: '#777168', textTransform: 'lowercase' }}>
-            <span style={{ color: '#d4d0c9', marginRight: 1 }}>--</span>edge
-          </span>
+      <div className="mb-4">
+        <div className="flex items-baseline justify-between mb-2">
+          <span className="text-canvas-xs font-medium text-canvas-ink-soft">Edge</span>
           <input
             type="number"
             value={edgeInputVal}
             onChange={handleEdgeInput}
             onBlur={handleEdgeBlur}
             min={0} max={1000} step={10}
-            className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={{
-              width: 42, textAlign: 'right', fontFamily: 'inherit',
-              fontSize: 13, fontWeight: 600, color: '#1a1a1a',
-              background: 'none', border: 'none', borderBottom: '1px solid transparent',
-              outline: 'none', padding: '0 0 1px 0',
-            }}
+            className={numberInputClass}
           />
         </div>
-        <div
-          ref={edgeTrackRef}
-          onMouseDown={onEdgeDrag}
-          onTouchStart={onEdgeDrag}
-          style={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
-        >
-          <div style={{ width: '100%', height: 3, borderRadius: 2, position: 'relative' }}>
-            <div style={{ position: 'absolute', inset: 0, borderRadius: 2, background: '#FAFAFA' }} />
-            <div style={{
-              position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 2,
-              background: 'linear-gradient(to right, #71716A, #888580, #4a4846, #1a1a1a)',
-              width: `${pctEdge}%`, transition: 'width 0.12s ease-out',
-            }} />
-          </div>
-          <div style={{
-            position: 'absolute', top: '50%', left: `${pctEdge}%`,
-            transform: 'translate(-50%, -50%)', width: 14, height: 14,
-            borderRadius: '50%', background: '#1a1a1a',
-            boxShadow: '0 1px 6px rgba(0,0,0,0.15)',
-            cursor: 'grab', zIndex: 3, transition: 'left 0.12s ease-out',
-          }} />
-        </div>
-        <div className="flex justify-between" style={{ marginTop: 5 }}>
-          <span style={{ fontSize: 10, color: '#d4d0c9' }}>safe</span>
-          <span style={{ fontSize: 10, color: '#d4d0c9' }}>bold</span>
-        </div>
+        <BlendSlider trackRef={edgeTrackRef} onDrag={onEdgeDrag} pct={pctEdge} endLabels={['Safe', 'Bold']} />
       </div>
 
       {/* HEAT SLIDER */}
       <div>
-        <div className="flex items-baseline justify-between" style={{ marginBottom: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: '0.06em', color: '#777168', textTransform: 'lowercase' }}>
-            <span style={{ color: '#d4d0c9', marginRight: 1 }}>--</span>heat
-          </span>
+        <div className="flex items-baseline justify-between mb-2">
+          <span className="text-canvas-xs font-medium text-canvas-ink-soft">Heat</span>
           <input
             type="number"
             value={heatInputVal}
             onChange={handleHeatInput}
             onBlur={handleHeatBlur}
             min={0} max={1000} step={10}
-            className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            style={{
-              width: 42, textAlign: 'right', fontFamily: 'inherit',
-              fontSize: 13, fontWeight: 600, color: '#1a1a1a',
-              background: 'none', border: 'none', borderBottom: '1px solid transparent',
-              outline: 'none', padding: '0 0 1px 0',
-            }}
+            className={numberInputClass}
           />
         </div>
-        <div
-          ref={heatTrackRef}
-          onMouseDown={onHeatDrag}
-          onTouchStart={onHeatDrag}
-          style={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center', cursor: 'pointer', touchAction: 'none' }}
-        >
-          <div style={{ width: '100%', height: 3, borderRadius: 2, position: 'relative' }}>
-            <div style={{ position: 'absolute', inset: 0, borderRadius: 2, background: '#FAFAFA' }} />
-            <div style={{
-              position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 2,
-              background: 'linear-gradient(to right, #8a9aa8, #b8a088, #c4956a, #d4784a)',
-              width: `${pctHeat}%`, transition: 'width 0.12s ease-out',
-            }} />
-          </div>
-          <div style={{
-            position: 'absolute', top: '50%', left: `${pctHeat}%`,
-            transform: 'translate(-50%, -50%)', width: 14, height: 14,
-            borderRadius: '50%', background: '#c4956a',
-            boxShadow: '0 1px 8px rgba(196,149,106,0.3)',
-            cursor: 'grab', zIndex: 3, transition: 'left 0.12s ease-out',
-          }} />
-        </div>
-        <div className="flex justify-between" style={{ marginTop: 5 }}>
-          <span style={{ fontSize: 10, color: '#d4d0c9' }}>narrative</span>
-          <span style={{ fontSize: 10, color: '#d4d0c9' }}>commanding</span>
-        </div>
+        <BlendSlider trackRef={heatTrackRef} onDrag={onHeatDrag} pct={pctHeat} endLabels={['Narrative', 'Commanding']} />
       </div>
 
       {/* Description */}
-      <div style={{ fontSize: 11, color: '#52524B', marginTop: 12, paddingLeft: 2, lineHeight: 1.4, minHeight: 13 }}>
+      <div className="text-canvas-sm text-canvas-ink-soft mt-3 pl-0.5 leading-[1.4] min-h-[13px]">
         {activePreset ? activePreset.desc : getCustomDesc(edge, heat)}
       </div>
 
       {/* Presets Toggle */}
       <button
         onClick={() => setPresetsOpen(!presetsOpen)}
-        className="flex items-center gap-1.5 transition-colors"
-        style={{
-          marginTop: 10, padding: 0, background: 'none', border: 'none', cursor: 'pointer',
-          fontFamily: 'inherit', fontSize: 10, fontWeight: 600,
-          letterSpacing: '0.06em', color: '#52524B',
-        }}
+        className="flex items-center gap-1.5 mt-2.5 p-0 bg-transparent border-none cursor-pointer text-canvas-xs font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors"
       >
-        <svg
-          width="8" height="8" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="3" strokeLinecap="round"
-          style={{ transform: presetsOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-        PRESETS
+        <ChevronRight
+          className={cn("w-2 h-2 transition-transform duration-200", presetsOpen && "rotate-90")}
+          strokeWidth={3}
+        />
+        Presets
       </button>
 
       {/* Collapsible Preset Grid */}
-      <div style={{
-        maxHeight: presetsOpen ? 120 : 0,
-        overflow: 'hidden',
-        transition: 'max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-      }}>
-        <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(4, 1fr)', paddingTop: 10 }}>
+      <div
+        className="overflow-hidden"
+        style={{ maxHeight: presetsOpen ? 120 : 0, transition: 'max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1)' }}
+      >
+        <div className="grid grid-cols-4 gap-1.5 pt-2.5">
           {PRESETS.map(p => {
             const dist = Math.sqrt((edge - p.edge) ** 2 + (heat - p.heat) ** 2);
             const isActive = dist < SNAP_THRESHOLD;
@@ -299,18 +260,7 @@ const TriBlendSelector: React.FC<TriBlendSelectorProps> = ({ value, onChange }) 
               <button
                 key={p.label}
                 onClick={() => onChange(edgeHeatToWeights(p.edge, p.heat))}
-                className="py-2.5 rounded-xl text-center transition-all"
-                style={{
-                  background: isActive ? '#1a1a1a' : '#ffffff',
-                  color: isActive ? '#fff' : '#52524B',
-                  fontSize: 12, fontWeight: isActive ? 600 : 500,
-                  border: isActive ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
-                  boxShadow: isActive ? '0 2px 8px rgba(26,26,26,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
-                  cursor: 'pointer', lineHeight: 1.2,
-                  fontFamily: 'inherit',
-                }}
-                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.borderColor = '#C5BFB6'; e.currentTarget.style.background = '#FAFAF8'; } }}
-                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.borderColor = '#E8E4DF'; e.currentTarget.style.background = '#ffffff'; } }}
+                className={cn(chipClass(isActive), "py-2.5 leading-[1.2]")}
               >
                 {p.label}
               </button>

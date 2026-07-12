@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 
 interface ColorOption {
   label: string;
@@ -45,6 +46,14 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
   // Track whether the last change originated from this component's own selection
   // to prevent the sync-from-prop effect from re-triggering after commitSelection
   const isInternalChange = useRef(false);
+
+  // E1b root cause (found at R6 C1): never auto-commit before the user touches
+  // the wheel. When the hydrated color doesn't parse into the lists (unset →
+  // the "Natural" fallback, or a D-41 Open state), the mount-time commit
+  // rebuilt a DIFFERENT string (Dyed[0] → "Silver") and wrote it to prefs just
+  // after hydration — the phantom hairColor diff that raised the D-11 ceremony
+  // on zero-edit saves.
+  const hasInteracted = useRef(false);
 
   const colors = activeTab === 'Dyed' ? DYED_COLORS : NATURAL_COLORS;
   const segmentAngle = 360 / colors.length;
@@ -109,7 +118,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
   }, [colors, selectedIndex, tone, onColorSelect, currentColor]);
 
   useEffect(() => {
-    if (!isDragging) {
+    if (!isDragging && hasInteracted.current) {
       commitSelection();
     }
   }, [selectedIndex, tone, activeTab, isDragging, commitSelection]);
@@ -134,6 +143,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    hasInteracted.current = true;
     setIsDragging(true);
     handleWheelInteraction(e.clientX, e.clientY);
   };
@@ -159,6 +169,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
   }, [isDragging, colors.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentSelection = colors[selectedIndex] || colors[0];
+  const toneQualifier = tone === 'Warm' ? 'Warm' : tone === 'Cool' ? 'Cool / ash' : null;
 
   const renderWheel = () => {
     const radius = 120;
@@ -166,7 +177,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
     const center = 160;
 
     return (
-      <svg viewBox="0 0 320 320" className="w-full h-full drop-shadow-lg">
+      <svg viewBox="0 0 320 320" className="w-full h-full">
         {colors.map((color, i) => {
           const startAngle = (i * segmentAngle) - 90 - (segmentAngle / 2);
           const endAngle = ((i + 1) * segmentAngle) - 90 - (segmentAngle / 2);
@@ -194,17 +205,17 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
               <path
                 d={`M ${x4} ${y4} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 0 0 ${x4} ${y4} Z`}
                 fill={color.hex}
-                stroke={isSelected ? "#1a1a1a" : "rgba(0,0,0,0.05)"}
-                strokeWidth={isSelected ? 2 : 1}
+                stroke={isSelected ? "var(--color-canvas-ink)" : "var(--color-canvas-border)"}
+                strokeWidth={isSelected ? 1.5 : 0.5}
                 className="transition-all duration-200"
               />
               {showLabel && (
                 <text
                   x={lx}
                   y={ly}
-                  fill={isSelected ? "#1a1a1a" : "#666"}
+                  fill={isSelected ? "var(--color-canvas-ink)" : "var(--color-canvas-ink-soft)"}
                   fontSize={isSelected ? "11" : "9"}
-                  fontWeight={isSelected ? "bold" : "normal"}
+                  fontWeight={isSelected ? "500" : "normal"}
                   textAnchor="middle"
                   alignmentBaseline="middle"
                   className="pointer-events-none transition-all duration-300"
@@ -216,6 +227,33 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
           );
         })}
 
+        {/* Center readout (DS §13.4) */}
+        <text
+          x={center}
+          y={toneQualifier ? center - 4 : center}
+          fill="var(--color-canvas-ink)"
+          fontSize="12"
+          fontWeight="500"
+          textAnchor="middle"
+          alignmentBaseline="middle"
+          className="pointer-events-none"
+        >
+          {currentSelection.label}
+        </text>
+        {toneQualifier && (
+          <text
+            x={center}
+            y={center + 12}
+            fill="var(--color-canvas-ink-faint)"
+            fontSize="10"
+            textAnchor="middle"
+            alignmentBaseline="middle"
+            className="pointer-events-none"
+          >
+            {toneQualifier}
+          </text>
+        )}
+
         {/* Selection Puck */}
         {(() => {
           const angle = (selectedIndex * segmentAngle) - 90;
@@ -225,7 +263,7 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
 
           return (
             <g className="transition-all duration-300 ease-out" style={{ transformOrigin: 'center' }}>
-              <circle cx={px} cy={py} r="14" fill="white" stroke="rgba(0,0,0,0.1)" strokeWidth="1" className="drop-shadow-md" />
+              <circle cx={px} cy={py} r="14" fill="var(--color-canvas-surface)" stroke="var(--color-canvas-border-strong)" strokeWidth="1" />
               <circle cx={px} cy={py} r="10" fill={currentSelection.hex} />
             </g>
           );
@@ -236,49 +274,52 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
 
   return (
     <div className="w-full flex flex-col space-y-4 select-none">
-      {/* Tabs */}
-      <div className="flex justify-center">
-        <div className="bg-[#F5F3F0] border border-[rgba(0,0,0,0.05)] p-0.5 rounded-full flex relative">
+      {/* Dyed/Natural — underline tabs (studio pattern, §6) */}
+      <div className="flex justify-center gap-6 border-b-hairline border-canvas-border">
+        {(['Dyed', 'Natural'] as const).map((tab) => (
           <button
-            onClick={() => setActiveTab('Dyed')}
-            className={`px-8 py-2 rounded-full text-[12px] font-medium tracking-wide transition-all duration-300 ${activeTab === 'Dyed' ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52524B] hover:text-[#555]'}`}
+            key={tab}
+            onClick={() => { hasInteracted.current = true; setActiveTab(tab); }}
+            className={cn(
+              "px-2 pb-2 text-canvas-md transition-colors -mb-px border-b",
+              activeTab === tab
+                ? "text-canvas-ink font-medium border-canvas-ink"
+                : "text-canvas-ink-soft border-transparent hover:text-canvas-ink",
+            )}
           >
-            Dyed
+            {tab}
           </button>
-          <button
-            onClick={() => setActiveTab('Natural')}
-            className={`px-8 py-2 rounded-full text-[12px] font-medium tracking-wide transition-all duration-300 ${activeTab === 'Natural' ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52524B] hover:text-[#555]'}`}
-          >
-            Natural
-          </button>
-        </div>
+        ))}
       </div>
 
       {/* The Wheel */}
       <div
-        className="relative w-full aspect-square p-2 cursor-crosshair touch-none"
+        className="relative w-full aspect-square p-2 cursor-crosshair touch-none rounded-canvas-md bg-canvas-surface-inset border-hairline border-canvas-border"
         ref={wheelRef}
         onMouseDown={handleMouseDown}
       >
         {renderWheel()}
       </div>
 
-      {/* Tone Controls */}
-      <div className="space-y-3 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+      {/* Tone Controls — segmented control (§6.1 pattern) */}
+      <div className="space-y-3 pt-2 border-t-hairline border-canvas-border">
         <div className="flex items-center">
-          <span style={{ fontSize: 11, fontWeight: 500, color: '#52524B' }}>
-            Tone
-          </span>
+          <span className="text-canvas-xs font-medium text-canvas-ink-soft">Tone</span>
         </div>
 
-        <div className="flex bg-[#F5F3F0] p-0.5 rounded border border-[rgba(0,0,0,0.05)]">
+        <div className="flex p-0.5 rounded-canvas-md bg-canvas-surface-inset border-hairline border-canvas-border">
           {['Warm', 'Neutral', 'Cool'].map((t) => (
             <button
               key={t}
-              onClick={() => setTone(t as 'Warm' | 'Neutral' | 'Cool')}
-              className={`flex-1 py-1.5 rounded-sm text-[11px] font-medium tracking-wide transition-all ${tone === t ? 'bg-[#1a1a1a] text-white shadow-sm' : 'text-[#52524B] hover:text-[#555]'}`}
+              onClick={() => { hasInteracted.current = true; setTone(t as 'Warm' | 'Neutral' | 'Cool'); }}
+              className={cn(
+                "flex-1 py-1.5 rounded-canvas-sm text-canvas-sm transition-colors",
+                tone === t
+                  ? "bg-canvas-surface border-hairline border-canvas-ink text-canvas-ink font-medium"
+                  : "text-canvas-ink-soft hover:text-canvas-ink",
+              )}
             >
-              {t === 'Cool' ? 'Cool / Ash' : t}
+              {t === 'Cool' ? 'Cool / ash' : t}
             </button>
           ))}
         </div>

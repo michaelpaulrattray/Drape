@@ -25,37 +25,18 @@ export const ExportModal = ({
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
     >
-      <div
-        style={{
-          background: '#fff',
-          borderRadius: 20,
-          boxShadow: '0 16px 48px rgba(0,0,0,0.12)',
-          maxWidth: 380,
-          width: '100%',
-          overflow: 'hidden',
-        }}
-      >
+      <div className="w-full overflow-hidden rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border-strong" style={{ maxWidth: 380 }}>
         {/* Preview */}
         {previewImage && (
-          <div className="relative" style={{ height: 160 }}>
+          <div className="relative border-b-hairline border-canvas-border" style={{ height: 160 }}>
             <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-            <div
-              className="absolute inset-0"
-              style={{ background: 'linear-gradient(to top, #fff, transparent 60%)' }}
-            />
             {assetId && (
-              <div
-                className="absolute bottom-3 left-4"
-                style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}
-              >
+              <div className="absolute bottom-3 left-4 px-2 py-0.5 rounded-canvas-sm bg-canvas-surface/90 text-canvas-lg font-medium text-canvas-ink">
                 {assetId}
               </div>
             )}
             {viewCount !== undefined && (
-              <div
-                className="absolute bottom-3 right-4 flex items-center gap-1"
-                style={{ fontSize: 11, color: '#52524B' }}
-              >
+              <div className="absolute bottom-3 right-4 flex items-center gap-1 px-2 py-0.5 rounded-canvas-sm bg-canvas-surface/90 text-canvas-sm text-canvas-ink-soft">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <path d="M9 3v18M3 9h18" />
@@ -68,17 +49,17 @@ export const ExportModal = ({
 
         {/* Content */}
         <div className="p-5">
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
-            Export Casting Pack
+          <div className="text-canvas-ink font-medium mb-1" style={{ fontSize: 16 }}>
+            Export identity pack
           </div>
-          <div style={{ fontSize: 13, color: '#52524B', lineHeight: 1.5, marginBottom: 16 }}>
+          <div className="text-canvas-ink-soft mb-4" style={{ fontSize: 13, lineHeight: 1.5 }}>
             Assign a name to finalize this casting session.
           </div>
 
           {/* Name input */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
-              MODEL NAME
+          <div className="mb-4">
+            <label className="block text-canvas-xs font-medium text-canvas-ink-soft mb-1.5">
+              Model name
             </label>
             <input
               autoFocus
@@ -89,21 +70,13 @@ export const ExportModal = ({
                 if (e.key === 'Enter' && characterName) onExport(characterName, ImageResolution.HIGH);
               }}
               placeholder="Enter name..."
-              className="w-full outline-none"
-              style={{
-                border: 'none',
-                borderBottom: '1.5px solid rgba(0,0,0,0.08)',
-                padding: '8px 0',
-                fontSize: 16,
-                fontWeight: 500,
-                color: '#1a1a1a',
-                background: 'transparent',
-              }}
+              className="w-full outline-none bg-transparent border-0 border-b border-canvas-border focus:border-canvas-ink text-canvas-ink placeholder:text-canvas-ink-faint"
+              style={{ padding: '8px 0', fontSize: 16, fontWeight: 500, borderBottomWidth: '1px', borderBottomStyle: 'solid' }}
             />
           </div>
 
           {/* Resolution footnote */}
-          <div style={{ fontSize: 11, color: '#71716A', marginBottom: 16 }}>
+          <div className="text-canvas-sm text-canvas-ink-faint mb-4">
             All exports are rendered at 2K resolution.
           </div>
 
@@ -111,14 +84,13 @@ export const ExportModal = ({
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              style={{ fontSize: 13, fontWeight: 500, color: '#52524B' }}
+              className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => onExport(characterName || 'Unknown Model', ImageResolution.HIGH)}
-              className="px-5 py-2 rounded-xl transition-all"
-              style={{ background: '#1a1a1a', color: '#fff', fontSize: 13, fontWeight: 600 }}
+              className="px-5 py-2 rounded-canvas-md bg-canvas-ink text-canvas-surface text-canvas-lg font-medium transition-colors"
             >
               Export
             </button>

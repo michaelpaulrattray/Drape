@@ -24,8 +24,6 @@ interface StudioSidePanelProps {
   background?: string;
 }
 
-const SHADOW_LEFT = '2px 0 8px rgba(0,0,0,0.08), 8px 0 40px rgba(0,0,0,0.10)';
-const SHADOW_RIGHT = '-2px 0 8px rgba(0,0,0,0.08), -8px 0 40px rgba(0,0,0,0.10)';
 
 export function StudioSidePanel({
   side,
@@ -35,13 +33,16 @@ export function StudioSidePanel({
   background,
 }: StudioSidePanelProps) {
   const isLeft = side === 'left';
-  const bg = background ?? '#F5F3F0';
+  const bg = background ?? 'var(--color-canvas-surface)';
 
+  // Canvas language (R6): flat surface, hairline seam toward the work area,
+  // no shadow, no rounded lobe — the panel is a docked surface, not a card.
   const style: CSSProperties = {
     width,
     background: bg,
-    borderRadius: isLeft ? '0 18px 18px 0' : '18px 0 0 18px',
-    boxShadow: isLeft ? SHADOW_LEFT : SHADOW_RIGHT,
+    ...(isLeft
+      ? { borderRight: '0.5px solid var(--color-canvas-border)' }
+      : { borderLeft: '0.5px solid var(--color-canvas-border)' }),
   };
 
   return (

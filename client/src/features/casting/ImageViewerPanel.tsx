@@ -198,13 +198,12 @@ export function ImageViewerPanel({
     <>
       <ViewTabs />
       {identityWarning && !genState.isGenerating && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full"
-          style={{
-            background: 'rgba(234, 179, 8, 0.9)',
-            backdropFilter: 'blur(8px)',
-            fontSize: 12, color: '#713f12', fontWeight: 500,
-          }}>
-          ⚠ {identityWarning}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-canvas-pill bg-canvas-surface border-hairline border-canvas-border-strong text-canvas-md font-medium text-canvas-ink-soft">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-warning)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <path d="M12 9v4M12 17h.01" />
+          </svg>
+          {identityWarning}
         </div>
       )}
     </>
@@ -227,9 +226,8 @@ export function ImageViewerPanel({
             right: refPos.x === -1 ? 16 : undefined,
             top: refPos.y,
             width: refSize,
-            borderRadius: 10, overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
-            transition: refDragging.current ? 'none' : 'box-shadow 0.2s',
+            borderRadius: 'var(--radius-canvas-md)', overflow: 'hidden',
+            border: '1px solid var(--color-canvas-border-strong)',
           }}
           onMouseDown={handleRefMouseDown}
         >
@@ -237,7 +235,7 @@ export function ImageViewerPanel({
             className="block w-full" style={{ pointerEvents: 'none' }} />
           <div
             className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
-            style={{ background: 'linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.15) 50%)', borderRadius: '0 0 10px 0' }}
+            style={{ background: 'rgba(10,10,10,0.15)', clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}
             onMouseDown={(e) => {
               e.stopPropagation();
               const startX = e.clientX;
@@ -255,8 +253,8 @@ export function ImageViewerPanel({
             }}
           />
           <div className="absolute top-0 left-0 right-0 px-1.5 py-0.5"
-            style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.4), transparent)', pointerEvents: 'none' }}>
-            <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', letterSpacing: '0.05em' }}>REF</span>
+            style={{ background: 'rgba(10,10,10,0.5)', pointerEvents: 'none' }}>
+            <span className="text-canvas-xs font-medium" style={{ color: 'var(--color-canvas-surface)' }}>Ref</span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); updatePref('referenceImage', undefined); }}
@@ -268,14 +266,7 @@ export function ImageViewerPanel({
       {prefs.referenceImage && !refVisible && hasAssets && (
         <button
           onClick={() => setRefVisible(true)}
-          className="absolute right-4 top-3 z-20 flex items-center gap-1.5 transition-all"
-          style={{
-            padding: '5px 10px', borderRadius: 8,
-            background: 'rgba(255,255,255,0.85)',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-            backdropFilter: 'blur(8px)',
-            fontSize: 11, fontWeight: 600, color: '#52524B',
-          }}
+          className="absolute right-4 top-3 z-20 flex items-center gap-1.5 px-2.5 py-[5px] rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border text-canvas-sm font-medium text-canvas-ink-soft hover:border-canvas-border-strong transition-colors"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 15l6-6 4 4 4-4 4 4" />
@@ -330,18 +321,16 @@ export function ImageViewerPanel({
   const statusOverlay = (isViewLocked || activeTool !== 'none') ? (
     <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 items-start">
       {isViewLocked && (
-        <div className="flex items-center gap-1.5"
-          style={{ padding: '5px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', backdropFilter: 'blur(8px)', fontSize: 11, fontWeight: 600, color: '#52524B' }}>
+        <div className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border text-canvas-sm font-medium text-canvas-ink-soft">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Locked Source
+          Locked source
         </div>
       )}
       {activeTool !== 'none' && (
-        <div className="flex items-center gap-1.5"
-          style={{ padding: '5px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', backdropFilter: 'blur(8px)' }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeTool === 'eraser' ? '#7c6bef' : '#dc3545' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#52524B' }}>
-            {activeTool === 'eraser' ? 'Magic Eraser' : 'Surgical Edit'}
+        <div className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border">
+          <div className="w-1.5 h-1.5 rounded-full bg-canvas-ink" />
+          <span className="text-canvas-sm font-medium text-canvas-ink-soft">
+            {activeTool === 'eraser' ? 'Magic eraser' : 'Surgical edit'}
           </span>
         </div>
       )}
@@ -364,16 +353,15 @@ export function ImageViewerPanel({
         {/* Inline Masking Helper — hidden in read-only */}
         {!isReadOnly && isMasking && (
           <div className="mb-2 flex justify-center relative z-30">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-              style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: activeTool === 'eraser' ? '#7c6bef' : '#c33' }}>
-                {maskPathsCount > 0 ? "STEP 02" : "STEP 01"}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border-strong">
+              <span className="text-canvas-sm font-medium text-canvas-ink">
+                {maskPathsCount > 0 ? "Step 2" : "Step 1"}
               </span>
-              <span style={{ width: 1, height: 8, background: 'rgba(0,0,0,0.1)', display: 'inline-block' }} />
-              <span style={{ fontSize: 11, fontWeight: 500, color: '#52524B' }}>
+              <span className="inline-block w-px h-2 bg-canvas-border" />
+              <span className="text-canvas-sm font-medium text-canvas-ink-soft">
                 {maskPathsCount === 0
-                  ? "Paint Target Area"
-                  : (activeTool === 'eraser' ? "Click Erase Button" : "Describe Edit & Apply")
+                  ? "Paint the target area"
+                  : (activeTool === 'eraser' ? "Click the erase button" : "Describe the edit and apply")
                 }
               </span>
             </div>
@@ -383,11 +371,8 @@ export function ImageViewerPanel({
         {/* Contextual Tip for New Model — sits just above refine panel, auto-dismissed after first refinement */}
         {!isReadOnly && !tipDismissed && historyIndex <= 0 && !genState.isGenerating && (!suggestions || suggestions.length === 0) && !isLoadingSuggestions && (
           <div className="flex justify-center mb-2 pointer-events-none transition-all duration-300 ease-out">
-            <div className="px-3 py-2 rounded-lg"
-              style={{
-                background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', fontSize: 12, color: '#52524B', maxWidth: 280, textAlign: 'center',
-              }}>
-              Type a change below, or use Quick Ideas. Hold the image to compare with previous versions.
+            <div className="px-3 py-2 rounded-canvas-md bg-canvas-surface/80 text-canvas-md text-canvas-ink-soft text-center" style={{ maxWidth: 280 }}>
+              Type a change below, or use Quick ideas. Hold the image to compare with previous versions.
             </div>
           </div>
         )}
@@ -413,11 +398,9 @@ export function ImageViewerPanel({
         {!isReadOnly && !genState.isGenerating && activeTool === 'none' && (isLoadingSuggestions || (suggestions && suggestions.length > 0)) && (
           <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20">
             {isLoadingSuggestions ? (
-              <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-full mx-auto w-fit"
-                style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)' }}>
-                <div className="w-3 h-3 rounded-full border-2 animate-spin"
-                  style={{ borderColor: '#E8E4DF', borderTopColor: '#999' }} />
-                <span style={{ fontSize: 12, color: '#52524B' }}>Thinking...</span>
+              <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-canvas-pill mx-auto w-fit bg-canvas-surface border-hairline border-canvas-border">
+                <div className="w-3 h-3 rounded-full border-2 border-canvas-border animate-spin" style={{ borderTopColor: 'var(--color-canvas-ink-faint)' }} />
+                <span className="text-canvas-md text-canvas-ink-soft">Thinking...</span>
               </div>
             ) : (
               <RotatingSuggestions

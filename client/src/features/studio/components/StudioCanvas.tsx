@@ -266,27 +266,26 @@ export function StudioCanvas({
 
       {/* ── Error banner ── */}
       {errorMessage && !isGenerating && (
-        <div
-          className="absolute top-14 left-4 right-4 z-30 flex items-center justify-between px-4 py-3 rounded-xl"
-          style={{
-            background: "rgba(220,50,50,0.08)",
-            border: "1px solid rgba(220,50,50,0.15)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          <span style={{ fontSize: 13, color: "#c33", fontWeight: 500 }}>{errorMessage}</span>
-          <div className="flex items-center gap-2">
+        <div className="absolute top-14 left-4 right-4 z-30 flex items-center justify-between gap-3 px-4 py-3 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border-strong">
+          <div className="flex items-center gap-2 min-w-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-destructive)" strokeWidth="2" strokeLinecap="round" className="flex-shrink-0">
+              <circle cx="12" cy="12" r="10" />
+              <path d="m15 9-6 6M9 9l6 6" />
+            </svg>
+            <span className="text-canvas-lg font-medium text-canvas-ink-soft">{errorMessage}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
             {onClearError && (
               <button
                 onClick={onClearError}
-                style={{ fontSize: 12, fontWeight: 500, color: "#999" }}
+                className="text-canvas-md font-medium text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors"
               >
                 Dismiss
               </button>
             )}
             <button
               onClick={onRetry}
-              style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", textDecoration: "underline" }}
+              className="text-canvas-md font-medium text-canvas-ink underline"
             >
               Retry
             </button>
@@ -327,8 +326,8 @@ export function StudioCanvas({
                 style={{
                   maxWidth: "calc(100vw - 620px)",
                   maxHeight: "calc(100vh - 140px)",
-                  borderRadius: 16,
-                  boxShadow: "0 24px 80px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
+                  borderRadius: "var(--radius-canvas-lg)",
+                  border: "0.5px solid var(--color-canvas-border)",
                   opacity: isGenerating ? 0.5 : 1,
                   filter: isGenerating ? "blur(2px)" : "none",
                   cursor: compareUrl ? "grab" : "default",
@@ -378,13 +377,9 @@ export function StudioCanvas({
               {/* ── Undo/Redo floating pill (bottom-left of image) ── */}
               {toolbarVisible && !isGenerating && !isComparing && (canUndo || canRedo) && (
                 <div
-                  className="absolute bottom-3 left-3 z-20 flex items-center gap-0.5 pointer-events-auto transition-all duration-200"
+                  className="absolute bottom-3 left-3 z-20 flex items-center gap-0.5 pointer-events-auto transition-all duration-200 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border"
                   style={{
                     padding: "2px 3px",
-                    borderRadius: 10,
-                    background: "rgba(255,255,255,0.85)",
-                    backdropFilter: "blur(8px)",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
                     opacity: imageAreaHovered ? 1 : 0,
                     transform: imageAreaHovered ? "translateY(0)" : "translateY(4px)",
                     pointerEvents: imageAreaHovered ? "auto" : "none",
@@ -393,25 +388,19 @@ export function StudioCanvas({
                   <button
                     onClick={onUndo}
                     disabled={!canUndo}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-20"
-                    style={{ color: "#71716A" }}
+                    className="w-7 h-7 rounded-canvas-sm flex items-center justify-center transition-colors disabled:opacity-20 text-canvas-ink-soft hover:text-canvas-ink hover:bg-canvas-surface-inset"
                     title="Undo (Z)"
-                    onMouseEnter={(e) => { if (canUndo) { e.currentTarget.style.background = "rgba(0,0,0,0.04)"; e.currentTarget.style.color = "#1a1a1a"; } }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#71716A"; }}
                   >
                     <Undo2 size={14} strokeWidth={2.5} />
                   </button>
 
-                  <div style={{ width: 1, height: 12, background: "rgba(0,0,0,0.08)" }} />
+                  <div className="w-px h-3 bg-canvas-border" />
 
                   <button
                     onClick={onRedo}
                     disabled={!canRedo}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-20"
-                    style={{ color: "#71716A" }}
+                    className="w-7 h-7 rounded-canvas-sm flex items-center justify-center transition-colors disabled:opacity-20 text-canvas-ink-soft hover:text-canvas-ink hover:bg-canvas-surface-inset"
                     title="Redo (⇧Z)"
-                    onMouseEnter={(e) => { if (canRedo) { e.currentTarget.style.background = "rgba(0,0,0,0.04)"; e.currentTarget.style.color = "#1a1a1a"; } }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#71716A"; }}
                   >
                     <Redo2 size={14} strokeWidth={2.5} />
                   </button>

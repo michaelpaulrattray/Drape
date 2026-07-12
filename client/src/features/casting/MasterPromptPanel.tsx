@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 
@@ -9,6 +10,11 @@ interface ProfileSection {
   label: string;
   items: { key: string; value: string }[];
 }
+
+// Section heading — sentence case, no letter-spacing (§13.9)
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <div className="text-canvas-xs font-medium text-canvas-ink-soft mb-1.5">{children}</div>
+);
 
 // ============ Main Component ============
 
@@ -93,7 +99,7 @@ export function MasterPromptPanel() {
   // Build profile sections from prefs
   const profileSections: ProfileSection[] = [
     {
-      label: 'IDENTITY',
+      label: 'Identity',
       items: [
         { key: 'Brand', value: prefs.castingBrand },
         { key: 'Gender', value: prefs.gender },
@@ -103,7 +109,7 @@ export function MasterPromptPanel() {
       ].filter((i) => i.value),
     },
     {
-      label: 'FEATURES',
+      label: 'Features',
       items: [
         { key: 'Face', value: prefs.faceShape },
         { key: 'Jawline', value: prefs.jawline },
@@ -111,12 +117,12 @@ export function MasterPromptPanel() {
         { key: 'Nose', value: prefs.noseShape },
         { key: 'Lips', value: prefs.lipShape },
         { key: 'Eyes', value: prefs.eyeShape },
-        { key: 'Eye Color', value: prefs.eyeColor },
+        { key: 'Eye color', value: prefs.eyeColor },
         { key: 'Brows', value: prefs.eyebrowStyle },
       ].filter((i) => i.value),
     },
     {
-      label: 'SKIN',
+      label: 'Skin',
       items: [
         { key: 'Tone', value: prefs.skinTone },
         { key: 'Texture', value: prefs.skinTexture },
@@ -124,7 +130,7 @@ export function MasterPromptPanel() {
       ].filter((i) => i.value),
     },
     {
-      label: 'HAIR',
+      label: 'Hair',
       items: [
         { key: 'Color', value: prefs.hairColor },
         { key: 'Style', value: prefs.hairStyle },
@@ -133,11 +139,11 @@ export function MasterPromptPanel() {
         { key: 'Volume', value: prefs.hairVolume },
         { key: 'Parting', value: prefs.hairParting },
         { key: 'Fringe', value: prefs.hairFringe },
-        ...(prefs.facialHair ? [{ key: 'Facial Hair', value: prefs.facialHair }] : []),
+        ...(prefs.facialHair ? [{ key: 'Facial hair', value: prefs.facialHair }] : []),
       ].filter((i) => i.value),
     },
     {
-      label: 'VIBE',
+      label: 'Vibe',
       items: prefs.castingVibe
         ? (() => {
             const edgeVal = Math.round((1 - prefs.castingVibe.commercial) * 1000);
@@ -157,31 +163,30 @@ export function MasterPromptPanel() {
 
   return (
     <div
-      className="h-full flex flex-col overflow-hidden"
-      style={{
-        background: '#fff',
-        transition: 'width 0.22s ease',
-      }}
+      className="h-full flex flex-col overflow-hidden bg-canvas-surface"
+      style={{ transition: 'width 0.22s ease' }}
     >
       {!isCollapsed ? (
         <>
           {/* Header + Tabs */}
           <div className="p-4 pb-0">
             <div className="flex items-center justify-between mb-3">
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
+              <div className="text-canvas-lg font-medium text-canvas-ink">
                 {activeTab === 'profile' ? 'Profile' : 'Spec'}
               </div>
               <div className="flex items-center gap-2">
                 {activeTab === 'spec' && (
-                  <button onClick={copyToClipboard} style={{ fontSize: 11, fontWeight: 600, color: isCopied ? '#5cad5c' : '#bbb' }}>
-                    {isCopied ? '✓ Copied' : 'Copy'}
+                  <button
+                    onClick={copyToClipboard}
+                    className={cn('text-canvas-sm font-medium transition-colors', isCopied ? 'text-canvas-ink' : 'text-canvas-ink-faint hover:text-canvas-ink-soft')}
+                  >
+                    {isCopied ? 'Copied' : 'Copy'}
                   </button>
                 )}
                 <button
                   onClick={() => setIsCollapsed(true)}
                   title="Collapse panel"
-                  className="hover:text-black transition-colors"
-                  style={{ color: '#71716A', display: 'flex', alignItems: 'center', padding: 2 }}
+                  className="flex items-center p-0.5 text-canvas-ink-soft hover:text-canvas-ink transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="9 18 15 12 9 6" />
@@ -190,19 +195,18 @@ export function MasterPromptPanel() {
               </div>
             </div>
 
-            <div className="flex gap-1.5 mb-3">
+            {/* Profile/Spec — underline tabs (studio pattern, §6) */}
+            <div className="flex gap-5 mb-0">
               {(['profile', 'spec'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className="flex-1 py-1.5 rounded-lg transition-all text-center"
-                  style={{
-                    fontSize: 11,
-                    fontWeight: activeTab === tab ? 600 : 400,
-                    background: activeTab === tab ? '#1a1a1a' : '#ffffff',
-                    color: activeTab === tab ? '#fff' : '#52524B',
-                    border: activeTab === tab ? '1px solid #1a1a1a' : '1px solid #E8E4DF',
-                  }}
+                  className={cn(
+                    'pb-2 text-canvas-sm transition-colors -mb-px border-b',
+                    activeTab === tab
+                      ? 'text-canvas-ink font-medium border-canvas-ink'
+                      : 'text-canvas-ink-soft border-transparent hover:text-canvas-ink',
+                  )}
                 >
                   {tab === 'profile' ? 'Profile' : 'Spec'}
                 </button>
@@ -210,7 +214,7 @@ export function MasterPromptPanel() {
             </div>
           </div>
 
-          <div style={{ height: 1, background: 'rgba(0,0,0,0.05)' }} />
+          <div className="border-b-hairline border-canvas-border" />
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
@@ -219,16 +223,16 @@ export function MasterPromptPanel() {
                 {/* Identity Card Header */}
                 {headAsset && (
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0" style={{ border: '1.5px solid rgba(0,0,0,0.06)' }}>
+                    <div className="w-10 h-10 rounded-canvas-md overflow-hidden flex-shrink-0 border-hairline border-canvas-border">
                       <img src={headAsset.storageUrl} alt="Model" className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+                      <div className="text-canvas-lg font-medium text-canvas-ink">
                         MOD-{headAsset.id}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#5cad5c' }} />
-                        <span style={{ fontSize: 11, color: '#52524B' }}>
+                        <div className="w-[5px] h-[5px] rounded-full bg-canvas-ink" />
+                        <span className="text-canvas-sm text-canvas-ink-soft">
                           {viewCount} view{viewCount !== 1 ? 's' : ''}
                         </span>
                       </div>
@@ -240,29 +244,27 @@ export function MasterPromptPanel() {
 
                 {/* Reference Image Section */}
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', marginBottom: 6 }}>REFERENCE</div>
+                  <SectionLabel>Reference</SectionLabel>
                   {prefs.referenceImage ? (
                     <div className="relative group">
-                      <div className="rounded-xl overflow-hidden" style={{ border: '1.5px solid rgba(0,0,0,0.06)' }}>
+                      <div className="rounded-canvas-md overflow-hidden border-hairline border-canvas-border">
                         <img src={prefs.referenceImage} alt="Reference" className="w-full object-cover" style={{ maxHeight: 120 }} />
                       </div>
-                      <div className="mt-2 px-2.5 py-2 rounded-lg" style={{ background: '#F5F3F0', fontSize: 11, color: '#52524B', lineHeight: 1.5 }}>
-                        <span style={{ fontWeight: 600, color: '#52524B' }}>How to use:</span> describe what to transfer in the refine bar — e.g. "use hairstyle from reference" or "apply eye makeup from reference image"
-                        <div style={{ marginTop: 4, color: '#71716A' }}>
-                          Press <span style={{ fontFamily: 'monospace', fontWeight: 700, background: 'rgba(0,0,0,0.04)', padding: '0 3px', borderRadius: 2 }}>F</span> to toggle on canvas · Drag to reposition · Corner to resize
+                      <div className="mt-2 px-2.5 py-2 rounded-canvas-md bg-canvas-surface-inset text-canvas-sm text-canvas-ink-soft leading-normal">
+                        <span className="font-medium">How to use:</span> describe what to transfer in the refine bar — e.g. "use hairstyle from reference" or "apply eye makeup from reference image"
+                        <div className="mt-1 text-canvas-ink-faint">
+                          Press <span className="font-mono font-medium bg-canvas-border/40 px-[3px] rounded-sm">F</span> to toggle on canvas · Drag to reposition · Corner to resize
                         </div>
                       </div>
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ padding: '3px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', fontSize: 11, fontWeight: 600, color: '#52524B', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-[3px] rounded-canvas-sm bg-canvas-surface border-hairline border-canvas-border text-canvas-sm font-medium text-canvas-ink-soft"
                       >
                         Replace
                       </button>
                       <button
                         onClick={() => updatePref('referenceImage', undefined)}
-                        className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ padding: '3px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', fontSize: 11, fontWeight: 600, color: '#c33', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                        className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-[3px] rounded-canvas-sm bg-canvas-surface border-hairline border-canvas-border text-canvas-sm font-medium text-canvas-ink-soft"
                       >
                         Remove
                       </button>
@@ -274,26 +276,29 @@ export function MasterPromptPanel() {
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
-                        className="cursor-pointer transition-all"
+                        className={cn(
+                          'cursor-pointer transition-colors text-center px-3 py-3.5 rounded-canvas-md',
+                          isDragging
+                            ? 'bg-canvas-surface-inset'
+                            : 'bg-canvas-surface-inset/60 hover:bg-canvas-surface-inset',
+                        )}
                         style={{
-                          padding: '14px 12px',
-                          borderRadius: 12,
-                          border: isDragging ? '1.5px dashed #1a1a1a' : '1.5px dashed rgba(0,0,0,0.1)',
-                          background: isDragging ? 'rgba(26,26,26,0.03)' : '#F5F3F0',
-                          textAlign: 'center',
+                          border: isDragging
+                            ? '1px dashed var(--color-canvas-ink)'
+                            : '1px dashed var(--color-canvas-border-strong)',
                         }}
                       >
-                        <div style={{ width: 28, height: 28, borderRadius: 8, margin: '0 auto 6px', background: 'rgba(255,255,255,0.8)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round">
+                        <div className="w-7 h-7 rounded-canvas-sm mx-auto mb-1.5 bg-canvas-surface border-hairline border-canvas-border flex items-center justify-center">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-ink-faint)" strokeWidth="1.5" strokeLinecap="round">
                             <rect x="3" y="3" width="18" height="18" rx="2" />
                             <path d="M3 15l6-6 4 4 4-4 4 4" />
                             <circle cx="8.5" cy="8.5" r="1.5" />
                           </svg>
                         </div>
-                        <div style={{ fontSize: 12, fontWeight: 500, color: '#52524B' }}>{isDragging ? 'Drop image' : 'Add Reference'}</div>
-                        <div style={{ fontSize: 11, color: '#71716A', marginTop: 2 }}>Drop or click to browse</div>
+                        <div className="text-canvas-md font-medium text-canvas-ink-soft">{isDragging ? 'Drop image' : 'Add reference'}</div>
+                        <div className="text-canvas-sm text-canvas-ink-faint mt-0.5">Drop or click to browse</div>
                       </div>
-                      <div className="mt-2 px-2.5 py-2 rounded-lg" style={{ background: '#F5F3F0', fontSize: 11, color: '#52524B', lineHeight: 1.5 }}>
+                      <div className="mt-2 px-2.5 py-2 rounded-canvas-md bg-canvas-surface-inset text-canvas-sm text-canvas-ink-soft leading-normal">
                         Upload a photo of a hairstyle, tattoo, accessory, or look you want to transfer to your model. Then describe what to use in the refine bar — the AI will visually reference this image during iteration.
                       </div>
                     </>
@@ -304,12 +309,12 @@ export function MasterPromptPanel() {
                 {/* Parameter Sections */}
                 {profileSections.map((section) => (
                   <div key={section.label}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', marginBottom: 6 }}>{section.label}</div>
+                    <SectionLabel>{section.label}</SectionLabel>
                     <div className="space-y-0.5">
                       {section.items.map((item) => (
-                        <div key={item.key} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg" style={{ background: '#F5F3F0' }}>
-                          <span style={{ fontSize: 12, color: '#52524B' }}>{item.key}</span>
-                          <span style={{ fontSize: 12, fontWeight: 500, color: '#52524B' }}>{item.value}</span>
+                        <div key={item.key} className="flex items-center justify-between py-1.5 px-2.5 rounded-canvas-sm bg-canvas-surface-inset">
+                          <span className="text-canvas-md text-canvas-ink-soft">{item.key}</span>
+                          <span className="text-canvas-md font-medium text-canvas-ink-soft">{item.value}</span>
                         </div>
                       ))}
                     </div>
@@ -319,8 +324,8 @@ export function MasterPromptPanel() {
                 {/* Casting Notes */}
                 {prefs.features && (
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#71716A', letterSpacing: '0.06em', marginBottom: 6 }}>NOTES</div>
-                    <div className="px-2.5 py-2 rounded-lg" style={{ background: '#F5F3F0', fontSize: 12, color: '#52524B', lineHeight: 1.5 }}>
+                    <SectionLabel>Notes</SectionLabel>
+                    <div className="px-2.5 py-2 rounded-canvas-sm bg-canvas-surface-inset text-canvas-md text-canvas-ink-soft leading-normal">
                       {prefs.features}
                     </div>
                   </div>
@@ -334,14 +339,12 @@ export function MasterPromptPanel() {
                     <button
                       key={mode}
                       onClick={() => setSpecMode(mode)}
-                      className="flex-1 py-1 rounded-md transition-all text-center"
-                      style={{
-                        fontSize: 10,
-                        fontWeight: specMode === mode ? 600 : 400,
-                        background: specMode === mode ? '#ffffff' : 'transparent',
-                        color: specMode === mode ? '#52524B' : '#999',
-                        border: specMode === mode ? '1px solid #E8E4DF' : '1px solid transparent',
-                      }}
+                      className={cn(
+                        'flex-1 py-1 rounded-canvas-sm transition-colors text-center text-canvas-xs',
+                        specMode === mode
+                          ? 'bg-canvas-surface border-hairline border-canvas-border font-medium text-canvas-ink-soft'
+                          : 'border border-transparent text-canvas-ink-faint hover:text-canvas-ink-soft',
+                      )}
                     >
                       {mode === 'natural' ? 'Description' : 'JSON'}
                     </button>
@@ -349,17 +352,17 @@ export function MasterPromptPanel() {
                 </div>
 
                 {specMode === 'natural' ? (
-                  <div style={{ fontSize: 13, lineHeight: 1.6, color: '#52524B' }} className="whitespace-pre-wrap select-text">
+                  <div className="whitespace-pre-wrap select-text text-canvas-ink-soft" style={{ fontSize: 13, lineHeight: 1.6 }}>
                     {currentMasterPrompt}
                   </div>
                 ) : currentTechnicalSchema ? (
-                  <pre style={{ fontSize: 12, lineHeight: 1.5, color: '#5cad5c' }} className="whitespace-pre-wrap select-text font-mono">
+                  <pre className="whitespace-pre-wrap select-text font-mono text-canvas-md text-canvas-ink-soft" style={{ lineHeight: 1.5 }}>
                     {JSON.stringify(currentTechnicalSchema, null, 2)}
                   </pre>
                 ) : (
                   /* Never render the literal "null" (VC-R4 fix 3) — a model
                      minted before schemas existed simply has none */
-                  <div style={{ fontSize: 12, color: '#71716A' }}>
+                  <div className="text-canvas-md text-canvas-ink-faint">
                     No JSON spec recorded for this cast.
                   </div>
                 )}
@@ -368,16 +371,16 @@ export function MasterPromptPanel() {
           </div>
 
           {/* Footer */}
-          <div className="p-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+          <div className="p-4 flex-shrink-0 border-t-hairline border-canvas-border">
             <div className="flex items-center justify-between">
-              <span style={{ fontSize: 11, color: '#71716A' }}>
+              <span className="text-canvas-sm text-canvas-ink-faint">
                 {activeTab === 'profile'
                   ? `${profileSections.reduce((n, s) => n + s.items.length, 0)} parameters set`
                   : 'Reproducible casting spec'}
               </span>
               {activeTab === 'profile' && (
-                <button onClick={() => setActiveTab('spec')} style={{ fontSize: 11, fontWeight: 500, color: '#71716A' }}>
-                  View Spec →
+                <button onClick={() => setActiveTab('spec')} className="text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors">
+                  View spec →
                 </button>
               )}
             </div>
@@ -389,19 +392,17 @@ export function MasterPromptPanel() {
           <button
             onClick={() => setIsCollapsed(false)}
             title="Expand panel"
-            className="hover:text-black transition-colors"
-            style={{ color: '#71716A', display: 'flex', alignItems: 'center', padding: 4 }}
+            className="flex items-center p-1 text-canvas-ink-soft hover:text-canvas-ink transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <div style={{ width: 20, height: 1, background: 'rgba(0,0,0,0.06)' }} />
+          <div className="w-5 border-b-hairline border-canvas-border" />
           <button
             onClick={() => { setIsCollapsed(false); setActiveTab('profile'); setTimeout(() => fileInputRef.current?.click(), 240); }}
             title="Add reference image"
-            className="hover:text-black transition-colors"
-            style={{ color: '#71716A', display: 'flex', alignItems: 'center', padding: 4 }}
+            className="flex items-center p-1 text-canvas-ink-soft hover:text-canvas-ink transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" />
