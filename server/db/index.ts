@@ -54,6 +54,7 @@ export {
   mintModel,
   deleteModel,
   createModelAsset,
+  setModelAssetPinned,
   getModelAssets,
   getModelAssetByView,
   getModelAssetsForCleanup,

@@ -333,6 +333,16 @@ export async function getModelAssets(modelId: number) {
     .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
 }
 
+/** R5 per-slot pin (D-21 on the package ledger): flips `pinned` on ONE asset
+ *  row — callers resolve which row via the newest-filled rule (mintPackage's
+ *  newestFilledAssetId) so pin state always rides the row the read model shows. */
+export async function setModelAssetPinned(assetId: number, pinned: boolean): Promise<{ success: boolean }> {
+  const db = await getDb();
+  if (!db) return { success: false };
+  await db.update(modelAssets).set({ pinned }).where(eq(modelAssets.id, assetId));
+  return { success: true };
+}
+
 export async function getModelAssetByView(modelId: number, viewType: string) {
   const db = await getDb();
   if (!db) return null;

@@ -3,7 +3,7 @@ import {
   getModelById, getUserGenerations, getUserById, mintModel,
 } from "../../db";
 import { POINT_COSTS } from "../../casting/aiService";
-import { planMintPackage, executeMintPackage, getPackageState } from "../../casting/mintPackage";
+import { planMintPackage, executeMintPackage, getPackageState, executeSetSlotPinned } from "../../casting/mintPackage";
 import { planRefreshSlots, executeRefreshSlots } from "../../casting/refreshSlots";
 import { CANONICAL_VIEW_ANGLES } from "../../../shared/boardTypes";
 import { enforceDailyQuota } from "../../db/dailyQuota";
@@ -148,6 +148,18 @@ export const castingExportRouter = router({
     .input(z.object({ modelId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       return getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+    }),
+
+  /** R5 per-slot pin (D-21 on the package ledger): pinned = accepted-final,
+   *  exempt from staleness pressure and bulk refresh. Free — no rate gate. */
+  setSlotPinned: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+      angle: z.enum(CANONICAL_VIEW_ANGLES),
+      pinned: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return executeSetSlotPinned({ userId: ctx.user.id, ...input });
     }),
 
   /** R5 per-tile refresh plan: slot costs + structural refusals (D-15/D-43).

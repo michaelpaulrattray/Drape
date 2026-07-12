@@ -5,7 +5,7 @@
  * always sums to the from-scratch production price.
  */
 import { describe, it, expect } from "vitest";
-import { tierCosts, slotCost, computePackageSlots } from "./mintPackage";
+import { tierCosts, slotCost, computePackageSlots, newestFilledAssetId } from "./mintPackage";
 import { MINT_TIER_SLOTS } from "../../shared/boardTypes";
 import { CREDIT_COSTS } from "./aiService";
 
@@ -107,5 +107,32 @@ describe("computePackageSlots — failure surfacing (D-40)", () => {
       ["backFull", "frontClose", "frontFull", "sideClose", "sideFull", "threeQuarter"].sort(),
     );
     expect(slots.every((s) => !s.filled && s.failed === null)).toBe(true);
+  });
+});
+
+describe("newestFilledAssetId — the row pin/refresh act on (R5)", () => {
+  const row = (id: number, viewType: string, storageUrl = "https://r2/x.png") => ({ id, viewType, storageUrl });
+
+  it("picks the NEWEST filled row (newest-first order), skipping markers", () => {
+    const assets = [
+      row(9, "sideClose", ""), // failure marker — never pinnable
+      row(7, "sideClose"), // the refresh (newest filled)
+      row(3, "sideClose"), // the original
+      row(1, "frontClose"),
+    ];
+    expect(newestFilledAssetId(assets, "sideClose")).toBe(7);
+  });
+
+  it("returns null when the slot has no filled row — nothing to pin", () => {
+    expect(newestFilledAssetId([row(9, "backFull", "")], "backFull")).toBeNull();
+    expect(newestFilledAssetId([], "backFull")).toBeNull();
+  });
+
+  it("matches computePackageSlots' selection — the pin lands on the row the card shows", () => {
+    const assets = [row(7, "sideClose"), row(3, "sideClose")];
+    const slot = computePackageSlots(assets.map((a) => ({ ...a, pinned: false }))).find((s) => s.angle === "sideClose")!;
+    // Same URL rule: newest filled row renders AND takes the pin
+    expect(slot.url).toBe("https://r2/x.png");
+    expect(newestFilledAssetId(assets, "sideClose")).toBe(7);
   });
 });
