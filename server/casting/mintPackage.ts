@@ -32,7 +32,7 @@ import {
   addCredits,
 } from "../db";
 import { generateFullBody, generateRemainingViews, CREDIT_COSTS } from "./aiService";
-import { verifyBackView } from "./backViewGate";
+import { isGatedAngle, verifyViewIdentity } from "./backViewGate";
 import {
   MINT_TIER_SLOTS,
   VIEW_ANGLE_LABELS,
@@ -130,15 +130,15 @@ export async function executeMintPackage(input: MintPackageInput) {
 
       let result = await generate();
 
-      // Back views pass the identity gate — one auto-retry (D-39)
-      if (angle === "backFull") {
-        const verdict = await verifyBackView(headshot.storageUrl, result.imageUrl);
+      // Gated angles (back + walk, D-46) pass the identity gate — one auto-retry (D-39)
+      if (isGatedAngle(angle)) {
+        const verdict = await verifyViewIdentity(headshot.storageUrl, result.imageUrl, angle);
         if (!verdict.ok) {
-          log.warn({ modelId: input.modelId }, "[MintPackage] back view failed the gate — retrying once");
+          log.warn({ modelId: input.modelId, angle }, "[MintPackage] view failed the gate — retrying once");
           result = await generate();
-          const second = await verifyBackView(headshot.storageUrl, result.imageUrl);
+          const second = await verifyViewIdentity(headshot.storageUrl, result.imageUrl, angle);
           if (!second.ok) {
-            throw new Error("The back view could not match this identity (checked twice)");
+            throw new Error(`The ${VIEW_ANGLE_LABELS[angle].toLowerCase()} view could not match this identity (checked twice)`);
           }
         }
       }
