@@ -1,11 +1,19 @@
 /**
- * NoteNode — Editable sticky note on the canvas.
+ * NoteNode — editable note on the canvas, in the canvas language (R6 design
+ * pass). Double-click to edit, click away to save.
  *
- * Renders as a warm-tinted card with editable text content.
- * Double-click to edit, click away to save.
+ * RULING R-6 (VC-R6b, in situ): the yellow's fate. Two variants behind ONE
+ * constant — flip NOTE_SURFACE to compare live:
+ *  - 'monochrome': plain surface card — D-7's position (silhouette
+ *    distinguishes types; a bare text card reads as a note).
+ *  - 'paper': one muted paper tint as the single sanctioned note surface
+ *    (would need a §2.1 sentence if ruled in).
  */
 import { memo, useState, useEffect, useRef } from 'react';
 import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
+
+const NOTE_SURFACE: 'monochrome' | 'paper' = 'monochrome';
+const NOTE_BG = NOTE_SURFACE === 'paper' ? '#FBF8EF' : 'var(--color-canvas-surface)';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -75,8 +83,8 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
           width: 8,
           height: 8,
           borderRadius: 4,
-          background: '#b8860b',
-          border: '2px solid #fff',
+          background: 'var(--color-canvas-ink)',
+          border: '2px solid var(--color-canvas-surface)',
         }}
         lineStyle={{
           borderColor: 'transparent',
@@ -92,16 +100,15 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
         style={{
           width: '100%',
           height: '100%',
-          borderRadius: 8,
-          background: '#fffde7',
+          borderRadius: 'var(--radius-canvas-md)',
+          background: NOTE_BG,
+          // Selection = 1px ink, resting = hairline — the CanvasNodeShell
+          // language (no shadows, no gold)
           border: selected
-            ? '2px solid #d4a017'
-            : '1px solid rgba(180,160,100,0.2)',
-          boxShadow: selected
-            ? '0 4px 16px rgba(180,160,100,0.2)'
-            : '0 1px 4px rgba(0,0,0,0.06)',
+            ? '1px solid var(--color-canvas-ink)'
+            : '0.5px solid var(--color-canvas-border)',
           overflow: 'hidden',
-          transition: 'box-shadow 150ms ease, border-color 150ms ease',
+          transition: 'border-color 150ms ease',
           display: 'flex',
           flexDirection: 'column' as const,
         }}
@@ -134,9 +141,9 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
               }}
               style={{
                 flex: 1,
-                fontSize: 16,
+                fontSize: 13,
                 lineHeight: 1.6,
-                color: '#4a4a4a',
+                color: 'var(--color-canvas-ink)',
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
@@ -154,9 +161,9 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
               }}
               style={{
                 flex: 1,
-                fontSize: 16,
+                fontSize: 13,
                 lineHeight: 1.6,
-                color: data.label ? '#4a4a4a' : '#aaa',
+                color: data.label ? 'var(--color-canvas-ink)' : 'var(--color-canvas-ink-faint)',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
                 cursor: 'text',
@@ -168,14 +175,12 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
           )}
         </div>
 
-        {/* Subtle footer */}
+        {/* Quiet type label — sentence case, no letter-spacing (§13.9) */}
         <div
           style={{
             padding: '4px 12px 6px',
-            fontSize: 9,
-            color: '#bbb',
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
+            fontSize: 10,
+            color: 'var(--color-canvas-ink-faint)',
             fontWeight: 500,
           }}
         >
