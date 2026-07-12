@@ -32,6 +32,7 @@ import {
   addCredits,
 } from "../db";
 import { generateFullBody, generateRemainingViews, CREDIT_COSTS } from "./aiService";
+import { buildIdentityAnchor } from "./geminiClient";
 import { isGatedAngle, verifyViewIdentity } from "./backViewGate";
 import {
   MINT_TIER_SLOTS,
@@ -84,6 +85,114 @@ export interface MintPackageInput {
   characterName: string;
 }
 
+/** What one slot generation needs — shared by mint (R3b) and refresh (R5). */
+export interface SlotGenContext {
+  userId: number;
+  modelId: number;
+  model: {
+    masterPrompt: string;
+    technicalSchema: unknown;
+    preferences?: unknown;
+  };
+  /** The CURRENT canonical headshot — every view generates from it (D-30). */
+  headshotUrl: string;
+  /** Names the money movement in the ledger: "Mint package" | "Refresh". */
+  reasonLabel: string;
+  /** Present on mint; absent on refresh (stamped into generation metadata + provenance). */
+  mintTier?: MintTier;
+}
+
+export type SlotGenResult =
+  | { ok: true; angle: CanonicalViewAngle; imageUrl: string }
+  | { ok: false; angle: CanonicalViewAngle; label: string; reason: string; refunded: number };
+
+/**
+ * Generate ONE package slot — the house pattern, extracted so mint and
+ * refresh can never drift: audit row → generate from the current headshot +
+ * identity text → per-angle identity gate (back + walk, retry-then-refund)
+ * → asset row with D-12 provenance (exact inputs + verbatim identityText).
+ * Failures are NAMED-AND-REFUNDED and persist as durable marker rows.
+ * The caller has already deducted this slot's cost.
+ */
+export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalViewAngle): Promise<SlotGenResult> {
+  const gender = (ctx.model.technicalSchema as { subject?: { sex?: string } })?.subject?.sex || "female";
+  const identityText = buildIdentityAnchor(ctx.model.masterPrompt, ctx.model.technicalSchema);
+  const genRecord = await createGeneration({
+    userId: ctx.userId,
+    modelId: ctx.modelId,
+    type: "multiView",
+    status: "processing",
+    pointsCost: slotCost(angle),
+    metadata: ctx.mintTier ? { viewType: angle, mintTier: ctx.mintTier } : { viewType: angle, source: "refresh" },
+  });
+  try {
+    const generate = () =>
+      angle === "frontFull"
+        ? generateFullBody(ctx.model.masterPrompt, ctx.headshotUrl, gender, ctx.model.technicalSchema,
+            (ctx.model.preferences as { bodyType?: string } | null | undefined)?.bodyType)
+        : generateRemainingViews(ctx.model.masterPrompt, ctx.headshotUrl, gender, SINGLE_VIEW_TYPE[angle]!, ctx.model.technicalSchema);
+
+    let result = await generate();
+
+    // Gated angles (back + walk, D-46) pass the identity gate — one auto-retry (D-39)
+    if (isGatedAngle(angle)) {
+      const verdict = await verifyViewIdentity(ctx.headshotUrl, result.imageUrl, angle);
+      if (!verdict.ok) {
+        log.warn({ modelId: ctx.modelId, angle }, "[PackageSlot] view failed the gate — retrying once");
+        result = await generate();
+        const second = await verifyViewIdentity(ctx.headshotUrl, result.imageUrl, angle);
+        if (!second.ok) {
+          throw new Error(`The ${VIEW_ANGLE_LABELS[angle].toLowerCase()} view could not match this identity (checked twice)`);
+        }
+      }
+    }
+
+    await createModelAsset({
+      modelId: ctx.modelId,
+      viewType: angle,
+      resolution: "1K",
+      storageUrl: result.imageUrl,
+      pointsCost: slotCost(angle),
+      provenance: {
+        inputs: [{ viewAngle: "frontClose", imageUrl: ctx.headshotUrl }],
+        engine: result.engineUsed,
+        ...(ctx.mintTier ? { mintTier: ctx.mintTier } : { source: "refresh" }),
+        // D-12 reproducibility at the asset level: the exact identity text
+        // this view generated against, verbatim (a few KB buys a full replay)
+        identityText,
+      },
+    });
+    await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+    return { ok: true, angle, imageUrl: result.imageUrl };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Generation failed";
+    await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: reason, completedAt: new Date() }).catch(() => {});
+    // Named-and-refunded: this slot's cost goes back; the batch proceeds
+    const refund = slotCost(angle);
+    await addCredits(ctx.userId, refund, "refund", `${ctx.reasonLabel}: ${VIEW_ANGLE_LABELS[angle]} failed (refund)`);
+    // Persist the failure DURABLY (D-40): a storageUrl-less marker row
+    // carrying status — so the failed slot survives the takeover close and
+    // renders named + retryable on re-edit (getPackageState reads it). A
+    // later successful (re)generation writes a newer row with a real URL,
+    // which supersedes this marker. (VC-R3b: the failure surfaced NOWHERE.)
+    await createModelAsset({
+      modelId: ctx.modelId,
+      viewType: angle,
+      resolution: "1K",
+      storageUrl: "",
+      pointsCost: 0,
+      status: { state: "failed", reason, refunded: refund, at: new Date().toISOString() },
+      provenance: {
+        inputs: [{ viewAngle: "frontClose", imageUrl: ctx.headshotUrl }],
+        engine: "identity-gate",
+        ...(ctx.mintTier ? { mintTier: ctx.mintTier } : { source: "refresh" }),
+      },
+    }).catch(() => {});
+    log.warn({ modelId: ctx.modelId, angle, reason }, "[PackageSlot] slot failed — refunded");
+    return { ok: false, angle, label: VIEW_ANGLE_LABELS[angle], reason, refunded: refund };
+  }
+}
+
 export async function executeMintPackage(input: MintPackageInput) {
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -108,82 +217,22 @@ export async function executeMintPackage(input: MintPackageInput) {
     }
   }
 
-  const gender = (model.technicalSchema as { subject?: { sex?: string } })?.subject?.sex || "female";
-  const generated: Array<{ angle: CanonicalViewAngle; imageUrl: string }> = [];
-  const failed: Array<{ angle: CanonicalViewAngle; label: string; reason: string; refunded: number }> = [];
-
-  const generateSlot = async (angle: CanonicalViewAngle): Promise<void> => {
-    const genRecord = await createGeneration({
-      userId: input.userId,
-      modelId: input.modelId,
-      type: "multiView",
-      status: "processing",
-      pointsCost: slotCost(angle),
-      metadata: { viewType: angle, mintTier: input.tier },
-    });
-    try {
-      const generate = () =>
-        angle === "frontFull"
-          ? generateFullBody(model.masterPrompt, headshot.storageUrl, gender, model.technicalSchema,
-              (model.preferences as { bodyType?: string } | null)?.bodyType)
-          : generateRemainingViews(model.masterPrompt, headshot.storageUrl, gender, SINGLE_VIEW_TYPE[angle]!, model.technicalSchema);
-
-      let result = await generate();
-
-      // Gated angles (back + walk, D-46) pass the identity gate — one auto-retry (D-39)
-      if (isGatedAngle(angle)) {
-        const verdict = await verifyViewIdentity(headshot.storageUrl, result.imageUrl, angle);
-        if (!verdict.ok) {
-          log.warn({ modelId: input.modelId, angle }, "[MintPackage] view failed the gate — retrying once");
-          result = await generate();
-          const second = await verifyViewIdentity(headshot.storageUrl, result.imageUrl, angle);
-          if (!second.ok) {
-            throw new Error(`The ${VIEW_ANGLE_LABELS[angle].toLowerCase()} view could not match this identity (checked twice)`);
-          }
-        }
-      }
-
-      await createModelAsset({
-        modelId: input.modelId,
-        viewType: angle,
-        resolution: "1K",
-        storageUrl: result.imageUrl,
-        pointsCost: slotCost(angle),
-        provenance: {
-          inputs: [{ viewAngle: "frontClose", imageUrl: headshot.storageUrl }],
-          engine: result.engineUsed,
-          mintTier: input.tier,
-        },
-      });
-      await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
-      generated.push({ angle, imageUrl: result.imageUrl });
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : "Generation failed";
-      await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: reason, completedAt: new Date() }).catch(() => {});
-      // Named-and-refunded: this slot's cost goes back; the mint proceeds
-      const refund = slotCost(angle);
-      await addCredits(input.userId, refund, "refund", `Mint package: ${VIEW_ANGLE_LABELS[angle]} failed (refund)`);
-      // Persist the failure DURABLY (D-40): a storageUrl-less marker row
-      // carrying status — so the failed slot survives the takeover close and
-      // renders named + retryable on re-edit (getPackageState reads it). A
-      // later successful (re)generation writes a newer row with a real URL,
-      // which supersedes this marker. (VC-R3b: the failure surfaced NOWHERE.)
-      await createModelAsset({
-        modelId: input.modelId,
-        viewType: angle,
-        resolution: "1K",
-        storageUrl: "",
-        pointsCost: 0,
-        status: { state: "failed", reason, refunded: refund, at: new Date().toISOString() },
-        provenance: { inputs: [{ viewAngle: "frontClose", imageUrl: headshot.storageUrl }], engine: "identity-gate", mintTier: input.tier },
-      }).catch(() => {});
-      failed.push({ angle, label: VIEW_ANGLE_LABELS[angle], reason, refunded: refund });
-      log.warn({ modelId: input.modelId, angle, reason }, "[MintPackage] slot failed — refunded");
-    }
-  };
-
   // Parallel: the image queue caps concurrency; each slot settles on its own
-  await Promise.all(missing.map((angle) => generateSlot(angle)));
+  const ctx: SlotGenContext = {
+    userId: input.userId,
+    modelId: input.modelId,
+    model,
+    headshotUrl: headshot.storageUrl,
+    reasonLabel: "Mint package",
+    mintTier: input.tier,
+  };
+  const results = await Promise.all(missing.map((angle) => generatePackageSlot(ctx, angle)));
+  const generated = results
+    .filter((r): r is Extract<SlotGenResult, { ok: true }> => r.ok)
+    .map((r) => ({ angle: r.angle, imageUrl: r.imageUrl }));
+  const failed = results
+    .filter((r): r is Extract<SlotGenResult, { ok: false }> => !r.ok)
+    .map(({ angle, label, reason, refunded }) => ({ angle, label, reason, refunded }));
 
   // Name + mint (identity becomes real and immutable, D-43)
   await updateModel(input.modelId, { name: input.characterName });
@@ -218,6 +267,11 @@ export interface PackageSlot {
   filled: boolean;
   url: string | null;
   pinned: boolean;
+  /** The current view's staleness (model-level, D-39; dormant in pass 1 —
+   *  D-43 removed the trigger; pass 2's stale-writer lights it up). */
+  stale: boolean;
+  /** vN for the tile popover: how many filled generations this slot has. */
+  version: number;
   /** Set when the newest attempt at this slot failed the gate and no filled
    *  view exists (named-and-refunded, D-40). Cleared by a later success. */
   failed: SlotFailure | null;
@@ -245,12 +299,15 @@ export function computePackageSlots(assets: SlotAssetRow[]): PackageSlot[] {
       !filledRow && status?.state === "failed"
         ? { reason: status.reason ?? "The identity check didn't pass", refunded: status.refunded ?? 0, at: status.at ?? "" }
         : null;
+    const filledStatus = filledRow?.status as { state?: string } | undefined;
     return {
       angle,
       label: VIEW_ANGLE_LABELS[angle],
       filled: !!filledRow,
       url: filledRow?.storageUrl ?? null,
       pinned: filledRow?.pinned ?? false,
+      stale: filledStatus?.state === "stale",
+      version: forAngle.filter((a) => a.storageUrl).length,
       failed,
     };
   });

@@ -4,6 +4,8 @@ import {
 } from "../../db";
 import { POINT_COSTS } from "../../casting/aiService";
 import { planMintPackage, executeMintPackage, getPackageState } from "../../casting/mintPackage";
+import { planRefreshSlots, executeRefreshSlots } from "../../casting/refreshSlots";
+import { CANONICAL_VIEW_ANGLES } from "../../../shared/boardTypes";
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { generatePremiumIdentityPdf, PdfModelData } from "../../casting/pdfService";
@@ -141,11 +143,39 @@ export const castingExportRouter = router({
       });
     }),
 
-  /** Package completeness (D-39c) — R5's sheet + future picker read this. */
+  /** Package completeness (D-39c) — R5's comp card + future picker read this. */
   packageState: protectedProcedure
     .input(z.object({ modelId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       return getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+    }),
+
+  /** R5 per-tile refresh plan: slot costs + structural refusals (D-15/D-43).
+   *  The headshot always reads refusal:'identity_anchor' — never refreshable. */
+  refreshSlotsPlan: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+      angles: z.array(z.enum(CANONICAL_VIEW_ANGLES)).min(1).max(6).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      return planRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
+    }),
+
+  /** R5 refresh execute: regenerates the slots against the CURRENT headshot,
+   *  new asset rows (newest-wins), per-slot named-and-refunded failures.
+   *  Refuses the headshot, pinned, and never-attempted slots structurally. */
+  refreshSlots: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+      angles: z.array(z.enum(CANONICAL_VIEW_ANGLES)).min(1).max(6),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const rate = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+      if (!rate.allowed) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
+      }
+      await enforceDailyQuota(ctx.user.id);
+      return executeRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
     }),
 
   // Mint model on export - assigns agencyId and locks identity

@@ -323,11 +323,14 @@ export async function getModelAssets(modelId: number) {
   const db = await getDb();
   if (!db) return [];
 
+  // id DESC tiebreak: refresh writes rows seconds after mint rows — same-second
+  // createdAt ties must still resolve newest-first (the whole package read
+  // model is newest-wins).
   return await db
     .select()
     .from(modelAssets)
     .where(eq(modelAssets.modelId, modelId))
-    .orderBy(desc(modelAssets.createdAt));
+    .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
 }
 
 export async function getModelAssetByView(modelId: number, viewType: string) {

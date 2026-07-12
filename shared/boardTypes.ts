@@ -14,14 +14,16 @@ export type CanonicalViewAngle =
   | "sideFull"
   | "backFull";
 
-export const CANONICAL_VIEW_ANGLES: readonly CanonicalViewAngle[] = [
+// Const tuple (not a widened array) so zod route inputs can z.enum() it —
+// one list, client/server/validation can never disagree.
+export const CANONICAL_VIEW_ANGLES = [
   "frontClose",
   "threeQuarter",
   "frontFull",
   "sideClose",
   "sideFull",
   "backFull",
-];
+] as const satisfies readonly CanonicalViewAngle[];
 
 /** The canonical identity package (D-39, ratified): face cluster locks
  *  facial identity, body cluster locks silhouette/build. */
