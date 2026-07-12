@@ -135,14 +135,17 @@ describe("mergeRecentWork", () => {
     expect(mergeRecentWork([], [], [], 12)).toEqual([]);
   });
 
-  it("excludes UNNAMED drafts — canvas candidates live on their board, not the lobby (A2b/D-42)", () => {
+  it("excludes UNNAMED casts — canvas candidates live on their board, not the lobby (A2b/D-42/F3)", () => {
     const now = new Date();
     const unnamed = { ...draftRow(7, now), name: null };
     const sentinel = { ...draftRow(8, now), name: "Draft Model" };
     const named = draftRow(9, now);
-    const result = mergeRecentWork([], [], [unnamed, sentinel, named], 12);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ tool: "casting", modelId: 9, name: "Draft 9" });
+    // Minted models arrive through the same casting source (F3) — named at
+    // mint by construction, they must survive the filter
+    const minted = { id: 10, name: "Vera", thumbnailUrl: "https://example.com/vera.png", assetCount: 4, updatedAt: now };
+    const result = mergeRecentWork([], [], [unnamed, sentinel, named, minted], 12);
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => (r.tool === "casting" ? r.modelId : -1)).sort((a, b) => a - b)).toEqual([9, 10]);
   });
 
   it("maps per-tool card fields onto the union shape", () => {

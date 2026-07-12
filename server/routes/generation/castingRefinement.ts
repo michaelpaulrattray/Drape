@@ -69,9 +69,12 @@ export const castingRefinementRouter = router({
       if (model.status !== "draft") {
         const classification = await classifyEditIdentityImpact(input.feedback);
         if (shouldRefuseIteration(model.status, classification)) {
+          // F4 copy (founder): the refusal teaches the doors — marks ARE
+          // possible at casting time (brief free text → minted identity, all
+          // views inherit) or on a draft; stage 2 (R6) designs the surface
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: `This changes who ${model.name || "this model"} is — their identity is minted. Fork instead.`,
+            message: `This changes who ${model.name || "this model"} is — their identity is minted. Fork to explore it, or include it at casting time.`,
           });
         }
       }

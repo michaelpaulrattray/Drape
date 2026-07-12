@@ -75,6 +75,10 @@
  *      (newest-wins), the ledger nets exactly the slot cost. The gate-fail
  *      refund path shares generatePackageSlot with the mint — invariant I +
  *      the refreshSlots unit tests guard it.
+ *   T. (paid — RUN_PAID_INVARIANTS incl. T; ~350cr) VC-R5 F1: a COSMETIC
+ *      iterate on a minted package passes the A1 seal, writes ONE new row
+ *      for the edited angle, and sibling views SURVIVE in the strip (the
+ *      pre-package ladder dropped them client-side; the rows were alive).
  *   I. (paid, SEPARATE mode) Forced gate failure surfaces named + refunded
  *      (D-40). Needs a server booted with BACK_VIEW_GATE_FORCE_FAIL=1 and
  *      the drive with RUN_GATE_FAIL=1 (the fail flag is server-side, out of
@@ -304,27 +308,29 @@ const addCastViaPill = async () => {
       await page.waitForSelector(".canvas-scope .grid button img", { timeout: 30000 });
     }
     // DOM click, not coordinates: the grid re-renders as thumbnails and
-    // refetches land, and a coordinate click mid-move hits nothing (burned
-    // three runs). Same handler path; C1's optimistic timing stays honest.
+    // refetches land, and a coordinate click mid-move hits nothing. One
+    // retry if the click landed on a mid-swap button (handler unbound) —
+    // C1's timing restarts at the click that actually delivers, so the
+    // optimistic-fill assertion stays honest.
     await sleep(450);
-    await page.evaluate(() => {
-      const img = document.querySelector(".canvas-scope .grid button img")!;
-      (img.closest("button") as HTMLElement).click();
-    });
-
-    // The node must show the image essentially immediately (optimistic fill)
     let filledAtMs = -1;
-    const t0 = Date.now();
-    for (let i = 0; i < 20; i++) {
-      const filled = await page.evaluate(() => {
-        const nodes = [...document.querySelectorAll(".react-flow__node")];
-        return nodes.some((n) => !!n.querySelector("img")?.getAttribute("src"));
+    for (let attempt = 0; attempt < 2 && filledAtMs < 0; attempt++) {
+      await page.evaluate(() => {
+        const img = document.querySelector(".canvas-scope .grid button img");
+        (img?.closest("button") as HTMLElement | undefined)?.click();
       });
-      if (filled) {
-        filledAtMs = Date.now() - t0;
-        break;
+      const t0 = Date.now();
+      for (let i = 0; i < 24; i++) {
+        const filled = await page.evaluate(() => {
+          const nodes = [...document.querySelectorAll(".react-flow__node")];
+          return nodes.some((n) => !!n.querySelector("img")?.getAttribute("src"));
+        });
+        if (filled) {
+          filledAtMs = Date.now() - t0;
+          break;
+        }
+        await sleep(50);
       }
-      await sleep(50);
     }
     check("C1 library pick fills node optimistically (<800ms)", filledAtMs >= 0 && filledAtMs < 800, `${filledAtMs}ms`);
 
@@ -962,6 +968,30 @@ let seededItemId = 0;
       check(
         "N4 filled tiles are image-only at rest (no text, D-29)",
         filled.every((t) => t.text === ""),
+      );
+
+      // N5 (VC-R5 F2): the out-pin must be genuinely VISIBLE — it once
+      // rendered as a white sliver clipped by the shell's overflow-hidden
+      // and the founder couldn't find it after being told where it was
+      const pin = await page.evaluate((sel: string) => {
+        const p = document.querySelector(`${sel} .cast-out-pin`) as HTMLElement | null;
+        if (!p) return null;
+        const r = p.getBoundingClientRect();
+        const node = document.querySelector(sel)!.getBoundingClientRect();
+        const cs = getComputedStyle(p);
+        return {
+          w: r.width,
+          visible: cs.opacity !== "0" && cs.display !== "none" && r.width >= 8,
+          // fully rendered: the pin's box is not clipped to a sliver — its
+          // center sits at the node's right edge with both halves drawable
+          atEdge: Math.abs(r.x + r.width / 2 - node.right) < r.width,
+          bordered: cs.borderTopWidth !== "0px",
+        };
+      }, sheetNodeSel);
+      check(
+        "N5 out-pin renders visible at the card edge (F2 — never a clipped sliver)",
+        !!pin && pin.visible && pin.atEdge && pin.bordered,
+        JSON.stringify(pin),
       );
     }
   }
@@ -1827,6 +1857,103 @@ if (!paidEnabled("R")) {
       const net = balBefore - (balAfter as Array<{ balance: number }>)[0].balance;
       check("R4 ledger nets exactly the slot cost (300)", net === 300, `net=${net}`);
     }
+  }
+}
+
+// ── Invariant T: cosmetic iterate keeps every package slot — VC-R5 F1 ──────
+// The pre-package ladder dropped sibling views from the CLIENT session on
+// iterate success (rows were always alive — the strip lied against the
+// ledger). Paid (~350cr): open the seeded minted package's environment,
+// iterate the active view cosmetically, assert the strip keeps its slots
+// and the ledger grew by exactly one row for the edited angle.
+if (!paidEnabled("T")) {
+  console.log("SKIP  T — paid invariant (one cosmetic iterate; ~350 credits)");
+} else if (!seededItemId || !seededModelId) {
+  console.log("SKIP  T — no seeded package this run");
+} else {
+  await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+  await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
+  await sleep(2000);
+  const tSel = `.react-flow__node[data-id="item-${seededItemId}"]`;
+  for (let i = 0; i < 12; i++) {
+    const rect = await page.evaluate((sel: string) => {
+      const n = document.querySelector(sel);
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width };
+    }, tSel);
+    if (!rect || (rect.w >= 240 && rect.w <= 420)) break;
+    await page.mouse.move(rect.x, rect.y);
+    await page.mouse.wheel({ deltaY: rect.w < 240 ? -240 : 240 });
+    await sleep(350);
+  }
+  const tLabel = await page.evaluate((sel: string) => {
+    const n = document.querySelector(sel);
+    if (!n) return null;
+    const r = n.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + 8 };
+  }, tSel);
+  await page.mouse.click(tLabel!.x, tLabel!.y);
+  await sleep(500);
+  const tEditOpened = await clickByText("Edit");
+  const tHydrated = tEditOpened && (await waitEditHydrated());
+  check("T0 environment opened + hydrated on the seeded package", tHydrated);
+  if (tHydrated) {
+    // Small-thumb census: the view strip's thumbnails (the F1 casualty)
+    const countThumbs = () =>
+      page.evaluate(
+        () =>
+          [...document.querySelectorAll("img")].filter((img) => {
+            const r = img.getBoundingClientRect();
+            return r.width > 8 && r.width < 100 && r.height > 8;
+          }).length,
+      );
+    const thumbsBefore = await countThumbs();
+    const [rowsB] = await conn.execute(
+      `SELECT COUNT(*) AS n FROM model_assets WHERE modelId = ? AND viewType = 'frontClose' AND storageUrl != ''`,
+      [seededModelId],
+    );
+    const frontRowsBefore = (rowsB as Array<{ n: number }>)[0].n;
+    const [balB] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const tBalBefore = (balB as Array<{ balance: number }>)[0].balance;
+
+    // "/" focuses the refine bar; a cosmetic edit passes the A1 seal
+    await page.keyboard.press("/");
+    await sleep(300);
+    await page.keyboard.type("brighten the lighting slightly", { delay: 15 });
+    await page.keyboard.press("Enter");
+    console.log("   T: iterating (real, ~350 credits)...");
+    let newRow = false;
+    for (let i = 0; i < 90 && !newRow; i++) {
+      await sleep(1000);
+      const [rowsA] = await conn.execute(
+        `SELECT COUNT(*) AS n FROM model_assets WHERE modelId = ? AND viewType = 'frontClose' AND storageUrl != ''`,
+        [seededModelId],
+      );
+      newRow = (rowsA as Array<{ n: number }>)[0].n === frontRowsBefore + 1;
+    }
+    check("T1 cosmetic iterate allowed on minted + wrote ONE new row (D-53)", newRow);
+    await sleep(1500);
+    const thumbsAfter = await countThumbs();
+    check(
+      "T2 sibling views SURVIVE the iterate (the strip never lies against the ledger)",
+      thumbsAfter >= thumbsBefore,
+      `thumbs ${thumbsBefore} → ${thumbsAfter}`,
+    );
+    const tPkg = await page.evaluate(async (mid: number) => {
+      const res = await fetch(
+        `/api/trpc/generation.packageState?input=${encodeURIComponent(JSON.stringify({ json: { modelId: mid } }))}`,
+        { credentials: "include" },
+      );
+      const data = await res.json();
+      const slots = data?.result?.data?.json?.slots ?? [];
+      return slots.filter((s: { filled: boolean }) => s.filled).length;
+    }, seededModelId);
+    check("T3 packageState still reports every slot filled", tPkg === 4, `${tPkg} filled`);
+    const [balA] = await conn.execute(`SELECT balance FROM points WHERE userId = ?`, [userId]);
+    const tNet = tBalBefore - (balA as Array<{ balance: number }>)[0].balance;
+    check("T4 ledger nets exactly the iterate cost (350)", tNet === 350, `net=${tNet}`);
+    await closeTakeoverCleanly();
   }
 }
 

@@ -319,30 +319,26 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
 
       <NodeLabelRow type={typeLabel} engine={engine} selected={selected} />
 
+      {/* Output pin — the lineage anchor AND the D-36a spawn gesture: drag
+          into empty canvas to pop a package view out pre-connected (R5).
+          Monochrome (D-7): outputs have no type color; the typed hues stay
+          on inputs. Lives OUTSIDE the shell (whose overflow-hidden clipped it
+          to an invisible white sliver — VC-R5 F2); grows + inks on node
+          hover/selection (discoverability, promoted from the R6 log). */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="out"
+        isConnectable={modelReady && !!data.imageUrl}
+        className="cast-out-pin"
+        style={{ opacity: modelReady && data.imageUrl ? 1 : 0 }}
+      />
+
       <CanvasNodeShell selected={selected}>
         <ConnectionDot kind="prompt" id="prompt-in" top={22} />
         {isRoot && !isLibrary && <ConnectionDot kind="image" id="ref-in" top={40} />}
-        {/* Output pin — the lineage anchor AND the D-36a spawn gesture: drag
-            into empty canvas to pop a package view out pre-connected (R5).
-            Monochrome (D-7): outputs have no type color; the typed hues stay
-            on inputs. Hidden until the node has output to offer. */}
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="out"
-          isConnectable={modelReady && !!data.imageUrl}
-          className="!transform-none"
-          style={{
-            top: 40,
-            right: -5,
-            width: 10,
-            height: 10,
-            background: "var(--color-canvas-surface)",
-            border: "1.5px solid var(--color-canvas-border-strong)",
-            borderRadius: "50%",
-            opacity: modelReady && data.imageUrl ? 1 : 0,
-          }}
-        />
+        {/* (The out-pin renders OUTSIDE this shell — its overflow-hidden was
+            clipping the pin to an invisible white sliver, VC-R5 F2) */}
         {/* Input anchor (R5): lineage edges land here — invisible; the typed
             ConnectionDots above are pass-2 wiring surfaces, not lineage ends */}
         <Handle type="target" position={Position.Left} id="in" style={{ opacity: 0, left: -2 }} isConnectable={false} />

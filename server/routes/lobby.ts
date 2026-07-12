@@ -2,24 +2,34 @@
  * Lobby Router — unified home-base queries for /app.
  *
  * recentWork unions the user's resumable work across tools into one
- * tool-tagged feed: canvas boards, wardrobe sessions, and draft casts.
- * Future tools (scenery, editorial) join the union here.
+ * tool-tagged feed: canvas boards, wardrobe sessions, and NAMED casts
+ * (VC-R5 F3: naming happens at mint, which also flips status past 'draft' —
+ * a drafts-only source lost every cast the moment the user named it, and
+ * the D-42 unnamed-filter then emptied the rest; the honest source is named
+ * casting work regardless of status). Future tools join the union here.
  */
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getUserBoards } from "../db/boards";
 import { getRecentUserSessions } from "../db/wardrobe";
-import { getUserDraftModelsWithThumbnail } from "../db/models";
+import { getUserDraftModelsWithThumbnail, getUserMintedModelsWithThumbnail } from "../db/models";
 import { DRAFT_AUTO_NAME } from "../lib/boardOps";
 
 // 8 = two clean rows at the lobby's 4-across laptop layout; Home is a
 // resume surface, the full archives live in Boards and the library pages.
 const DEFAULT_LIMIT = 8;
-const DRAFTS_LIMIT = 6;
+const CASTS_LIMIT = 6; // per casting source (named drafts / minted)
 
 type BoardRow = Awaited<ReturnType<typeof getUserBoards>>[number];
 type WardrobeSessionRow = Awaited<ReturnType<typeof getRecentUserSessions>>[number];
-type DraftModelRow = Awaited<ReturnType<typeof getUserDraftModelsWithThumbnail>>[number];
+/** The casting feed row — named drafts and minted models both map onto it. */
+type CastFeedRow = {
+  id: number;
+  name: string | null;
+  thumbnailUrl: string;
+  assetCount: number;
+  updatedAt: Date;
+};
 
 export type RecentWorkItem =
   | {
@@ -56,16 +66,15 @@ export type RecentWorkItem =
 export function mergeRecentWork(
   boards: BoardRow[],
   sessions: WardrobeSessionRow[],
-  drafts: DraftModelRow[],
+  casts: CastFeedRow[],
   limit: number,
 ): RecentWorkItem[] {
-  // A2(b), founder-ruled at VC-R5 follow-up: UNNAMED drafts stay out of the
-  // feed — every canvas cast/fork/variation candidate is an unnamed draft
-  // (D-42 made unnamed the candidate marker), and six candidates were
-  // displacing the boards/sessions the user actually returns to. Candidates
-  // live on their board; NAMED drafts are deliberate works-in-progress and
-  // stay. The Models library is untouched.
-  const namedDrafts = drafts.filter((d) => d.name && d.name !== DRAFT_AUTO_NAME);
+  // A2(b) as corrected by VC-R5 F3: the feed's casting rows are NAMED casts —
+  // named drafts and minted models alike. Unnamed drafts (D-42's candidate
+  // marker — every canvas cast/fork/variation) stay out: candidates live on
+  // their board, and six of them were displacing the boards/sessions the
+  // user actually returns to. The Models library is untouched.
+  const namedCasts = casts.filter((c) => c.name && c.name !== DRAFT_AUTO_NAME);
   const items: RecentWorkItem[] = [
     ...boards.map((b): RecentWorkItem => ({
       tool: "canvas",
@@ -85,13 +94,13 @@ export function mergeRecentWork(
       savedLookCount: s.savedLookCount,
       updatedAt: s.updatedAt,
     })),
-    ...namedDrafts.map((d): RecentWorkItem => ({
+    ...namedCasts.map((c): RecentWorkItem => ({
       tool: "casting",
-      modelId: d.id,
-      name: d.name,
-      thumbnailUrl: d.thumbnailUrl,
-      assetCount: d.assetCount,
-      updatedAt: d.updatedAt,
+      modelId: c.id,
+      name: c.name,
+      thumbnailUrl: c.thumbnailUrl,
+      assetCount: c.assetCount,
+      updatedAt: c.updatedAt,
     })),
   ];
 
@@ -108,11 +117,24 @@ export const lobbyRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? DEFAULT_LIMIT;
-      const [boards, sessions, drafts] = await Promise.all([
+      const [boards, sessions, drafts, minted] = await Promise.all([
         getUserBoards(ctx.user.id, "active"),
         getRecentUserSessions(ctx.user.id),
-        getUserDraftModelsWithThumbnail(ctx.user.id, DRAFTS_LIMIT),
+        getUserDraftModelsWithThumbnail(ctx.user.id, CASTS_LIMIT),
+        getUserMintedModelsWithThumbnail(ctx.user.id, CASTS_LIMIT),
       ]);
-      return mergeRecentWork(boards, sessions, drafts, limit);
+      // One casting source: named drafts + minted models (F3). The merge's
+      // named-filter drops unnamed candidates; minted are named at mint.
+      const casts: CastFeedRow[] = [
+        ...drafts,
+        ...minted.map((m) => ({
+          id: m.id,
+          name: m.name,
+          thumbnailUrl: m.thumbnailUrl,
+          assetCount: m.assetCount,
+          updatedAt: m.updatedAt,
+        })),
+      ];
+      return mergeRecentWork(boards, sessions, casts, limit);
     }),
 });

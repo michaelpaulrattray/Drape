@@ -184,6 +184,7 @@ export async function getUserMintedModelsWithThumbnail(
       masterPrompt: models.masterPrompt,
       mintedAt: models.mintedAt,
       createdAt: models.createdAt,
+      updatedAt: models.updatedAt,
     })
     .from(models)
     .where(and(eq(models.userId, userId), eq(models.status, "active")))
@@ -205,7 +206,11 @@ export async function getUserMintedModelsWithThumbnail(
 
   // Build a map of modelId -> frontFull URL (prefer frontFull, fallback to frontClose)
   const thumbMap = new Map<number, string>();
+  const assetViewTypes = new Map<number, Set<string>>();
   for (const asset of assets) {
+    if (!asset.storageUrl) continue; // failed-slot markers aren't thumbnails
+    if (!assetViewTypes.has(asset.modelId)) assetViewTypes.set(asset.modelId, new Set());
+    assetViewTypes.get(asset.modelId)!.add(asset.viewType);
     if (asset.viewType === "frontFull") {
       thumbMap.set(asset.modelId, asset.storageUrl);
     } else if (asset.viewType === "frontClose" && !thumbMap.has(asset.modelId)) {
@@ -223,6 +228,8 @@ export async function getUserMintedModelsWithThumbnail(
       masterPrompt: m.masterPrompt,
       thumbnailUrl: thumbMap.get(m.id)!,
       mintedAt: m.mintedAt,
+      updatedAt: m.updatedAt,
+      assetCount: assetViewTypes.get(m.id)?.size ?? 0,
     }));
 }
 

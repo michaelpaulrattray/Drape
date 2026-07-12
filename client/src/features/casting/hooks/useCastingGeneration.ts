@@ -355,14 +355,12 @@ export function useCastingGeneration({
           storageUrl: result.imageUrl,
         };
         
-        let newAssets = [...currentAssets];
-        if (activeView === 'frontClose') {
-          newAssets = newAssets.filter(a => a.viewType === 'frontClose');
-        } else if (activeView === 'frontFull') {
-          newAssets = newAssets.filter(a => ['frontClose', 'frontFull'].includes(a.viewType));
-        }
-        
-        newAssets = [...newAssets.filter((a) => a.viewType !== activeView), newAsset];
+        // D-53: every change to a slot is a new ledger row for THAT slot —
+        // siblings STAY. (The pre-package ladder dropped downstream views
+        // here on the theory they'd be regenerated; post-D-46 that made the
+        // strip lie against the ledger — the rows were alive, VC-R5 F1.
+        // Divergence marking is the R6 stale-writer's job, never removal.)
+        const newAssets = [...currentAssets.filter((a) => a.viewType !== activeView), newAsset];
         setCurrentAssets(newAssets);
         pushHistory(newAssets);
         
