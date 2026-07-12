@@ -3,11 +3,16 @@
  * Canvas only, never the refinement studio. The Add action opens the node
  * menu (host decides how); geometry accommodates future tool entries
  * (video, pass 4) without redesign — nothing is sized to the icon count.
+ *
+ * VC-R4 ruling R1: the pointer splits into Select (marquee-capable) and
+ * Hand/Pan as a left cluster; Space temporarily switches to hand (React
+ * Flow's panActivationKeyCode). Frames removed per ruling R3 — they return
+ * at pass 3 as export units (D-20) wearing their real job.
  */
-import { Plus, MousePointer2, Type, Square, MoreHorizontal } from "lucide-react";
+import { Plus, MousePointer2, Hand, Type, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type PillTool = "add" | "select" | "note" | "frame";
+export type PillTool = "add" | "select" | "hand" | "note";
 
 export interface FloatingToolPillProps {
   activeTool: Exclude<PillTool, "add">;
@@ -18,14 +23,16 @@ export interface FloatingToolPillProps {
 export function FloatingToolPill({ activeTool, onSelectTool, onMore }: FloatingToolPillProps) {
   return (
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-0.5 p-1 bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-pill">
-      <ToolButton onClick={() => onSelectTool("add")} label="Add">
-        <Plus className="w-3 h-3" strokeWidth={1.8} />
-      </ToolButton>
+      {/* Pointer cluster (R1): Select marquees, Hand pans; Space = temporary hand */}
       <ToolButton active={activeTool === "select"} onClick={() => onSelectTool("select")} label="Select">
         <MousePointer2 className="w-3 h-3" strokeWidth={1.6} />
       </ToolButton>
-      <ToolButton active={activeTool === "frame"} onClick={() => onSelectTool("frame")} label="Frame">
-        <Square className="w-3 h-3" strokeWidth={1.6} />
+      <ToolButton active={activeTool === "hand"} onClick={() => onSelectTool("hand")} label="Hand — pan (hold Space)">
+        <Hand className="w-3 h-3" strokeWidth={1.6} />
+      </ToolButton>
+      <span className="w-px h-3.5 bg-canvas-border mx-1" aria-hidden />
+      <ToolButton onClick={() => onSelectTool("add")} label="Add">
+        <Plus className="w-3 h-3" strokeWidth={1.8} />
       </ToolButton>
       <ToolButton active={activeTool === "note"} onClick={() => onSelectTool("note")} label="Note">
         <Type className="w-3 h-3" strokeWidth={1.6} />

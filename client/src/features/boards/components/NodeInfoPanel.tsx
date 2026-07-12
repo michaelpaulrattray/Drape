@@ -34,6 +34,9 @@ type PrefsObj = Record<string, unknown>;
 const PREF_LABELS: Record<string, string> = {
   gender: 'Gender',
   ethnicity: 'Ethnicity',
+  ethnicityBlend: 'Ethnicity Blend',
+  castingBrand: 'Brand',
+  castingVibe: 'Vibe',
   age: 'Age',
   bodyType: 'Body Type',
   hairStyle: 'Hair Style',
@@ -47,6 +50,34 @@ const PREF_LABELS: Record<string, string> = {
   build: 'Build',
   expression: 'Expression',
 };
+
+// Never rendered as spec rows: huge blobs and dev-side state (D-41 — internal
+// identifiers must not leak into copy)
+const HIDDEN_PREF_KEYS = new Set(['referenceImage', 'engineChoice']);
+
+function isBlendArray(v: unknown): v is Array<{ name: string; pct: number }> {
+  return (
+    Array.isArray(v) &&
+    v.length > 0 &&
+    v.every((e) => !!e && typeof e === 'object' && 'name' in e && 'pct' in e)
+  );
+}
+
+/** Human-readable spec values (VC-R4 fix 2) — raw JSON is the fallback of
+ *  last resort, never the rendering for known shapes. */
+function formatPrefValue(key: string, val: unknown): string {
+  if (isBlendArray(val)) {
+    return val.map((e) => `${e.name} ${Math.round(Number(e.pct))}%`).join(' · ');
+  }
+  if (key === 'castingVibe' && val && typeof val === 'object' && !Array.isArray(val)) {
+    // {commercial, editorial, runway} as fractions of 1
+    return Object.entries(val as Record<string, unknown>)
+      .filter(([, n]) => typeof n === 'number' && n > 0.005)
+      .map(([k, n]) => `${k.charAt(0).toUpperCase()}${k.slice(1)} ${Math.round((n as number) * 100)}%`)
+      .join(' · ');
+  }
+  return typeof val === 'object' ? JSON.stringify(val) : String(val ?? '—');
+}
 
 function formatDate(d: Date | string | null | undefined): string {
   if (!d) return '—';
@@ -108,16 +139,6 @@ export function NodeInfoPanel({ itemId, position, onClose }: NodeInfoPanelProps)
 
   const prefs = (data?.model?.preferences ?? {}) as PrefsObj;
   const schema = (data?.model?.technicalSchema ?? {}) as PrefsObj;
-
-  const copyPrompt = async () => {
-    if (!data?.model?.masterPrompt) return;
-    try {
-      await navigator.clipboard.writeText(data.model.masterPrompt);
-      toast.success('Master prompt copied');
-    } catch {
-      toast.error('Failed to copy');
-    }
-  };
 
   return (
     <div
@@ -222,80 +243,37 @@ export function NodeInfoPanel({ itemId, position, onClose }: NodeInfoPanelProps)
                     )}
                   </Section>
 
-                  {/* Specs from preferences */}
+                  {/* Specs from preferences — human-readable (VC-R4 fix 2) */}
                   {Object.keys(prefs).length > 0 && (
                     <Section title="Specs">
                       {Object.entries(prefs).map(([key, val]) => {
+                        if (HIDDEN_PREF_KEYS.has(key)) return null;
                         const label = PREF_LABELS[key] ?? key;
-                        const display = typeof val === 'object' ? JSON.stringify(val) : String(val ?? '—');
-                        if (!val || display === '—' || display === 'null' || display === 'undefined') return null;
+                        const display = formatPrefValue(key, val);
+                        if (!val || !display || display === '—' || display === 'null' || display === 'undefined') return null;
                         return <InfoRow key={key} label={label} value={display} />;
                       })}
                     </Section>
                   )}
 
-                  {/* Technical schema highlights */}
+                  {/* Technical schema — the JSON master prompt, copyable in
+                      full (VC-R4 fix 2), same affordance as Master Prompt */}
                   {Object.keys(schema).length > 0 && (
-                    <Section title="Technical Schema">
-                      {Object.entries(schema).slice(0, 8).map(([key, val]) => {
-                        const display = typeof val === 'object' ? JSON.stringify(val).substring(0, 60) : String(val ?? '—');
-                        if (!val || display === '—') return null;
-                        return <InfoRow key={key} label={key} value={display} />;
-                      })}
-                    </Section>
+                    <CopyableBlock
+                      title="Technical Schema"
+                      copyLabel="Copy technical schema"
+                      copiedToast="Technical schema copied"
+                      content={JSON.stringify(schema, null, 2)}
+                    />
                   )}
 
                   {/* Master prompt */}
-                  <div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: 6,
-                      }}
-                    >
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Master Prompt
-                      </span>
-                      <button
-                        onClick={copyPrompt}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: '#999',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          fontSize: 11,
-                          padding: '2px 4px',
-                          borderRadius: 4,
-                        }}
-                        title="Copy master prompt"
-                      >
-                        <Copy size={12} />
-                        Copy
-                      </button>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        lineHeight: 1.6,
-                        color: '#444',
-                        background: 'rgba(0, 0, 0, 0.03)',
-                        borderRadius: 8,
-                        padding: '10px 12px',
-                        maxHeight: 140,
-                        overflowY: 'auto',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                      }}
-                    >
-                      {data.model.masterPrompt || '—'}
-                    </div>
-                  </div>
+                  <CopyableBlock
+                    title="Master Prompt"
+                    copyLabel="Copy master prompt"
+                    copiedToast="Master prompt copied"
+                    content={data.model.masterPrompt || ''}
+                  />
                 </>
               )}
 
@@ -317,6 +295,75 @@ export function NodeInfoPanel({ itemId, position, onClose }: NodeInfoPanelProps)
 }
 
 /* ── Sub-components ───────────────────────────────────────── */
+
+/** Titled mono block with a Copy affordance — Master Prompt and Technical
+ *  Schema share this exact surface (VC-R4 fix 2). */
+function CopyableBlock({
+  title,
+  content,
+  copyLabel,
+  copiedToast,
+}: {
+  title: string;
+  content: string;
+  copyLabel: string;
+  copiedToast: string;
+}) {
+  const copy = async () => {
+    if (!content) return;
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success(copiedToast);
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {title}
+        </span>
+        <button
+          onClick={copy}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#999',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 11,
+            padding: '2px 4px',
+            borderRadius: 4,
+          }}
+          title={copyLabel}
+        >
+          <Copy size={12} />
+          Copy
+        </button>
+      </div>
+      <div
+        style={{
+          fontSize: 12,
+          lineHeight: 1.6,
+          color: '#444',
+          background: 'rgba(0, 0, 0, 0.03)',
+          borderRadius: 8,
+          padding: '10px 12px',
+          maxHeight: 140,
+          overflowY: 'auto',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        }}
+      >
+        {content || '—'}
+      </div>
+    </div>
+  );
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

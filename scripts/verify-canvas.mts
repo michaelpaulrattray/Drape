@@ -42,6 +42,9 @@
  *      restore path and both survive the server reconcile.
  *   K. Duplicate (R4, free): selection raises the toolbar; Duplicate lands
  *      an optimistic copy that persists with the same image.
+ *   M. Marquee + Esc (VC-R4 fix 5 / D-47, free): Select tool is default —
+ *      drag on empty canvas box-selects (partial intersection); Esc at the
+ *      bottom of the layer stack clears the selection.
  *   L. (paid — RUN_PAID_INVARIANTS=1) Variations landing (R4): the popover
  *      total is plan-derived (2 × castingImage); two optimistic temps render
  *      immediately, never vanish, land as sibling drafts with variant_of
@@ -720,6 +723,26 @@ if (!(await filledNode())?.img) {
       check("K3 duplicate persisted (server row with the same image)", copies >= 2 && (await nodeCount()) > countBefore, `copies=${copies}`);
     }
   }
+}
+
+// ── Invariant M: marquee select + Esc clears (VC-R4 fix 5 / D-47) — FREE ───
+// Select tool is default: drag on empty canvas draws a selection box
+// (partial intersection); Esc at the bottom of the layer stack clears it.
+{
+  // Start from an empty corner, sweep across the board region
+  await page.mouse.move(60, 180);
+  await page.mouse.down();
+  await page.mouse.move(1500, 900, { steps: 10 });
+  await page.mouse.up();
+  await sleep(400);
+  const selectedCount = () =>
+    page.evaluate(() => document.querySelectorAll(".react-flow__node.selected").length);
+  const afterMarquee = await selectedCount();
+  check("M1 marquee drag selects nodes (Select tool default)", afterMarquee >= 2, `${afterMarquee} selected`);
+  await page.keyboard.press("Escape");
+  await sleep(300);
+  const afterEsc = await selectedCount();
+  check("M2 Esc clears the selection (bottom of the layer stack)", afterEsc === 0, `${afterEsc} selected`);
 }
 
 // ── Invariant F: fork landing stability — RUN_PAID_INVARIANTS=1 ────────────

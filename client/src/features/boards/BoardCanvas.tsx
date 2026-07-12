@@ -15,6 +15,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   Background,
+  SelectionMode,
   useNodesState,
   useEdgesState,
   type Node,
@@ -95,6 +96,9 @@ type BoardCanvasProps = {
   onClearSelectionRef?: (clear: () => void) => void;
   /** Move-undo restore: set node positions imperatively */
   onSetPositionsRef?: (setter: (moves: Array<{ itemId: number; x: number; y: number }>) => void) => void;
+  /** VC-R4 ruling R1: 'select' = drag-on-empty marquees (Space or middle/right
+   *  drag pans); 'hand' = drag pans. */
+  pointerTool?: 'select' | 'hand';
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -267,6 +271,7 @@ export function BoardCanvas({
   onSelectAllRef,
   onClearSelectionRef,
   onSetPositionsRef,
+  pointerTool = 'select',
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -525,9 +530,19 @@ export function BoardCanvas({
         maxZoom={3}
         deleteKeyCode={null}
         zoomOnScroll
-        selectionOnDrag={false}
+        // R1 tool separation (VC-R4): Select = drag-on-empty marquees, pan
+        // via Space (panActivationKeyCode) or middle/right drag; Hand = drag
+        // pans. Partial-intersection marquee — touching a card selects it.
+        selectionOnDrag={pointerTool === 'select'}
+        panOnDrag={pointerTool === 'hand' ? true : [1, 2]}
+        panActivationKeyCode="Space"
+        selectionMode={SelectionMode.Partial}
         selectNodesOnDrag={false}
         multiSelectionKeyCode={['Meta', 'Control']}
+        // Click-vs-drag tolerance (VC-R4 fix 4): a few px of jitter is still
+        // a click — selection must never be eaten by a 2px drag
+        nodeDragThreshold={4}
+        paneClickDistance={4}
         // The Decision-7 keyboard model owns arrows/delete/Esc at the window
         // level — React Flow's built-in arrow-move would double-nudge
         disableKeyboardA11y

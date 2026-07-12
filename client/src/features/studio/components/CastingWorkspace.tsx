@@ -176,6 +176,11 @@ export function CastingWorkspace({
           if (model.masterPrompt) {
             genStore.setCurrentMasterPrompt(model.masterPrompt);
           }
+          // Spec tab's JSON view reads this — hydration missed it (VC-R4
+          // fix 3; the other hydration paths already set it)
+          genStore.setCurrentTechnicalSchema(
+            ((model as any).technicalSchema as Record<string, unknown> | null) ?? null,
+          );
         }
         // Restore form preferences so ControlPanel shows actual model identity
         if ((model as any).preferences) {

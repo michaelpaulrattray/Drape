@@ -8,9 +8,11 @@
  *  - Appears on "+" click or right-click on canvas
  */
 import { useEffect, useRef, useState } from 'react';
-import { User, Shirt, Upload, StickyNote, Image, Search, Frame } from 'lucide-react';
+import { User, Shirt, Upload, StickyNote, Image, Search } from 'lucide-react';
 
-export type AddNodeAction = 'cast' | 'wardrobe' | 'upload' | 'note' | 'reference' | 'frame';
+// Frames removed per VC-R4 ruling R3 — they return at pass 3 as export units
+// (D-20) wearing their real job. Existing frame nodes still render.
+export type AddNodeAction = 'cast' | 'wardrobe' | 'upload' | 'note' | 'reference';
 
 type MenuItem = {
   action: AddNodeAction;
@@ -37,12 +39,6 @@ const MENU_ITEMS: MenuItem[] = [
     label: 'Add Reference',
     icon: <Image className="w-[15px] h-[15px]" />,
     group: 'create',
-  },
-  {
-    action: 'frame',
-    label: 'Add Frame',
-    icon: <Frame className="w-[15px] h-[15px]" />,
-    group: 'media',
   },
   {
     action: 'note',

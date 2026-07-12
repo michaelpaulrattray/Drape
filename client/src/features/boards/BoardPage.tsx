@@ -47,7 +47,8 @@ function BoardPageImpl() {
   const boardId = params?.id ? parseInt(params.id, 10) : NaN;
 
   const [activePanel, setActivePanel] = useState<ToolPanelId>(null);
-  const [activeTool, setActiveTool] = useState<CanvasToolId>('select');
+  // 'hand' joins the legacy tool ids per VC-R4 ruling R1 (Select/Hand split)
+  const [activeTool, setActiveTool] = useState<CanvasToolId | 'hand'>('select');
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [editorItemId, setEditorItemId] = useState<number | null>(null);
   const [addNodeMenu, setAddNodeMenu] = useState<{ x: number; y: number } | null>(null);
@@ -91,8 +92,10 @@ function BoardPageImpl() {
   // Cmd+C/V alias Duplicate for same-board (D-39 ratification line 5)
   const clipboardRef = useRef<number[]>([]);
 
-  // Placement mode: 'note' or 'frame' — cursor becomes crosshair, next pane click places the node
-  const [placementMode, setPlacementMode] = useState<'note' | 'frame' | null>(null);
+  // Placement mode: 'note' — cursor becomes crosshair, next pane click places
+  // the node. (Frames retired from the tools per VC-R4 ruling R3 — they
+  // return at pass 3 as export units; existing frame nodes still render.)
+  const [placementMode, setPlacementMode] = useState<'note' | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -984,16 +987,6 @@ function BoardPageImpl() {
           positionX: flowPos.x,
           positionY: flowPos.y,
         });
-      } else if (placementMode === 'frame') {
-        addItemMutation.mutate({
-          boardId,
-          type: 'frame',
-          label: 'Untitled Frame',
-          width: 600,
-          height: 400,
-          positionX: flowPos.x,
-          positionY: flowPos.y,
-        });
       }
 
       setPlacementMode(null);
@@ -1100,10 +1093,6 @@ function BoardPageImpl() {
           setActivePanel('wardrobe');
           setActiveTool('wardrobe');
           break;
-        case 'frame':
-          setPlacementMode('frame');
-          setActiveTool('frame');
-          break;
         case 'note':
           setPlacementMode('note');
           setActiveTool('note');
@@ -1120,14 +1109,15 @@ function BoardPageImpl() {
   );
 
   const handleToolSelect = useCallback(
-    (tool: CanvasToolId) => {
+    (tool: CanvasToolId | 'hand') => {
       setActiveTool(tool);
       // Clear placement mode when switching to a non-placement tool
-      if (tool !== 'note' && tool !== 'frame') {
+      if (tool !== 'note') {
         setPlacementMode(null);
       }
       switch (tool) {
         case 'select':
+        case 'hand': // R1 pointer cluster — pan tool, no panel
           setActivePanel(null);
           break;
         case 'cast':
@@ -1142,9 +1132,6 @@ function BoardPageImpl() {
           break;
         case 'note':
           setPlacementMode('note');
-          break;
-        case 'frame':
-          setPlacementMode('frame');
           break;
       }
     },
@@ -1388,13 +1375,14 @@ function BoardPageImpl() {
             onSetPositionsRef={(setter) => {
               setPositionsRef.current = setter;
             }}
+            pointerTool={activeTool === 'hand' ? 'hand' : 'select'}
             className="absolute inset-0"
           >
             {/* Bottom canvas UI — rendered inside ReactFlow for context access */}
             <CanvasZoomControls />
             <FloatingToolPill
               activeTool={
-                activeTool === 'note' ? 'note' : activeTool === 'frame' ? 'frame' : 'select'
+                activeTool === 'note' ? 'note' : activeTool === 'hand' ? 'hand' : 'select'
               }
               onSelectTool={(tool: PillTool) => {
                 if (tool === 'add') {

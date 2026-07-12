@@ -281,6 +281,31 @@ Follow-up batch after the founder drove the R1 takeover. Items 1–2 (optimistic
 
 **R6 log:** `FailedSlot`'s amber is a **named third hue**, unsanctioned by any ruling — defensible pre-restyle (a failure genuinely isn't ink-or-red), but it needs a verdict when the environment restyle sets the palette.
 
+## Group 6f — VC-R4 rulings (founder, 2026-07-12)
+
+VC-R4 verdict: **the grammar passes** — toolbar, fork-beside, delete/undo, keyboard, Esc stack. Reference screenshots in `docs/specs/references/` (`fix2-`, `fix3-`, `fix5-`, `ruling1-`, `logitem-` prefixes). Five fixes shipped same day: **(1)** takeover balance labeled "{n} credits" + hairline-separated from the action cluster (it read as the action's price — D-15/D-45); **(2)** Info panel formats human fields (`ethnicityBlend` → "South Asian 100%", `castingVibe` → percentage blend; `referenceImage`/`engineChoice` never rendered — D-41 leak guard) and Technical Schema gets the same Copy affordance as Master Prompt; **(3)** Spec tab rendered literal "null" — edit-session hydration never set `currentTechnicalSchema` (the other hydration paths did); plus a graceful no-spec state for pre-schema models; **(4)** click-vs-drag threshold (`nodeDragThreshold`/`paneClickDistance` = 4px) — tiny drags were eating selection clicks; **(5)** marquee select via ruling R1.
+
+**Delete-cascade semantics CONFIRMED as implemented (not a bug):** post-D-46, views are model-level and a board root is a placement — deleting it soft-deletes silently with Undo. The red cascade dialog keys off `generated_from_cast` edges (client prediction and server unit alike), which cannot exist until R5 pop-outs; when R5 materializes pop-outs with those edges, the dialog activates with no further wiring.
+
+### D-47 — Pointer splits into Select and Hand *(ruling R1)*
+
+**What:** two pointer tools as a left cluster on the pill (ElevenLabs reference: `ruling1-elevenlabs-tool-separation-select-hand-comment.png`): **Select** — drag on empty canvas draws a marquee (partial-intersection selection; middle/right-drag still pans); **Hand** — drag pans. **Space held = temporary hand** (canvas convention; React Flow `panActivationKeyCode`). Resolves fix 5's pan/marquee conflict; Select is the default tool.
+
+**Affects:** `FloatingToolPill` (pointer cluster), `BoardCanvas` (`selectionOnDrag`/`panOnDrag`/`SelectionMode.Partial`), DS §5.3; F Decision 7's Space+drag row now formalized as the temporary-hand.
+
+### D-48 — Variations spawn BELOW; fork spawns beside — geometry is semantics
+
+**What:** the founder withdraws his earlier "beside might feel better": beside is the FORK geometry (a different person joins the row), below is the VARIATIONS geometry (candidates of the same person). Two semantically different spawn types must not share a geometry. Revisit only at R5 if the sheet's node heights change the feel.
+
+### D-49 — Frames tool retired until pass 3 *(ruling R3)*
+
+**What:** the frames tool is removed from the pill and Add menu NOW — it was a legacy stub with no real job. Frames return at **pass 3 as export units** per the ratified frames-as-export proposal (D-20) — the tool comes back wearing its real job. Existing frame nodes keep rendering (FrameNode stays; only creation affordances are gone).
+
+### Logged for future passes (VC-R4, no build)
+
+- **Board chrome top-right cluster** — profile / assets / comments (ElevenLabs reference, `logitem-*.png`). Assets-as-persistent-library-sidebar is a pass-2/3 question; comments are collaboration-pass; **comment-click → pan/zoom-to-location** is the interaction to spec when it arrives.
+- **Board-agent capability bar** — ElevenLabs' Flows Agent located and rewrote an LLM node's prompt from the chat instruction "make the text more dramatic" (`logitem-agent-edits-node-prompt-from-chat.png`). The bar for our future board agent: the `boardState.getSnapshot` consumer must be able to read the board, locate the right node, and propose/apply edits. Extends D-36d.
+
 ### D-39 — Canonical identity package + tiered mint *(RATIFIED 2026-07-11, all lines — see ratification record below)*
 
 > **RATIFICATION RECORD (founder, 2026-07-11) — `D39_PACKAGE_ASSESSMENT.md` ratified, all lines:**

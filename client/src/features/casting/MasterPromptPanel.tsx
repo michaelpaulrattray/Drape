@@ -57,7 +57,9 @@ export function MasterPromptPanel() {
 
   const contentToCopy = specMode === 'natural'
     ? currentMasterPrompt
-    : JSON.stringify(currentTechnicalSchema, null, 2);
+    : currentTechnicalSchema
+      ? JSON.stringify(currentTechnicalSchema, null, 2)
+      : '';
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(contentToCopy);
@@ -350,10 +352,16 @@ export function MasterPromptPanel() {
                   <div style={{ fontSize: 13, lineHeight: 1.6, color: '#52524B' }} className="whitespace-pre-wrap select-text">
                     {currentMasterPrompt}
                   </div>
-                ) : (
+                ) : currentTechnicalSchema ? (
                   <pre style={{ fontSize: 12, lineHeight: 1.5, color: '#5cad5c' }} className="whitespace-pre-wrap select-text font-mono">
                     {JSON.stringify(currentTechnicalSchema, null, 2)}
                   </pre>
+                ) : (
+                  /* Never render the literal "null" (VC-R4 fix 3) — a model
+                     minted before schemas existed simply has none */
+                  <div style={{ fontSize: 12, color: '#71716A' }}>
+                    No JSON spec recorded for this cast.
+                  </div>
                 )}
               </div>
             )}
