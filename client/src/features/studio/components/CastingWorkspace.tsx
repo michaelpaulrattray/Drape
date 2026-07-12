@@ -119,10 +119,6 @@ export function CastingWorkspace({
     handleRefineSubmit,
     handleEnhance,
     handleRetry,
-    handleUndo,
-    handleRedo,
-    canUndo,
-    canRedo,
   } = useCastingGeneration({
     isAuthenticated,
     activeTool: castingActiveTool,
@@ -268,14 +264,10 @@ export function CastingWorkspace({
           handlePointerDown={handlePointerDown}
           handlePointerMove={handlePointerMove}
           handlePointerUp={handlePointerUp}
-          handleUndo={handleUndo}
-          handleRedo={handleRedo}
           handleRetry={handleRetry}
           handleGenerate={handleGenerate}
           handleEnhance={handleEnhance}
           handleRefineSubmit={handleRefineSubmit}
-          canUndo={canUndo}
-          canRedo={canRedo}
           isReadOnly={isReadOnly}
         />
       </div>

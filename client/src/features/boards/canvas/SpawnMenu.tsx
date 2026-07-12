@@ -1,5 +1,5 @@
 /**
- * PinSpawnMenu — the D-36a pin-initiated spawn gesture, scoped to pass 1
+ * SpawnMenu — the D-36a pin-initiated spawn gesture, scoped to pass 1
  * (founder-ruled at R5 planning): dragging from a cast's out-pin into empty
  * canvas offers the six package slots; choosing one spawns that view
  * popped-out at the drop point, pre-connected by its lineage edge.
@@ -15,7 +15,7 @@ import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import type { CanonicalViewAngle } from "@shared/boardTypes";
 
-export interface PinSpawnMenuProps {
+export interface SpawnMenuProps {
   itemId: number;
   modelId: number;
   /** Screen-space drop point (menu position). */
@@ -29,7 +29,7 @@ export interface PinSpawnMenuProps {
   onClose: () => void;
 }
 
-export function PinSpawnMenu({ itemId, modelId, x, y, flowX, flowY, poppedAngles, onClose }: PinSpawnMenuProps) {
+export function SpawnMenu({ itemId, modelId, x, y, flowX, flowY, poppedAngles, onClose }: SpawnMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const { data } = trpc.generation.packageState.useQuery({ modelId }, { staleTime: 15_000 });
 

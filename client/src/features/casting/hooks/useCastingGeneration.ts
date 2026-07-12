@@ -498,22 +498,11 @@ export function useCastingGeneration({
     }
   }, [handleGenerate, performIteration]);
 
-  // Undo/Redo
-  const handleUndo = useCallback(() => {
-    if (canUndo()) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      setCurrentAssets(history[newIndex]);
-    }
-  }, [canUndo, historyIndex, history]);
-
-  const handleRedo = useCallback(() => {
-    if (canRedo()) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setCurrentAssets(history[newIndex]);
-    }
-  }, [canRedo, historyIndex, history]);
+  // Undo/redo RETIRED (D-53/A3): the client snapshot stack performed version
+  // control it didn't have — full cross-view snapshots meant undo on one view
+  // rewound others, and nothing it did survived a save. The slot ledger is
+  // the single version history now ("Use this version", copy-forward). The
+  // history stack itself stays: hold-to-compare and hydration read it.
 
   return {
     creditsData,
@@ -527,10 +516,6 @@ export function useCastingGeneration({
     handleRefineSubmit,
     handleEnhance,
     handleRetry,
-    handleUndo,
-    handleRedo,
-    canUndo,
-    canRedo,
     // Phase 2 additions
     fetchSuggestions,
     handleCompactPrompt,

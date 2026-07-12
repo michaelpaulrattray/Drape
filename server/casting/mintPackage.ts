@@ -357,3 +357,96 @@ export async function executeSetSlotPinned(input: {
   await setModelAssetPinned(assetId, input.pinned);
   return { modelId: input.modelId, angle: input.angle, pinned: input.pinned };
 }
+
+// ── D-53: the slot ledger is the single version history ─────────────────────
+
+/** Filled rows for one angle, newest first — the tile thumb-strip's data.
+ *  (The head is index 0: newest-wins everywhere.) */
+export async function getSlotVersions(input: {
+  userId: number;
+  modelId: number;
+  angle: CanonicalViewAngle;
+}): Promise<{
+  modelId: number;
+  angle: CanonicalViewAngle;
+  versions: Array<{ assetId: number; url: string; pinned: boolean; createdAt: string; isHead: boolean }>;
+}> {
+  const model = await getModelById(input.modelId);
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  const assets = await getModelAssets(input.modelId); // newest-first
+  const filled = assets.filter((a) => a.viewType === input.angle && a.storageUrl);
+  return {
+    modelId: input.modelId,
+    angle: input.angle,
+    versions: filled.map((a, i) => ({
+      assetId: a.id,
+      url: a.storageUrl,
+      pinned: a.pinned ?? false,
+      createdAt: a.createdAt instanceof Date ? a.createdAt.toISOString() : String(a.createdAt ?? ""),
+      isHead: i === 0,
+    })),
+  };
+}
+
+/** D-53 `restoreSlotVersion` — "Use this version": copy-forward APPEND, never
+ *  a backward mutation (the board's `revertItemVersion` keeps its opposite
+ *  semantics and its name). Zero generation cost; the restored row arrives
+ *  UNPINNED (a pin marks a row, not a lineage) with `restoredFromAssetId`
+ *  provenance so the D-12 audit chain stays whole. Newest-wins promotes it
+ *  instantly for every consumer (comp card, composer, hydration, vN). */
+export async function executeRestoreSlotVersion(input: {
+  userId: number;
+  modelId: number;
+  angle: CanonicalViewAngle;
+  assetId: number;
+}): Promise<{ modelId: number; angle: CanonicalViewAngle; assetId: number; url: string; version: number }> {
+  const model = await getModelById(input.modelId);
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+
+  const assets = await getModelAssets(input.modelId); // newest-first
+  const source = assets.find((a) => a.id === input.assetId);
+  if (!source || source.viewType !== input.angle || !source.storageUrl) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `That version isn't a cast ${VIEW_ANGLE_LABELS[input.angle]} view of this model`,
+    });
+  }
+  const head = assets.find((a) => a.viewType === input.angle && a.storageUrl);
+  if (head && head.id === source.id) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "That's already the current version",
+    });
+  }
+
+  const sourceProvenance = (source.provenance ?? null) as { inputs?: unknown } | null;
+  const created = await createModelAsset({
+    modelId: input.modelId,
+    viewType: input.angle,
+    resolution: source.resolution ?? "1K",
+    storageUrl: source.storageUrl,
+    storageKey: source.storageKey ?? null,
+    pointsCost: 0, // a pointer copy moves no money
+    pinned: false,
+    provenance: {
+      restoredFromAssetId: source.id,
+      inputs: sourceProvenance?.inputs ?? null,
+      engine: "restore",
+    },
+  });
+  if (!created.success || !created.assetId) {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Restore failed — nothing was changed" });
+  }
+
+  const after = await getModelAssets(input.modelId);
+  const version = after.filter((a) => a.viewType === input.angle && a.storageUrl).length;
+  return {
+    modelId: input.modelId,
+    angle: input.angle,
+    assetId: created.assetId,
+    url: source.storageUrl,
+    version,
+  };
+}

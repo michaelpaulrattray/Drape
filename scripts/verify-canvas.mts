@@ -674,6 +674,18 @@ if (!(await filledNode())?.img) {
     await sleep(600);
     check("V1 surgical tool activates", toolOn);
 
+    // D-53 (C4): the casting session undo is RETIRED — no pill, no Z keys.
+    // The ledger thumb-strip ("Use this version") is the version history.
+    const undoState = await page.evaluate(() => ({
+      undoBtn: !!document.querySelector('button[title="Undo (Z)"]'),
+      redoBtn: !!document.querySelector('button[title="Redo (⇧Z)"]'),
+    }));
+    check(
+      "W1 casting undo/redo affordances are gone (D-53 retirement)",
+      !undoState.undoBtn && !undoState.redoBtn,
+      JSON.stringify(undoState),
+    );
+
     // Zoom the camera to ~2× with the wheel over the image field
     const imgRect = await page.evaluate(() => {
       const wrap = document.querySelector("[data-camera-image]");
@@ -748,6 +760,63 @@ if (!(await filledNode())?.img) {
       }
     }
     await closeTakeoverCleanly();
+  }
+}
+
+// ── Invariant W: restoreSlotVersion structural contracts (D-53) — FREE ──────
+// Copy-forward restore over raw tRPC (the E4 pattern, UI bypassed): the
+// current head is refused, bogus rows are refused. The happy path (restore
+// an old row → free new head, vN+1) needs a second ledger row and therefore
+// rides the PAID T leg when enabled.
+{
+  const [midRows] = await conn.execute(
+    `SELECT CAST(JSON_EXTRACT(i.metadata, '$.provenance.modelId') AS UNSIGNED) AS mid
+       FROM board_items i
+      WHERE i.boardId = ? AND i.deletedAt IS NULL AND i.imageUrl IS NOT NULL
+      ORDER BY i.id DESC LIMIT 1`,
+    [boardId],
+  );
+  const wModelId = (midRows as Array<{ mid: number }>)[0]?.mid;
+  if (!wModelId) {
+    console.log("SKIP  W2-4 — no model behind a filled node");
+  } else {
+    const wResult = await page.evaluate(async (mid: number) => {
+      const q = encodeURIComponent(JSON.stringify({ json: { modelId: mid, angle: "sideClose" } }));
+      const vRes = await fetch(`/api/trpc/generation.slotVersions?input=${q}`, { credentials: "include" });
+      const vJson = await vRes.json();
+      const versions = vJson?.result?.data?.json?.versions ?? [];
+      const head = versions.find((v: { isHead: boolean }) => v.isHead);
+      let headRefused = false;
+      if (head) {
+        const rRes = await fetch("/api/trpc/generation.restoreSlotVersion", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ json: { modelId: mid, angle: "sideClose", assetId: head.assetId } }),
+        });
+        const rText = await rRes.text();
+        headRefused = rRes.status >= 400 && rText.includes("already the current version");
+      }
+      const badRes = await fetch("/api/trpc/generation.restoreSlotVersion", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { modelId: mid, angle: "frontFull", assetId: 999999999 } }),
+      });
+      return {
+        versionCount: versions.length,
+        headMarked: !!head,
+        headRefused,
+        bogusRefused: badRes.status >= 400,
+      };
+    }, wModelId);
+    check(
+      "W2 slotVersions lists the ledger with the head marked",
+      wResult.versionCount >= 1 && wResult.headMarked,
+      JSON.stringify(wResult),
+    );
+    check("W3 restoring the current head is refused (nothing to restore)", wResult.headRefused);
+    check("W4 restoring a bogus row is refused", wResult.bogusRefused);
   }
 }
 
@@ -1110,7 +1179,7 @@ let seededItemId = 0;
       // rendered as a white sliver clipped by the shell's overflow-hidden
       // and the founder couldn't find it after being told where it was
       const pin = await page.evaluate((sel: string) => {
-        const p = document.querySelector(`${sel} .cast-out-pin`) as HTMLElement | null;
+        const p = document.querySelector(`${sel} .spawn-dot`) as HTMLElement | null;
         if (!p) return null;
         const r = p.getBoundingClientRect();
         const node = document.querySelector(sel)!.getBoundingClientRect();

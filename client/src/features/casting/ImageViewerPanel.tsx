@@ -4,6 +4,7 @@ import { MaskCanvas } from "./components/ImageViewer/MaskCanvas";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
+import { trpc } from "@/lib/trpc";
 import { type GeneratedAsset, type GenerationState } from "@/features/casting/constants";
 import { StudioCanvas } from "@/features/studio/components/StudioCanvas";
 import { ImageActionBar } from "@/features/studio/components/ImageActionBar";
@@ -39,14 +40,10 @@ interface ImageViewerPanelProps {
   handlePointerDown: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   handlePointerMove: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   handlePointerUp: () => void;
-  handleUndo: () => void;
-  handleRedo: () => void;
   handleRetry: () => void;
   handleGenerate: () => void;
   handleEnhance: () => void;
   handleRefineSubmit: () => void;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
   isReadOnly?: boolean;
 }
 
@@ -70,14 +67,10 @@ export function ImageViewerPanel({
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
-  handleUndo,
-  handleRedo,
   handleRetry,
   handleGenerate,
   handleEnhance,
   handleRefineSubmit,
-  canUndo,
-  canRedo,
   isReadOnly,
 }: ImageViewerPanelProps) {
   const { prefs, updatePref } = useCastingFormStore();
@@ -88,7 +81,16 @@ export function ImageViewerPanel({
     suggestions,
     isLoadingSuggestions,
     identityWarning,
+    currentModelId,
   } = useCastingGenerationStore();
+
+  // D-53 vN unification: ONE version vocabulary — the ledger's per-slot count
+  // (the same number the comp card shows). The client-stack denominator
+  // (`historyIndex + 1`) lied: it counted synthesized cross-view snapshots.
+  const packageQuery = trpc.generation.packageState.useQuery(
+    { modelId: currentModelId ?? 0 },
+    { enabled: !!currentModelId, staleTime: 15_000 },
+  );
   const {
     activeView,
     activeTool,
@@ -181,12 +183,18 @@ export function ImageViewerPanel({
 
   // ── Derive StudioCanvas props ──
   const viewName = VIEW_DISPLAY_NAMES[activeView] || activeView;
+  // D-53: the ledger's per-slot count — the comp card's vN and the viewer's
+  // vN are the SAME number now (the client-stack denominator died)
+  const ledgerVersion =
+    packageQuery.data?.slots.find((s) => s.angle === activeView)?.version ?? null;
   const statusLabel = genState.isGenerating
     ? (genState.currentStep || 'Generating...')
     : isReadOnly && hasResult
       ? `${viewName} \u00b7 final`
       : hasResult
-        ? `${viewName} \u00b7 v${historyIndex + 1}`
+        ? ledgerVersion
+          ? `${viewName} \u00b7 v${ledgerVersion}`
+          : viewName
         : 'Set up your model';
 
   // ── Top overlay: ViewTabs + Identity Warning ──
@@ -420,10 +428,13 @@ export function ImageViewerPanel({
       isGenerating={genState.isGenerating}
       generatingMessage={genState.currentStep}
       hasResult={hasResult}
-      onUndo={handleUndo}
-      onRedo={handleRedo}
-      canUndo={!isReadOnly && canUndo()}
-      canRedo={!isReadOnly && canRedo()}
+      // D-53: casting's session undo is RETIRED — the slot ledger is the
+      // version history ("Use this version" in the tile thumb-strip);
+      // hold-to-compare stays. The pill props remain live for wardrobe.
+      onUndo={() => {}}
+      onRedo={() => {}}
+      canUndo={false}
+      canRedo={false}
       statusLabel={statusLabel}
       errorMessage={genState.error ? (
         genState.error.includes('safety') || genState.error.includes('Safety')
@@ -460,8 +471,6 @@ export function ImageViewerPanel({
             shortcuts={isReadOnly
               ? [...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : [])]
               : [
-                  { key: 'Z', label: 'Undo' },
-                  { key: '⇧Z', label: 'Redo' },
                   { key: '/', label: 'Refine' },
                   ...(prefs.referenceImage ? [{ key: 'F', label: 'Toggle Ref' }] : []),
                   ...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : []),

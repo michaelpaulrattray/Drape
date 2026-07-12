@@ -14,10 +14,11 @@
  * dispatch to BoardPage (which owns modals, the trust net, and optimistic
  * landings); Download acts directly.
  */
-import { memo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import { CanvasPopoverContent } from "../CanvasPopover";
 import { CanvasNodeShell } from "../CanvasNodeShell";
@@ -120,6 +121,17 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   });
   const tileAnchorRef = useRef<HTMLElement | null>(null);
   useRegisterCanvasLayer(`sheet-tile-${data.itemId}`, sheet.popoverAngle !== null);
+
+  // D-53 thumb-strip: the vN chip opens the angle's ledger history — filled
+  // rows newest-first, "Use this version" on non-head rows (copy-forward)
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  useEffect(() => {
+    setVersionsOpen(false);
+  }, [sheet.popoverAngle]);
+  const slotVersionsQuery = trpc.generation.slotVersions.useQuery(
+    { modelId: sheet.modelId ?? 0, angle: sheet.popoverAngle ?? "frontClose" },
+    { enabled: versionsOpen && !!sheet.modelId && sheet.popoverAngle !== null },
+  );
   const showSheet = sheet.isSheet && controller.promptState === "complete" && !errored && !controller.isEmpty;
 
   // D-51: the package verb — one strip slot, three honest states. Ghost
@@ -330,7 +342,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         position={Position.Right}
         id="out"
         isConnectable={modelReady && !!data.imageUrl}
-        className="cast-out-pin"
+        className="spawn-dot"
         style={{ opacity: modelReady && data.imageUrl ? 1 : 0 }}
       />
 
@@ -405,12 +417,53 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                   const close = () => sheet.setPopoverAngle(null);
                   return (
                     <div className="flex flex-col gap-1.5">
-                      <div className="text-canvas-sm font-medium text-canvas-ink">
-                        {slot.label}
-                        {slot.version > 1 && (
-                          <span className="text-canvas-ink-faint font-normal"> · v{slot.version}</span>
-                        )}
-                      </div>
+                      {/* D-43.3/D-53: at v1 the chip hides; at >1 the vN IS the
+                          door to the version history (the tile thumb-strip) */}
+                      {slot.version > 1 ? (
+                        <button
+                          type="button"
+                          className="text-left text-canvas-sm font-medium text-canvas-ink"
+                          title={versionsOpen ? undefined : "Version history"}
+                          onClick={() => setVersionsOpen((o) => !o)}
+                        >
+                          {slot.label}
+                          <span className="text-canvas-ink-faint font-normal underline decoration-dotted underline-offset-2"> · v{slot.version}</span>
+                        </button>
+                      ) : (
+                        <div className="text-canvas-sm font-medium text-canvas-ink">{slot.label}</div>
+                      )}
+                      {versionsOpen && slot.version > 1 && (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex gap-1 overflow-x-auto pb-0.5">
+                            {(slotVersionsQuery.data?.versions ?? []).map((v) => (
+                              <button
+                                key={v.assetId}
+                                type="button"
+                                disabled={v.isHead || sheet.restoring}
+                                title={v.isHead ? "Current version" : "Use this version"}
+                                className={cn(
+                                  "relative flex-shrink-0 w-9 rounded-canvas-sm overflow-hidden transition-opacity",
+                                  v.isHead
+                                    ? "border border-canvas-ink"
+                                    : "border-hairline border-canvas-border hover:border-canvas-border-strong",
+                                  sheet.restoring && "opacity-50",
+                                )}
+                                style={{ aspectRatio: "3 / 4" }}
+                                onClick={() => {
+                                  if (!v.isHead) sheet.restoreVersion(slot.angle, v.assetId);
+                                }}
+                              >
+                                <img src={v.url} alt="" className="w-full h-full object-cover" draggable={false} />
+                              </button>
+                            ))}
+                          </div>
+                          <div className="text-canvas-xs text-canvas-ink-faint">
+                            {sheet.restoring
+                              ? "Restoring…"
+                              : "Tap an earlier version to use it — free, lands as the newest"}
+                          </div>
+                        </div>
+                      )}
                       {slot.pinned ? (
                         <div className="text-canvas-xs text-canvas-ink-soft">Pinned — kept as finished work</div>
                       ) : slot.failed ? (

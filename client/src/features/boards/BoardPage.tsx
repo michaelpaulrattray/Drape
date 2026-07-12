@@ -31,7 +31,7 @@ import { NodeContextMenu, type NodeContextAction } from './components/NodeContex
 import { NodeInfoPanel } from './components/NodeInfoPanel';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { isLineageEdge, type CanonicalViewAngle } from '@shared/boardTypes';
-import { PinSpawnMenu } from './canvas/PinSpawnMenu';
+import { SpawnMenu } from './canvas/SpawnMenu';
 import { GroupContextMenu } from './canvas/GroupContextMenu';
 import { downloadImage } from './canvas/imageActions';
 
@@ -64,7 +64,7 @@ function BoardPageImpl() {
     imageUrl: string | null;
   } | null>(null);
   // R5 pin-spawn (D-36a): drag from a cast's out-pin into empty canvas
-  const [pinSpawnMenu, setPinSpawnMenu] = useState<{
+  const [spawnMenu, setSpawnMenu] = useState<{
     itemId: number;
     modelId: number;
     x: number;
@@ -726,7 +726,7 @@ function BoardPageImpl() {
       const meta = (item?.metadata ?? {}) as { provenance?: { type?: string; modelId?: number } };
       const p = meta.provenance;
       if (!p || (p.type !== 'cast_root' && p.type !== 'library_cast') || !p.modelId || p.modelId <= 0) return;
-      setPinSpawnMenu({
+      setSpawnMenu({
         itemId: detail.itemId,
         modelId: p.modelId,
         x: detail.x,
@@ -757,10 +757,10 @@ function BoardPageImpl() {
   // Which angles this root already popped out (the spawn menu disables them)
   const pinSpawnPopped = useMemo(() => {
     const set = new Set<CanonicalViewAngle>();
-    if (!pinSpawnMenu || !boardEdges || !items) return set;
+    if (!spawnMenu || !boardEdges || !items) return set;
     const itemById = new Map(items.map((i) => [i.id, i]));
     for (const edge of boardEdges) {
-      if (edge.relation !== 'generated_from_cast' || edge.source !== pinSpawnMenu.itemId) continue;
+      if (edge.relation !== 'generated_from_cast' || edge.source !== spawnMenu.itemId) continue;
       const target = itemById.get(edge.target);
       const meta = (target?.metadata ?? {}) as { provenance?: { type?: string; viewAngle?: CanonicalViewAngle } };
       if (meta.provenance?.type === 'cast_view' && meta.provenance.viewAngle) {
@@ -768,7 +768,7 @@ function BoardPageImpl() {
       }
     }
     return set;
-  }, [pinSpawnMenu, boardEdges, items]);
+  }, [spawnMenu, boardEdges, items]);
 
   // R5 prefetch (D-38): comp cards must paint from cache, never open
   // empty-then-load — warm every placed cast's packageState as items arrive
@@ -1786,16 +1786,16 @@ function BoardPageImpl() {
       )}
 
       {/* Pin-spawn menu (R5/D-36a) — drag from an out-pin into empty canvas */}
-      {pinSpawnMenu && (
-        <PinSpawnMenu
-          itemId={pinSpawnMenu.itemId}
-          modelId={pinSpawnMenu.modelId}
-          x={pinSpawnMenu.x}
-          y={pinSpawnMenu.y}
-          flowX={pinSpawnMenu.flowX}
-          flowY={pinSpawnMenu.flowY}
+      {spawnMenu && (
+        <SpawnMenu
+          itemId={spawnMenu.itemId}
+          modelId={spawnMenu.modelId}
+          x={spawnMenu.x}
+          y={spawnMenu.y}
+          flowX={spawnMenu.flowX}
+          flowY={spawnMenu.flowY}
           poppedAngles={pinSpawnPopped}
-          onClose={() => setPinSpawnMenu(null)}
+          onClose={() => setSpawnMenu(null)}
         />
       )}
 

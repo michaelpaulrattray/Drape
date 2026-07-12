@@ -90,7 +90,7 @@
 /* The cast out-pin (D-36a spawn gesture + lineage anchor). Rendered outside
    the node shell (its overflow-hidden clipped the pin invisible — VC-R5 F2);
    grows + inks on node hover/selection so the gesture is findable. */
-.canvas-scope .react-flow__handle.cast-out-pin {
+.canvas-scope .react-flow__handle.spawn-dot {
   width: 12px;
   height: 12px;
   right: -6px;
@@ -103,8 +103,8 @@
   min-height: 0;
   transition: transform 120ms ease-out, border-color 120ms ease-out;
 }
-.canvas-scope .react-flow__node:hover .react-flow__handle.cast-out-pin,
-.canvas-scope .react-flow__node.selected .react-flow__handle.cast-out-pin {
+.canvas-scope .react-flow__node:hover .react-flow__handle.spawn-dot,
+.canvas-scope .react-flow__node.selected .react-flow__handle.spawn-dot {
   transform: scale(1.35);
   border-color: var(--color-canvas-ink);
 }

@@ -155,8 +155,32 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     },
   });
 
+  // D-53 "Use this version" — copy-forward restore on the ledger. The
+  // response IS server truth (new head url + vN), so patch the slot cache
+  // directly and revalidate behind (D-38 posture).
+  const restoreMutation = trpc.generation.restoreSlotVersion.useMutation({
+    onSuccess: (res) => {
+      if (!modelId) return;
+      utils.generation.packageState.setData({ modelId }, (old) =>
+        old
+          ? {
+              ...old,
+              slots: old.slots.map((s) =>
+                s.angle === res.angle
+                  ? { ...s, url: res.url, version: res.version, stale: false, pinned: false }
+                  : s,
+              ),
+            }
+          : old,
+      );
+      void utils.generation.packageState.invalidate({ modelId });
+      void utils.generation.slotVersions.invalidate({ modelId, angle: res.angle });
+    },
+  });
+
   return {
     isSheet,
+    modelId,
     tiles,
     staleCount,
     completeCard,
@@ -187,6 +211,10 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     setPinned: (angle: CanonicalViewAngle, pinned: boolean) => {
       if (modelId) pinMutation.mutate({ modelId, angle, pinned });
     },
+    restoreVersion: (angle: CanonicalViewAngle, assetId: number) => {
+      if (modelId) restoreMutation.mutate({ modelId, angle, assetId });
+    },
+    restoring: restoreMutation.isPending,
     popOut: (angle: CanonicalViewAngle) => {
       window.dispatchEvent(
         new CustomEvent("board-pop-out-view", { detail: { itemId: data.itemId, angle } }),

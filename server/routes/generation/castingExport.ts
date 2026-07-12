@@ -3,7 +3,14 @@ import {
   getModelById, getUserGenerations, getUserById, mintModel,
 } from "../../db";
 import { POINT_COSTS } from "../../casting/aiService";
-import { planMintPackage, executeMintPackage, getPackageState, executeSetSlotPinned } from "../../casting/mintPackage";
+import {
+  planMintPackage,
+  executeMintPackage,
+  getPackageState,
+  executeSetSlotPinned,
+  getSlotVersions,
+  executeRestoreSlotVersion,
+} from "../../casting/mintPackage";
 import { planRefreshSlots, executeRefreshSlots } from "../../casting/refreshSlots";
 import { CANONICAL_VIEW_ANGLES } from "../../../shared/boardTypes";
 import { enforceDailyQuota } from "../../db/dailyQuota";
@@ -160,6 +167,30 @@ export const castingExportRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       return executeSetSlotPinned({ userId: ctx.user.id, ...input });
+    }),
+
+  /** D-53: filled rows for one angle, newest first — the tile thumb-strip. */
+  slotVersions: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+      angle: z.enum(CANONICAL_VIEW_ANGLES),
+    }))
+    .query(async ({ ctx, input }) => {
+      return getSlotVersions({ userId: ctx.user.id, ...input });
+    }),
+
+  /** D-53 "Use this version": copy-forward append on the ledger — zero
+   *  generation cost, arrives unpinned, `restoredFromAssetId` provenance.
+   *  Never "revert" (the board's revertItemVersion mutates backward and
+   *  keeps its own name + 3f routing). Free — no rate gate. */
+  restoreSlotVersion: protectedProcedure
+    .input(z.object({
+      modelId: z.number().int().positive(),
+      angle: z.enum(CANONICAL_VIEW_ANGLES),
+      assetId: z.number().int().positive(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return executeRestoreSlotVersion({ userId: ctx.user.id, ...input });
     }),
 
   /** R5 per-tile refresh plan: slot costs + structural refusals (D-15/D-43).
