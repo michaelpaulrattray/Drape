@@ -73,7 +73,7 @@ export function CanvasImageViewer({ imageUrl, label, onClose }: CanvasImageViewe
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
       <div
         className="relative flex flex-col rounded-canvas-lg overflow-hidden border-hairline border-canvas-border-strong"
-        style={{ inset: 16, position: "absolute", background: "#FAFAF8" }}
+        style={{ inset: 16, position: "absolute", background: "var(--color-canvas-field)" }}
       >
         {/* Slim top bar — title left, the two viewer verbs right */}
         <div className="flex items-center justify-between px-4 h-12 border-b-hairline border-canvas-border bg-canvas-surface flex-shrink-0">
@@ -104,7 +104,7 @@ export function CanvasImageViewer({ imageUrl, label, onClose }: CanvasImageViewe
         <div
           className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing select-none"
           style={{
-            backgroundImage: "radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)",
+            backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 0.8px, transparent 0.8px)",
             backgroundSize: "20px 20px",
           }}
           onWheel={onWheel}

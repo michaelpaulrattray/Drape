@@ -176,7 +176,7 @@ export default function DrapeStudio() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: '#FAFAF8' }}
+        style={{ background: 'var(--color-canvas-field)' }}
       >
         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1a1a1a' }} />
       </div>
@@ -184,7 +184,7 @@ export default function DrapeStudio() {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ background: '#FAFAF8' }}>
+    <div className="h-screen flex overflow-hidden" style={{ background: 'var(--color-canvas-field)' }}>
       {/* App Sidebar — full viewport height */}
       <AppSidebar
         canvas={canvas}

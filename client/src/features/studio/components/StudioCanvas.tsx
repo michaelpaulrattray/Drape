@@ -6,7 +6,11 @@
  * slots and props change per tool, giving a seamless, flicker-free experience.
  *
  * Shared features:
- *   - Canvas background (warm off-white #FAFAF8 with subtle warm dot grid)
+ *   - Work-area field (canvas-field token + dot grid — the viewer's language)
+ *   - Camera (R6 spatial fallback, ruling R-2a): wheel zooms, dragging the
+ *     field background pans, double-click on the background resets. The image
+ *     itself keeps hold-to-compare and mask painting — the camera never
+ *     steals those gestures.
  *   - Undo/redo floating pill (bottom-left of image, Higgsfield-style)
  *   - ImageActionBar slot (top-right of image — download, copy, menu, optional heart)
  *   - Error banner (inline, dismiss + retry)
@@ -160,6 +164,55 @@ export function StudioCanvas({
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
   const compareTimerRef = useRef<number | null>(null);
 
+  // ── Camera (R6 spatial fallback) ──────────────────────────────────────────
+  const CAMERA_MIN = 0.5;
+  const CAMERA_MAX = 4;
+  const [camera, setCamera] = useState({ zoom: 1, x: 0, y: 0 });
+  const cameraDragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
+  const [cameraDragging, setCameraDragging] = useState(false);
+
+  const onFieldWheel = useCallback((e: React.WheelEvent) => {
+    setCamera((c) => ({
+      ...c,
+      zoom: Math.min(CAMERA_MAX, Math.max(CAMERA_MIN, c.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12))),
+    }));
+  }, []);
+
+  // Pan starts only on the field BACKGROUND — a press on the image belongs
+  // to hold-to-compare / mask painting, never the camera
+  const onFieldMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+      if (e.target !== e.currentTarget) return;
+      cameraDragRef.current = { startX: e.clientX, startY: e.clientY, baseX: camera.x, baseY: camera.y };
+      setCameraDragging(true);
+    },
+    [camera.x, camera.y],
+  );
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const d = cameraDragRef.current;
+      if (!d) return;
+      setCamera((c) => ({ ...c, x: d.baseX + (e.clientX - d.startX), y: d.baseY + (e.clientY - d.startY) }));
+    };
+    const onUp = () => {
+      cameraDragRef.current = null;
+      setCameraDragging(false);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+  const onFieldDoubleClick = useCallback((e: React.MouseEvent) => {
+    // Reset on any double-click that isn't ON the image (the image's own
+    // dblclick stays free for future D-54-style focus semantics)
+    if ((e.target as HTMLElement).closest("[data-camera-image]")) return;
+    setCamera({ zoom: 1, x: 0, y: 0 });
+  }, []);
+
   // Hold-to-compare
   const handleCompareStart = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -220,8 +273,8 @@ export function StudioCanvas({
       <div
         className="flex-1 h-full flex items-center justify-center"
         style={{
-          background: "#FAFAF8",
-          backgroundImage: "radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)",
+          background: "var(--color-canvas-field)",
+          backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 0.8px, transparent 0.8px)",
           backgroundSize: "20px 20px",
         }}
       >
@@ -236,8 +289,8 @@ export function StudioCanvas({
       <div
         className="flex-1 h-full flex flex-col relative overflow-hidden"
         style={{
-          background: "#FAFAF8",
-          backgroundImage: "radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)",
+          background: "var(--color-canvas-field)",
+          backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 0.8px, transparent 0.8px)",
           backgroundSize: "20px 20px",
         }}
       >
@@ -256,8 +309,8 @@ export function StudioCanvas({
     <div
       className="flex-1 h-full flex flex-col relative overflow-hidden"
       style={{
-        background: "#FAFAF8",
-        backgroundImage: "radial-gradient(circle, #d4d0cb 0.8px, transparent 0.8px)",
+        background: "var(--color-canvas-field)",
+        backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 0.8px, transparent 0.8px)",
         backgroundSize: "20px 20px",
       }}
     >
@@ -299,11 +352,24 @@ export function StudioCanvas({
       {/* ── Status overlay slot (locked source, active tool pills) ── */}
       {statusOverlay}
 
-      {/* ── Image area ── */}
-      <div className="flex-1 relative min-h-0 flex items-center justify-center bg-transparent">
-        {/* Image + overlays hover container */}
+      {/* ── Image area — the camera's field (wheel zoom, bg drag pan) ── */}
+      <div
+        className="flex-1 relative min-h-0 flex items-center justify-center bg-transparent"
+        style={{ cursor: cameraDragging ? "grabbing" : undefined }}
+        onWheel={onFieldWheel}
+        onMouseDown={onFieldMouseDown}
+        onDoubleClick={onFieldDoubleClick}
+      >
+        {/* Image + overlays hover container — the camera transforms this
+            whole unit, so attached chrome (action bar, undo pill, mask)
+            travels with the image */}
         <div
           className="relative max-w-full max-h-full flex items-center justify-center select-none"
+          style={{
+            transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
+            transformOrigin: "center center",
+            transition: cameraDragging ? "none" : "transform 120ms ease-out",
+          }}
           onMouseEnter={() => { setImageAreaHovered(true); onHoverChange?.(true); }}
           onMouseLeave={() => { setImageAreaHovered(false); onHoverChange?.(false); }}
         >
@@ -313,6 +379,7 @@ export function StudioCanvas({
           {activeDisplayUrl && (
             <div
               className="relative"
+              data-camera-image
               style={{ borderRadius: 16, overflow: "hidden" }}
               onPointerDown={handleCompareStart}
               onPointerUp={handleCompareEnd}
@@ -343,15 +410,8 @@ export function StudioCanvas({
               {/* Compare badge */}
               {isComparing && (
                 <div
-                  className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full"
-                  style={{
-                    background: "rgba(124,138,239,0.85)",
-                    backdropFilter: "blur(8px)",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#fff",
-                    letterSpacing: "0.02em",
-                  }}
+                  className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-canvas-pill text-canvas-sm font-medium"
+                  style={{ background: "rgba(10,10,10,0.75)", color: "var(--color-canvas-surface)" }}
                 >
                   {compareLabel}
                 </div>

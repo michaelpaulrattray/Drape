@@ -318,7 +318,7 @@ export function CastingTakeover({
         style={{
           inset: 16,
           borderRadius: 14,
-          background: '#FAFAF8',
+          background: 'var(--color-canvas-field)',
           border: '1px solid rgba(0,0,0,0.10)',
           opacity: open ? 1 : 0,
           transform: open ? 'scale(1)' : 'scale(0.975)',
@@ -411,7 +411,7 @@ export function CastingTakeover({
         {/* Cold-mount loader (P1): edit sessions hydrate the model first —
             never flash the default studio */}
         {editContext && !hydrated && (
-          <div className="absolute inset-0 z-10" style={{ background: '#FAFAF8' }}>
+          <div className="absolute inset-0 z-10" style={{ background: 'var(--color-canvas-field)' }}>
             <BrandLoader label={isMintedEdit ? 'Loading this cast' : 'Loading your draft'} />
           </div>
         )}

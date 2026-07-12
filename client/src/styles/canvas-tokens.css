@@ -13,6 +13,13 @@
   --color-canvas-surface: #FFFFFF;
   --color-canvas-surface-inset: #F4F4F3;
 
+  /* Work-area field — the image viewer's background pair, founder-flagged at
+     VC-R5 as the reference for canvas backgrounds generally (R6 spatial
+     direction). Used by CanvasImageViewer and the casting environment's
+     StudioCanvas; the board's own bg adoption is a future ruling. */
+  --color-canvas-field: #FAFAF8;
+  --color-canvas-field-dot: #D4D0CB;
+
   /* Canvas ink */
   --color-canvas-ink: #0A0A0A;
   --color-canvas-ink-soft: #5A5A58;
