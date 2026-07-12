@@ -2,6 +2,20 @@ import { RefObject, useRef, useState, useEffect } from 'react';
 import { Sparkles, SendHorizontal } from 'lucide-react';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 
+// F5 (founder-ruled): iterate can ADD things — distinctive marks, accessories,
+// any feature — and nobody knew. Discoverability, not a feature: rotating
+// placeholder EXAMPLES teach the field's range. Explicitly NOT a selector —
+// marks are open creative space; enum-izing them is wrong.
+const ROTATING_EXAMPLES = [
+  'brighten the lighting',
+  'add a small tattoo on the forearm',
+  'soften the makeup',
+  'add thin gold earrings',
+  'make the expression warmer',
+  'add light freckles',
+];
+const EXAMPLE_INTERVAL_MS = 4500;
+
 // ============ Types ============
 
 interface RefinePanelProps {
@@ -45,6 +59,17 @@ export function RefinePanel({
 
   const [glowActive, setGlowActive] = useState(false);
   const glowFiredRef = useRef(false);
+
+  // F5: rotate the placeholder examples while the field is empty
+  const [exampleIndex, setExampleIndex] = useState(0);
+  useEffect(() => {
+    if (refineInput) return; // typing — hold still
+    const timer = setInterval(
+      () => setExampleIndex((i) => (i + 1) % ROTATING_EXAMPLES.length),
+      EXAMPLE_INTERVAL_MS,
+    );
+    return () => clearInterval(timer);
+  }, [refineInput]);
 
   const isLocked = isViewLocked && !unlockMode;
   const hasMask = maskPathsCount > 0;
@@ -146,7 +171,7 @@ export function RefinePanel({
   const getPlaceholder = () => {
     if (activeTool === 'surgical') return 'Describe change for masked area...';
     if (referenceImage) return "e.g. 'use hairstyle from reference image'";
-    return 'Describe a change... (press / to focus)';
+    return `Describe a change — "${ROTATING_EXAMPLES[exampleIndex]}"`;
   };
 
   return (

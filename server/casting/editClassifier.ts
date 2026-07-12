@@ -84,3 +84,23 @@ export function shouldRefuseIteration(
 ): boolean {
   return modelStatus !== "draft" && classification.identityLevel;
 }
+
+/** F6 stale-writer selection — pure, exported for tests. Given the model's
+ *  assets NEWEST-FIRST (getModelAssets order) and the angle that just took
+ *  an identity-classified draft edit, return the asset ids to stale-mark:
+ *  each OTHER angle's head (newest filled) row, skipping pinned heads
+ *  (accepted-final work feels no staleness pressure — D-21). */
+export function selectStaleSiblingHeads(
+  assets: Array<{ id: number; viewType: string; storageUrl?: string | null; pinned?: boolean | null }>,
+  editedViewType: string,
+): number[] {
+  const heads = new Map<string, { id: number; pinned: boolean }>();
+  for (const a of assets) {
+    if (a.viewType !== editedViewType && a.storageUrl && !heads.has(a.viewType)) {
+      heads.set(a.viewType, { id: a.id, pinned: a.pinned ?? false });
+    }
+  }
+  return Array.from(heads.values())
+    .filter((h) => !h.pinned)
+    .map((h) => h.id);
+}

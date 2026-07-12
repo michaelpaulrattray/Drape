@@ -417,6 +417,19 @@ export function useCastingGeneration({
       setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Iteration failed";
+      // A1 stage 2: the identity seal's refusal is TAUGHT, not toasted —
+      // the designed fork-guidance surface renders where the edit happened
+      // (D-40), with a working Fork door. No failed-action retry: retrying
+      // the same edit would be refused again by design.
+      if (message.includes("identity is minted")) {
+        setGenState({
+          isGenerating: false,
+          currentStep: "",
+          error: null,
+          identityRefusal: { message, editText: prompt },
+        });
+        return;
+      }
       setGenState({ isGenerating: false, currentStep: "", error: message });
       setFailedAction({ type: 'ITERATE', args: { text: prompt, view: activeView, mask: maskBase64 } });
       toast.error(message);

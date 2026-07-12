@@ -175,6 +175,10 @@ export interface GenerationState {
   startTime?: number;
   estimatedDuration?: number;
   identityWarning?: string | null;
+  /** A1 stage 2 (D-53 rider): the seal refused an identity-level edit on a
+   *  minted model — rendered as the designed fork-guidance surface (F4 copy
+   *  + a working Fork door), never the generic error banner or a toast. */
+  identityRefusal?: { message: string; editText: string } | null;
 }
 
 export type EditTool = 'none' | 'surgical' | 'eraser';

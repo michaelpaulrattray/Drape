@@ -58,6 +58,10 @@ export interface CastingTakeoverProps {
   onIdentityCommit: (decision: 'update' | 'fork', changes: Record<string, unknown>) => void;
   /** User backed out (Esc / back / close), after the leave-confirm if work exists. */
   onClose: () => void;
+  /** D-38: fired just before close on minted-edit sessions with the CLIENT-
+   *  HELD slot heads (plain data across the D-24 boundary) — the host paints
+   *  the mosaic from these immediately; refetch reconciles behind. */
+  onSessionSlots?: (modelId: number, slots: Array<{ angle: string; url: string }>) => void;
 }
 
 /** Fields compared for identity changes (everything the form can set). */
@@ -102,6 +106,7 @@ export function CastingTakeover({
   onMinted,
   onIdentityCommit,
   onClose,
+  onSessionSlots,
 }: CastingTakeoverProps) {
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   const [identityDialog, setIdentityDialog] = useState<{
@@ -123,8 +128,22 @@ export function CastingTakeover({
   }, []);
   const startClose = useCallback(() => {
     setClosing(true);
+    // D-38 straggler (R6 close-out log 1): a cosmetic iterate writes new
+    // ledger heads mid-session — carry the CLIENT-HELD slot urls across the
+    // close as plain data (the mint path's pattern; the D-24 boundary passes
+    // data, never stores) so the board mosaic updates the instant the room
+    // folds. The host patches its packageState cache and revalidates behind.
+    if (editContext && !editContext.draft) {
+      const sessionAssets = useCastingGenerationStore.getState().currentAssets;
+      onSessionSlots?.(
+        editContext.modelId,
+        sessionAssets
+          .filter((a) => a.storageUrl)
+          .map((a) => ({ angle: a.viewType, url: a.storageUrl })),
+      );
+    }
     window.setTimeout(onClose, 210);
-  }, [onClose]);
+  }, [onClose, onSessionSlots, editContext]);
 
   // Session setup: always a clean slate; edit sessions then hydrate via the
   // workspace's gallery path (canvas.castModelId), and minted edits raise the
@@ -259,6 +278,22 @@ export function CastingTakeover({
       window.removeEventListener('casting-open-mint', onMint);
     };
   }, [isMintedEdit, setShowCastModal]);
+
+  // A1 stage 2: the fork-guidance banner's Fork door — the refused edit
+  // routes into the SAME D-11 fork ceremony as Save changes, carried as the
+  // fork's casting note (`features`), so "fork with this edit" is one flow.
+  useEffect(() => {
+    if (!isMintedEdit) return;
+    const onForkFromRefusal = (e: Event) => {
+      const editText = (e as CustomEvent<{ editText: string }>).detail?.editText ?? '';
+      setIdentityDialog({
+        changes: { features: editText },
+        labels: ['the requested change'],
+      });
+    };
+    window.addEventListener('casting-fork-from-refusal', onForkFromRefusal);
+    return () => window.removeEventListener('casting-fork-from-refusal', onForkFromRefusal);
+  }, [isMintedEdit]);
   useEffect(() => {
     if (!showCastModal) setUpgradeMode(false);
   }, [showCastModal]);

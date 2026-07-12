@@ -201,6 +201,43 @@ export function ImageViewerPanel({
   const topOverlay = (
     <>
       <ViewTabs />
+      {/* A1 stage 2 (D-53 rider): the fork-guidance surface — the seal's
+          refusal teaches the doors where the edit happened (F4/D-40), with
+          a WORKING Fork door (routes into the D-11 fork ceremony carrying
+          the attempted edit as the fork's casting note). */}
+      {genState.identityRefusal && !genState.isGenerating && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 w-[440px] max-w-[calc(100%-32px)] rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border-strong p-3.5">
+          <div className="text-canvas-lg font-medium text-canvas-ink mb-1">
+            This edit changes who they are
+          </div>
+          <div className="text-canvas-md text-canvas-ink-soft mb-3" style={{ lineHeight: 1.5 }}>
+            {genState.identityRefusal.message}
+          </div>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setGenState((p) => ({ ...p, identityRefusal: null }))}
+              className="text-canvas-md font-medium text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors"
+            >
+              Dismiss
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const editText = genState.identityRefusal!.editText;
+                setGenState((p) => ({ ...p, identityRefusal: null }));
+                window.dispatchEvent(
+                  new CustomEvent("casting-fork-from-refusal", { detail: { editText } }),
+                );
+              }}
+              className="px-3.5 py-1.5 rounded-canvas-pill bg-canvas-ink text-canvas-md font-medium transition-opacity hover:opacity-90"
+              style={{ color: "var(--color-canvas-surface)" }}
+            >
+              Fork to explore this
+            </button>
+          </div>
+        </div>
+      )}
       {identityWarning && !genState.isGenerating && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-canvas-pill bg-canvas-surface border-hairline border-canvas-border-strong text-canvas-md font-medium text-canvas-ink-soft">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-warning)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

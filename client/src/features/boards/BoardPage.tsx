@@ -1873,6 +1873,23 @@ function BoardPageImpl() {
             setCastTakeoverItemId(null);
             setCastEditContext(null);
           }}
+          // D-38 straggler: the session's client-held slot heads paint the
+          // mosaic the instant the room folds — patch the packageState cache
+          // from plain data, then revalidate behind (the mint path's pattern)
+          onSessionSlots={(modelId, slots) => {
+            utils.generation.packageState.setData({ modelId }, (old) =>
+              old
+                ? {
+                    ...old,
+                    slots: old.slots.map((s) => {
+                      const held = slots.find((h) => h.angle === s.angle);
+                      return held && held.url !== s.url ? { ...s, url: held.url } : s;
+                    }),
+                  }
+                : old,
+            );
+            void utils.generation.packageState.invalidate({ modelId });
+          }}
         />
       )}
 

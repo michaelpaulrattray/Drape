@@ -1,6 +1,6 @@
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
-  getModelById, createModelAsset, getModelAssets,
+  getModelById, createModelAsset, getModelAssets, markModelAssetsStale,
   createGeneration, updateGeneration, updateModel,
 } from "../../db";
 import {
@@ -17,7 +17,7 @@ import { TRPCError } from "@trpc/server";
 import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
-import { classifyEditIdentityImpact, shouldRefuseIteration } from "../../casting/editClassifier";
+import { classifyEditIdentityImpact, shouldRefuseIteration, selectStaleSiblingHeads } from "../../casting/editClassifier";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("routes/generation");
 
@@ -64,14 +64,16 @@ export const castingRefinementRouter = router({
       // an identity-level edit typed against one view would rewrite who this
       // person is outside the D-11 ceremony AND become the canonical view by
       // newest-wins. Refused BEFORE any money moves; cosmetic refinements
-      // stay allowed (D-43.2). Drafts are untouched — freely editable.
-      // Stage 2 (R6): designed fork-guidance UI + draft stale-writer.
+      // stay allowed (D-43.2). Drafts stay freely editable — but the SAME
+      // classifier verdict doubles as the stales-siblings line (F6): a
+      // divergent addition on one draft view marks the other filled slots
+      // out of sync, so the package can never silently diverge again.
+      const classification = await classifyEditIdentityImpact(input.feedback);
       if (model.status !== "draft") {
-        const classification = await classifyEditIdentityImpact(input.feedback);
         if (shouldRefuseIteration(model.status, classification)) {
           // F4 copy (founder): the refusal teaches the doors — marks ARE
           // possible at casting time (brief free text → minted identity, all
-          // views inherit) or on a draft; stage 2 (R6) designs the surface
+          // views inherit) or on a draft; the client renders the fork door
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message: `This changes who ${model.name || "this model"} is — their identity is minted. Fork to explore it, or include it at casting time.`,
@@ -154,6 +156,25 @@ export const castingRefinementRouter = router({
           storageUrl: result.imageUrl,
           pointsCost: POINT_COSTS.iterate,
         });
+
+        // F6 stale-writer (the D-53 rider's motivating case): an identity-
+        // classified edit on a DRAFT view diverges the package — mark each
+        // OTHER angle's head row stale so the read side (tile dimming, the
+        // {N} stale segment, bulk refresh) lights up. Cosmetic edits mark
+        // nothing (D-43.2 — staleness spam is the failure mode). Pinned rows
+        // are exempt: accepted-final work feels no staleness pressure.
+        if (model.status === "draft" && classification.identityLevel) {
+          const staleIds = selectStaleSiblingHeads(assets, targetAsset.viewType);
+          if (staleIds.length > 0) {
+            const marked = await markModelAssetsStale(staleIds);
+            if (!marked.success) {
+              log.error(
+                { modelId: input.modelId, staleIds },
+                "[iterate] stale-writer failed — draft package may silently diverge",
+              );
+            }
+          }
+        }
 
         await updateModel(input.modelId, {
           masterPrompt: result.updatedMasterPrompt,

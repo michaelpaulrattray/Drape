@@ -350,6 +350,22 @@ export async function setModelAssetPinned(assetId: number, pinned: boolean): Pro
   return { success: true };
 }
 
+/** F6/D-53 stale-writer: mark asset rows out-of-sync on model_assets. The
+ *  entire read side (tile dimming + dots, {N} stale strip segment, bulk
+ *  refresh, composer warnings) shipped dormant with R5 — this is the writer
+ *  that lights it. Refresh/restore clear it by APPENDING a new head row
+ *  (newest-wins), never by editing status back. */
+export async function markModelAssetsStale(assetIds: number[]): Promise<{ success: boolean }> {
+  if (assetIds.length === 0) return { success: true };
+  const db = await getDb();
+  if (!db) return { success: false };
+  await db
+    .update(modelAssets)
+    .set({ status: { state: "stale", at: new Date().toISOString() } })
+    .where(inArray(modelAssets.id, assetIds));
+  return { success: true };
+}
+
 export async function getModelAssetByView(modelId: number, viewType: string) {
   const db = await getDb();
   if (!db) return null;

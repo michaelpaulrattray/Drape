@@ -55,6 +55,7 @@ export {
   deleteModel,
   createModelAsset,
   setModelAssetPinned,
+  markModelAssetsStale,
   getModelAssets,
   getModelAssetByView,
   getModelAssetsForCleanup,

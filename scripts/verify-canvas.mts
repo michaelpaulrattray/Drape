@@ -913,10 +913,17 @@ if (!(await filledNode())?.img) {
         await page.keyboard.down("Control");
         await page.keyboard.press("KeyZ");
         await page.keyboard.up("Control");
-        await sleep(2500);
-        const [zRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
-        const zRestored = (zRows as Array<{ deletedAt: unknown }>)[0]?.deletedAt == null;
-        check("J5 Cmd+Z undoes the delete (same restore path)", zRestored && (await nodeCount()) === countBefore);
+        // Poll for the settled truth — the fixed 2.5s sleep raced the remote
+        // Railway round trip repeatedly (J2/J4's lesson, applied here too)
+        let zRestored = false;
+        let zDomOk = false;
+        for (let i = 0; i < 20 && !(zRestored && zDomOk); i++) {
+          await sleep(500);
+          const [zRows] = await conn.execute(`SELECT deletedAt FROM board_items WHERE id = ?`, [emptyNode.id]);
+          zRestored = (zRows as Array<{ deletedAt: unknown }>)[0]?.deletedAt == null;
+          zDomOk = (await nodeCount()) === countBefore;
+        }
+        check("J5 Cmd+Z undoes the delete (same restore path)", zRestored && zDomOk, `db=${zRestored} dom=${zDomOk}`);
       }
     }
   }

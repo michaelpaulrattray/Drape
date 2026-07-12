@@ -62,3 +62,44 @@ describe("the prompt (single tuning point)", () => {
     expect(IDENTITY_EDIT_PROMPT).toMatch(/artifacts/i);
   });
 });
+
+// ── F6 stale-writer selection (D-53 rider, C5) ──────────────────────────────
+import { selectStaleSiblingHeads } from "./editClassifier";
+
+describe("selectStaleSiblingHeads — the F6 line", () => {
+  // Newest-first, like getModelAssets
+  const assets = [
+    { id: 50, viewType: "frontFull", storageUrl: "https://r2/ff-v2.png", pinned: false },
+    { id: 40, viewType: "frontFull", storageUrl: "https://r2/ff-v1.png", pinned: false },
+    { id: 30, viewType: "sideClose", storageUrl: "https://r2/side.png", pinned: true },
+    { id: 20, viewType: "threeQuarter", storageUrl: "https://r2/tq.png", pinned: false },
+    { id: 10, viewType: "frontClose", storageUrl: "https://r2/head.png", pinned: false },
+    { id: 5, viewType: "backFull", storageUrl: "", pinned: false }, // failed marker — not a head
+  ];
+
+  it("marks each OTHER angle's head, never the edited angle", () => {
+    const ids = selectStaleSiblingHeads(assets, "frontFull");
+    expect(ids).toContain(20); // threeQuarter head
+    expect(ids).toContain(10); // headshot head
+    expect(ids).not.toContain(50); // the edited angle
+    expect(ids).not.toContain(40);
+  });
+
+  it("skips pinned heads — accepted-final feels no staleness pressure", () => {
+    expect(selectStaleSiblingHeads(assets, "frontFull")).not.toContain(30);
+  });
+
+  it("only the HEAD row per angle, never older versions", () => {
+    const ids = selectStaleSiblingHeads(assets, "frontClose");
+    expect(ids).toContain(50); // frontFull head (v2)
+    expect(ids).not.toContain(40); // frontFull v1 — not a head
+  });
+
+  it("ignores unfilled marker rows", () => {
+    expect(selectStaleSiblingHeads(assets, "frontClose")).not.toContain(5);
+  });
+
+  it("a single-view draft marks nothing", () => {
+    expect(selectStaleSiblingHeads([assets[4]], "frontClose")).toEqual([]);
+  });
+});
