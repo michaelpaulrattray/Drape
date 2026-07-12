@@ -451,6 +451,51 @@ Ratified specifics:
 
 Consider making the environment's work area a spatial surface in the canvas image viewer's exact language — scroll-zoom, pan, the `#FAFAF8` + dot grid, the fluidity — rather than the current fixed-frame page. **Scope: camera-on-a-fixed-composition** — the panel stays docked, views hold canonical arrangement, no board grammar transfers; only the viewer's camera and feel. Rationale: closes the last dialect gap (board → environment currently reads canvas → webpage), and post-R5 the environment's content is a package + version strips + compare — spatial inspection handles that natively. **The R6 plan must price both the full version and the cheap fallback** (viewer background + scroll-zoom on the existing layout).
 
+## Group 6j — R6 mid-milestone record (VC-R6a/VC-R6b rulings + founder driving-notes backlog, 2026-07-12/13)
+
+*Interim record so nothing rides only in session state; C8's docs batch reconciles this into the DS/build plan properly.*
+
+### Rulings (binding, applied where noted)
+
+| Ref | Ruling | Status |
+|---|---|---|
+| R-1 | FailedSlot wears the destructive channel (red glyph + ink copy; board and environment agree on failure) | applied C1 |
+| R-2 | Spatial work area ships the FALLBACK (camera on the existing layout); the full camera-on-composition build is a **named post-pass item**, judged on the restyled environment | applied C2 |
+| R-3 | Save/Cast: same anchor, different weight (Cast = dark pill, Save = quiet outline). **Confirmed at VC-R6a: the header Cast pill carries NO cost label — the tier dialog is the D-15 cost surface** | applied C1/C3 |
+| R-4 | One environment chrome, two doors; wardrobe inherits the slim chrome, internals untouched; sidebar functions relocated (popover) | applied C3 |
+| R-5 | Out-pin → spawn-dot, code-only; slot "Pin" keeps its learned name; R7 docs note: ConnectionDots become "ports" in docs when convenient | applied C4 |
+| R-6 | Note surface: **MONOCHROME**; plus a "make notes actually good" interaction/sizing pass folded into C6's note work | rides C6 |
+| R-7 | Floor **UNIFIED on the field**: ONE field + dot token pair consumed identically by board, image viewer, and studio work area — no per-surface tuning; three-surface screenshot set for confirmation | rides C6 |
+| R-8 | Camera pan stays (earns its keep at 2×+) | closed |
+| R-9 | Background dots darken one step (they vanish today; the board reads as blank paper) — one token nudge, shown with the R-7 set | rides C6 |
+| R-10 | Version-chip UX is failing its job — **no redesign now**; "version surfacing rethink" joins the A4 mask-rebuild as ONE named post-pass item (the thumb-strip data model is right, the chrome isn't) | logged |
+| A4 | Belt-slimming rider **APPROVED**: export chip → `···` menu row (chip + `useCastingViewGeneration` deleted), menu Retry retired, mask stroke language conformant; mask-model rebuild = named post-pass item | rides C6 |
+
+Open for ruling: the **draft-state trap** (`DRAFT_STATE_TRAP_ASSESSMENT.md` — recommendation (a): views without minting, amending D-46 rider 1) and the folded **popped-view toolbar slimming** (Return to sheet · Download · Delete · Info; Edit reserved for the root).
+
+### R7 additions (hardening list, founder driving notes 2026-07-13)
+
+1. **Model deletion doesn't exist** — and it is a cascade DESIGN question, not a button: deleted models may have board placements and D-12 snapshots referencing their assets (the graceful-degradation ruling anticipated exactly this). Spec deletion semantics (soft-delete? placements? snapshots?) as an R7 item; the same thinking extends to garments/looks libraries.
+2. **Back-navigation audit**: library → draft → studio → back lands at lobby HOME, not the entry point. Standardize return-to-origin across all libraries and pages.
+3. **Profile popout surfaces** (settings/billing/security/usage): audit what is WIRED vs broken — broken items are R7 hardening; the visual redesign is L6 below.
+
+### R6 C8-flex candidate
+
+4. **Recent Work draft rule**: canvas-born casts are represented by their BOARD only (the board IS the recent work); standalone-born casts appear individually. One provenance check on the feed source. *Take in C8 only if genuinely trivial; else joins the L batch.*
+
+### Named batch — LOBBY & HOME POLISH *(post-R7 or alongside dogfood; founder briefs it properly when the design ideas form — these are the collected seeds)*
+
+- **L1** Casting-from-library workspace placeholder is lackluster — needs a designed answer (possibly none at all); no reference identified yet.
+- **L2** Home redesign toward inviting/fun first-landing (founder ideas pending); Recent Work possibly graduates to its own page with search.
+- **L3** Canvas cards in the lobby need a real design — mosaic-of-board-contents thumbnails or similar; also answer where archived canvases go (does archive even exist?).
+- **L4** Notifications in the lobby rail (release notes, low credits, refunds, security, usage).
+- **L5** Rail menu items get proper designed icons complementing the house language — explicitly not generic AI-slop icons.
+- **L6** Profile popout surfaces redesigned in the house language (wiring audit is R7 item 3).
+
+### Parked (founder's own notes, not the log)
+
+- Community / jobs / templates tab — post-launch strategy question.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
