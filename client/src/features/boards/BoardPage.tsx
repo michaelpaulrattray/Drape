@@ -456,13 +456,16 @@ function BoardPageImpl() {
   // R3: the cast node's Edit action — the environment opens on the model
   useEffect(() => {
     const onEditCast = (e: Event) => {
-      const detail = (e as CustomEvent<{ itemId: number; modelId: number | null; draft: boolean }>).detail;
+      const detail = (e as CustomEvent<{ itemId: number; modelId: number | null; draft: boolean; openUpgrade?: boolean }>).detail;
       if (!detail || typeof detail.itemId !== 'number' || !detail.modelId) return;
       setCastEditContext({
         boardId,
         itemId: detail.itemId,
         modelId: detail.modelId,
         draft: !!detail.draft,
+        // D-51: ghost tiles + the package verb open the takeover WITH the
+        // mint/upgrade dialog already up (mint gate for drafts, Rider 1)
+        openUpgrade: !!detail.openUpgrade,
       });
     };
     window.addEventListener('board-edit-cast', onEditCast);
@@ -527,9 +530,11 @@ function BoardPageImpl() {
           modelId,
         });
       }
+      // R5: a mint/upgrade changed the package — the comp card re-reads it
+      void utils.generation.packageState.invalidate({ modelId });
       landMintedCastMutation.mutate({ boardId, itemId, modelId });
     },
-    [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation],
+    [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation, utils],
   );
 
   // R3: the identity-event landing (D-11). Update regenerates THIS node
@@ -553,6 +558,123 @@ function BoardPageImpl() {
       }
     }
   }, [items]);
+
+  // ── R5: pop out / collapse (DS §5.17) — placements referencing the model
+  // package. Pop-out lands optimistically via the pendingForks overlay (D-38;
+  // the op is a fast DB write, but the row must never vanish-then-appear) and
+  // appends its edge to the listEdges cache so cascade prediction + edge
+  // rendering have no gap.
+  const popOutMutation = trpc.boardOps.popOutView.execute.useMutation({
+    onMutate: async (vars) => {
+      const source = items?.find((i) => i.id === vars.itemId);
+      const tempId = -Date.now();
+      const tempRow: BoardItemRecord = {
+        id: tempId,
+        type: 'model',
+        kind: 'image',
+        label: source?.label ?? null,
+        imageUrl: null, // the server resolves the asset URL; sub-second
+        positionX: vars.position?.x ?? (source?.positionX ?? 0) + (source?.width ?? 280) + 60,
+        positionY: vars.position?.y ?? source?.positionY ?? 0,
+        width: 200,
+        height: 360,
+        zIndex: 0,
+        metadata: {
+          provenance: {
+            type: 'cast_view',
+            modelId: -1,
+            rootItemId: vars.itemId,
+            viewAngle: vars.angle,
+            attributes: {},
+            engine: 'package',
+            inputs: [],
+          },
+        },
+        sourceModelId: null,
+      };
+      setPendingForks((pf) => [...pf, tempRow]);
+      return { tempId };
+    },
+    onSuccess: (result, vars, ctx) => {
+      if (ctx?.tempId) {
+        setPendingForks((pf) =>
+          pf.map((p) =>
+            p.id === ctx.tempId ? { ...p, id: result.itemId, imageUrl: result.imageUrl } : p,
+          ),
+        );
+      }
+      // The cascade-bearing edge enters the cache immediately — a delete in
+      // the refetch window must still predict the popped child (R4 trust net)
+      utils.boardOps.listEdges.setData({ boardId }, (old) => [
+        ...(old ?? []),
+        { id: result.edgeId, source: vars.itemId, target: result.itemId, relation: 'generated_from_cast' },
+      ]);
+      utils.boards.getItems.invalidate({ boardId });
+      utils.boardOps.listEdges.invalidate({ boardId });
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.tempId) setPendingForks((pf) => pf.filter((p) => p.id !== ctx.tempId));
+      toast.error(err.message);
+    },
+  });
+
+  const collapseMutation = trpc.boardOps.collapseView.useMutation({
+    onMutate: async ({ itemId }) => {
+      // Optimistic removal, mirroring delete's onMutate (D-38)
+      await utils.boards.getItems.cancel({ boardId });
+      const prev = utils.boards.getItems.getData({ boardId });
+      utils.boards.getItems.setData({ boardId }, (old) => old?.filter((i) => i.id !== itemId));
+      return { prev };
+    },
+    onSuccess: () => {
+      utils.boardOps.listEdges.invalidate({ boardId });
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
+      toast.error(err.message);
+    },
+    onSettled: () => utils.boards.getItems.invalidate({ boardId }),
+  });
+
+  useEffect(() => {
+    const onPopOut = (e: Event) => {
+      const detail = (e as CustomEvent<{ itemId: number; angle: string; position?: { x: number; y: number } }>).detail;
+      if (!detail || typeof detail.itemId !== 'number' || detail.itemId <= 0) return;
+      popOutMutation.mutate({
+        boardId,
+        itemId: detail.itemId,
+        angle: detail.angle as never,
+        position: detail.position,
+      });
+    };
+    const onCollapse = (e: Event) => {
+      const detail = (e as CustomEvent<{ itemId: number }>).detail;
+      if (!detail || typeof detail.itemId !== 'number' || detail.itemId <= 0) return;
+      collapseMutation.mutate({ boardId, itemId: detail.itemId });
+    };
+    window.addEventListener('board-pop-out-view', onPopOut);
+    window.addEventListener('board-collapse-view', onCollapse);
+    return () => {
+      window.removeEventListener('board-pop-out-view', onPopOut);
+      window.removeEventListener('board-collapse-view', onCollapse);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId]);
+
+  // R5 prefetch (D-38): comp cards must paint from cache, never open
+  // empty-then-load — warm every placed cast's packageState as items arrive
+  useEffect(() => {
+    if (!items) return;
+    const seen = new Set<number>();
+    for (const item of items) {
+      const meta = (item.metadata ?? {}) as { provenance?: { modelId?: number } };
+      const modelId = meta.provenance?.modelId;
+      if (typeof modelId === 'number' && modelId > 0 && !seen.has(modelId)) {
+        seen.add(modelId);
+        void utils.generation.packageState.prefetch({ modelId });
+      }
+    }
+  }, [items, utils]);
 
   const applyModelEditMutation = trpc.boardOps.applyModelEdit.execute.useMutation({
     onMutate: async (vars) => {
@@ -1183,6 +1305,10 @@ function BoardPageImpl() {
           setInfoPanel({ itemId: nodeId, position: pos });
           break;
         }
+        case 'collapse':
+          // R5: the popped view returns to its comp card (DS §5.17)
+          collapseMutation.mutate({ boardId, itemId: nodeId });
+          break;
         case 'delete':
           handleItemDelete(nodeId);
           break;
@@ -1190,7 +1316,7 @@ function BoardPageImpl() {
           break;
       }
     },
-    [handleItemDelete, nodeContextMenu],
+    [handleItemDelete, nodeContextMenu, collapseMutation, boardId],
   );
 
   // ── Derived state ──────────────────────────────────────────
@@ -1524,6 +1650,11 @@ function BoardPageImpl() {
           position={{ x: nodeContextMenu.x, y: nodeContextMenu.y }}
           nodeId={nodeContextMenu.nodeId}
           imageUrl={nodeContextMenu.imageUrl}
+          canCollapse={(() => {
+            const item = items?.find((i) => i.id === nodeContextMenu.nodeId);
+            const meta = (item?.metadata ?? {}) as { provenance?: { type?: string } };
+            return meta.provenance?.type === 'cast_view';
+          })()}
           onAction={handleNodeContextAction}
           onClose={() => setNodeContextMenu(null)}
         />

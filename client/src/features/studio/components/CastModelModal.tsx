@@ -1,9 +1,9 @@
 /**
  * CastModelModal — the mint gate. Asks for a name and a package tier
- * (D-39: Draft / Core identity / Production sheet), then mints the
- * identity via a single mintPackage call. Tier costs are plan-derived
- * (server truth, D-15) — never client literals. Upgrading later costs
- * the same: pricing counts only missing slots.
+ * (D-39, tier copy per D-51: Draft / Core identity / Full comp card),
+ * then mints the identity via a single mintPackage call. Tier costs are
+ * plan-derived (server truth, D-15) — never client literals. Upgrading
+ * later costs the same: pricing counts only missing slots.
  */
 import { useState, useCallback, useEffect } from 'react';
 import { Camera, ChevronRight, Loader2 } from 'lucide-react';
@@ -14,7 +14,8 @@ export type TierPlan = Record<MintTier, { missing: string[]; cost: number }>;
 const TIER_COPY: Record<MintTier, { name: string; purpose: string }> = {
   draft: { name: 'Draft', purpose: 'Name them and keep exploring. Views come later.' },
   core: { name: 'Core identity', purpose: 'Face angles and full body — ready for styling.' },
-  production: { name: 'Production sheet', purpose: 'The full six-view card, for scenes and video.' },
+  // D-51 vocabulary: the composite is the COMP CARD everywhere users read it
+  production: { name: 'Full comp card', purpose: 'The full six-view card, for scenes and video.' },
 };
 
 const TIER_ORDER: MintTier[] = ['draft', 'core', 'production'];

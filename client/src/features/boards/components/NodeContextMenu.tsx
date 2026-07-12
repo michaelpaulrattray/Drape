@@ -15,6 +15,7 @@ import {
   ClipboardCopy,
   Trash2,
   Info,
+  Minimize2,
   type LucideIcon,
 } from 'lucide-react';
 import { downloadImage, copyImageToClipboard } from '../canvas/imageActions';
@@ -26,6 +27,7 @@ export type NodeContextAction =
   | 'download'
   | 'copy_image'
   | 'info'
+  | 'collapse'
   | 'delete';
 
 type MenuItem = {
@@ -38,6 +40,8 @@ type MenuItem = {
 const MENU_ITEMS: MenuItem[] = [
   { action: 'rename', label: 'Rename', icon: Pencil, group: 'edit' },
   { action: 'info', label: 'Info', icon: Info, group: 'edit' },
+  // R5: popped-out views return to their comp card (DS §5.17)
+  { action: 'collapse', label: 'Collapse into sheet', icon: Minimize2, group: 'edit' },
   { action: 'download', label: 'Download Image', icon: Download, group: 'file' },
   { action: 'copy_image', label: 'Copy Image', icon: ClipboardCopy, group: 'file' },
   { action: 'delete', label: 'Delete', icon: Trash2, group: 'danger' },
@@ -49,6 +53,8 @@ type NodeContextMenuProps = {
   position: { x: number; y: number };
   nodeId: number;
   imageUrl: string | null;
+  /** True only for popped-out views (cast_view provenance) — shows Collapse. */
+  canCollapse?: boolean;
   onAction: (action: NodeContextAction, nodeId: number) => void;
   onClose: () => void;
 };
@@ -59,6 +65,7 @@ export function NodeContextMenu({
   position,
   nodeId,
   imageUrl,
+  canCollapse,
   onAction,
   onClose,
 }: NodeContextMenuProps) {
@@ -103,9 +110,12 @@ export function NodeContextMenu({
     return { x, y };
   })();
 
-  // Image actions only make sense once an image exists
+  // Image actions only make sense once an image exists; Collapse only on
+  // popped-out views
   const visibleItems = MENU_ITEMS.filter(
-    (item) => imageUrl || !['download', 'copy_image'].includes(item.action),
+    (item) =>
+      (imageUrl || !['download', 'copy_image'].includes(item.action)) &&
+      (item.action !== 'collapse' || canCollapse),
   );
 
   const groups = ['edit', 'file', 'danger'] as const;

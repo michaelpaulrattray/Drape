@@ -15,7 +15,7 @@
  *
  * Studio-scoped code hosted by BoardPage — the D-24 boundary in practice.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -39,6 +39,9 @@ export interface CastEditContext {
   modelId: number;
   /** Placed draft — Edit is the promotion route (mint gate, not D-11). */
   draft: boolean;
+  /** R5/D-51: the board's package verb + ghost tiles open the takeover with
+   *  the mint/upgrade dialog already up (mint gate for drafts, Rider 1). */
+  openUpgrade?: boolean;
 }
 
 export interface CastingTakeoverProps {
@@ -259,6 +262,17 @@ export function CastingTakeover({
   useEffect(() => {
     if (!showCastModal) setUpgradeMode(false);
   }, [showCastModal]);
+
+  // R5/D-51 upgrade intent: the board's "Build comp card"/"Complete card"
+  // verb (and ghost tiles) arrive with the dialog pre-opened — once the
+  // session has hydrated, so the tier plan reads the real model
+  const openedUpgradeIntentRef = useRef(false);
+  useEffect(() => {
+    if (!editContext?.openUpgrade || openedUpgradeIntentRef.current || !hydrated) return;
+    openedUpgradeIntentRef.current = true;
+    setUpgradeMode(isMintedEdit);
+    setShowCastModal(true);
+  }, [editContext?.openUpgrade, hydrated, isMintedEdit, setShowCastModal]);
 
   // Esc closes (capture so board-level handlers never see it while we're up)
   useEffect(() => {

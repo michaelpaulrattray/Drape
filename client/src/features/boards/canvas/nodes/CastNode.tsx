@@ -31,6 +31,9 @@ import { VariationsPopoverContent } from "../VariationsPopover";
 import { downloadImage } from "../imageActions";
 import { useRegisterCanvasLayer } from "../../stores/useCanvasLayers";
 import { useCastNodeController } from "./useCastNodeController";
+import { CharacterSheetImageArea } from "../CharacterSheetImageArea";
+import { CostLabel } from "../CostLabel";
+import { useSheetController } from "./useSheetController";
 import type { Provenance, NodeStatus, CastAttributes } from "@shared/boardTypes";
 
 export interface CastNodeData extends Record<string, unknown> {
@@ -96,15 +99,35 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // modelId > 0 — optimistic rows carry a -1 placeholder until the server
   // confirm swaps in the real id; acting on that would target a dead session
   const modelReady = typeof modelId === "number" && modelId > 0 && data.itemId > 0;
-  const openEdit = () =>
+  const openEdit = (openUpgrade = false) =>
     window.dispatchEvent(
       new CustomEvent("board-edit-cast", {
-        detail: { itemId: data.itemId, modelId, draft: isDraft },
+        detail: { itemId: data.itemId, modelId, draft: isDraft, openUpgrade },
       }),
     );
   const editSegment: ControlSegment[] =
     modelReady && data.imageUrl
-      ? [{ kind: "action", content: "Edit", onClick: openEdit }]
+      ? [{ kind: "action", content: "Edit", onClick: () => openEdit() }]
+      : [];
+
+  // ── R5: the comp card (DS §5.17) — the model's package rendered on the
+  // root; tile popover is the ONE per-view surface (D-29 restraint) ─────────
+  const sheet = useSheetController(data, {
+    enabled: modelReady && !isView && !!data.imageUrl,
+  });
+  const tileAnchorRef = useRef<HTMLElement | null>(null);
+  useRegisterCanvasLayer(`sheet-tile-${data.itemId}`, sheet.popoverAngle !== null);
+  const showSheet = sheet.isSheet && controller.promptState === "complete" && !errored && !controller.isEmpty;
+
+  // D-51: the package verb — one strip slot, three honest states. Ghost
+  // tiles are the in-card accelerator; this is the stable anchor.
+  const packageVerb: ControlSegment[] =
+    modelReady && data.imageUrl && !isView
+      ? isDraft
+        ? [{ kind: "action", content: "Build comp card", onClick: () => openEdit(true) }]
+        : sheet.minted && !sheet.completeCard
+          ? [{ kind: "action", content: "Complete card", onClick: () => openEdit(true) }]
+          : [] // complete six-slot card: the verb disappears entirely
       : [];
 
   // D-43 v-chip ruling: hidden at v1; at >1 the chip itself opens history
@@ -137,13 +160,14 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const controlSegments: ControlSegment[] = isRoot && !isLibrary
     ? [
         ...editSegment,
-        { kind: "action", content: "+ Views", onClick: () => {} }, // R5
+        ...packageVerb,
         ...versionSegment,
         { kind: "action", content: "···", onClick: openMenu },
       ]
     : [
         ...(data.pinned ? [{ kind: "pin", content: "Pinned — kept as finished work" } as ControlSegment] : []),
         ...editSegment,
+        ...packageVerb,
         ...versionSegment,
         { kind: "action", content: "···", onClick: openMenu },
       ];
@@ -277,16 +301,138 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           <NodeStatusBadge status={data.status} onPrimary={controller.retry} />
         )}
 
-        <div className="relative">
-          <CastImageArea
-            imageUrl={data.imageUrl}
-            promptState={controller.isEmpty && !errored ? "empty" : controller.promptState}
-            progressFraction={controller.progressFraction}
-            progressSeconds={controller.progressSeconds}
-            dimmed={data.status?.type === "stale" && !data.pinned}
-            error={errored}
-            onRetry={controller.retry}
-          />
+        <div className="relative" onMouseEnter={showSheet ? sheet.prefetchPlan : undefined}>
+          {showSheet ? (
+            // The comp card substitutes ONLY the completed image state —
+            // empty/generating/error/draft paths keep §5.12 untouched. The
+            // grid is 3:4 overall, so node geometry never shifts (D-31).
+            <CharacterSheetImageArea
+              tiles={sheet.tiles}
+              activeTileAngle={sheet.popoverAngle}
+              onTileClick={(angle, el) => {
+                tileAnchorRef.current = el;
+                sheet.prefetchPlan();
+                sheet.setPopoverAngle(angle);
+              }}
+              onGhostClick={() => openEdit(true)}
+            />
+          ) : (
+            <CastImageArea
+              imageUrl={data.imageUrl}
+              promptState={controller.isEmpty && !errored ? "empty" : controller.promptState}
+              progressFraction={controller.progressFraction}
+              progressSeconds={controller.progressSeconds}
+              dimmed={data.status?.type === "stale" && !data.pinned}
+              error={errored}
+              onRetry={controller.retry}
+            />
+          )}
+
+          {/* The one per-view surface (D-29): label · vN, status, actions */}
+          <Popover
+            open={sheet.popoverAngle !== null}
+            onOpenChange={(open) => !open && sheet.setPopoverAngle(null)}
+          >
+            <PopoverAnchor virtualRef={tileAnchorRef as React.RefObject<HTMLElement>} />
+            {sheet.popoverAngle !== null && sheet.activeSlot && (
+              <CanvasPopoverContent side="right" sideOffset={10} className="w-[236px] p-3">
+                {(() => {
+                  const slot = sheet.activeSlot!;
+                  const isHeadshot = slot.angle === "frontClose";
+                  const planSlot = sheet.refreshPlan?.slots.find((s) => s.angle === slot.angle);
+                  const refreshCost = planSlot ? planSlot.cost : null;
+                  const refreshable = !isHeadshot && !slot.pinned && (slot.filled || !!slot.failed);
+                  const close = () => sheet.setPopoverAngle(null);
+                  return (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-canvas-sm font-medium text-canvas-ink">
+                        {slot.label}
+                        {slot.version > 1 && (
+                          <span className="text-canvas-ink-faint font-normal"> · v{slot.version}</span>
+                        )}
+                      </div>
+                      {slot.pinned ? (
+                        <div className="text-canvas-xs text-canvas-ink-soft">Pinned — kept as finished work</div>
+                      ) : slot.failed ? (
+                        <div className="text-canvas-xs text-canvas-ink-soft">
+                          Failed: {slot.failed.reason} — you weren't charged
+                        </div>
+                      ) : slot.stale ? (
+                        <div className="text-canvas-xs text-canvas-ink-soft">Out of sync</div>
+                      ) : null}
+
+                      <div className="flex flex-col border-t border-hairline border-canvas-border mt-1 pt-1.5">
+                        {slot.filled && (
+                          sheet.poppedItemId ? (
+                            <button
+                              type="button"
+                              className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
+                              onClick={() => {
+                                sheet.collapse(sheet.poppedItemId!);
+                                close();
+                              }}
+                            >
+                              Return to sheet
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
+                              onClick={() => {
+                                sheet.popOut(slot.angle);
+                                close();
+                              }}
+                            >
+                              Pop out ⤢
+                            </button>
+                          )
+                        )}
+                        {isHeadshot ? (
+                          // D-43: the headshot IS the identity — no refresh, ever
+                          <div className="px-2 py-1.5 text-canvas-xs text-canvas-ink-faint">
+                            The headshot is this identity — fork to change it
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!refreshable}
+                            title={slot.pinned ? "Pinned — unpin to refresh" : undefined}
+                            className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-between gap-2"
+                            onClick={() => {
+                              sheet.refreshSlot(slot.angle);
+                              close();
+                            }}
+                          >
+                            <span>{slot.failed && !slot.filled ? "Retry" : "Refresh"}</span>
+                            <CostLabel credits={refreshCost} />
+                          </button>
+                        )}
+                        {slot.filled && (
+                          <button
+                            type="button"
+                            className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
+                            onClick={() => sheet.setPinned(slot.angle, !slot.pinned)}
+                          >
+                            {slot.pinned ? "Unpin" : "Pin"}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
+                          onClick={() => {
+                            close();
+                            openEdit();
+                          }}
+                        >
+                          Open in environment
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </CanvasPopoverContent>
+            )}
+          </Popover>
           {/* The front door (D-33): one dark pill, below the empty-slot glyph.
               The picker itself is hosted by BoardPage — node-local state dies
               on the optimistic temp→real id remount. */}
