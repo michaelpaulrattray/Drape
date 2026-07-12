@@ -188,13 +188,24 @@ export async function executeMoveNodes(input: {
 
 // ── deleteNode / undoDelete (soft, cascade-aware) ──────────────────────────
 
-/** A root's cascade unit = itself + its generated_from_cast targets.
+/** A root's cascade unit = itself + its ALIVE generated_from_cast targets.
  *  Deliberately NOT forked_from/variant_of — forks and variations are
  *  independent identities, never destroyed by deleting their source (D-8's
- *  red is scoped to delete-cascade alone). */
+ *  red is scoped to delete-cascade alone).
+ *
+ *  ALIVE only (VC-R5 fix 1): edges survive soft deletes by design (undo needs
+ *  them), so a popped view that was collapsed or deleted earlier leaves its
+ *  edge... no — collapse removes its edge, but a DIRECTLY deleted popped view
+ *  keeps one. Counting such targets made the one red mark in the app lie
+ *  about its blast radius ("2 connected views" over an empty cascade). */
 async function cascadeUnit(itemId: number): Promise<number[]> {
   const viewEdges = await getEdgesFrom(itemId, "generated_from_cast");
-  return [itemId, ...viewEdges.map((e) => e.targetItemId)];
+  const unit = [itemId];
+  for (const edge of viewEdges) {
+    const target = await getBoardItemById(edge.targetItemId);
+    if (target && !target.deletedAt) unit.push(edge.targetItemId);
+  }
+  return unit;
 }
 
 /** Union of cascade units for a selection — deleted and restored as one unit. */

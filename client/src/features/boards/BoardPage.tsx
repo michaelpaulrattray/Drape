@@ -172,11 +172,20 @@ function BoardPageImpl() {
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ itemIds: number[]; cascadeCount: number } | null>(null);
 
-  /** Client-side cascade prediction: selection + generated_from_cast targets. */
+  /** Client-side cascade prediction: selection + ALIVE generated_from_cast
+   *  targets. Aliveness is checked against the items cache (soft-deleted rows
+   *  never arrive in getItems) — the edge cache can hold optimistic appends
+   *  and stale rows across a pop-out/collapse cycle at AU latency, and the
+   *  one red dialog must never claim a blast radius that isn't there
+   *  (VC-R5 fix 1). The server recomputes the unit authoritatively with the
+   *  same alive-only rule. */
   const predictDeleteUnit = (itemIds: number[]) => {
     const unit = new Set(itemIds);
+    const alive = new Set((itemsRef.current ?? []).map((i) => i.id));
     for (const edge of boardEdgesRef.current ?? []) {
-      if (edge.relation === 'generated_from_cast' && unit.has(edge.source)) unit.add(edge.target);
+      if (edge.relation === 'generated_from_cast' && unit.has(edge.source) && alive.has(edge.target)) {
+        unit.add(edge.target);
+      }
     }
     return unit;
   };
@@ -668,17 +677,24 @@ function BoardPageImpl() {
 
   const collapseMutation = trpc.boardOps.collapseView.useMutation({
     onMutate: async ({ itemId }) => {
-      // Optimistic removal, mirroring delete's onMutate (D-38)
+      // Optimistic removal, mirroring delete's onMutate (D-38) — and the
+      // lineage edge leaves the cache WITH the placement, so cascade
+      // prediction never sees a collapsed view (VC-R5 fix 1)
       await utils.boards.getItems.cancel({ boardId });
       const prev = utils.boards.getItems.getData({ boardId });
       utils.boards.getItems.setData({ boardId }, (old) => old?.filter((i) => i.id !== itemId));
-      return { prev };
+      const prevEdges = utils.boardOps.listEdges.getData({ boardId });
+      utils.boardOps.listEdges.setData({ boardId }, (old) =>
+        old?.filter((e) => !(e.relation === 'generated_from_cast' && e.target === itemId)),
+      );
+      return { prev, prevEdges };
     },
     onSuccess: () => {
       utils.boardOps.listEdges.invalidate({ boardId });
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.prev) utils.boards.getItems.setData({ boardId }, ctx.prev);
+      if (ctx?.prevEdges) utils.boardOps.listEdges.setData({ boardId }, ctx.prevEdges);
       toast.error(err.message);
     },
     onSettled: () => utils.boards.getItems.invalidate({ boardId }),

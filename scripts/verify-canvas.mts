@@ -56,8 +56,12 @@
  *   O. (R5, free) Pop out writes the generated_from_cast edge with
  *      { viewAngle } metadata (200-wide cast_view placement, rendered edge);
  *      deleting the root then raises the RED CASCADE DIALOG (the R4
- *      activation, VC-R4 confirm); collapse soft-deletes the placement and
- *      re-anchors outgoing edges to the root, viewAngle preserved (D-30).
+ *      activation, VC-R4 confirm); collapse soft-deletes the placement,
+ *      REMOVES the lineage edge (O7b), and re-anchors outgoing edges to the
+ *      root, viewAngle preserved (D-30). O9 (VC-R5 fix 1): deleting the root
+ *      AFTER a pop-out/collapse cycle shows NO cascade dialog — the one red
+ *      mark must never lie about its blast radius (alive-only prediction,
+ *      client and server).
  *   P. (R5, free) Per-slot pin over raw tRPC lands on the newest filled row;
  *      the tile popover reads it back (Unpin + disabled Refresh).
  *   Q. (R5, free) Structural refresh refusals BEFORE money moves: the
@@ -1091,6 +1095,55 @@ let seededItemId = 0;
         }
         check("O7 collapse soft-deletes the placement", collapsed);
         check("O8 outgoing edge re-anchored to root, viewAngle preserved (D-30)", reanchored);
+
+        // O7b (VC-R5 fix 1): collapse must REMOVE the lineage edge server-side
+        const [remaining] = await conn.execute(
+          `SELECT COUNT(*) AS n FROM board_edges
+           WHERE boardId = ? AND sourceItemId = ? AND relation = 'generated_from_cast'`,
+          [boardId, seededItemId],
+        );
+        const lineageGone = (remaining as Array<{ n: number }>)[0].n === 0;
+        check("O7b collapse removed the generated_from_cast edge", lineageGone);
+
+        // O9 (VC-R5 fix 1, the trust assertion): after pop-out → collapse,
+        // deleting the root must NOT raise the cascade dialog — the one red
+        // mark in the app must never lie about its blast radius. Plain soft
+        // delete + Undo toast instead; Cmd+Z restores (cleanup).
+        {
+          await page.keyboard.press("Escape");
+          await sleep(400);
+          const label9 = await page.evaluate((sel: string) => {
+            const n = document.querySelector(sel);
+            if (!n) return null;
+            const r = n.getBoundingClientRect();
+            return { x: r.x + r.width / 2, y: r.y + 8 };
+          }, sheetNodeSel);
+          await page.mouse.click(label9!.x, label9!.y);
+          await sleep(400);
+          await page.keyboard.press("Delete");
+          await sleep(700);
+          const afterDelete = await page.evaluate(() => ({
+            dialog: [...document.querySelectorAll("p")].some((p) => p.textContent?.trim() === "Delete this cast?"),
+            undoToast: [...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Undo"),
+          }));
+          check(
+            "O9 delete after collapse: NO phantom cascade dialog, plain soft delete",
+            !afterDelete.dialog && afterDelete.undoToast,
+            JSON.stringify(afterDelete),
+          );
+          if (afterDelete.dialog) {
+            await page.evaluate(() => {
+              const b = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim() === "Cancel");
+              (b as HTMLElement | undefined)?.click();
+            });
+          } else {
+            // Restore for the legs that follow
+            await page.keyboard.down("Control");
+            await page.keyboard.press("z");
+            await page.keyboard.up("Control");
+            await sleep(1500);
+          }
+        }
       }
     }
   }
