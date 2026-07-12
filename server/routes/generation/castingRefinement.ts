@@ -17,6 +17,7 @@ import { TRPCError } from "@trpc/server";
 import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
+import { classifyEditIdentityImpact, shouldRefuseIteration } from "../../casting/editClassifier";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("routes/generation");
 
@@ -57,6 +58,22 @@ export const castingRefinementRouter = router({
       const targetAsset = assets.find(a => a.id === input.assetId);
       if (!targetAsset) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Asset not found" });
+      }
+
+      // A1 SEAL (VC-R5 follow-up, D-43): a minted identity is immutable —
+      // an identity-level edit typed against one view would rewrite who this
+      // person is outside the D-11 ceremony AND become the canonical view by
+      // newest-wins. Refused BEFORE any money moves; cosmetic refinements
+      // stay allowed (D-43.2). Drafts are untouched — freely editable.
+      // Stage 2 (R6): designed fork-guidance UI + draft stale-writer.
+      if (model.status !== "draft") {
+        const classification = await classifyEditIdentityImpact(input.feedback);
+        if (shouldRefuseIteration(model.status, classification)) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `This changes who ${model.name || "this model"} is — their identity is minted. Fork instead.`,
+          });
+        }
       }
 
       const genResult = await createGeneration({
