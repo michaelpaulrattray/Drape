@@ -184,11 +184,11 @@ export interface TopBarProps {
 
 Canvas usage: breadcrumb `Boards · {board.name}`, right slot zoom % · Share · avatar. Studio usage: `backAction {label:"Boards"}`, breadcrumb `Cast`, title `Maya R.`, subtitle `v{n} · saved {relativeTime}`, right slot `{viewsDone} of 5 views · esc`. Row: `px-4 py-3 border-b-hairline border-canvas-border bg-canvas-surface`; back button `text-canvas-sm text-canvas-ink-soft hover:bg-canvas-surface-inset`; crumbs `text-canvas-sm text-canvas-ink-soft` separated by `·` in ink-faint; title `text-canvas-md font-medium`.
 
-### 5.3 `FloatingToolPill`
+### 5.3 `FloatingToolPill` *(amended per VC-R5 follow-up rulings A/B — the pill is FLAT)*
 
-`client/src/features/boards/canvas/FloatingToolPill.tsx` — bottom-center pill, canvas only. Buttons: **Add** (`Plus`), **Select** (`MousePointer2`), **Frame** (`Square`), **Note** (`Type`), divider, **More** (`MoreHorizontal`). 28px round buttons; active = `bg-canvas-ink text-canvas-surface`; container `p-1 bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-pill`. Implementation as in the original draft.
+`client/src/features/boards/canvas/FloatingToolPill.tsx` — bottom-center pill, canvas only. **No + → popup menu (ruling B):** every addable node type is its own segment. Current layout: pointer cluster **Select** (`MousePointer2`, marquee per D-47) · **Hand** (`Hand`, pan; Space = temporary hand) · divider · node-type cluster **Cast** (`UserPlus`, spawns at viewport center) · **Note** (`Type`). Image/Video/etc. join as their passes land — one `ToolButton` each; nothing is sized to the segment count (D-18 spirit). 28px round buttons; active = `bg-canvas-ink text-canvas-surface`; container `p-1 bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-pill`.
 
-The **Add** dropdown (shadcn `DropdownMenu`, positioned above the pill) lists: `Cast`, `From library` *(new — foundations Decision 3a/§4 `library_cast` placement; opens the `LibraryPickerPopover`, §7.3)*, `Image` *(pass 3, hidden until then)*, `Reference`, `Note`, `Frame`. The pill's geometry already accommodates future tool entries (video, pass 4) without redesign — do not size anything to exactly the current icon count.
+The right-click `AddNodeMenu` survives as the at-cursor context path. **The empty board is QUIET (ruling A):** dotted grid + one tertiary line ("Add a cast to begin") — no floating affordance, no modal; the legible pill IS the empty-state answer, and D-9's ghost-composition first-run owns onboarding when it lands (R6). *(Frames removed per D-49 — pass 3.)*
 
 ### 5.4 `ConnectionDot`
 

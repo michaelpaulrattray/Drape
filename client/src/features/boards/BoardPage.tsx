@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { toast } from 'sonner';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
@@ -1670,10 +1670,11 @@ function BoardPageImpl() {
                 activeTool === 'note' ? 'note' : activeTool === 'hand' ? 'hand' : 'select'
               }
               onSelectTool={(tool: PillTool) => {
-                if (tool === 'add') {
-                  // Pill adds spawn at viewport center — clear any stale cursor pos
+                if (tool === 'cast') {
+                  // Ruling B: flat pill — Cast is a direct verb, no popup.
+                  // Spawns at viewport center; right-click keeps the at-cursor menu.
                   contextMenuFlowPosRef.current = null;
-                  setAddNodeMenu({ x: window.innerWidth / 2 - 90, y: window.innerHeight - 320 });
+                  handleAddCast(null);
                   return;
                 }
                 handleToolSelect(tool);
@@ -1682,42 +1683,17 @@ function BoardPageImpl() {
             <CanvasChatToggle />
           </BoardCanvas>
 
-          {/* Empty state — minimal "+" button */}
+          {/* Empty state (VC-R5 follow-up ruling A): QUIET — dotted grid + one
+              tertiary line. No floating affordance, no modal; the pill carries
+              the invitation (ruling B) and D-9's ghost-composition first-run
+              owns onboarding when it lands (R6). */}
           {canvasItems.length === 0 && !itemsLoading && !boardLoading && !activePanel && (
             <div
-              className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
               style={{ zIndex: 5 }}
             >
-              <button
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setAddNodeMenu({ x: rect.right + 8, y: rect.top });
-                }}
-                className="pointer-events-auto flex items-center justify-center rounded-full transition-all duration-200"
-                style={{
-                  width: 40,
-                  height: 40,
-                  background: 'rgba(0,0,0,0.05)',
-                  color: '#52524B',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(0,0,0,0.1)';
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(0,0,0,0.05)';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-              >
-                <Plus size={18} strokeWidth={2} />
-              </button>
-              <p
-                className="pointer-events-none mt-2.5"
-                style={{ fontSize: 12, color: '#a1a19a', fontWeight: 400 }}
-              >
-                Click to add a node
+              <p className="text-canvas-xs" style={{ color: '#a1a19a' }}>
+                Add a cast to begin
               </p>
             </div>
           )}

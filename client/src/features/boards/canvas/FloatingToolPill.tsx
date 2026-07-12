@@ -1,21 +1,26 @@
 /**
  * FloatingToolPill — bottom-center tool pill (DESIGN_SYSTEM.md §5.3).
- * Canvas only, never the refinement studio. The Add action opens the node
- * menu (host decides how); geometry accommodates future tool entries
- * (video, pass 4) without redesign — nothing is sized to the icon count.
+ * Canvas only, never the refinement studio.
  *
  * VC-R4 ruling R1: the pointer splits into Select (marquee-capable) and
  * Hand/Pan as a left cluster; Space temporarily switches to hand (React
  * Flow's panActivationKeyCode). Frames removed per ruling R3 — they return
  * at pass 3 as export units (D-20) wearing their real job.
+ *
+ * VC-R5 follow-up ruling B: the pill is FLAT — no + → popup menu; every
+ * addable node type is its own segment (Cast · Note today; Image/Video/etc.
+ * join as passes land — D-18 spirit: nothing is sized to the segment count,
+ * new types are one ToolButton each). A legible pill on a quiet board IS
+ * the empty-state answer (ruling A). The right-click AddNodeMenu survives
+ * as the at-cursor context path.
  */
-import { Plus, MousePointer2, Hand, Type, MoreHorizontal } from "lucide-react";
+import { MousePointer2, Hand, Type, UserPlus, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type PillTool = "add" | "select" | "hand" | "note";
+export type PillTool = "cast" | "select" | "hand" | "note";
 
 export interface FloatingToolPillProps {
-  activeTool: Exclude<PillTool, "add">;
+  activeTool: Exclude<PillTool, "cast">;
   onSelectTool: (tool: PillTool) => void;
   onMore?: () => void;
 }
@@ -31,8 +36,9 @@ export function FloatingToolPill({ activeTool, onSelectTool, onMore }: FloatingT
         <Hand className="w-3 h-3" strokeWidth={1.6} />
       </ToolButton>
       <span className="w-px h-3.5 bg-canvas-border mx-1" aria-hidden />
-      <ToolButton onClick={() => onSelectTool("add")} label="Add">
-        <Plus className="w-3 h-3" strokeWidth={1.8} />
+      {/* Node-type cluster (ruling B): one segment per addable type */}
+      <ToolButton onClick={() => onSelectTool("cast")} label="Cast">
+        <UserPlus className="w-3 h-3" strokeWidth={1.6} />
       </ToolButton>
       <ToolButton active={activeTool === "note"} onClick={() => onSelectTool("note")} label="Note">
         <Type className="w-3 h-3" strokeWidth={1.6} />

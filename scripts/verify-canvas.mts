@@ -163,7 +163,7 @@ await page.setCookie({ name: "app_session_id", value: token, domain: "localhost"
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
-await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
 await sleep(500);
 
 const nodeCount = () => page.evaluate(() => document.querySelectorAll(".react-flow__node").length);
@@ -174,25 +174,16 @@ const nodeRects = () =>
       return { id: n.getAttribute("data-id") ?? "", x: r.x, y: r.y, w: r.width, h: r.height };
     }),
   );
+// Flat pill (VC-R5 follow-up ruling B): Cast is a direct segment — one click,
+// no popup menu. The right-click AddNodeMenu remains the at-cursor path.
 const addCastViaPill = async () => {
   const btn = (await page.evaluate(() => {
-    const b = document.querySelector('button[aria-label="Add"]');
+    const b = document.querySelector('button[aria-label="Cast"]');
     if (!b) return null;
     const r = b.getBoundingClientRect();
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
   }))!;
   await page.mouse.click(btn.x, btn.y);
-  await sleep(400);
-  const item = (await page.evaluate(() => {
-    const els = [...document.querySelectorAll("button, [role=menuitem], div")].filter(
-      (el) => el.textContent?.trim() === "Cast Model",
-    );
-    const el = els[els.length - 1];
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-  }))!;
-  await page.mouse.click(item.x, item.y);
 };
 
 // ── Invariant A: create → immediately drag → position sticks ───────────────
@@ -516,7 +507,7 @@ const closeTakeoverCleanly = async () => {
     // reset together in the takeover cleanup (see CastingTakeover).
 
     await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
-    await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+    await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await sleep(800);
   }
 }
@@ -878,7 +869,7 @@ let seededItemId = 0;
   seededItemId = (iRes as { insertId: number }).insertId;
   await conn.execute(`UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`, [boardId]);
   await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
-  await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+  await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
 
   const sheetNodeSel = `.react-flow__node[data-id="item-${seededItemId}"]`;
   // The card paints once the packageState prefetch lands — poll, don't race
@@ -1179,7 +1170,7 @@ let seededItemId = 0;
     // The raw pin bypassed the client cache (packageState staleTime) — a
     // reload is the honest way to assert the UI reads the server truth
     await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
-    await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+    await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await settleSheet();
     const tiles = await tileInfo();
     const tq = tiles?.find((t) => t.area === "tq");
@@ -1787,7 +1778,7 @@ if (!paidEnabled("R")) {
     const rItemId = (riRes as { insertId: number }).insertId;
     await conn.execute(`UPDATE boards SET viewportX = NULL, viewportY = NULL, viewportZoom = NULL WHERE id = ?`, [boardId]);
     await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
-    await page.waitForSelector('button[aria-label="Add"]', { timeout: 90000 });
+    await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await sleep(1500);
 
     const [cntRows] = await conn.execute(
