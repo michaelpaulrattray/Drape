@@ -289,6 +289,17 @@ export function BoardCanvas({
   const prevFingerprintRef = useRef<string>('');
   const isDraggingRef = useRef(false);
   const pendingSelectRef = useRef<number | null>(null);
+  const pendingSelectSetRef = useRef<number[] | null>(null);
+
+  // Pasted/duplicated sets select as a group when they land (drive 2)
+  useEffect(() => {
+    const onSelectItems = (e: Event) => {
+      const ids = (e as CustomEvent<{ itemIds: number[] }>).detail?.itemIds;
+      if (Array.isArray(ids) && ids.length > 0) pendingSelectSetRef.current = ids;
+    };
+    window.addEventListener('board-select-items', onSelectItems);
+    return () => window.removeEventListener('board-select-items', onSelectItems);
+  }, []);
 
   // Expose auto-select: applies immediately if the node exists, otherwise on
   // the next rebuild (freshly-created items arrive via query invalidation)
@@ -419,6 +430,15 @@ export function BoardCanvas({
         selectedIds.clear();
         selectedIds.add(`item-${pendingId}`);
         pendingSelectRef.current = null;
+      }
+      // Pasted/duplicated SETS arrive selected as a group (founder, drive 2):
+      // originals deselect, the copies become the live selection so they can
+      // move to clear space together. Consumed only when every id has landed.
+      const pendingSet = pendingSelectSetRef.current;
+      if (pendingSet && pendingSet.every((id) => items.some((i) => i.id === id))) {
+        selectedIds.clear();
+        for (const id of pendingSet) selectedIds.add(`item-${id}`);
+        pendingSelectSetRef.current = null;
       }
       return items.map((item) => {
         const node = itemToNode(item, boardId, onItemDelete, onItemRename, onVersionHistory, onItemResize);
@@ -657,8 +677,8 @@ export function BoardCanvas({
       >
         <Background
           variant={"dots" as any}
-          gap={20}
-          size={2}
+          gap={24}
+          size={1}
           color="var(--color-canvas-field-dot)"
         />
         {/* D-50: selection >1 renders as a GROUP — one container, one toolbar */}

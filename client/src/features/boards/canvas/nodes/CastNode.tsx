@@ -25,7 +25,7 @@ import { CanvasNodeShell } from "../CanvasNodeShell";
 import { NodeLabelRow } from "../NodeLabelRow";
 import { ConnectionDot } from "../ConnectionDot";
 import { CastImageArea } from "../CastImageArea";
-import { NodeControlStrip, type ControlSegment } from "../NodeControlStrip";
+import { type ControlSegment } from "../NodeControlStrip";
 import { NodeStatusBadge } from "../NodeStatusBadge";
 import { NodeFloatingToolbar, type NodeToolbarAction } from "../NodeFloatingToolbar";
 import { ForkRecastPopoverContent } from "../ForkRecastPopover";
@@ -111,10 +111,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         detail: { itemId: data.itemId, modelId, draft: isDraft, openUpgrade },
       }),
     );
-  const editSegment: ControlSegment[] =
-    modelReady && data.imageUrl
-      ? [{ kind: "action", content: "Edit", onClick: () => openEdit() }]
-      : [];
+  const hasEdit = Boolean(modelReady && data.imageUrl);
 
   // ── R5: the comp card (DS §5.17) — the model's package rendered on the
   // root; tile popover is the ONE per-view surface (D-29 restraint) ─────────
@@ -231,17 +228,14 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
     );
   };
 
-  const controlSegments: ControlSegment[] = isRoot && !isLibrary
-    ? [
-        ...editSegment,
-        ...packageVerb,
-        ...staleSegment,
-        ...versionSegment,
-        { kind: "action", content: "···", onClick: openMenu },
-      ]
+  // R6 consolidation (founder-directed, drive 2): the strip is dead — its
+  // contextual segments ride the ONE node pill as trailing text, after the
+  // icon verbs. D-51's verb states and the ledger vN survive unchanged.
+  // Views carry no root chrome (slim ruling): no package verb, no headshot
+  // vN, no ··· — right-click keeps the context-menu parity
+  const trailingSegments: ControlSegment[] = isView
+    ? []
     : [
-        ...(data.pinned ? [{ kind: "pin", content: "Pinned — kept as finished work" } as ControlSegment] : []),
-        ...editSegment,
         ...packageVerb,
         ...staleSegment,
         ...versionSegment,
@@ -252,39 +246,52 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const dispatchNodeEvent = (name: string) =>
     window.dispatchEvent(new CustomEvent(name, { detail: { itemId: data.itemId } }));
 
+  // Popped views SLIM (founder-ruled with the trap ruling): a popped view is
+  // a REFERENCE — Return to sheet · Download · Delete · Info, nothing else.
+  // Edit is reserved for the root (identity work has one door); the old
+  // disabled Rerun/Variations/Duplicate rows were dead weight.
   const toolbarActions: NodeToolbarAction[] = [
-    // Popped views (VC-R5 fix 3): the first slot is Collapse — right-click-
-    // only was a hidden verb, and Rerun's fork/recast is a ROOT verb (a view
-    // regenerates via the comp card's per-tile Refresh, foundations 3e)
-    isView
-      ? {
-          id: "collapse" as const,
-          label: "Return to sheet",
-          disabled: data.itemId <= 0,
-          onClick: () => dispatchNodeEvent("board-collapse-view"),
-        }
-      : {
-          id: "rerun" as const,
-          label: modelReady ? "Rerun" : "Rerun — still landing",
-          disabled: !modelReady,
-          onClick: () => setPopover((p) => (p === "forkRecast" ? null : "forkRecast")),
-        },
-    {
-      id: "variations",
-      label: isView
-        ? "Not available on view nodes"
-        : modelReady
-          ? "Variations"
-          : "Variations — still landing",
-      disabled: isView || !modelReady,
-      onClick: () => setPopover((p) => (p === "variations" ? null : "variations")),
-    },
-    {
-      id: "duplicate",
-      label: isView ? "Not available on view nodes" : "Duplicate",
-      disabled: isView || data.itemId <= 0,
-      onClick: () => dispatchNodeEvent("board-duplicate-node"),
-    },
+    ...(isView
+      ? [
+          // Popped views SLIM (founder-ruled with the trap ruling): a view is
+          // a REFERENCE — its verbs are Return to sheet · Download · Delete ·
+          // Info. Edit stays on the root (identity work has one door); the
+          // old disabled Rerun/Variations/Duplicate rows were dead weight.
+          {
+            id: "collapse" as const,
+            label: "Return to sheet",
+            disabled: data.itemId <= 0,
+            onClick: () => dispatchNodeEvent("board-collapse-view"),
+          },
+        ]
+      : [
+          // Edit leads — the pen is the node's primary verb (R6 consolidation)
+          ...(hasEdit
+            ? [{
+                id: "edit" as const,
+                label: isDraft ? "Edit — name and mint this draft" : "Edit",
+                onClick: () => openEdit(),
+              }]
+            : []),
+          {
+            id: "rerun" as const,
+            label: modelReady ? "Rerun" : "Rerun — still landing",
+            disabled: !modelReady,
+            onClick: () => setPopover((p: NodePopover) => (p === "forkRecast" ? null : "forkRecast")),
+          },
+          {
+            id: "variations" as const,
+            label: modelReady ? "Variations" : "Variations — still landing",
+            disabled: !modelReady,
+            onClick: () => setPopover((p: NodePopover) => (p === "variations" ? null : "variations")),
+          },
+          {
+            id: "duplicate" as const,
+            label: "Duplicate",
+            disabled: data.itemId <= 0,
+            onClick: () => dispatchNodeEvent("board-duplicate-node"),
+          },
+        ]),
     {
       id: "download",
       label: data.imageUrl ? "Download" : "No image yet",
@@ -325,7 +332,39 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
 
   return (
     <div ref={containerRef} className="relative" style={{ width: cardWidth }}>
-      {showToolbar && <NodeFloatingToolbar actions={toolbarActions} />}
+      {showToolbar && (
+        <NodeFloatingToolbar
+          actions={toolbarActions}
+          trailing={
+            <>
+              {data.pinned && (
+                <span
+                  className="px-1.5 text-canvas-xs text-canvas-ink-faint whitespace-nowrap"
+                  title="Pinned — kept as finished work"
+                >
+                  Pinned
+                </span>
+              )}
+              {trailingSegments.map((seg, i) =>
+                seg.kind === "action" && seg.onClick ? (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={seg.onClick}
+                    className="px-2 h-7 rounded-canvas-pill text-canvas-sm text-canvas-ink-soft hover:bg-canvas-surface-inset hover:text-canvas-ink transition-colors whitespace-nowrap"
+                  >
+                    {seg.content}
+                  </button>
+                ) : (
+                  <span key={i} className="px-1.5 text-canvas-xs text-canvas-ink-faint whitespace-nowrap">
+                    {seg.content}
+                  </span>
+                ),
+              )}
+            </>
+          }
+        />
+      )}
 
       {/* Rerun/Variations popovers — anchored above the card, beside the
           toolbar; screen-space via the portal, so screen-legible at any zoom */}
@@ -658,7 +697,8 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         </div>
       </CanvasNodeShell>
 
-      {selected && !controller.isEmpty && <NodeControlStrip segments={controlSegments} />}
+      {/* The below-card strip died in the R6 consolidation — its segments
+          ride the node pill's trailing slot now */}
 
       {/* Aggregate refresh confirm — portaled: fixed positioning can't live
           inside React Flow's transformed node tree */}

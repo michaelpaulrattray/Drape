@@ -8,8 +8,8 @@ export function DottedGridBackground() {
       style={{
         background: "var(--color-canvas-field)",
         backgroundImage:
-          "radial-gradient(circle, var(--color-canvas-field-dot) 1px, transparent 1px)",
-        backgroundSize: "20px 20px",
+          "radial-gradient(circle, var(--color-canvas-field-dot) 0.75px, transparent 0.75px)",
+        backgroundSize: "24px 24px",
       }}
       aria-hidden
     />

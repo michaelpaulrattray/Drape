@@ -1,11 +1,17 @@
 /**
- * Above-card action pill on selection — DESIGN_SYSTEM.md §5.10.
+ * THE node action pill — DESIGN_SYSTEM.md §5.10 as amended at R6 drive 2
+ * (founder-directed consolidation): ONE pill per node, anchored BELOW it,
+ * carrying the icon verbs (Edit rides as a pen icon) plus the contextual
+ * text segments that used to live in the separate NodeControlStrip (the
+ * D-51 package verb, ledger vN, {N} stale, ···). Two toolbars around one
+ * node was archaic; the strip is dead for cast nodes.
+ * The D-50 GROUP toolbar keeps its ABOVE placement (position="top").
  * Screen-legible chrome (D-2 as narrowed by D-37): counter-scaled below 1×
- * zoom so it never shrinks past usable size. Six icons max; disabled actions
- * stay visible with explanatory tooltips.
+ * zoom so it never shrinks past usable size; disabled actions stay visible
+ * with explanatory tooltips.
  */
 import { cn } from "@/lib/utils";
-import { RefreshCw, Shuffle, Copy, Download, Trash2, Info, Maximize, Play, Minimize2 } from "lucide-react";
+import { RefreshCw, Shuffle, Copy, Download, Trash2, Info, Maximize, Play, Minimize2, Pencil } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -16,8 +22,8 @@ import { useCanvasZoom, screenLegibleScale } from "./canvasZoom";
 
 export interface NodeToolbarAction {
   // focus/runAll belong to the D-50 group toolbar (GroupSelectionOverlay);
-  // collapse is the popped-view slot (VC-R5 fix 3)
-  id: "rerun" | "variations" | "duplicate" | "download" | "delete" | "info" | "focus" | "runAll" | "collapse";
+  // collapse is the popped-view slot (VC-R5 fix 3); edit is the pen (R6)
+  id: "rerun" | "variations" | "duplicate" | "download" | "delete" | "info" | "focus" | "runAll" | "collapse" | "edit";
   label: string;
   onClick: () => void;
   disabled?: boolean;
@@ -36,19 +42,36 @@ const ICONS: Record<
   focus: Maximize,
   runAll: Play,
   collapse: Minimize2,
+  edit: Pencil,
 };
 
-export function NodeFloatingToolbar({ actions }: { actions: NodeToolbarAction[] }) {
+export function NodeFloatingToolbar({
+  actions,
+  position = "bottom",
+  trailing,
+}: {
+  actions: NodeToolbarAction[];
+  /** "bottom" (the node pill, R6 consolidation) or "top" (the D-50 group toolbar). */
+  position?: "top" | "bottom";
+  /** Contextual text segments (D-51 verb, vN, {N} stale, ···) after a divider. */
+  trailing?: React.ReactNode;
+}) {
   const { zoom } = useCanvasZoom();
   const counterScale = screenLegibleScale(zoom);
 
   return (
     <TooltipProvider delayDuration={300}>
       <div
-        className="absolute left-1/2 -top-2 flex items-center gap-0.5 p-0.5 bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-pill"
+        className={cn(
+          "absolute left-1/2 flex items-center gap-0.5 p-0.5 bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-pill",
+          position === "top" ? "-top-2" : "-bottom-2",
+        )}
         style={{
-          transform: `translate(-50%, -100%) scale(${counterScale})`,
-          transformOrigin: "bottom center",
+          transform:
+            position === "top"
+              ? `translate(-50%, -100%) scale(${counterScale})`
+              : `translate(-50%, 100%) scale(${counterScale})`,
+          transformOrigin: position === "top" ? "bottom center" : "top center",
         }}
         onMouseDown={(e) => e.stopPropagation()} // don't start a React Flow drag
       >
@@ -72,7 +95,7 @@ export function NodeFloatingToolbar({ actions }: { actions: NodeToolbarAction[] 
                 </button>
               </TooltipTrigger>
               <TooltipContent
-                side="top"
+                side={position === "top" ? "top" : "bottom"}
                 className="text-canvas-xs bg-canvas-ink text-canvas-surface border-none shadow-none px-2 py-1 rounded-canvas-sm"
               >
                 {action.label}
@@ -80,6 +103,12 @@ export function NodeFloatingToolbar({ actions }: { actions: NodeToolbarAction[] 
             </Tooltip>
           );
         })}
+        {trailing && (
+          <>
+            <div className="w-px h-3.5 mx-0.5 bg-canvas-border" />
+            {trailing}
+          </>
+        )}
       </div>
     </TooltipProvider>
   );

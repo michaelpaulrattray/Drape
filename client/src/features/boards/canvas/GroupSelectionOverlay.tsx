@@ -77,7 +77,10 @@ export function GroupSelectionOverlay({
         }}
       >
         <div className="pointer-events-auto">
+          {/* The GROUP toolbar keeps its ABOVE placement (founder, drive 2:
+              "the selection floating toolbar above is fine") */}
           <NodeFloatingToolbar
+            position="top"
             actions={[
               { id: "duplicate", label: `Duplicate ${itemIds.length}`, onClick: () => onGroupAction("duplicate", itemIds) },
               { id: "download", label: "Download all", onClick: () => onGroupAction("download", itemIds) },

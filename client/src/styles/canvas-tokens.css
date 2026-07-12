@@ -17,7 +17,9 @@
      identically by the board, the image viewer, and the studio work area —
      no per-surface tuning, no other floor exists. Dot darkened one step
      (R-9: at #D4D0CB the dots vanished and boards read as blank paper).
-     Grid geometry is part of the contract: 20px spacing, 1px dot radius. */
+     Grid geometry is part of the contract (founder-tuned to the ElevenLabs
+     rhythm, drive 2): 24px spacing, FINE dot (0.75px radius CSS / size 1 in
+     React Flow's Background) — small marks, calm cadence. */
   --color-canvas-field: #FAFAF8;
   --color-canvas-field-dot: #C6C0B4;
 

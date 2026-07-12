@@ -1465,6 +1465,13 @@ function BoardPageImpl() {
               }
               void utils.boards.getItems.invalidate({ boardId });
               void utils.boardOps.listEdges.invalidate({ boardId });
+              // The copies become the live selection (founder, drive 2) —
+              // originals deselect so the pasted group moves to clear space
+              window.dispatchEvent(
+                new CustomEvent('board-select-items', {
+                  detail: { itemIds: Array.from(idMap.values()) },
+                }),
+              );
             } catch {
               toast.error("Couldn't duplicate the selection — try again");
               void utils.boards.getItems.invalidate({ boardId });

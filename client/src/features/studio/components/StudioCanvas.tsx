@@ -274,8 +274,8 @@ export function StudioCanvas({
         className="flex-1 h-full flex items-center justify-center"
         style={{
           background: "var(--color-canvas-field)",
-          backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 1px, transparent 1px)",
-          backgroundSize: "20px 20px",
+          backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 0.75px, transparent 0.75px)",
+          backgroundSize: "24px 24px",
         }}
       >
         {emptyState}
@@ -290,8 +290,8 @@ export function StudioCanvas({
         className="flex-1 h-full flex flex-col relative overflow-hidden"
         style={{
           background: "var(--color-canvas-field)",
-          backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 1px, transparent 1px)",
-          backgroundSize: "20px 20px",
+          backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 0.75px, transparent 0.75px)",
+          backgroundSize: "24px 24px",
         }}
       >
         {topOverlay}
@@ -310,8 +310,8 @@ export function StudioCanvas({
       className="flex-1 h-full flex flex-col relative overflow-hidden"
       style={{
         background: "var(--color-canvas-field)",
-        backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 1px, transparent 1px)",
-        backgroundSize: "20px 20px",
+        backgroundImage: "radial-gradient(circle, var(--color-canvas-field-dot) 0.75px, transparent 0.75px)",
+        backgroundSize: "24px 24px",
       }}
     >
       {/* ── Top overlay slot (ViewTabs, identity warnings) ── */}

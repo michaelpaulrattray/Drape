@@ -398,7 +398,15 @@ const openEditOnFilledNode = async () => {
   if (!n) return false;
   await page.mouse.click(n.x, n.y);
   await sleep(500);
-  return clickByText("Edit");
+  // R6 consolidation: Edit is the pen ICON on the node pill (aria-label
+  // "Edit" / "Edit — name and mint this draft"), not a text segment
+  return page.evaluate(() => {
+    const b = [...document.querySelectorAll("button")].find((x) =>
+      (x.getAttribute("aria-label") ?? "").startsWith("Edit"),
+    ) as HTMLElement | undefined;
+    b?.click();
+    return !!b;
+  });
 };
 const waitEditHydrated = async () => {
   for (let i = 0; i < 30; i++) {
@@ -1580,25 +1588,42 @@ let seededItemId = 0;
 // between the copies, with metadata carried — a duplicated parent+view pair
 // must not arrive lineage-less.
 {
-  // Seed one popped view (root → view + generated_from_cast edge)
-  const xPop = await page.evaluate(
-    async (bId: number, iId: number) => {
-      const r = await fetch("/api/trpc/boardOps.popOutView.execute", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ json: { boardId: bId, itemId: iId, angle: "sideClose" } }),
-      });
-      const data = await r.json();
-      return data?.result?.data?.json ?? null;
-    },
-    boardId,
-    seededItemId,
+  // Seed one popped view THROUGH THE CLIENT (the node's own pop-out event →
+  // BoardPage mutation → optimistic append + invalidation). A raw tRPC seed
+  // never reached the client cache, so Ctrl+A couldn't select the popped
+  // view and its edge endpoints never entered the id map (X2 flake).
+  const [beforeMaxRows] = await conn.execute(
+    `SELECT MAX(id) AS m FROM board_items WHERE boardId = ?`,
+    [boardId],
   );
-  if (!xPop?.itemId) {
-    console.log("SKIP  X — pop-out seed failed");
+  const beforeMaxItemId = (beforeMaxRows as Array<{ m: number }>)[0].m;
+  await page.evaluate((iId: number) => {
+    window.dispatchEvent(
+      new CustomEvent("board-pop-out-view", { detail: { itemId: iId, angle: "sideClose" } }),
+    );
+  }, seededItemId);
+  let xPop: { itemId: number; edgeId: number } | null = null;
+  for (let i = 0; i < 20 && !xPop; i++) {
+    await sleep(700);
+    const [popRows] = await conn.execute(
+      `SELECT i.id AS itemId, e.id AS edgeId FROM board_items i
+         JOIN board_edges e ON e.targetItemId = i.id AND e.relation = 'generated_from_cast'
+        WHERE i.boardId = ? AND i.id > ? AND i.deletedAt IS NULL LIMIT 1`,
+      [boardId, beforeMaxItemId],
+    );
+    const row = (popRows as Array<{ itemId: number; edgeId: number }>)[0];
+    if (row) {
+      // The client created it — wait until it RENDERS too (selection needs DOM)
+      const rendered = await page.evaluate(
+        (id: number) => !!document.querySelector(`.react-flow__node[data-id="item-${id}"]`),
+        row.itemId,
+      );
+      if (rendered) xPop = row;
+    }
+  }
+  if (!xPop) {
+    console.log("SKIP  X — pop-out seed failed (client path never landed)");
   } else {
-    await sleep(1500);
     const [maxRows] = await conn.execute(`SELECT MAX(id) AS m FROM board_items WHERE boardId = ?`, [boardId]);
     const maxItemId = (maxRows as Array<{ m: number }>)[0].m;
 
