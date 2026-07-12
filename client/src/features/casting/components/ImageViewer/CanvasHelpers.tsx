@@ -64,10 +64,11 @@ export function RotatingSuggestions({ ideas, onSelect }: { ideas: string[]; onSe
 
 // ============ ToolButton ============
 
-export function ToolButton({ active, onClick, icon }: { active: boolean; onClick: () => void; icon: React.ReactNode }) {
+export function ToolButton({ active, onClick, icon, title }: { active: boolean; onClick: () => void; icon: React.ReactNode; title?: string }) {
   return (
     <button
       onClick={onClick}
+      title={title}
       className={
         active
           ? "w-10 h-10 rounded-canvas-md flex items-center justify-center cursor-pointer transition-colors bg-canvas-ink text-canvas-surface"

@@ -72,92 +72,122 @@ export function ModelCardChooser({ model, onClose }: { model: ChooserModel | nul
     return <ExportPackDialog modelId={model.id} isOpen onClose={onClose} />;
   }
 
-  const actionClass =
-    'w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-canvas-surface-inset text-canvas-ink-soft hover:text-canvas-ink';
+  const actions: Array<{ icon: typeof IdCard; verb: string; desc: string; onPick: () => void }> = [
+    {
+      icon: IdCard,
+      verb: 'View comp card',
+      desc: 'The canonical card — every view in one place.',
+      onPick: () => setMode('card'),
+    },
+    {
+      icon: Pencil,
+      verb: 'Open in casting',
+      desc: 'Refine views, complete the card, or fork the identity.',
+      onPick: () => navigate(`/studio?tool=casting&modelId=${model.id}`),
+    },
+    {
+      icon: Shirt,
+      verb: 'Dress in wardrobe',
+      desc: 'Style them in garments from your library.',
+      onPick: () => navigate(`/studio?tool=wardrobe&modelId=${model.id}`),
+    },
+    {
+      icon: Package,
+      verb: 'Export identity pack',
+      desc: '2K views and the identity document, zipped.',
+      onPick: () => setMode('export'),
+    },
+  ];
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0" style={{ background: 'rgba(10,10,10,0.3)' }} onClick={onClose} />
       <div
         className="relative w-full overflow-hidden rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border-strong"
-        style={{ maxWidth: mode === 'card' ? 420 : 340 }}
+        style={{ maxWidth: mode === 'card' ? 420 : 520 }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 h-11 border-b-hairline border-canvas-border">
-          <div className="flex items-center gap-2 min-w-0">
-            {mode === 'card' && (
-              <button
-                type="button"
-                onClick={() => setMode('menu')}
-                aria-label="Back"
-                className="w-6 h-6 -ml-1 rounded-canvas-sm flex items-center justify-center text-canvas-ink-soft hover:bg-canvas-surface-inset transition-colors"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.8} />
-              </button>
-            )}
-            <span className="truncate text-canvas-lg font-medium text-canvas-ink">{model.name}</span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="w-6 h-6 rounded-canvas-sm flex items-center justify-center text-canvas-ink-soft hover:bg-canvas-surface-inset transition-colors"
-          >
-            <X className="w-3.5 h-3.5" strokeWidth={1.8} />
-          </button>
-        </div>
-
         {mode === 'card' ? (
-          /* The canonical comp card, statically (D-51 vocabulary) */
-          <div className="p-4">
-            {packageQuery.isLoading ? (
-              <div className="rounded-canvas-md animate-pulse bg-canvas-surface-inset" style={{ aspectRatio: '3 / 4' }} />
-            ) : (
-              <CharacterSheetImageArea
-                tiles={tiles}
-                activeTileAngle={null}
-                onTileClick={() => {}}
-                onTileDoubleClick={() => {}}
-                onGhostClick={() => {}}
-              />
-            )}
-          </div>
-        ) : (
           <>
-            {/* Menu — thumbnail strip + the four verbs */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b-hairline border-canvas-border">
-              <div className="w-10 h-[52px] rounded-canvas-sm overflow-hidden border-hairline border-canvas-border flex-shrink-0">
-                <img src={model.imageUrl} alt="" className="w-full h-full object-cover" />
+            {/* Header (card mode) */}
+            <div className="flex items-center justify-between px-4 h-11 border-b-hairline border-canvas-border">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setMode('menu')}
+                  aria-label="Back"
+                  className="w-6 h-6 -ml-1 rounded-canvas-sm flex items-center justify-center text-canvas-ink-soft hover:bg-canvas-surface-inset transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.8} />
+                </button>
+                <span className="truncate text-canvas-lg font-medium text-canvas-ink">{model.name}</span>
               </div>
-              <span className="text-canvas-md text-canvas-ink-soft">What would you like to do?</span>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className="w-6 h-6 rounded-canvas-sm flex items-center justify-center text-canvas-ink-soft hover:bg-canvas-surface-inset transition-colors"
+              >
+                <X className="w-3.5 h-3.5" strokeWidth={1.8} />
+              </button>
             </div>
-            <div className="py-1.5">
-              <button type="button" className={actionClass} onClick={() => setMode('card')}>
-                <IdCard className="w-4 h-4 flex-shrink-0" strokeWidth={1.6} />
-                <span className="text-canvas-lg">View comp card</span>
-              </button>
-              <button
-                type="button"
-                className={actionClass}
-                onClick={() => navigate(`/studio?tool=casting&modelId=${model.id}`)}
-              >
-                <Pencil className="w-4 h-4 flex-shrink-0" strokeWidth={1.6} />
-                <span className="text-canvas-lg">Open in casting</span>
-              </button>
-              <button
-                type="button"
-                className={actionClass}
-                onClick={() => navigate(`/studio?tool=wardrobe&modelId=${model.id}`)}
-              >
-                <Shirt className="w-4 h-4 flex-shrink-0" strokeWidth={1.6} />
-                <span className="text-canvas-lg">Dress in wardrobe</span>
-              </button>
-              <button type="button" className={actionClass} onClick={() => setMode('export')}>
-                <Package className="w-4 h-4 flex-shrink-0" strokeWidth={1.6} />
-                <span className="text-canvas-lg">Export identity pack</span>
-              </button>
+            {/* The canonical comp card, statically (D-51 vocabulary) */}
+            <div className="p-4">
+              {packageQuery.isLoading ? (
+                <div className="rounded-canvas-md animate-pulse bg-canvas-surface-inset" style={{ aspectRatio: '3 / 4' }} />
+              ) : (
+                <CharacterSheetImageArea
+                  tiles={tiles}
+                  activeTileAngle={null}
+                  onTileClick={() => {}}
+                  onTileDoubleClick={() => {}}
+                  onGhostClick={() => {}}
+                />
+              )}
             </div>
           </>
+        ) : (
+          /* Menu — picking up the model's card: the headshot anchors the
+             modal at full height; the verbs read as a considered list
+             beside it (VC-R6a fix 2 — never a system dialog) */
+          <div className="flex" style={{ minHeight: 296 }}>
+            <div className="relative flex-shrink-0 border-r-hairline border-canvas-border" style={{ width: 186 }}>
+              <img src={model.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col">
+              <div className="flex items-start justify-between pl-5 pr-3 pt-4 pb-3">
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-canvas-ink" style={{ fontSize: 16 }}>
+                    {model.name}
+                  </div>
+                  <div className="text-canvas-sm text-canvas-ink-faint mt-0.5">Minted model</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="w-6 h-6 mt-0.5 rounded-canvas-sm flex items-center justify-center flex-shrink-0 text-canvas-ink-soft hover:bg-canvas-surface-inset transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" strokeWidth={1.8} />
+                </button>
+              </div>
+              <div className="flex-1 flex flex-col justify-center pb-3">
+                {actions.map(({ icon: Icon, verb, desc, onPick }) => (
+                  <button
+                    key={verb}
+                    type="button"
+                    onClick={onPick}
+                    className="group w-full flex items-start gap-3 pl-5 pr-4 py-2.5 text-left transition-colors hover:bg-canvas-surface-inset"
+                  >
+                    <Icon className="w-4 h-4 mt-0.5 flex-shrink-0 text-canvas-ink-faint group-hover:text-canvas-ink transition-colors" strokeWidth={1.5} />
+                    <span className="min-w-0">
+                      <span className="block text-canvas-lg text-canvas-ink-soft group-hover:text-canvas-ink transition-colors">{verb}</span>
+                      <span className="block text-canvas-sm text-canvas-ink-faint mt-px">{desc}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

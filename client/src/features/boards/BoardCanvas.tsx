@@ -34,6 +34,11 @@ import { CanvasZoomContext, useLiveCanvasZoom } from './canvas/canvasZoom';
 import { GroupSelectionOverlay } from './canvas/GroupSelectionOverlay';
 import type { BoardItemCanvasMetadata, Provenance } from '@shared/boardTypes';
 
+// R-7 ruling aid (VC-R6a): read once — `?bg=field` shows the board on the
+// studio's field pair for the founder's before/after ruling.
+const FIELD_BG_FLAG =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('bg') === 'field';
+
 /* ── Types ────────────────────────────────────────────────── */
 
 export type BoardItemRecord = {
@@ -646,15 +651,19 @@ export function BoardCanvas({
         disableKeyboardA11y
         proOptions={{ hideAttribution: true }}
         style={{
-          '--xy-background-color': '#DFDFDF',
-          '--xy-background-color-props': '#DFDFDF',
+          // R-7 ruling aid (VC-R6a): `?bg=field` swaps the board floor onto
+          // the studio's field pair for the founder's before/after. If the
+          // unification lands, the field values become the ONLY floor and
+          // this flag dies.
+          '--xy-background-color': FIELD_BG_FLAG ? 'var(--color-canvas-field)' : '#DFDFDF',
+          '--xy-background-color-props': FIELD_BG_FLAG ? 'var(--color-canvas-field)' : '#DFDFDF',
         } as React.CSSProperties}
       >
         <Background
           variant={"dots" as any}
           gap={20}
           size={1.3}
-          color="#c4c4c4"
+          color={FIELD_BG_FLAG ? 'var(--color-canvas-field-dot)' : '#c4c4c4'}
         />
         {/* D-50: selection >1 renders as a GROUP — one container, one toolbar */}
         <GroupSelectionOverlay

@@ -297,6 +297,7 @@ export function ImageViewerPanel({
           {isIterationAllowed && (!isViewLocked || unlockMode) && (
             <ToolButton
               active={activeTool === 'surgical'}
+              title="Surgical edit"
               onClick={() => useCastingUIStore.getState().setActiveTool(activeTool === 'surgical' ? 'none' : 'surgical')}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>}
             />
@@ -304,6 +305,7 @@ export function ImageViewerPanel({
           {(!hasDownstreamDependencies || unlockMode) && (
             <ToolButton
               active={activeTool === 'eraser'}
+              title="Magic eraser"
               onClick={() => useCastingUIStore.getState().setActiveTool(activeTool === 'eraser' ? 'none' : 'eraser')}
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>}
             />

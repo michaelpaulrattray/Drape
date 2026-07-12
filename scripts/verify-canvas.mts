@@ -653,6 +653,104 @@ if (!(await filledNode())?.img) {
   await closeTakeoverCleanly();
 }
 
+// ── Invariant V: mask coordinates survive the camera (VC-R6a fix 1) — FREE ──
+// The work area has a camera (R6 C2); the mask/surgical overlay must draw in
+// IMAGE space at any zoom. Regression guarded: backing store synced from the
+// transformed rect + live-draw mixing rect dims — strokes landed zoom× off.
+if (!(await filledNode())?.img) {
+  console.log("SKIP  V — no filled cast node available");
+} else {
+  await openEditOnFilledNode();
+  const vHydrated = await waitEditHydrated();
+  if (!vHydrated) {
+    check("V0 edit hydrated for mask leg", false);
+  } else {
+    // Activate the surgical tool (element click bypasses the hover gate)
+    const toolOn = await page.evaluate(() => {
+      const b = document.querySelector('button[title="Surgical edit"]') as HTMLElement | null;
+      b?.click();
+      return !!b;
+    });
+    await sleep(600);
+    check("V1 surgical tool activates", toolOn);
+
+    // Zoom the camera to ~2× with the wheel over the image field
+    const imgRect = await page.evaluate(() => {
+      const wrap = document.querySelector("[data-camera-image]");
+      const r = wrap?.getBoundingClientRect();
+      return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null;
+    });
+    if (!imgRect) {
+      check("V2 image present for zoom", false);
+    } else {
+      await page.mouse.move(imgRect.x + imgRect.w / 2, imgRect.y + imgRect.h / 2);
+      for (let i = 0; i < 6; i++) {
+        await page.mouse.wheel({ deltaY: -240 });
+        await sleep(80);
+      }
+      await sleep(400);
+      const zoomed = await page.evaluate(() => {
+        const wrap = document.querySelector("[data-camera-image]") as HTMLElement | null;
+        let el: HTMLElement | null = wrap;
+        while (el) {
+          const t = getComputedStyle(el).transform;
+          if (t && t !== "none") return t;
+          el = el.parentElement;
+        }
+        return "none";
+      });
+      check("V2 camera zoomed for the mask leg", /matrix\(1\.9/.test(zoomed) || /matrix\(2/.test(zoomed), zoomed);
+
+      // Draw a short stroke through the VISUAL center of the zoomed image
+      const canvasRect = await page.evaluate(() => {
+        const c = document.querySelector("[data-camera-image] canvas");
+        const r = c?.getBoundingClientRect();
+        return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null;
+      });
+      if (!canvasRect) {
+        check("V3 mask canvas present", false);
+      } else {
+        const cx = canvasRect.x + canvasRect.w / 2;
+        const cy = canvasRect.y + canvasRect.h / 2;
+        await page.mouse.move(cx - 20, cy);
+        await page.mouse.down();
+        await page.mouse.move(cx + 20, cy, { steps: 8 });
+        await page.mouse.up();
+        await sleep(600);
+
+        // The stored normalized path repaints via the backing store — painted
+        // pixels at the backing CENTER prove pointer→image mapping held at 2×.
+        // NOTE: no inner functions in evaluate (esbuild __name crash — see E5)
+        const maskState = await page.evaluate(() => {
+          const c = document.querySelector("[data-camera-image] canvas") as HTMLCanvasElement | null;
+          if (!c) return null;
+          const ctx = c.getContext("2d");
+          if (!ctx) return null;
+          const points = [
+            [0.5, 0.5],
+            [0.95, 0.5],
+            [0.5, 0.95],
+          ];
+          const sums: number[] = [];
+          for (const [fx, fy] of points) {
+            const d = ctx.getImageData(Math.round(c.width * fx), Math.round(c.height * fy), 2, 2).data;
+            let a = 0;
+            for (let i = 3; i < d.length; i += 4) a += d[i];
+            sums.push(a);
+          }
+          return { center: sums[0], farRight: sums[1], farDown: sums[2], w: c.width, h: c.height };
+        });
+        check(
+          "V3 stroke lands at the image center at 2× (not displaced)",
+          !!maskState && maskState.center > 0 && maskState.farRight === 0 && maskState.farDown === 0,
+          JSON.stringify(maskState),
+        );
+      }
+    }
+    await closeTakeoverCleanly();
+  }
+}
+
 // ── Invariant J: delete → undo round trip (R4 trust net) — FREE ────────────
 // Soft delete is optimistic, the Undo toast and Cmd+Z share one restore
 // path, and the DB row survives with deletedAt toggling — never a hard row

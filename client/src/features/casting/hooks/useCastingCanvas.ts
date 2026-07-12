@@ -26,12 +26,19 @@ export function useCastingCanvas(
     setCurrentPath([]);
   }, [activeTool]);
 
-  // Sync canvas with image
+  // Sync canvas with image. LAYOUT size, never getBoundingClientRect: the
+  // image lives inside the camera transform (R6 C2), so its bounding rect is
+  // zoom-scaled — a backing store synced from it renders oversized and then
+  // gets transformed AGAIN by the camera, landing every stroke off the image
+  // at any zoom ≠ 1 (VC-R6a fix 1). offsetWidth/Height are transform-
+  // independent, and the canvas element transforms in lockstep with the
+  // image via their shared wrapper.
   useEffect(() => {
     const syncCanvas = () => {
       if (imageRef.current && canvasRef.current) {
-        const { width, height } = imageRef.current.getBoundingClientRect();
-        
+        const width = imageRef.current.offsetWidth;
+        const height = imageRef.current.offsetHeight;
+
         canvasRef.current.width = width;
         canvasRef.current.height = height;
         
@@ -90,13 +97,15 @@ export function useCastingCanvas(
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.lineWidth = 20;
-      ctx.strokeStyle = activeTool === 'eraser' 
+      ctx.strokeStyle = activeTool === 'eraser'
         ? 'rgba(216, 180, 254, 0.8)'
         : 'rgba(255, 100, 100, 0.8)';
-      
-      const w = rect.width;
-      const h = rect.height;
-      
+
+      // Backing dims, NOT rect dims: the rect is camera-scaled — mixing it
+      // with the layout-sized backing store drew strokes zoom× displaced
+      const w = canvasRef.current!.width;
+      const h = canvasRef.current!.height;
+
       ctx.beginPath();
       const prev = currentPath[currentPath.length - 1] || newPoint;
       ctx.moveTo(prev.x * w, prev.y * h);
