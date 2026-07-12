@@ -76,6 +76,19 @@ describe("executeRestoreSlotVersion — copy-forward (D-53)", () => {
     expect(db.createModelAsset).not.toHaveBeenCalled();
   });
 
+  it("refuses a no-op: restoring a row whose image equals the head (drive-2 ledger pollution)", async () => {
+    // v1 and the head carry the same storageUrl (e.g. a prior restore) —
+    // appending again is pure ledger noise
+    db.getModelAssets.mockResolvedValue([
+      { id: 30, viewType: "sideClose", storageUrl: "https://r2/same.png", resolution: "1K", storageKey: "k3", pinned: false, provenance: null, createdAt: new Date("2026-07-12T03:00:00Z") },
+      { id: 10, viewType: "sideClose", storageUrl: "https://r2/same.png", resolution: "1K", storageKey: "k1", pinned: false, provenance: null, createdAt: new Date("2026-07-12T01:00:00Z") },
+    ]);
+    await expect(
+      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 10 }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(db.createModelAsset).not.toHaveBeenCalled();
+  });
+
   it("refuses a row from a different angle", async () => {
     await expect(
       executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "frontFull", assetId: 10 }),

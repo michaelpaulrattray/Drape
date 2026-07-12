@@ -420,6 +420,16 @@ export async function executeRestoreSlotVersion(input: {
       message: "That's already the current version",
     });
   }
+  // No-op guard (VC-R6b drive 2): restoring a row whose IMAGE already equals
+  // the head appends nothing but ledger noise — repeated restores were
+  // minting identical rows (v8 stacks of one image). Same-content = same
+  // version; refuse politely.
+  if (head && head.storageUrl === source.storageUrl) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "That's already the current image",
+    });
+  }
 
   const sourceProvenance = (source.provenance ?? null) as { inputs?: unknown } | null;
   const created = await createModelAsset({

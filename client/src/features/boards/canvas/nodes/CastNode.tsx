@@ -152,8 +152,10 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // D-53 thumb-strip: the vN chip opens the angle's ledger history — filled
   // rows newest-first, "Use this version" on non-head rows (copy-forward)
   const [versionsOpen, setVersionsOpen] = useState(false);
+  const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
   useEffect(() => {
     setVersionsOpen(false);
+    setSelectedVersionId(null);
   }, [sheet.popoverAngle]);
   const slotVersionsQuery = trpc.generation.slotVersions.useQuery(
     { modelId: sheet.modelId ?? 0, angle: sheet.popoverAngle ?? "frontClose" },
@@ -455,8 +457,11 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           ) : (
             <CastImageArea
               // VC-R6b bug 1: the ledger's headshot head wins when the model
-              // is live — item.imageUrl is only the landing-time snapshot
-              imageUrl={(modelReady ? sheet.headshotUrl : null) ?? data.imageUrl}
+              // is live — item.imageUrl is only the landing-time snapshot.
+              // ROOTS/LIBRARY ONLY: a popped VIEW shows its own angle, and the
+              // shared packageState cache would swap it for the headshot
+              // (the pop-out-shows-wrong-view regression, second drive)
+              imageUrl={(modelReady && !isView ? sheet.headshotUrl : null) ?? data.imageUrl}
               promptState={controller.isEmpty && !errored ? "empty" : controller.promptState}
               progressFraction={controller.progressFraction}
               progressSeconds={controller.progressSeconds}
@@ -500,34 +505,52 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                       )}
                       {versionsOpen && slot.version > 1 && (
                         <div className="flex flex-col gap-1">
+                          {/* Two-step by hard lesson (VC-R6b drive 2): a bare
+                              thumb click COMMITTED a restore, so browsing the
+                              strip minted a new version per click (v8 ledgers
+                              of identical rows). Click = select; only the
+                              explicit action commits. */}
                           <div className="flex gap-1 overflow-x-auto pb-0.5">
                             {(slotVersionsQuery.data?.versions ?? []).map((v) => (
                               <button
                                 key={v.assetId}
                                 type="button"
-                                disabled={v.isHead || sheet.restoring}
-                                title={v.isHead ? "Current version" : "Use this version"}
+                                disabled={sheet.restoring}
+                                title={v.isHead ? "Current version" : "Select this version"}
                                 className={cn(
                                   "relative flex-shrink-0 w-9 rounded-canvas-sm overflow-hidden transition-opacity",
                                   v.isHead
                                     ? "border border-canvas-ink"
-                                    : "border-hairline border-canvas-border hover:border-canvas-border-strong",
+                                    : selectedVersionId === v.assetId
+                                      ? "border border-canvas-ink-soft"
+                                      : "border-hairline border-canvas-border hover:border-canvas-border-strong",
                                   sheet.restoring && "opacity-50",
                                 )}
                                 style={{ aspectRatio: "3 / 4" }}
-                                onClick={() => {
-                                  if (!v.isHead) sheet.restoreVersion(slot.angle, v.assetId);
-                                }}
+                                onClick={() => setSelectedVersionId(v.isHead ? null : v.assetId)}
                               >
                                 <img src={v.url} alt="" className="w-full h-full object-cover" draggable={false} />
                               </button>
                             ))}
                           </div>
-                          <div className="text-canvas-xs text-canvas-ink-faint">
-                            {sheet.restoring
-                              ? "Restoring…"
-                              : "Tap an earlier version to use it — free, lands as the newest"}
-                          </div>
+                          {sheet.restoring ? (
+                            <div className="text-canvas-xs text-canvas-ink-faint">Restoring…</div>
+                          ) : selectedVersionId !== null ? (
+                            <button
+                              type="button"
+                              className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
+                              onClick={() => {
+                                sheet.restoreVersion(slot.angle, selectedVersionId);
+                                setSelectedVersionId(null);
+                              }}
+                            >
+                              Use this version — free, lands as the newest
+                            </button>
+                          ) : (
+                            <div className="text-canvas-xs text-canvas-ink-faint">
+                              Select an earlier version to restore it
+                            </div>
+                          )}
                         </div>
                       )}
                       {slot.pinned ? (
