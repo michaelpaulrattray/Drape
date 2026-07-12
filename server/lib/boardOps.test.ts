@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { planCreateNode, planRunGeneration, buildVariationsPlan, MAX_VARIATIONS } from "./boardOps";
 import { CREDIT_COSTS } from "../casting/aiService";
+import { EDGE_CLASS, isLineageEdge } from "../../shared/boardTypes";
+import { BOARD_EDGE_RELATIONS } from "../../drizzle/schema";
 
 describe("boardOps plans (foundations §4 / Decision 6)", () => {
   it("planCreateNode is free and describes exactly one creation", () => {
@@ -43,5 +45,27 @@ describe("boardOps plans (foundations §4 / Decision 6)", () => {
     expect(buildVariationsPlan(1, item, 0).creates).toHaveLength(1);
     expect(buildVariationsPlan(1, item, 99).creates).toHaveLength(MAX_VARIATIONS);
     expect(buildVariationsPlan(1, item, 99).estimatedCreditCost).toBe(MAX_VARIATIONS * CREDIT_COSTS.castingImage);
+  });
+});
+
+describe("edge classes (D-50.5)", () => {
+  it("EDGE_CLASS covers exactly the schema's relations — the lists never drift", () => {
+    expect(Object.keys(EDGE_CLASS).sort()).toEqual([...BOARD_EDGE_RELATIONS].sort());
+  });
+
+  it("lineage = history (never disconnectable); input = dataflow (run-all/composer/agent)", () => {
+    expect(EDGE_CLASS.generated_from_cast).toBe("lineage");
+    expect(EDGE_CLASS.forked_from).toBe("lineage");
+    expect(EDGE_CLASS.variant_of).toBe("lineage");
+    expect(EDGE_CLASS.iterated_from).toBe("lineage");
+    expect(EDGE_CLASS.vto_input_model).toBe("input");
+    expect(EDGE_CLASS.vto_input_garment).toBe("input");
+    expect(EDGE_CLASS.reference_for).toBe("input");
+  });
+
+  it("isLineageEdge tolerates unknown relations (false, not a crash)", () => {
+    expect(isLineageEdge("generated_from_cast")).toBe(true);
+    expect(isLineageEdge("reference_for")).toBe(false);
+    expect(isLineageEdge("someday_new_relation")).toBe(false);
   });
 });

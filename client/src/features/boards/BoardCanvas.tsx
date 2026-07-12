@@ -17,7 +17,6 @@ import {
   Background,
   SelectionMode,
   useNodesState,
-  useEdgesState,
   type Node,
   type Edge,
   type OnNodesChange,
@@ -99,6 +98,9 @@ type BoardCanvasProps = {
   /** VC-R4 ruling R1: 'select' = drag-on-empty marquees (Space or middle/right
    *  drag pans); 'hand' = drag pans. */
   pointerTool?: 'select' | 'hand';
+  /** R5 lineage edges (D-50.5 lineage class only, endpoints alive) — rendered
+   *  ambient per DS §8; full opacity when either endpoint is selected. */
+  lineageEdges?: Array<{ id: number; source: number; target: number; relation: string }>;
 };
 
 /* ── Node type registry (must be stable ref) ──────────────── */
@@ -272,6 +274,7 @@ export function BoardCanvas({
   onClearSelectionRef,
   onSetPositionsRef,
   pointerTool = 'select',
+  lineageEdges,
 }: BoardCanvasProps) {
   const rfInstance = useRef<ReactFlowInstance<AnyFlowNode> | null>(null);
   const prevFingerprintRef = useRef<string>('');
@@ -293,7 +296,34 @@ export function BoardCanvas({
   }, [onSelectNodeRef]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyFlowNode>([]);
-  const [edges] = useEdgesState<Edge>([]);
+
+  // R5 edge rendering (DS §8): lineage is ambient structure — hairline-strong
+  // smoothstep at 40%, upgraded to full opacity when either endpoint is
+  // selected. Edges are facts (D-50.5): never selectable, never deletable.
+  const edges = useMemo<Edge[]>(() => {
+    if (!lineageEdges?.length) return [];
+    const selectedIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+    return lineageEdges.map((e) => {
+      const source = `item-${e.source}`;
+      const target = `item-${e.target}`;
+      const active = selectedIds.has(source) || selectedIds.has(target);
+      return {
+        id: `edge-${e.id}`,
+        source,
+        target,
+        sourceHandle: 'out',
+        targetHandle: 'in',
+        type: 'smoothstep',
+        selectable: false,
+        focusable: false,
+        style: {
+          stroke: 'var(--color-canvas-border-strong)',
+          strokeWidth: 1,
+          opacity: active ? 1 : 0.4,
+        },
+      } satisfies Edge;
+    });
+  }, [lineageEdges, nodes]);
 
   // Latest nodes for imperative helpers (registered once — never stale, and
   // never inside a setNodes updater, which StrictMode double-invokes)

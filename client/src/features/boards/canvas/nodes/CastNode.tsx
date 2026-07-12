@@ -269,6 +269,9 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         {isRoot && !isLibrary && <ConnectionDot kind="image" id="ref-in" top={40} />}
         {/* Output anchor — edges need a source handle to render (M1 finding) */}
         <Handle type="source" position={Position.Right} id="out" style={{ opacity: 0, right: -2 }} />
+        {/* Input anchor (R5): lineage edges land here — invisible; the typed
+            ConnectionDots above are pass-2 wiring surfaces, not lineage ends */}
+        <Handle type="target" position={Position.Left} id="in" style={{ opacity: 0, left: -2 }} isConnectable={false} />
 
         {data.status && !data.pinned && !errored && (
           <NodeStatusBadge status={data.status} onPrimary={controller.retry} />

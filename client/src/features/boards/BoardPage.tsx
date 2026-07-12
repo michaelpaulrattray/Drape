@@ -30,6 +30,7 @@ import { CanvasChatToggle } from './components/CanvasChatToggle';
 import { NodeContextMenu, type NodeContextAction } from './components/NodeContextMenu';
 import { NodeInfoPanel } from './components/NodeInfoPanel';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
+import { isLineageEdge } from '@shared/boardTypes';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -1249,6 +1250,17 @@ function BoardPageImpl() {
     return pending.length > 0 ? [...mapped, ...pending] : mapped;
   }, [items, pendingForks, optimisticFills]);
 
+  // R5 edge rendering feed: lineage class only (D-50.5 — input edges are
+  // pass-2 dataflow), both endpoints alive (soft-deleted rows leave orphan
+  // edges in the table by design; they must not render dangling)
+  const lineageEdges = useMemo(() => {
+    if (!boardEdges?.length) return [];
+    const alive = new Set(canvasItems.map((i) => i.id));
+    return boardEdges.filter(
+      (e) => isLineageEdge(e.relation) && alive.has(e.source) && alive.has(e.target),
+    );
+  }, [boardEdges, canvasItems]);
+
   const isSaving =
     renameMutation.isPending ||
     saveViewportMutation.isPending ||
@@ -1331,6 +1343,7 @@ function BoardPageImpl() {
         >
           <BoardCanvas
             items={canvasItems}
+            lineageEdges={lineageEdges}
             viewport={viewport}
             onItemMove={handleItemMove}
             onItemResize={handleItemResize}

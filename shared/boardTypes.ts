@@ -53,6 +53,39 @@ export const MINT_TIER_SLOTS: Record<MintTier, readonly CanonicalViewAngle[]> = 
   production: ["sideClose", "threeQuarter", "frontFull", "sideFull", "backFull"],
 };
 
+/** Edge relations (mirror of drizzle BOARD_EDGE_RELATIONS — a unit test
+ *  asserts the two lists never drift). */
+export type BoardEdgeRelation =
+  | "iterated_from"
+  | "vto_input_model"
+  | "vto_input_garment"
+  | "reference_for"
+  | "variant_of"
+  | "generated_from_cast"
+  | "forked_from";
+
+/**
+ * D-50.5 — every edge relation belongs to exactly one class:
+ *  - `lineage` (history): renders as ambient structure; edges are FACTS and
+ *    are never disconnectable.
+ *  - `input` (dataflow): what run-all, the D-30 composer, and the future
+ *    board agent consume; D-36b's X-disconnect applies here (pass 2).
+ * Code selects edges by class, never by ad-hoc relation lists.
+ */
+export const EDGE_CLASS: Record<BoardEdgeRelation, "lineage" | "input"> = {
+  iterated_from: "lineage",
+  variant_of: "lineage",
+  generated_from_cast: "lineage",
+  forked_from: "lineage",
+  vto_input_model: "input",
+  vto_input_garment: "input",
+  reference_for: "input",
+};
+
+export function isLineageEdge(relation: string): boolean {
+  return EDGE_CLASS[relation as BoardEdgeRelation] === "lineage";
+}
+
 /** A snapshot of an input actually consumed by a generation, captured at generation time (D-12). */
 export interface InputSnapshot {
   itemId: number;
