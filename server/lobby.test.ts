@@ -135,6 +135,16 @@ describe("mergeRecentWork", () => {
     expect(mergeRecentWork([], [], [], 12)).toEqual([]);
   });
 
+  it("excludes UNNAMED drafts — canvas candidates live on their board, not the lobby (A2b/D-42)", () => {
+    const now = new Date();
+    const unnamed = { ...draftRow(7, now), name: null };
+    const sentinel = { ...draftRow(8, now), name: "Draft Model" };
+    const named = draftRow(9, now);
+    const result = mergeRecentWork([], [], [unnamed, sentinel, named], 12);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ tool: "casting", modelId: 9, name: "Draft 9" });
+  });
+
   it("maps per-tool card fields onto the union shape", () => {
     const now = new Date();
     const [canvas, wardrobe, casting] = mergeRecentWork(

@@ -10,6 +10,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getUserBoards } from "../db/boards";
 import { getRecentUserSessions } from "../db/wardrobe";
 import { getUserDraftModelsWithThumbnail } from "../db/models";
+import { DRAFT_AUTO_NAME } from "../lib/boardOps";
 
 // 8 = two clean rows at the lobby's 4-across laptop layout; Home is a
 // resume surface, the full archives live in Boards and the library pages.
@@ -58,6 +59,13 @@ export function mergeRecentWork(
   drafts: DraftModelRow[],
   limit: number,
 ): RecentWorkItem[] {
+  // A2(b), founder-ruled at VC-R5 follow-up: UNNAMED drafts stay out of the
+  // feed — every canvas cast/fork/variation candidate is an unnamed draft
+  // (D-42 made unnamed the candidate marker), and six candidates were
+  // displacing the boards/sessions the user actually returns to. Candidates
+  // live on their board; NAMED drafts are deliberate works-in-progress and
+  // stay. The Models library is untouched.
+  const namedDrafts = drafts.filter((d) => d.name && d.name !== DRAFT_AUTO_NAME);
   const items: RecentWorkItem[] = [
     ...boards.map((b): RecentWorkItem => ({
       tool: "canvas",
@@ -77,7 +85,7 @@ export function mergeRecentWork(
       savedLookCount: s.savedLookCount,
       updatedAt: s.updatedAt,
     })),
-    ...drafts.map((d): RecentWorkItem => ({
+    ...namedDrafts.map((d): RecentWorkItem => ({
       tool: "casting",
       modelId: d.id,
       name: d.name,

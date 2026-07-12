@@ -489,7 +489,9 @@ export async function executeFillFromLibrary(input: {
 // (D-42): they carry `draft: true`, sort below minted models, and the fake
 // auto-name ("Draft Model") is stripped — unnamed renders as unnamed.
 
-const DRAFT_AUTO_NAME = "Draft Model";
+/** D-42's fake auto-name sentinel — unnamed must render as unnamed. Exported
+ *  for every surface that needs the honest-naming rule (picker, lobby feed). */
+export const DRAFT_AUTO_NAME = "Draft Model";
 
 export async function listCastableModels(userId: number, limit = 30) {
   const { getUserModels } = await import("../db");
