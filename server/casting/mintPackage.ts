@@ -109,7 +109,10 @@ export interface SlotGenContext {
 }
 
 export type SlotGenResult =
-  | { ok: true; angle: CanonicalViewAngle; imageUrl: string }
+  // assetId is the REAL ledger row id (D-55: the session stays open on a
+  // draft and iterates these views immediately — the client must hold the
+  // true id, never a synthesized one, or the iterate lookup misses)
+  | { ok: true; angle: CanonicalViewAngle; imageUrl: string; assetId: number | null }
   | { ok: false; angle: CanonicalViewAngle; label: string; reason: string; refunded: number };
 
 /**
@@ -153,7 +156,7 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
       }
     }
 
-    await createModelAsset({
+    const created = await createModelAsset({
       modelId: ctx.modelId,
       viewType: angle,
       resolution: "1K",
@@ -169,7 +172,7 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
       },
     });
     await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
-    return { ok: true, angle, imageUrl: result.imageUrl };
+    return { ok: true, angle, imageUrl: result.imageUrl, assetId: created.assetId ?? null };
   } catch (error) {
     const reason = error instanceof Error ? error.message : "Generation failed";
     await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: reason, completedAt: new Date() }).catch(() => {});
@@ -235,7 +238,7 @@ export async function executeMintPackage(input: MintPackageInput) {
   const results = await Promise.all(missing.map((angle) => generatePackageSlot(ctx, angle)));
   const generated = results
     .filter((r): r is Extract<SlotGenResult, { ok: true }> => r.ok)
-    .map((r) => ({ angle: r.angle, imageUrl: r.imageUrl }));
+    .map((r) => ({ angle: r.angle, imageUrl: r.imageUrl, assetId: r.assetId }));
   const failed = results
     .filter((r): r is Extract<SlotGenResult, { ok: false }> => !r.ok)
     .map(({ angle, label, reason, refunded }) => ({ angle, label, reason, refunded }));

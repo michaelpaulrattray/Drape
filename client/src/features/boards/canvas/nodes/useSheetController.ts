@@ -94,9 +94,12 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
   const slots = (packageQuery.data?.slots ?? []) as SheetSlotState[];
   const filledCount = slots.filter((s) => s.filled).length;
   const minted = packageQuery.data?.minted === true;
-  /** The comp card renders once a minted package has ≥2 filled slots —
-   *  drafts and single-headshot models keep the plain image card. */
-  const isSheet = enabled && minted && filledCount >= 2;
+  /** The comp card renders once a package has ≥2 filled slots — MINTED OR
+   *  DRAFT (D-55 / VC-R6 final r2: a draft may hold a full package and must
+   *  show it on the canvas, or its views are invisible off the environment).
+   *  Single-headshot models keep the plain image card. The verb (§5.17) still
+   *  reads "Build comp card" on a draft vs "Complete card" on a minted gap. */
+  const isSheet = enabled && filledCount >= 2;
 
   const tiles = useMemo(
     () => buildSheetTiles(slots, new Set(poppedByAngle.keys()), refreshingAngles),

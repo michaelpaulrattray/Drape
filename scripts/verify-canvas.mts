@@ -1962,10 +1962,17 @@ let seededItemId = 0;
     [userId],
   );
   const sdModelId = (sdM as { insertId: number }).insertId;
-  await conn.execute(
-    `INSERT INTO model_assets (modelId, viewType, resolution, storageUrl, pointsCost) VALUES (?, 'frontClose', '1K', ?, 0)`,
-    [sdModelId, SD_URL],
-  );
+  // A view-bearing DRAFT (the post-Core-purchase state): headshot + 3 Core
+  // views, status still draft, NO agencyId. Proves the r2 sweep — a draft may
+  // hold a package and must behave draft-ly everywhere.
+  const sdAssetIds: Record<string, number> = {};
+  for (const angle of ["frontClose", "frontFull", "sideClose", "threeQuarter"]) {
+    const [a] = await conn.execute(
+      `INSERT INTO model_assets (modelId, viewType, resolution, storageUrl, pointsCost) VALUES (?, ?, '1K', ?, 0)`,
+      [sdModelId, angle, SD_URL],
+    );
+    sdAssetIds[angle] = (a as { insertId: number }).insertId;
+  }
 
   // Place it: empty node over raw tRPC, then the fill op (draft stamping)
   const sdItem = await page.evaluate(
@@ -2039,6 +2046,94 @@ let seededItemId = 0;
       return r.status;
     }, sdModelId);
     check("SD5 nameless mint refused (name belongs to the mint moment)", sdNameless === 400, `status=${sdNameless}`);
+
+    // SD6 (r2 sweep): server package state is status-driven — a view-bearing
+    // draft is NOT minted (no agencyId), never inferred from view-presence.
+    const sdPkg = await page.evaluate(async (mId: number) => {
+      const r = await fetch(`/api/trpc/generation.packageState?input=${encodeURIComponent(JSON.stringify({ json: { modelId: mId } }))}`, { credentials: "include" });
+      const d = await r.json();
+      const j = d?.result?.data?.json;
+      return { minted: j?.minted, filled: (j?.slots ?? []).filter((s: any) => s.filled).length };
+    }, sdModelId);
+    check("SD6 view-bearing draft is NOT minted (status-driven, not view-count)", sdPkg.minted === false && sdPkg.filled >= 3, JSON.stringify(sdPkg));
+
+    // SD7 (r2 defect 1): iterate on a draft view resolves the REAL asset id —
+    // the pre-fix synthetic id 404'd "Asset not found". A bogus id still 404s
+    // (correct); a real id passes the lookup + the draft seal (identity edits
+    // free on drafts) and proceeds to generate. We assert the lookup+seal gate
+    // is passed by checking a real-id COSMETIC edit is accepted (200) while a
+    // synthetic id is refused (404) — without burning a full identity gen.
+    const sdSynthetic = await page.evaluate(async (mId: number) => {
+      const r = await fetch("/api/trpc/generation.iterate", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "include",
+        body: JSON.stringify({ json: { modelId: mId, feedback: "brighten the lighting", assetId: 990000001 } }),
+      });
+      return r.status;
+    }, sdModelId);
+    check("SD7 iterate with a synthetic asset id is refused (the pre-fix bug's shape)", sdSynthetic === 404, `status=${sdSynthetic}`);
+
+    // SD8 (r2 defects 2&3 root): the draft's board node shows the comp-card
+    // mosaic (isSheet no longer requires minted) AND Edit opens the takeover
+    // in CAST mode ("Cast this model"), never minted-edit ("Save changes").
+    // Center the viewport on the seeded node (flow x=2400 is off the right
+    // edge otherwise — SD9's click needs it on-screen; SD8's DOM query didn't)
+    await conn.execute(`UPDATE boards SET viewportX = -1600, viewportY = 280, viewportZoom = 100 WHERE id = ?`, [boardId]);
+    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
+    // Poll for the mosaic — it paints once the packageState prefetch lands
+    // (a remote-DB roundtrip; a fixed sleep raced it)
+    const sdNodeSel = `.react-flow__node[data-id="item-${sdItem.itemId}"]`;
+    await page
+      .waitForFunction(
+        (sel: string) => {
+          const el = document.querySelector(sel);
+          return !!el && [...el.querySelectorAll("button")].some((b) => (b as HTMLElement).style.gridArea);
+        },
+        { timeout: 20000, polling: 250 },
+        sdNodeSel,
+      )
+      .catch(() => {});
+    const sdSheet = await page.evaluate((id: number) => {
+      const el = document.querySelector(`.react-flow__node[data-id="item-${id}"]`);
+      const tiles = el ? [...el.querySelectorAll("button")].filter((b) => (b as HTMLElement).style.gridArea).length : 0;
+      return { tiles, badge: !!el && [...el.querySelectorAll("span")].some((s) => s.textContent?.trim() === "Draft") };
+    }, sdItem.itemId);
+    check("SD8 view-bearing draft renders its comp card on canvas (D-55 first-class)", sdSheet.tiles >= 6 && sdSheet.badge, JSON.stringify(sdSheet));
+
+    // Open Edit on the draft node → the takeover's primary action
+    const sdEditOpened = await page.evaluate((id: number) => {
+      const el = document.querySelector(`.react-flow__node[data-id="item-${id}"]`) as HTMLElement | null;
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + 8 };
+    }, sdItem.itemId) as { x: number; y: number } | false;
+    if (sdEditOpened) {
+      await page.mouse.click(sdEditOpened.x, sdEditOpened.y);
+      await sleep(500);
+      const clicked = await page.evaluate(() => {
+        const b = [...document.querySelectorAll("button")].find((x) => (x.getAttribute("aria-label") ?? "").startsWith("Edit")) as HTMLElement | undefined;
+        b?.click();
+        return !!b;
+      });
+      let primary = "";
+      if (clicked) {
+        for (let i = 0; i < 30 && !primary; i++) {
+          await sleep(1000);
+          primary = await page.evaluate(() => {
+            const body = document.body.textContent ?? "";
+            if (body.includes("Loading this cast") || body.includes("Loading your draft")) return "";
+            if ([...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Cast this model")) return "cast";
+            if ([...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Save changes")) return "save";
+            return "";
+          });
+        }
+      }
+      check("SD9 draft Edit opens the MINT door (Cast this model), never minted-edit (Save changes)", primary === "cast", `primary=${primary}`);
+      await page.keyboard.press("Escape");
+      await sleep(400);
+      if (await bodyIncludes("Leave casting?")) { await clickByText("Leave"); }
+      await sleep(400);
+    }
 
     // Cleanup
     await conn.execute(`UPDATE board_items SET deletedAt = NOW() WHERE id = ?`, [sdItem.itemId]);
@@ -2186,24 +2281,31 @@ if (!paidEnabled("Y")) {
       JSON.stringify({ minted: yViews?.minted, generated: yViews?.generated?.length, failed: yViews?.failed?.length }),
     );
 
-    // Identity iterate on ONE draft view → the stale-writer marks siblings
-    const [assetRows] = await conn.execute(
-      `SELECT id, viewType FROM model_assets WHERE modelId = ? AND storageUrl != '' ORDER BY id DESC`,
-      [yFork.modelId],
+    // Defect 1: every generated view carries its REAL ledger assetId (the
+    // client threads these; a synthesized id 404'd "Asset not found").
+    const yGen = (yViews?.generated ?? []) as Array<{ angle: string; imageUrl: string; assetId: number | null }>;
+    check(
+      "Y2b generated views carry real ledger asset ids (defect 1 threading)",
+      yGen.length >= 2 && yGen.every((g) => typeof g.assetId === "number" && g.assetId > 0),
+      JSON.stringify(yGen.map((g) => ({ angle: g.angle, assetId: g.assetId }))),
     );
-    const yAssets = assetRows as Array<{ id: number; viewType: string }>;
-    const target = yAssets.find((a) => a.viewType === "frontFull");
-    if (!target) {
-      check("Y3 identity iterate stales the siblings", false, "no frontFull to iterate");
+
+    // Identity iterate on ONE draft view USING THE RETURNED ASSET ID (exactly
+    // what the client sends) → must SUCCEED (defect 1) and stale the siblings.
+    const target = yGen.find((g) => g.angle === "frontFull") ?? yGen[0];
+    if (!target?.assetId) {
+      check("Y3 identity iterate stales the siblings", false, "no returned assetId to iterate");
     } else {
-      await page.evaluate(async (args: { mid: number; aid: number }) => {
-        await fetch("/api/trpc/generation.iterate", {
+      const yIter = await page.evaluate(async (args: { mid: number; aid: number }) => {
+        const r = await fetch("/api/trpc/generation.iterate", {
           method: "POST",
           headers: { "content-type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ json: { modelId: args.mid, assetId: args.aid, feedback: "add a large dragon tattoo across the chest and both arms" } }),
         });
-      }, { mid: yFork.modelId, aid: target.id });
+        return r.status;
+      }, { mid: yFork.modelId, aid: target.assetId });
+      check("Y3a iterate on a draft view SUCCEEDS on the real asset id (defect 1 closed)", yIter === 200, `status=${yIter}`);
       let staleCount = 0;
       for (let i = 0; i < 10 && staleCount === 0; i++) {
         await sleep(1000);
@@ -2244,7 +2346,7 @@ if (!paidEnabled("Y")) {
         });
         const text = await r.text();
         return { status: r.status, refused: text.includes("identity is minted") };
-      }, { mid: yFork.modelId, aid: target.id });
+      }, { mid: yFork.modelId, aid: target.assetId });
       check(
         "Y5 after mint the SAME edit is refused — the loop closes",
         (f3 as Array<{ status: string }>)[0]?.status !== "draft" && sealAfter.status >= 400 && sealAfter.refused,

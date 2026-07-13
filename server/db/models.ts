@@ -312,14 +312,13 @@ export async function createModelAsset(
   }
 
   try {
-    await db.insert(modelAssets).values(data);
-    const inserted = await db
-      .select()
-      .from(modelAssets)
-      .where(eq(modelAssets.modelId, data.modelId))
-      .orderBy(desc(modelAssets.createdAt))
-      .limit(1);
-    return { success: true, assetId: inserted[0]?.id };
+    // $returningId, never newest-by-createdAt (D-46 R7 log): the mint runs
+    // every slot through Promise.all, so a newest-row lookup could return a
+    // SIBLING slot's id — which then rides back to the client and misroutes
+    // the next iterate (VC-R6 final r2 defect 1). The inserted id must be
+    // exactly this row's.
+    const [inserted] = await db.insert(modelAssets).values(data).$returningId();
+    return { success: true, assetId: inserted?.id };
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to create model asset:");
     return { success: false, error: "Failed to create model asset" };

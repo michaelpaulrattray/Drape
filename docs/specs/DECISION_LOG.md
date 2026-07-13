@@ -526,6 +526,19 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Sequence:** founder re-drives the stays-draft path + the floor → **R6 closes, R7 opens**; paid invariant Y (~1600cr walkable-loop proof) folds into R7's run.
 
+### VC-R6 FINAL re-drive ROUND 2 (founder, 2026-07-13) — D-55 decoupling HALF-shipped; the permissions/doors didn't follow the status
+
+**Diagnosis confirmed by probe:** the SERVER was already status-correct (status stays `draft` through a Core purchase, `packageState.minted = !!agencyId`, the iterate seal keys off `status !== 'draft'`, an identity edit on a draft returns 200). The disease lived in the CLIENT: a "has-views ⇒ minted" era assumption in three specific places, plus one server id hazard.
+
+**Fixes (applied same day; the founder's root suspicion was right — sweep, not spot-fix):**
+
+- **Defect 1 — iterate "Asset not found" on a draft-born view:** `useCastGate` synthesized `id: Date.now()+i` for freshly-generated views instead of the real ledger id, so the next iterate's `assets.find(id)` missed. `mintPackage` now returns each slot's REAL `assetId` (threaded through `SlotGenResult` → `generated[]`), and `useCastGate` uses it. **`createModelAsset` converted to `$returningId`** (D-46 R7 log): the newest-row-by-`createdAt` lookup could return a SIBLING slot's id under the parallel mint — the returned id must be exactly this row's.
+- **Defects 2 & 3 — draft opened in minted-edit mode (fork ceremony + only "Save changes", no mint door):** the stays-draft optimistic fill (`handleDraftLanded`) dropped `draft` from the fill ledger, so during the fill window the node read as MINTED (no badge; Edit → `editContext.draft=false` → `isMintedEdit` → "Save changes" + the D-11 dialog). The optimistic fill now carries `draft: true`, so the whole chain is status-driven end-to-end (server status → `fillFromLibrary` → node provenance → `editContext` → `isMintedEdit`). Once correct, a draft's Edit shows "Cast this model" → the tier dialog with the mint door.
+- **Defect 4 — tier dialog state-aware:** an existing placed draft's dialog now LEADS with adding views ("Add N views — she stays a draft"; header "Add views"; primary "Add views") and mint ("Name & mint") is a distinct labeled door; a fresh cast leads with mint (name field labeled "Name — this mints her identity") with "Add views — stays a draft" as the second door. Every door says where it leads. `existingDraft` threaded from `editContext.draft`.
+- **Sweep result — one more status gap fixed:** `useSheetController.isSheet` required `minted`, so a view-bearing DRAFT rendered only its headshot on the canvas (its package invisible off the environment). Now `isSheet = filledCount >= 2` (MINTED OR DRAFT) — a draft's comp card renders on the board, per D-55 first-class drafts. Every other `isMinted`/`minted` derivation audited: all status/agencyId-driven (`packageState.minted = !!agencyId`, `CastNode.isMinted = isLibrary && !isDraft`, `useResumeDraft`/`useSessionPersistence` = `status === 'active'`). `refreshSlots` confirmed status-agnostic (works on drafts).
+
+**Verification:** free drive **SD6–SD9** (draft not minted / synthetic-id refused / comp card renders on a draft / Edit opens the mint door not "Save changes") + **paid invariant Y** (the full walkable loop: fork → Core views as draft [Y2b asserts real asset ids] → identity iterate SUCCEEDS on a draft view [Y3a, defect 1 closed] → siblings stale → bulk refresh offer → name-and-mint → post-mint seal engages). The loop is walkable by someone who never read the log.
+
 ### Parked (founder's own notes, not the log)
 
 - Community / jobs / templates tab — post-launch strategy question.

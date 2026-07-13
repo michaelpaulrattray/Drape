@@ -80,7 +80,11 @@ export function useCastGate({
         if (result.generated.length > 0) {
           const castStore = useCastingGenerationStore.getState();
           const fresh: GeneratedAsset[] = result.generated.map((g, i) => ({
-            id: Date.now() + i,
+            // The REAL ledger id (D-55 / VC-R6 final r2 defect 1): the draft
+            // session stays open and iterates these views straight away — a
+            // synthesized id makes the server's assetId lookup miss ("Asset
+            // not found"). Fall back only if the server somehow omitted it.
+            id: g.assetId ?? Date.now() + i,
             viewType: g.angle,
             storageUrl: g.imageUrl,
           }));

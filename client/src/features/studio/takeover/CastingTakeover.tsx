@@ -553,6 +553,9 @@ export function CastingTakeover({
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
         mode={upgradeMode ? 'upgrade' : 'mint'}
         fixedName={upgradeMode ? modelNameInStore : undefined}
+        // Defect 4: an existing placed draft's tier dialog leads with adding
+        // views; a fresh cast leads with mint. Every door says where it leads.
+        existingDraft={!!editContext?.draft}
       />
 
       <CreditTopupModal

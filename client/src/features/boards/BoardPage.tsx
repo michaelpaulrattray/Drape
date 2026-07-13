@@ -654,6 +654,12 @@ function BoardPageImpl() {
           imageUrl: info.headshotUrl,
           label: info.name,
           modelId,
+          // VC-R6 final r2: a stays-draft landing IS a draft — the
+          // optimistic provenance must carry draft:true or the node reads
+          // as minted during the fill window (no badge; Edit opens in
+          // minted-edit mode → "Save changes" + the fork ceremony on a
+          // draft). The server row confirms draft:true behind.
+          draft: true,
         });
       }
       void utils.generation.packageState.invalidate({ modelId });

@@ -41,6 +41,12 @@ export interface CastModelModalProps {
   mode?: 'mint' | 'upgrade';
   /** The minted model's name, passed through onConfirm in upgrade mode */
   fixedName?: string;
+  /** VC-R6 final r2 / defect 4: this subject is an EXISTING placed draft
+   *  (re-editing to add views), not a fresh first cast. The dialog then
+   *  reads as ADDING VIEWS ("Add N views — she stays a draft"), the primary
+   *  is "Add views", and mint (name + mint) is a distinct labeled door.
+   *  Every door says where it leads. */
+  existingDraft?: boolean;
 }
 
 export function CastModelModal({
@@ -53,10 +59,15 @@ export function CastModelModal({
   previewImage,
   mode = 'mint',
   fixedName,
+  existingDraft = false,
 }: CastModelModalProps) {
   const [name, setName] = useState('');
   const [tier, setTier] = useState<MintTier>('core');
   const upgrade = mode === 'upgrade';
+  // Defect 4: an existing draft's dialog leads with ADDING VIEWS; mint is the
+  // distinct deliberate step. A fresh cast leads with mint (name commits).
+  const addFirst = existingDraft && !upgrade;
+  const selectedGenerates = (tiers?.[tier]?.cost ?? 0) > 0;
 
   // Upgrade: land on the first tier that still has something to add
   useEffect(() => {
@@ -74,6 +85,18 @@ export function CastModelModal({
     if (!confirmable) return;
     onConfirm(effectiveName, tier);
   }, [confirmable, effectiveName, onConfirm, tier]);
+
+  // Defect 4 — two clearly-labeled doors (mint mode). "Add views" stays a
+  // draft (photographs, no commitment); "Name & mint" commits identity
+  // (D-43) and requires a name. Which is primary depends on where you stand.
+  const canMint = !!name.trim() && !isCasting;
+  const canAddViews = selectedGenerates && !isCasting;
+  const doMint = useCallback(() => {
+    if (name.trim()) onConfirm(name.trim(), tier, false);
+  }, [name, onConfirm, tier]);
+  const doAddViews = useCallback(() => {
+    if (selectedGenerates) onConfirm(name.trim(), tier, true);
+  }, [name, onConfirm, tier, selectedGenerates]);
 
   if (!isOpen) return null;
 
@@ -96,11 +119,11 @@ export function CastModelModal({
         )}
 
         <div style={{ padding: '16px 24px 20px' }}>
-          {/* Header */}
+          {/* Header — the door names where it leads */}
           <div className="flex items-center gap-2 mb-3">
             <Camera className="w-4 h-4 text-canvas-ink-soft" />
             <span className="text-canvas-lg font-medium text-canvas-ink">
-              {upgrade ? 'Complete the card' : 'Cast this model'}
+              {upgrade ? 'Complete the card' : addFirst ? 'Add views' : 'Cast this model'}
             </span>
           </div>
 
@@ -109,11 +132,17 @@ export function CastModelModal({
               {fixedName ? `Add the views ${fixedName} is missing.` : 'Add the missing views.'} Upgrading
               later always costs the same — you only pay for what's new.
             </p>
+          ) : addFirst ? (
+            /* Existing draft: views are photographs, not a commitment (D-55) */
+            <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-3.5">
+              Add reference views — she stays a draft, freely editable. Naming
+              and minting her identity is a separate step below.
+            </p>
           ) : (
-            /* Name input */
+            /* Fresh cast: the name field IS the mint trigger — say so */
             <div className="mb-3.5">
               <label className="block text-canvas-xs font-medium text-canvas-ink-soft mb-1.5">
-                Model name
+                Name — this mints her identity
               </label>
               <input
                 autoFocus
@@ -123,10 +152,10 @@ export function CastModelModal({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleConfirm();
                 }}
-                placeholder="Enter name..."
+                placeholder="Enter name to mint, or add views below as a draft"
                 disabled={isCasting}
                 className="w-full outline-none bg-transparent border-0 border-b border-canvas-border focus:border-canvas-ink text-canvas-ink placeholder:text-canvas-ink-faint disabled:opacity-50"
-                style={{ padding: '8px 0', fontSize: 16, fontWeight: 500, borderBottomWidth: '1px', borderBottomStyle: 'solid' }}
+                style={{ padding: '8px 0', fontSize: 15, fontWeight: 500, borderBottomWidth: '1px', borderBottomStyle: 'solid' }}
               />
             </div>
           )}
@@ -176,31 +205,15 @@ export function CastModelModal({
                       </span>
                     </div>
                     <span className="block text-canvas-md text-canvas-ink-soft" style={{ lineHeight: 1.4 }}>
-                      {TIER_COPY[t].purpose}
+                      {addFirst && plan && plan.missing.length > 0
+                        ? `Adds ${plan.missing.length} view${plan.missing.length === 1 ? '' : 's'} — she stays a draft`
+                        : TIER_COPY[t].purpose}
                     </span>
                   </div>
                 </button>
               );
             })}
           </div>
-
-          {/* Trap ruling (a), sharpened at VC-R6 final: views without
-              minting on EVERY tier — the stays-draft path never demands a
-              name (a typed name rides as an optional nickname); naming
-              stays fused to the mint. Mint mode only (an upgrade is
-              already minted). */}
-          {!upgrade && (
-            <button
-              type="button"
-              disabled={isCasting}
-              onClick={() => onConfirm(name.trim(), tier, true)}
-              className="w-full text-left mb-3.5 -mt-1 text-canvas-sm text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors disabled:opacity-40"
-            >
-              {(tiers?.[tier]?.cost ?? 0) > 0
-                ? 'Or add these views and keep exploring — stays a draft, same price'
-                : 'Or keep exploring — stays a draft, mint when ready'}
-            </button>
-          )}
 
           {/* Casting progress */}
           {isCasting && castingMessage && (
@@ -210,37 +223,68 @@ export function CastModelModal({
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              disabled={isCasting}
-              className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors disabled:opacity-40"
-            >
-              Keep editing
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={!confirmable}
-              className={`flex items-center gap-1.5 px-5 py-2 rounded-canvas-md transition-colors text-canvas-lg font-medium ${
-                confirmable
-                  ? 'bg-canvas-ink text-canvas-surface cursor-pointer'
-                  : 'bg-canvas-border text-canvas-ink-faint cursor-not-allowed'
-              }`}
-            >
-              {isCasting ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  {upgrade ? 'Adding...' : 'Casting...'}
-                </>
-              ) : (
-                <>
-                  {upgrade ? 'Add views' : 'Cast & continue'}
-                  <ChevronRight className="w-3 h-3" />
-                </>
-              )}
-            </button>
-          </div>
+          {/* Actions — every door says where it leads (defect 4) */}
+          {upgrade ? (
+            <div className="flex justify-end gap-3">
+              <button onClick={onClose} disabled={isCasting} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors disabled:opacity-40">
+                Keep editing
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={!confirmable}
+                className={`flex items-center gap-1.5 px-5 py-2 rounded-canvas-md transition-colors text-canvas-lg font-medium ${confirmable ? 'bg-canvas-ink text-canvas-surface cursor-pointer' : 'bg-canvas-border text-canvas-ink-faint cursor-not-allowed'}`}
+              >
+                {isCasting ? <><Loader2 className="w-3 h-3 animate-spin" />Adding...</> : <>Add views<ChevronRight className="w-3 h-3" /></>}
+              </button>
+            </div>
+          ) : (() => {
+            // Two doors: "Add views" (stays a draft) and "Name & mint"
+            // (commits identity). The primary (dark) depends on where you
+            // stand — adding to an existing draft leads with views; a fresh
+            // cast leads with mint.
+            const addViewsBtn = (primary: boolean) => (
+              <button
+                key="add"
+                type="button"
+                onClick={doAddViews}
+                disabled={!canAddViews}
+                title={!selectedGenerates ? 'This tier adds no new views' : undefined}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-canvas-md transition-colors text-canvas-lg font-medium disabled:opacity-40 ${
+                  primary
+                    ? (canAddViews ? 'bg-canvas-ink text-canvas-surface cursor-pointer' : 'bg-canvas-border text-canvas-ink-faint cursor-not-allowed')
+                    : 'text-canvas-ink-soft border-hairline border-canvas-border-strong hover:text-canvas-ink hover:border-canvas-ink'
+                }`}
+              >
+                {isCasting && primary ? <><Loader2 className="w-3 h-3 animate-spin" />Adding…</> : 'Add views'}
+              </button>
+            );
+            const mintBtn = (primary: boolean) => (
+              <button
+                key="mint"
+                type="button"
+                onClick={doMint}
+                disabled={!canMint}
+                title={!name.trim() ? 'Enter a name to mint her identity' : undefined}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-canvas-md transition-colors text-canvas-lg font-medium disabled:opacity-40 ${
+                  primary
+                    ? (canMint ? 'bg-canvas-ink text-canvas-surface cursor-pointer' : 'bg-canvas-border text-canvas-ink-faint cursor-not-allowed')
+                    : 'text-canvas-ink-soft border-hairline border-canvas-border-strong hover:text-canvas-ink hover:border-canvas-ink'
+                }`}
+              >
+                {isCasting && primary ? <><Loader2 className="w-3 h-3 animate-spin" />Minting…</> : <>Name &amp; mint{primary && <ChevronRight className="w-3 h-3" />}</>}
+              </button>
+            );
+            return (
+              <div className="flex justify-end items-center gap-2.5">
+                <button onClick={onClose} disabled={isCasting} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors disabled:opacity-40 mr-1">
+                  Keep editing
+                </button>
+                {addFirst
+                  ? [mintBtn(false), addViewsBtn(true)]
+                  : [addViewsBtn(false), mintBtn(true)]}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
