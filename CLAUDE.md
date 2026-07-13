@@ -8,6 +8,12 @@ Drape is a commercial product heading for public launch. Billing, credits, and a
 
 Design taste: restrained, editorial, monochrome. Prefer simple, human-feeling solutions over clever or busy ones; avoid generic templated UI patterns. When in doubt on design decisions, less is more.
 
+## Advisor protocol
+
+An `advisor` subagent (stronger model, read-only) is available. Call it BEFORE substantive work — before writing code, before committing to an interpretation on a non-trivial task. Orientation (reading files, grep) is not substantive work; do that first, then consult. Also call it when stuck (recurring errors, non-converging approach) and before declaring a milestone chunk complete. Give its advice serious weight; if evidence contradicts it, surface the conflict in one more consult rather than silently switching. When it flags a founder ruling, stop and ask rather than deciding.
+
+For coding specifically: milestone plans and DECISION_LOG rulings are pre-made judgment — executing them needs no consult. Consult when the plan leaves implementation shape open and the choice is architectural, after the FIRST failed fix attempt on any bug (not the third), and as a brief review before reporting a milestone chunk complete.
+
 ## Commands
 
 - `pnpm dev` — start dev server (Express + Vite middleware, single process on http://localhost:3000; auto-increments port if busy)
