@@ -1973,6 +1973,12 @@ let seededItemId = 0;
     );
     sdAssetIds[angle] = (a as { insertId: number }).insertId;
   }
+  // r3 F5: mark ONE sibling stale (the F6 writer's effect) so both the board
+  // mosaic AND the studio strip must show the same treatment on a DRAFT.
+  await conn.execute(
+    `UPDATE model_assets SET status = ? WHERE id = ?`,
+    [JSON.stringify({ state: "stale", at: new Date().toISOString() }), sdAssetIds.sideClose],
+  );
 
   // Place it: empty node over raw tRPC, then the fill op (draft stamping)
   const sdItem = await page.evaluate(
@@ -2129,11 +2135,78 @@ let seededItemId = 0;
         }
       }
       check("SD9 draft Edit opens the MINT door (Cast this model), never minted-edit (Save changes)", primary === "cast", `primary=${primary}`);
-      await page.keyboard.press("Escape");
-      await sleep(400);
-      if (await bodyIncludes("Leave casting?")) { await clickByText("Leave"); }
-      await sleep(400);
+
+      // SD10 (r3 F1): closing a session RESETS the casting stores — a fresh
+      // cast / draft edit used to leave currentModelId + currentAssets behind,
+      // and the next session's iterate fired against that stale (often minted)
+      // model + asset id (the three faces: seal-on-a-draft, "asset not found",
+      // "Unable to transform"). Read the store through the DEV hook after close.
+      if (primary === "cast") {
+        // SD11 (r3 F5): the STUDIO strip carries the same stale treatment as
+        // the board mosaic — a dot + dimmed thumb on the pre-seeded stale
+        // sideClose slot, on a DRAFT (the old strip only read packageState on
+        // minted edits, so a draft's stale never showed where the edit is made).
+        let staleStrip = { dot: false, dimmed: false };
+        for (let i = 0; i < 12 && !staleStrip.dot; i++) {
+          await sleep(500);
+          staleStrip = await page.evaluate(() => {
+            // The Side thumbnail: an img whose sibling label reads "Side"
+            const labels = [...document.querySelectorAll("span")].filter((s) => s.textContent?.trim() === "Side");
+            for (const lbl of labels) {
+              const btn = lbl.closest("button");
+              const img = btn?.querySelector("img");
+              if (!btn || !img) continue;
+              const dot = !!btn.querySelector('span[title*="Out of sync"]');
+              const dimmed = parseFloat(getComputedStyle(img).opacity) <= 0.75;
+              if (dot) return { dot, dimmed };
+            }
+            return { dot: false, dimmed: false };
+          });
+        }
+        check("SD11 studio strip shows the stale dot + dim on a draft (F5, matches mosaic)", staleStrip.dot && staleStrip.dimmed, JSON.stringify(staleStrip));
+
+        // Confirm the session actually hydrated the draft first (so the reset
+        // is meaningful, not just an already-empty store)
+        const hydratedModelId = await page.evaluate(
+          () => (window as any).__castGenStore?.getState()?.currentModelId ?? null,
+        );
+        await page.keyboard.press("Escape");
+        await sleep(400);
+        if (await bodyIncludes("Leave casting?")) { await clickByText("Leave"); }
+        await sleep(700);
+        const afterClose = await page.evaluate(() => {
+          const s = (window as any).__castGenStore?.getState();
+          return { modelId: s?.currentModelId ?? null, assets: s?.currentAssets?.length ?? -1 };
+        });
+        check(
+          "SD10 close resets the session — no stale model/assets leak to the next (F1)",
+          hydratedModelId !== null && afterClose.modelId === null && afterClose.assets === 0,
+          JSON.stringify({ hydratedModelId, afterClose }),
+        );
+      } else {
+        await page.keyboard.press("Escape");
+        await sleep(400);
+        if (await bodyIncludes("Leave casting?")) { await clickByText("Leave"); }
+        await sleep(400);
+      }
     }
+
+    // SD12 (r3 F6, founder-ratified): the headshot is never refreshable, but
+    // the refusal is STATUS-AWARE — a draft is told to iterate-in-environment
+    // (fluid identity), never "fork" (the minted answer). Raw tRPC, free.
+    const sdRefuse = await page.evaluate(async (mId: number) => {
+      const r = await fetch("/api/trpc/generation.refreshSlots", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "include",
+        body: JSON.stringify({ json: { modelId: mId, angles: ["frontClose"] } }),
+      });
+      const text = await r.text();
+      return { status: r.status, draftCopy: text.includes("stays a draft"), forkCopy: /forks a new model|Fork instead/.test(text) };
+    }, sdModelId);
+    check(
+      "SD12 headshot refresh refused on a draft with the iterate-in-environment copy, never 'fork' (F6)",
+      sdRefuse.status === 412 && sdRefuse.draftCopy && !sdRefuse.forkCopy,
+      JSON.stringify(sdRefuse),
+    );
 
     // Cleanup
     await conn.execute(`UPDATE board_items SET deletedAt = NOW() WHERE id = ?`, [sdItem.itemId]);
@@ -2232,6 +2305,57 @@ let seededItemId = 0;
   }
 }
 
+// ── Invariant MK: the deterministic mark stales siblings — PAID (~350cr) ────
+// The r3 F3 delta, isolated: a small named mark ("add a small tattoo to her
+// forearm" — the founder's exact phrasing that the flaky LLM called cosmetic)
+// on ONE draft view stales its siblings, deterministically, every time.
+// One real iterate — cheaper than re-walking the whole Y loop.
+if (!paidEnabled("MK")) {
+  console.log("SKIP  MK — paid invariant (deterministic mark stale; ~350 credits)");
+} else {
+  await conn.execute(
+    `DELETE FROM model_assets WHERE modelId IN (SELECT id FROM models WHERE userId=? AND masterPrompt='mk-drive-seed')`, [userId]);
+  await conn.execute(`DELETE FROM models WHERE userId=? AND masterPrompt='mk-drive-seed'`, [userId]);
+  const [mkReal] = await conn.execute(
+    `SELECT ma.storageUrl FROM model_assets ma JOIN models m ON m.id=ma.modelId WHERE m.userId=? AND ma.storageUrl LIKE 'http%' LIMIT 1`, [userId]);
+  const MK_URL = (mkReal as Array<{ storageUrl: string }>)[0]?.storageUrl;
+  if (!MK_URL) {
+    check("MK deterministic mark stales siblings", false, "no real asset url to seed from");
+  } else {
+    const [mkM] = await conn.execute(
+      `INSERT INTO models (userId, name, status, masterPrompt, technicalSchema, preferences)
+       VALUES (?, NULL, 'draft', 'mk-drive-seed', '{}', '{}')`, [userId]);
+    const mkModelId = (mkM as { insertId: number }).insertId;
+    const mkIds: Record<string, number> = {};
+    for (const angle of ["frontClose", "frontFull", "sideClose"]) {
+      const [a] = await conn.execute(
+        `INSERT INTO model_assets (modelId, viewType, resolution, storageUrl, pointsCost) VALUES (?,?, '1K', ?, 0)`,
+        [mkModelId, angle, MK_URL]);
+      mkIds[angle] = (a as { insertId: number }).insertId;
+    }
+    // Iterate the full-front view with the founder's small-mark phrasing
+    const mkStatus = await page.evaluate(async (args: { mid: number; aid: number }) => {
+      const r = await fetch("/api/trpc/generation.iterate", {
+        method: "POST", headers: { "content-type": "application/json" }, credentials: "include",
+        body: JSON.stringify({ json: { modelId: args.mid, assetId: args.aid, feedback: "add a small tattoo to her forearm" } }),
+      });
+      return r.status;
+    }, { mid: mkModelId, aid: mkIds.frontFull });
+    check("MK1 small-mark iterate SUCCEEDS on a draft view (not refused, not cosmetic-skipped)", mkStatus === 200, `status=${mkStatus}`);
+    // The siblings (frontClose, sideClose) must be stale-marked
+    let mkStale = 0;
+    for (let i = 0; i < 12 && mkStale < 2; i++) {
+      await sleep(1000);
+      const [rows] = await conn.execute(
+        `SELECT COUNT(*) AS c FROM model_assets WHERE modelId=? AND JSON_EXTRACT(status,'$.state')='stale'`, [mkModelId]);
+      mkStale = Number((rows as Array<{ c: number }>)[0].c);
+    }
+    check("MK2 the small mark STALES both siblings (deterministic, F3)", mkStale >= 2, `${mkStale} stale`);
+    await conn.execute(`DELETE FROM model_assets WHERE modelId=?`, [mkModelId]);
+    await conn.execute(`DELETE FROM models WHERE id=?`, [mkModelId]);
+  }
+}
+
 // ── Invariant Y: the walkable loop (trap ruling (a)) — PAID (~1600cr) ───────
 // fork → views as DRAFT (mint:false — stays draft, gates still fire) →
 // identity iterate (free on drafts) → siblings STALE → bulk refresh offer →
@@ -2292,6 +2416,10 @@ if (!paidEnabled("Y")) {
 
     // Identity iterate on ONE draft view USING THE RETURNED ASSET ID (exactly
     // what the client sends) → must SUCCEED (defect 1) and stale the siblings.
+    // r3 F3: the founder's EXACT failing phrasing ("add a small tattoo to her
+    // forearm") — the flaky LLM classifier called it cosmetic, so the
+    // stale-writer never fired. Now deterministic (namesAPermanentMark), so a
+    // named mark ALWAYS stales siblings on a draft. This leg proves it.
     const target = yGen.find((g) => g.angle === "frontFull") ?? yGen[0];
     if (!target?.assetId) {
       check("Y3 identity iterate stales the siblings", false, "no returned assetId to iterate");
@@ -2301,7 +2429,7 @@ if (!paidEnabled("Y")) {
           method: "POST",
           headers: { "content-type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ json: { modelId: args.mid, assetId: args.aid, feedback: "add a large dragon tattoo across the chest and both arms" } }),
+          body: JSON.stringify({ json: { modelId: args.mid, assetId: args.aid, feedback: "add a small tattoo to her forearm" } }),
         });
         return r.status;
       }, { mid: yFork.modelId, aid: target.assetId });
@@ -2342,7 +2470,7 @@ if (!paidEnabled("Y")) {
           method: "POST",
           headers: { "content-type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ json: { modelId: args.mid, assetId: args.aid, feedback: "add a large dragon tattoo across the chest and both arms" } }),
+          body: JSON.stringify({ json: { modelId: args.mid, assetId: args.aid, feedback: "add a small tattoo to her forearm" } }),
         });
         const text = await r.text();
         return { status: r.status, refused: text.includes("identity is minted") };

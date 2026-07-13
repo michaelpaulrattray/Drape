@@ -22,12 +22,17 @@ function ViewThumbnail({
   isActive,
   onClick,
   isHovered,
+  isStale,
 }: {
   src: string;
   label: string;
   isActive: boolean;
   onClick: () => void;
   isHovered: boolean;
+  /** F5: the same stale treatment the board mosaic uses (D-37 dot + dim) —
+   *  the strip is where the divergent edit is MADE, so the consequence must
+   *  be visible here first (D-40). */
+  isStale?: boolean;
 }) {
   return (
     <button
@@ -48,7 +53,20 @@ function ViewThumbnail({
         if (!isActive) e.currentTarget.style.borderColor = 'var(--color-canvas-border)';
       }}
     >
-      <img src={src} alt={label} className="w-full h-full object-cover" />
+      <img
+        src={src}
+        alt={label}
+        className="w-full h-full object-cover transition-opacity duration-200"
+        style={{ opacity: isStale ? 0.6 : 1 }}
+      />
+      {/* Stale dot — ink, top-right, screen-legible (matches the mosaic tile) */}
+      {isStale && (
+        <span
+          className="absolute top-1 right-1 rounded-full bg-canvas-ink"
+          style={{ width: 6, height: 6, boxShadow: '0 0 0 1.5px var(--color-canvas-surface)' }}
+          title="Out of sync with a recent edit — refresh from the comp card"
+        />
+      )}
       <div
         className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-center"
         style={{ background: 'rgba(10,10,10,0.55)' }}
@@ -128,6 +146,7 @@ const PACKAGE_SLOTS: Array<{ vt: ViewType; label: string }> = [
 
 export function ViewTabs() {
   const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
+  const currentModelId = useCastingGenerationStore((s) => s.currentModelId);
   const { activeView, setActiveView } = useCastingUIStore();
   // ONE view system (D-46): the six-slot package renders for drafts and minted
   // models alike — filled slots as thumbnails, empty ones as ghosts. The only
@@ -141,15 +160,24 @@ export function ViewTabs() {
     window.dispatchEvent(
       new CustomEvent(isMintedEdit ? 'casting-open-package-upgrade' : 'casting-open-mint'),
     );
-  // Named-and-refunded slot failures (D-40) surface as retryable failed slots
+  // F5: read the package state for the CURRENT model — draft OR minted (the
+  // old query only ran on minted edits, so a draft's stale marks and failed
+  // slots never reached the strip, the very surface where the edit is made).
   const packageQuery = trpc.generation.packageState.useQuery(
-    { modelId: mintedModelId ?? 0 },
-    { enabled: isMintedEdit },
+    { modelId: currentModelId ?? 0 },
+    { enabled: currentModelId != null, staleTime: 5_000 },
   );
   const failedByAngle = new Map(
     (packageQuery.data?.slots ?? [])
       .filter((s) => s.failed)
       .map((s) => [s.angle as ViewType, s.failed!.reason]),
+  );
+  // F5: stale = a sibling out of sync with a recent divergent edit (F6 writer),
+  // not pinned. Same rule the board mosaic uses.
+  const staleAngles = new Set(
+    (packageQuery.data?.slots ?? [])
+      .filter((s) => s.stale && !s.pinned && s.filled)
+      .map((s) => s.angle as ViewType),
   );
   const [hovered, setHovered] = useState(false);
 
@@ -175,6 +203,8 @@ export function ViewTabs() {
               isActive={activeView === vt}
               onClick={() => setActiveView(vt)}
               isHovered={hovered}
+              // The edited (active) view is never its own stale sibling
+              isStale={staleAngles.has(vt) && activeView !== vt}
             />
           ) : failedByAngle.has(vt) ? (
             <FailedSlot key={vt} label={label} reason={failedByAngle.get(vt)!} onRetry={openPackage} />

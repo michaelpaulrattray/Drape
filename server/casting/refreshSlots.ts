@@ -114,9 +114,17 @@ export async function executeRefreshSlots(input: {
     const slot = slots.find((s) => s.angle === angle);
     const refusal = slot ? refusalFor(slot) : "unfilled";
     if (refusal === "identity_anchor") {
+      // F6 (founder-ratified r3): the headshot is never REFRESHABLE — the
+      // anchor can't refresh against itself (that's a re-cast, a different
+      // face, regardless of status). But the copy + route are status-aware:
+      // on a DRAFT identity is fluid, so the answer is iterate-in-environment
+      // (free, whole-package-stales), never fork; fork is the minted answer.
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: "The headshot is this identity — refreshing it would cast a different person. Fork instead.",
+        message:
+          model.status === "draft"
+            ? "The headshot anchors every view. Edit it in the environment — she stays a draft, and the other views will flag for a refresh."
+            : "The headshot is this identity — changing it forks a new model.",
       });
     }
     if (refusal === "pinned") {

@@ -11,6 +11,7 @@ import {
   IDENTITY_EDIT_PROMPT,
   classifyEditIdentityImpact,
   shouldRefuseIteration,
+  namesAPermanentMark,
 } from "./editClassifier";
 
 afterEach(() => {
@@ -35,6 +36,43 @@ describe("shouldRefuseIteration (the D-43 seal rule)", () => {
 
   it("fail-open classifications never refuse (a broken classifier must not block paid edits)", () => {
     expect(shouldRefuseIteration("active", { identityLevel: false, checked: false })).toBe(false);
+  });
+});
+
+// ── Deterministic mark detection (VC-R6 final r3 F3) ────────────────────────
+describe("namesAPermanentMark — marks are the canonical trigger, no LLM", () => {
+  it("catches the founder's phrasings and the mark vocabulary", () => {
+    for (const s of [
+      "add a small tattoo to forearm",
+      "give her a throat tattoo",
+      "add tattoos on both arms",
+      "a scar over the left eyebrow",
+      "add a birthmark on her cheek",
+      "put a mole above her lip",
+      "add freckles across the nose",
+      "a nose piercing",
+      "add a beauty mark",
+    ]) {
+      expect(namesAPermanentMark(s), s).toBe(true);
+    }
+  });
+
+  it("does not false-positive on cosmetic edits or mark-adjacent words", () => {
+    for (const s of [
+      "brighten the lighting",
+      "add a scarf around her neck",
+      "molecular gastronomy background",
+      "soften the branding on the shirt",
+      "change the pose",
+      "warmer color grade",
+    ]) {
+      expect(namesAPermanentMark(s), s).toBe(false);
+    }
+  });
+
+  it("classifyEditIdentityImpact short-circuits a named mark to identity-level (no model call)", async () => {
+    const verdict = await classifyEditIdentityImpact("add a small tattoo to her forearm");
+    expect(verdict).toEqual({ identityLevel: true, checked: true });
   });
 });
 
@@ -101,5 +139,15 @@ describe("selectStaleSiblingHeads — the F6 line", () => {
 
   it("a single-view draft marks nothing", () => {
     expect(selectStaleSiblingHeads([assets[4]], "frontClose")).toEqual([]);
+  });
+
+  it("a headshot edit stales the WHOLE package — every other view descended from it (F6)", () => {
+    // Editing the anchor (frontClose) flags every other non-pinned filled
+    // view; the anchor itself is never its own stale sibling.
+    const ids = selectStaleSiblingHeads(assets, "frontClose");
+    expect(ids).toEqual(expect.arrayContaining([50, 20])); // frontFull head, threeQuarter
+    expect(ids).not.toContain(30); // sideClose is pinned — accepted-final, exempt
+    expect(ids).not.toContain(10); // never the edited headshot itself
+    expect(ids).not.toContain(5); // unfilled marker, not a head
   });
 });

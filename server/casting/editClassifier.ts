@@ -51,11 +51,35 @@ export interface EditClassification {
   checked: boolean;
 }
 
+/**
+ * Permanent distinctive marks are the CANONICAL identity/stale trigger
+ * (founder, VC-R6 final r3 F3): a mark on one view makes every other view
+ * inconsistent, full stop — this must not ride a flaky LLM verdict (the
+ * TEXT_ECONOMY classifier called "add a small tattoo" cosmetic often enough
+ * that the stale-writer never fired). Detected deterministically: if the
+ * edit names a mark, it is identity-level, no model call. Word-boundary
+ * matched so "scarf"/"molecular"/"branding" don't false-positive.
+ * Exported for tests — the marks vocabulary is the single tuning point.
+ */
+export const MARK_PATTERN =
+  /\b(tattoo|tattoos|tatt|ink(?:ed)?|scar|scars|birthmark|birthmarks|mole|moles|freckle|freckles|piercing|piercings|pierced|stretch mark|beauty mark|beauty spot|body art|brand mark|scarification)\b/i;
+
+export function namesAPermanentMark(feedback: string): boolean {
+  return MARK_PATTERN.test(feedback);
+}
+
 export async function classifyEditIdentityImpact(feedback: string): Promise<EditClassification> {
   // Founder test hook (mirrors BACK_VIEW_GATE_FORCE_FAIL): classify every
   // edit as identity-level to watch the refusal live. Never ships enabled.
   if (process.env.ITERATE_CLASSIFY_FORCE_IDENTITY === "1") {
     log.warn("[EditClassifier] FORCE IDENTITY active — remove after testing");
+    return { identityLevel: true, checked: true };
+  }
+  // Deterministic short-circuit (F3): a named permanent mark is always
+  // identity-level — never subject to the LLM's judgment. This is what makes
+  // marks the canonical stale trigger on drafts and a hard seal on minted.
+  if (namesAPermanentMark(feedback)) {
+    log.info("[EditClassifier] permanent mark named — identity-level (deterministic)");
     return { identityLevel: true, checked: true };
   }
   const ai = getAiClient();

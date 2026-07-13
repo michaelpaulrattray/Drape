@@ -100,6 +100,7 @@ export function useCastingGeneration({
   const compactPromptMutation = trpc.generation.compactPrompt.useMutation();
   const clearSessionMutation = trpc.generation.clearSession.useMutation();
   const analyzeReferenceMutation = trpc.generation.analyzeReference.useMutation();
+  const utils = trpc.useUtils();
 
   // Form validation — matches original: ethnicity OR ethnicityBlend satisfies requirement
   const isFormValid = useMemo(() => {
@@ -380,6 +381,10 @@ export function useCastingGeneration({
         
         toast.success("Iteration complete!");
         refetchCreditsWithWarning();
+        // F5: a divergent edit may have staled siblings (F6 writer) — refetch
+        // the package so the STRIP shows the stale dot/dim live, where the
+        // edit was made (D-40), not only on the board mosaic after close.
+        if (currentModelId) void utils.generation.packageState.invalidate({ modelId: currentModelId });
         
         // Fire-and-forget: fetch suggestions — re-analyze reference if present (matches SOT)
         // Read fresh (not from a render-time closure)

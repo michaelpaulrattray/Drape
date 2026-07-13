@@ -145,11 +145,19 @@ export function CastingTakeover({
     // close as plain data (the mint path's pattern; the D-24 boundary passes
     // data, never stores) so the board mosaic updates the instant the room
     // folds. The host patches its packageState cache and revalidates behind.
-    if (editContext && !editContext.draft) {
-      const sessionAssets = useCastingGenerationStore.getState().currentAssets;
+    //
+    // VC-R6 final r3 (F2 + F3b): fire for EVERY session, not just minted
+    // edits. A stays-draft / draft-edit session generates views and writes
+    // sibling-stale marks that the board never saw until a hard refresh —
+    // the patch paints the fresh views (F2) and the revalidate the host runs
+    // surfaces the {N} stale segment from a mark edit (F3b). Model id comes
+    // from the edit context, or the live session for a fresh cast.
+    const state = useCastingGenerationStore.getState();
+    const sessionModelId = editContext?.modelId ?? state.currentModelId;
+    if (sessionModelId) {
       onSessionSlots?.(
-        editContext.modelId,
-        sessionAssets
+        sessionModelId,
+        state.currentAssets
           .filter((a) => a.storageUrl)
           .map((a) => ({ angle: a.viewType, url: a.storageUrl })),
       );
@@ -187,9 +195,18 @@ export function CastingTakeover({
       }
     }
     return () => {
-      if (editContext && !editContext.draft) {
-        resetCastingSession(); // full discard — never just the flag
-      }
+      // VC-R6 final r3 F1 (session-reentry corruption): reset on EVERY close,
+      // not just minted edits. A fresh cast / draft edit used to leave
+      // currentModelId, currentAssets, and canvas.castModelId in the stores;
+      // the NEXT session's child-hydration effect (runs before this parent's
+      // mount reset) then read the stale canvas.castModelId and its async
+      // fetch re-poisoned the store AFTER the reset — the iterate fired
+      // against a stale (often minted) model + stale asset id. Three faces:
+      // the seal spoke on a "draft" (wrong model was minted), "asset not
+      // found" (stale id), and "Unable to transform" (compounded mismatch).
+      // Drafts persist server-side, so a clean re-hydrate on next open loses
+      // nothing. The bleed contract still holds — mintedEditContext dies here.
+      resetCastingSession();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

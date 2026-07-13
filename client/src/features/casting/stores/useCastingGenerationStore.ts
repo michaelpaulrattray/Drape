@@ -184,6 +184,14 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
   )
 );
 
+// DEV-only observability: the regression drive reads currentModelId/
+// currentAssets to prove session-reentry hygiene (F1 — reset on every close).
+// Dead-code-eliminated from the prod bundle (import.meta.env.DEV is false).
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as unknown as { __castGenStore?: typeof useCastingGenerationStore }).__castGenStore =
+    useCastingGenerationStore;
+}
+
 // Selector hooks — only those actually imported by consumers
 export const useCurrentMasterPrompt = () => useCastingGenerationStore((state) => state.currentMasterPrompt);
 export const useSuggestions = () => useCastingGenerationStore((state) => state.suggestions);
