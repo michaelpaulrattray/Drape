@@ -698,10 +698,17 @@ export function BoardCanvas({
           '--xy-background-color-props': 'var(--color-canvas-field)',
         } as React.CSSProperties}
       >
+        {/* THE floor (R-7): same token pair AND same geometry as the CSS
+            surfaces. React Flow draws radius = size/2 × zoom — size 1.5
+            gives the 0.75px dot the viewer/studio radial-gradients draw
+            (size 1 rendered 0.5px: the board read a step lighter at 100%,
+            VC-R6 final fix 3). Dots stay canvas-space by recommendation —
+            the floor is the space itself; scaling with zoom is what tells
+            your hands the camera moved. */}
         <Background
           variant={"dots" as any}
           gap={24}
-          size={1}
+          size={1.5}
           color="var(--color-canvas-field-dot)"
         />
         {/* D-50: selection >1 renders as a GROUP — one container, one toolbar */}

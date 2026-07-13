@@ -170,7 +170,7 @@ await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", tim
 await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
 await sleep(500);
 
-// ── Invariant H: D-9 first-run intro — FREE ─────────────────────────────────
+// ── Invariant FR: D-9 first-run intro — FREE (letter H belongs to the paid post-mint block) ─────────────────────────────────
 // First-ever empty board shows the ghost composition; "Start with a blank
 // board" dismisses it PERMANENTLY (profile flag, survives reload). Runs
 // first so the flag ends the leg SET — the rest of the drive never sees
@@ -184,7 +184,7 @@ await sleep(500);
     intro: !!document.querySelector("[data-first-run-intro]"),
     pill: [...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Cast your first model"),
   }));
-  check("H1 first-ever empty board shows the intro (D-9)", introUp.intro && introUp.pill, JSON.stringify(introUp));
+  check("FR1 first-ever empty board shows the intro (D-9)", introUp.intro && introUp.pill, JSON.stringify(introUp));
   if (introUp.intro) {
     await page.evaluate(() => {
       const b = [...document.querySelectorAll("button")].find(
@@ -194,14 +194,14 @@ await sleep(500);
     });
     await sleep(600);
     const gone = await page.evaluate(() => !document.querySelector("[data-first-run-intro]"));
-    check("H2 blank-board exit dismisses the intro", gone);
+    check("FR2 blank-board exit dismisses the intro", gone);
     let flagSet = false;
     for (let i = 0; i < 12 && !flagSet; i++) {
       await sleep(500);
       const [rows] = await conn.execute(`SELECT canvasIntroSeen AS s FROM users WHERE id = ?`, [userId]);
       flagSet = Boolean((rows as Array<{ s: number }>)[0]?.s);
     }
-    check("H3 dismissal persists on the profile (never returns)", flagSet);
+    check("FR3 dismissal persists on the profile (never returns)", flagSet);
     await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
     await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
     await sleep(800);
@@ -209,11 +209,42 @@ await sleep(500);
       intro: !!document.querySelector("[data-first-run-intro]"),
       hint: (document.body.textContent ?? "").includes("Add a cast to begin"),
     }));
-    check("H4 returning user gets the quiet hint, not the intro (§11.2)", !after.intro && after.hint, JSON.stringify(after));
+    check("FR4 returning user gets the quiet hint, not the intro (§11.2)", !after.intro && after.hint, JSON.stringify(after));
   } else {
     // Leave the flag set regardless — the drive must never race the overlay
     await conn.execute(`UPDATE users SET canvasIntroSeen = 1 WHERE id = ?`, [userId]);
   }
+}
+
+// ── Invariant FL: THE floor renders at parity (R-7 / VC-R6 final fix 3) ─────
+// The board's rendered dot must be the same 0.75px-radius, 24px-rhythm,
+// same-token dot the viewer/studio radial-gradients draw (React Flow draws
+// radius = size/2 × zoom — size 1 drifted the board a step lighter once).
+// unit floorParity.test.ts pins the CSS surfaces; this pins the live render.
+{
+  const fl = await page.evaluate(() => {
+    const circle = document.querySelector(".react-flow__background pattern circle");
+    const pattern = document.querySelector(".react-flow__background pattern");
+    const vp = document.querySelector(".react-flow__viewport") as HTMLElement | null;
+    const zoom = vp ? new DOMMatrix(getComputedStyle(vp).transform).a : NaN;
+    return {
+      r: circle ? parseFloat(circle.getAttribute("r") ?? "0") : null,
+      gap: pattern ? parseFloat(pattern.getAttribute("width") ?? "0") : null,
+      zoom,
+    };
+  });
+  const rCanvas = fl.r !== null && fl.zoom ? fl.r / fl.zoom : null;
+  const gapCanvas = fl.gap !== null && fl.zoom ? fl.gap / fl.zoom : null;
+  check(
+    "FL1 board dot radius = 0.75 canvas-px (parity with viewer/studio)",
+    rCanvas !== null && Math.abs(rCanvas - 0.75) < 0.02,
+    JSON.stringify({ ...fl, rCanvas }),
+  );
+  check(
+    "FL2 board dot rhythm = 24 canvas-px",
+    gapCanvas !== null && Math.abs(gapCanvas - 24) < 0.1,
+    JSON.stringify({ gapCanvas }),
+  );
 }
 
 const nodeCount = () => page.evaluate(() => document.querySelectorAll(".react-flow__node").length);
@@ -1906,7 +1937,117 @@ let seededItemId = 0;
   await sleep(200);
 }
 
-// ── Invariant I: the note contract (R-6 notes pass) — FREE ──────────────────
+// ── Invariant SD: D-55 stays-draft honesty (VC-R6 final fix 1) — FREE ───────
+// A placed DRAFT wears a real badge on the card face (never a label crumb),
+// teaches its next step once, takes an optional nickname WITHOUT minting,
+// and the mint path still refuses namelessness (naming fused to minting).
+{
+  // Seed a draft model + headshot (asset URL borrowed like the N seeding)
+  await conn.execute(
+    `DELETE FROM model_assets WHERE modelId IN (SELECT id FROM models WHERE userId = ? AND masterPrompt = 'sd-drive-seed')`,
+    [userId],
+  );
+  await conn.execute(`DELETE FROM models WHERE userId = ? AND masterPrompt = 'sd-drive-seed'`, [userId]);
+  const [sdReal] = await conn.execute(
+    `SELECT ma.storageUrl FROM model_assets ma JOIN models m ON m.id = ma.modelId
+     WHERE m.userId = ? AND ma.storageUrl LIKE 'http%' LIMIT 1`,
+    [userId],
+  );
+  const SD_URL =
+    (sdReal as Array<{ storageUrl: string }>)[0]?.storageUrl ??
+    "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+  const [sdM] = await conn.execute(
+    `INSERT INTO models (userId, name, status, masterPrompt, technicalSchema, preferences)
+     VALUES (?, NULL, 'draft', 'sd-drive-seed', '{}', '{}')`,
+    [userId],
+  );
+  const sdModelId = (sdM as { insertId: number }).insertId;
+  await conn.execute(
+    `INSERT INTO model_assets (modelId, viewType, resolution, storageUrl, pointsCost) VALUES (?, 'frontClose', '1K', ?, 0)`,
+    [sdModelId, SD_URL],
+  );
+
+  // Place it: empty node over raw tRPC, then the fill op (draft stamping)
+  const sdItem = await page.evaluate(
+    async (bId: number, mId: number) => {
+      const c = await fetch("/api/trpc/boardOps.createNode.execute", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { boardId: bId, kind: "cast_config", provenance: null, position: { x: 2400, y: 120 }, size: { width: 280, height: 420 } } }),
+      });
+      const cd = await c.json();
+      const itemId = cd?.result?.data?.json?.itemId;
+      if (!itemId) return null;
+      const f = await fetch("/api/trpc/boardOps.fillFromLibrary", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { boardId: bId, itemId, modelId: mId } }),
+      });
+      const fd = await f.json();
+      return { itemId, draft: fd?.result?.data?.json?.draft ?? null };
+    },
+    boardId,
+    sdModelId,
+  );
+  check("SD1 draft fill lands with draft stamping", !!sdItem && sdItem.draft === true, JSON.stringify(sdItem));
+
+  if (sdItem) {
+    await page.goto(`${BASE}/app/board/${boardId}`, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.waitForSelector('button[aria-label="Select"]', { timeout: 90000 });
+    await sleep(1500);
+    const sdNode = await page.evaluate((id: number) => {
+      const el = document.querySelector(`.react-flow__node[data-id="item-${id}"]`);
+      if (!el) return null;
+      const t = el.textContent ?? "";
+      return {
+        badge: [...el.querySelectorAll("span")].some((s) => s.textContent?.trim() === "Draft"),
+        crumb: t.includes("· Draft"),
+        hint: t.includes("Keep exploring — add views or edit freely, mint when ready"),
+      };
+    }, sdItem.itemId);
+    check("SD2 draft wears the badge on the card face, not a label crumb", !!sdNode && sdNode.badge && !sdNode.crumb, JSON.stringify(sdNode));
+    check("SD3 fresh draft teaches its next step (one-time hint)", !!sdNode?.hint);
+
+    // Optional nickname: names the draft WITHOUT minting (naming ≠ minting)
+    const sdNick = await page.evaluate(async (mId: number) => {
+      const r = await fetch("/api/trpc/generation.mintPackage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { modelId: mId, tier: "draft", mint: false, characterName: "SD Nickname" } }),
+      });
+      return r.status;
+    }, sdModelId);
+    const [sdRow] = await conn.execute(`SELECT name, status FROM models WHERE id = ?`, [sdModelId]);
+    const sdState = (sdRow as Array<{ name: string | null; status: string }>)[0];
+    check(
+      "SD4 nickname names the draft WITHOUT minting",
+      sdNick === 200 && sdState?.name === "SD Nickname" && sdState?.status === "draft",
+      JSON.stringify({ status: sdNick, ...sdState }),
+    );
+
+    // The mint path still refuses namelessness — naming is fused to minting
+    const sdNameless = await page.evaluate(async (mId: number) => {
+      const r = await fetch("/api/trpc/generation.mintPackage", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ json: { modelId: mId, tier: "draft" } }),
+      });
+      return r.status;
+    }, sdModelId);
+    check("SD5 nameless mint refused (name belongs to the mint moment)", sdNameless === 400, `status=${sdNameless}`);
+
+    // Cleanup
+    await conn.execute(`UPDATE board_items SET deletedAt = NOW() WHERE id = ?`, [sdItem.itemId]);
+    await conn.execute(`DELETE FROM model_assets WHERE modelId = ?`, [sdModelId]);
+    await conn.execute(`DELETE FROM models WHERE id = ?`, [sdModelId]);
+  }
+}
+
+// ── Invariant NT: the note contract (R-6 notes pass) — FREE (letter I belongs to the paid gate-fail block) ──────────────────
 // A fresh note opens ready to write (auto-edit on the CONFIRMED id — never
 // the optimistic row, whose temp→real remount would eat mid-typing text);
 // Ctrl+Enter commits; double-click re-edits; Esc cancels.
@@ -1948,7 +2089,7 @@ let seededItemId = 0;
         return a?.tagName === "TEXTAREA" && !!a.closest(".react-flow__node");
       });
     }
-    check("I1 fresh note opens ready to write (post-confirm auto-edit)", writable);
+    check("NT1 fresh note opens ready to write (post-confirm auto-edit)", writable);
     if (writable) {
       await page.keyboard.type("Drive note");
       await page.keyboard.down("Control");
@@ -1964,7 +2105,7 @@ let seededItemId = 0;
         );
         noteRow = (rows as Array<{ id: number; label: string }>)[0] ?? null;
       }
-      check("I2 Ctrl+Enter commits the note text", !!noteRow);
+      check("NT2 Ctrl+Enter commits the note text", !!noteRow);
       // I3 — double-click re-edits; Esc cancels without persisting
       if (noteRow) {
         const noteSel = `.react-flow__node[data-id="item-${noteRow.id}"]`;
@@ -1986,7 +2127,7 @@ let seededItemId = 0;
           }
           await page.keyboard.press("Escape");
         }
-        check("I3 double-click re-opens the note for editing", reEdits);
+        check("NT3 double-click re-opens the note for editing", reEdits);
         // Cleanup
         await conn.execute(`UPDATE board_items SET deletedAt = NOW() WHERE id = ?`, [noteRow.id]);
       }

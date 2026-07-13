@@ -640,6 +640,28 @@ function BoardPageImpl() {
     [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation, utils],
   );
 
+  // D-55 (VC-R6 final): a stays-draft confirm lands the DRAFT on its node —
+  // same fill op as mint (stamps draft provenance + honest name server-side),
+  // but the takeover STAYS OPEN; the session continues. The node behind the
+  // scrim fills with the badge/strip-verb face, so closing later lands
+  // somewhere real instead of dropping the work.
+  const handleDraftLanded = useCallback(
+    (modelId: number, info: { name: string | null; headshotUrl: string | null }) => {
+      const itemId = castEditContext?.itemId ?? castTakeoverItemId;
+      if (itemId === null || itemId <= 0) return;
+      if (info.headshotUrl) {
+        useOptimisticFills.getState().setFill(itemId, {
+          imageUrl: info.headshotUrl,
+          label: info.name,
+          modelId,
+        });
+      }
+      void utils.generation.packageState.invalidate({ modelId });
+      landMintedCastMutation.mutate({ boardId, itemId, modelId });
+    },
+    [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation, utils],
+  );
+
   // R3: the identity-event landing (D-11). Update regenerates THIS node
   // (job-driven progress on the card); fork lands a new draft node beside
   // the original, optimistically (D-38).
@@ -2036,6 +2058,7 @@ function BoardPageImpl() {
           isAuthenticated={isAuthenticated}
           editContext={castEditContext}
           onMinted={handleTakeoverMinted}
+          onDraftLanded={handleDraftLanded}
           onIdentityCommit={handleIdentityCommit}
           onClose={() => {
             setCastTakeoverItemId(null);

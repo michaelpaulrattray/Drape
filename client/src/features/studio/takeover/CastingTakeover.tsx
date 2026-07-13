@@ -65,6 +65,11 @@ export interface CastingTakeoverProps {
    *  HELD slot heads (plain data across the D-24 boundary) — the host paints
    *  the mosaic from these immediately; refetch reconciles behind. */
   onSessionSlots?: (modelId: number, slots: Array<{ angle: string; url: string }>) => void;
+  /** D-55 (VC-R6 final): a stays-draft confirm landed — the host fills the
+   *  originating node with the DRAFT (badge, strip verb, Edit) while the
+   *  session stays open. Without this the walkable loop dead-ended at a
+   *  close that dropped the work on the floor. */
+  onDraftLanded?: (modelId: number, info: { name: string | null; headshotUrl: string | null }) => void;
 }
 
 /** Fields compared for identity changes (everything the form can set). */
@@ -110,8 +115,12 @@ export function CastingTakeover({
   onIdentityCommit,
   onClose,
   onSessionSlots,
+  onDraftLanded,
 }: CastingTakeoverProps) {
   const [confirmingLeave, setConfirmingLeave] = useState(false);
+  // D-55: once a stays-draft confirm lands the draft on the board, closing
+  // this session abandons NOTHING — the leave-confirm would be a false alarm
+  const [draftLanded, setDraftLanded] = useState(false);
   const [identityDialog, setIdentityDialog] = useState<{
     changes: Record<string, unknown>;
     labels: string[];
@@ -231,6 +240,18 @@ export function CastingTakeover({
         headshotUrl:
           currentAssets.find((a) => a.viewType === 'frontClose' && a.storageUrl)?.storageUrl ?? null,
       }),
+    // D-55 (VC-R6 final): the stays-draft confirm lands the DRAFT on its
+    // node — session stays open, closing later abandons nothing
+    onStayDraft: (modelId, nickname) => {
+      setDraftLanded(true);
+      onDraftLanded?.(modelId, {
+        name: nickname || null,
+        headshotUrl:
+          useCastingGenerationStore
+            .getState()
+            .currentAssets.find((a) => a.viewType === 'frontClose' && a.storageUrl)?.storageUrl ?? null,
+      });
+    },
   });
 
   const hasHeadshot = currentAssets.some((a) => a.viewType === 'frontClose' && a.storageUrl);
@@ -243,9 +264,12 @@ export function CastingTakeover({
     return Object.keys(diff.changes).length > 0 ? diff : null;
   }, [isMintedEdit, baselinePrefs, prefs]);
 
+  // Authoring sessions: a landed draft (D-55) means closing abandons
+  // nothing — the node carries the work; only an in-flight generation
+  // still warrants the confirm
   const workInProgress = isMintedEdit
     ? unsavedDiff() !== null
-    : genState.isGenerating || currentModelId !== null;
+    : genState.isGenerating || (currentModelId !== null && !draftLanded);
 
   const attemptClose = useCallback(() => {
     if (isCasting) return; // mint in flight — landing imminent, don't tear down

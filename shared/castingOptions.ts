@@ -97,6 +97,33 @@ export interface EthnicityBlendEntry {
  * intentionally its own (legacy behavior preserved — do not "fix" it to the
  * enum lists without a founder ruling on generation-behavior change).
  */
+/**
+ * Weighted hair distribution (VC-R6 final fix 2): the old uniform pick over
+ * eight colors gave Silver+Platinum a combined 25% — every fourth randomized
+ * cast read grey/white. Natural darks dominate the way a real casting pool
+ * does; silver-class stays possible, rare. Exported for the distribution test.
+ */
+export const RANDOM_HAIR_WEIGHTS: ReadonlyArray<{ color: string; weight: number }> = [
+  { color: "Jet Black", weight: 22 },
+  { color: "Dark Brown", weight: 26 },
+  { color: "Chestnut", weight: 14 },
+  { color: "Auburn", weight: 10 },
+  { color: "Blonde", weight: 14 },
+  { color: "Copper", weight: 7 },
+  { color: "Platinum", weight: 4 },
+  { color: "Silver", weight: 3 },
+];
+
+function pickWeightedHair(): string {
+  const total = RANDOM_HAIR_WEIGHTS.reduce((s, w) => s + w.weight, 0);
+  let roll = Math.random() * total;
+  for (const { color, weight } of RANDOM_HAIR_WEIGHTS) {
+    roll -= weight;
+    if (roll < 0) return color;
+  }
+  return RANDOM_HAIR_WEIGHTS[0].color;
+}
+
 export function generateRandomPreferences(): Record<string, unknown> {
   const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
@@ -129,7 +156,7 @@ export function generateRandomPreferences(): Record<string, unknown> {
     skinTexture: pick(SKIN_TEXTURES),
     skinFinish: pick(SKIN_FINISHES),
     eyeColor: pick(EYE_COLORS),
-    hairColor: pick(["Jet Black", "Dark Brown", "Chestnut", "Auburn", "Blonde", "Platinum", "Copper", "Silver"]),
+    hairColor: pickWeightedHair(),
     hairStyle: pick(hairFamilies),
     hairLength: pick(HAIR_LENGTHS),
     hairTexture: pick(HAIR_TEXTURES),

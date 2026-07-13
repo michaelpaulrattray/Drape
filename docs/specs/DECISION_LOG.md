@@ -507,6 +507,25 @@ Consider making the environment's work area a spatial surface in the canvas imag
 - **L5** Rail menu items get proper designed icons complementing the house language — explicitly not generic AI-slop icons.
 - **L6** Profile popout surfaces redesigned in the house language (wiring audit is R7 item 3).
 
+### VC-R6 FINAL (founder, 2026-07-13) — the ceremony largely passes; three fixes, two graduations
+
+**PASSES:** first-run intro (appears once, dies forever, teaches) · cast path end to end · notes · money surfaces · name-only labels · environment tools + monochrome mask halo + export verb · lobby thumbnail + Recent Work provenance · Tidy v1 as banked.
+
+**Fixes (applied same day):**
+
+- **Fix 1 — D-55 sharpened (implementation-honesty):** the stays-draft path **never demands a name** — a typed name rides as an *optional nickname* (`mintPackage` `mint:false` + `characterName` names WITHOUT minting); naming-as-identity stays fused to the mint moment (nameless mint still refused). The Draft tier's old copy ("Name them and keep exploring") claimed exploration while it name+minted — now reads "Just the headshot — mint now, add views anytime." Draft state wears a **real badge on the card face** (the `· Draft` label crumb is dead — it was missable and a named draft read as minted). The stays-draft confirm **LANDS the draft on its node** (session stays open; closing later abandons nothing — the old path dead-ended at a leave-confirm that dropped the work), and a fresh draft node teaches its next step once ("Keep exploring — add views or edit freely, mint when ready"), retired by first selection. Drive invariant **SD1–SD5** (badge/no-crumb/hint/nickname-without-mint/nameless-mint-refused). The stays-draft ghost action now exists on **every** tier in mint mode.
+- **Fix 2 — randomizer silver bias:** the uniform 8-color hair pick gave Silver+Platinum a combined 25%. Now weighted (`RANDOM_HAIR_WEIGHTS`, silver class <10% by construction, darks dominant) with a sampled distribution test. Two residues of the E1b family also closed: `HairColorWheel` rested on Dyed[0]=Silver for unparsed values (mount default AND the sync-effect fallback) — both rest on Natural now.
+- **Fix 3 — floor drift:** React Flow draws dot radius = `size/2` × zoom; `size={1}` rendered 0.5px against the CSS surfaces' 0.75px — the board WAS a step lighter at 100% (geometry, same token). `size={1.5}` converges it. Guards: `floorParity.test.ts` (source-level — one token pair, 0.75px, 24px on every surface; no second dot constant can creep in) + drive **FL1/FL2** (live rendered radius/rhythm ÷ zoom). **Counter-scale recommendation (small ruling, pending):** keep board dots canvas-space — the floor is the space itself, and dots scaling with zoom is what tells your hands the camera moved (D-37's constancy doctrine covers CONTENT, not the space); reference canvases behave the same; revisit only if far-zoom blankness grates in practice, where the remedy would be a minimum screen radius, not counter-scaling.
+
+**Graduations (logged, not built):**
+
+- **G1 — Tidy v2, cluster-aware:** connected sets stay together, children placed relative to parents, forks-beside/variations-below geometry preserved, THEN row-pack the clusters. v1 was the banked spec; real boards ruled it too dumb. Joins the **named post-pass items** (mask-model rebuild, version-surfacing rethink — R-10).
+- **G2 — note authorship:** notes gain a user tag when teams land (multi-user accounts, team management in the lobby). Files with the **collaboration pass** alongside comments (Group 6f log).
+
+**Confirmed:** the top-right board cluster (profile/assets/comments, ElevenLabs logitem refs) remains future-pass — D-45(2)'s balance popover was the R6 slice, as built.
+
+**Sequence:** founder re-drives the stays-draft path + the floor → **R6 closes, R7 opens**; paid invariant Y (~1600cr walkable-loop proof) folds into R7's run.
+
 ### Parked (founder's own notes, not the log)
 
 - Community / jobs / templates tab — post-launch strategy question.

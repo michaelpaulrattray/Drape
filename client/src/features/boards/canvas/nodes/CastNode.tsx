@@ -87,13 +87,14 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // D-43: a non-draft library cast is a MINTED identity — recast is sealed
   const isMinted = isLibrary && !isDraft;
   // Label grammar (founder, drive 2): the NAME is the label — "jerrryt",
-  // "jerrryt · Full front", "jerrryt · Draft". The old "Cast · … · Library"
-  // spelled out provenance vocabulary nobody needed on chrome; "Cast" now
-  // appears only on unnamed empty nodes (a type placeholder, not a prefix).
+  // "jerrryt · Full front". The old "Cast · … · Library" spelled out
+  // provenance vocabulary nobody needed on chrome; "Cast" now appears only
+  // on unnamed empty nodes (a type placeholder, not a prefix). Draft state
+  // moved OFF the label crumb onto a real badge on the card face
+  // (VC-R6 final fix 1 — a word in the crumb was missable; the state isn't).
   const baseLabel = data.label || "Cast";
-  const typeLabel = isDraft
-    ? `${baseLabel} · Draft`
-    : prov?.type === "cast_view"
+  const typeLabel =
+    prov?.type === "cast_view"
       ? `${baseLabel} · ${VIEW_ANGLE_LABEL[prov.viewAngle] ?? prov.viewAngle}`
       : baseLabel;
   // (The label row's engine slot is dead — C7 label pass; raw engine ids
@@ -162,6 +163,25 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
     { enabled: versionsOpen && !!sheet.modelId && sheet.popoverAngle !== null },
   );
   const showSheet = sheet.isSheet && controller.promptState === "complete" && !errored && !controller.isEmpty;
+
+  // VC-R6 final fix 1(b): a fresh draft node teaches its own next step —
+  // one quiet line below the card, once per user, gone the moment the node
+  // is first selected (the pill with Edit + "Build comp card" takes over).
+  const [draftHintSeen, setDraftHintSeen] = useState(() => {
+    try {
+      return localStorage.getItem("drape_draft_hint_seen") === "1";
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    if (selected && isDraft && !draftHintSeen) {
+      try {
+        localStorage.setItem("drape_draft_hint_seen", "1");
+      } catch { /* quota/private mode — the hint just shows again */ }
+      setDraftHintSeen(true);
+    }
+  }, [selected, isDraft, draftHintSeen]);
 
   // D-51: the package verb — one strip slot, three honest states. Ghost
   // tiles are the in-card accelerator; this is the stable anchor.
@@ -522,6 +542,14 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
             />
           )}
 
+          {/* VC-R6 final fix 1: draft state wears a REAL badge on the card
+              face — unmissable regardless of name (the label crumb wasn't) */}
+          {isDraft && data.imageUrl && (
+            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-canvas-sm bg-canvas-surface/95 border-hairline border-canvas-border-strong text-canvas-xs font-medium text-canvas-ink-soft pointer-events-none">
+              Draft
+            </span>
+          )}
+
           {/* The one per-view surface (D-29): label · vN, status, actions */}
           <Popover
             open={sheet.popoverAngle !== null}
@@ -709,6 +737,20 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           )}
         </div>
       </CanvasNodeShell>
+
+      {/* VC-R6 final fix 1(b): a fresh draft teaches its own next step —
+          one quiet line, once per user, replaced by the pill (Edit +
+          "Build comp card") the moment the node is first selected */}
+      {isDraft && data.imageUrl && !draftHintSeen && !selected && (
+        <div
+          className="absolute left-0 right-0 -bottom-2 pointer-events-none"
+          style={{ transform: "translateY(100%)" }}
+        >
+          <p className="text-canvas-xs text-canvas-ink-faint text-center leading-snug px-2">
+            Keep exploring — add views or edit freely, mint when ready
+          </p>
+        </div>
+      )}
 
       {/* The below-card strip died in the R6 consolidation — its segments
           ride the node pill's trailing slot now */}

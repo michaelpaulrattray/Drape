@@ -22,6 +22,10 @@ interface UseCastGateParams {
   /** Override the post-mint destination: the studio transitions to wardrobe
    *  by default; the board takeover (D-35) lands the model on its node. */
   onMinted?: (modelId: number, characterName: string) => void;
+  /** D-55 (VC-R6 final): a stays-draft confirm succeeded — the host lands
+   *  the DRAFT on its node (session stays open; the walkable loop must not
+   *  dead-end at a takeover close that drops the work on the floor). */
+  onStayDraft?: (modelId: number, nickname: string) => void;
 }
 
 export function useCastGate({
@@ -29,6 +33,7 @@ export function useCastGate({
   currentAssets,
   refetchCreditsWithWarning,
   onMinted,
+  onStayDraft,
 }: UseCastGateParams) {
   const setActiveTool = useStudioStore((s) => s.setActiveTool);
   const setCanvas = useStudioStore((s) => s.setCanvas);
@@ -60,11 +65,15 @@ export function useCastGate({
       );
       try {
         // Trap ruling (a): stayDraft = generate the tier's views, model stays
-        // a draft (no name, no mint) — identity iteration stays free
+        // a draft (no mint) — identity iteration stays free. A typed name
+        // rides as an OPTIONAL NICKNAME (D-42 honest naming, never a mint).
+        const nickname = stayDraft ? characterName.trim() : '';
         const result = await mintPackageMutation.mutateAsync({
           modelId: currentModelId,
           tier,
-          ...(stayDraft ? { mint: false as const } : { characterName }),
+          ...(stayDraft
+            ? { mint: false as const, ...(nickname ? { characterName: nickname } : {}) }
+            : { characterName }),
         });
 
         // Land freshly generated views in the studio viewer state
@@ -109,6 +118,13 @@ export function useCastGate({
         if (upgrade || stayDraft) {
           // D-39c upgrade / trap-(a) stays-draft views: stay in the session;
           // the new views filling the strip ARE the feedback (D-40, no toast).
+          if (stayDraft) {
+            // The nickname must reach the picker's Drafts section honestly
+            utils.boardOps.listCastableModels.invalidate();
+            // VC-R6 final fix 1(b): the draft LANDS on its node now — the
+            // loop must not dead-end at a close that drops it
+            onStayDraft?.(currentModelId, nickname);
+          }
         } else {
           // D-40: the node landing on the board IS the feedback — no
           // "has been cast!" toast (a legacy survivor Fable caught at VC-R3b).
@@ -144,6 +160,7 @@ export function useCastGate({
       setCanvas,
       refetchCreditsWithWarning,
       onMinted,
+      onStayDraft,
     ]
   );
 

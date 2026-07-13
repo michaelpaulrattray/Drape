@@ -37,7 +37,11 @@ interface HairColorWheelProps {
 }
 
 const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSelect }) => {
-  const [activeTab, setActiveTab] = useState<'Dyed' | 'Natural'>('Dyed');
+  // Resting default is NATURAL[0] (Jet Black) — the wheel used to rest on
+  // Dyed[0] = Silver, so any unparsed value (unset / D-41 Open) showed a
+  // silver pointer and the next interaction committed it (VC-R6 final
+  // fix 2, the same family as the E1b auto-commit).
+  const [activeTab, setActiveTab] = useState<'Dyed' | 'Natural'>('Natural');
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [tone, setTone] = useState<'Warm' | 'Neutral' | 'Cool'>('Neutral');
   const [isDragging, setIsDragging] = useState(false);
@@ -81,8 +85,9 @@ const HairColorWheel: React.FC<HairColorWheelProps> = ({ currentColor, onColorSe
       if (existsInOther) {
         targetTab = otherTab;
       } else {
-        const isNatural = NATURAL_COLORS.some(c => cleanName.toLowerCase().includes(c.label.toLowerCase()));
-        targetTab = isNatural ? 'Natural' : 'Dyed';
+        // Unparsed (unset / D-41 Open): rest on Natural — the old 'Dyed'
+        // fallback parked the pointer on Silver (VC-R6 final fix 2)
+        targetTab = 'Natural';
       }
     }
 

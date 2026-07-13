@@ -240,10 +240,16 @@ export async function executeMintPackage(input: MintPackageInput) {
     .filter((r): r is Extract<SlotGenResult, { ok: false }> => !r.ok)
     .map(({ angle, label, reason, refunded }) => ({ angle, label, reason, refunded }));
 
-  // Trap ruling (a): views without minting — the slots landed above with
-  // full gates and pricing; the model stays a draft, freely iterable, until
-  // the user names-and-mints deliberately.
+  // Trap ruling (a) as sharpened at VC-R6 final: views without minting —
+  // the slots landed above with full gates and pricing; the model stays a
+  // draft, freely iterable, until the user names-and-mints deliberately.
+  // A provided name here is an OPTIONAL NICKNAME (honest D-42 naming for
+  // the picker/board) — it never mints; naming-as-identity stays fused to
+  // the mint moment.
   if (input.mint === false) {
+    if (input.characterName?.trim()) {
+      await updateModel(input.modelId, { name: input.characterName.trim() });
+    }
     log.info(
       { modelId: input.modelId, tier: input.tier, generated: generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
       "[MintPackage] views added, stays a draft",

@@ -12,7 +12,9 @@ import type { MintTier } from '@shared/boardTypes';
 export type TierPlan = Record<MintTier, { missing: string[]; cost: number }>;
 
 const TIER_COPY: Record<MintTier, { name: string; purpose: string }> = {
-  draft: { name: 'Draft', purpose: 'Name them and keep exploring. Views come later.' },
+  // D-55 (VC-R6 final): minting is what NAMES and locks identity — the old
+  // "Name them and keep exploring" copy claimed exploration while minting
+  draft: { name: 'Just the headshot', purpose: 'Mint now, add views anytime at the same price.' },
   core: { name: 'Core identity', purpose: 'Face angles and full body — ready for styling.' },
   // D-51 vocabulary: the composite is the COMP CARD everywhere users read it
   production: { name: 'Full comp card', purpose: 'The full six-view card, for scenes and video.' },
@@ -182,17 +184,21 @@ export function CastModelModal({
             })}
           </div>
 
-          {/* Trap ruling (a): views without minting — exploration keeps its
-              freedom. Only in mint mode (an upgrade is already minted), and
-              only when the picked tier actually generates something. */}
-          {!upgrade && tier !== 'draft' && (tiers?.[tier]?.cost ?? 0) > 0 && (
+          {/* Trap ruling (a), sharpened at VC-R6 final: views without
+              minting on EVERY tier — the stays-draft path never demands a
+              name (a typed name rides as an optional nickname); naming
+              stays fused to the mint. Mint mode only (an upgrade is
+              already minted). */}
+          {!upgrade && (
             <button
               type="button"
               disabled={isCasting}
-              onClick={() => onConfirm('', tier, true)}
+              onClick={() => onConfirm(name.trim(), tier, true)}
               className="w-full text-left mb-3.5 -mt-1 text-canvas-sm text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors disabled:opacity-40"
             >
-              Or add these views and keep exploring — stays a draft, same price
+              {(tiers?.[tier]?.cost ?? 0) > 0
+                ? 'Or add these views and keep exploring — stays a draft, same price'
+                : 'Or keep exploring — stays a draft, mint when ready'}
             </button>
           )}
 
