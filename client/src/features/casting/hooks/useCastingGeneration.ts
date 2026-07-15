@@ -192,16 +192,14 @@ export function useCastingGeneration({
     }
   }, [currentMasterPrompt]);
 
-  // View locking RETIRED (D-46, the unification). The linear stage-lock
-  // pre-empted staleness by forbidding upstream edits; D-43 (drafts freely
-  // editable, minted identities fork on change) and the package staleness
-  // ledger replaced that model entirely. Nothing was load-bearing — full-body
-  // generation reads the *current* headshot at generation time, never a frozen
-  // one. Held at constant false; the read-only plumbing downstream is a no-op
-  // now (flagged for R7 removal).
-  const isViewLocked = false;
-  const hasDownstreamDependencies = false;
-
+  // STABILIZATION ALLOWLIST (wrap, 2026-07-15) — deliberately restored, not
+  // a fossil revival. Audit V1 ruled per-view iterate should be uniform, but
+  // lifting the gate alone is UNSAFE: the server iterate path frames every
+  // non-frontClose view as FULL_BODY (V14) and masked edits would broaden
+  // without the classifier boundary. The real fix is V1+V14 TOGETHER
+  // (per-view framing + the unified masked-edit boundary) — see
+  // CASTING_SYSTEM_AUDIT_ADDENDUM_REVISED.md; this list dies there, not here.
+  // (The stage-lock plumbing D-46 retired stays deleted — audit V2.)
   const isIterationAllowed = useMemo(() => {
     return ['frontClose', 'frontFull', 'backFull'].includes(activeView);
   }, [activeView]);
@@ -527,8 +525,6 @@ export function useCastingGeneration({
     refetchCreditsWithWarning,
     isFormValid,
     currentImageUrl,
-    isViewLocked,
-    hasDownstreamDependencies,
     isIterationAllowed,
     handleGenerate,
     handleRefineSubmit,

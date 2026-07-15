@@ -30,9 +30,7 @@ interface CastingUIState {
   setRefineInput: (input: string) => void;
   isEnhancing: boolean;
   setIsEnhancing: (enhancing: boolean) => void;
-  unlockMode: boolean;
-  setUnlockMode: (mode: boolean) => void;
-  
+
   // Modal states
   isTopupOpen: boolean;
   setIsTopupOpen: (open: boolean) => void;
@@ -69,9 +67,7 @@ export const useCastingUIStore = create<CastingUIState>()(
       setRefineInput: (input) => set({ refineInput: input }, false, 'setRefineInput'),
       isEnhancing: false,
       setIsEnhancing: (enhancing) => set({ isEnhancing: enhancing }, false, 'setIsEnhancing'),
-      unlockMode: false,
-      setUnlockMode: (mode) => set({ unlockMode: mode }, false, 'setUnlockMode'),
-      
+
       // Modal states
       isTopupOpen: false,
       setIsTopupOpen: (open) => set({ isTopupOpen: open }, false, 'setIsTopupOpen'),
@@ -86,7 +82,6 @@ export const useCastingUIStore = create<CastingUIState>()(
         showMobilePanel: false,
         refineInput: '',
         isEnhancing: false,
-        unlockMode: false,
         isTopupOpen: false,
         showExportModal: false,
       }, false, 'resetUI'),

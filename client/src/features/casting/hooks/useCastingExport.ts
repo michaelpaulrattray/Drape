@@ -54,12 +54,15 @@ export function useCastingExport({
       const pdfFilename = `LEGAL_IDENTITY_${cleanId}.pdf`;
 
       const zip = new JSZip();
+      // Audit V3: all six canonical slots — the era-0 map silently dropped
+      // the three-quarter view from every export pack
       const viewFileMap: Record<string, string> = {
         frontClose: '01_Headshot_Primary.png',
-        frontFull: '02_Full_Body_Standing.png',
+        threeQuarter: '02_Three_Quarter_Head.png',
         sideClose: '03_Profile_Head.png',
-        sideFull: '04_Full_Body_Walk.png',
-        backFull: '05_Full_Body_Rear.png'
+        frontFull: '04_Full_Body_Standing.png',
+        sideFull: '05_Full_Body_Walk.png',
+        backFull: '06_Full_Body_Rear.png'
       };
 
       for (const asset of currentAssets) {
@@ -120,10 +123,11 @@ export function useCastingExport({
       // Generate Premium PDF Identity Document via server
       setGenState(prev => ({ ...prev, currentStep: 'Generating Premium Identity Document...' }));
       
-      const pdfImages: { headshot?: string; fullBody?: string; profile?: string; walk?: string; back?: string } = {};
-      
+      const pdfImages: { headshot?: string; threeQuarter?: string; fullBody?: string; profile?: string; walk?: string; back?: string } = {};
+
       const viewTypeMap: Record<string, keyof typeof pdfImages> = {
         'frontClose': 'headshot',
+        'threeQuarter': 'threeQuarter',
         'frontFull': 'fullBody',
         'sideClose': 'profile',
         'sideFull': 'walk',

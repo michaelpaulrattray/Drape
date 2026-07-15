@@ -40,6 +40,7 @@ export const castingExportRouter = router({
       modelName: z.string(),
       images: z.object({
         headshot: z.string().optional(),
+        threeQuarter: z.string().optional(), // audit V3: the D-39 slot the era-0 map dropped
         fullBody: z.string().optional(),
         profile: z.string().optional(),
         walk: z.string().optional(),

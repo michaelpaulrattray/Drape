@@ -18,10 +18,12 @@ const EXAMPLE_INTERVAL_MS = 4500;
 
 // ============ Types ============
 
+// The stage-lock branch (era-1, audit V2) is dead. The per-view iterate
+// gate is RESTORED for the stabilization wrap (see useCastingGeneration) —
+// it dies with the V1+V14 fix in the revised plan, not before.
 interface RefinePanelProps {
   maskPathsCount: number;
   isMasking: boolean;
-  isViewLocked: boolean;
   isIterationAllowed: boolean;
   textAreaRef: RefObject<HTMLTextAreaElement | null>;
   handleGenerate: () => void;
@@ -39,7 +41,6 @@ const barShellClass =
 export function RefinePanel({
   maskPathsCount,
   isMasking,
-  isViewLocked,
   isIterationAllowed,
   textAreaRef,
   handleGenerate,
@@ -53,8 +54,6 @@ export function RefinePanel({
     refineInput,
     setRefineInput,
     isEnhancing,
-    unlockMode,
-    setUnlockMode,
   } = useCastingUIStore();
 
   const [glowActive, setGlowActive] = useState(false);
@@ -71,7 +70,6 @@ export function RefinePanel({
     return () => clearInterval(timer);
   }, [refineInput]);
 
-  const isLocked = isViewLocked && !unlockMode;
   const hasMask = maskPathsCount > 0;
 
   // Auto-resize textarea
@@ -102,10 +100,14 @@ export function RefinePanel({
     }
   };
 
-  const iterationDisabledReason =
-    activeView === 'sideClose'
-      ? 'Side profile cannot be edited directly. Edit the headshot or full body instead.'
-      : null;
+  // Wrap honesty fix: every gated view gets a stated reason — the old code
+  // had copy only for sideClose, leaving ¾/Walk as a live-looking box that
+  // silently refused typing (the round-4 walk finding). Capability unchanged.
+  const iterationDisabledReason = isIterationAllowed
+    ? null
+    : activeView === 'sideClose'
+      ? 'Side profile cannot be edited directly yet. Edit the headshot or full body instead.'
+      : 'This view cannot be edited directly yet. Edit the headshot or full body instead.';
 
   const glowKeyframes = `
     @keyframes enhanceFloat {
@@ -135,8 +137,8 @@ export function RefinePanel({
     );
   }
 
-  // ── Iteration disabled ──
-  if (!isIterationAllowed && iterationDisabledReason) {
+  // ── Iteration disabled (stabilization gate — reason always stated) ──
+  if (iterationDisabledReason) {
     return (
       <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
         <div className={`flex items-center justify-center gap-2 p-3 ${barShellClass}`}>
@@ -147,27 +149,7 @@ export function RefinePanel({
     );
   }
 
-  // ── View locked ──
-  if (isLocked) {
-    return (
-      <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
-        <div className={`flex items-center justify-between p-3 ${barShellClass}`}>
-          <div className="flex items-center gap-2">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-ink-faint)" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-            <span className="text-canvas-lg text-canvas-ink-soft">View locked</span>
-          </div>
-          <button
-            onClick={() => setUnlockMode(true)}
-            className="text-canvas-md font-medium text-canvas-ink underline"
-          >
-            Unlock
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Normal refine bar ──
+  // ── Refine bar ──
   const getPlaceholder = () => {
     if (activeTool === 'surgical') return 'Describe change for masked area...';
     if (referenceImage) return "e.g. 'use hairstyle from reference image'";
@@ -178,27 +160,23 @@ export function RefinePanel({
     <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
       <div className={`flex items-end gap-2 p-1.5 ${barShellClass}`}>
         {/* Enhance */}
-        {isIterationAllowed && (
-          <>
-            {glowActive && <style>{glowKeyframes}</style>}
-            <button
-              onClick={handleEnhance}
-              disabled={!refineInput.trim() || isEnhancing}
-              className={`flex-shrink-0 w-8 h-8 rounded-canvas-md flex items-center justify-center ${glowActive ? 'text-canvas-ink' : 'text-canvas-ink-faint'}`}
-              style={{
-                animation: glowActive ? 'enhanceFloat 1.4s ease-in-out infinite' : 'none',
-                transition: 'color 0.4s ease',
-              }}
-              title="Enhance with AI"
-            >
-              {isEnhancing ? (
-                <div className="w-3 h-3 border-2 border-t-transparent border-canvas-border-strong rounded-full animate-spin" />
-              ) : (
-                <Sparkles size={14} strokeWidth={2} />
-              )}
-            </button>
-          </>
-        )}
+        {glowActive && <style>{glowKeyframes}</style>}
+        <button
+          onClick={handleEnhance}
+          disabled={!refineInput.trim() || isEnhancing}
+          className={`flex-shrink-0 w-8 h-8 rounded-canvas-md flex items-center justify-center ${glowActive ? 'text-canvas-ink' : 'text-canvas-ink-faint'}`}
+          style={{
+            animation: glowActive ? 'enhanceFloat 1.4s ease-in-out infinite' : 'none',
+            transition: 'color 0.4s ease',
+          }}
+          title="Enhance with AI"
+        >
+          {isEnhancing ? (
+            <div className="w-3 h-3 border-2 border-t-transparent border-canvas-border-strong rounded-full animate-spin" />
+          ) : (
+            <Sparkles size={14} strokeWidth={2} />
+          )}
+        </button>
 
         <div className="w-px h-5 mb-1.5 bg-canvas-border" />
 
@@ -219,7 +197,6 @@ export function RefinePanel({
           onChange={(e) => setRefineInput(e.target.value)}
           placeholder={getPlaceholder()}
           rows={1}
-          disabled={!isIterationAllowed}
           className="flex-1 outline-none resize-none bg-transparent border-none text-canvas-ink placeholder:text-canvas-ink-faint"
           style={{ fontSize: 14, lineHeight: 1.5, padding: '8px 8px', minHeight: 34, maxHeight: 80 }}
           onKeyDown={(e) => {

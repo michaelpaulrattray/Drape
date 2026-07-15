@@ -13,6 +13,7 @@ import { useCastingFormStore } from '@/features/casting/stores/useCastingFormSto
 import type { ActiveTool } from '../types';
 import type { GeneratedAsset } from '@/features/casting/constants';
 import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
+import { CANONICAL_VIEW_ANGLES } from '@shared/boardTypes';
 
 const STORAGE_KEY = 'drape_active_session';
 
@@ -93,12 +94,14 @@ export function useSessionRestore(isAuthenticated: boolean) {
     // Restore canvas state
     const headshot = model.assets?.find((a: { viewType: string }) => a.viewType === 'frontClose');
     const fullBody = model.assets?.find((a: { viewType: string }) => a.viewType === 'frontFull');
-    const sideView = model.assets?.find((a: { viewType: string }) => a.viewType === 'sideClose');
 
     setCanvas({
       hasModel: !!headshot,
       hasFullBody: !!fullBody,
-      hasAllViews: !!(headshot && fullBody && sideView),
+      // Audit V4: "all views" is the D-39 canonical six, not the era-0 trio
+      hasAllViews: CANONICAL_VIEW_ANGLES.every((vt) =>
+        (model.assets ?? []).some((a: { viewType: string; storageUrl: string }) => a.viewType === vt && a.storageUrl),
+      ),
       modelSource: 'cast',
       uploadedModelUrl: null,
       castModelId: isMinted ? model.id : null,

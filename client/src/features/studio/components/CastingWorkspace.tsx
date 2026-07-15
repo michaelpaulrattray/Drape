@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { CANONICAL_VIEW_ANGLES } from '@shared/boardTypes';
 import { useStudioStore } from '../stores/useStudioStore';
 import { AnimatedPanel } from './AnimatedPanel';
 import { StudioSidePanel } from './StudioSidePanel';
@@ -76,10 +77,10 @@ export function CastingWorkspace({
 
     const hasModel = currentAssets.some((a) => a.viewType === 'frontClose' && a.storageUrl);
     const hasFullBody = currentAssets.some((a) => a.viewType === 'frontFull' && a.storageUrl);
-    const hasAllViews =
-      hasModel &&
-      hasFullBody &&
-      currentAssets.some((a) => a.viewType === 'sideClose' && a.storageUrl);
+    // Audit V4: "all views" is the D-39 canonical six, not the era-0 trio
+    const hasAllViews = CANONICAL_VIEW_ANGLES.every((vt) =>
+      currentAssets.some((a) => a.viewType === vt && a.storageUrl),
+    );
 
     setCanvas({
       hasModel,
@@ -112,8 +113,6 @@ export function CastingWorkspace({
     refetchCreditsWithWarning,
     isFormValid,
     currentImageUrl,
-    isViewLocked,
-    hasDownstreamDependencies,
     isIterationAllowed,
     handleGenerate,
     handleRefineSubmit,
@@ -266,8 +265,6 @@ export function CastingWorkspace({
           currentImageUrl={currentImageUrl ?? undefined}
           currentAssets={currentAssets}
           genState={genState}
-          isViewLocked={isViewLocked}
-          hasDownstreamDependencies={hasDownstreamDependencies}
           isIterationAllowed={isIterationAllowed}
           isMasking={isMasking}
           maskPathsCount={maskPaths.length}

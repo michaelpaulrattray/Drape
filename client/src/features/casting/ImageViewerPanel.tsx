@@ -11,13 +11,9 @@ import { ImageActionBar } from "@/features/studio/components/ImageActionBar";
 
 // ============ View Labels ============
 
-const VIEW_DISPLAY_NAMES: Record<string, string> = {
-  frontClose: 'Headshot',
-  frontFull: 'Full Body',
-  sideClose: 'Side',
-};
-
-
+// Audit V3: the canonical six labels (shared/boardTypes) — the old 3-key map
+// showed raw ids for ¾/walk/back
+import { VIEW_ANGLE_LABELS } from '@shared/boardTypes';
 
 // ============ Types ============
 
@@ -25,8 +21,7 @@ interface ImageViewerPanelProps {
   currentImageUrl: string | undefined;
   currentAssets: GeneratedAsset[];
   genState: GenerationState;
-  isViewLocked: boolean;
-  hasDownstreamDependencies: boolean;
+  /** Stabilization gate (wrap 2026-07-15) — dies with the V1+V14 fix. */
   isIterationAllowed: boolean;
   isMasking: boolean;
   maskPathsCount: number;
@@ -51,8 +46,6 @@ export function ImageViewerPanel({
   currentImageUrl,
   currentAssets,
   genState,
-  isViewLocked,
-  hasDownstreamDependencies,
   isIterationAllowed,
   isMasking,
   maskPathsCount,
@@ -89,7 +82,6 @@ export function ImageViewerPanel({
   const {
     activeView,
     activeTool,
-    unlockMode,
     setRefineInput,
     setShowExportModal,
   } = useCastingUIStore();
@@ -183,7 +175,7 @@ export function ImageViewerPanel({
   }, [currentAssets.length, prefs.referenceImage, isReadOnly, genState.isGenerating, handleGenerate]);
 
   // ── Derive StudioCanvas props ──
-  const viewName = VIEW_DISPLAY_NAMES[activeView] || activeView;
+  const viewName = (VIEW_ANGLE_LABELS as Record<string, string>)[activeView] || activeView;
   // D-53: the ledger's per-slot count — the comp card's vN and the viewer's
   // vN are the SAME number now (the client-stack denominator died)
   const ledgerVersion =
@@ -340,44 +332,37 @@ export function ImageViewerPanel({
           className="absolute top-1/2 -translate-y-1/2 right-4 flex flex-col gap-2 z-30 transition-opacity duration-200"
           style={{ opacity: imageAreaHovered ? 1 : 0, pointerEvents: imageAreaHovered ? 'auto' : 'none' }}
         >
-          {isIterationAllowed && (!isViewLocked || unlockMode) && (
-            <ToolButton
-              active={activeTool === 'surgical'}
-              title="Surgical edit"
-              onClick={() => useCastingUIStore.getState().setActiveTool(activeTool === 'surgical' ? 'none' : 'surgical')}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>}
-            />
+          {/* Stabilization gate (wrap): surgical follows the iterate
+              allowlist until masked edits route through the classifier
+              boundary (V1+V14, revised plan) */}
+          {isIterationAllowed && (
+          <ToolButton
+            active={activeTool === 'surgical'}
+            title="Surgical edit"
+            onClick={() => useCastingUIStore.getState().setActiveTool(activeTool === 'surgical' ? 'none' : 'surgical')}
+            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>}
+          />
           )}
-          {(!hasDownstreamDependencies || unlockMode) && (
-            <ToolButton
-              active={activeTool === 'eraser'}
-              title="Magic eraser"
-              onClick={() => useCastingUIStore.getState().setActiveTool(activeTool === 'eraser' ? 'none' : 'eraser')}
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>}
-            />
-          )}
+          <ToolButton
+            active={activeTool === 'eraser'}
+            title="Magic eraser"
+            onClick={() => useCastingUIStore.getState().setActiveTool(activeTool === 'eraser' ? 'none' : 'eraser')}
+            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>}
+          />
         </div>
       )}
     </>
   ) : undefined;
 
-  // ── Status overlay: Locked source + active tool pills ──
-  const statusOverlay = (isViewLocked || activeTool !== 'none') ? (
+  // ── Status overlay: active tool pill (lock pill retired — audit V2) ──
+  const statusOverlay = activeTool !== 'none' ? (
     <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 items-start">
-      {isViewLocked && (
-        <div className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border text-canvas-sm font-medium text-canvas-ink-soft">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Locked source
-        </div>
-      )}
-      {activeTool !== 'none' && (
-        <div className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border">
-          <div className="w-1.5 h-1.5 rounded-full bg-canvas-ink" />
-          <span className="text-canvas-sm font-medium text-canvas-ink-soft">
-            {activeTool === 'eraser' ? 'Magic eraser' : 'Surgical edit'}
-          </span>
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border">
+        <div className="w-1.5 h-1.5 rounded-full bg-canvas-ink" />
+        <span className="text-canvas-sm font-medium text-canvas-ink-soft">
+          {activeTool === 'eraser' ? 'Magic eraser' : 'Surgical edit'}
+        </span>
+      </div>
     </div>
   ) : undefined;
 
@@ -426,7 +411,6 @@ export function ImageViewerPanel({
           <RefinePanel
             maskPathsCount={maskPathsCount}
             isMasking={isMasking}
-            isViewLocked={isViewLocked}
             isIterationAllowed={isIterationAllowed}
             textAreaRef={textAreaRef}
             handleGenerate={handleGenerate}

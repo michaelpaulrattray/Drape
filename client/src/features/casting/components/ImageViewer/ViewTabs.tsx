@@ -163,9 +163,13 @@ export function ViewTabs() {
   // F5: read the package state for the CURRENT model — draft OR minted (the
   // old query only ran on minted edits, so a draft's stale marks and failed
   // slots never reached the strip, the very surface where the edit is made).
+  // Audit V15: ONE cadence with the board's observer (useSheetController) —
+  // two staleTimes made the strip and the mosaic disagree across a takeover
+  // hop. Post-edit freshness comes from performIteration's explicit
+  // invalidate, not a faster poll.
   const packageQuery = trpc.generation.packageState.useQuery(
     { modelId: currentModelId ?? 0 },
-    { enabled: currentModelId != null, staleTime: 5_000 },
+    { enabled: currentModelId != null, staleTime: 15_000 },
   );
   const failedByAngle = new Map(
     (packageQuery.data?.slots ?? [])
@@ -203,8 +207,10 @@ export function ViewTabs() {
               isActive={activeView === vt}
               onClick={() => setActiveView(vt)}
               isHovered={hovered}
-              // The edited (active) view is never its own stale sibling
-              isStale={staleAngles.has(vt) && activeView !== vt}
+              // Audit V15: no active-view suppression — the ledger already
+              // guarantees a just-edited view isn't stale (the writer marks
+              // siblings only); a stale view you SWITCH to must say so.
+              isStale={staleAngles.has(vt)}
             />
           ) : failedByAngle.has(vt) ? (
             <FailedSlot key={vt} label={label} reason={failedByAngle.get(vt)!} onRetry={openPackage} />

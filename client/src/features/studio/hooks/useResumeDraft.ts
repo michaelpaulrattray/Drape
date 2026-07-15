@@ -14,6 +14,7 @@ import { useCastingFormStore } from '@/features/casting/stores/useCastingFormSto
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
 import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
+import { CANONICAL_VIEW_ANGLES } from '@shared/boardTypes';
 
 export function useResumeDraft() {
   const utils = trpc.useUtils();
@@ -55,7 +56,6 @@ export function useResumeDraft() {
 
     const headshot = assets.find((a) => a.viewType === 'frontClose');
     const fullBody = assets.find((a) => a.viewType === 'frontFull');
-    const sideView = assets.find((a) => a.viewType === 'sideClose');
     const isMinted = model.status === 'active';
 
     setCanvas({
@@ -64,7 +64,10 @@ export function useResumeDraft() {
       castMasterPrompt: model.masterPrompt || null,
       hasModel: !!headshot,
       hasFullBody: !!fullBody,
-      hasAllViews: !!(fullBody && sideView),
+      // Audit V4: "all views" is the D-39 canonical six, not the era-0 trio
+      hasAllViews: CANONICAL_VIEW_ANGLES.every((vt) =>
+        assets.some((a) => a.viewType === vt && a.storageUrl),
+      ),
       modelSource: 'cast',
       uploadedModelUrl: null,
       isMinted,

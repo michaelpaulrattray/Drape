@@ -49,6 +49,7 @@ export interface PdfModelData {
   };
   images: {
     headshot?: string; // base64
+    threeQuarter?: string; // audit V3: the D-39 slot the era-0 map dropped
     fullBody?: string;
     profile?: string;
     walk?: string;
@@ -234,6 +235,7 @@ function createCompCardPage(doc: jsPDF, data: PdfModelData, pageNum: number, tot
   // Collect available images
   const availableViews: { label: string; base64: string }[] = [];
   if (data.images.headshot) availableViews.push({ label: 'PRIMARY HEADSHOT', base64: data.images.headshot });
+  if (data.images.threeQuarter) availableViews.push({ label: 'THREE-QUARTER PORTRAIT', base64: data.images.threeQuarter });
   if (data.images.fullBody) availableViews.push({ label: 'FULL BODY STANDING', base64: data.images.fullBody });
   if (data.images.profile) availableViews.push({ label: 'PROFILE VIEW', base64: data.images.profile });
   if (data.images.walk) availableViews.push({ label: 'MOVEMENT / WALK', base64: data.images.walk });
