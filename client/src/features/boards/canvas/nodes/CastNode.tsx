@@ -201,8 +201,11 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           : [] // complete six-slot card: the verb disappears entirely
       : [];
 
-  // Aggregate refresh entry (dormant in pass 1 — D-43 removed the trigger;
-  // renders only when model_assets carry stale, i.e. pass 2)
+  // Aggregate refresh entry — renders when model_assets carry stale, which
+  // the LIVE stale-writer sets today: an identity-classified draft edit in
+  // the environment stales the sibling views (castingRefinement iterate).
+  // V8: the count is ONLY the views the dialog can refresh; the headshot
+  // never rides it.
   const staleSegment: ControlSegment[] =
     showSheet && sheet.staleCount > 0
       ? [{
@@ -211,6 +214,23 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           onClick: () => {
             sheet.prefetchPlan();
             sheet.setBulkRefreshOpen(true);
+          },
+        }]
+      : [];
+
+  // V8: a stale headshot is its OWN labeled state — refresh structurally
+  // refuses it (it IS the identity), so it never joins the count above.
+  // The door opens the headshot's popover, where the status-aware exits
+  // live (F6): a DRAFT iterates in the environment, a MINTED identity
+  // forks, and either may restore an earlier version when history exists.
+  const staleHeadshotSegment: ControlSegment[] =
+    showSheet && sheet.staleHeadshot
+      ? [{
+          kind: "action",
+          content: "Headshot out of sync",
+          onClick: () => {
+            tileAnchorRef.current = containerRef.current;
+            sheet.setPopoverAngle("frontClose");
           },
         }]
       : [];
@@ -268,6 +288,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
     : [
         ...packageVerb,
         ...staleSegment,
+        ...staleHeadshotSegment,
         ...versionSegment,
         { kind: "action", content: "···", onClick: openMenu },
       ];
@@ -654,7 +675,23 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           Failed: {slot.failed.reason} — you weren't charged
                         </div>
                       ) : slot.stale ? (
-                        <div className="text-canvas-xs text-canvas-ink-soft">Out of sync</div>
+                        isHeadshot ? (
+                          // V8/F6: the stale headshot is its own labeled state
+                          // with the ruled exits said out loud — refresh can
+                          // never clear it, so silence here was a dead end.
+                          // Status-aware (server package truth, sheet.minted):
+                          // a DRAFT iterates in the environment; a MINTED
+                          // identity only changes by forking. Draft copy must
+                          // never say fork.
+                          <div className="text-canvas-xs text-canvas-ink-soft">
+                            {sheet.minted
+                              ? "Headshot out of sync — it never refreshes. Changing this identity forks a new model"
+                              : "Headshot out of sync — it never refreshes. Edit it in the environment"}
+                            {slot.version > 1 ? ", or restore a previous version from its history" : ""}.
+                          </div>
+                        ) : (
+                          <div className="text-canvas-xs text-canvas-ink-soft">Out of sync</div>
+                        )
                       ) : null}
 
                       <div className="flex flex-col border-t border-hairline border-canvas-border mt-1 pt-1.5">
@@ -684,9 +721,13 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           )
                         )}
                         {isHeadshot ? (
-                          // D-43: the headshot IS the identity — no refresh, ever
+                          // D-43/F6: the headshot IS the identity — no refresh,
+                          // ever. The explanation is status-aware: fork is the
+                          // MINTED answer; a draft's answer is the environment
                           <div className="px-2 py-1.5 text-canvas-xs text-canvas-ink-faint">
-                            The headshot is this identity — fork to change it
+                            {sheet.minted
+                              ? "The headshot is this identity — fork to change it"
+                              : "The headshot anchors every view — edit it in the environment"}
                           </div>
                         ) : (
                           <button

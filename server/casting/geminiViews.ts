@@ -9,6 +9,7 @@
  */
 
 import { IMAGE_PRO, IMAGE_FALLBACK } from "@shared/modelRegistry";
+import type { CanonicalViewAngle } from "../../shared/boardTypes";
 import type { ModelViews, GeminiPart } from "./geminiTypes";
 import { ImageResolution, AspectRatio } from "./geminiTypes";
 import {
@@ -233,14 +234,29 @@ export const generateRemainingViews = async (
 // GENERATE SINGLE VIEW
 // ============================================================================
 
+/** The four package angles generated one-at-a-time from the headshot (the
+ *  headshot and full-front have dedicated generators). Audit V21: canonical
+ *  vocabulary only — the era-0 wire names ('side'/'walk'/'back') are gone,
+ *  so there is ONE view-naming vocabulary from ledger to prompt builder. */
+export type SingleViewAngle = Exclude<CanonicalViewAngle, "frontClose" | "frontFull">;
+
+/** Per-angle prompt tasks, keyed by canonical angle — exported for tests. */
+export const SINGLE_VIEW_PROMPTS: Record<SingleViewAngle, (wardrobeConstraint: string) => string> = {
+  sideClose: (wardrobeConstraint) => `SIDE PROFILE PORTRAIT. Head and shoulders only. Facing Right. ${wardrobeConstraint} Same subject.`,
+  sideFull: (wardrobeConstraint) => `FULL BODY SIDE PROFILE. Walking motion. Facing Right. ${wardrobeConstraint} Same subject.`,
+  backFull: (wardrobeConstraint) => `FULL BODY FROM BEHIND. Walking away. ${wardrobeConstraint} Same subject. No new back tattoos.`,
+  // D-39 face cluster: ~45° is the safest person-rotation (angles research)
+  threeQuarter: (wardrobeConstraint) => `THREE-QUARTER PORTRAIT. Head and shoulders only, face turned 45 degrees to the right of camera — a classic three-quarter angle. Both eyes visible. ${wardrobeConstraint} Same subject.`,
+};
+
 /**
- * Generate a single view (side, walk, or back)
+ * Generate a single package view (threeQuarter, sideClose, sideFull, backFull)
  */
 export const generateSingleView = async (
   masterPrompt: string,
   sourceImageUrl: string,
   gender: string,
-  viewType: 'side' | 'walk' | 'back' | 'threeQuarter',
+  viewType: SingleViewAngle,
   technicalSchema?: any
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   return withImageQueue(async () => {
@@ -256,15 +272,7 @@ export const generateSingleView = async (
     ? "Attire: Simple black boxer briefs. BARE CHEST."
     : "Attire: Minimalist black activewear.";
 
-  const viewPrompts: Record<string, string> = {
-    'side': `SIDE PROFILE PORTRAIT. Head and shoulders only. Facing Right. ${wardrobeConstraint} Same subject.`,
-    'walk': `FULL BODY SIDE PROFILE. Walking motion. Facing Right. ${wardrobeConstraint} Same subject.`,
-    'back': `FULL BODY FROM BEHIND. Walking away. ${wardrobeConstraint} Same subject. No new back tattoos.`,
-    // D-39 face cluster: ~45° is the safest person-rotation (angles research)
-    'threeQuarter': `THREE-QUARTER PORTRAIT. Head and shoulders only, face turned 45 degrees to the right of camera — a classic three-quarter angle. Both eyes visible. ${wardrobeConstraint} Same subject.`
-  };
-
-  const prompt = viewPrompts[viewType];
+  const prompt = SINGLE_VIEW_PROMPTS[viewType](wardrobeConstraint);
   const fullPrompt = `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${prompt}\n\n${identityAnchor}\n\nTHE ATTACHED IMAGE IS THIS EXACT PERSON. Match their face, skin, and any tattoos/marks precisely.\n\n${dynamicStudioSettings}`;
 
   const executeViewGen = async (model: string) => {

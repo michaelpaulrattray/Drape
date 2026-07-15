@@ -4,11 +4,11 @@
  * post-immutability scope). NOT red — refreshing regenerates work, it never
  * destroys it (D-8 keeps red for delete-cascade alone).
  *
- * Dormant in pass 1: D-43 removed the identity-edit stale trigger, so
- * nothing sets model_assets.status = stale yet — pass 2's stale-writer
- * lights this up with zero UI work. Costs are plan-derived (D-15); pinned
- * slots never appear (the server's plan filters them — pin law, not UI
- * courtesy).
+ * The stale-writer is live (F6 / D-53 rider): an identity-classified edit
+ * on a DRAFT view marks the sibling head rows stale (castingRefinement
+ * iterate → markModelAssetsStale), which is what lights this dialog up.
+ * Costs are plan-derived (D-15); pinned slots never appear (the server's
+ * plan filters them — pin law, not UI courtesy).
  */
 import { CostLabel } from "./CostLabel";
 import type { CanonicalViewAngle } from "@shared/boardTypes";
@@ -75,7 +75,14 @@ export function BulkRefreshDialog({
               onClick={onConfirm}
               className="px-3.5 py-1.5 rounded-canvas-pill text-canvas-xs font-medium bg-canvas-ink text-canvas-surface hover:opacity-90 transition-opacity disabled:opacity-40"
             >
-              {slots.length === 1 ? "Refresh 1 view" : `Refresh ${slots.length} views`}
+              {/* V8 count honesty extends to the loading beat: while the
+                  plan is in flight the rows aren't known — never flash
+                  "Refresh 0 views" as if zero were the answer */}
+              {totalCost === null
+                ? "Loading…"
+                : slots.length === 1
+                  ? "Refresh 1 view"
+                  : `Refresh ${slots.length} views`}
             </button>
           </div>
         </div>

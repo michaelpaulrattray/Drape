@@ -47,7 +47,7 @@ import type {
   BoardItemCanvasMetadata,
   CanonicalViewAngle,
 } from "../../shared/boardTypes";
-import { VIEW_ANGLE_LABELS } from "../../shared/boardTypes";
+import { VIEW_ANGLE_LABELS, CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import type { BoardItemKind, BoardEdgeRelation } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 
@@ -433,6 +433,15 @@ export async function executeRunGeneration(input: RunGenerationInput) {
 // Fills THIS node in place: provenance → library_cast, image → the model's
 // canonical headshot, initial version row. Never spawns a sibling.
 
+/** The provenance viewAngle for a library-cast fill: the stored viewType when
+ *  it is one of the canonical six, else the headshot slot. Pure — exported for
+ *  tests (audit N1: this list must be CANONICAL_VIEW_ANGLES, never a copy). */
+export function libraryCastViewAngle(viewType: string): CanonicalViewAngle {
+  return (CANONICAL_VIEW_ANGLES as readonly string[]).includes(viewType)
+    ? (viewType as CanonicalViewAngle)
+    : "frontClose";
+}
+
 export async function executeFillFromLibrary(input: {
   userId: number;
   itemId: number;
@@ -453,13 +462,13 @@ export async function executeFillFromLibrary(input: {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no canonical imagery yet" });
   }
 
-  const canonical = ["frontClose", "frontFull", "sideClose", "sideFull", "backFull"];
   const draft = model.status !== "active" && model.status !== "locked";
   const provenance: Provenance = {
     type: "library_cast",
     modelId: input.modelId,
-    viewAngle: (canonical.includes(headshot.viewType) ? headshot.viewType : "frontClose") as
-      Extract<Provenance, { type: "library_cast" }>["viewAngle"],
+    // Audit N1: the canonical list is the shared six (a hardcoded five-view
+    // copy here silently demoted a threeQuarter asset to "frontClose")
+    viewAngle: libraryCastViewAngle(headshot.viewType),
     ...(draft ? { draft: true } : {}),
   };
 

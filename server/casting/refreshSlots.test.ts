@@ -91,7 +91,7 @@ describe("computeRefreshPlan — pricing (D-15)", () => {
   });
 });
 
-describe("computeRefreshPlan — staleness passthrough (dormant pass-2 machinery)", () => {
+describe("computeRefreshPlan — staleness passthrough (the F6 stale-writer feeds this)", () => {
   it("surfaces stale from the newest filled row; pinned-stale stays refused", () => {
     const slots = computePackageSlots([
       filled("frontClose"),

@@ -6,9 +6,10 @@ import {
   MAX_VARIATIONS,
   popOutPlacement,
   planCollapseEdgeMoves,
+  libraryCastViewAngle,
 } from "./boardOps";
 import { CREDIT_COSTS } from "../casting/aiService";
-import { EDGE_CLASS, isLineageEdge } from "../../shared/boardTypes";
+import { EDGE_CLASS, isLineageEdge, CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { BOARD_EDGE_RELATIONS } from "../../drizzle/schema";
 
 describe("boardOps plans (foundations §4 / Decision 6)", () => {
@@ -193,5 +194,21 @@ describe("edge classes (D-50.5)", () => {
     expect(isLineageEdge("generated_from_cast")).toBe(true);
     expect(isLineageEdge("reference_for")).toBe(false);
     expect(isLineageEdge("someday_new_relation")).toBe(false);
+  });
+});
+
+describe("libraryCastViewAngle — the canonical list is the shared six (audit N1)", () => {
+  it("passes through every canonical angle, including threeQuarter", () => {
+    // The old hardcoded five-view copy demoted a threeQuarter asset to
+    // "frontClose" — the canonical list must be CANONICAL_VIEW_ANGLES itself
+    for (const angle of CANONICAL_VIEW_ANGLES) {
+      expect(libraryCastViewAngle(angle)).toBe(angle);
+    }
+  });
+
+  it("falls back to the headshot slot for non-canonical view types", () => {
+    for (const junk of ["side", "walk", "back", "vto_output", ""]) {
+      expect(libraryCastViewAngle(junk)).toBe("frontClose");
+    }
   });
 });

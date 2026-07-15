@@ -13,6 +13,7 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import type { CanonicalViewAngle, BoardItemCanvasMetadata } from "@shared/boardTypes";
+import { isActionableStale } from "@shared/refreshPolicy";
 import type { CastNodeData } from "./CastNode";
 import type { SheetTile } from "../CharacterSheetImageArea";
 
@@ -106,7 +107,12 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     [slots, poppedByAngle, refreshingAngles],
   );
 
-  const staleCount = slots.filter((s) => s.stale && !s.pinned && s.filled).length;
+  // V8 count honesty: count ONLY what the refresh dialog can actually
+  // refresh — the shared predicate the server's plan rows use. The stale
+  // headshot is NOT a number that won't budge; it surfaces as its own
+  // labeled state (staleHeadshot) with the F6 exits.
+  const staleCount = slots.filter(isActionableStale).length;
+  const staleHeadshot = slots.some((s) => s.angle === "frontClose" && s.filled && s.stale);
   const completeCard = filledCount >= 6;
 
   // ── Refresh plan (D-15: every cost is plan-derived) ────────────────────
@@ -191,6 +197,11 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     headshotVersion: slots.find((s) => s.angle === "frontClose")?.version ?? null,
     tiles,
     staleCount,
+    /** V8: the headshot is out of sync — its own state, never in staleCount
+     *  (refresh structurally refuses it). Status-aware exits (F6): a draft
+     *  iterates in the environment, a minted identity forks, and either may
+     *  restore an earlier version when history exists. */
+    staleHeadshot,
     completeCard,
     minted,
     filledCount,
@@ -202,9 +213,10 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     poppedItemId: popoverAngle ? poppedByAngle.get(popoverAngle) ?? null : null,
     refreshPlan: planQuery.data,
     prefetchPlan,
-    // Aggregate refresh (dormant pass-2 machinery — nothing sets stale in
-    // pass 1; the {N} stale segment + this dialog light up with pass 2's
-    // stale-writer). Rows = unpinned stale slots the plan allows.
+    // Aggregate refresh. The stale-writer is LIVE: an identity-classified
+    // edit on a draft view marks the sibling head rows stale
+    // (castingRefinement.ts iterate → markModelAssetsStale; pinned exempt).
+    // Rows = unpinned stale slots the plan allows.
     bulkRefreshOpen,
     setBulkRefreshOpen,
     bulkStaleRows: (planQuery.data?.slots ?? [])

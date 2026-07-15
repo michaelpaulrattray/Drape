@@ -5,6 +5,9 @@ const templateRoot = path.resolve(import.meta.dirname);
 
 export default defineConfig({
   root: templateRoot,
+  // Client components under test (e.g. CastModelModal) use the automatic
+  // JSX runtime — same as the app's Vite build
+  esbuild: { jsx: "automatic" },
   resolve: {
     alias: {
       "@": path.resolve(templateRoot, "client", "src"),

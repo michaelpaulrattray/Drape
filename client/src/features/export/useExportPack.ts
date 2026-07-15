@@ -18,27 +18,16 @@ import { toast } from "sonner";
 import JSZip from "jszip";
 import { triggerDownload } from "@/lib/triggerDownload";
 import type { GeneratedAsset } from "@/features/casting/constants";
-
-/** Human-readable labels for each view type */
-const VIEW_LABELS: Record<string, string> = {
-  frontClose: "Headshot",
-  frontFull: "Full Body",
-  sideClose: "Profile",
-};
-
-/** Filenames inside the ZIP for each view type */
-const VIEW_FILENAMES: Record<string, string> = {
-  frontClose: "01_Headshot_Primary.png",
-  frontFull: "02_Full_Body_Standing.png",
-  sideClose: "03_Profile_Head.png",
-};
-
-/** PDF key mapping */
-const VIEW_TO_PDF_KEY: Record<string, string> = {
-  frontClose: "headshot",
-  frontFull: "fullBody",
-  sideClose: "profile",
-};
+// Audit V3 residue closure (Batch A-safe): this hook held the LAST era-0
+// trio map, silently dropping three-quarter/walk/back from the export-verb
+// packs. All view mapping now rides the shared canonical-six module.
+import {
+  EXPORT_VIEW_FILENAMES,
+  VIEW_TO_PDF_KEY,
+  isCanonicalViewType,
+  compCardViewOrder,
+} from "@shared/exportViews";
+import { VIEW_ANGLE_LABELS } from "@shared/boardTypes";
 
 export type ExportStep =
   | "idle"
@@ -88,15 +77,14 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
   const agencyId = model?.agencyId ?? null;
   const modelName = model?.name ?? "Unnamed Model";
 
-  /** Sorted assets with labels */
+  /** Sorted assets with labels — the canonical six, in comp-card order */
   const viewAssets = useMemo(() => {
-    const order = ["frontClose", "frontFull", "sideClose"];
     return assets
-      .filter((a) => VIEW_LABELS[a.viewType])
-      .sort((a, b) => order.indexOf(a.viewType) - order.indexOf(b.viewType))
+      .filter((a) => isCanonicalViewType(a.viewType))
+      .sort((a, b) => compCardViewOrder(a.viewType) - compCardViewOrder(b.viewType))
       .map((a) => ({
         ...a,
-        label: VIEW_LABELS[a.viewType] || a.viewType,
+        label: isCanonicalViewType(a.viewType) ? VIEW_ANGLE_LABELS[a.viewType] : a.viewType,
       }));
   }, [assets]);
 
@@ -134,7 +122,9 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     try {
       const proxy = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
       if (!proxy.success || !proxy.base64) throw new Error("Proxy failed");
-      const filename = VIEW_FILENAMES[asset.viewType] || `${asset.viewType}.png`;
+      const filename = isCanonicalViewType(asset.viewType)
+        ? EXPORT_VIEW_FILENAMES[asset.viewType]
+        : `${asset.viewType}.png`;
       triggerDownload(proxy.base64, filename);
     } catch {
       toast.error("Failed to download image");
@@ -191,8 +181,8 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     try {
       const pdfImages: Record<string, string> = {};
       for (const asset of assets) {
+        if (!isCanonicalViewType(asset.viewType)) continue;
         const key = VIEW_TO_PDF_KEY[asset.viewType];
-        if (!key) continue;
         try {
           const proxy = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
           if (proxy.success && proxy.base64) pdfImages[key] = proxy.base64;
@@ -252,7 +242,9 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
 
       // Add casting views (upscaled to 2K)
       for (const asset of assets) {
-        const filename = VIEW_FILENAMES[asset.viewType] || `${asset.viewType}.png`;
+        const filename = isCanonicalViewType(asset.viewType)
+          ? EXPORT_VIEW_FILENAMES[asset.viewType]
+          : `${asset.viewType}.png`;
         let imageUrl = asset.storageUrl;
 
         try {
@@ -306,8 +298,8 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
       setStep("generating-pdf");
       const pdfImages: Record<string, string> = {};
       for (const asset of assets) {
+        if (!isCanonicalViewType(asset.viewType)) continue;
         const key = VIEW_TO_PDF_KEY[asset.viewType];
-        if (!key) continue;
         try {
           const proxy = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
           if (proxy.success && proxy.base64) pdfImages[key] = proxy.base64;

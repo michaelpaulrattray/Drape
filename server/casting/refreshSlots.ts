@@ -31,12 +31,15 @@ import {
   type SlotGenResult,
 } from "./mintPackage";
 import { VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTypes";
+// V8: refusal law lives in shared/refreshPolicy so the client's stale count
+// and this plan's rows derive from the SAME predicate — they cannot disagree
+import { refreshRefusalFor, type RefreshRefusal } from "../../shared/refreshPolicy";
 import { assertNotArchived } from "./modelGuards";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("casting/refreshSlots");
 
-export type RefreshRefusal = "identity_anchor" | "pinned" | "unfilled" | null;
+export type { RefreshRefusal };
 
 export interface RefreshSlotInfo {
   angle: CanonicalViewAngle;
@@ -56,13 +59,6 @@ export interface RefreshPlan {
   totalCost: number;
 }
 
-function refusalFor(slot: PackageSlot): RefreshRefusal {
-  if (slot.angle === "frontClose") return "identity_anchor";
-  if (slot.pinned) return "pinned";
-  if (!slot.filled && !slot.failed) return "unfilled";
-  return null;
-}
-
 /** Pure — exported for tests. `requested` narrows the refreshable set;
  *  omitted = every non-refused slot (the aggregate-refresh default). */
 export function computeRefreshPlan(slots: PackageSlot[], requested?: CanonicalViewAngle[]): RefreshPlan {
@@ -72,7 +68,7 @@ export function computeRefreshPlan(slots: PackageSlot[], requested?: CanonicalVi
     cost: slotCost(s.angle),
     pinned: s.pinned,
     stale: s.stale,
-    refusal: refusalFor(s),
+    refusal: refreshRefusalFor(s),
   }));
   const refreshable = infos
     .filter((s) => s.refusal === null && (!requested || requested.includes(s.angle)))
@@ -114,7 +110,7 @@ export async function executeRefreshSlots(input: {
   // Structural refusals before any money moves
   for (const angle of input.angles) {
     const slot = slots.find((s) => s.angle === angle);
-    const refusal = slot ? refusalFor(slot) : "unfilled";
+    const refusal = slot ? refreshRefusalFor(slot) : "unfilled";
     if (refusal === "identity_anchor") {
       // F6 (founder-ratified r3): the headshot is never REFRESHABLE — the
       // anchor can't refresh against itself (that's a re-cast, a different

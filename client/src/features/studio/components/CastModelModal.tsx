@@ -22,6 +22,22 @@ const TIER_COPY: Record<MintTier, { name: string; purpose: string }> = {
 
 const TIER_ORDER: MintTier[] = ['draft', 'core', 'production'];
 
+/** The arguments each door sends — pure, exported for tests. Honesty rule:
+ *  the stays-draft door carries the typed name ONLY on the placed-draft
+ *  path (addFirst), whose copy explains it as an optional draft label. A
+ *  fresh cast's field is labeled "this mints her identity" (founder-ruled
+ *  wording), so its stays-draft door must never silently harvest that
+ *  value as a nickname. Mint always names; the guard is the caller's. */
+export function confirmArgsForDoor(
+  door: 'mint' | 'addViews',
+  opts: { addFirst: boolean; name: string; tier: MintTier },
+): { characterName: string; tier: MintTier; stayDraft: boolean } {
+  const trimmed = opts.name.trim();
+  return door === 'mint'
+    ? { characterName: trimmed, tier: opts.tier, stayDraft: false }
+    : { characterName: opts.addFirst ? trimmed : '', tier: opts.tier, stayDraft: true };
+}
+
 export interface CastModelModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -92,11 +108,14 @@ export function CastModelModal({
   const canMint = !!name.trim() && !isCasting;
   const canAddViews = selectedGenerates && !isCasting;
   const doMint = useCallback(() => {
-    if (name.trim()) onConfirm(name.trim(), tier, false);
-  }, [name, onConfirm, tier]);
+    const args = confirmArgsForDoor('mint', { addFirst, name, tier });
+    if (args.characterName) onConfirm(args.characterName, args.tier, args.stayDraft);
+  }, [addFirst, name, onConfirm, tier]);
   const doAddViews = useCallback(() => {
-    if (selectedGenerates) onConfirm(name.trim(), tier, true);
-  }, [name, onConfirm, tier, selectedGenerates]);
+    if (!selectedGenerates) return;
+    const args = confirmArgsForDoor('addViews', { addFirst, name, tier });
+    onConfirm(args.characterName, args.tier, args.stayDraft);
+  }, [addFirst, name, onConfirm, tier, selectedGenerates]);
 
   if (!isOpen) return null;
 
@@ -132,27 +151,43 @@ export function CastModelModal({
               {fixedName ? `Add the views ${fixedName} is missing.` : 'Add the missing views.'} Upgrading
               later always costs the same — you only pay for what's new.
             </p>
-          ) : addFirst ? (
-            /* Existing draft: views are photographs, not a commitment (D-55) */
-            <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-3.5">
-              Add reference views — she stays a draft, freely editable. Naming
-              and minting her identity is a separate step below.
-            </p>
           ) : (
-            /* Fresh cast: the name field IS the mint trigger — say so */
+            /* The name field renders on BOTH non-upgrade paths — audit V9:
+               the addFirst branch once had no input at all, so a placed
+               draft's "Name & mint" door was permanently disabled with a
+               tooltip pointing at a field that didn't exist. */
             <div className="mb-3.5">
+              {addFirst && (
+                /* Existing draft: views are photographs, not a commitment
+                   (D-55). Honest doors: "Add views" keeps her a draft — a
+                   typed name then rides along as an OPTIONAL draft label
+                   (mintPackage stays-draft nickname); only "Name & mint"
+                   locks identity. */
+                <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-2.5">
+                  Add reference views — she stays a draft, freely editable.
+                  Name &amp; mint locks her identity; until then, a typed
+                  name is just her draft label.
+                </p>
+              )}
               <label className="block text-canvas-xs font-medium text-canvas-ink-soft mb-1.5">
-                Name — this mints her identity
+                {addFirst
+                  ? 'Name — optional draft label until you mint'
+                  : 'Name — this mints her identity'}
               </label>
               <input
-                autoFocus
+                autoFocus={!addFirst}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleConfirm();
+                  // Enter in the name field is the mint intent on both paths
+                  if (e.key === 'Enter') (addFirst ? doMint : handleConfirm)();
                 }}
-                placeholder="Enter name to mint, or add views below as a draft"
+                placeholder={
+                  addFirst
+                    ? 'Name her — locked in only when you mint'
+                    : 'Enter name to mint, or add views below as a draft'
+                }
                 disabled={isCasting}
                 className="w-full outline-none bg-transparent border-0 border-b border-canvas-border focus:border-canvas-ink text-canvas-ink placeholder:text-canvas-ink-faint disabled:opacity-50"
                 style={{ padding: '8px 0', fontSize: 15, fontWeight: 500, borderBottomWidth: '1px', borderBottomStyle: 'solid' }}

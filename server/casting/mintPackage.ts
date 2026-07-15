@@ -33,6 +33,7 @@ import {
   addCredits,
 } from "../db";
 import { generateFullBody, generateRemainingViews, CREDIT_COSTS } from "./aiService";
+import type { SingleViewAngle } from "./geminiViews";
 import { assertNotArchived } from "./modelGuards";
 import { buildIdentityAnchor } from "./geminiClient";
 import { isGatedAngle, verifyViewIdentity } from "./backViewGate";
@@ -45,14 +46,6 @@ import {
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("casting/mintPackage");
-
-/** generateSingleView's wire names per canonical angle. */
-const SINGLE_VIEW_TYPE: Partial<Record<CanonicalViewAngle, "side" | "walk" | "back" | "threeQuarter">> = {
-  sideClose: "side",
-  sideFull: "walk",
-  backFull: "back",
-  threeQuarter: "threeQuarter",
-};
 
 export function slotCost(angle: CanonicalViewAngle): number {
   return angle === "frontFull" ? CREDIT_COSTS.fullBody : CREDIT_COSTS.multiView;
@@ -141,7 +134,10 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
       angle === "frontFull"
         ? generateFullBody(ctx.model.masterPrompt, ctx.headshotUrl, gender, ctx.model.technicalSchema,
             (ctx.model.preferences as { bodyType?: string } | null | undefined)?.bodyType)
-        : generateRemainingViews(ctx.model.masterPrompt, ctx.headshotUrl, gender, SINGLE_VIEW_TYPE[angle]!, ctx.model.technicalSchema);
+        // V21: one canonical vocabulary — the angle IS the generator's view
+        // name. frontClose never reaches here (tiers exclude it; refresh
+        // refuses the identity anchor), hence the narrowing.
+        : generateRemainingViews(ctx.model.masterPrompt, ctx.headshotUrl, gender, angle as SingleViewAngle, ctx.model.technicalSchema);
 
     let result = await generate();
 
@@ -359,8 +355,9 @@ export interface PackageSlot {
   filled: boolean;
   url: string | null;
   pinned: boolean;
-  /** The current view's staleness (model-level, D-39; dormant in pass 1 —
-   *  D-43 removed the trigger; pass 2's stale-writer lights it up). */
+  /** The current view's staleness (model-level, D-39). Written today by the
+   *  F6 stale-writer: identity-classified draft edits stale the sibling
+   *  head rows (castingRefinement iterate → markModelAssetsStale). */
   stale: boolean;
   /** vN for the tile popover: how many filled generations this slot has. */
   version: number;

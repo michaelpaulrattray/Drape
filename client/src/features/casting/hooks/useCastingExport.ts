@@ -3,6 +3,14 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import JSZip from "jszip";
 import type { GeneratedAsset, GenerationState, ImageResolution } from "@/features/casting/constants";
+// One canonical-six export mapping, shared with useExportPack — copies of
+// this map are how V3's dropped views happened (audit V3 / trio-map residue)
+import {
+  EXPORT_VIEW_FILENAMES,
+  VIEW_TO_PDF_KEY,
+  isCanonicalViewType,
+  type PdfImageKey,
+} from "@shared/exportViews";
 
 interface UseCastingExportParams {
   currentModelId: number | null;
@@ -60,19 +68,11 @@ export function useCastingExport({
       const pdfFilename = `LEGAL_IDENTITY_${cleanId}.pdf`;
 
       const zip = new JSZip();
-      // Audit V3: all six canonical slots — the era-0 map silently dropped
-      // the three-quarter view from every export pack
-      const viewFileMap: Record<string, string> = {
-        frontClose: '01_Headshot_Primary.png',
-        threeQuarter: '02_Three_Quarter_Head.png',
-        sideClose: '03_Profile_Head.png',
-        frontFull: '04_Full_Body_Standing.png',
-        sideFull: '05_Full_Body_Walk.png',
-        backFull: '06_Full_Body_Rear.png'
-      };
 
       for (const asset of currentAssets) {
-        const filename = viewFileMap[asset.viewType] || `${asset.viewType}.png`;
+        const filename = isCanonicalViewType(asset.viewType)
+          ? EXPORT_VIEW_FILENAMES[asset.viewType]
+          : `${asset.viewType}.png`;
         
         try {
           let imageUrl = asset.storageUrl;
@@ -129,28 +129,18 @@ export function useCastingExport({
       // Generate Premium PDF Identity Document via server
       setGenState(prev => ({ ...prev, currentStep: 'Generating Premium Identity Document...' }));
       
-      const pdfImages: { headshot?: string; threeQuarter?: string; fullBody?: string; profile?: string; walk?: string; back?: string } = {};
+      const pdfImages: Partial<Record<PdfImageKey, string>> = {};
 
-      const viewTypeMap: Record<string, keyof typeof pdfImages> = {
-        'frontClose': 'headshot',
-        'threeQuarter': 'threeQuarter',
-        'frontFull': 'fullBody',
-        'sideClose': 'profile',
-        'sideFull': 'walk',
-        'backFull': 'back',
-      };
-      
       for (const asset of currentAssets) {
-        const pdfKey = viewTypeMap[asset.viewType];
-        if (pdfKey) {
-          try {
-            const proxyResult = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
-            if (proxyResult.success && proxyResult.base64) {
-              pdfImages[pdfKey] = proxyResult.base64;
-            }
-          } catch (e) {
-            console.error(`Failed to proxy image for ${asset.viewType}:`, e);
+        if (!isCanonicalViewType(asset.viewType)) continue;
+        const pdfKey = VIEW_TO_PDF_KEY[asset.viewType];
+        try {
+          const proxyResult = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
+          if (proxyResult.success && proxyResult.base64) {
+            pdfImages[pdfKey] = proxyResult.base64;
           }
+        } catch (e) {
+          console.error(`Failed to proxy image for ${asset.viewType}:`, e);
         }
       }
       

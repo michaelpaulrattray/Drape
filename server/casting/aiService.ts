@@ -6,6 +6,7 @@
 
 import { IMAGE_PRO } from "@shared/modelRegistry";
 import * as gemini from "./geminiService";
+import type { SingleViewAngle } from "./geminiViews";
 import { storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("casting/aiService");
@@ -245,14 +246,15 @@ export async function generateFullBody(
 }
 
 /**
- * Generate a single view (side, walk, or back)
- * This generates only the requested view instead of all 3 at once
+ * Generate a single package view (threeQuarter, sideClose, sideFull, backFull)
+ * This generates only the requested view instead of all 3 at once.
+ * Audit V21: canonical angle vocabulary end-to-end — no wire-name translation.
  */
 export async function generateRemainingViews(
   masterPrompt: string,
   sourceImageUrl: string,
   gender: string,
-  viewType: 'side' | 'back' | 'walk' | 'threeQuarter',
+  viewType: SingleViewAngle,
   technicalSchema?: any
 ): Promise<GenerationResult> {
   const sourceBase64 = await fetchAsBase64(sourceImageUrl);
