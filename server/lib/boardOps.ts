@@ -48,6 +48,7 @@ import type {
   CanonicalViewAngle,
 } from "../../shared/boardTypes";
 import { VIEW_ANGLE_LABELS, CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
+import { isModelDraftStatus, isModelAvailableStatus } from "../../shared/modelLifecycle";
 import type { BoardItemKind, BoardEdgeRelation } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 
@@ -462,7 +463,11 @@ export async function executeFillFromLibrary(input: {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no canonical imagery yet" });
   }
 
-  const draft = model.status !== "active" && model.status !== "locked";
+  // Batch B: draft is the STATUS read-model, never "not minted" — an
+  // archived or unrecognized row must not degrade to an editable draft
+  // (assertNotArchived above already 404s archived; this keeps the
+  // derivation truthful even if that guard's placement ever changes).
+  const draft = isModelDraftStatus(model.status);
   const provenance: Provenance = {
     type: "library_cast",
     modelId: input.modelId,
@@ -516,7 +521,11 @@ export async function listCastableModels(userId: number, limit = 30) {
     if (out.length >= limit) break;
     const headshotUrl = headshots.get(model.id);
     if (headshotUrl) {
-      const draft = model.status !== "active" && model.status !== "locked";
+      // Batch B: archived/unknown statuses are unavailable, never presented
+      // (getUserModels already excludes archived — FR-4 — this is the read
+      // model's own refusal, so the picker can't regress if that filter does)
+      if (!isModelAvailableStatus(model.status)) continue;
+      const draft = isModelDraftStatus(model.status);
       out.push({
         id: model.id,
         name: draft && model.name === DRAFT_AUTO_NAME ? null : model.name,

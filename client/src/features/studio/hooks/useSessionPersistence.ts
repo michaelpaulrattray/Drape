@@ -14,6 +14,7 @@ import type { ActiveTool } from '../types';
 import type { GeneratedAsset } from '@/features/casting/constants';
 import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
 import { CANONICAL_VIEW_ANGLES } from '@shared/boardTypes';
+import { isModelAvailableStatus, isModelMintedStatus } from '@shared/modelLifecycle';
 
 const STORAGE_KEY = 'drape_active_session';
 
@@ -41,6 +42,16 @@ export function clearPersistedSession() {
   } catch {
     // silently ignore
   }
+}
+
+/** Review correction 3: a persisted cast link is DEAD when the server has
+ *  confirmed the model is gone or not ours — NOT_FOUND covers hard-deleted
+ *  drafts and FR-4 archived (models.get reads archived as deleted);
+ *  FORBIDDEN covers a link that no longer belongs to this account. A
+ *  transient network failure has no tRPC code and must NOT count — clearing
+ *  on it would throw away a session that is still perfectly restorable. */
+export function isDeadSessionErrorCode(code: unknown): boolean {
+  return code === "NOT_FOUND" || code === "FORBIDDEN";
 }
 
 /** Read the persisted session without side effects */
@@ -78,6 +89,19 @@ export function useSessionRestore(isAuthenticated: boolean) {
     }
   );
 
+  // Review correction 3: when the server CONFIRMS the persisted link is dead
+  // (model deleted/archived → NOT_FOUND per FR-4, or no longer ours →
+  // FORBIDDEN), clear it so every future mount stops retrying a dead link.
+  // Transient failures carry no tRPC code and leave the entry alone.
+  useEffect(() => {
+    if (hasRestored.current) return;
+    if (!modelQuery.error) return;
+    if (isDeadSessionErrorCode(modelQuery.error.data?.code)) {
+      hasRestored.current = true;
+      clearPersistedSession();
+    }
+  }, [modelQuery.error]);
+
   useEffect(() => {
     if (hasRestored.current) return;
     if (!isAuthenticated) return;
@@ -89,7 +113,19 @@ export function useSessionRestore(isAuthenticated: boolean) {
     hasRestored.current = true;
 
     const model = modelQuery.data;
-    const isMinted = model.status === 'active';
+    // Review correction 5: availability is REQUIRED before restoring —
+    // an unknown/unrecognized status must not restore at all (and certainly
+    // not as an editable draft just because it isn't minted). The dead link
+    // is cleared like a confirmed-gone model.
+    if (!isModelAvailableStatus(model.status)) {
+      clearPersistedSession();
+      return;
+    }
+    // Batch B: minted is the shared status read model — legacy 'locked'
+    // restores as minted, never as an editable draft. (Archived can't reach
+    // here: models.get reads it as deleted, FR-4, so the query errors and
+    // the dead-link effect above clears the entry.)
+    const isMinted = isModelMintedStatus(model.status);
 
     // Restore canvas state
     const headshot = model.assets?.find((a: { viewType: string }) => a.viewType === 'frontClose');

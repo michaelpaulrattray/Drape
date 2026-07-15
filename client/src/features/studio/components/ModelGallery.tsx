@@ -13,6 +13,10 @@ import { DeleteOverlayButton } from './DeleteOverlayButton';
 export interface MintedModel {
   id: number;
   name: string | null;
+  /** Server lifecycle status — the read model's minted truth (Batch B).
+   *  Consumers derive minted state via isModelMintedStatus(status), never
+   *  from this row having arrived through a "minted" gallery. */
+  status: string;
   agencyId: string | null;
   masterPrompt: string;
   thumbnailUrl: string;

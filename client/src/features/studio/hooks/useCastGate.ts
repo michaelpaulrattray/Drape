@@ -103,10 +103,15 @@ export function useCastGate({
           castStore.pushHistory(newAssets);
         }
 
-        // Mark as minted in canvas state — NOT for stays-draft views (a)
-        if (!stayDraft) {
-          setCanvas({ isMinted: true, castModelId: currentModelId });
-        }
+        // Batch B: the post-action gate state is the SERVER result's status
+        // truth (result.minted), never an inference from which action the
+        // client requested — a stays-draft request on an inconsistent row,
+        // or an upgrade on a legacy 'locked' model, must read what the
+        // server says, not what the client asked for.
+        setCanvas({
+          isMinted: result.minted,
+          ...(result.minted ? { castModelId: currentModelId } : {}),
+        });
 
         // Named-and-refunded slot failures surface honestly (D-39/D-40). A
         // long duration: the takeover may be closing under this toast, and a

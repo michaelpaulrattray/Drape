@@ -81,7 +81,7 @@ describe('Session Reset — useSessionReset actions', () => {
     });
 
     it('clears wardrobe state when returning home from gallery model', () => {
-      useStudioStore.getState().loadModelFromCast(99, 'https://s3.example.com/cast.jpg', 'A tall model');
+      useStudioStore.getState().loadModelFromCast(99, 'https://s3.example.com/cast.jpg', 'A tall model', true);
       simulateWardrobeSession();
       
       useWardrobeStore.getState().resetWardrobe();
@@ -128,7 +128,7 @@ describe('Session Reset — useSessionReset actions', () => {
     });
 
     it('clears wardrobe when switching from gallery model to casting', () => {
-      useStudioStore.getState().loadModelFromCast(50, 'https://s3.example.com/cast.jpg', 'Edgy model');
+      useStudioStore.getState().loadModelFromCast(50, 'https://s3.example.com/cast.jpg', 'Edgy model', true);
       simulateWardrobeSession();
       
       useWardrobeStore.getState().resetWardrobe();
@@ -144,7 +144,7 @@ describe('Session Reset — useSessionReset actions', () => {
   describe('loadUploadedModel (new upload clears old session)', () => {
     it('clears previous wardrobe session when uploading a new model', () => {
       // First model loaded from gallery
-      useStudioStore.getState().loadModelFromCast(10, 'https://s3.example.com/old.jpg', 'Old model');
+      useStudioStore.getState().loadModelFromCast(10, 'https://s3.example.com/old.jpg', 'Old model', true);
       simulateWardrobeSession();
       
       // New upload (simulates useSessionReset.loadUploadedModel)
@@ -171,12 +171,12 @@ describe('Session Reset — useSessionReset actions', () => {
 
   describe('loadGalleryModel (gallery selection clears old session)', () => {
     it('clears previous wardrobe session when selecting a different gallery model', () => {
-      useStudioStore.getState().loadModelFromCast(10, 'https://s3.example.com/model-a.jpg', 'Model A');
+      useStudioStore.getState().loadModelFromCast(10, 'https://s3.example.com/model-a.jpg', 'Model A', true);
       simulateWardrobeSession();
       
       // Select different gallery model (simulates useSessionReset.loadGalleryModel)
       useWardrobeStore.getState().resetWardrobe();
-      useStudioStore.getState().loadModelFromCast(20, 'https://s3.example.com/model-b.jpg', 'Model B');
+      useStudioStore.getState().loadModelFromCast(20, 'https://s3.example.com/model-b.jpg', 'Model B', true);
       
       expectWardrobeClean();
       expect(useStudioStore.getState().canvas.castModelId).toBe(20);
@@ -188,7 +188,7 @@ describe('Session Reset — useSessionReset actions', () => {
       simulateWardrobeSession();
       
       useWardrobeStore.getState().resetWardrobe();
-      useStudioStore.getState().loadModelFromCast(30, 'https://s3.example.com/gallery.jpg', 'Gallery model');
+      useStudioStore.getState().loadModelFromCast(30, 'https://s3.example.com/gallery.jpg', 'Gallery model', true);
       
       expectWardrobeClean();
       expect(useStudioStore.getState().canvas.uploadedModelUrl).toBeNull();
@@ -233,7 +233,7 @@ describe('Session Reset — useSessionReset actions', () => {
 
     it('Gallery → Wardrobe → Home → Gallery (different model) → Wardrobe → fresh session', () => {
       // Step 1: Load gallery model
-      useStudioStore.getState().loadModelFromCast(10, 'https://s3.example.com/model-a.jpg', 'Model A');
+      useStudioStore.getState().loadModelFromCast(10, 'https://s3.example.com/model-a.jpg', 'Model A', true);
       simulateWardrobeSession();
       
       // Step 2: Go Home
@@ -245,7 +245,7 @@ describe('Session Reset — useSessionReset actions', () => {
       
       // Step 3: Load different gallery model
       useWardrobeStore.getState().resetWardrobe(); // redundant but safe
-      useStudioStore.getState().loadModelFromCast(20, 'https://s3.example.com/model-b.jpg', 'Model B');
+      useStudioStore.getState().loadModelFromCast(20, 'https://s3.example.com/model-b.jpg', 'Model B', true);
       
       // Step 4: Wardrobe should be clean with new model
       expectWardrobeClean();
@@ -286,7 +286,7 @@ describe('Session Reset — useSessionReset actions', () => {
     });
 
     it('does not overwrite gallery model canvas when casting assets change', () => {
-      useStudioStore.getState().loadModelFromCast(99, 'https://s3.example.com/gallery.jpg', 'Gallery');
+      useStudioStore.getState().loadModelFromCast(99, 'https://s3.example.com/gallery.jpg', 'Gallery', true);
       
       const canvas = useStudioStore.getState().canvas;
       expect(canvas.castModelId).toBe(99);

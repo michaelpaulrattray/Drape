@@ -15,6 +15,7 @@ import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
 import { buildHistoryFromAssets } from '@/features/casting/utils/buildHistoryFromAssets';
 import { CANONICAL_VIEW_ANGLES } from '@shared/boardTypes';
+import { isModelAvailableStatus, isModelMintedStatus } from '@shared/modelLifecycle';
 
 export function useResumeDraft() {
   const utils = trpc.useUtils();
@@ -23,6 +24,14 @@ export function useResumeDraft() {
 
   const resumeDraftById = useCallback(async (modelId: number) => {
     const model = await utils.models.get.fetch({ modelId });
+
+    // Review correction 5: availability is REQUIRED before restoring — an
+    // unknown/unrecognized status must refuse (the caller's catch shows
+    // "Could not load that model"), never restore as an editable draft.
+    // (Archived already 404s in models.get, FR-4.)
+    if (!isModelAvailableStatus(model.status)) {
+      throw new Error('Model unavailable');
+    }
 
     // Reset stores first
     useCastingGenerationStore.getState().resetGeneration();
@@ -56,7 +65,10 @@ export function useResumeDraft() {
 
     const headshot = assets.find((a) => a.viewType === 'frontClose');
     const fullBody = assets.find((a) => a.viewType === 'frontFull');
-    const isMinted = model.status === 'active';
+    // Batch B: minted is the shared status read model — legacy 'locked'
+    // restores as minted, never as an editable draft. (Archived can't reach
+    // here: models.get reads it as deleted, FR-4.)
+    const isMinted = isModelMintedStatus(model.status);
 
     setCanvas({
       castModelId: model.id,

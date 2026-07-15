@@ -225,16 +225,19 @@ export async function getRecentUserSessions(userId: number, limit = MAX_SESSIONS
     return true;
   }).slice(0, limit);
 
-  // Batch-fetch model names for sessions linked to cast models
+  // Batch-fetch model names + STATUS for sessions linked to cast models.
+  // Status rides the payload (Batch B) so resume derives draft/minted/
+  // unavailable from status truth instead of assuming every linked model is
+  // minted; a missing row (hard-deleted draft) leaves modelStatus null.
   const modelIds = Array.from(new Set(rows.map((r) => r.modelId).filter(Boolean))) as number[];
-  const modelMap = new Map<number, { name: string | null; masterPrompt: string | null }>();
+  const modelMap = new Map<number, { name: string | null; masterPrompt: string | null; status: string }>();
   if (modelIds.length > 0) {
     const modelRows = await db
-      .select({ id: models.id, name: models.name, masterPrompt: models.masterPrompt })
+      .select({ id: models.id, name: models.name, masterPrompt: models.masterPrompt, status: models.status })
       .from(models)
       .where(sql`${models.id} IN (${sql.join(modelIds.map((id) => sql`${id}`), sql`, `)})`);
     for (const m of modelRows) {
-      modelMap.set(m.id, { name: m.name, masterPrompt: m.masterPrompt });
+      modelMap.set(m.id, { name: m.name, masterPrompt: m.masterPrompt, status: m.status });
     }
   }
 
@@ -264,6 +267,7 @@ export async function getRecentUserSessions(userId: number, limit = MAX_SESSIONS
         sessionId: session.id,
         modelId: session.modelId,
         modelName: model?.name ?? null,
+        modelStatus: model?.status ?? null,
         masterPrompt: model?.masterPrompt ?? null,
         modelImageUrl: session.modelImageUrl,
         lastResultUrl: history[history.length - 1],
@@ -287,6 +291,7 @@ function formatSession() {
     sessionId: number;
     modelId: number | null;
     modelName: string | null;
+    modelStatus: string | null;
     masterPrompt: string | null;
     modelImageUrl: string;
     lastResultUrl: string;

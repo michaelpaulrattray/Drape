@@ -11,6 +11,8 @@
  *  - loadMintedModelById(id) — from a deep link (fetches the model first)
  */
 import { useCallback } from 'react';
+import { toast } from 'sonner';
+import { isModelAvailableStatus, isModelMintedStatus } from '@shared/modelLifecycle';
 import { trpc } from '@/lib/trpc';
 import { useSessionReset } from './useSessionReset';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
@@ -30,6 +32,7 @@ function preloadImage(url: string): Promise<void> {
 type FullModel = {
   id: number;
   name: string | null;
+  status?: string;
   masterPrompt: string | null;
   technicalSchema?: unknown;
   preferences?: unknown;
@@ -65,10 +68,18 @@ export function useLoadWardrobeModel() {
   const utils = trpc.useUtils();
   const { loadGalleryModel } = useSessionReset();
 
-  /** Gallery card path — instant entry, background casting hydration */
+  /** Gallery card path — instant entry, background casting hydration.
+   *  Minted state is the row's STATUS truth (Batch B) — the gallery being
+   *  a minted surface is a query filter, not the read model. Review
+   *  correction 5: availability is REQUIRED before loading — an unknown
+   *  status must refuse, not fall through as an "unminted" editable load. */
   const loadMintedModel = useCallback(async (model: MintedModel) => {
+    if (!isModelAvailableStatus(model.status)) {
+      toast.error('This model is unavailable.');
+      return;
+    }
     await preloadImage(model.thumbnailUrl);
-    loadGalleryModel(model.id, model.thumbnailUrl, model.masterPrompt);
+    loadGalleryModel(model.id, model.thumbnailUrl, model.masterPrompt, isModelMintedStatus(model.status));
 
     utils.models.get.fetch({ modelId: model.id }).then((fullModel) => {
       hydrateCastingStores(fullModel as FullModel);
@@ -84,6 +95,10 @@ export function useLoadWardrobeModel() {
    */
   const loadMintedModelById = useCallback(async (modelId: number): Promise<boolean> => {
     const model = (await utils.models.get.fetch({ modelId })) as FullModel;
+    // Review correction 5: unknown/unrecognized status is unavailable —
+    // return false so the caller falls back to the start screen instead of
+    // loading the row as an editable not-minted model.
+    if (!isModelAvailableStatus(model.status)) return false;
     const assets = model.assets || [];
     const image =
       assets.find((a) => a.viewType === 'frontFull') ??
@@ -92,7 +107,7 @@ export function useLoadWardrobeModel() {
     if (!image) return false;
 
     await preloadImage(image.storageUrl).catch(() => {});
-    loadGalleryModel(model.id, image.storageUrl, model.masterPrompt || '');
+    loadGalleryModel(model.id, image.storageUrl, model.masterPrompt || '', isModelMintedStatus(model.status));
     hydrateCastingStores(model);
     return true;
   }, [loadGalleryModel, utils]);

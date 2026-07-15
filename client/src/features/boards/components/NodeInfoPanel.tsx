@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { isModelMintedStatus } from '@shared/modelLifecycle';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -248,7 +249,15 @@ export function NodeInfoPanel({ itemId, position, onClose }: NodeInfoPanelProps)
                 <>
                   <Section title="Model">
                     <InfoRow icon={<User size={13} />} label="Name" value={data.model.name ?? '—'} />
-                    <InfoRow icon={<Hash size={13} />} label="Agency ID" value={data.model.agencyId ?? 'Not minted'} />
+                    {/* Review correction 5: a missing ID is only "Not minted"
+                        when the STATUS says unminted — a minted (active/legacy
+                        locked) row missing its ID has integrity data missing,
+                        not a different lifecycle state. */}
+                    <InfoRow
+                      icon={<Hash size={13} />}
+                      label="Agency ID"
+                      value={data.model.agencyId ?? (isModelMintedStatus(data.model.status) ? 'Missing' : 'Not minted')}
+                    />
                     <InfoRow icon={<Layers size={13} />} label="Status" value={data.model.status} />
                     <InfoRow icon={<Calendar size={13} />} label="Created" value={formatDate(data.model.createdAt)} />
                     {data.assetCount !== undefined && (

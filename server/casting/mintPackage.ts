@@ -43,6 +43,7 @@ import {
   type CanonicalViewAngle,
   type MintTier,
 } from "../../shared/boardTypes";
+import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("casting/mintPackage");
@@ -307,9 +308,10 @@ export async function executeMintPackage(input: MintPackageInput) {
       { modelId: input.modelId, tier: input.tier, generated: generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
       "[MintPackage] views added, stays a draft",
     );
-    // Honest state: on the upgrade path the model IS minted — never report
-    // minted:false for a model that holds an identity
-    return { agencyId: model.agencyId ?? null, minted: !!model.agencyId, tier: input.tier, generated, failed };
+    // Honest state (Batch B): minted is STATUS truth — active or the legacy
+    // locked alias. On the upgrade path the model IS minted; a draft carrying
+    // a stray agencyId is still a draft and must never read minted here.
+    return { agencyId: model.agencyId ?? null, minted: isModelMintedStatus(model.status), tier: input.tier, generated, failed };
   }
 
   // Name + mint (identity becomes real and immutable, D-43).
@@ -409,7 +411,10 @@ export async function getPackageState(input: { userId: number; modelId: number }
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
-  return { modelId: input.modelId, minted: !!model.agencyId, slots: computePackageSlots(assets) };
+  // Batch B: minted is status truth (active | legacy locked) — agencyId is
+  // integrity detail, never the read-model discriminator (a stray ID on a
+  // draft must not read minted; a legacy locked row must).
+  return { modelId: input.modelId, minted: isModelMintedStatus(model.status), slots: computePackageSlots(assets) };
 }
 
 /** The row pin/refresh act on: the NEWEST filled row for the angle — the same

@@ -1,27 +1,31 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { getModelByAgencyId, getModelAssets } from "../db";
+import { isModelMintedStatus } from "../../shared/modelLifecycle";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 export const registryRouter = router({
   // Public lookup by agencyId - for cross-app model retrieval
-  // Only returns minted (active) models with agencyId assigned
+  // Only returns MINTED models (Batch B: status truth — active or the legacy
+  // locked alias; archived reads deleted). The agencyId itself is this
+  // operation's integrity requirement — it is the lookup key by construction.
   lookup: publicProcedure
     .input(z.object({
       agencyId: z.string().regex(/^MOD-\d{2}-[A-F0-9]{6}$/, "Invalid Model ID format"),
     }))
     .query(async ({ input }) => {
       const model = await getModelByAgencyId(input.agencyId);
-      
+
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
       }
 
-      // Only return minted models (status = 'active')
-      if (model.status !== 'active') {
-        throw new TRPCError({ 
-          code: "NOT_FOUND", 
-          message: "Model not found or not yet minted" 
+      // Minted by status — a legacy locked identity is retrievable; a draft
+      // carrying a stray agencyId and an archived row both read NOT_FOUND
+      if (!isModelMintedStatus(model.status)) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Model not found or not yet minted"
         });
       }
 
@@ -57,16 +61,21 @@ export const registryRouter = router({
       }
 
       const model = await getModelByAgencyId(input.agencyId);
-      
-      if (!model) {
+
+      // Batch B (review correction 2): verify and lookup must agree, and
+      // "archived = deleted everywhere" (FR-4) applies to EXISTENCE on this
+      // public endpoint. Any row that is not minted by the shared read model
+      // — draft (stray ID), archived, unknown — is publicly ABSENT: the same
+      // shape as no row at all, leaking neither existence nor timestamps.
+      if (!model || !isModelMintedStatus(model.status)) {
         return { valid: true, exists: false, minted: false };
       }
 
       return {
         valid: true,
         exists: true,
-        minted: model.status === 'active',
-        mintedAt: model.status === 'active' ? model.mintedAt : null,
+        minted: true,
+        mintedAt: model.mintedAt,
       };
     }),
 });

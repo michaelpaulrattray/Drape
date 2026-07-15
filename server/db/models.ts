@@ -12,6 +12,7 @@ import {
   InsertModelAsset,
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
+import { MODEL_MINTED_STATUSES } from "../../shared/modelLifecycle";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/models");
 
@@ -184,7 +185,11 @@ export async function deleteModel(
 
 /**
  * Get user's minted (exported) models with their frontFull thumbnail.
- * Only returns models with status 'active' that have a frontFull asset.
+ * Returns models whose STATUS reads minted — 'active' or the legacy 'locked'
+ * alias (Batch B / FR-4; the filter is the shared MODEL_MINTED_STATUSES list
+ * so it can never diverge from the read model) — that have a thumbnail asset.
+ * Rows carry `status` so consumers derive minted state from status truth,
+ * never from the row's gallery-of-origin.
  * Used by the studio lobby "My Models" gallery.
  */
 export async function getUserMintedModelsWithThumbnail(
@@ -194,11 +199,12 @@ export async function getUserMintedModelsWithThumbnail(
   const db = await getDb();
   if (!db) return [];
 
-  // Get active (minted) models for this user
+  // Get minted models for this user (status truth: active | legacy locked)
   const userModels = await db
     .select({
       id: models.id,
       name: models.name,
+      status: models.status,
       agencyId: models.agencyId,
       masterPrompt: models.masterPrompt,
       mintedAt: models.mintedAt,
@@ -206,7 +212,7 @@ export async function getUserMintedModelsWithThumbnail(
       updatedAt: models.updatedAt,
     })
     .from(models)
-    .where(and(eq(models.userId, userId), eq(models.status, "active")))
+    .where(and(eq(models.userId, userId), inArray(models.status, [...MODEL_MINTED_STATUSES])))
     .orderBy(desc(models.mintedAt))
     .limit(limit);
 
@@ -243,6 +249,7 @@ export async function getUserMintedModelsWithThumbnail(
     .map((m) => ({
       id: m.id,
       name: m.name,
+      status: m.status,
       agencyId: m.agencyId,
       masterPrompt: m.masterPrompt,
       thumbnailUrl: thumbMap.get(m.id)!,

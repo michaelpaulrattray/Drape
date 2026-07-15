@@ -14,6 +14,7 @@ import {
 import { planRefreshSlots, executeRefreshSlots } from "../../casting/refreshSlots";
 import { assertNotArchived } from "../../casting/modelGuards";
 import { CANONICAL_VIEW_ANGLES } from "../../../shared/boardTypes";
+import { resolveExportEligibility, MISSING_AGENCY_ID_COPY } from "../../../shared/exportEligibility";
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { generatePremiumIdentityPdf, PdfModelData } from "../../casting/pdfService";
@@ -59,20 +60,31 @@ export const castingExportRouter = router({
       }
       // FR-4 first: archived reads as deleted (NOT_FOUND, never a mint hint)
       assertNotArchived(model);
-      // Batch 0 (FR-2A, review fix 6): the identity document is a minted-
-      // identity artifact. Minted means a LEGAL minted status ('active', or
-      // the legacy 'locked' alias) AND an agencyId — a draft carrying a
-      // stray agencyId is still a draft and is refused. Export never mints
-      // implicitly; the client routes to the mint door.
-      const legallyMinted =
-        (model.status === "active" || model.status === "locked") && !!model.agencyId;
-      if (!legallyMinted) {
-        log.warn({ modelId: input.modelId, status: model.status, hasAgencyId: !!model.agencyId }, "[generatePdf] refused — model not minted");
+      // Batch 0 (FR-2A, review fix 6) / Batch B final round: the identity
+      // document is a minted-identity artifact, gated by the ONE shared
+      // export contract (shared/exportEligibility — the same resolver the
+      // client hooks run). Minted state is STATUS truth ('active' or the
+      // legacy 'locked' alias); the agencyId is this export's SEPARATE
+      // integrity requirement (the dossier prints it), and whitespace-only
+      // IDs count as missing. The two refusals are DISTINCT: unminted routes
+      // to the mint door; a minted row missing its ID gets the repair copy —
+      // re-minting is not the fix and no fake ID is ever printed.
+      const eligibility = resolveExportEligibility(model);
+      if (!eligibility.ok) {
+        log.warn(
+          { modelId: input.modelId, status: model.status, hasAgencyId: !!model.agencyId?.trim(), reason: eligibility.reason },
+          "[generatePdf] refused — export ineligible",
+        );
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "Name & mint this model to export the identity pack.",
+          message:
+            eligibility.reason === "not_minted"
+              ? "Name & mint this model to export the identity pack."
+              : MISSING_AGENCY_ID_COPY,
         });
       }
+      // The resolver's verified, trimmed ID is the only ID the PDF carries
+      const exportId = eligibility.agencyId;
 
       // Get user info for owner details
       const user = await getUserById(ctx.user.id);
@@ -114,7 +126,7 @@ export const castingExportRouter = router({
       // Prepare PDF data
       const pdfData: PdfModelData = {
         modelName: input.modelName || model.name || 'Unnamed Model',
-        agencyId: model.agencyId || `MOD-${new Date().getFullYear().toString().slice(-2)}-DRAFT`,
+        agencyId: exportId,
         sessionId: `SES-${model.id}`,
         createdAt: model.createdAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
         mintedAt: model.mintedAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
@@ -134,7 +146,7 @@ export const castingExportRouter = router({
       return {
         success: true,
         pdfBase64: base64Pdf,
-        filename: `IDENTITY_${model.agencyId || 'DRAFT'}.pdf`,
+        filename: `IDENTITY_${exportId}.pdf`,
       };
     }),
 

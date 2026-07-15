@@ -58,8 +58,12 @@ interface StudioState {
   /** Load a model from an uploaded image URL */
   loadModelFromUpload: (imageUrl: string) => void;
 
-  /** Load a model from a previous cast (minted model from gallery) */
-  loadModelFromCast: (modelId: number, fullBodyUrl: string, masterPrompt: string) => void;
+  /** Load a model from a previous cast (gallery / session resume). `minted`
+   *  is REQUIRED and must come from server status truth via the shared
+   *  read model (isModelMintedStatus) — never from which surface the model
+   *  was loaded from (Batch B: the gallery once hardcoded minted here and
+   *  legacy 'locked' / stray-agencyId rows read wrong everywhere). */
+  loadModelFromCast: (modelId: number, fullBodyUrl: string, masterPrompt: string, minted: boolean) => void;
 
   /** Clear the uploaded model and reset to empty canvas */
   clearUploadedModel: () => void;
@@ -124,7 +128,7 @@ export const useStudioStore = create<StudioState>()(
           'loadModelFromUpload'
         ),
 
-      loadModelFromCast: (modelId, fullBodyUrl, masterPrompt) =>
+      loadModelFromCast: (modelId, fullBodyUrl, masterPrompt, minted) =>
         set(
           {
             canvas: {
@@ -136,7 +140,7 @@ export const useStudioStore = create<StudioState>()(
               castModelId: modelId,
               castMasterPrompt: masterPrompt,
               castFullBodyUrl: fullBodyUrl,
-              isMinted: true, // Gallery-loaded models are always minted
+              isMinted: minted, // status truth from the caller — never assumed from the gallery
             },
             activeTool: 'wardrobe' as StudioTool,
             wardrobeStart: false,

@@ -82,7 +82,8 @@ describe("loadModelFromCast store action", () => {
     store.getState().loadModelFromCast(
       42,
       "https://s3.example.com/models/42/frontFull.png",
-      "A tall female model with sharp features..."
+      "A tall female model with sharp features...",
+      true
     );
 
     const state = store.getState();
@@ -94,11 +95,23 @@ describe("loadModelFromCast store action", () => {
     expect(state.canvas.castMasterPrompt).toContain("tall female model");
     expect(state.canvas.castFullBodyUrl).toContain("frontFull.png");
     expect(state.canvas.uploadedModelUrl).toBeNull();
+    expect(state.canvas.isMinted).toBe(true);
+  });
+
+  it("Batch B: minted state is the caller's status truth, never a gallery assumption", () => {
+    // A draft loaded through the gallery path stays a draft on the canvas —
+    // the old hardcode marked EVERY gallery load minted.
+    store.getState().loadModelFromCast(43, "https://example.com/cast.png", "prompt", false);
+    expect(store.getState().canvas.isMinted).toBe(false);
+    // A legacy 'locked' model (isModelMintedStatus → true at the call site)
+    // loads as minted.
+    store.getState().loadModelFromCast(44, "https://example.com/cast.png", "prompt", true);
+    expect(store.getState().canvas.isMinted).toBe(true);
   });
 
   it("clears cast fields when loading from upload after gallery", () => {
     // First load from gallery
-    store.getState().loadModelFromCast(42, "https://example.com/cast.png", "prompt");
+    store.getState().loadModelFromCast(42, "https://example.com/cast.png", "prompt", true);
     expect(store.getState().canvas.castModelId).toBe(42);
 
     // Then switch to upload
@@ -111,7 +124,7 @@ describe("loadModelFromCast store action", () => {
   });
 
   it("resets cast fields on clearUploadedModel", () => {
-    store.getState().loadModelFromCast(42, "https://example.com/cast.png", "prompt");
+    store.getState().loadModelFromCast(42, "https://example.com/cast.png", "prompt", true);
     store.getState().clearUploadedModel();
 
     const state = store.getState();
@@ -122,7 +135,7 @@ describe("loadModelFromCast store action", () => {
   });
 
   it("resets cast fields on resetStudio", () => {
-    store.getState().loadModelFromCast(42, "https://example.com/cast.png", "prompt");
+    store.getState().loadModelFromCast(42, "https://example.com/cast.png", "prompt", true);
     store.getState().resetStudio();
 
     const state = store.getState();

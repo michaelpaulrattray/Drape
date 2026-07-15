@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { CREDIT_COSTS } from "./casting/aiService";
+import { isModelMintedStatus } from "../shared/modelLifecycle";
 
 /**
  * Tests for Model and Generation endpoints
@@ -261,16 +262,18 @@ describe("Model Minting System", () => {
   });
 
   it("should only allow cross-app retrieval for minted models", () => {
-    // Draft models should not be retrievable via registry
-    const draftModel = { status: "draft", agencyId: null };
-    const mintedModel = { status: "active", agencyId: "MOD-26-A1B2C3" };
+    // Batch B: the registry's rule is the SHARED read model (minted by
+    // status — legacy 'locked' counts) plus its own agencyId integrity
+    // requirement. This replica must use the same predicate as the route,
+    // never a hand-rolled status === "active".
+    const canRetrieve = (model: { status: string; agencyId: string | null }) =>
+      isModelMintedStatus(model.status) && model.agencyId !== null;
 
-    const canRetrieve = (model: { status: string; agencyId: string | null }) => {
-      return model.status === "active" && model.agencyId !== null;
-    };
-
-    expect(canRetrieve(draftModel)).toBe(false);
-    expect(canRetrieve(mintedModel)).toBe(true);
+    expect(canRetrieve({ status: "draft", agencyId: null })).toBe(false);
+    expect(canRetrieve({ status: "draft", agencyId: "MOD-26-A1B2C3" })).toBe(false); // stray ID
+    expect(canRetrieve({ status: "active", agencyId: "MOD-26-A1B2C3" })).toBe(true);
+    expect(canRetrieve({ status: "locked", agencyId: "MOD-26-A1B2C3" })).toBe(true); // legacy alias
+    expect(canRetrieve({ status: "archived", agencyId: "MOD-26-A1B2C3" })).toBe(false);
   });
 });
 

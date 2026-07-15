@@ -7,6 +7,8 @@
  * Note: The app has 3 view types: frontClose (Headshot), frontFull (Full Body), sideClose (Profile).
  */
 import { describe, it, expect } from "vitest";
+import { isModelMintedStatus } from "../shared/modelLifecycle";
+import { resolveExportEligibility } from "../shared/exportEligibility";
 
 // ── View Label & Filename Mapping ─────────────────────────────
 
@@ -224,10 +226,18 @@ describe("ZIP Filename Generation", () => {
     expect(pdfFilename).toBe("LEGAL_IDENTITY_MOD_26_A1B2C3.pdf");
   });
 
-  it("should handle DRAFT fallback when no agencyId", () => {
-    const agencyId: string | null = null;
-    const cleanId = (agencyId || "DRAFT").replace(/[^a-zA-Z0-9]/g, "_");
-    expect(cleanId).toBe("DRAFT");
+  it("Batch B final round: there is NO DRAFT fallback — a missing ID refuses the export instead", () => {
+    // Identity artifacts print only a verified agency ID. A missing or
+    // whitespace-only ID makes the export ineligible (repair copy) before
+    // any filename exists — resolveExportEligibility, shared client/server.
+    expect(resolveExportEligibility({ status: "active", agencyId: null })).toEqual({
+      ok: false,
+      reason: "missing_agency_id",
+    });
+    expect(resolveExportEligibility({ status: "locked", agencyId: "  " })).toEqual({
+      ok: false,
+      reason: "missing_agency_id",
+    });
   });
 });
 
@@ -262,17 +272,16 @@ describe("Export Step Labels", () => {
 // ── Mint Status Logic ─────────────────────────────────────────
 
 describe("Mint Status", () => {
-  it("should detect minted model by agencyId presence", () => {
-    const model = { agencyId: "MOD-26-A1B2C3" };
-    expect(!!model.agencyId).toBe(true);
+  it("Batch B: minted state is STATUS truth — agencyId presence proves nothing", () => {
+    // The export hooks derive isMinted via the shared read model; the old
+    // !!agencyId derivation misread stray-ID drafts and legacy locked rows.
+    expect(isModelMintedStatus("active")).toBe(true);
+    expect(isModelMintedStatus("locked")).toBe(true); // legacy minted alias
+    expect(isModelMintedStatus("draft")).toBe(false); // even with a stray agencyId
+    expect(isModelMintedStatus("archived")).toBe(false);
   });
 
-  it("should detect unminted model by null agencyId", () => {
-    const model = { agencyId: null };
-    expect(!!model.agencyId).toBe(false);
-  });
-
-  it("agencyId format should match MOD-YY-XXXXXX pattern", () => {
+  it("agencyId format should match MOD-YY-XXXXXX pattern (integrity detail, not read state)", () => {
     const agencyId = "MOD-26-A1B2C3";
     expect(agencyId).toMatch(/^MOD-\d{2}-[A-F0-9]{6}$/);
   });

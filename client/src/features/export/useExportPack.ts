@@ -28,6 +28,8 @@ import {
   compCardViewOrder,
 } from "@shared/exportViews";
 import { VIEW_ANGLE_LABELS } from "@shared/boardTypes";
+import { isModelMintedStatus } from "@shared/modelLifecycle";
+import { withExportEligibility, MISSING_AGENCY_ID_COPY } from "@shared/exportEligibility";
 
 export type ExportStep =
   | "idle"
@@ -73,9 +75,26 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
   const utils = trpc.useUtils();
 
   const model = modelQuery.data ?? null;
-  const isMinted = !!model?.agencyId;
+  // Batch B: minted is STATUS truth (active | legacy locked) — agencyId is
+  // the dossier's print detail, never the read-model discriminator. The
+  // server's generatePdf keeps its own fail-closed status+agencyId gate.
+  const isMinted = isModelMintedStatus(model?.status);
   const agencyId = model?.agencyId ?? null;
   const modelName = model?.name ?? "Unnamed Model";
+
+  /** Review correction 1 + final round C: every export action runs through
+   *  the shared withExportEligibility BOUNDARY — on refusal the action body
+   *  (and every mutation) is never entered. This helper only voices the
+   *  refusal: an unminted model routes to the mint message; a status-minted
+   *  row missing its ID gets the repair copy (never a mint prompt, never a
+   *  "DRAFT" placeholder printed into an identity artifact). */
+  const notifyExportRefusal = useCallback((reason: "not_minted" | "missing_agency_id") => {
+    if (reason === "not_minted") {
+      toast(`Name & mint ${modelName} in casting to export the identity pack.`);
+    } else {
+      toast.error(MISSING_AGENCY_ID_COPY);
+    }
+  }, [modelName]);
 
   /** Sorted assets with labels — the canonical six, in comp-card order */
   const viewAssets = useMemo(() => {
@@ -169,177 +188,190 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
   // ── Download PDF only ──────────────────────────────────────
   const downloadPdf = useCallback(async () => {
     if (!modelId) return;
-    // FR-2(A), Batch 0: export never mints. The identity pack is a
-    // minted-identity artifact — a draft is refused with the route to the
-    // mint door (the server refuses too; this is the honest early copy).
-    if (!isMinted) {
-      toast(`Name & mint ${modelName} in casting to export the identity pack.`);
-      return;
-    }
-    setStep("generating-pdf");
-    setProgress(10);
-    try {
-      const pdfImages: Record<string, string> = {};
-      for (const asset of assets) {
-        if (!isCanonicalViewType(asset.viewType)) continue;
-        const key = VIEW_TO_PDF_KEY[asset.viewType];
+    // FR-2(A) + review correction 1 + final round C: the whole action runs
+    // inside the shared eligibility BOUNDARY — on refusal (unminted, or a
+    // status-minted row missing its agencyId) the body below, and therefore
+    // every proxy/PDF mutation, is never entered.
+    const outcome = await withExportEligibility(
+      model,
+      { proxyImage: proxyImageMutation.mutateAsync, generatePdf: generatePdfMutation.mutateAsync },
+      async (exportId, m) => {
+        setStep("generating-pdf");
+        setProgress(10);
         try {
-          const proxy = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
-          if (proxy.success && proxy.base64) pdfImages[key] = proxy.base64;
-        } catch { /* skip */ }
-      }
-      setProgress(50);
+          const pdfImages: Record<string, string> = {};
+          for (const asset of assets) {
+            if (!isCanonicalViewType(asset.viewType)) continue;
+            const key = VIEW_TO_PDF_KEY[asset.viewType];
+            try {
+              const proxy = await m.proxyImage({ imageUrl: asset.storageUrl });
+              if (proxy.success && proxy.base64) pdfImages[key] = proxy.base64;
+            } catch { /* skip */ }
+          }
+          setProgress(50);
 
-      const result = await generatePdfMutation.mutateAsync({
-        modelId,
-        modelName: modelName.toUpperCase(),
-        images: pdfImages,
-      });
+          const result = await m.generatePdf({
+            modelId,
+            modelName: modelName.toUpperCase(),
+            images: pdfImages,
+          });
 
-      if (!result.success || !result.pdfBase64) throw new Error("PDF generation failed");
+          if (!result.success || !result.pdfBase64) throw new Error("PDF generation failed");
 
-      setProgress(90);
-      const binary = atob(result.pdfBase64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = result.filename || `IDENTITY_${agencyId || "DRAFT"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setProgress(100);
-      toast.success("Identity document downloaded");
-    } catch (e: any) {
-      toast.error(e.message || "PDF download failed");
-    } finally {
-      setStep("idle");
-      setProgress(0);
-    }
-  }, [modelId, assets, modelName, agencyId, isMinted]);
+          setProgress(90);
+          const binary = atob(result.pdfBase64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          const blob = new Blob([bytes], { type: "application/pdf" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = result.filename || `IDENTITY_${exportId}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          setProgress(100);
+          toast.success("Identity document downloaded");
+        } catch (e: any) {
+          toast.error(e.message || "PDF download failed");
+        } finally {
+          setStep("idle");
+          setProgress(0);
+        }
+      },
+    );
+    if (!outcome.ok) notifyExportRefusal(outcome.reason);
+  }, [modelId, model, assets, modelName, notifyExportRefusal]);
 
   // ── Download full ZIP pack ─────────────────────────────────
   const downloadZip = useCallback(async () => {
     if (!modelId || assets.length === 0) return;
-    // FR-2(A): same gate as the PDF — export never mints
-    if (!isMinted) {
-      toast(`Name & mint ${modelName} in casting to export the identity pack.`);
-      return;
-    }
-
-    const safeName = modelName.trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, "_");
-    const cleanId = (agencyId || "DRAFT").replace(/[^a-zA-Z0-9]/g, "_");
-
-    try {
-      setStep("upscaling");
-      setProgress(5);
-      const zip = new JSZip();
-      const totalItems = assets.length + savedLooks.length + 1; // views + looks + PDF
-      let done = 0;
-
-      // Add casting views (upscaled to 2K)
-      for (const asset of assets) {
-        const filename = isCanonicalViewType(asset.viewType)
-          ? EXPORT_VIEW_FILENAMES[asset.viewType]
-          : `${asset.viewType}.png`;
-        let imageUrl = asset.storageUrl;
+    // FR-2(A) + review correction 1 + final round C: the whole action runs
+    // inside the shared eligibility BOUNDARY — on refusal the paid upscale
+    // loop and every proxy/PDF mutation are never entered. A verified
+    // agencyId is the only thing ever printed into the pack (no "DRAFT").
+    const outcome = await withExportEligibility(
+      model,
+      {
+        upscale: upscaleMutation.mutateAsync,
+        proxyImage: proxyImageMutation.mutateAsync,
+        generatePdf: generatePdfMutation.mutateAsync,
+      },
+      async (exportId, m) => {
+        const safeName = modelName.trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, "_");
+        const cleanId = exportId.replace(/[^a-zA-Z0-9]/g, "_");
 
         try {
-          const upResult = await upscaleMutation.mutateAsync({
-            imageUrl: asset.storageUrl,
-            resolution: "2K",
+          setStep("upscaling");
+          setProgress(5);
+          const zip = new JSZip();
+          const totalItems = assets.length + savedLooks.length + 1; // views + looks + PDF
+          let done = 0;
+
+          // Add casting views (upscaled to 2K)
+          for (const asset of assets) {
+            const filename = isCanonicalViewType(asset.viewType)
+              ? EXPORT_VIEW_FILENAMES[asset.viewType]
+              : `${asset.viewType}.png`;
+            let imageUrl = asset.storageUrl;
+
+            try {
+              const upResult = await m.upscale({
+                imageUrl: asset.storageUrl,
+                resolution: "2K",
+              });
+              if (upResult.success && upResult.imageUrl) imageUrl = upResult.imageUrl;
+            } catch { /* use original */ }
+
+            try {
+              const proxy = await m.proxyImage({ imageUrl });
+              if (proxy.success && proxy.base64) {
+                const b64 = proxy.base64.split(",")[1];
+                const bin = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                zip.file(filename, bytes);
+              }
+            } catch { /* skip */ }
+
+            done++;
+            setProgress(Math.round((done / totalItems) * 75));
+          }
+
+          // Add saved wardrobe looks (original resolution, in LOOKS/ subfolder)
+          if (savedLooks.length > 0) {
+            const looksFolder = zip.folder("LOOKS");
+            for (let i = 0; i < savedLooks.length; i++) {
+              const look = savedLooks[i];
+              const lookName = (look.name || `Look_${i + 1}`).replace(/[^a-zA-Z0-9]/g, "_");
+              const lookFilename = `${String(i + 1).padStart(2, "0")}_${lookName}.png`;
+
+              try {
+                const proxy = await m.proxyImage({ imageUrl: look.imageUrl });
+                if (proxy.success && proxy.base64) {
+                  const b64 = proxy.base64.split(",")[1];
+                  const bin = atob(b64);
+                  const bytes = new Uint8Array(bin.length);
+                  for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+                  looksFolder!.file(lookFilename, bytes);
+                }
+              } catch { /* skip */ }
+
+              done++;
+              setProgress(Math.round((done / totalItems) * 75));
+            }
+          }
+
+          // Generate PDF
+          setStep("generating-pdf");
+          const pdfImages: Record<string, string> = {};
+          for (const asset of assets) {
+            if (!isCanonicalViewType(asset.viewType)) continue;
+            const key = VIEW_TO_PDF_KEY[asset.viewType];
+            try {
+              const proxy = await m.proxyImage({ imageUrl: asset.storageUrl });
+              if (proxy.success && proxy.base64) pdfImages[key] = proxy.base64;
+            } catch { /* skip */ }
+          }
+
+          const pdfResult = await m.generatePdf({
+            modelId,
+            modelName: safeName,
+            images: pdfImages,
           });
-          if (upResult.success && upResult.imageUrl) imageUrl = upResult.imageUrl;
-        } catch { /* use original */ }
 
-        try {
-          const proxy = await proxyImageMutation.mutateAsync({ imageUrl });
-          if (proxy.success && proxy.base64) {
-            const b64 = proxy.base64.split(",")[1];
-            const bin = atob(b64);
+          if (pdfResult.success && pdfResult.pdfBase64) {
+            const bin = atob(pdfResult.pdfBase64);
             const bytes = new Uint8Array(bin.length);
             for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-            zip.file(filename, bytes);
+            zip.file(`LEGAL_IDENTITY_${cleanId}.pdf`, bytes);
           }
-        } catch { /* skip */ }
+          setProgress(90);
 
-        done++;
-        setProgress(Math.round((done / totalItems) * 75));
-      }
+          // Compress and download
+          setStep("compressing");
+          const content = await zip.generateAsync({ type: "blob" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(content);
+          link.download = `CASTING_PACK_${safeName}_2K.zip`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
 
-      // Add saved wardrobe looks (original resolution, in LOOKS/ subfolder)
-      if (savedLooks.length > 0) {
-        const looksFolder = zip.folder("LOOKS");
-        for (let i = 0; i < savedLooks.length; i++) {
-          const look = savedLooks[i];
-          const lookName = (look.name || `Look_${i + 1}`).replace(/[^a-zA-Z0-9]/g, "_");
-          const lookFilename = `${String(i + 1).padStart(2, "0")}_${lookName}.png`;
-
-          try {
-            const proxy = await proxyImageMutation.mutateAsync({ imageUrl: look.imageUrl });
-            if (proxy.success && proxy.base64) {
-              const b64 = proxy.base64.split(",")[1];
-              const bin = atob(b64);
-              const bytes = new Uint8Array(bin.length);
-              for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
-              looksFolder!.file(lookFilename, bytes);
-            }
-          } catch { /* skip */ }
-
-          done++;
-          setProgress(Math.round((done / totalItems) * 75));
+          setProgress(100);
+          toast.success("Export pack downloaded");
+        } catch (e: any) {
+          toast.error(e.message || "Export failed");
+        } finally {
+          setStep("idle");
+          setProgress(0);
         }
-      }
-
-      // Generate PDF
-      setStep("generating-pdf");
-      const pdfImages: Record<string, string> = {};
-      for (const asset of assets) {
-        if (!isCanonicalViewType(asset.viewType)) continue;
-        const key = VIEW_TO_PDF_KEY[asset.viewType];
-        try {
-          const proxy = await proxyImageMutation.mutateAsync({ imageUrl: asset.storageUrl });
-          if (proxy.success && proxy.base64) pdfImages[key] = proxy.base64;
-        } catch { /* skip */ }
-      }
-
-      const pdfResult = await generatePdfMutation.mutateAsync({
-        modelId,
-        modelName: safeName,
-        images: pdfImages,
-      });
-
-      if (pdfResult.success && pdfResult.pdfBase64) {
-        const bin = atob(pdfResult.pdfBase64);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        zip.file(`LEGAL_IDENTITY_${cleanId}.pdf`, bytes);
-      }
-      setProgress(90);
-
-      // Compress and download
-      setStep("compressing");
-      const content = await zip.generateAsync({ type: "blob" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(content);
-      link.download = `CASTING_PACK_${safeName}_2K.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-
-      setProgress(100);
-      toast.success("Export pack downloaded");
-    } catch (e: any) {
-      toast.error(e.message || "Export failed");
-    } finally {
-      setStep("idle");
-      setProgress(0);
-    }
-  }, [modelId, assets, savedLooks, modelName, agencyId, isMinted]);
+      },
+    );
+    if (!outcome.ok) notifyExportRefusal(outcome.reason);
+  }, [modelId, model, assets, savedLooks, modelName, notifyExportRefusal]);
 
   return {
     // Data

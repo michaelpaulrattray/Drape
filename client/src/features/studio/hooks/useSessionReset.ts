@@ -12,11 +12,12 @@
  *  - Resuming a saved wardrobe session from the DB
  */
 import { useCallback } from 'react';
+import { isModelAvailableStatus, isModelMintedStatus } from '@shared/modelLifecycle';
 import { useStudioStore } from '../stores/useStudioStore';
 import { useWardrobeStore } from '@/features/wardrobe/stores/useWardrobeStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
-import { persistSession } from './useSessionPersistence';
+import { persistSession, clearPersistedSession } from './useSessionPersistence';
 import type { StudioTool } from '../types';
 
 export function useSessionReset() {
@@ -68,16 +69,19 @@ export function useSessionReset() {
   /**
    * Load a gallery cast model — clears old wardrobe + casting state first.
    * Used by: WardrobeStart "My Models" gallery (via useLoadWardrobeModel).
+   * `minted` comes from the model's server status via the shared read model
+   * (Batch B) — the gallery being a "minted" surface proves nothing.
    */
   const loadGalleryModel = useCallback((
     modelId: number,
     fullBodyUrl: string,
     masterPrompt: string,
+    minted: boolean,
   ) => {
     resetWardrobe();
     resetCasting();
     resetCastingForm();
-    loadModelFromCast(modelId, fullBodyUrl, masterPrompt);
+    loadModelFromCast(modelId, fullBodyUrl, masterPrompt, minted);
   }, [resetWardrobe, resetCasting, resetCastingForm, loadModelFromCast]);
 
   /**
@@ -89,6 +93,9 @@ export function useSessionReset() {
     sessionId: number;
     modelId: number | null;
     modelName: string | null;
+    /** Server status truth for the linked model; null when the model row is
+     *  gone (hard-deleted draft) or the session has no cast link. */
+    modelStatus?: string | null;
     masterPrompt: string | null;
     modelImageUrl: string;
     history: string[];
@@ -102,12 +109,18 @@ export function useSessionReset() {
     resetCasting();
     resetCastingForm();
 
-    // Set canvas state based on whether this is a cast or uploaded model.
-    if (session.modelId) {
+    // Set canvas state from STATUS truth (Batch B): a draft resumes as a
+    // draft, legacy 'locked' resumes as minted, and an archived or missing
+    // source model resumes as session imagery only (the model link is
+    // unavailable — never an editable-draft or minted fallback).
+    const sourceAvailable =
+      session.modelId != null && isModelAvailableStatus(session.modelStatus);
+    if (session.modelId && sourceAvailable) {
       loadModelFromCast(
         session.modelId,
         session.modelImageUrl,
         session.masterPrompt || '',
+        isModelMintedStatus(session.modelStatus),
       );
     } else {
       loadModelFromUpload(session.modelImageUrl);
@@ -137,9 +150,16 @@ export function useSessionReset() {
       }
     }
 
-    // Persist to localStorage so refresh works immediately
-    if (session.modelId) {
-      persistSession(session.modelId, 'wardrobe', true);
+    // Persist to localStorage so refresh works immediately — status truth,
+    // and only when the cast link actually resumed. When the link DEGRADED
+    // (archived/deleted/unavailable source), actively CLEAR the persisted
+    // entry (review correction 3): a stale drape_active_session from an
+    // earlier run would otherwise keep pointing at the dead model on every
+    // future mount.
+    if (session.modelId && sourceAvailable) {
+      persistSession(session.modelId, 'wardrobe', isModelMintedStatus(session.modelStatus));
+    } else if (session.modelId) {
+      clearPersistedSession();
     }
   }, [resetWardrobe, resetCasting, loadModelFromCast, loadModelFromUpload]);
 
