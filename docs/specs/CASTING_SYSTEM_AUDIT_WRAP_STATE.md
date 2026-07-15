@@ -63,7 +63,7 @@ Not run (out of wrap scope): `pnpm test:integration`, `scripts/verify-canvas.mts
 
 ## Remaining blockers / cautions for the next terminal
 
-1. The worktree is **uncommitted**. First action in the fresh terminal is a human decision: commit this wrap state as the stabilization baseline (recommended, so the next batch diffs cleanly) or keep working tree-dirty. Nothing here is entangled with the user-owned files — `git add` the 11 batch files + this note explicitly; do NOT blanket-add (`CLAUDE.md`, `.claude/agents/advisor.md`, `.agents/`, `.codex/`, `AGENTS.md` are user-owned; the revised addendum is the founder's plan document).
+1. The worktree is **uncommitted**. First action in the fresh terminal is a human decision: commit this wrap state as the stabilization baseline (recommended, so the next batch diffs cleanly) or keep working tree-dirty. Nothing here is entangled with the user-owned files — `git add` the 11 batch files + this note explicitly; do NOT blanket-add (`CLAUDE.md`, `.claude/agents/advisor.md`, `.agents/`, `.codex/`, `.claude/settings.local.json`, `AGENTS.md` are user-owned/local; the revised addendum is the founder's plan document). *(Resolved: committed as `e16fd9a` + `eb60269`.)*
 2. The stabilization allowlist means side/¾/walk still cannot be edited — now with honest copy. This is known, ruled, and temporary (V1+V14 in the revised plan).
 3. `verify-canvas.mts` drive legs for the eventual repairs (per-view iterate parity, SD13 name-door, count parity) do not exist yet — they belong to the batches that build those behaviors.
 4. Line-ending warnings (LF→CRLF) on several files are environmental noise, not changes.
@@ -75,6 +75,36 @@ Not run (out of wrap scope): `pnpm test:integration`, `scripts/verify-canvas.mts
 - **No migration** was generated or run; no schema files touched.
 - **No deployment** and no production contact of any kind.
 
-## Recommended next action (fresh terminal)
+---
 
-Per `CASTING_SYSTEM_AUDIT_ADDENDUM_REVISED.md` §5: read this note + the live diff, commit the wrap baseline (batch files + this note only), then produce the **conflict report and concrete Batch 0/A/B plan** for founder ratification before changing code — Batch 0 (status-transition authority + security closure) is the first implementation candidate, with V9 explicitly coupled to Batch 0's mint-route closure and V8 as the honesty patch. No canon/propagation implementation until its design gates are ratified.
+# BATCH 0 STATE RECORD (2026-07-15, appended post-implementation + review round)
+
+Batch 0 of `CASTING_SYSTEM_R6_EXECUTION_PLAN.md` is implemented as **uncommitted working-tree changes** on top of commits `e16fd9a` (stabilization baseline) + `eb60269` (docs baseline). The founder's review round (findings 1–9) and the final-items round are both incorporated — including finding 9: **the drafts-only deletion ruling was made and IS IMPLEMENTED** (`models.delete` refuses minted/locked/archived/foreign, result-checked; both UI callers reconciled).
+
+**What Batch 0 closed** (details: `IDENTITY_WRITER_INVENTORY.md`; tests: `server/batch0-authority.test.ts`, **48 behavioral** — the review round's 35 grew to 48 with the final-items matrices; drives: `scripts/drive-batch0-authority.mts` E6–E10, 15 raw-tRPC legs + `scripts/drive-batch0-ui.mts` UI1–UI2, browser):
+
+- Masked edits disabled at both layers (server refuses `maskBase64` pre-money; casting tools removed; the orphaned board surface `ModelEditorOverlay` + `useBoardIteration` deleted).
+- `models.update` is strict name-only (status rejected, not stripped); FR-3(B) minted rename allowed; write-checked. D-55 wording amended in the DECISION_LOG.
+- Legacy `generation.mint` removed; export refuses unminted and routes to the mint door (FR-2A); `generatePdf` requires legal minted status (`active`/`locked`) + agencyId.
+- `executeMintPackage`: internal name guard pre-spend; required name write abort-before-mint; trimmed at boundary.
+- `generation.castingImage` reordered: owner/archived/draft-only checks BEFORE quota + deduction (was: deduct first, throw outside the refund path, no status check — a raw caller could newest-wins swap a minted headshot).
+- Archived = deleted everywhere (`assertNotArchived` at every model-op entry; `getUserModels` query filter; `getItemModelInfo` hides archived sources while preserving the item snapshot).
+- `reconcile` secured: `{ modelId, assetId }` strict (SSRF closed, legacy `imageUrl` rejected), owned-asset check, allowlist-validated server-derived URL, drafts only, write-checked. `compactPrompt`: drafts only, write-checked.
+- Observability: pino warns on every refusal class; the two swallowed mintPackage `.catch(() => {})` paths now log.
+- Deliverables: `IDENTITY_WRITER_INVENTORY.md`, `scripts/audit-model-status.ts` (read-only prod audit; not yet run against production).
+
+**Final-items round (founder, 2026-07-15, all four addressed):**
+1. **Mint-transition invariant:** `executeMintPackage` fails a mint request closed unless the model is a CLEAN draft (no `agencyId`, no `mintedAt`) — before assets/costs/deduction/generation. Upgrades became explicit `mint:false` requests (client + server); nicknames are drafts-only; `minted` reported honestly. Tested per state (active / locked / draft-with-agencyId / draft-with-mintedAt / upgrade path).
+2. **Archived placements degrade visibly:** `getItems` stamps `sourceArchived`; the flag survives the client rebuild; the node face renders the D-12 "Source unavailable" state (browser-verified); `getItemModelInfo` distinguishes archived from unlinked; snapshot data retained; no document/ledger exposure.
+3. **Deletion ruling applied (drafts-only):** `models.delete` refuses minted/locked (PRECONDITION_FAILED), archived (NOT_FOUND), foreign (FORBIDDEN); db-failure is an error; lobby card disables delete on minted casting rows with honest copy (feed carries `draft`); WardrobeStart's delete affordance removed. Cascade/R2/archive design stays R7.
+4. **Verification honesty:** the promised browser-level UI drive now exists and RAN — `scripts/drive-batch0-ui.mts` (UI1 archived-node degrade, UI2 no surgical/eraser in the open environment + refine bar present), both PASS. It caught one real bug before passing: `canvasItems` rebuilt items field-by-field and dropped the `sourceArchived` flag.
+
+**Validation (all green, 2026-07-15, final):** `pnpm check` clean · batch0-authority **48/48** · lobby + casting suites green (283 passed in the combined focused run) · full unit suite **1,672 passed / 50 env-skipped** · drive E6–E10 **15/15** · UI drive **2/2** — all against the local dev server only (free ops; no production contact; no paid generation; the E10 leg proves the credit balance untouched).
+
+**Open items:** staging/commit of the Batch 0 diff (founder-gated); FR-1 policy report (Batch C-prep, next in sequence); R7 deletion/cascade design (incl. dangling placements from hard-deleted source rows — a deleted source does NOT render "Source unavailable" today, unlike an archived one); **PRE-LAUNCH: mint concurrency** — `mintModel` is not concurrency-atomic (read-then-write, no compare-and-swap; simultaneous mints can double-generate/charge and race agency ids) — duplicate-submission protection, operation ids, and CAS minting ride the revised addendum §7 concurrency/idempotency design gate.
+
+## Recommended next action
+
+*(The original wrap-era recommendation — produce the Batch 0/A/B plan for ratification — is superseded: that plan was ratified as `CASTING_SYSTEM_R6_EXECUTION_PLAN.md` and Batch 0 is implemented and verified above.)*
+
+**Now:** stage exactly the 35 Batch 0 paths (per-path `git add`, founder-confirmed manifest) and commit locally as the Batch 0 batch. Then proceed per the execution plan's sequence: **Batch A-safe** next (V9 name door, V8 count honesty, N1 canonical-list fix, V21 naming, + the `useExportPack` trio-map residue), with the **Batch C-prep FR-1 policy report** before any Batch A-coupled implementation. Never stage `.agents/`, `.codex/`, or `.claude/settings.local.json`. No push, no production contact, no paid generation without separate authorization.

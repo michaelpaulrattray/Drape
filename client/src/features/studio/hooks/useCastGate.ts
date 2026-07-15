@@ -67,13 +67,18 @@ export function useCastGate({
         // Trap ruling (a): stayDraft = generate the tier's views, model stays
         // a draft (no mint) — identity iteration stays free. A typed name
         // rides as an OPTIONAL NICKNAME (D-42 honest naming, never a mint).
+        // Batch 0 (mint-transition invariant): UPGRADE is also mint:false —
+        // the model is already minted; only a clean draft may request the
+        // mint transition, and the server fails anything else closed.
         const nickname = stayDraft ? characterName.trim() : '';
         const result = await mintPackageMutation.mutateAsync({
           modelId: currentModelId,
           tier,
           ...(stayDraft
             ? { mint: false as const, ...(nickname ? { characterName: nickname } : {}) }
-            : { characterName }),
+            : upgrade
+              ? { mint: false as const }
+              : { characterName }),
         });
 
         // Land freshly generated views in the studio viewer state

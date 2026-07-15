@@ -13,7 +13,6 @@ import { ModelUploadZone } from './ModelUploadZone';
 import { useLoadWardrobeModel } from '../hooks/useLoadWardrobeModel';
 
 export function WardrobeStart() {
-  const utils = trpc.useUtils();
   const { loadMintedModel } = useLoadWardrobeModel();
 
   const { data: models, isLoading } = trpc.wardrobe.model.listMinted.useQuery(
@@ -22,22 +21,10 @@ export function WardrobeStart() {
   );
 
   const [loadingModelId, setLoadingModelId] = useState<number | null>(null);
-  const [deletingModelId, setDeletingModelId] = useState<number | null>(null);
-
-  const deleteModelMutation = trpc.models.delete.useMutation({
-    onError: (err) => {
-      toast.error(err.message || 'Failed to delete model');
-      setDeletingModelId(null);
-    },
-    onSuccess: () => {
-      toast.success('Model deleted');
-      setDeletingModelId(null);
-    },
-    onSettled: () => {
-      utils.wardrobe.model.listMinted.invalidate();
-      utils.lobby.recentWork.invalidate();
-    },
-  });
+  // Batch 0 deletion ruling: this gallery lists MINTED models, and minted
+  // identities cannot be hard-deleted (server refuses; deletion arrives with
+  // the R7 archive design). The delete affordance is removed rather than
+  // left to fail on click.
 
   const handleSelectModel = useCallback(async (model: MintedModel) => {
     if (loadingModelId) return;
@@ -51,11 +38,6 @@ export function WardrobeStart() {
       setLoadingModelId(null);
     }
   }, [loadingModelId, loadMintedModel]);
-
-  const handleDeleteModel = useCallback((modelId: number) => {
-    setDeletingModelId(modelId);
-    deleteModelMutation.mutate({ modelId });
-  }, [deleteModelMutation]);
 
   // Entrance animation
   const [mounted, setMounted] = useState(false);
@@ -114,8 +96,6 @@ export function WardrobeStart() {
           <ModelGallery
             models={(models as MintedModel[]) ?? []}
             onSelectModel={handleSelectModel}
-            onDeleteModel={handleDeleteModel}
-            deletingModelId={deletingModelId}
           />
         </div>
 

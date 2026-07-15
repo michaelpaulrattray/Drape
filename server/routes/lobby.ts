@@ -29,6 +29,9 @@ type CastFeedRow = {
   thumbnailUrl: string;
   assetCount: number;
   updatedAt: Date;
+  /** Batch 0 (deletion ruling): only drafts are hard-deletable — the card's
+   *  delete affordance keys off this, never off a client guess. */
+  draft: boolean;
 };
 
 export type RecentWorkItem =
@@ -57,6 +60,9 @@ export type RecentWorkItem =
       thumbnailUrl: string;
       assetCount: number;
       updatedAt: Date;
+      /** Only drafts may be deleted (Batch 0 ruling); minted rows disable
+       *  the affordance with honest copy. */
+      draft: boolean;
     };
 
 /**
@@ -107,6 +113,7 @@ export function mergeRecentWork(
       thumbnailUrl: c.thumbnailUrl,
       assetCount: c.assetCount,
       updatedAt: c.updatedAt,
+      draft: c.draft,
     })),
   ];
 
@@ -133,13 +140,14 @@ export const lobbyRouter = router({
       // One casting source: named drafts + minted models (F3). The merge's
       // named-filter drops unnamed candidates; minted are named at mint.
       const casts: CastFeedRow[] = [
-        ...drafts,
+        ...drafts.map((d) => ({ ...d, draft: true })),
         ...minted.map((m) => ({
           id: m.id,
           name: m.name,
           thumbnailUrl: m.thumbnailUrl,
           assetCount: m.assetCount,
           updatedAt: m.updatedAt,
+          draft: false,
         })),
       ];
       return mergeRecentWork(boards, sessions, casts, limit, placedModelIds);

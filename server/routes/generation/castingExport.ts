@@ -1,6 +1,6 @@
 import { publicProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
-  getModelById, getUserGenerations, getUserById, mintModel,
+  getModelById, getUserGenerations, getUserById,
 } from "../../db";
 import { POINT_COSTS } from "../../casting/aiService";
 import {
@@ -12,6 +12,7 @@ import {
   executeRestoreSlotVersion,
 } from "../../casting/mintPackage";
 import { planRefreshSlots, executeRefreshSlots } from "../../casting/refreshSlots";
+import { assertNotArchived } from "../../casting/modelGuards";
 import { CANONICAL_VIEW_ANGLES } from "../../../shared/boardTypes";
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
@@ -55,6 +56,22 @@ export const castingExportRouter = router({
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      // FR-4 first: archived reads as deleted (NOT_FOUND, never a mint hint)
+      assertNotArchived(model);
+      // Batch 0 (FR-2A, review fix 6): the identity document is a minted-
+      // identity artifact. Minted means a LEGAL minted status ('active', or
+      // the legacy 'locked' alias) AND an agencyId — a draft carrying a
+      // stray agencyId is still a draft and is refused. Export never mints
+      // implicitly; the client routes to the mint door.
+      const legallyMinted =
+        (model.status === "active" || model.status === "locked") && !!model.agencyId;
+      if (!legallyMinted) {
+        log.warn({ modelId: input.modelId, status: model.status, hasAgencyId: !!model.agencyId }, "[generatePdf] refused — model not minted");
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Name & mint this model to export the identity pack.",
+        });
       }
 
       // Get user info for owner details
@@ -229,53 +246,12 @@ export const castingExportRouter = router({
       return executeRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
     }),
 
-  // Mint model on export - assigns agencyId and locks identity
-  mint: protectedProcedure
-    .input(z.object({
-      modelId: z.number(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      // Get the model
-      const model = await getModelById(input.modelId);
-      if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-      }
-      if (model.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-      }
-
-      // Check if already minted
-      if (model.agencyId) {
-        return {
-          success: true,
-          agencyId: model.agencyId,
-          alreadyMinted: true,
-        };
-      }
-
-      // Generate unique agency ID (MOD-YY-XXXXXX format)
-      const chars = '0123456789ABCDEF';
-      let hash = '';
-      for (let i = 0; i < 6; i++) {
-        hash += chars[Math.floor(Math.random() * 16)];
-      }
-      const agencyId = `MOD-${new Date().getFullYear().toString().slice(-2)}-${hash}`;
-
-      // Mint the model
-      const result = await mintModel(input.modelId, agencyId);
-      if (!result.success) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: result.error || "Failed to mint model",
-        });
-      }
-
-      log.info(`[Mint] Model ${input.modelId} minted with agencyId: ${agencyId}`);
-
-      return {
-        success: true,
-        agencyId,
-        alreadyMinted: false,
-      };
-    }),
+  // NOTE (Batch 0, R6 execution plan / FR-2): the legacy `mint` procedure
+  // was REMOVED here. It minted namelessly (no name guard, random agencyId)
+  // and was fired implicitly by the export flows — a live bypass of the
+  // D-55 ceremony (nameless mint refused) and the B0.2 blocker. Minting now
+  // happens ONLY through `mintPackage` (mint: true), which requires a name
+  // at the router AND inside executeMintPackage. Export refuses unminted
+  // models and routes to the mint door; it never mints implicitly.
+  // Do not reintroduce a mint path outside the ceremony.
 });

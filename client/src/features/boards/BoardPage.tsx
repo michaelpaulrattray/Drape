@@ -1737,6 +1737,9 @@ function BoardPageImpl() {
               }
             : (item.metadata as Record<string, unknown> | null),
           sourceModelId: item.sourceModelId,
+          // FR-4 (Batch 0): archived-source placements degrade to the D-12
+          // "Source unavailable" render — the flag must survive this rebuild
+          sourceArchived: item.sourceArchived === true,
         };
       });
     // Pending forks overlay the cache (bug-3 fix) — refetches can't clobber

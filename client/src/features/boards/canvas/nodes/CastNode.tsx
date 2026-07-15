@@ -25,6 +25,7 @@ import { CanvasNodeShell } from "../CanvasNodeShell";
 import { NodeLabelRow } from "../NodeLabelRow";
 import { ConnectionDot } from "../ConnectionDot";
 import { CastImageArea } from "../CastImageArea";
+import { ImageFallback } from "../ImageFallback";
 import { type ControlSegment } from "../NodeControlStrip";
 import { NodeStatusBadge } from "../NodeStatusBadge";
 import { NodeFloatingToolbar, type NodeToolbarAction } from "../NodeFloatingToolbar";
@@ -51,6 +52,9 @@ export interface CastNodeData extends Record<string, unknown> {
   status?: NodeStatus | null;
   pinned?: boolean;
   version: number;
+  /** Batch 0 (FR-4): source model archived — the node face degrades to the
+   *  D-12 "Source unavailable" state; stored snapshot data is retained. */
+  sourceArchived?: boolean;
   /** VC-R6b bug 4: rename commits through the host (boardOps label update) */
   onRename?: (itemId: number, label: string) => void;
 }
@@ -115,12 +119,15 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
         detail: { itemId: data.itemId, modelId, draft: isDraft, openUpgrade, initialAngle },
       }),
     );
-  const hasEdit = Boolean(modelReady && data.imageUrl);
+  // FR-4 (Batch 0): an archived source has no environment to open and no
+  // package to observe — the node is a historical snapshot only
+  const sourceArchived = data.sourceArchived === true;
+  const hasEdit = Boolean(modelReady && data.imageUrl && !sourceArchived);
 
   // ── R5: the comp card (DS §5.17) — the model's package rendered on the
   // root; tile popover is the ONE per-view surface (D-29 restraint) ─────────
   const sheet = useSheetController(data, {
-    enabled: modelReady && !isView && !!data.imageUrl,
+    enabled: modelReady && !isView && !!data.imageUrl && !sourceArchived,
   });
   const tileAnchorRef = useRef<HTMLElement | null>(null);
   useRegisterCanvasLayer(`sheet-tile-${data.itemId}`, sheet.popoverAngle !== null);
@@ -502,7 +509,15 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
               : undefined
           }
         >
-          {showSheet ? (
+          {sourceArchived ? (
+            // FR-4 / D-12: the source model is archived (deleted). The node
+            // face says so explicitly — never a normal-looking image whose
+            // source no longer exists. Stored snapshot data survives on the
+            // item row (label, metadata) as historical evidence.
+            <div className="w-full" style={{ aspectRatio: "3 / 4" }}>
+              <ImageFallback label="Source unavailable" />
+            </div>
+          ) : showSheet ? (
             // The comp card substitutes ONLY the completed image state —
             // empty/generating/error/draft paths keep §5.12 untouched. The
             // grid is 3:4 overall, so node geometry never shifts (D-31).

@@ -398,17 +398,22 @@ export function useCastingGeneration({
           fetchSuggestions(updatedPrompt, result.imageUrl);
         }
         
-        // Fire-and-forget: reconcile schema with actual image (matches SOT)
-        // The image model may deviate from the text prompt — reconcile corrects the schema
-        reconcileMutation.mutateAsync({
-          modelId: currentModelId,
-          imageUrl: result.imageUrl,
-        }).then((reconciled) => {
-          if (reconciled.schema) setCurrentTechnicalSchema(reconciled.schema);
-          if (reconciled.description) setCurrentMasterPrompt(reconciled.description);
-        }).catch(() => {
-          // Silent fail — stale spec is better than crashing
-        });
+        // Fire-and-forget: reconcile schema with the image that just changed.
+        // Batch 0 (R6 plan): the client sends the new asset's ID — the server
+        // derives the stored URL from its own ledger (no client URL crosses
+        // the boundary) — and refuses non-drafts (a minted identity document
+        // is sealed; the catch below is the expected quiet path there).
+        if (result.assetId) {
+          reconcileMutation.mutateAsync({
+            modelId: currentModelId,
+            assetId: result.assetId,
+          }).then((reconciled) => {
+            if (reconciled.schema) setCurrentTechnicalSchema(reconciled.schema);
+            if (reconciled.description) setCurrentMasterPrompt(reconciled.description);
+          }).catch(() => {
+            // Silent fail — stale spec is better than crashing
+          });
+        }
         
         // Auto-compact after 5+ amendments (matches SOT threshold)
         if (amendments.length + 1 >= 5 && (amendments.length + 1) % 5 === 0) {

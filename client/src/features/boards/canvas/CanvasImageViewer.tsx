@@ -4,8 +4,9 @@
  * No refine, no surgical, no editing affordances; editing lives in the
  * casting environment via Edit, inside the D-11 ceremony.
  *
- * Replaces ModelEditorOverlay as the double-click surface (that component
- * was a D-25 violation living on borrowed time; R7 sweeps the file).
+ * Replaced ModelEditorOverlay as the double-click surface (that component
+ * was a D-25 violation; deleted in Batch 0's masked-edit closure along with
+ * its useBoardIteration bridge — the R7 sweep item, pulled forward).
  * Background kept from the old viewer — founder-flagged as the better
  * canvas color (R6 restyle reference).
  */

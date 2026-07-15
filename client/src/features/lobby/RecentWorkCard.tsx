@@ -223,18 +223,32 @@ export function RecentWorkCard({
                     <div style={{ height: 1, background: 'rgba(0,0,0,0.06)', margin: '2px 0' }} />
                   </>
                 )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuOpen(false);
-                    onDelete(item);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left"
-                  style={{ fontSize: 13, color: '#dc2626' }}
-                >
-                  <Trash2 className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />
-                  Delete
-                </button>
+                {item.tool === 'casting' && !item.draft ? (
+                  /* Batch 0 deletion ruling: minted identities cannot be
+                     hard-deleted (server refuses); the affordance says so
+                     honestly instead of failing on click. */
+                  <div
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left cursor-default"
+                    style={{ fontSize: 13, color: '#71716A' }}
+                    title="Minted identities can't be deleted yet — deletion arrives with archiving."
+                  >
+                    <Trash2 className="w-3.5 h-3.5" style={{ color: '#B4B4AC' }} />
+                    Minted — can't delete
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      onDelete(item);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left"
+                    style={{ fontSize: 13, color: '#dc2626' }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />
+                    Delete
+                  </button>
+                )}
               </div>
             </>
           )}

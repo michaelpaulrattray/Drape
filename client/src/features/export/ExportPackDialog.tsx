@@ -12,7 +12,6 @@ import { useExportPack, type ExportStep } from "./useExportPack";
 
 const STEP_COPY: Record<ExportStep, string | null> = {
   idle: null,
-  minting: "Minting…",
   upscaling: "Upscaling views to 2K…",
   "generating-pdf": "Building the identity document…",
   compressing: "Compressing the pack…",

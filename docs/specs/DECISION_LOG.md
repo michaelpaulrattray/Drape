@@ -479,6 +479,8 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Affects:** D-46 rider 1 (reversed, knowingly); `executeMintPackage` (+`mint` flag), `generation.mintPackage` input (name optional when staying draft), `CastModelModal` (stays-draft path in mint mode), `useCastGate` (stayDraft threading, no isMinted flip, stays in session). Drive invariant **Y** (paid): the full walkable loop incl. Y5 — after mint the same edit is refused. D-43 untouched: mint remains the immutability moment.
 
+> **FR-3 amendment (founder, 2026-07-15, R6 execution plan):** naming is **required by the mint ceremony** — a nameless mint stays refused — but the display label is **not permanently frozen** after mint. A minted model may be renamed as display metadata; renaming never alters visual identity, and `agencyId` remains the stable identity key. "Naming-as-identity" refers to the ceremony (identity becomes real under a name), not to label immutability.
+
 **Popped-view toolbar slimming ruled YES alongside** (Return to sheet · Download · Delete · Info; Edit reserved for the root) — shipped with the C6 consolidation.
 
 ### R7 additions (hardening list, founder driving notes 2026-07-13)

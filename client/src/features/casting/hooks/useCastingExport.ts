@@ -19,7 +19,7 @@ export function useCastingExport({
   setGenState,
   setShowExportModal,
 }: UseCastingExportParams) {
-  const mintMutation = trpc.generation.mint.useMutation();
+  const utils = trpc.useUtils();
   const generatePdfMutation = trpc.generation.generatePdf.useMutation();
   const upscaleMutation = trpc.generation.upscale.useMutation();
   const proxyImageMutation = trpc.generation.proxyImage.useMutation();
@@ -36,14 +36,20 @@ export function useCastingExport({
     }
 
     setShowExportModal(false);
-    setGenState({ isGenerating: true, currentStep: `Minting Model Identity...`, error: null, progress: 0, startTime: Date.now(), estimatedDuration: 5000 });
+    setGenState({ isGenerating: true, currentStep: `Preparing Export...`, error: null, progress: 0, startTime: Date.now(), estimatedDuration: 5000 });
 
     try {
-      const mintResult = await mintMutation.mutateAsync({ modelId: currentModelId });
-      const exportId = mintResult.agencyId;
-      
+      // FR-2(A), Batch 0: export NEVER mints. Server truth decides minted
+      // state; a draft is refused here and routed to the mint door (the
+      // tier dialog) instead of being silently minted mid-export.
+      const model = await utils.models.get.fetch({ modelId: currentModelId });
+      const exportId = model?.agencyId;
+
       if (!exportId) {
-        throw new Error('Failed to mint model - no agencyId returned');
+        setGenState({ isGenerating: false, currentStep: '', error: null });
+        toast('Name & mint this model to export the identity pack — opening the mint step.');
+        window.dispatchEvent(new CustomEvent('casting-open-mint'));
+        return;
       }
 
       setGenState({ isGenerating: true, currentStep: `Processing Export Pack (${exportRes})...`, error: null, progress: 30, startTime: genState.startTime, estimatedDuration: 20000 });

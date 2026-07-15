@@ -33,6 +33,7 @@ import {
   addCredits,
 } from "../db";
 import { generateFullBody, generateRemainingViews, CREDIT_COSTS } from "./aiService";
+import { assertNotArchived } from "./modelGuards";
 import { buildIdentityAnchor } from "./geminiClient";
 import { isGatedAngle, verifyViewIdentity } from "./backViewGate";
 import {
@@ -71,6 +72,7 @@ export async function planMintPackage(input: { userId: number; modelId: number }
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
   const existing = assets.filter((a) => a.storageUrl).map((a) => a.viewType);
   return {
@@ -175,7 +177,12 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
     return { ok: true, angle, imageUrl: result.imageUrl, assetId: created.assetId ?? null };
   } catch (error) {
     const reason = error instanceof Error ? error.message : "Generation failed";
-    await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: reason, completedAt: new Date() }).catch(() => {});
+    await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: reason, completedAt: new Date() }).catch((genUpdateError) => {
+      log.error(
+        { modelId: ctx.modelId, angle, err: genUpdateError instanceof Error ? genUpdateError.message : String(genUpdateError) },
+        "[PackageSlot] failed to record generation failure — audit trail gap",
+      );
+    });
     // Named-and-refunded: this slot's cost goes back; the batch proceeds
     const refund = slotCost(angle);
     await addCredits(ctx.userId, refund, "refund", `${ctx.reasonLabel}: ${VIEW_ANGLE_LABELS[angle]} failed (refund)`);
@@ -196,16 +203,54 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
         engine: "identity-gate",
         ...(ctx.mintTier ? { mintTier: ctx.mintTier } : { source: "refresh" }),
       },
-    }).catch(() => {});
+    }).catch((markerError) => {
+      // Batch 0 (D-46 R7 log item 1): a swallowed marker failure meant the
+      // slot failure surfaced nowhere durable — log it, never hide it
+      log.error(
+        { modelId: ctx.modelId, angle, err: markerError instanceof Error ? markerError.message : String(markerError) },
+        "[PackageSlot] failed-slot marker insert FAILED — failure will not survive takeover close",
+      );
+    });
     log.warn({ modelId: ctx.modelId, angle, reason }, "[PackageSlot] slot failed — refunded");
     return { ok: false, angle, label: VIEW_ANGLE_LABELS[angle], reason, refunded: refund };
   }
 }
 
 export async function executeMintPackage(input: MintPackageInput) {
+  // Batch 0 defense in depth: the router refuses nameless mints, but this is
+  // the state machine's own boundary — no caller may mint without a name,
+  // and the check runs BEFORE any slot generation spends credits.
+  if (input.mint !== false && !input.characterName?.trim()) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "A name is required to mint" });
+  }
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
+
+  // MINT-TRANSITION INVARIANT (Batch 0, review item 1): the only legal
+  // transition through this boundary is a CLEAN draft → active. Adding
+  // views to an already-minted model is a mint:false request (the client's
+  // upgrade path) and never touches name or status. Anything else asking to
+  // mint — an active/locked model, or an inconsistent row (a draft carrying
+  // agencyId/mintedAt) — fails CLOSED before assets are read, costs are
+  // computed, credits are deducted, or anything generates.
+  if (input.mint !== false) {
+    const cleanDraft = model.status === "draft" && !model.agencyId && !model.mintedAt;
+    if (!cleanDraft) {
+      log.warn(
+        { modelId: input.modelId, status: model.status, hasAgencyId: !!model.agencyId, hasMintedAt: !!model.mintedAt },
+        "[MintPackage] mint transition refused — not a clean draft",
+      );
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message:
+          model.status === "draft"
+            ? "This model's mint state is inconsistent — it can't be minted as-is."
+            : "Already minted — add views without re-minting.",
+      });
+    }
+  }
 
   const assets = await getModelAssets(input.modelId);
   const headshot = assets.find((a) => a.viewType === "frontClose" && a.storageUrl);
@@ -250,18 +295,39 @@ export async function executeMintPackage(input: MintPackageInput) {
   // the picker/board) — it never mints; naming-as-identity stays fused to
   // the mint moment.
   if (input.mint === false) {
-    if (input.characterName?.trim()) {
-      await updateModel(input.modelId, { name: input.characterName.trim() });
+    // Nicknames are a DRAFT affordance (D-42/D-55). A minted model reaching
+    // here is the upgrade path — its name never changes through this door
+    // (renames are models.update, FR-3(B)).
+    if (input.characterName?.trim() && model.status === "draft") {
+      // Optional nickname (best-effort): the paid slot generations above are
+      // the operation's outcome; a failed nickname write must not fail them,
+      // but it must never be silent either
+      const nicknamed = await updateModel(input.modelId, { name: input.characterName.trim() });
+      if (!nicknamed.success) {
+        log.error({ modelId: input.modelId }, "[MintPackage] stays-draft nickname write failed — name unchanged");
+      }
     }
     log.info(
       { modelId: input.modelId, tier: input.tier, generated: generated.map((g) => g.angle), failed: failed.map((f) => f.angle) },
       "[MintPackage] views added, stays a draft",
     );
-    return { agencyId: model.agencyId ?? null, minted: false, tier: input.tier, generated, failed };
+    // Honest state: on the upgrade path the model IS minted — never report
+    // minted:false for a model that holds an identity
+    return { agencyId: model.agencyId ?? null, minted: !!model.agencyId, tier: input.tier, generated, failed };
   }
 
-  // Name + mint (identity becomes real and immutable, D-43)
-  await updateModel(input.modelId, { name: input.characterName });
+  // Name + mint (identity becomes real and immutable, D-43).
+  // Batch 0 (review fix 2): the name write is REQUIRED — if it fails, abort
+  // BEFORE mintModel so a mint can never succeed name-less. The generated
+  // slots persist on the draft; minting can be retried at no cost.
+  const named = await updateModel(input.modelId, { name: input.characterName.trim() });
+  if (!named.success) {
+    log.error({ modelId: input.modelId }, "[MintPackage] name write failed — mint aborted, model stays a draft");
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Couldn't save the name — nothing was minted. Your views are safe; try minting again.",
+    });
+  }
   let agencyId = model.agencyId;
   if (!agencyId) {
     const chars = "0123456789ABCDEF";
@@ -344,6 +410,7 @@ export async function getPackageState(input: { userId: number; modelId: number }
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
   return { modelId: input.modelId, minted: !!model.agencyId, slots: computePackageSlots(assets) };
 }
@@ -371,6 +438,7 @@ export async function executeSetSlotPinned(input: {
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
   const assetId = newestFilledAssetId(assets, input.angle);
   if (assetId === null) {
@@ -399,6 +467,7 @@ export async function getSlotVersions(input: {
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId); // newest-first
   const filled = assets.filter((a) => a.viewType === input.angle && a.storageUrl);
   return {
@@ -429,6 +498,7 @@ export async function executeRestoreSlotVersion(input: {
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
 
   const assets = await getModelAssets(input.modelId); // newest-first
   const source = assets.find((a) => a.id === input.assetId);

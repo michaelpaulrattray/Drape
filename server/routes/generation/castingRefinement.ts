@@ -18,6 +18,7 @@ import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
 import { classifyEditIdentityImpact, shouldRefuseIteration, selectStaleSiblingHeads } from "../../casting/editClassifier";
+import { assertNotArchived } from "../../casting/modelGuards";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("routes/generation");
 
@@ -32,6 +33,21 @@ export const castingRefinementRouter = router({
       referenceImage: z.string().max(10_000_000).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // MASKED EDITS CLOSED (Batch 0, R6 execution plan): the edit classifier
+      // reads only the feedback text, and masked submissions carry fixed or
+      // arbitrary text that names no mark — so a mask could change a minted
+      // identity (e.g. erase a tattoo) while classifying cosmetic, the exact
+      // ungated-write class D-43 sealed. Refused before any money moves, on
+      // every view and every status. Re-enablement is gated on the unified
+      // classifier/identity-writer boundary (IDENTITY_EDIT_INTERIM_POLICY).
+      if (input.maskBase64) {
+        log.warn({ userId: ctx.user.id, modelId: input.modelId }, "[iterate] masked submission refused (Batch 0 closure)");
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Masked edits are temporarily unavailable — describe the change in words instead.",
+        });
+      }
+
       // Rate limit by user to prevent API abuse
       const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
       if (!rateCheck.allowed) {
@@ -52,6 +68,8 @@ export const castingRefinementRouter = router({
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
+
+      assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
 
       // Get the asset being iterated
       const assets = await getModelAssets(input.modelId);
@@ -397,12 +415,22 @@ export const castingRefinementRouter = router({
     }),
 
   // Visual reconciliation — correct schema/description to match actual image
-  // No credits charged — this is data correction, not generation
+  // No credits charged — this is data correction, not generation.
+  // Batch 0 (B0.3/B0.4, R6 execution plan + review fix 4): this procedure
+  // was an unguarded identity-document writer AND an SSRF hole — it fetched
+  // a CLIENT-SUPPLIED URL server-side and rewrote masterPrompt/
+  // technicalSchema with no status guard (a raw caller could rewrite a
+  // MINTED identity). It now takes an OWNED ASSET ID — the asset the caller
+  // just generated/iterated — and derives the stored URL server-side, so
+  // reconciliation still targets the image that actually changed (a body
+  // iterate reconciles against the body result, not the headshot) while no
+  // client URL ever crosses the boundary. Strict input: the legacy imageUrl
+  // shape is REJECTED, not ignored. Drafts only (D-43).
   reconcile: protectedProcedure
     .input(z.object({
       modelId: z.number(),
-      imageUrl: z.string().url(),
-    }))
+      assetId: z.number().int().positive(),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       // Rate limit free Gemini calls to protect API quota
       const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
@@ -419,9 +447,32 @@ export const castingRefinementRouter = router({
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
+      assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
+      // D-43: a minted identity document changes only through the ceremony
+      if (model.status !== "draft") {
+        log.warn({ modelId: input.modelId }, "[Reconcile] refused — model is not a draft");
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Reconcile applies to drafts — a minted identity document is sealed.",
+        });
+      }
 
-      // Fetch image as base64 server-side (avoids sending large payloads from client)
-      const imgResp = await fetch(input.imageUrl);
+      // Server-derived image: the identified asset must belong to THIS
+      // caller-owned model and carry a stored URL
+      const modelAssets = await getModelAssets(input.modelId);
+      const targetAsset = modelAssets.find((a) => a.id === input.assetId && a.storageUrl);
+      if (!targetAsset) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Asset not found" });
+      }
+      // Defense in depth: the stored URL should always be our own public
+      // bucket, but it still passes the SSRF allowlist before any fetch
+      const urlCheck = validateProxyUrl(targetAsset.storageUrl);
+      if (!urlCheck.valid) {
+        log.warn({ modelId: input.modelId, assetId: input.assetId, reason: urlCheck.reason }, "[Reconcile] stored asset URL failed validation");
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Stored image URL failed validation" });
+      }
+
+      const imgResp = await fetch(targetAsset.storageUrl);
       if (!imgResp.ok) throw new TRPCError({ code: "BAD_REQUEST", message: "Failed to fetch image" });
       const imgBuf = Buffer.from(await imgResp.arrayBuffer());
       const contentType = imgResp.headers.get('content-type') || 'image/png';
@@ -437,10 +488,13 @@ export const castingRefinementRouter = router({
           currentPrompt
         );
 
-        await updateModel(input.modelId, {
+        const written = await updateModel(input.modelId, {
           masterPrompt: description,
           technicalSchema: schema,
         });
+        if (!written.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save reconciled schema" });
+        }
 
         return {
           success: true,
@@ -478,6 +532,16 @@ export const castingRefinementRouter = router({
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
+      assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
+      // Batch 0 (B0.3): compaction is an LLM rewrite of the identity
+      // document — sealed after mint (D-43), same boundary as reconcile
+      if (model.status !== "draft") {
+        log.warn({ modelId: input.modelId }, "[CompactPrompt] refused — model is not a draft");
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Prompt compaction applies to drafts — a minted identity document is sealed.",
+        });
+      }
 
       const currentPrompt = model.masterPrompt || "";
       const currentSchema = model.technicalSchema || {};
@@ -485,9 +549,12 @@ export const castingRefinementRouter = router({
       try {
         const compacted = await compactMasterPrompt(currentPrompt, currentSchema);
 
-        await updateModel(input.modelId, {
+        const written = await updateModel(input.modelId, {
           masterPrompt: compacted,
         });
+        if (!written.success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save compacted prompt" });
+        }
 
         return {
           success: true,

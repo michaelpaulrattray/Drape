@@ -95,6 +95,7 @@ function draftRow(id: number, updatedAt: Date) {
     assetCount: 2,
     createdAt: updatedAt,
     updatedAt,
+    draft: true, // Batch 0 deletion ruling: the feed carries deletability
   };
 }
 
@@ -142,10 +143,14 @@ describe("mergeRecentWork", () => {
     const named = draftRow(9, now);
     // Minted models arrive through the same casting source (F3) — named at
     // mint by construction, they must survive the filter
-    const minted = { id: 10, name: "Vera", thumbnailUrl: "https://example.com/vera.png", assetCount: 4, updatedAt: now };
+    const minted = { id: 10, name: "Vera", thumbnailUrl: "https://example.com/vera.png", assetCount: 4, updatedAt: now, draft: false };
     const result = mergeRecentWork([], [], [unnamed, sentinel, named, minted], 12);
     expect(result).toHaveLength(2);
     expect(result.map((r) => (r.tool === "casting" ? r.modelId : -1)).sort((a, b) => a - b)).toEqual([9, 10]);
+    // Batch 0 deletion ruling: deletability rides the feed row honestly
+    const byId = new Map(result.map((r) => (r.tool === "casting" ? [r.modelId, r.draft] : [-1, false])));
+    expect(byId.get(9)).toBe(true);
+    expect(byId.get(10)).toBe(false);
   });
 
   it("represents canvas-born casts by their BOARD only (Group 6j item 4)", () => {

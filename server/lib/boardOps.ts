@@ -37,6 +37,7 @@ import {
   type ModelPreferences,
 } from "../casting/aiService";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../casting/promptReinforcement";
+import { assertNotArchived } from "../casting/modelGuards";
 import { parseCastingPrompt, mergeParsedPreferences, resolveEngineChoices } from "../casting/promptParser";
 import { enforceDailyQuota } from "../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
@@ -443,6 +444,7 @@ export async function executeFillFromLibrary(input: {
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
 
   // Canonical reference imagery only (D-28 constraint): the frontClose asset.
   const assets = await getModelAssets(input.modelId);
@@ -646,6 +648,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   const model = await getModelById(prov.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
 
   // D-43 (founder-ratified 2026-07-11): minted identities are IMMUTABLE —
   // fork is the sole identity operation on any non-draft model. Keyed off
@@ -833,6 +836,7 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
   const model = await getModelById(prov.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
 
   const rate = checkRateLimit(`user:${input.userId}`, RATE_LIMITS.generation);
   if (!rate.allowed) {
@@ -1004,6 +1008,7 @@ export async function executePopOutView(input: {
   const model = await getModelById(modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
 
   // The angle's CURRENT image — newest filled row (the read model's rule)
   const assets = await getModelAssets(modelId);

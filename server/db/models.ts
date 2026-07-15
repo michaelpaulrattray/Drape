@@ -2,7 +2,7 @@
  * Models Domain — model CRUD, minting, and model asset management.
  */
 
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, ne, desc, and, inArray } from "drizzle-orm";
 import {
   models,
   modelAssets,
@@ -71,12 +71,31 @@ export async function getUserModels(userId: number, limit: number = 50) {
   const db = await getDb();
   if (!db) return [];
 
+  // Batch 0 (FR-4): archived is deleted — excluded from every active read
+  // (library list, picker, lobby feeds all flow through here)
   return await db
     .select()
     .from(models)
-    .where(eq(models.userId, userId))
+    .where(and(eq(models.userId, userId), ne(models.status, "archived")))
     .orderBy(desc(models.createdAt))
     .limit(limit);
+}
+
+/**
+ * Batch 0 (FR-4, review item 2): which of these model ids are archived.
+ * Board reads use this to mark placements whose source is deleted-by-archive
+ * so the client renders the D-12 "Source unavailable" state.
+ */
+export async function getArchivedModelIdsIn(modelIds: number[]): Promise<Set<number>> {
+  if (modelIds.length === 0) return new Set();
+  const db = await getDb();
+  if (!db) return new Set();
+
+  const rows = await db
+    .select({ id: models.id })
+    .from(models)
+    .where(and(inArray(models.id, modelIds), eq(models.status, "archived")));
+  return new Set(rows.map((r) => r.id));
 }
 
 export async function updateModel(

@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, useCallback, RefObject } from "react";
-import { ViewTabs, RefinePanel, WarmEmptyState, RotatingSuggestions, ToolButton } from "./components/ImageViewer";
+import { ViewTabs, RefinePanel, WarmEmptyState, RotatingSuggestions } from "./components/ImageViewer";
 import { MaskCanvas } from "./components/ImageViewer/MaskCanvas";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
@@ -323,48 +323,17 @@ export function ImageViewerPanel({
     />
   ) : undefined;
 
-  // ── Side overlay: Tool buttons (hidden in read-only mode) ──
-  const sideOverlay = hasAssets && !isReadOnly ? (
-    <>
-      {/* Tools bar — surgical + eraser */}
-      {!genState.isGenerating && hasAssets && (
-        <div
-          className="absolute top-1/2 -translate-y-1/2 right-4 flex flex-col gap-2 z-30 transition-opacity duration-200"
-          style={{ opacity: imageAreaHovered ? 1 : 0, pointerEvents: imageAreaHovered ? 'auto' : 'none' }}
-        >
-          {/* Stabilization gate (wrap): surgical follows the iterate
-              allowlist until masked edits route through the classifier
-              boundary (V1+V14, revised plan) */}
-          {isIterationAllowed && (
-          <ToolButton
-            active={activeTool === 'surgical'}
-            title="Surgical edit"
-            onClick={() => useCastingUIStore.getState().setActiveTool(activeTool === 'surgical' ? 'none' : 'surgical')}
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>}
-          />
-          )}
-          <ToolButton
-            active={activeTool === 'eraser'}
-            title="Magic eraser"
-            onClick={() => useCastingUIStore.getState().setActiveTool(activeTool === 'eraser' ? 'none' : 'eraser')}
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>}
-          />
-        </div>
-      )}
-    </>
-  ) : undefined;
+  // ── Side overlay: masked tools CLOSED (Batch 0, R6 execution plan) ──
+  // Surgical + eraser are disabled everywhere until masked edits route
+  // through the unified classifier/identity-writer boundary: the eraser's
+  // fixed prompt names no mark, so a masked edit could pass the text
+  // classifier while changing a minted identity. The server refuses
+  // maskBase64 outright; these entry points are removed so the tool state
+  // can never arm. Re-enablement is policy-gated (IDENTITY_EDIT_INTERIM_POLICY).
+  const sideOverlay = undefined;
 
-  // ── Status overlay: active tool pill (lock pill retired — audit V2) ──
-  const statusOverlay = activeTool !== 'none' ? (
-    <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 items-start">
-      <div className="flex items-center gap-1.5 px-2.5 py-[5px] rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border">
-        <div className="w-1.5 h-1.5 rounded-full bg-canvas-ink" />
-        <span className="text-canvas-sm font-medium text-canvas-ink-soft">
-          {activeTool === 'eraser' ? 'Magic eraser' : 'Surgical edit'}
-        </span>
-      </div>
-    </div>
-  ) : undefined;
+  // Tool status pill retired with the tools — activeTool can no longer arm.
+  const statusOverlay = undefined;
 
   // ── Bottom overlay: Contextual tip + Refine panel + Shortcuts + Suggestions ──
   const bottomOverlay = hasAssets ? (

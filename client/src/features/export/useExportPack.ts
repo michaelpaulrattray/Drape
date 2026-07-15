@@ -4,7 +4,8 @@
  * Handles:
  *  - Fetching model data (name, agencyId, mint status, assets, preferences)
  *  - Fetching saved wardrobe looks for the model
- *  - Minting (if not yet minted)
+ *  - Refusing draft export (FR-2A: export never mints — the mint ceremony
+ *    is the only mint path; the UI routes the user to it)
  *  - PDF identity document generation + download
  *  - ZIP pack generation (all views + looks + PDF) + download
  *  - Individual image download (views and looks)
@@ -41,7 +42,6 @@ const VIEW_TO_PDF_KEY: Record<string, string> = {
 
 export type ExportStep =
   | "idle"
-  | "minting"
   | "upscaling"
   | "generating-pdf"
   | "compressing"
@@ -76,7 +76,6 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
   );
 
   // Mutations
-  const mintMutation = trpc.generation.mint.useMutation();
   const generatePdfMutation = trpc.generation.generatePdf.useMutation();
   const upscaleMutation = trpc.generation.upscale.useMutation();
   const proxyImageMutation = trpc.generation.proxyImage.useMutation();
@@ -177,24 +176,16 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     }
   }, [modelId, renameLookMutation, utils]);
 
-  // ── Mint model ─────────────────────────────────────────────
-  const mintModel = useCallback(async () => {
-    if (!modelId) return;
-    setStep("minting");
-    try {
-      await mintMutation.mutateAsync({ modelId });
-      await modelQuery.refetch();
-      toast.success("Model identity minted");
-    } catch (e: any) {
-      toast.error(e.message || "Minting failed");
-    } finally {
-      setStep("idle");
-    }
-  }, [modelId]);
-
   // ── Download PDF only ──────────────────────────────────────
   const downloadPdf = useCallback(async () => {
     if (!modelId) return;
+    // FR-2(A), Batch 0: export never mints. The identity pack is a
+    // minted-identity artifact — a draft is refused with the route to the
+    // mint door (the server refuses too; this is the honest early copy).
+    if (!isMinted) {
+      toast(`Name & mint ${modelName} in casting to export the identity pack.`);
+      return;
+    }
     setStep("generating-pdf");
     setProgress(10);
     try {
@@ -238,11 +229,16 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
       setStep("idle");
       setProgress(0);
     }
-  }, [modelId, assets, modelName, agencyId]);
+  }, [modelId, assets, modelName, agencyId, isMinted]);
 
   // ── Download full ZIP pack ─────────────────────────────────
   const downloadZip = useCallback(async () => {
     if (!modelId || assets.length === 0) return;
+    // FR-2(A): same gate as the PDF — export never mints
+    if (!isMinted) {
+      toast(`Name & mint ${modelName} in casting to export the identity pack.`);
+      return;
+    }
 
     const safeName = modelName.trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, "_");
     const cleanId = (agencyId || "DRAFT").replace(/[^a-zA-Z0-9]/g, "_");
@@ -351,7 +347,7 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
       setStep("idle");
       setProgress(0);
     }
-  }, [modelId, assets, savedLooks, modelName, agencyId]);
+  }, [modelId, assets, savedLooks, modelName, agencyId, isMinted]);
 
   return {
     // Data
@@ -368,7 +364,6 @@ export function useExportPack({ modelId, assets }: UseExportPackParams) {
     progress,
     isExporting: step !== "idle",
     // Actions
-    mintModel,
     downloadImage,
     downloadLookImage,
     downloadPdf,

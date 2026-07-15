@@ -31,6 +31,7 @@ import {
   type SlotGenResult,
 } from "./mintPackage";
 import { VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTypes";
+import { assertNotArchived } from "./modelGuards";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("casting/refreshSlots");
@@ -84,6 +85,7 @@ async function loadModelSlots(input: { userId: number; modelId: number }) {
   const model = await getModelById(input.modelId);
   if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
   return { model, slots: computePackageSlots(assets) };
 }

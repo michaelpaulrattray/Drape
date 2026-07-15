@@ -230,6 +230,19 @@ export function NodeInfoPanel({ itemId, position, onClose }: NodeInfoPanelProps)
                 <InfoRow icon={<Calendar size={13} />} label="Added" value={formatDate(data.item.createdAt)} />
               </Section>
 
+              {/* FR-4: archived source — say so explicitly, never render as
+                  an ordinary unlinked item. The item snapshot above remains
+                  the historical evidence; the model document is not exposed. */}
+              {!data.model && data.sourceArchived && (
+                <Section title="Model">
+                  <InfoRow
+                    icon={<User size={13} />}
+                    label="Source"
+                    value="Unavailable — the linked model was removed"
+                  />
+                </Section>
+              )}
+
               {/* Model info — only if linked */}
               {!!data.model && (
                 <>

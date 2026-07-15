@@ -23,6 +23,7 @@ import {
   deleteBoardItems,
   getModelById,
   getModelAssets,
+  getArchivedModelIdsIn,
   addBoardItemVersion,
   getBoardItemVersions,
   getLatestVersionNumber,
@@ -235,12 +236,24 @@ export const boardsRouter = router({
       return { ids };
     }),
 
-  /** Get all items for a board */
+  /** Get all items for a board. Batch 0 (FR-4, review item 2): items whose
+   *  source model is ARCHIVED carry `sourceArchived: true` so the node
+   *  renders the D-12 "Source unavailable" state — the stored snapshot
+   *  (label/imageUrl/metadata) stays as historical evidence, but the
+   *  placement must not render as if its source still exists. */
   getItems: protectedProcedure
     .input(z.object({ boardId: z.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
-      return getBoardItems(input.boardId);
+      const items = await getBoardItems(input.boardId);
+      const sourceIds = Array.from(
+        new Set(items.map((i) => i.sourceModelId).filter((id): id is number => !!id)),
+      );
+      const archivedIds = await getArchivedModelIdsIn(sourceIds);
+      return items.map((i) => ({
+        ...i,
+        sourceArchived: !!i.sourceModelId && archivedIds.has(i.sourceModelId),
+      }));
     }),
 
   /** Update a single item (label, position, metadata) */
@@ -410,10 +423,18 @@ export const boardsRouter = router({
             createdAt: item.createdAt,
           },
           model: null,
+          sourceArchived: false,
         };
       }
 
-      const model = await getModelById(item.sourceModelId);
+      const sourceModel = await getModelById(item.sourceModelId);
+      // Batch 0 (FR-4, review fix 7 + item 2): an ARCHIVED source model is
+      // deleted — the item's stored snapshot (label/imageUrl/metadata) is
+      // preserved, but the model document and asset ledger are not exposed.
+      // `sourceArchived` lets the client say "Source unavailable" explicitly
+      // instead of conflating this with an ordinary unlinked item.
+      const sourceArchived = !!sourceModel && sourceModel.status === "archived";
+      const model = sourceModel && !sourceArchived ? sourceModel : null;
       const assets = model ? await getModelAssets(item.sourceModelId) : [];
 
       return {
@@ -437,6 +458,7 @@ export const boardsRouter = router({
               createdAt: model.createdAt,
             }
           : null,
+        sourceArchived,
         assetCount: assets.length,
         latestAssetId: assets.length > 0 ? assets[0].id : null,
       };
