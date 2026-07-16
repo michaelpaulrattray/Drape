@@ -9,6 +9,7 @@ import {
   type EditTool,
   type Amendment,
 } from "@/features/casting/constants";
+import { buildCreationPreferences } from "@/features/casting/creationPayload";
 import type { CastingBindings } from "./castingBindings";
 
 interface UseCastingGenerationParams {
@@ -228,43 +229,11 @@ export function useCastingGeneration({
     }
 
     try {
-      const backendPrefs = {
-        gender: prefs.gender,
-        age: prefs.age,
-        ethnicity: prefs.ethnicity,
-        bodyType: prefs.bodyType,
-        faceShape: prefs.faceShape,
-        jawline: prefs.jawline,
-        cheekbones: prefs.cheekbones,
-        cheeks: prefs.cheeks,
-        eyeShape: prefs.eyeShape,
-        noseShape: prefs.noseShape,
-        lipShape: prefs.lipShape,
-        eyebrowStyle: prefs.eyebrowStyle,
-        skinTone: prefs.skinTone,
-        skinTexture: prefs.skinTexture,
-        skinFinish: prefs.skinFinish,
-        eyeColor: prefs.eyeColor,
-        hairStyle: prefs.hairStyle,
-        hairColor: prefs.hairColor,
-        hairLength: prefs.hairLength,
-        hairTexture: prefs.hairTexture,
-        hairFringe: prefs.hairFringe,
-        hairParting: prefs.hairParting,
-        hairVolume: prefs.hairVolume,
-        hairFlyaways: prefs.hairFlyaways,
-        hairHairline: prefs.hairHairline,
-        hairTuck: prefs.hairTuck,
-        hairFade: prefs.hairFade,
-        facialHair: prefs.facialHair,
-        castingBrand: resolvedBrand,
-        castingVibe: prefs.castingVibe,
-        features: prefs.features,
-        referenceImage: prefs.referenceImage,
-        userPrompt: prefs.userPrompt,
-        ethnicityBlend: prefs.ethnicityBlend,
-      };
-      
+      // Batch C (§10.3): the creation payload is built by a pure helper that
+      // can never carry `referenceImage` — the strict server schema rejects
+      // the key, and superjson would otherwise round-trip even undefined.
+      const backendPrefs = buildCreationPreferences(prefs, resolvedBrand);
+
       console.log('[CastingStudio] Sending preferences to backend:', JSON.stringify(backendPrefs, null, 2));
 
       setGenState((prev) => ({ ...prev, currentStep: "Generating casting specification...", progress: 20 }));

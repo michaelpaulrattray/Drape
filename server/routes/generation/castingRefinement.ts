@@ -13,6 +13,7 @@ import { withAtomicCredits, recordRefund, refundTruth } from "../../casting/atom
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { iterateInputSchema } from "./iterateInput";
 import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
@@ -33,14 +34,10 @@ const log = createModuleLogger("routes/generation");
 
 export const castingRefinementRouter = router({
   // Iterate/refine a model image
+  // Wire schema lives in iterateInput.ts (dependency-light so the contract
+  // tests import the REAL schema, not a copy)
   iterate: protectedProcedure
-    .input(z.object({
-      modelId: z.number(),
-      feedback: z.string().min(1),
-      assetId: z.number(),
-      maskBase64: z.string().max(10_000_000).optional(),
-      referenceImage: z.string().max(10_000_000).optional(),
-    }))
+    .input(iterateInputSchema)
     .mutation(async ({ ctx, input }) => {
       // MASKED EDITS CLOSED (Batch 0, R6 execution plan): the edit classifier
       // reads only the feedback text, and masked submissions carry fixed or

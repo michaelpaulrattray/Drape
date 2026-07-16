@@ -4,6 +4,7 @@ import {
   getModelAssets,
 } from "../db";
 import { generateMasterPrompt, ModelPreferences } from "../casting/aiService";
+import { modelCreateInputSchema } from "./modelCreateInput";
 import { validateCreationIntent } from "../casting/identity/creationIntake";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
@@ -13,71 +14,10 @@ const log = createModuleLogger("routes/models");
 
 export const modelsRouter = router({
   // Create a new AI model from preferences
-  // Schema matches geminiService.ts ModelPreferences interface exactly
+  // Strict wire schema lives in modelCreateInput.ts (dependency-light so the
+  // client/server contract tests import the REAL schema, not a copy)
   create: protectedProcedure
-    .input(z.object({
-      preferences: z.object({
-        // Demographics
-        gender: z.string().optional(),
-        age: z.union([z.number(), z.string()]).optional(),
-        ethnicity: z.string().optional(),
-        ethnicityBlend: z.array(z.object({
-          name: z.string(),
-          pct: z.number(),
-        })).optional(),
-        bodyType: z.string().optional(),
-        
-        // Face structure
-        faceShape: z.string().optional(),
-        jawline: z.string().optional(),
-        cheekbones: z.string().optional(),
-        cheeks: z.string().optional(),
-        eyeShape: z.string().optional(),
-        noseShape: z.string().optional(),
-        lipShape: z.string().optional(),
-        eyebrowStyle: z.string().optional(),
-        
-        // Skin
-        skinTone: z.string().optional(),
-        skinTexture: z.string().optional(),
-        skinFinish: z.string().optional(),
-        
-        // Eyes
-        eyeColor: z.string().optional(),
-        
-        // Hair - complete builder
-        hairStyle: z.string().optional(),
-        hairColor: z.string().optional(),
-        hairLength: z.string().optional(),
-        hairTexture: z.string().optional(),
-        hairFringe: z.string().optional(),
-        hairParting: z.string().optional(),
-        hairVolume: z.string().optional(),
-        hairFlyaways: z.string().optional(),
-        hairHairline: z.string().optional(),
-        hairTuck: z.string().optional(),
-        hairFade: z.string().optional(),
-        facialHair: z.string().optional(),
-        
-        // Brand & Vibe
-        castingBrand: z.string().optional(),
-        castingVibe: z.object({
-          editorial: z.number(),
-          commercial: z.number(),
-          runway: z.number(),
-        }).optional(),
-        
-        // Additional
-        features: z.string().optional(),
-        userPrompt: z.string().optional(),
-        // Batch C (§10.3, M22): `referenceImage` is GONE and the object is
-        // STRICT — a creation reference is schema-REJECTED, never silently
-        // ignored. References join after the first headshot, through the
-        // guarded iteration path. (`previousMasterPrompt` was an unused
-        // creation channel and is likewise rejected.)
-      }).strict(),
-      name: z.string().optional(),
-    }))
+    .input(modelCreateInputSchema)
     .mutation(async ({ ctx, input }) => {
       // Debug: Log received preferences
       log.info({ preferences: input.preferences }, '[models.create] Received preferences');
