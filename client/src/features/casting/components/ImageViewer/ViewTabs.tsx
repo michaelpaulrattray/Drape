@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
+import { refundOutcomeText } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
@@ -106,17 +107,25 @@ function GhostSlot({ label, onClick }: { label: string; onClick: () => void }) {
 }
 
 // ============ FailedSlot (D-40; hue per R6 ruling R-1) ============
-// A slot whose generation failed the identity gate — named + refunded, and
-// retryable. Distinct from an empty ghost: the user was told, not charged.
-// Failure wears the destructive-red glyph (§2.1.3) — the board's failed tile
-// and this slot agree on what failure looks like; no third hue.
+// A slot whose generation failed the identity gate — named, retryable, and
+// HONEST about the money (Batch C final correction 1): the refund line
+// derives from what the ledger actually recorded, never an unconditional
+// "you weren't charged". Failure wears the destructive-red glyph (§2.1.3).
 
-function FailedSlot({ label, reason, onRetry }: { label: string; reason: string; onRetry: () => void }) {
+function FailedSlot({
+  label,
+  failure,
+  onRetry,
+}: {
+  label: string;
+  failure: { reason: string; refunded: number; refundReference?: string };
+  onRetry: () => void;
+}) {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onRetry(); }}
       className="flex flex-col items-center justify-center gap-1 transition-colors duration-200 rounded-canvas-md bg-canvas-surface-inset hover:bg-canvas-surface text-canvas-ink-soft"
-      title={`${label} didn't pass the identity check — ${reason}. You weren't charged. Click to try again.`}
+      title={`${label} didn't pass the identity check — ${failure.reason}. ${refundOutcomeText(failure)} Click to try again.`}
       style={{
         width: 72,
         height: 90,
@@ -174,7 +183,7 @@ export function ViewTabs() {
   const failedByAngle = new Map(
     (packageQuery.data?.slots ?? [])
       .filter((s) => s.failed)
-      .map((s) => [s.angle as ViewType, s.failed!.reason]),
+      .map((s) => [s.angle as ViewType, s.failed!]),
   );
   // F5: stale = a sibling out of sync with a recent divergent edit (F6 writer),
   // not pinned. Same rule the board mosaic uses.
@@ -213,7 +222,7 @@ export function ViewTabs() {
               isStale={staleAngles.has(vt)}
             />
           ) : failedByAngle.has(vt) ? (
-            <FailedSlot key={vt} label={label} reason={failedByAngle.get(vt)!} onRetry={openPackage} />
+            <FailedSlot key={vt} label={label} failure={failedByAngle.get(vt)!} onRetry={openPackage} />
           ) : (
             <GhostSlot key={vt} label={label} onClick={openPackage} />
           ),

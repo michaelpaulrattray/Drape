@@ -11,6 +11,8 @@
  * - Deprecated aliases preserved until Phase 1b removes callers
  */
 
+import { markPromptStateFor } from "./identity/marksVocabulary";
+
 // ============================================================================
 // BRAND NAME
 // ============================================================================
@@ -251,8 +253,22 @@ export const hasBodyArt = (text: string): boolean => {
     /\bcalligraphy tattoo\b/.test(t);
 };
 
+/**
+ * Three-state prompt-rule selection (Batch C, IDENTITY_EDIT_INTERIM_POLICY
+ * §13.10, founder-ratified): the rule is chosen by the SHARED categorized
+ * marks vocabulary, never the legacy ink-only detector alone —
+ *  - ink            ⇒ the tattoo-persistence rule;
+ *  - non-ink mark   ⇒ NEITHER rule: no persistence promise, and never the
+ *                     clean-skin rule that would erase a freckled/scarred/
+ *                     pierced document (M14 pinned the old disagreement);
+ *  - mark-free      ⇒ the clean-skin rule.
+ * Per-category mark persistence remains Batch D/R7.
+ */
 export const getStudioSettings = (context: string) => {
-  return `${BASE_STUDIO_SETTINGS}\n${hasBodyArt(context) ? TATTOO_PERSISTENCE_RULE : CLEAN_SKIN_RULE}`;
+  const state = markPromptStateFor(context);
+  if (state === "ink") return `${BASE_STUDIO_SETTINGS}\n${TATTOO_PERSISTENCE_RULE}`;
+  if (state === "nonInkMark") return BASE_STUDIO_SETTINGS;
+  return `${BASE_STUDIO_SETTINGS}\n${CLEAN_SKIN_RULE}`;
 };
 
 // ============================================================================

@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { slotFailureMessage } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useStudioStore } from '../stores/useStudioStore';
 import type { GeneratedAsset } from '@/features/casting/constants';
@@ -113,15 +114,14 @@ export function useCastGate({
           ...(result.minted ? { castModelId: currentModelId } : {}),
         });
 
-        // Named-and-refunded slot failures surface honestly (D-39/D-40). A
-        // long duration: the takeover may be closing under this toast, and a
-        // fleeting notice is what made the failure feel silent at VC-R3b. The
-        // failed slot also renders retryable in the view strip (durable).
+        // Slot failures surface honestly (D-39/D-40 + Batch C final
+        // correction 1): the sentence derives from the ledger's actual
+        // outcome — refunded amount, a support reference when the refund
+        // could not be recorded, and no "Retry marker" promise when the
+        // durable marker itself failed to persist (correction 6). A long
+        // duration: the takeover may be closing under this toast.
         for (const f of result.failed) {
-          toast.error(
-            `${f.label} view couldn't match this identity — ${f.refunded} credits refunded, nothing charged. It's marked "Retry" in the package.`,
-            { duration: 9000 }
-          );
+          toast.error(slotFailureMessage(f), { duration: 9000 });
         }
 
         setShowCastModal(false);
@@ -139,6 +139,15 @@ export function useCastGate({
             // loop must not dead-end at a close that drops it
             onStayDraft?.(currentModelId, nickname);
           }
+        } else if (!result.minted) {
+          // §14/R8 (Batch C): a slot failed during the mint's generation —
+          // the successful views persisted on the draft, the failure was
+          // refunded (toasted above), and the MINT TRANSITION aborted.
+          // Retrying with the slots filled charges nothing (M20).
+          toast.error(
+            'Minting paused — a view needs a retry first. Your generated views are safe; retrying the mint with all views filled is free.',
+            { duration: 9000 }
+          );
         } else {
           // D-40: the node landing on the board IS the feedback — no
           // "has been cast!" toast (a legacy survivor Fable caught at VC-R3b).
@@ -185,6 +194,9 @@ export function useCastGate({
     isMinted,
     castingMessage,
     tierPlan: planQuery.data?.tiers,
+    /** §14 (R8, Batch C): per-tier mint-integrity prediction — the dialog
+     *  renders each failing check's own copy before anyone spends. */
+    mintIntegrity: planQuery.data?.integrity,
     handleCastAndContinue,
   };
 }

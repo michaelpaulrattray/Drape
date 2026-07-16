@@ -141,6 +141,7 @@ export default function DrapeStudio() {
     isCasting,
     castingMessage,
     tierPlan,
+    mintIntegrity,
     handleCastAndContinue,
   } = useCastGate({
     currentModelId,
@@ -275,6 +276,7 @@ export default function DrapeStudio() {
         onClose={() => setShowCastModal(false)}
         onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, false, stayDraft)}
         tiers={tierPlan}
+        integrity={mintIntegrity}
         isCasting={isCasting}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}

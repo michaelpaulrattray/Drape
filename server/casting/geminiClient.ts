@@ -172,17 +172,25 @@ export const withSingleRetry503 = async <T>(
 // ERROR FORMATTING
 // ============================================================================
 
+/**
+ * Map a provider error to a SAFE user-facing sentence. Every branch returns
+ * fixed wording — raw provider text (which can carry request payloads, URLs,
+ * or key details) never passes through (final review correction: error
+ * sanitization). Callers log the complete original error server-side.
+ */
 export const formatGeminiError = (e: any): string => {
   const msg = e.message || e.toString();
 
   if (msg.includes('429')) return "RATE_LIMIT:Rate limit exceeded. The engine is shared — please wait before retrying.";
-  if (msg.includes('403') || msg.includes('API key')) return "Authentication failed. Please verify your API Key billing status.";
-  if (msg.includes('400')) return `Invalid request (400): ${msg.length > 120 ? msg.slice(0, 120) + '...' : msg}`;
+  // Customers never provide or manage the server's Gemini key — an auth
+  // failure is OUR outage, never something the user can fix.
+  if (msg.includes('403') || msg.includes('API key')) return "The generation service is temporarily unavailable. Please try again later.";
+  if (msg.includes('400')) return "The engine rejected this request. Adjust the instruction and try again.";
   if (msg.includes('500') || msg.includes('503')) return "Engine offline. The servers are experiencing downtime.";
   if (msg.includes('SAFETY') || msg.includes('blocked')) return "Safety protocols triggered. The request was flagged by content filters.";
   if (msg.includes('timed out')) return "Request timed out. Please try again.";
 
-  return msg;
+  return "Generation failed unexpectedly. Please try again.";
 };
 
 // ============================================================================

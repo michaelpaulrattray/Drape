@@ -1,21 +1,46 @@
 /**
- * V1+V14 (R6 Batch A-coupled) — the six typed-iteration doors at the router.
+ * The generation.iterate door over the REAL appRouter (Batch C: M1/M3/M15/
+ * M17/M21 router legs + the Batch A-coupled six-door framing regressions).
  *
- * Proves, over the real generation.iterate procedure (appRouter caller, db
- * and Gemini mocked at their module boundaries):
- *  - ALL SIX canonical angles reach ordinary typed iteration — no three-view
- *    allowlist survives anywhere in the request path;
- *  - each angle's request hands the REAL iterateModel call the frame from
- *    the exhaustive canonical map (close trio HEADSHOT, body trio FULL_BODY);
- *  - a non-canonical stored viewType refuses BEFORE any generation record,
- *    deduction, or image call — it never silently defaults to a frame;
- *  - every non-angle gate is preserved: masked refusal (Batch 0), ownership,
- *    archived exclusion (FR-4), the D-43 minted identity seal, and the F6
- *    draft stale-writer (which marks siblings — it does not regenerate them;
- *    typed iteration has no propagation).
+ * db, Gemini, and the authority's LLM seam are mocked at their module
+ * boundaries; everything between the wire and those seams is real: the
+ * shared identity authority, the §8.6 atomic commit, framing, guards.
+ *
+ * Proves:
+ *  - ALL SIX canonical angles reach typed iteration with the exhaustive
+ *    per-angle framing (V1+V14 regression);
+ *  - every refusal class is FREE: no generation record, no deduction, no
+ *    image call, no document write (M1/M2/M16/M20);
+ *  - image-only results are ASSET-ONLY: identity documents byte-unchanged,
+ *    `display` role + current revision stamped, no stale flags (M17);
+ *  - a draft identity edit on the authoritative headshot commits atomically:
+ *    document + new anchor + new revision + stale flags PINNED INCLUDED
+ *    (M1/M21); a commit failure refunds exactly once (M20);
+ *  - masked refusal, ownership, archived exclusion, and the F4 minted seal
+ *    are unchanged (M3 + regressions).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { TrpcContext } from "../_core/context";
+
+const llmScript = vi.hoisted(() => ({
+  classify: '{"kind":"imageOnly","categories":["image.lighting"],"operations":{}}',
+  normalize: '{"edits":[]}',
+  fail: false,
+}));
+const tx = vi.hoisted(() => ({
+  modelUpdates: [] as Array<Record<string, unknown>>,
+  assetInserts: [] as Array<Record<string, unknown>>,
+  staleUpdates: [] as Array<{ values: Record<string, unknown> }>,
+  staleWhereIds: [] as number[][],
+  failInsert: false,
+  reset() {
+    this.modelUpdates = [];
+    this.assetInserts = [];
+    this.staleUpdates = [];
+    this.staleWhereIds = [];
+    this.failInsert = false;
+  },
+}));
 
 vi.mock("../db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../db")>();
@@ -34,7 +59,37 @@ vi.mock("../db", async (importOriginal) => {
 });
 vi.mock("../db/connection", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../db/connection")>();
-  return { ...actual, getDb: vi.fn().mockResolvedValue(null) };
+  const makeTx = () => ({
+    update: (_table: unknown) => ({
+      set: (values: Record<string, unknown>) => ({
+        where: (cond: unknown) => {
+          if ((values.status as { state?: string } | undefined)?.state === "stale") {
+            tx.staleUpdates.push({ values });
+            // drizzle inArray(col, ids) — capture the ids for assertions
+            const ids = (cond as { queryChunks?: unknown } & Record<string, unknown>);
+            void ids;
+          } else {
+            tx.modelUpdates.push(values);
+          }
+          return Promise.resolve();
+        },
+      }),
+    }),
+    insert: (_table: unknown) => ({
+      values: (values: Record<string, unknown>) => ({
+        $returningId: async () => {
+          if (tx.failInsert) throw new Error("insert failed");
+          tx.assetInserts.push(values);
+          return [{ id: 777 }];
+        },
+      }),
+    }),
+  });
+  return {
+    ...actual,
+    getDb: vi.fn().mockResolvedValue(null),
+    withTransaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) => cb(makeTx())),
+  };
 });
 vi.mock("../db/dailyQuota", () => ({
   enforceDailyQuota: vi.fn().mockResolvedValue(undefined),
@@ -51,15 +106,24 @@ vi.mock("./aiService", async (importOriginal) => {
       imageUrl: "https://pub-test.r2.dev/iterate/new.png",
       engineUsed: "test",
     }),
-    updateSchemaForIteration: vi.fn().mockResolvedValue({ updated: true }),
     compactMasterPrompt: vi.fn().mockResolvedValue("compacted"),
   };
 });
-vi.mock("./editClassifier", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./editClassifier")>();
+// The authority's LLM seam — scripted per test, dead when fail=true
+vi.mock("../wardrobe/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../wardrobe/utils")>();
   return {
     ...actual,
-    classifyEditIdentityImpact: vi.fn().mockResolvedValue({ identityLevel: false, checked: true }),
+    withTextQueue: (fn: () => unknown) => Promise.resolve(fn()),
+    getAiClient: () => ({
+      models: {
+        generateContent: async (req: { contents: unknown }) => {
+          if (llmScript.fail) throw new Error("LLM down");
+          const body = JSON.stringify(req.contents);
+          return { text: body.includes("You classify") ? llmScript.classify : llmScript.normalize };
+        },
+      },
+    }),
   };
 });
 
@@ -69,12 +133,14 @@ import {
   createGeneration,
   createModelAsset,
   markModelAssetsStale,
+  updateModel,
   deductCredits,
+  addCredits,
 } from "../db";
 import { iterateModel } from "./aiService";
-import { classifyEditIdentityImpact } from "./editClassifier";
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { ITERATION_CROP_BY_VIEW } from "./iterationFraming";
+import { REFUSAL_COPY } from "./identity/refusalCopy";
 import { appRouter } from "../routers";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
@@ -108,6 +174,7 @@ const model = (over: Record<string, unknown> = {}) => ({
   masterPrompt: "master prompt",
   technicalSchema: {},
   preferences: {},
+  identityRevisionId: null,
   createdAt: new Date(),
   ...over,
 });
@@ -118,30 +185,45 @@ const SIX_ASSETS = CANONICAL_VIEW_ANGLES.map((vt, i) => ({
   modelId: 7,
   viewType: vt,
   storageUrl: `${R2_BASE}/models/7/${vt}.png`,
-  pinned: false,
+  // sideClose PINNED — §14: pinning never exempts staleness
+  pinned: vt === "sideClose",
   status: null,
   provenance: null,
   createdAt: new Date(),
 }));
 const assetIdFor = (vt: string) => SIX_ASSETS.find((a) => a.viewType === vt)!.id;
 
+const IDENTITY_JAWLINE = '{"kind":"identity","categories":["person.face.jawline"],"operations":{}}';
+const NORMALIZED_JAWLINE = '{"edits":[{"leaf":"person.face.jawline","value":"broad angular jaw, squared"}]}';
+
 beforeEach(() => {
   vi.mocked(getModelById).mockReset().mockResolvedValue(model() as never);
   vi.mocked(getModelAssets).mockReset().mockResolvedValue(SIX_ASSETS as never);
   vi.mocked(createGeneration).mockClear().mockResolvedValue({ success: true, generationId: 11 } as never);
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 501 } as never);
-  vi.mocked(markModelAssetsStale).mockClear().mockResolvedValue({ success: true } as never);
+  vi.mocked(markModelAssetsStale).mockClear();
+  vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true } as never);
+  vi.mocked(addCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(iterateModel).mockClear().mockResolvedValue({
     imageUrl: "https://pub-test.r2.dev/iterate/new.png",
     engineUsed: "test",
   } as never);
-  vi.mocked(classifyEditIdentityImpact)
-    .mockReset()
-    .mockResolvedValue({ identityLevel: false, checked: true } as never);
+  llmScript.classify = '{"kind":"imageOnly","categories":["image.lighting"],"operations":{}}';
+  llmScript.normalize = '{"edits":[]}';
+  llmScript.fail = false;
+  tx.reset();
 });
 
-// ─── All six doors open, each with the mapped frame ─────────────────────────
+const expectNothingCharged = () => {
+  expect(createGeneration).not.toHaveBeenCalled();
+  expect(deductCredits).not.toHaveBeenCalled();
+  expect(iterateModel).not.toHaveBeenCalled();
+  expect(updateModel).not.toHaveBeenCalled();
+  expect(createModelAsset).not.toHaveBeenCalled();
+};
+
+// ─── All six doors open, each with the mapped frame (A-coupled regression) ──
 
 describe("typed iteration reaches every canonical view with the complete typed framing", () => {
   it.each(CANONICAL_VIEW_ANGLES.map((a) => [a, ITERATION_CROP_BY_VIEW[a]] as const))(
@@ -157,12 +239,8 @@ describe("typed iteration reaches every canonical view with the complete typed f
       expect(iterateModel).toHaveBeenCalledTimes(1);
       const [, sourceUrl, , options] = vi.mocked(iterateModel).mock.calls[0];
       expect(sourceUrl).toBe(`${R2_BASE}/models/7/${angle}.png`);
-      // The COMPLETE typed framing travels: crop class AND the canonical
-      // angle that selects the orientation-preservation directive (V14) —
-      // never the crop token alone.
       expect(options?.frame).toBe(expectedCrop);
       expect(options?.viewAngle).toBe(angle);
-      // Money moved exactly once, and only after the frame resolved
       expect(deductCredits).toHaveBeenCalledTimes(1);
     },
   );
@@ -188,10 +266,10 @@ describe("non-canonical stored viewType fails closed", () => {
   );
 });
 
-// ─── Non-angle gates preserved ───────────────────────────────────────────────
+// ─── Every refusal class is FREE (M1/M2/M16/M20) ────────────────────────────
 
-describe("non-angle gates are unchanged by the six-door opening", () => {
-  it("masked submission still refuses before touching the model (Batch 0 closure)", async () => {
+describe("shared-authority refusals: zero charge, no rows, no writes, no calls", () => {
+  it("masked submission still refuses before touching the model (M3, Batch 0 closure)", async () => {
     const caller = appRouter.createCaller(authCtx());
     await expect(
       caller.generation.iterate({
@@ -202,81 +280,191 @@ describe("non-angle gates are unchanged by the six-door opening", () => {
       }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelById).not.toHaveBeenCalled();
-    expect(deductCredits).not.toHaveBeenCalled();
-    expect(iterateModel).not.toHaveBeenCalled();
+    expectNothingCharged();
   });
 
-  it("foreign owner: FORBIDDEN on a newly opened view, nothing charged", async () => {
+  it.each([
+    ["mark edit (draft)", "add a small tattoo on the forearm", model()],
+    ["mark edit (minted)", "remove her freckles", model({ status: "active", agencyId: "MOD-1" })],
+    ["presentation", "put her in a leather jacket", model()],
+    ["cosmetic lash", "add mascara", model()],
+    ["post-creation eyelash", "longer eyelashes", model()],
+  ])("%s refuses FREE with typed copy", async (_label, feedback, m) => {
+    vi.mocked(getModelById).mockResolvedValue(m as never);
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({ modelId: 7, feedback, assetId: assetIdFor("frontClose") }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expectNothingCharged();
+  });
+
+  it("classifier OUTAGE fails closed and free — never an unchecked image-only fallback (M2)", async () => {
+    llmScript.fail = true;
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({ modelId: 7, feedback: "a subtle general change", assetId: assetIdFor("frontClose") }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.classifierUnavailable });
+    expectNothingCharged();
+  });
+
+  it("minted identity seal: an allowed leaf on a MINTED model refuses with the F4 fork copy", async () => {
+    vi.mocked(getModelById).mockResolvedValue(
+      model({ status: "active", agencyId: "MOD-26-ABCDEF", name: "Vera" }) as never,
+    );
+    llmScript.classify = IDENTITY_JAWLINE;
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({ modelId: 7, feedback: "sharper jawline", assetId: assetIdFor("frontClose") }),
+    ).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("identity is minted"),
+    });
+    expectNothingCharged();
+  });
+
+  it("identity edit on a NON-ANCHOR view refuses with routing to the headshot", async () => {
+    llmScript.classify = IDENTITY_JAWLINE;
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({ modelId: 7, feedback: "sharper jawline", assetId: assetIdFor("sideClose") }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.nonAnchorView });
+    expectNothingCharged();
+  });
+
+  it("foreign owner: FORBIDDEN, nothing charged", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ userId: 2 }) as never);
     const caller = appRouter.createCaller(authCtx(1));
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "x", assetId: assetIdFor("threeQuarter") }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(deductCredits).not.toHaveBeenCalled();
-    expect(iterateModel).not.toHaveBeenCalled();
+    expectNothingCharged();
   });
 
-  it("archived model: reads as deleted (FR-4) on a newly opened view", async () => {
+  it("archived model reads as deleted (FR-4)", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "archived" }) as never);
     const caller = appRouter.createCaller(authCtx());
     await expect(
       caller.generation.iterate({ modelId: 7, feedback: "x", assetId: assetIdFor("sideFull") }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    expect(deductCredits).not.toHaveBeenCalled();
-    expect(iterateModel).not.toHaveBeenCalled();
+    expectNothingCharged();
   });
+});
 
-  it("minted identity seal (D-43): identity-level edit on a newly opened view still refuses with the F4 copy", async () => {
-    vi.mocked(getModelById).mockResolvedValue(
-      model({ status: "active", agencyId: "MOD-26-ABCDEF", name: "Vera" }) as never,
-    );
-    vi.mocked(classifyEditIdentityImpact).mockResolvedValue({
-      identityLevel: true,
-      checked: true,
-    } as never);
-    const caller = appRouter.createCaller(authCtx());
-    await expect(
-      caller.generation.iterate({
-        modelId: 7,
-        feedback: "add a small tattoo on the forearm",
-        assetId: assetIdFor("sideClose"),
-      }),
-    ).rejects.toMatchObject({
-      code: "PRECONDITION_FAILED",
-      message: expect.stringContaining("identity is minted"),
-    });
-    expect(createGeneration).not.toHaveBeenCalled();
-    expect(deductCredits).not.toHaveBeenCalled();
-    expect(iterateModel).not.toHaveBeenCalled();
-  });
+// ─── Image-only: asset-only (M17) ───────────────────────────────────────────
 
-  it("F6 stale-writer: a draft identity edit on a newly opened view marks siblings stale — it does NOT regenerate them (no propagation)", async () => {
-    vi.mocked(classifyEditIdentityImpact).mockResolvedValue({
-      identityLevel: true,
-      checked: true,
-    } as never);
+describe("image-only results are asset-only (M17)", () => {
+  it("identity documents byte-unchanged; display role + current revision stamped; no stale flags; no compaction", async () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.generation.iterate({
       modelId: 7,
-      feedback: "add a small tattoo on the forearm",
-      assetId: assetIdFor("threeQuarter"),
+      feedback: "brighten the lighting",
+      assetId: assetIdFor("frontClose"),
     });
     expect(result.success).toBe(true);
-    expect(markModelAssetsStale).toHaveBeenCalledTimes(1);
-    const staleIds = vi.mocked(markModelAssetsStale).mock.calls[0][0] as number[];
-    expect(staleIds).not.toContain(assetIdFor("threeQuarter"));
-    expect(staleIds.length).toBeGreaterThan(0);
-    // One image call for the selected view only — siblings are flagged, never generated
-    expect(iterateModel).toHaveBeenCalledTimes(1);
+    // Documents byte-unchanged: NO model write of any kind
+    expect(updateModel).not.toHaveBeenCalled();
+    expect(tx.modelUpdates).toEqual([]);
+    // No stale flags
+    expect(markModelAssetsStale).not.toHaveBeenCalled();
+    expect(tx.staleUpdates).toEqual([]);
+    // The new frontClose version is DISPLAY-only under the current revision
+    expect(createModelAsset).toHaveBeenCalledTimes(1);
+    const row = vi.mocked(createModelAsset).mock.calls[0][0] as Record<string, never> & { provenance: Record<string, unknown> };
+    expect(row.provenance.identityRole).toBe("display");
+    expect(row.provenance.identityRevisionId).toBe("genesis");
+    // The response carries no document payload — nothing changed
+    expect((result as Record<string, unknown>).masterPrompt).toBeUndefined();
   });
 
-  it("cosmetic draft edit marks nothing stale (D-43.2 unchanged)", async () => {
+  it("image-only works identically on a MINTED model (drafts and minted alike, §5.3)", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({ status: "active", agencyId: "MOD-1" }) as never);
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.generation.iterate({
+      modelId: 7,
+      feedback: "brighten the lighting",
+      assetId: assetIdFor("frontFull"),
+    });
+    expect(result.success).toBe(true);
+    expect(updateModel).not.toHaveBeenCalled();
+  });
+});
+
+// ─── Identity edit: the §8.6 atomic commit (M1/M21) ─────────────────────────
+
+describe("draft identity edit on the authoritative headshot — atomic commit", () => {
+  beforeEach(() => {
+    llmScript.classify = IDENTITY_JAWLINE;
+    llmScript.normalize = NORMALIZED_JAWLINE;
+  });
+
+  it("commits document + anchor role + new revision + stale flags (PINNED INCLUDED) atomically", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.generation.iterate({
+      modelId: 7,
+      feedback: "sharper jawline",
+      assetId: assetIdFor("frontClose"),
+    });
+    expect(result.success).toBe(true);
+    expect(result.assetId).toBe(777); // the tx-inserted anchor row
+
+    // Model row updated inside the transaction: document + NEW revision
+    expect(tx.modelUpdates).toHaveLength(1);
+    const modelUpdate = tx.modelUpdates[0];
+    expect(String(modelUpdate.masterPrompt)).toContain("broad angular jaw, squared");
+    expect((modelUpdate.preferences as Record<string, unknown>).jawline).toBe("broad angular jaw, squared");
+    expect(String(modelUpdate.identityRevisionId)).toMatch(/^rev-/);
+
+    // New anchor asset with the SAME new revision + the typed edit list
+    expect(tx.assetInserts).toHaveLength(1);
+    const anchorRow = tx.assetInserts[0] as { provenance: Record<string, unknown>; viewType: string };
+    expect(anchorRow.viewType).toBe("frontClose");
+    expect(anchorRow.provenance.identityRole).toBe("anchor");
+    expect(anchorRow.provenance.identityRevisionId).toBe(modelUpdate.identityRevisionId);
+    expect(anchorRow.provenance.identityEdits).toEqual([
+      { kind: "leaf", leaf: "person.face.jawline", operation: "modify", value: "broad angular jaw, squared" },
+    ]);
+
+    // Every filled sibling staled inside the SAME transaction — the pinned
+    // sideClose included (§14: D-21 exemption superseded)
+    expect(tx.staleUpdates).toHaveLength(1);
+
+    // The old direct stale-writer is not used by this path anymore
+    expect(markModelAssetsStale).not.toHaveBeenCalled();
+
+    // Paid exactly once
+    expect(deductCredits).toHaveBeenCalledTimes(1);
+    expect(addCredits).not.toHaveBeenCalled();
+
+    // §8.4: the image call carried the handler directives, never raw text
+    const [, , , options] = vi.mocked(iterateModel).mock.calls[0];
+    expect(options?.policyDirectives?.join(" ")).toContain("jawline only");
+  });
+
+  it("M20 step-9: a commit failure refunds exactly once and leaves no partial identity state", async () => {
+    tx.failInsert = true;
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({ modelId: 7, feedback: "sharper jawline", assetId: assetIdFor("frontClose") }),
+    ).rejects.toThrow();
+    // withAtomicCredits kept the deduction (generation succeeded), then the
+    // commit failed ⇒ exactly one explicit refund
+    expect(deductCredits).toHaveBeenCalledTimes(1);
+    expect(addCredits).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(addCredits).mock.calls[0][1]).toBe(350); // the iterate cost back
+    // No out-of-transaction identity writes happened
+    expect(updateModel).not.toHaveBeenCalled();
+    expect(createModelAsset).not.toHaveBeenCalled();
+  });
+
+  it("a reference-assisted identity edit rides the same commit with source 'reference'", async () => {
     const caller = appRouter.createCaller(authCtx());
     await caller.generation.iterate({
       modelId: 7,
-      feedback: "brighten the lighting",
-      assetId: assetIdFor("sideClose"),
+      feedback: "use the jawline from the reference",
+      assetId: assetIdFor("frontClose"),
+      referenceImage: "data:image/png;base64,AAAA",
     });
-    expect(markModelAssetsStale).not.toHaveBeenCalled();
+    const anchorRow = tx.assetInserts[0] as { provenance: Record<string, unknown> };
+    expect(anchorRow.provenance.identityEditSource).toBe("reference");
   });
 });

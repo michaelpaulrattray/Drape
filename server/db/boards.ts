@@ -192,6 +192,84 @@ export async function addBoardItemVersion(data: InsertBoardItemVersion) {
   return result.id;
 }
 
+// ── Atomic landing records (Batch C final correction 4) ───────────────────
+//
+// A landing's board writes are DOMAIN RECORDS, not best-effort logging: a
+// node stamp without its version row (or a placed node without its lineage
+// edge) is half-versioned board state that no log line recovers. Each
+// grouped write commits together or not at all. No external image call ever
+// runs inside these transactions — callers finish generation first.
+
+import { withTransaction, type TransactionHandle } from "./connection";
+import { boardEdges, type InsertBoardEdge } from "../../drizzle/schema";
+
+export interface StampBoardItemWithVersionInput {
+  itemId: number;
+  update: Partial<
+    Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">
+  >;
+  version: InsertBoardItemVersion;
+}
+
+/** The stamp's writes on an EXISTING transaction — used by landings that must
+ *  commit board state atomically with other domain writes (the identity
+ *  commit, final correction 3). */
+export async function stampBoardItemWithVersionIn(
+  tx: TransactionHandle,
+  input: StampBoardItemWithVersionInput,
+): Promise<void> {
+  await tx.update(boardItems).set(input.update).where(eq(boardItems.id, input.itemId));
+  await tx.insert(boardItemVersions).values(input.version);
+}
+
+/** Node restamp + its version row, atomically. */
+export async function stampBoardItemWithVersion(input: StampBoardItemWithVersionInput): Promise<void> {
+  await withTransaction(async (tx) => {
+    await stampBoardItemWithVersionIn(tx, input);
+  });
+}
+
+/** A single board-item update on an EXISTING transaction (same landing use). */
+export async function updateBoardItemIn(
+  tx: TransactionHandle,
+  itemId: number,
+  data: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">>,
+): Promise<void> {
+  await tx.update(boardItems).set(data).where(eq(boardItems.id, itemId));
+}
+
+/** A placed LINKED node — item + initial version + lineage edge — atomically.
+ *  Returns the new item id. Throws with nothing written on any failure, so a
+ *  caller can never observe an unlinked or unversioned placement. */
+export async function placeLinkedBoardItem(input: {
+  item: InsertBoardItem;
+  /** The lineage edge; targetItemId is the freshly inserted item. */
+  edge: Pick<InsertBoardEdge, "boardId" | "sourceItemId" | "relation">;
+  /** Recorded as v1 when the item lands with an image. */
+  initialVersion?: { imageUrl: string; prompt?: string | null };
+}): Promise<number> {
+  return withTransaction(async (tx) => {
+    const [row] = await tx.insert(boardItems).values(input.item).$returningId();
+    if (!row?.id) throw new Error("Failed to create the board item");
+    if (input.initialVersion) {
+      await tx.insert(boardItemVersions).values({
+        itemId: row.id,
+        version: 1,
+        imageUrl: input.initialVersion.imageUrl,
+        prompt: input.initialVersion.prompt ?? null,
+        tool: "initial",
+      });
+    }
+    await tx.insert(boardEdges).values({
+      boardId: input.edge.boardId,
+      sourceItemId: input.edge.sourceItemId,
+      targetItemId: row.id,
+      relation: input.edge.relation,
+    });
+    return row.id;
+  });
+}
+
 export async function getBoardItemVersions(itemId: number) {
   const db = (await getDb())!;
   return db

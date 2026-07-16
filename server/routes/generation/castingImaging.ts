@@ -1,29 +1,39 @@
+import { randomUUID } from "node:crypto";
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
-  getModelById, createModelAsset,
+  getModelById, getModelAssets, createModelAsset,
   createGeneration, updateGeneration,
 } from "../../db";
-import { deductPoints, addCredits } from "../../db";
+import { deductPoints } from "../../db";
 import {
   generateCastingImage,
   POINT_COSTS,
 } from "../../casting/aiService";
 import { enforceDailyQuota } from "../../db/dailyQuota";
+import { recordRefund, refundTruth } from "../../casting/atomicCredits";
+import { publicErrorMessage } from "../../lib/publicError";
 import { assertNotArchived } from "../../casting/modelGuards";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
+import { buildIdentityAnchor } from "../../casting/geminiClient";
+import { currentRevisionId, identityStampFor } from "../../casting/identity/anchorSelector";
+import { commitAnchorReRoll } from "../../casting/identity/identityCommit";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("routes/generation");
 
 export const castingImagingRouter = router({
-  // Generate casting image (headshot)
+  // Generate casting image (headshot).
+  // Batch C (§10.3/M10): the creation `referenceImage` parameter is GONE —
+  // strict input, so a raw caller supplying one is REJECTED before any
+  // charge, never silently ignored. A new cast is established from the
+  // structured attributes and brief alone; references join after the first
+  // headshot, through the guarded iteration path.
   castingImage: protectedProcedure
     .input(z.object({
       modelId: z.number(),
-      referenceImage: z.string().max(10_000_000).optional(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       // Rate limit by user to prevent API abuse
       const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
@@ -60,14 +70,25 @@ export const castingImagingRouter = router({
       // Daily quota enforcement — prevent one user from exhausting Gemini RPD
       await enforceDailyQuota(ctx.user.id);
 
+      // R4 (ratified): a headshot RE-ROLL is an identity-changing anchor
+      // operation — resolved BEFORE money so the post-generation writes are
+      // deterministic. An empty draft (initial cast) flags nothing.
+      const priorAssets = await getModelAssets(input.modelId);
+      const isReRoll = priorAssets.some((a) => a.viewType === "frontClose" && a.storageUrl);
+
       // ATOMIC credit deduction BEFORE generation to prevent race conditions
-      // Credits are deducted first, then refunded if generation fails
+      // Credits are deducted first, then refunded if generation fails. The
+      // charge id is captured so every refund derives its own idempotent id
+      // from it (review finding 1 — a refund must never reuse the charge id,
+      // which the ledger would dedupe against the deduction row and skip).
+      // Collision-resistant (correction 7): Date.now() can collide in parallel.
+      const chargeReferenceId = `casting-image-${input.modelId}-${randomUUID()}`;
       const deductResult = await deductPoints(
         ctx.user.id,
         POINT_COSTS.castingImage,
         "generation",
         "Casting image generation (pending)",
-        `pending-${Date.now()}`
+        chargeReferenceId
       );
 
       if (!deductResult.success) {
@@ -77,7 +98,9 @@ export const castingImagingRouter = router({
         });
       }
 
-      // Create generation record
+      // Create generation record — a failed audit-row insert is detected and
+      // refunded, never dereferenced as an undefined id (review finding 2).
+      // Every refund carries its TRUTH to the user (final correction 1).
       const genResult = await createGeneration({
         userId: ctx.user.id,
         modelId: input.modelId,
@@ -85,6 +108,12 @@ export const castingImagingRouter = router({
         status: "processing",
         pointsCost: POINT_COSTS.castingImage,
       });
+      if (!genResult.success || !genResult.generationId) {
+        log.error({ modelId: input.modelId }, "[castingImage] createGeneration failed — refunding before generation");
+        const outcome = await recordRefund(ctx.user.id, POINT_COSTS.castingImage, "Refund: casting image couldn't start", chargeReferenceId);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Couldn't start the cast. ${refundTruth(outcome)} Try again.` });
+      }
+      const generationId = genResult.generationId;
 
       try {
         // Generate image
@@ -99,7 +128,6 @@ export const castingImagingRouter = router({
           {
             castingBrand,
             frame: 'HEADSHOT',
-            referenceImage: input.referenceImage,
             ethnicityHint,
             userId: String(ctx.user.id),
           }
@@ -109,11 +137,6 @@ export const castingImagingRouter = router({
 
         if (!result.imageUrl) {
           log.error('[castingImage] No image URL returned from generation');
-          await updateGeneration(genResult.generationId!, {
-            status: "failed",
-            errorMessage: "No image generated",
-            completedAt: new Date(),
-          });
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "No image generated",
@@ -122,21 +145,65 @@ export const castingImagingRouter = router({
 
         // Credits already deducted before generation - no need to deduct again
 
-        // Save asset
-        const assetResult = await createModelAsset({
+        // §7 identity stamping (Batch C):
+        //  - INITIAL cast headshot ⇒ role `anchor` under the model's current
+        //    (genesis) revision — the anchor authority every consumer reads.
+        //  - RE-ROLL (R4 ratified) ⇒ an identity-changing anchor operation:
+        //    role `anchor`, a NEW identityRevisionId on the model row, and
+        //    stale flags on every filled sibling view, PINNED INCLUDED.
+        const identityText = buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined);
+        const anchorValues = {
           modelId: input.modelId,
-          viewType: "frontClose",
-          resolution: "1K",
+          viewType: "frontClose" as const,
+          resolution: "1K" as const,
           storageUrl: result.imageUrl,
           pointsCost: POINT_COSTS.castingImage,
-        });
+          provenance: {
+            engine: result.engineUsed,
+            // Initial cast: anchor under the model's current (genesis) revision
+            ...identityStampFor({ role: "anchor", revisionId: currentRevisionId(model), identityText }),
+          },
+        };
 
-        // Update generation record
-        await updateGeneration(genResult.generationId!, {
+        let assetResult: { success: boolean; assetId?: number };
+        if (isReRoll) {
+          // Atomic anchor change (shared R4 commit): new anchor row + new
+          // revision + stale flags land together or not at all (§8.6/9).
+          const reRoll = await commitAnchorReRoll({
+            modelId: input.modelId,
+            storageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.castingImage,
+            engine: result.engineUsed,
+            identityText,
+            assets: priorAssets,
+          });
+          assetResult = { success: true, assetId: reRoll.assetId };
+        } else {
+          assetResult = await createModelAsset(anchorValues);
+          // Review finding 2: the asset row IS the durable paid result — a
+          // failed write must never return success/assetId:undefined. Throw
+          // into the refund path below (which appends the refund TRUTH).
+          if (!assetResult.success || !assetResult.assetId) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "The headshot generated but couldn't be saved.",
+            });
+          }
+        }
+
+        // The durable result is saved. An audit-row failure past this point
+        // is an audit gap, never a refund (review finding 3, invariant 2).
+        const auditDone = await updateGeneration(generationId, {
           status: "completed",
           resultUrl: result.imageUrl,
           completedAt: new Date(),
         });
+        if (!auditDone.success) {
+          log.error(
+            { modelId: input.modelId, generationId },
+            "[castingImage] audit-row completion write failed AFTER a saved headshot — audit gap, result stands",
+          );
+        }
 
         // Model stays as 'draft' until explicit export/mint
         // (previously auto-set to 'active' here, causing drafts to appear in MY MODELS)
@@ -148,21 +215,27 @@ export const castingImagingRouter = router({
           assetId: assetResult.assetId,
         };
       } catch (error) {
-        // Refund credits on failure
-        await addCredits(
-          ctx.user.id,
-          POINT_COSTS.castingImage,
-          "refund",
-          "Refund for failed casting image generation",
-          `refund-${genResult.generationId}`
-        );
+        // Refund credits on failure — everything inside the try precedes or
+        // IS the durable-result write, so a refund here is always correct.
+        // The outgoing message carries the refund TRUTH (final correction 1).
+        log.error({ err: error, modelId: input.modelId, generationId }, "[castingImage] failed before the durable boundary");
+        const outcome = await recordRefund(ctx.user.id, POINT_COSTS.castingImage, "Refund: failed casting image generation", chargeReferenceId);
 
-        await updateGeneration(genResult.generationId!, {
+        // Raw internal text stays in the audit row + logs (staff surfaces);
+        // the client message is sanitized (final corrections).
+        const auditFailed = await updateGeneration(generationId, {
           status: "failed",
           errorMessage: error instanceof Error ? error.message : "Unknown error",
           completedAt: new Date(),
         });
-        throw error;
+        if (!auditFailed.success) {
+          log.error({ modelId: input.modelId, generationId }, "[castingImage] audit-row failure write failed — audit gap");
+        }
+        const baseMessage = publicErrorMessage(error, "Casting failed.");
+        throw new TRPCError({
+          code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
+          message: `${baseMessage} ${refundTruth(outcome)}`,
+        });
       }
     }),
 

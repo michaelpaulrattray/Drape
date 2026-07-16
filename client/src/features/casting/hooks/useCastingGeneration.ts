@@ -95,8 +95,9 @@ export function useCastingGeneration({
   const enhanceMutation = trpc.generation.enhance.useMutation();
   
   // New Phase 2 mutations
+  // (The reconcile mutation is gone — Batch C/R7: no client may auto-rewrite
+  // the identity document from a generated image.)
   const suggestionsMutation = trpc.generation.suggestions.useMutation();
-  const reconcileMutation = trpc.generation.reconcile.useMutation();
   const compactPromptMutation = trpc.generation.compactPrompt.useMutation();
   const clearSessionMutation = trpc.generation.clearSession.useMutation();
   const analyzeReferenceMutation = trpc.generation.analyzeReference.useMutation();
@@ -152,7 +153,8 @@ export function useCastingGeneration({
     }
   }, [activeView, profileSummary]);
 
-  // Compact prompt (manual or auto after 3+ amendments)
+  // Compact prompt — MANUAL only (Batch C: iterations never auto-compact;
+  // the server keeps raw text whenever compaction would touch mark language)
   const handleCompactPrompt = useCallback(async () => {
     if (!currentModelId || !currentMasterPrompt) return;
     try {
@@ -276,9 +278,11 @@ export function useCastingGeneration({
       setCurrentTechnicalSchema(modelResult.technicalSchema || null);
 
       setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot...", progress: 50 }));
+      // Batch C (§10.3): a new cast is established from the selections and
+      // brief alone — the server schema-rejects creation references.
+      // References join after the first headshot, through the refine bar.
       const imageResult = await generateCastingMutation.mutateAsync({
         modelId: modelResult.modelId!,
-        referenceImage: prefs.referenceImage,
       });
 
       if (imageResult.success && imageResult.imageUrl) {
@@ -393,28 +397,12 @@ export function useCastingGeneration({
           fetchSuggestions(updatedPrompt, result.imageUrl);
         }
         
-        // Fire-and-forget: reconcile schema with the image that just changed.
-        // Batch 0 (R6 plan): the client sends the new asset's ID — the server
-        // derives the stored URL from its own ledger (no client URL crosses
-        // the boundary) — and refuses non-drafts (a minted identity document
-        // is sealed; the catch below is the expected quiet path there).
-        if (result.assetId) {
-          reconcileMutation.mutateAsync({
-            modelId: currentModelId,
-            assetId: result.assetId,
-          }).then((reconciled) => {
-            if (reconciled.schema) setCurrentTechnicalSchema(reconciled.schema);
-            if (reconciled.description) setCurrentMasterPrompt(reconciled.description);
-          }).catch(() => {
-            // Silent fail — stale spec is better than crashing
-          });
-        }
-        
-        // Auto-compact after 5+ amendments (matches SOT threshold)
-        if (amendments.length + 1 >= 5 && (amendments.length + 1) % 5 === 0) {
-          console.log('[Compaction] Auto-triggering after', amendments.length + 1, 'amendments');
-          handleCompactPrompt();
-        }
+        // Batch C (R7 ratified — reconcile KEPT OFF, M4): the automatic
+        // reconcile call after every iterate is REMOVED. Identity documents
+        // change only through deliberate authorized operations; a generated
+        // image never silently rewrites them. The auto-compaction trigger is
+        // gone with it (§5.3/M17): image-only iterations never compact, and
+        // identity edits write the document atomically server-side.
       }
 
       setGenState({ isGenerating: false, currentStep: "", error: null });

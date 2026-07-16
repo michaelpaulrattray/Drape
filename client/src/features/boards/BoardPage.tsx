@@ -920,30 +920,42 @@ function BoardPageImpl() {
     onSuccess: (result, vars, ctx) => {
       if (result.decision === 'fork' && ctx?.tempId) {
         completeJob(ctx.tempId);
-        // Reveal the real node in place; the prune effect drops this entry
-        // once the refetch delivers the server row. The real modelId must
-        // land WITH the swap — an Edit click in the refetch window would
-        // otherwise open a promotion session pointed at the -1 placeholder
-        // (dead environment, mint never arms).
-        setPendingForks((pf) =>
-          pf.map((p) =>
-            p.id === ctx.tempId
-              ? {
-                  ...p,
-                  id: result.newItemId!,
-                  imageUrl: result.imageUrl,
-                  metadata: {
-                    provenance: {
-                      type: 'library_cast',
-                      modelId: result.modelId,
-                      viewAngle: 'frontClose',
-                      draft: true,
+        // Batch C final correction 5: a TYPED PARTIAL SUCCESS — the fork was
+        // created and charged but the board placement failed. The paid
+        // action is DONE (never re-enabled for a repeat charge): drop the
+        // temp node, tell the user where the draft lives, refresh the picker.
+        if (result.placed === false) {
+          setPendingForks((pf) => pf.filter((p) => p.id !== ctx.tempId));
+          toast.error(result.placementMessage ?? 'The fork was created and charged — find it in your model library.', {
+            duration: 9000,
+          });
+          utils.boardOps.listCastableModels.invalidate();
+        } else {
+          // Reveal the real node in place; the prune effect drops this entry
+          // once the refetch delivers the server row. The real modelId must
+          // land WITH the swap — an Edit click in the refetch window would
+          // otherwise open a promotion session pointed at the -1 placeholder
+          // (dead environment, mint never arms).
+          setPendingForks((pf) =>
+            pf.map((p) =>
+              p.id === ctx.tempId
+                ? {
+                    ...p,
+                    id: result.newItemId!,
+                    imageUrl: result.imageUrl,
+                    metadata: {
+                      provenance: {
+                        type: 'library_cast',
+                        modelId: result.modelId,
+                        viewAngle: 'frontClose',
+                        draft: true,
+                      },
                     },
-                  },
-                }
-              : p,
-          ),
-        );
+                  }
+                : p,
+            ),
+          );
+        }
       } else {
         completeJob(vars.itemId);
       }
@@ -965,15 +977,23 @@ function BoardPageImpl() {
     },
   });
 
+  // Batch C review finding 7: the takeover CLOSES ONLY AFTER the server
+  // accepted the commit. A free refusal (unsupported content, presentation
+  // routing) rejects the promise — the takeover stays open with the user's
+  // changes intact and the D-11 dialog shows the server's message in
+  // context, instead of dumping the user onto the board with a toast.
   const handleIdentityCommit = useCallback(
-    (decision: 'update' | 'fork', changes: Record<string, unknown>) => {
+    async (decision: 'update' | 'fork', changes: Record<string, unknown>) => {
       const ctx = castEditContext;
-      setCastEditContext(null);
-      if (!ctx || ctx.itemId <= 0) return;
+      if (!ctx || ctx.itemId <= 0) {
+        setCastEditContext(null);
+        return;
+      }
       if (decision === 'update') {
         startJob({ itemId: ctx.itemId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
       }
-      applyModelEditMutation.mutate({ boardId, itemId: ctx.itemId, decision, changes });
+      await applyModelEditMutation.mutateAsync({ boardId, itemId: ctx.itemId, decision, changes });
+      setCastEditContext(null);
     },
     [boardId, castEditContext, applyModelEditMutation, startJob],
   );
@@ -1040,7 +1060,10 @@ function BoardPageImpl() {
         if (temp) failJob(temp.tempId, failure.message);
         // The failed candidate's surface just vanished — a toast is the
         // correct fallback (D-40), named and refund-honest (D-12 amendment)
-        toast.error(`Variation ${failure.index + 1} failed — you weren't charged for it.`);
+        // Batch C final correction 1: the failure entry carries the SERVER's
+        // truthful sentence (recorded refund, support reference, or the
+        // charged-but-unplaced library draft) — never an unconditional claim
+        toast.error(`Variation ${failure.index + 1}: ${failure.message}`, { duration: 9000 });
       }
       variationTempsRef.current = [];
       utils.boards.getItems.invalidate({ boardId });

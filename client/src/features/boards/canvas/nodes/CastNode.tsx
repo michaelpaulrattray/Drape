@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { refundBadgeText } from "@shared/refundCopy";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import { CanvasPopoverContent } from "../CanvasPopover";
 import { CanvasNodeShell } from "../CanvasNodeShell";
@@ -626,12 +627,23 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                               of identical rows). Click = select; only the
                               explicit action commits. */}
                           <div className="flex gap-1 overflow-x-auto pb-0.5">
+                            {/* §7.4 (Batch C, M13): restore is offered ONLY
+                                where revision-compatible — a version from an
+                                earlier identity renders unselectable with the
+                                ruled copy, so the UI never advertises a
+                                restore the server refuses. */}
                             {(slotVersionsQuery.data?.versions ?? []).map((v) => (
                               <button
                                 key={v.assetId}
                                 type="button"
-                                disabled={sheet.restoring}
-                                title={v.isHead ? "Current version" : "Select this version"}
+                                disabled={sheet.restoring || (!v.isHead && !v.revisionCompatible)}
+                                title={
+                                  v.isHead
+                                    ? "Current version"
+                                    : v.revisionCompatible
+                                      ? "Select this version"
+                                      : "This version belongs to an earlier identity and can't replace the current cast. Fork or re-cast to use it."
+                                }
                                 className={cn(
                                   "relative flex-shrink-0 w-9 rounded-canvas-sm overflow-hidden transition-opacity",
                                   v.isHead
@@ -639,10 +651,13 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                                     : selectedVersionId === v.assetId
                                       ? "border border-canvas-ink-soft"
                                       : "border-hairline border-canvas-border hover:border-canvas-border-strong",
-                                  sheet.restoring && "opacity-50",
+                                  (sheet.restoring || (!v.isHead && !v.revisionCompatible)) && "opacity-50",
                                 )}
                                 style={{ aspectRatio: "3 / 4" }}
-                                onClick={() => setSelectedVersionId(v.isHead ? null : v.assetId)}
+                                onClick={() => {
+                                  if (!v.isHead && !v.revisionCompatible) return;
+                                  setSelectedVersionId(v.isHead ? null : v.assetId);
+                                }}
                               >
                                 <img src={v.url} alt="" className="w-full h-full object-cover" draggable={false} />
                               </button>
@@ -671,8 +686,10 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                       {slot.pinned ? (
                         <div className="text-canvas-xs text-canvas-ink-soft">Pinned — kept as finished work</div>
                       ) : slot.failed ? (
+                        // Batch C final correction 1: the money line is the
+                        // ledger's truth, never an unconditional claim
                         <div className="text-canvas-xs text-canvas-ink-soft">
-                          Failed: {slot.failed.reason} — you weren't charged
+                          Failed: {slot.failed.reason} — {refundBadgeText(slot.failed.refunded).toLowerCase()}
                         </div>
                       ) : slot.stale ? (
                         isHeadshot ? (
@@ -683,11 +700,14 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           // a DRAFT iterates in the environment; a MINTED
                           // identity only changes by forking. Draft copy must
                           // never say fork.
+                          // §7.4 (Batch C, M13): restore is promised only as
+                          // reuse of versions from the CURRENT look — never
+                          // unconditionally, never as identity rollback.
                           <div className="text-canvas-xs text-canvas-ink-soft">
                             {sheet.minted
                               ? "Headshot out of sync — it never refreshes. Changing this identity forks a new model"
                               : "Headshot out of sync — it never refreshes. Edit it in the environment"}
-                            {slot.version > 1 ? ", or restore a previous version from its history" : ""}.
+                            {slot.version > 1 ? ", or reuse a version from the current look in its history" : ""}.
                           </div>
                         ) : (
                           <div className="text-canvas-xs text-canvas-ink-soft">Out of sync</div>

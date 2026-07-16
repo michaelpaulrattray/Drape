@@ -173,6 +173,12 @@ export const models = mysqlTable("models", {
   // active = minted with agencyId, identity locked
   // locked = permanently immutable (legacy support)
   // archived = soft deleted
+  // Identity revision (Batch C, IDENTITY_EDIT_INTERIM_POLICY §7.4): the
+  // server-owned era between identity-authorized anchor changes. Additive,
+  // forward-only; NULL = the genesis revision for existing models — legacy
+  // rows are never backfilled or promoted. Written only inside the §8.6
+  // atomic identity commit and the server-side anchor re-roll.
+  identityRevisionId: varchar("identityRevisionId", { length: 64 }),
   mintedAt: timestamp("mintedAt"), // When the model was exported/minted
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

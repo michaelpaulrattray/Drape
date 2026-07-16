@@ -8,6 +8,7 @@
  * an empty cast_root, composing the existing casting engine). Later milestones
  * add generateViews, fork/recast, refreshStaleViews, refinement, etc. here.
  */
+import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import {
   addBoardItem,
@@ -19,6 +20,10 @@ import {
   undoDeleteBoardItems,
   addBoardItemVersion,
   getLatestVersionNumber,
+  stampBoardItemWithVersion,
+  stampBoardItemWithVersionIn,
+  updateBoardItemIn,
+  placeLinkedBoardItem,
   createModel,
   getModelById,
   updateModel,
@@ -39,6 +44,14 @@ import {
 import { buildEthnicityHint, buildReinforcedPrompt } from "../casting/promptReinforcement";
 import { assertNotArchived } from "../casting/modelGuards";
 import { parseCastingPrompt, mergeParsedPreferences, resolveEngineChoices } from "../casting/promptParser";
+import { recordRefund, refundTruth } from "../casting/atomicCredits";
+import { publicErrorMessage } from "./publicError";
+import type { TransactionHandle } from "../db/connection";
+import { validateCreationIntent } from "../casting/identity/creationIntake";
+import { buildStructuredPatch } from "../casting/identity/structuredEdit";
+import { commitAnchorReRoll, commitIdentityEdit, computeIdentityCommit } from "../casting/identity/identityCommit";
+import { currentRevisionId, identityStampFor } from "../casting/identity/anchorSelector";
+import { buildIdentityAnchor } from "../casting/geminiClient";
 import { enforceDailyQuota } from "../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import type {
@@ -294,9 +307,40 @@ export async function executeRunGeneration(input: RunGenerationInput) {
   }
   await enforceDailyQuota(input.userId);
 
+  // Batch C (§10.2, M22): parse and VALIDATE the final normalized creation
+  // intent BEFORE any deduction — the old order deducted first, so a refused
+  // brief still moved money. Three-path parser dispatch (R2/D-14) is
+  // unchanged: the parser never blocks a run — on failure the prompt passes
+  // through verbatim — but the VALIDATION refusal is deliberate and free.
+  const locked = (input.attributes ?? {}) as Record<string, unknown>;
+  const promptText = (input.userPrompt ?? "").trim();
+  let prefs: ModelPreferences = { ...locked, userPrompt: promptText } as ModelPreferences;
+  if (promptText) {
+    try {
+      const parsed = await parseCastingPrompt(promptText);
+      prefs = mergeParsedPreferences(parsed, locked, promptText);
+    } catch (parseError) {
+      log.warn(
+        { itemId: input.itemId, err: parseError instanceof Error ? parseError.message : String(parseError) },
+        "Prompt parse failed — falling back to verbatim passthrough",
+      );
+    }
+  }
+  // Paid path: engine-choice brand resolves to a recorded random pick (D-41)
+  prefs = resolveEngineChoices(prefs);
+  // §10.3: no reference rides any creation path
+  delete (prefs as Record<string, unknown>).referenceImage;
+  const intake = validateCreationIntent(prefs as Record<string, unknown>);
+  if (!intake.ok) {
+    log.warn({ itemId: input.itemId, code: intake.code, channel: intake.channel }, "Canvas cast refused at intake (free)");
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
+  }
+
   const cost = CREDIT_COSTS.castingImage;
+  // Collision-resistant charge reference (final correction 7)
+  const chargeReferenceId = `board-item-${input.itemId}-${randomUUID()}`;
   const deduct = await deductPoints(
-    input.userId, cost, "generation", "Canvas cast generation (pending)", `board-item-${input.itemId}-${Date.now()}`,
+    input.userId, cost, "generation", "Canvas cast generation (pending)", chargeReferenceId,
   );
   if (!deduct.success) {
     throw new TRPCError({
@@ -305,28 +349,15 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     });
   }
 
+  // ── The PAID DURABLE-EFFECT boundary (review finding 3): everything inside
+  // this try either precedes or IS the durable paid result (model row +
+  // generation record + headshot asset). Failure here means no usable paid
+  // result survives, so the deterministic refund below is always correct.
+  let modelId: number;
+  let masterPromptText: string;
+  let imageUrl: string;
+  let engineUsed: string | undefined;
   try {
-    // Three-path parser dispatch (R2/D-14): parsed / random / per-field
-    // random, merged under defaults < parser < randomization < locked
-    // attributes. The parser NEVER blocks a paid run — on failure the prompt
-    // passes through verbatim (the engine already interprets free text).
-    const locked = (input.attributes ?? {}) as Record<string, unknown>;
-    const promptText = (input.userPrompt ?? "").trim();
-    let prefs: ModelPreferences = { ...locked, userPrompt: promptText } as ModelPreferences;
-    if (promptText) {
-      try {
-        const parsed = await parseCastingPrompt(promptText);
-        prefs = mergeParsedPreferences(parsed, locked, promptText);
-      } catch (parseError) {
-        log.warn(
-          { itemId: input.itemId, err: parseError instanceof Error ? parseError.message : String(parseError) },
-          "Prompt parse failed — falling back to verbatim passthrough",
-        );
-      }
-    }
-    // Paid path: engine-choice brand resolves to a recorded random pick (D-41)
-    prefs = resolveEngineChoices(prefs);
-
     const masterPrompt = await generateMasterPrompt(prefs);
     const modelResult = await createModel({
       userId: input.userId,
@@ -339,8 +370,11 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     if (!modelResult.success || !modelResult.modelId) {
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: modelResult.error || "Failed to create model" });
     }
-    const modelId = modelResult.modelId;
+    modelId = modelResult.modelId;
+    masterPromptText = masterPrompt.naturalDescription;
 
+    // Review finding 2: a failed audit-row insert is detected, never
+    // dereferenced as an undefined generation id
     const genRecord = await createGeneration({
       userId: input.userId,
       modelId,
@@ -348,6 +382,9 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       status: "processing",
       pointsCost: cost,
     });
+    if (!genRecord.success || !genRecord.generationId) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the cast" });
+    }
 
     const ethnicityHint = buildEthnicityHint(prefs as never);
     const reinforced = buildReinforcedPrompt(masterPrompt.naturalDescription, prefs as never);
@@ -358,75 +395,120 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       userId: String(input.userId),
     });
     if (!result.imageUrl) {
-      await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
+      const auditFailed = await updateGeneration(genRecord.generationId, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
+      if (!auditFailed.success) log.error({ itemId: input.itemId, modelId }, "runGeneration: audit-row failure write failed — audit gap");
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
     }
-    await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+    imageUrl = result.imageUrl;
+    engineUsed = result.engineUsed;
 
     // Register the headshot as a model asset (parity with the legacy flow) —
     // the models library, the D-28 picker, and /studio resume all read these.
-    await createModelAsset({
+    // §7 (Batch C): the initial cast headshot is the identity ANCHOR under
+    // the genesis revision, fingerprinted for legacy-compatible restores.
+    // Review finding 2: the asset row completes the durable paid result — a
+    // failed write fails (and refunds) the whole cast.
+    const asset = await createModelAsset({
       modelId,
       viewType: "frontClose",
       resolution: "1K",
       storageUrl: result.imageUrl,
       pointsCost: cost,
+      provenance: {
+        engine: result.engineUsed,
+        ...identityStampFor({
+          role: "anchor",
+          revisionId: currentRevisionId({ identityRevisionId: null }),
+          identityText: buildIdentityAnchor(masterPrompt.naturalDescription, masterPrompt.technicalSchema),
+        }),
+      },
     });
+    if (!asset.success || !asset.assetId) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The cast generated but couldn't be saved." });
+    }
 
-    // Stamp the node: image + provenance (Decision 1 — engine recorded) +
-    // attrs + version (the strip reads metadata.version — never hardcode)
+    const auditDone = await updateGeneration(genRecord.generationId, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+    if (!auditDone.success) {
+      log.error({ itemId: input.itemId, modelId, generationId: genRecord.generationId }, "runGeneration: audit-row completion write failed AFTER durable result — audit gap, result stands");
+    }
+  } catch (error) {
+    // Refund on any failure BEFORE the durable result completed — and carry
+    // the refund TRUTH into both the node status and the outgoing error
+    // (final correction 1): never claim "not charged" for an unrecorded refund.
+    log.error({ err: error, itemId: input.itemId }, "runGeneration failed before the durable boundary");
+    const outcome = await recordRefund(input.userId, cost, "Canvas cast generation failed (refund)", chargeReferenceId);
+    // Sanitized (final corrections): authored TRPCError/PublicError wording
+    // passes; raw internal error text never reaches the node card or toast.
+    const baseMessage = publicErrorMessage(error, "Generation failed.");
+    const truthful = `${baseMessage} ${refundTruth(outcome)}`;
+    await executeMarkNodeStatus({
+      itemId: input.itemId,
+      status: { type: "error", message: truthful },
+    }).catch((statusError) => {
+      log.warn({ err: statusError, itemId: input.itemId }, "runGeneration: failed to persist the error status on the node");
+    });
+    throw new TRPCError({
+      code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
+      message: truthful,
+    });
+  }
+
+  // ── Past the boundary: the paid result exists (model + headshot in the
+  // library). Board/UI synchronization failures are logged audit gaps —
+  // never a refund, never a retryable "generation failed" that could
+  // duplicate the paid work (review finding 3, invariant 2). The return
+  // payload still carries the result so the client can render it.
+  try {
     const provenance: Provenance = {
       type: "cast_root",
       modelId,
       viewAngle: "frontClose",
       attributes: { ...prefs } as Record<string, unknown>,
-      engine: result.engineUsed || "gemini",
+      engine: engineUsed || "gemini",
     };
     const meta = readMeta(item);
     const version = (await getLatestVersionNumber(input.itemId)) + 1;
-    await updateBoardItem(input.itemId, {
-      imageUrl: result.imageUrl,
-      label: input.modelName || item.label || "Cast",
-      metadata: {
-        ...meta,
-        provenance,
-        attributes: { ...prefs } as Record<string, unknown>,
-        userPrompt: input.userPrompt ?? "",
-        status: null,
-        isGenerating: false,
-        version,
-      } satisfies BoardItemCanvasMetadata,
-    });
-    await addBoardItemVersion({
+    // Final correction 4: the node stamp and its version row are one domain
+    // record — they commit together or not at all (no half-versioned node).
+    await stampBoardItemWithVersion({
       itemId: input.itemId,
-      version,
-      imageUrl: result.imageUrl,
-      prompt: input.userPrompt || null,
-      tool: version === 1 ? "initial" : "rerun",
-    });
-
-    log.info({ itemId: input.itemId, modelId, engine: result.engineUsed }, "Canvas cast generated");
-    return {
-      success: true as const,
-      itemId: input.itemId,
-      modelId,
-      imageUrl: result.imageUrl,
-      masterPrompt: masterPrompt.naturalDescription,
-      creditCost: cost,
-    };
-  } catch (error) {
-    // Refund on any failure after deduction (the atomic-credits contract);
-    // the node keeps its error status client-side ("You weren't charged").
-    await addCredits(input.userId, cost, "refund", "Canvas cast generation failed (refund)");
-    await executeMarkNodeStatus({
-      itemId: input.itemId,
-      status: {
-        type: "error",
-        message: error instanceof Error ? error.message : "Generation failed",
+      update: {
+        imageUrl,
+        label: input.modelName || item.label || "Cast",
+        metadata: {
+          ...meta,
+          provenance,
+          attributes: { ...prefs } as Record<string, unknown>,
+          userPrompt: input.userPrompt ?? "",
+          status: null,
+          isGenerating: false,
+          version,
+        } satisfies BoardItemCanvasMetadata,
       },
-    }).catch(() => {});
-    throw error;
+      version: {
+        itemId: input.itemId,
+        version,
+        imageUrl,
+        prompt: input.userPrompt || null,
+        tool: version === 1 ? "initial" : "rerun",
+      },
+    });
+  } catch (syncError) {
+    log.error(
+      { itemId: input.itemId, modelId, err: syncError instanceof Error ? syncError.message : String(syncError) },
+      "runGeneration: board stamp failed AFTER the paid cast landed (rolled back whole) — the draft lives in the library; no refund, no retryable failure",
+    );
   }
+
+  log.info({ itemId: input.itemId, modelId, engine: engineUsed }, "Canvas cast generated");
+  return {
+    success: true as const,
+    itemId: input.itemId,
+    modelId,
+    imageUrl,
+    masterPrompt: masterPromptText,
+    creditCost: cost,
+  };
 }
 
 // ── fillFromLibrary (D-28 — empty cast node picks an existing model) ───────
@@ -622,36 +704,86 @@ export interface ApplyModelEditInput {
  * Throws on failure — the CALLER owns deduction and refunds.
  */
 async function generateCastCandidate(opts: { userId: number; prefs: ModelPreferences; cost: number }) {
-  const masterPrompt = await generateMasterPrompt(opts.prefs);
+  // §10.3 (Batch C): creation references are cleared from every fork/recast/
+  // variation preference set — a persisted legacy referenceImage (or the
+  // fork's merge) must never ride into a new cast. The INHERITED brief is
+  // cleared too: NEW-mode document derivation never reads `userPrompt`, so a
+  // pre-policy brief is inert here — clearing it keeps legacy models
+  // forkable while the candidate's real intent (attributes + features) is
+  // fully validated. Callers validate intake BEFORE deducting; this second
+  // check fails closed if a new caller forgot.
+  const prefs = { ...opts.prefs } as ModelPreferences & Record<string, unknown>;
+  delete prefs.referenceImage;
+  prefs.userPrompt = "";
+  const intake = validateCreationIntent(prefs);
+  if (!intake.ok) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
+  }
+  const masterPrompt = await generateMasterPrompt(prefs);
   const model = await createModel({
     userId: opts.userId,
     name: DRAFT_AUTO_NAME,
     masterPrompt: masterPrompt.naturalDescription,
     technicalSchema: masterPrompt.technicalSchema,
-    preferences: opts.prefs,
+    preferences: prefs,
     status: "draft",
   });
   if (!model.success || !model.modelId) {
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: model.error || "Failed to create model" });
+    // model.error may carry raw DB text — log it, never send it (final corrections)
+    log.error({ modelId: null, dbError: model.error }, "generateCastCandidate: createModel failed");
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create the model." });
   }
+  // Review finding 2: a failed audit-row insert is detected before the image
+  // call — the caller's catch refunds; no undefined generation id survives
   const genRecord = await createGeneration({
     userId: opts.userId, modelId: model.modelId, type: "castingImage", status: "processing", pointsCost: opts.cost,
   });
+  if (!genRecord.success || !genRecord.generationId) {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the cast" });
+  }
   const result = await generateCastingImage(
-    buildReinforcedPrompt(masterPrompt.naturalDescription, opts.prefs as never),
+    buildReinforcedPrompt(masterPrompt.naturalDescription, prefs as never),
     {
-      castingBrand: (opts.prefs as { castingBrand?: string }).castingBrand || "Generic",
+      castingBrand: (prefs as { castingBrand?: string }).castingBrand || "Generic",
       frame: "HEADSHOT",
-      ethnicityHint: buildEthnicityHint(opts.prefs as never),
+      ethnicityHint: buildEthnicityHint(prefs as never),
       userId: String(opts.userId),
     },
   );
   if (!result.imageUrl) {
-    await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
+    const auditFailed = await updateGeneration(genRecord.generationId, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
+    if (!auditFailed.success) log.error({ modelId: model.modelId }, "generateCastCandidate: audit-row failure write failed — audit gap");
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
   }
-  await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
-  await createModelAsset({ modelId: model.modelId, viewType: "frontClose", resolution: "1K", storageUrl: result.imageUrl, pointsCost: opts.cost });
+  // §7: a fresh candidate's headshot is its identity anchor (genesis
+  // revision). Review finding 2: the asset row completes the candidate's
+  // durable paid result — a failed write fails the candidate (the caller's
+  // catch refunds); an empty model shell without a headshot is not usable.
+  const asset = await createModelAsset({
+    modelId: model.modelId,
+    viewType: "frontClose",
+    resolution: "1K",
+    storageUrl: result.imageUrl,
+    pointsCost: opts.cost,
+    provenance: {
+      engine: result.engineUsed,
+      ...identityStampFor({
+        role: "anchor",
+        revisionId: currentRevisionId({ identityRevisionId: null }),
+        identityText: buildIdentityAnchor(masterPrompt.naturalDescription, masterPrompt.technicalSchema),
+      }),
+    },
+  });
+  if (!asset.success || !asset.assetId) {
+    const auditFailed = await updateGeneration(genRecord.generationId, { status: "failed", errorMessage: "Generated but could not be saved", completedAt: new Date() });
+    if (!auditFailed.success) log.error({ modelId: model.modelId }, "generateCastCandidate: audit-row failure write failed — audit gap");
+    // The CALLER refunds and appends the refund truth (final correction 1)
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The cast generated but couldn't be saved." });
+  }
+  const auditDone = await updateGeneration(genRecord.generationId, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+  if (!auditDone.success) {
+    log.error({ modelId: model.modelId, generationId: genRecord.generationId }, "generateCastCandidate: audit-row completion write failed AFTER durable result — audit gap, result stands");
+  }
   return { modelId: model.modelId, imageUrl: result.imageUrl, engineUsed: result.engineUsed };
 }
 
@@ -686,107 +818,282 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   await enforceDailyQuota(input.userId);
 
   const current = (model.preferences ?? {}) as Record<string, unknown>;
-  const merged = resolveEngineChoices(mergeAttributeChanges(current, input.changes));
-
   const cost = CREDIT_COSTS.castingImage;
+
+  if (input.decision === "update") {
+    // Batch C (ratified R3, §13.5): the update branch is a
+    // `source:"structured"` §8.6 patch commit. Changes resolve to
+    // authorizable identity fields with their REAL typed values through the
+    // handler registry — no wholesale document re-derivation (which
+    // destroyed amendments and mark language), no unknown keys, no
+    // presentation or `features` smuggling. Validation and the refusal are
+    // FREE — they complete before the deduction.
+    //
+    // RECAST (R4): the board's rerun-in-place gesture arrives as `update`
+    // with `intent:'rerun'` and NO changes — an identity-changing anchor
+    // RE-ROLL from the current document (new anchor + new revision + stale
+    // flags), never a structured patch and never a "nothing to change"
+    // refusal.
+    const isRerun = input.intent === "rerun" && Object.keys(input.changes).length === 0;
+    let identityPatch: import("../casting/identity/identityTypes").AuthorizedIdentityPatch | null = null;
+    let generationDoc = { masterPrompt: model.masterPrompt || "", preferences: current };
+    if (!isRerun) {
+      const structured = buildStructuredPatch(input.changes, current);
+      if (!structured.ok) {
+        log.warn({ itemId: input.itemId, code: structured.code }, "applyModelEdit update refused (free)");
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: structured.message });
+      }
+      identityPatch = structured.patch;
+      // The post-commit document, computed purely — generation reads the
+      // deliberately updated identity; the atomic commit below persists the
+      // exact same computation.
+      const computed = computeIdentityCommit(model, structured.patch);
+      generationDoc = { masterPrompt: computed.masterPrompt, preferences: computed.preferences as Record<string, unknown> };
+    }
+
+    const chargeReferenceId = `apply-edit-${input.itemId}-${randomUUID()}`;
+    const deduct = await deductPoints(
+      input.userId, cost, "generation",
+      `Identity update (pending)`, chargeReferenceId,
+    );
+    if (!deduct.success) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
+    }
+
+    // ── The PAID DURABLE-EFFECT boundary (review finding 3 + FINAL
+    // correction 3): generation, then ONE transaction carrying the atomic
+    // identity commit AND its required board landing — the node stamp, the
+    // version row, and every downstream stale status. The identity change
+    // and the board state that represents it land together or not at all:
+    // a failure anywhere inside rolls the whole landing back, nothing
+    // durable survives, and the deterministic refund below is always
+    // correct. No external image call runs inside the transaction.
+    let imageUrl: string;
+    let committedRevision: string;
+    try {
+      const genRecord = await createGeneration({
+        userId: input.userId, modelId: model.id, type: "castingImage", status: "processing", pointsCost: cost,
+      });
+      // Review finding 2: a failed audit-row insert is detected, never
+      // dereferenced as an undefined id
+      if (!genRecord.success || !genRecord.generationId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the update" });
+      }
+      const result = await generateCastingImage(
+        buildReinforcedPrompt(generationDoc.masterPrompt, generationDoc.preferences as never),
+        {
+          castingBrand: (generationDoc.preferences as { castingBrand?: string }).castingBrand || "Generic",
+          frame: "HEADSHOT",
+          ethnicityHint: buildEthnicityHint(generationDoc.preferences as never),
+          userId: String(input.userId),
+        },
+      );
+      if (!result.imageUrl) {
+        const auditFailed = await updateGeneration(genRecord.generationId, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
+        if (!auditFailed.success) log.error({ itemId: input.itemId, modelId: model.id }, "applyModelEdit: audit-row failure write failed — audit gap");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
+      }
+      imageUrl = result.imageUrl;
+
+      const assets = await getModelAssets(model.id);
+
+      // Precompute the board landing (reads BEFORE the transaction; the
+      // landing callback performs writes only). Final correction 3: the node
+      // stamp, its version row, and the downstream stale statuses are
+      // REQUIRED board state, not best-effort logging — they commit inside
+      // the identity transaction.
+      const landingPrefs: Record<string, unknown> = isRerun
+        ? current
+        : (generationDoc.preferences as Record<string, unknown>);
+      const newProv: Provenance = prov.type === "cast_root"
+        ? { ...prov, attributes: landingPrefs, engine: result.engineUsed || prov.engine }
+        : { ...prov, attributes: landingPrefs };
+      const version = (await getLatestVersionNumber(input.itemId)) + 1;
+      // Downstream edge targets go stale (D-11); missing/deleted targets are
+      // skipped, but a failed stale WRITE is never swallowed — it aborts the
+      // whole landing (final correction 3).
+      const edges = await getEdgesFrom(input.itemId);
+      const staleTargets: Array<{ id: number; metadata: Record<string, unknown> }> = [];
+      for (const edge of edges) {
+        const target = await getBoardItemById(edge.targetItemId);
+        if (!target || target.deletedAt) continue;
+        staleTargets.push({
+          id: target.id,
+          metadata: {
+            ...readMeta(target),
+            status: {
+              type: "stale",
+              message: "The cast this was made from was updated — it reflects the previous identity.",
+              context: { causedByItemId: input.itemId },
+            },
+          },
+        });
+      }
+      const landing = async (tx: TransactionHandle) => {
+        await stampBoardItemWithVersionIn(tx, {
+          itemId: input.itemId,
+          update: {
+            imageUrl: result.imageUrl,
+            metadata: { ...meta, provenance: newProv, attributes: landingPrefs, status: null, isGenerating: false, version },
+          },
+          version: {
+            itemId: input.itemId, version, imageUrl: result.imageUrl,
+            prompt: input.intent === "rerun" ? "Recast" : `Identity update: ${Object.keys(input.changes).join(", ")}`,
+            tool: input.intent === "rerun" ? "rerun" : "attributes",
+          },
+        });
+        for (const target of staleTargets) {
+          await updateBoardItemIn(tx, target.id, { metadata: target.metadata });
+        }
+      };
+
+      if (isRerun) {
+        // R4 re-roll: same shared atomic commit `castingImage` uses — new
+        // anchor + new revision + stale-all (pinned included), no doc change
+        const reRoll = await commitAnchorReRoll({
+          modelId: model.id,
+          storageUrl: result.imageUrl,
+          pointsCost: cost,
+          engine: result.engineUsed,
+          identityText: buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined),
+          assets,
+          landing,
+        });
+        committedRevision = reRoll.identityRevisionId;
+      } else {
+        // §8.6 ATOMIC COMMIT: preferences patch + schema writes + fragments +
+        // new anchor (role `anchor`) + new identityRevisionId + stale flags on
+        // every filled sibling view, PINNED INCLUDED — all-or-nothing, WITH
+        // the board landing in the same transaction (final correction 3).
+        const commit = await commitIdentityEdit({
+          model,
+          patch: identityPatch!,
+          newAnchor: { storageUrl: result.imageUrl, pointsCost: cost, engine: result.engineUsed },
+          assets,
+          landing,
+        });
+        committedRevision = commit.identityRevisionId;
+      }
+
+      // The identity is durably committed — an audit-row failure past this
+      // point is an audit gap, never a refund (finding 3, invariant 2)
+      const auditDone = await updateGeneration(genRecord.generationId, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+      if (!auditDone.success) {
+        log.error({ itemId: input.itemId, modelId: model.id, generationId: genRecord.generationId }, "applyModelEdit: audit-row completion write failed AFTER commit — audit gap, result stands");
+      }
+    } catch (error) {
+      // Nothing durable survived (commit rolls back) — refund once, checked,
+      // and carry the refund TRUTH out (corrections 1). Outward wording is
+      // sanitized: raw internal error text is logged, never sent.
+      log.error({ err: error, itemId: input.itemId, modelId: model.id }, "applyModelEdit update failed inside the durable boundary");
+      const outcome = await recordRefund(input.userId, cost, `Identity update failed (refund)`, chargeReferenceId);
+      const baseMessage = publicErrorMessage(error, "The update failed.");
+      throw new TRPCError({
+        code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
+        message: `${baseMessage} ${refundTruth(outcome)}`,
+      });
+    }
+
+    // The identity AND its board landing committed together (one
+    // transaction) — there is no post-boundary board synchronization left to
+    // fail silently, and nothing to repair.
+    log.info({ itemId: input.itemId, modelId: model.id, changed: Object.keys(input.changes), rerun: isRerun, revision: committedRevision }, "Identity updated");
+    return { decision: "update" as const, itemId: input.itemId, modelId: model.id, imageUrl };
+  }
+
+  // decision === "fork" — a new unnamed draft, original untouched. This is a
+  // CREATION path: merge keeps its creation semantics, references are
+  // cleared (§10.3), and intake validation refuses FREE, before deduction
+  // (§10.2 — this door previously deducted first).
+  const merged = resolveEngineChoices(mergeAttributeChanges(current, input.changes)) as ModelPreferences & Record<string, unknown>;
+  delete merged.referenceImage;
+  merged.userPrompt = ""; // inherited briefs are inert in NEW-mode derivation — see generateCastCandidate
+  const intake = validateCreationIntent(merged);
+  if (!intake.ok) {
+    log.warn({ itemId: input.itemId, code: intake.code, channel: intake.channel }, "applyModelEdit fork refused at intake (free)");
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
+  }
+
+  const forkChargeReferenceId = `apply-edit-${input.itemId}-${randomUUID()}`;
   const deduct = await deductPoints(
     input.userId, cost, "generation",
-    `Identity ${input.decision} (pending)`, `apply-edit-${input.itemId}-${Date.now()}`,
+    `Identity fork (pending)`, forkChargeReferenceId,
   );
   if (!deduct.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
   }
 
+  // ── The PAID DURABLE-EFFECT boundary (review finding 3): the candidate
+  // (model row + headshot asset) is the paid result. Failure inside means
+  // nothing usable survived — refund once, checked, truth carried out.
+  let candidate: Awaited<ReturnType<typeof generateCastCandidate>>;
   try {
-    if (input.decision === "update") {
-      const masterPrompt = await generateMasterPrompt(merged);
-      const genRecord = await createGeneration({
-        userId: input.userId, modelId: model.id, type: "castingImage", status: "processing", pointsCost: cost,
-      });
-      const result = await generateCastingImage(
-        buildReinforcedPrompt(masterPrompt.naturalDescription, merged as never),
-        {
-          castingBrand: (merged as { castingBrand?: string }).castingBrand || "Generic",
-          frame: "HEADSHOT",
-          ethnicityHint: buildEthnicityHint(merged as never),
-          userId: String(input.userId),
-        },
-      );
-      if (!result.imageUrl) {
-        await updateGeneration(genRecord.generationId!, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
-      }
-      await updateGeneration(genRecord.generationId!, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
-      await createModelAsset({ modelId: model.id, viewType: "frontClose", resolution: "1K", storageUrl: result.imageUrl, pointsCost: cost });
-      await updateModel(model.id, {
-        masterPrompt: masterPrompt.naturalDescription,
-        technicalSchema: masterPrompt.technicalSchema,
-        preferences: merged,
-      });
-
-      // Restamp THIS node — the landing op is the only writer of node versions (D-23)
-      const newProv: Provenance = prov.type === "cast_root"
-        ? { ...prov, attributes: merged as Record<string, unknown>, engine: result.engineUsed || prov.engine }
-        : { ...prov, attributes: merged as Record<string, unknown> };
-      const version = (await getLatestVersionNumber(input.itemId)) + 1;
-      await updateBoardItem(input.itemId, {
-        imageUrl: result.imageUrl,
-        metadata: { ...meta, provenance: newProv, attributes: merged as Record<string, unknown>, status: null, isGenerating: false, version },
-      });
-      // R4: a recast (rerun-in-place, drafts only past the D-43 guard) is a
-      // rerun in the version ledger, not an attribute edit
-      await addBoardItemVersion({
-        itemId: input.itemId, version, imageUrl: result.imageUrl,
-        prompt: input.intent === "rerun" ? "Recast" : `Identity update: ${Object.keys(input.changes).join(", ")}`,
-        tool: input.intent === "rerun" ? "rerun" : "attributes",
-      });
-
-      // Downstream edge targets go stale (D-11; R5 renders the full flow)
-      const edges = await getEdgesFrom(input.itemId);
-      for (const edge of edges) {
-        await executeMarkNodeStatus({
-          itemId: edge.targetItemId,
-          status: {
-            type: "stale",
-            message: "The cast this was made from was updated — it reflects the previous identity.",
-            context: { causedByItemId: input.itemId },
-          },
-        }).catch(() => {});
-      }
-
-      log.info({ itemId: input.itemId, modelId: model.id, changed: Object.keys(input.changes) }, "Identity updated");
-      return { decision: "update" as const, itemId: input.itemId, modelId: model.id, imageUrl: result.imageUrl };
-    }
-
-    // decision === "fork" — a new unnamed draft, original untouched
-    const candidate = await generateCastCandidate({ userId: input.userId, prefs: merged, cost });
-    const { itemId: newItemId } = await executeCreateNode({
-      boardId: item.boardId,
-      kind: "image",
-      provenance: {
-        type: "library_cast",
-        modelId: candidate.modelId,
-        viewAngle: "frontClose",
-        attributes: merged as Record<string, unknown>,
-        draft: true,
-      },
-      position: { x: item.positionX + item.width + 60, y: item.positionY },
-      size: { width: 280, height: 420 },
-      imageUrl: candidate.imageUrl,
+    candidate = await generateCastCandidate({ userId: input.userId, prefs: merged, cost });
+  } catch (error) {
+    log.error({ err: error, itemId: input.itemId }, "applyModelEdit fork failed inside the durable boundary");
+    const outcome = await recordRefund(input.userId, cost, `Identity fork failed (refund)`, forkChargeReferenceId);
+    const baseMessage = publicErrorMessage(error, "The fork failed.");
+    throw new TRPCError({
+      code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
+      message: `${baseMessage} ${refundTruth(outcome)}`,
     });
-    await addBoardEdge({
-      boardId: item.boardId,
-      sourceItemId: input.itemId,
-      targetItemId: newItemId,
-      relation: "forked_from",
+  }
+
+  // ── Past the boundary: the fork EXISTS and was rightly charged (it lives
+  // in the model library either way). The placement (item + v1 + lineage
+  // edge) is ONE atomic record (final correction 4); if it fails, the
+  // outcome is a TYPED PARTIAL SUCCESS (final correction 5) — never an error
+  // shape a client could treat as a free refusal and re-fire, which would
+  // charge a second fork.
+  const forkProvenance: Provenance = {
+    type: "library_cast",
+    modelId: candidate.modelId,
+    viewAngle: "frontClose",
+    attributes: merged as Record<string, unknown>,
+    draft: true,
+  };
+  try {
+    const newItemId = await placeLinkedBoardItem({
+      item: {
+        boardId: item.boardId,
+        type: legacyTypeForKind("image", forkProvenance) as never,
+        kind: "image",
+        imageUrl: candidate.imageUrl,
+        positionX: Math.round(item.positionX + item.width + 60),
+        positionY: Math.round(item.positionY),
+        width: 280,
+        height: 420,
+        metadata: { provenance: forkProvenance, version: 1 },
+        sourceModelId: candidate.modelId,
+      },
+      edge: { boardId: item.boardId, sourceItemId: input.itemId, relation: "forked_from" },
+      initialVersion: { imageUrl: candidate.imageUrl },
     });
 
     log.info({ itemId: input.itemId, newItemId, forkModelId: candidate.modelId }, "Identity forked");
-    return { decision: "fork" as const, itemId: input.itemId, newItemId, modelId: candidate.modelId, imageUrl: candidate.imageUrl };
-  } catch (error) {
-    // Atomic-credits contract: refund on any failure after deduction
-    await addCredits(input.userId, cost, "refund", `Identity ${input.decision} failed (refund)`);
-    throw error;
+    return {
+      decision: "fork" as const,
+      itemId: input.itemId,
+      newItemId,
+      modelId: candidate.modelId,
+      imageUrl: candidate.imageUrl,
+      placed: true as const,
+    };
+  } catch (placementError) {
+    log.error(
+      { itemId: input.itemId, forkModelId: candidate.modelId, err: placementError instanceof Error ? placementError.message : String(placementError) },
+      "applyModelEdit fork: atomic board placement failed AFTER the paid candidate landed (nothing half-written) — no refund, the draft lives in the library",
+    );
+    return {
+      decision: "fork" as const,
+      itemId: input.itemId,
+      newItemId: null,
+      modelId: candidate.modelId,
+      imageUrl: candidate.imageUrl,
+      placed: false as const,
+      placementMessage:
+        "Your fork was created and charged — find the new draft in your model library. Placing it on the board failed; it was not charged twice.",
+    };
   }
 }
 
@@ -865,15 +1172,27 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
   const count = Math.max(1, Math.min(MAX_VARIATIONS, input.count));
   const unitCost = CREDIT_COSTS.castingImage;
   const totalCost = count * unitCost;
+
+  // Batch C (§10.2/§10.3, M22): variations are creations — the base
+  // preference set is validated and reference-cleared BEFORE the deduction,
+  // so a refused intent never moves money.
+  const base = { ...((model.preferences ?? {}) as Record<string, unknown>) };
+  delete base.referenceImage;
+  base.userPrompt = ""; // inherited briefs are inert in NEW-mode derivation — see generateCastCandidate
+  const intake = validateCreationIntent(base);
+  if (!intake.ok) {
+    log.warn({ itemId: input.itemId, code: intake.code, channel: intake.channel }, "Variations refused at intake (free)");
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
+  }
+
+  const variationsChargeReferenceId = `variations-${input.itemId}-${randomUUID()}`;
   const deduct = await deductPoints(
     input.userId, totalCost, "generation",
-    `${count} cast variation${count === 1 ? "" : "s"} (pending)`, `variations-${input.itemId}-${Date.now()}`,
+    `${count} cast variation${count === 1 ? "" : "s"} (pending)`, variationsChargeReferenceId,
   );
   if (!deduct.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
   }
-
-  const base = (model.preferences ?? {}) as Record<string, unknown>;
   const positions = variationPositions(item, count);
 
   // Parallel candidates; failures are named-and-refunded PER candidate (the
@@ -887,41 +1206,76 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
   );
 
   const variations: Array<{ index: number; itemId: number; modelId: number; imageUrl: string; position: { x: number; y: number } }> = [];
-  const failures: Array<{ index: number; message: string }> = [];
+  // Every failure entry carries its own complete truth (final correction 1):
+  // generation failures state the recorded refund outcome; placement
+  // failures state that the charged draft exists in the library.
+  const failures: Array<{ index: number; message: string; refunded: number; refundReference?: string }> = [];
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
     if (outcome.status === "rejected") {
-      const message = outcome.reason instanceof Error ? outcome.reason.message : "Generation failed";
-      failures.push({ index: i, message });
-      await addCredits(input.userId, unitCost, "refund", `Cast variation ${i + 1} failed (refund)`);
-      log.warn({ itemId: input.itemId, index: i, message }, "Variation candidate failed — refunded");
+      // BEFORE the durable boundary: no usable candidate survived — refund
+      // this slot once, checked, under a per-candidate deterministic id.
+      // The outward message is sanitized; the complete error is logged below.
+      const message = publicErrorMessage(outcome.reason, "Generation failed.");
+      const refundOutcome = await recordRefund(
+        input.userId, unitCost,
+        `Cast variation ${i + 1} failed (refund)`,
+        `${variationsChargeReferenceId}-${i}`,
+      );
+      failures.push({
+        index: i,
+        message: `${message} ${refundTruth(refundOutcome)}`,
+        refunded: refundOutcome.recorded ? unitCost : 0,
+        refundReference: refundOutcome.reference,
+      });
+      log.warn({ err: outcome.reason, itemId: input.itemId, index: i, message, refunded: refundOutcome.recorded }, "Variation candidate failed");
       continue;
     }
-    const { itemId: newItemId } = await executeCreateNode({
-      boardId: item.boardId,
-      kind: "image",
-      provenance: {
-        type: "library_cast",
-        modelId: outcome.value.modelId,
-        viewAngle: "frontClose",
-        draft: true,
-      },
-      position: positions[i],
-      size: { width: 280, height: 420 },
-      imageUrl: outcome.value.imageUrl,
-    });
-    await addBoardEdge({
-      boardId: item.boardId,
-      sourceItemId: input.itemId,
-      targetItemId: newItemId,
-      relation: "variant_of",
-    });
-    variations.push({ index: i, itemId: newItemId, modelId: outcome.value.modelId, imageUrl: outcome.value.imageUrl, position: positions[i] });
+    // PAST the boundary for this candidate: it exists and was rightly
+    // charged (visible in the library). Placement (item + v1 + edge) is one
+    // atomic record (final correction 4); a failure is reported honestly —
+    // no refund, no silent duplicate-inviting failure.
+    const variantProvenance: Provenance = {
+      type: "library_cast",
+      modelId: outcome.value.modelId,
+      viewAngle: "frontClose",
+      draft: true,
+    };
+    try {
+      const newItemId = await placeLinkedBoardItem({
+        item: {
+          boardId: item.boardId,
+          type: legacyTypeForKind("image", variantProvenance) as never,
+          kind: "image",
+          imageUrl: outcome.value.imageUrl,
+          positionX: Math.round(positions[i].x),
+          positionY: Math.round(positions[i].y),
+          width: 280,
+          height: 420,
+          metadata: { provenance: variantProvenance, version: 1 },
+          sourceModelId: outcome.value.modelId,
+        },
+        edge: { boardId: item.boardId, sourceItemId: input.itemId, relation: "variant_of" },
+        initialVersion: { imageUrl: outcome.value.imageUrl },
+      });
+      variations.push({ index: i, itemId: newItemId, modelId: outcome.value.modelId, imageUrl: outcome.value.imageUrl, position: positions[i] });
+    } catch (placementError) {
+      log.error(
+        { itemId: input.itemId, index: i, modelId: outcome.value.modelId, err: placementError instanceof Error ? placementError.message : String(placementError) },
+        "runVariations: atomic placement failed AFTER the paid candidate landed (nothing half-written) — no refund, the draft lives in the library",
+      );
+      failures.push({
+        index: i,
+        message: "Created and charged — placing it on the board failed. Find the draft in your model library; it was not charged twice.",
+        refunded: 0,
+      });
+    }
   }
 
   if (variations.length === 0) {
-    // Everything already refunded per candidate above
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: failures[0]?.message || "All variations failed — you weren't charged." });
+    // Every failure entry carries its own honest copy — generation failures
+    // were refunded per candidate; placement failures name the charged draft
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: failures[0]?.message || "All variations failed." });
   }
 
   log.info({ itemId: input.itemId, requested: count, landed: variations.length }, "Variations cast");

@@ -1,23 +1,31 @@
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
-  getModelById, createModelAsset, getModelAssets, markModelAssetsStale,
+  getModelById, createModelAsset, getModelAssets,
   createGeneration, updateGeneration, updateModel,
 } from "../../db";
 import {
-  generateMasterPrompt, iterateModel, enhanceUserPrompt, upscaleImage,
+  iterateModel, enhanceUserPrompt, upscaleImage,
   generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGESTIONS,
-  reconcileSchemaWithImage, compactMasterPrompt, clearCastingSession,
-  updateSchemaForIteration,
+  compactMasterPrompt, clearCastingSession,
   POINT_COSTS, ImageResolution,
 } from "../../casting/aiService";
-import { withAtomicCredits } from "../../casting/atomicCredits";
+import { withAtomicCredits, recordRefund, refundTruth } from "../../casting/atomicCredits";
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
-import { classifyEditIdentityImpact, shouldRefuseIteration, selectStaleSiblingHeads } from "../../casting/editClassifier";
+import { authorizeEditRequest } from "../../casting/identity/editAuthority";
+import { commitIdentityEdit } from "../../casting/identity/identityCommit";
+import {
+  currentRevisionId,
+  identityStampFor,
+  selectIdentityAnchor,
+} from "../../casting/identity/anchorSelector";
+import { protectedMarkLanguageIntact } from "../../casting/identity/marksVocabulary";
+import { REFUSAL_COPY } from "../../casting/identity/refusalCopy";
+import { buildIdentityAnchor } from "../../casting/geminiClient";
 import { iterationFramingForView } from "../../casting/iterationFraming";
 import { assertNotArchived } from "../../casting/modelGuards";
 import { createModuleLogger } from "../../logging/logger";
@@ -92,26 +100,30 @@ export const castingRefinementRouter = router({
       // propagation).
       const framing = iterationFramingForView(targetAsset.viewType);
 
-      // A1 SEAL (VC-R5 follow-up, D-43): a minted identity is immutable —
-      // an identity-level edit typed against one view would rewrite who this
-      // person is outside the D-11 ceremony AND become the canonical view by
-      // newest-wins. Refused BEFORE any money moves; cosmetic refinements
-      // stay allowed (D-43.2). Drafts stay freely editable — but the SAME
-      // classifier verdict doubles as the stales-siblings line (F6): a
-      // divergent addition on one draft view marks the other filled slots
-      // out of sync, so the package can never silently diverge again.
-      const classification = await classifyEditIdentityImpact(input.feedback);
-      if (model.status !== "draft") {
-        if (shouldRefuseIteration(model.status, classification)) {
-          // F4 copy (founder): the refusal teaches the doors — marks ARE
-          // possible at casting time (brief free text → minted identity, all
-          // views inherit) or on a draft; the client renders the fork door
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: `This changes who ${model.name || "this model"} is — their identity is minted. Fork to explore it, or include it at casting time.`,
-          });
-        }
+      // THE SHARED IDENTITY-AUTHORITY BOUNDARY (Batch C, policy §6/§13.1):
+      // one server-owned decision for every free-text and reference-assisted
+      // instruction — this supersedes the A1 seal's boolean fail-open
+      // classifier. Classification, leaf normalization, and every refusal
+      // complete HERE, before the generation record, the deduction, and the
+      // image-model call, so every refusal class is free (R2, fail-closed).
+      // The F4 minted-identity fork copy still flows from the same boundary.
+      const anchor = selectIdentityAnchor(assets);
+      const decision = await authorizeEditRequest({
+        model,
+        targetAsset: { id: targetAsset.id, viewType: targetAsset.viewType },
+        anchorAssetId: anchor?.id ?? null,
+        feedback: input.feedback,
+        referenceAttached: !!input.referenceImage,
+        referenceImageBase64: input.referenceImage,
+      });
+      if (decision.refused) {
+        log.warn(
+          { userId: ctx.user.id, modelId: input.modelId, code: decision.code, retryable: decision.retryable },
+          "[iterate] refused by the shared identity authority (free, before money)",
+        );
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: decision.message });
       }
+      const authorization = decision.authorization;
 
       const genResult = await createGeneration({
         userId: ctx.user.id,
@@ -119,8 +131,20 @@ export const castingRefinementRouter = router({
         type: "iteration",
         status: "processing",
         pointsCost: POINT_COSTS.iterate,
-        metadata: { feedback: input.feedback, assetId: input.assetId },
+        metadata: {
+          feedback: input.feedback,
+          assetId: input.assetId,
+          authorizationClass: authorization.class,
+        },
       });
+      // Review finding 2: a failed audit-row insert is detected BEFORE any
+      // money moves — never charge while pretending an audit row exists, and
+      // never dereference an undefined generation id.
+      if (!genResult.success || !genResult.generationId) {
+        log.error({ modelId: input.modelId }, "[iterate] createGeneration failed — refused before deduction");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the edit — you weren't charged. Try again." });
+      }
+      const chargeReferenceId = `gen-${genResult.generationId}`;
 
       try {
         const result = await withAtomicCredits(
@@ -128,33 +152,17 @@ export const castingRefinementRouter = router({
             userId: ctx.user.id,
             amount: POINT_COSTS.iterate,
             description: "Model iteration",
-            referenceId: `gen-${genResult.generationId}`,
+            referenceId: chargeReferenceId,
           },
           async () => {
-            // ── FREEZE-AND-APPEND (matches SOT) ──
-            // Append user amendment to existing prompt instead of regenerating.
-            // This preserves the original prompt's nuances.
-            let rawPrompt = (model.masterPrompt || '') + `\n\nAPPLIED MODIFICATION: ${input.feedback}`;
-
-            // Count amendments — compact every 5 to prevent contradictory bloat
-            const amendmentCount = (rawPrompt.match(/APPLIED MODIFICATION:/g) || []).length;
-            let updatedMasterPrompt: string;
-            if (amendmentCount >= 5) {
-              updatedMasterPrompt = await compactMasterPrompt(rawPrompt, model.technicalSchema || {});
-            } else {
-              updatedMasterPrompt = rawPrompt;
-            }
-
-            // Surgically update only affected schema fields (for PDF stats)
-            const updatedSchema = await updateSchemaForIteration(
-              model.technicalSchema || {},
-              input.feedback
-            );
-
-            // Build ethnicityHint and CASTING OVERRIDES for image model
+            // The generation prompt reads the CURRENT document. Freeze-and-
+            // append is dead (Batch C): identity changes land in the document
+            // only through the §8.6 atomic commit below, built from the
+            // handler-normalized patch — never by appending the raw sentence,
+            // and never by an LLM schema rewrite on the paid path.
             const prefs = (model.preferences || {}) as any;
             const ethnicityHint = buildEthnicityHint(prefs);
-            const reinforcedPrompt = buildReinforcedPrompt(updatedMasterPrompt, prefs);
+            const reinforcedPrompt = buildReinforcedPrompt(model.masterPrompt || "", prefs);
 
             const iterResult = await iterateModel(
               reinforcedPrompt,
@@ -164,8 +172,8 @@ export const castingRefinementRouter = router({
                 castingBrand: (model.technicalSchema as any)?.context?.casting_for,
                 frame: framing.crop,
                 viewAngle: framing.viewAngle,
-                maskBase64: input.maskBase64,
                 additionalReference: input.referenceImage,
+                policyDirectives: authorization.promptDirectives,
                 ethnicityHint,
                 userId: String(ctx.user.id),
               }
@@ -178,62 +186,146 @@ export const castingRefinementRouter = router({
               });
             }
 
-            return { imageUrl: iterResult.imageUrl, updatedMasterPrompt, updatedSchema };
+            return { imageUrl: iterResult.imageUrl, engineUsed: iterResult.engineUsed };
           }
         );
 
+        if (authorization.class === "identity" && authorization.identityPatch) {
+          // §8.6 ATOMIC IDENTITY COMMIT: preference patch + schema write +
+          // master-description fragments + new anchor asset (role `anchor`)
+          // + new identityRevisionId + stale flags on every filled sibling,
+          // PINNED INCLUDED (§14 — pinning prevents automatic replacement,
+          // not staleness). All-or-nothing: a commit failure rolls back,
+          // refunds exactly once (M20 step-9), and leaves no partial
+          // identity state.
+          let commit;
+          try {
+            commit = await commitIdentityEdit({
+              model,
+              patch: authorization.identityPatch,
+              newAnchor: {
+                storageUrl: result.imageUrl,
+                pointsCost: POINT_COSTS.iterate,
+                engine: result.engineUsed,
+                inputs: [{ viewAngle: targetAsset.viewType, imageUrl: targetAsset.storageUrl }],
+              },
+              assets,
+            });
+          } catch (commitError) {
+            // The commit rolled back — no partial identity state survives.
+            // Refund under the charge's DERIVED refund id (finding 1), and
+            // the outgoing message carries the refund TRUTH (correction 1).
+            const outcome = await recordRefund(
+              ctx.user.id,
+              POINT_COSTS.iterate,
+              "Identity edit failed to commit (refund)",
+              chargeReferenceId,
+            );
+            log.error(
+              { modelId: input.modelId, err: commitError instanceof Error ? commitError.message : String(commitError) },
+              "[iterate] identity commit failed — rolled back",
+            );
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `The identity edit couldn't be saved — nothing changed. ${refundTruth(outcome)}`,
+            });
+          }
+
+          // The identity is durably committed. An audit-row update failure
+          // after this point is an audit gap, never a reason to refund or to
+          // report the committed result as failed (finding 3, invariant 2).
+          const auditDone = await updateGeneration(genResult.generationId, {
+            status: "completed",
+            resultUrl: result.imageUrl,
+            completedAt: new Date(),
+          });
+          if (!auditDone.success) {
+            log.error(
+              { modelId: input.modelId, generationId: genResult.generationId },
+              "[iterate] audit-row completion write failed AFTER a committed identity edit — audit gap, result stands",
+            );
+          }
+
+          return {
+            success: true,
+            imageUrl: result.imageUrl,
+            pointsCost: POINT_COSTS.iterate,
+            masterPrompt: commit.masterPrompt,
+            technicalSchema: commit.technicalSchema,
+            assetId: commit.assetId,
+          };
+        }
+
+        // IMAGE-ONLY (§5.3): a new asset version of the selected view — and
+        // nothing else. Identity documents stay byte-unchanged; no
+        // compaction, no reconcile, no stale flags. On `frontClose` the
+        // result is DISPLAY-ONLY (role `display` + current revision), so the
+        // §7 anchor selector ignores it and a refined photo can never
+        // silently become the identity reference.
         const assetResult = await createModelAsset({
           modelId: input.modelId,
           viewType: targetAsset.viewType,
           resolution: "1K",
           storageUrl: result.imageUrl,
           pointsCost: POINT_COSTS.iterate,
+          provenance: {
+            inputs: [{ viewAngle: targetAsset.viewType, imageUrl: targetAsset.storageUrl }],
+            engine: result.engineUsed,
+            imageOnlyCategories: authorization.imageOnlyCategories ?? [],
+            ...identityStampFor({
+              role: "display",
+              revisionId: currentRevisionId(model),
+              identityText: buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined),
+            }),
+          },
         });
-
-        // F6 stale-writer (the D-53 rider's motivating case): an identity-
-        // classified edit on a DRAFT view diverges the package — mark each
-        // OTHER angle's head row stale so the read side (tile dimming, the
-        // {N} stale segment, bulk refresh) lights up. Cosmetic edits mark
-        // nothing (D-43.2 — staleness spam is the failure mode). Pinned rows
-        // are exempt: accepted-final work feels no staleness pressure.
-        if (model.status === "draft" && classification.identityLevel) {
-          const staleIds = selectStaleSiblingHeads(assets, targetAsset.viewType);
-          if (staleIds.length > 0) {
-            const marked = await markModelAssetsStale(staleIds);
-            if (!marked.success) {
-              log.error(
-                { modelId: input.modelId, staleIds },
-                "[iterate] stale-writer failed — draft package may silently diverge",
-              );
-            }
-          }
+        // Review finding 2: the asset ROW is the durable paid result of an
+        // image-only edit — if it didn't write, the user paid for nothing
+        // usable: refund once (checked) and fail honestly, never return
+        // success with a null asset id.
+        if (!assetResult.success || !assetResult.assetId) {
+          const outcome = await recordRefund(
+            ctx.user.id,
+            POINT_COSTS.iterate,
+            "Model iteration failed to save (refund)",
+            chargeReferenceId,
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `The edit generated but couldn't be saved. ${refundTruth(outcome)} Try again.`,
+          });
         }
 
-        await updateModel(input.modelId, {
-          masterPrompt: result.updatedMasterPrompt,
-          technicalSchema: result.updatedSchema,
-        });
-
-        await updateGeneration(genResult.generationId!, {
+        const auditDone = await updateGeneration(genResult.generationId, {
           status: "completed",
           resultUrl: result.imageUrl,
           completedAt: new Date(),
         });
+        if (!auditDone.success) {
+          log.error(
+            { modelId: input.modelId, generationId: genResult.generationId },
+            "[iterate] audit-row completion write failed AFTER a saved image-only edit — audit gap, result stands",
+          );
+        }
 
         return {
           success: true,
           imageUrl: result.imageUrl,
           pointsCost: POINT_COSTS.iterate,
-          masterPrompt: result.updatedMasterPrompt,
-          technicalSchema: result.updatedSchema,
           assetId: assetResult.assetId,
         };
       } catch (error) {
-        await updateGeneration(genResult.generationId!, {
+        const auditFailed = await updateGeneration(genResult.generationId, {
           status: "failed",
           errorMessage: error instanceof Error ? error.message : "Unknown error",
           completedAt: new Date(),
         });
+        if (!auditFailed.success) {
+          log.error(
+            { modelId: input.modelId, generationId: genResult.generationId },
+            "[iterate] audit-row failure write failed — audit gap",
+          );
+        }
         throw error;
       }
     }),
@@ -321,10 +413,12 @@ export const castingRefinementRouter = router({
           base64: `data:${contentType};base64,${base64}`,
         };
       } catch (error) {
+        // Fetch errors can carry the target URL/host detail — logged in
+        // full, never sent to the client (final corrections).
         log.error({ err: error }, '[ProxyImage] Error:');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to fetch image',
+          message: 'Failed to fetch image',
         });
       }
     }),
@@ -429,100 +523,27 @@ export const castingRefinementRouter = router({
       }
     }),
 
-  // Visual reconciliation — correct schema/description to match actual image
-  // No credits charged — this is data correction, not generation.
-  // Batch 0 (B0.3/B0.4, R6 execution plan + review fix 4): this procedure
-  // was an unguarded identity-document writer AND an SSRF hole — it fetched
-  // a CLIENT-SUPPLIED URL server-side and rewrote masterPrompt/
-  // technicalSchema with no status guard (a raw caller could rewrite a
-  // MINTED identity). It now takes an OWNED ASSET ID — the asset the caller
-  // just generated/iterated — and derives the stored URL server-side, so
-  // reconciliation still targets the image that actually changed (a body
-  // iterate reconciles against the body result, not the headshot) while no
-  // client URL ever crosses the boundary. Strict input: the legacy imageUrl
-  // shape is REJECTED, not ignored. Drafts only (D-43).
+  // Visual reconciliation — DISABLED (Batch C; R7 ratified: KEEP OFF).
+  // Reconcile rewrote masterPrompt/technicalSchema from a generated image
+  // with no classification — the newest image silently rewrote the identity
+  // document. Identity-document updates now happen only inside the §8.6
+  // atomic commit behind the shared authority. The procedure refuses (never
+  // silently vanishes) so any raw caller learns the truth; the client's
+  // auto-fire after every iterate is removed (M4).
   reconcile: protectedProcedure
     .input(z.object({
       modelId: z.number(),
       assetId: z.number().int().positive(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
-      // Rate limit free Gemini calls to protect API quota
-      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
-      if (!rateCheck.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: rateLimitError(rateCheck.resetIn),
-        });
-      }
-      const model = await getModelById(input.modelId);
-      if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-      }
-      if (model.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-      }
-      assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
-      // D-43: a minted identity document changes only through the ceremony
-      if (model.status !== "draft") {
-        log.warn({ modelId: input.modelId }, "[Reconcile] refused — model is not a draft");
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Reconcile applies to drafts — a minted identity document is sealed.",
-        });
-      }
-
-      // Server-derived image: the identified asset must belong to THIS
-      // caller-owned model and carry a stored URL
-      const modelAssets = await getModelAssets(input.modelId);
-      const targetAsset = modelAssets.find((a) => a.id === input.assetId && a.storageUrl);
-      if (!targetAsset) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Asset not found" });
-      }
-      // Defense in depth: the stored URL should always be our own public
-      // bucket, but it still passes the SSRF allowlist before any fetch
-      const urlCheck = validateProxyUrl(targetAsset.storageUrl);
-      if (!urlCheck.valid) {
-        log.warn({ modelId: input.modelId, assetId: input.assetId, reason: urlCheck.reason }, "[Reconcile] stored asset URL failed validation");
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Stored image URL failed validation" });
-      }
-
-      const imgResp = await fetch(targetAsset.storageUrl);
-      if (!imgResp.ok) throw new TRPCError({ code: "BAD_REQUEST", message: "Failed to fetch image" });
-      const imgBuf = Buffer.from(await imgResp.arrayBuffer());
-      const contentType = imgResp.headers.get('content-type') || 'image/png';
-      const imageBase64 = `data:${contentType};base64,${imgBuf.toString('base64')}`;
-
-      const currentSchema = model.technicalSchema || {};
-      const currentPrompt = model.masterPrompt || "";
-
-      try {
-        const { schema, description } = await reconcileSchemaWithImage(
-          currentSchema,
-          imageBase64,
-          currentPrompt
-        );
-
-        const written = await updateModel(input.modelId, {
-          masterPrompt: description,
-          technicalSchema: schema,
-        });
-        if (!written.success) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save reconciled schema" });
-        }
-
-        return {
-          success: true,
-          schema,
-          description,
-        };
-      } catch (error) {
-        log.error({ err: error }, "[Reconcile] Error:");
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to reconcile schema",
-        });
-      }
+      log.warn(
+        { userId: ctx.user.id, modelId: input.modelId },
+        "[Reconcile] refused — automatic reconcile is disabled (R7, Batch C)",
+      );
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: REFUSAL_COPY.reconcileDisabled,
+      });
     }),
 
   // Compact a bloated master prompt into a clean single paragraph
@@ -563,6 +584,23 @@ export const castingRefinementRouter = router({
 
       try {
         const compacted = await compactMasterPrompt(currentPrompt, currentSchema);
+
+        // PROTECTED-LANGUAGE GUARD (Batch C, §13.4/M5): compaction is an LLM
+        // rewrite — if it removes or paraphrases away any mark family the
+        // document carries (tattoos, scars, freckles, piercings…), the
+        // rewrite is REJECTED and the raw text kept. A marked document must
+        // never lose its marks to maintenance.
+        if (!protectedMarkLanguageIntact(currentPrompt, compacted)) {
+          log.warn(
+            { modelId: input.modelId },
+            "[CompactPrompt] rejected — compaction dropped protected mark language; raw text kept",
+          );
+          return {
+            success: true,
+            masterPrompt: currentPrompt,
+            protectedLanguageKept: true,
+          };
+        }
 
         const written = await updateModel(input.modelId, {
           masterPrompt: compacted,

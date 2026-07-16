@@ -20,6 +20,7 @@
  * Gated angles (back + walk) pass the identity gate with the same
  * retry-then-refund contract as mint.
  */
+import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { getModelById, getModelAssets, deductPoints } from "../db";
 import {
@@ -35,6 +36,7 @@ import { VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTy
 // and this plan's rows derive from the SAME predicate — they cannot disagree
 import { refreshRefusalFor, type RefreshRefusal } from "../../shared/refreshPolicy";
 import { assertNotArchived } from "./modelGuards";
+import { selectIdentityAnchor } from "./identity/anchorSelector";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("casting/refreshSlots");
@@ -83,7 +85,7 @@ async function loadModelSlots(input: { userId: number; modelId: number }) {
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
-  return { model, slots: computePackageSlots(assets) };
+  return { model, assets, slots: computePackageSlots(assets) };
 }
 
 export async function planRefreshSlots(input: {
@@ -97,7 +99,14 @@ export async function planRefreshSlots(input: {
 
 export interface RefreshResult {
   refreshed: Array<{ angle: CanonicalViewAngle; imageUrl: string }>;
-  failed: Array<{ angle: CanonicalViewAngle; label: string; reason: string; refunded: number }>;
+  failed: Array<{
+    angle: CanonicalViewAngle;
+    label: string;
+    reason: string;
+    refunded: number;
+    refundReference: string;
+    markerPersisted: boolean;
+  }>;
 }
 
 export async function executeRefreshSlots(input: {
@@ -105,7 +114,7 @@ export async function executeRefreshSlots(input: {
   modelId: number;
   angles: CanonicalViewAngle[];
 }): Promise<RefreshResult> {
-  const { model, slots } = await loadModelSlots(input);
+  const { model, assets, slots } = await loadModelSlots(input);
 
   // Structural refusals before any money moves
   for (const angle of input.angles) {
@@ -139,8 +148,13 @@ export async function executeRefreshSlots(input: {
     }
   }
 
-  const headshot = slots.find((s) => s.angle === "frontClose");
-  if (!headshot?.url) {
+  // §7 (Batch C): refresh regenerates from the AUTHORITATIVE identity anchor
+  // via the shared selector — never from a newer display-only headshot
+  // refinement. Outputs are stamped with the current revision inside
+  // generatePackageSlot, so a refresh is the resolution leg of every
+  // allowed identity edit.
+  const anchor = selectIdentityAnchor(assets);
+  if (!anchor?.storageUrl) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This model has no headshot to refresh against" });
   }
 
@@ -150,7 +164,7 @@ export async function executeRefreshSlots(input: {
     totalCost,
     "generation",
     `Refresh views (pending)`,
-    `refresh-${input.modelId}-${Date.now()}`,
+    `refresh-${input.modelId}-${randomUUID()}`, // collision-resistant (correction 7)
   );
   if (!deduct.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
@@ -160,7 +174,7 @@ export async function executeRefreshSlots(input: {
     userId: input.userId,
     modelId: input.modelId,
     model,
-    headshotUrl: headshot.url,
+    headshotUrl: anchor.storageUrl,
     reasonLabel: "Refresh",
   };
   // Parallel: the image queue caps concurrency; per-slot failures refund named
@@ -170,7 +184,9 @@ export async function executeRefreshSlots(input: {
     .map((r) => ({ angle: r.angle, imageUrl: r.imageUrl }));
   const failed = results
     .filter((r): r is Extract<SlotGenResult, { ok: false }> => !r.ok)
-    .map(({ angle, label, reason, refunded }) => ({ angle, label, reason, refunded }));
+    .map(({ angle, label, reason, refunded, refundReference, markerPersisted }) => ({
+      angle, label, reason, refunded, refundReference, markerPersisted,
+    }));
 
   log.info(
     { modelId: input.modelId, refreshed: refreshed.map((r) => r.angle), failed: failed.map((f) => f.angle) },

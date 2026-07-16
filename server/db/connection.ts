@@ -50,8 +50,13 @@ export async function getDb() {
  * });
  * ```
  */
+/** The transaction handle `withTransaction` callbacks receive — exported so
+ *  cross-module atomic landings (identity commit + board stamp, Batch C final
+ *  correction 3) can type their write callbacks. */
+export type TransactionHandle = Parameters<Parameters<DbInstance["transaction"]>[0]>[0];
+
 export async function withTransaction<T>(
-  callback: (tx: Parameters<Parameters<DbInstance["transaction"]>[0]>[0]) => Promise<T>
+  callback: (tx: TransactionHandle) => Promise<T>
 ): Promise<T> {
   const db = await getDb();
   if (!db) {

@@ -26,6 +26,73 @@ async function requireBoardOwnership(boardId: number, userId: number) {
 const kindSchema = z.enum(BOARD_ITEM_KINDS);
 const relationSchema = z.enum(BOARD_EDGE_RELATIONS);
 const positionSchema = z.object({ x: z.number(), y: z.number() });
+
+/**
+ * Batch C (§13.5/M6): the structured attribute editor's wire boundary.
+ * `changes` was an arbitrary z.record — now every key must be a known
+ * casting-form field; unknown keys (and the removed `referenceImage` /
+ * `previousMasterPrompt` channels) are REJECTED, never silently stripped.
+ * The update branch further restricts to authorizable identity fields
+ * (buildStructuredPatch); fork validates the full creation intake.
+ */
+const MODEL_EDIT_CHANGE_KEYS = new Set([
+  "gender", "age", "ethnicity", "ethnicityBlend", "bodyType",
+  "faceShape", "jawline", "cheekbones", "cheeks", "eyeShape", "noseShape",
+  "lipShape", "eyebrowStyle", "skinTone", "skinTexture", "skinFinish",
+  "eyeColor", "hairStyle", "hairColor", "hairLength", "hairTexture",
+  "hairFringe", "hairParting", "hairVolume", "hairFlyaways", "hairHairline",
+  "hairTuck", "hairFade", "facialHair", "castingBrand", "castingVibe",
+  "features", "userPrompt",
+  "hairStyleOverride", "hairColorOverride", "eyeColorOverride",
+  "facialHairOverride", "skinTextureOverride", "castingBrandOverride",
+]);
+const modelEditChangesSchema = z
+  .record(z.string(), z.unknown())
+  .superRefine((changes, ctx) => {
+    for (const key of Object.keys(changes)) {
+      if (!MODEL_EDIT_CHANGE_KEYS.has(key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Unknown field: ${key}`,
+        });
+      }
+    }
+  });
+
+/**
+ * Batch C final correction 3: the Canvas creation `attributes` wire boundary
+ * is a TYPED closed schema, not `z.unknown()` — arrays and nested objects
+ * can no longer smuggle forbidden text or malformed preference containers
+ * past the string-channel scans (e.g. `jawline: ["sharp", "red dress"]`).
+ * The only legitimate nested shapes (`castingVibe`, `ethnicityBlend`) are
+ * validated exactly; unknown keys reject; everything else is a plain string.
+ */
+const creationVibeSchema = z.object({
+  editorial: z.number().finite(),
+  commercial: z.number().finite(),
+  runway: z.number().finite(),
+}).strict();
+const creationBlendSchema = z.array(
+  z.object({ name: z.string().max(64), pct: z.number().finite() }).strict(),
+).max(4);
+const CREATION_STRING_KEYS = [
+  "gender", "ethnicity", "bodyType",
+  "faceShape", "jawline", "cheekbones", "cheeks", "eyeShape", "noseShape",
+  "lipShape", "eyebrowStyle", "skinTone", "skinTexture", "skinFinish",
+  "eyeColor", "hairStyle", "hairColor", "hairLength", "hairTexture",
+  "hairFringe", "hairParting", "hairVolume", "hairFlyaways", "hairHairline",
+  "hairTuck", "hairFade", "facialHair", "castingBrand", "features", "userPrompt",
+  "hairStyleOverride", "hairColorOverride", "eyeColorOverride",
+  "facialHairOverride", "skinTextureOverride", "castingBrandOverride",
+] as const;
+const creationAttributesSchema = z
+  .object({
+    age: z.union([z.string().max(16), z.number().finite()]).optional(),
+    castingVibe: creationVibeSchema.optional(),
+    ethnicityBlend: creationBlendSchema.optional(),
+    ...Object.fromEntries(CREATION_STRING_KEYS.map((k) => [k, z.string().max(4000).optional()])),
+  })
+  .strict();
 // Provenance/status are typed shared/boardTypes shapes; structural validation
 // happens at the type level, passthrough at the wire level (same stance as
 // boards.updateItem's metadata record).
@@ -238,7 +305,7 @@ export const boardOpsRouter = router({
         boardId: z.number().int().positive(),
         itemId: z.number().int().positive(),
         decision: z.enum(["update", "fork"]),
-        changes: z.record(z.string(), z.unknown()),
+        changes: modelEditChangesSchema,
         intent: z.enum(["edit", "rerun"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -368,7 +435,7 @@ export const boardOpsRouter = router({
         boardId: z.number().int().positive(),
         itemId: z.number().int().positive(),
         userPrompt: z.string().max(4000).optional(),
-        attributes: z.record(z.string(), z.unknown()).optional(),
+        attributes: creationAttributesSchema.optional(),
         modelName: z.string().max(128).optional(),
       }))
       .mutation(async ({ ctx, input }) => {

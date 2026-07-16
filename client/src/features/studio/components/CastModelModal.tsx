@@ -11,6 +11,17 @@ import type { MintTier } from '@shared/boardTypes';
 
 export type TierPlan = Record<MintTier, { missing: string[]; cost: number }>;
 
+/** §14 (R8, Batch C): the server's per-tier mint-integrity prediction — the
+ *  dialog surfaces each failing check's OWN copy and holds the mint door
+ *  shut, so a refusal is never a surprise after money was about to move. */
+export interface MintIntegrityPrediction {
+  anchor: { ok: boolean; message?: string };
+  displayHeadshot: { ok: boolean; message?: string };
+  tierViews: Array<{ angle: string; label: string; present: boolean; ok: boolean; message?: string }>;
+  ok: boolean;
+}
+export type TierIntegrity = Record<MintTier, MintIntegrityPrediction>;
+
 const TIER_COPY: Record<MintTier, { name: string; purpose: string }> = {
   // D-55 (VC-R6 final): minting is what NAMES and locks identity — the old
   // "Name them and keep exploring" copy claimed exploration while minting
@@ -46,6 +57,9 @@ export interface CastModelModalProps {
   onConfirm: (characterName: string, tier: MintTier, stayDraft?: boolean) => void;
   /** Plan-derived tier costs; undefined while the plan loads */
   tiers?: TierPlan;
+  /** Per-tier §14 mint-integrity prediction (server truth); undefined while
+   *  the plan loads. Only gates the MINT door — adding views stays open. */
+  integrity?: TierIntegrity;
   /** Whether the casting process is in progress */
   isCasting: boolean;
   /** Progress message during casting */
@@ -70,6 +84,7 @@ export function CastModelModal({
   onClose,
   onConfirm,
   tiers,
+  integrity,
   isCasting,
   castingMessage,
   previewImage,
@@ -102,10 +117,23 @@ export function CastModelModal({
     onConfirm(effectiveName, tier);
   }, [confirmable, effectiveName, onConfirm, tier]);
 
+  // §14 (R8): the selected tier's failing integrity checks, each with its
+  // own copy — the mint door holds shut until they resolve. Adding views
+  // stays open (it isn't the mint transition).
+  const tierIntegrity = integrity?.[tier];
+  const integrityMessages = tierIntegrity && !tierIntegrity.ok
+    ? [
+        ...(!tierIntegrity.anchor.ok && tierIntegrity.anchor.message ? [tierIntegrity.anchor.message] : []),
+        ...(!tierIntegrity.displayHeadshot.ok && tierIntegrity.displayHeadshot.message ? [tierIntegrity.displayHeadshot.message] : []),
+        ...tierIntegrity.tierViews.filter((v) => !v.ok && v.message).map((v) => v.message!),
+      ]
+    : [];
+  const integrityOk = tierIntegrity ? tierIntegrity.ok : true;
+
   // Defect 4 — two clearly-labeled doors (mint mode). "Add views" stays a
   // draft (photographs, no commitment); "Name & mint" commits identity
   // (D-43) and requires a name. Which is primary depends on where you stand.
-  const canMint = !!name.trim() && !isCasting;
+  const canMint = !!name.trim() && !isCasting && integrityOk;
   const canAddViews = selectedGenerates && !isCasting;
   const doMint = useCallback(() => {
     const args = confirmArgsForDoor('mint', { addFirst, name, tier });
@@ -250,6 +278,18 @@ export function CastModelModal({
             })}
           </div>
 
+          {/* §14 mint-integrity prediction — each failing check speaks its
+              own copy; the mint door below is held shut until resolved */}
+          {!upgrade && integrityMessages.length > 0 && (
+            <div className="mb-3.5 px-3 py-2 rounded-canvas-md bg-canvas-surface-inset">
+              {integrityMessages.map((m, i) => (
+                <div key={i} className="text-canvas-md text-canvas-ink-soft" style={{ lineHeight: 1.45 }}>
+                  {m}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Casting progress */}
           {isCasting && castingMessage && (
             <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-canvas-md bg-canvas-surface-inset text-canvas-lg text-canvas-ink-soft">
@@ -299,7 +339,13 @@ export function CastModelModal({
                 type="button"
                 onClick={doMint}
                 disabled={!canMint}
-                title={!name.trim() ? 'Enter a name to mint her identity' : undefined}
+                title={
+                  !integrityOk
+                    ? integrityMessages[0] ?? 'Resolve the flagged views before minting'
+                    : !name.trim()
+                      ? 'Enter a name to mint her identity'
+                      : undefined
+                }
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-canvas-md transition-colors text-canvas-lg font-medium disabled:opacity-40 ${
                   primary
                     ? (canMint ? 'bg-canvas-ink text-canvas-surface cursor-pointer' : 'bg-canvas-border text-canvas-ink-faint cursor-not-allowed')

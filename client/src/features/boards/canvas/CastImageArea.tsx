@@ -43,7 +43,9 @@ export function CastImageArea({
         <>
           <XCircle className="w-4 h-4 text-canvas-destructive" strokeWidth={1.4} />
           <span className="text-canvas-xs mt-1.5 text-canvas-ink-soft">Generation failed</span>
-          <span className="text-canvas-xs mt-0.5">You weren't charged</span>
+          {/* Batch C final correction 1: the money truth rides the node's
+              status message (set server-side from the ledger's actual
+              outcome) — no unconditional "you weren't charged" claim here */}
           {onRetry && (
             <button
               type="button"

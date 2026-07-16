@@ -151,9 +151,14 @@ describe("formatGeminiError", () => {
     expect(result).toContain("RATE_LIMIT");
   });
 
-  it("formats auth errors", () => {
+  // Customers never provide the server's Gemini key — auth failures read as
+  // a service outage, never as "verify your API key" (final close-out).
+  it("formats auth errors as a service outage, never a customer key problem", () => {
     const result = formatGeminiError({ message: "403 Forbidden" });
-    expect(result).toContain("Authentication failed");
+    expect(result).toBe("The generation service is temporarily unavailable. Please try again later.");
+    expect(result).not.toContain("API");
+    const keyErr = formatGeminiError({ message: "API key not valid. Please pass a valid API key." });
+    expect(keyErr).toBe("The generation service is temporarily unavailable. Please try again later.");
   });
 
   it("formats server errors", () => {
@@ -171,9 +176,22 @@ describe("formatGeminiError", () => {
     expect(result).toContain("timed out");
   });
 
-  it("passes through unknown errors", () => {
-    const result = formatGeminiError({ message: "Something unexpected" });
-    expect(result).toBe("Something unexpected");
+  // Final corrections (error sanitization): raw provider text can carry
+  // request payloads, URLs, or key details — no branch passes it through.
+  it("NEVER passes unknown error text through — fixed safe wording instead", () => {
+    const result = formatGeminiError({ message: "connect ECONNREFUSED db://user:secret@10.0.0.1" });
+    expect(result).not.toContain("secret");
+    expect(result).not.toContain("10.0.0.1");
+    expect(result).toBe("Generation failed unexpectedly. Please try again.");
+  });
+
+  it("400 errors return fixed wording without the provider payload", () => {
+    const result = formatGeminiError({
+      message: "400 Bad Request: POST https://generativelanguage.googleapis.com/v1/models?key=AIza-SECRET {\"contents\":[…]}",
+    });
+    expect(result).not.toContain("googleapis");
+    expect(result).not.toContain("AIza");
+    expect(result).toBe("The engine rejected this request. Adjust the instruction and try again.");
   });
 });
 

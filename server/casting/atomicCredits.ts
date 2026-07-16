@@ -22,8 +22,10 @@
  * ```
  */
 
+import { randomUUID } from "node:crypto";
 import { deductCredits, addCredits } from "../db";
 import { TRPCError } from "@trpc/server";
+import { publicErrorMessage } from "../lib/publicError";
 import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -61,12 +63,68 @@ interface AtomicCreditResult<T> {
  * @returns The result of the operation
  * @throws TRPCError if insufficient credits or operation fails
  */
+/**
+ * Deterministic refund reference for a charge reference. The charge writes a
+ * `creditTransactions` row under its own referenceId, and `addCredits` treats
+ * ANY existing (userId, referenceId) row as an already-recorded transaction —
+ * so a refund reusing the charge's id is silently SKIPPED while the user
+ * stays charged (Batch C review finding 1). Charge and refund therefore use
+ * distinct, deterministic ids: retrying the same refund stays idempotent
+ * (the refund's own row dedupes it), and it can never collide with the
+ * deduction row.
+ */
+export function refundReferenceFor(chargeReferenceId: string): string {
+  return `refund:${chargeReferenceId}`;
+}
+
+/** What actually happened to a refund — the truth every user-facing surface
+ *  must carry (final review correction 1): a refund that failed to record is
+ *  NEVER reported as "you weren't charged". */
+export interface RefundOutcome {
+  recorded: boolean;
+  amount: number;
+  /** The deterministic refund reference — quoted to support for manual
+   *  reconciliation when `recorded` is false. */
+  reference: string;
+}
+
+/** Record a refund under the charge's derived reference, CHECK the result,
+ *  and return the truthful outcome. Sequential-retry idempotent (the refund's
+ *  own ledger row dedupes a re-attempt). NOTE: the ledger's duplicate check
+ *  is read-before-write with no DB uniqueness constraint — two truly
+ *  concurrent writers of the same reference can race. That concurrency
+ *  hardening is the R7 pre-launch ledger item; nothing here claims
+ *  concurrent-writer safety. */
+export async function recordRefund(
+  userId: number,
+  amount: number,
+  description: string,
+  chargeReferenceId: string,
+): Promise<RefundOutcome> {
+  const reference = refundReferenceFor(chargeReferenceId);
+  const result = await addCredits(userId, amount, "refund", description, reference);
+  if (!result.success) {
+    log.error(
+      { userId, amount, chargeReferenceId, reference, refundError: result.error },
+      "[AtomicCredits] REFUND FAILED TO RECORD — user remains charged; recover manually with the refund reference",
+    );
+  }
+  return { recorded: result.success, amount, reference };
+}
+
+/** The user-facing sentence for a refund outcome. */
+export function refundTruth(outcome: RefundOutcome): string {
+  return outcome.recorded
+    ? `${outcome.amount} credits were refunded.`
+    : `The automatic refund could not be recorded — quote reference ${outcome.reference} and support will restore the ${outcome.amount} credits.`;
+}
+
 export async function withAtomicCredits<T>(
   options: AtomicCreditOptions,
   operation: () => Promise<T>
 ): Promise<T> {
   const { userId, amount, description, referenceId, engineUsed } = options;
-  
+
   // Step 0: Check if account is frozen (blocks all generation)
   const db = await getDb();
   if (db) {
@@ -83,44 +141,55 @@ export async function withAtomicCredits<T>(
     }
   }
 
+  // One charge id per invocation — the refund id derives from it, so a retry
+  // of the refund (never of the charge) is idempotent by construction. The
+  // fallback is collision-resistant (final review correction 7): Date.now()
+  // alone can collide across parallel requests.
+  const chargeReferenceId = referenceId || `pending-${userId}-${randomUUID()}`;
+
   // Step 1: Atomically deduct credits BEFORE the operation
   const deductResult = await deductCredits(
     userId,
     amount,
     "generation",
     `${description} (pending)`,
-    referenceId || `pending-${Date.now()}`,
+    chargeReferenceId,
     engineUsed
   );
-  
+
   if (!deductResult.success) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: deductResult.error || `Insufficient credits. Need ${amount} credits.`,
     });
   }
-  
+
   try {
     // Step 2: Execute the expensive operation
     const result = await operation();
-    
+
     // Step 3: Operation succeeded - credits stay deducted
     return result;
-    
+
   } catch (error) {
-    // Step 4: Operation failed - refund the credits
-    log.info(`[AtomicCredits] Operation failed, refunding ${amount} credits to user ${userId}`);
-    
-    await addCredits(
-      userId,
-      amount,
-      "refund",
-      `Refund: ${description} failed`,
-      referenceId || `refund-${Date.now()}`
-    );
-    
-    // Re-throw the original error
-    throw error;
+    // Step 4: Operation failed — refund under the DERIVED refund id (never
+    // the charge id, which addCredits would dedupe against the deduction
+    // row and silently skip), and CARRY THE TRUTH to the caller (final
+    // review correction 1): the outgoing error message states exactly what
+    // the ledger did, so no surface downstream can claim "you weren't
+    // charged" when the refund didn't record.
+    log.error({ err: error, userId, amount, chargeReferenceId }, `[AtomicCredits] Operation failed, refunding ${amount} credits`);
+    const outcome = await recordRefund(userId, amount, `Refund: ${description} failed`, chargeReferenceId);
+
+    // Sanitized outward message (final corrections): deliberately written
+    // TRPCError/PublicError wording passes through; raw internal error text
+    // (provider/DB/SDK) never does — it was logged in full above. The
+    // truthful refund outcome is ALWAYS appended.
+    const baseMessage = publicErrorMessage(error, "The operation failed.");
+    if (error instanceof TRPCError) {
+      throw new TRPCError({ code: error.code, message: `${baseMessage} ${refundTruth(outcome)}` });
+    }
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `${baseMessage} ${refundTruth(outcome)}` });
   }
 }
 
@@ -146,6 +215,13 @@ export async function withAtomicCredits<T>(
  * 4. Request 2 atomically deducts 5 → balance: 0 ✓
  * 5. Requests 3-5 fail: balance 0 < 5 ✗
  * 6. User gets exactly 2 generations as expected
+ *
+ * HONEST LIMIT (R7 pre-launch ledger-hardening item): the BALANCE update is
+ * atomic (conditional UPDATE), but the ledger's referenceId duplicate check
+ * in addCredits is read-before-write with no database uniqueness constraint.
+ * Refund idempotency therefore holds for SEQUENTIAL retries only — two truly
+ * concurrent writers of the same refund reference can race and double-write.
+ * Do not describe this module as concurrency-safe for refund recording.
  * 
  * HOW TO USE:
  * -----------

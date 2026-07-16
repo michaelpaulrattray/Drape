@@ -251,7 +251,7 @@ export function MasterPromptPanel() {
                         <img src={prefs.referenceImage} alt="Reference" className="w-full object-cover" style={{ maxHeight: 120 }} />
                       </div>
                       <div className="mt-2 px-2.5 py-2 rounded-canvas-md bg-canvas-surface-inset text-canvas-sm text-canvas-ink-soft leading-normal">
-                        <span className="font-medium">How to use:</span> describe what to transfer in the refine bar — e.g. "use hairstyle from reference" or "apply eye makeup from reference image"
+                        <span className="font-medium">How to use:</span> name exactly what to take in the refine bar — e.g. "use the hairstyle from the reference" or "use the eye shape from the reference"
                         <div className="mt-1 text-canvas-ink-faint">
                           Press <span className="font-mono font-medium bg-canvas-border/40 px-[3px] rounded-sm">F</span> to toggle on canvas · Drag to reposition · Corner to resize
                         </div>
@@ -299,7 +299,7 @@ export function MasterPromptPanel() {
                         <div className="text-canvas-sm text-canvas-ink-faint mt-0.5">Drop or click to browse</div>
                       </div>
                       <div className="mt-2 px-2.5 py-2 rounded-canvas-md bg-canvas-surface-inset text-canvas-sm text-canvas-ink-soft leading-normal">
-                        Upload a photo of a hairstyle, tattoo, accessory, or look you want to transfer to your model. Then describe what to use in the refine bar — the AI will visually reference this image during iteration.
+                        Upload a photo of a hairstyle or facial feature you want to carry over. Then name exactly what to take in the refine bar — styling, accessories, and whole looks live on Canvas and Wardrobe.
                       </div>
                     </>
                   )}

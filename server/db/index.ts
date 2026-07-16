@@ -226,4 +226,9 @@ export {
   getLatestVersionNumber,
   getVersionCount,
   deleteBoardItemVersions,
+  // Atomic landing records (Batch C final corrections 3+4)
+  stampBoardItemWithVersion,
+  stampBoardItemWithVersionIn,
+  updateBoardItemIn,
+  placeLinkedBoardItem,
 } from "./boards";

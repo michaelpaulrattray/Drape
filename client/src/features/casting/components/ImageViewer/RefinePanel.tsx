@@ -2,17 +2,18 @@ import { RefObject, useRef, useState, useEffect } from 'react';
 import { Sparkles, SendHorizontal } from 'lucide-react';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 
-// F5 (founder-ruled): iterate can ADD things — distinctive marks, accessories,
-// any feature — and nobody knew. Discoverability, not a feature: rotating
-// placeholder EXAMPLES teach the field's range. Explicitly NOT a selector —
-// marks are open creative space; enum-izing them is wrong.
+// F5 as amended by the ratified interim identity policy (Batch C, D-56):
+// rotating placeholder EXAMPLES teach the field's range — and advertise ONLY
+// what the shared server guard supports today. Mark edits (tattoos, freckles),
+// makeup, and accessories refuse during R6, so they never appear here;
+// identity leaves (draft headshot) and image-only changes do.
 const ROTATING_EXAMPLES = [
   'brighten the lighting',
-  'add a small tattoo on the forearm',
-  'soften the makeup',
-  'add thin gold earrings',
+  'a sharper jawline',
+  'shorter hair',
   'make the expression warmer',
-  'add light freckles',
+  'deep hazel eyes',
+  'soften the background',
 ];
 const EXAMPLE_INTERVAL_MS = 4500;
 
@@ -129,7 +130,7 @@ export function RefinePanel({
   // ── Refine bar ──
   const getPlaceholder = () => {
     if (activeTool === 'surgical') return 'Describe change for masked area...';
-    if (referenceImage) return "e.g. 'use hairstyle from reference image'";
+    if (referenceImage) return "e.g. 'use the hairstyle from the reference'";
     return `Describe a change — "${ROTATING_EXAMPLES[exampleIndex]}"`;
   };
 

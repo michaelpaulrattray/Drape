@@ -23,6 +23,9 @@ import {
   extractMimeType,
   extractBase64Data,
   formatGeminiError,
+} from "./geminiClient";
+import { PublicError } from "../lib/publicError";
+import {
   diagnoseResponse,
   extractImageFromResponse,
   safeResponseText,
@@ -40,8 +43,8 @@ import {
   DEFAULT_BRAND_DESCRIPTOR,
   irisDescriptions,
   getStudioSettings,
-  hasBodyArt,
 } from "./geminiPrompts";
+import { markPromptStateFor } from "./identity/marksVocabulary";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("casting/geminiGeneration");
 
@@ -190,9 +193,10 @@ export const generateMasterPrompt = async (
       );
       return parseResponse(response);
     } catch (e: any) {
-      log.warn({ err: e?.message }, `[MasterPrompt] ${model} failed:`);
+      // Complete internal error server-side; only sanitized wording travels
+      log.warn({ err: e }, `[MasterPrompt] ${model} failed:`);
       if (i === MODELS.length - 1) {
-        throw new Error(formatGeminiError(e));
+        throw new PublicError(formatGeminiError(e), { cause: e });
       }
       // Brief pause before trying next model
       await new Promise(r => setTimeout(r, 1000));
@@ -546,7 +550,11 @@ export const generateCastingImage = async (
   // V14: canonical angle of the view being iterated — selects the per-angle
   // orientation-preservation directive; absent on non-view paths (creation),
   // which keep the legacy binary frame directive unchanged.
-  viewAngle?: CanonicalViewAngle
+  viewAngle?: CanonicalViewAngle,
+  // Batch C (§8.4): server-owned authorization directives from the field
+  // handlers — the ONLY channel that may unlock an identity attribute in the
+  // iterate/transfer prompt. Never the raw user sentence.
+  policyDirectives?: string[]
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   return withImageQueue(async () => {
   const ai = getAiClient();
@@ -562,7 +570,12 @@ export const generateCastingImage = async (
   let technicalConstraints = `PHOTOREALISTIC ONLY. Real photograph from a real full-frame DSLR sensor with physical noise.
 NO open mouth, NO showing teeth, NO laughing, NO grinning, NO excessive smiling.
 NO: PERFECT SYMMETRY, CGI, CARTOON, ANIME, 3D RENDER, PLASTIC SKIN, DOLL LOOK`;
-  if (!hasBodyArt(contextForConfig)) {
+  // Three-state (Batch C, §13.10): only a MARK-FREE document takes the
+  // tattoos/ink/piercings NO-list. A non-ink-marked document (freckles,
+  // scars, piercings) must not receive the piercings prohibition that would
+  // erase its own marks; an inked document keeps the persistence rule from
+  // getStudioSettings.
+  if (markPromptStateFor(contextForConfig) === "markFree") {
     technicalConstraints += ", TATTOOS, INK, BODY ART, PIERCINGS";
   }
   technicalConstraints += ".";
@@ -598,7 +611,7 @@ NO: PERFECT SYMMETRY, CGI, CARTOON, ANIME, 3D RENDER, PLASTIC SKIN, DOLL LOOK`;
     textPrompt = buildIterationImagePrompt(
       iterationRequest, masterPrompt, frame, dynamicStudioSettings,
       inputMapDescription, maskImageBase64, additionalReferenceBase64, imageIndexCounter,
-      viewAngle
+      viewAngle, policyDirectives
     );
   } else {
     // Ethnicity phenotype lock — placed FIRST so image model can't override
@@ -729,9 +742,10 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
       );
       return { imageUrl: url, engineUsed: model };
     } catch (e: any) {
-      log.warn({ err: e?.message }, `[CastingImage] ${model} failed:`);
+      // Complete internal error server-side; only sanitized wording travels
+      log.warn({ err: e }, `[CastingImage] ${model} failed:`);
       if (i === IMAGE_MODELS.length - 1) {
-        throw new Error(formatGeminiError(e));
+        throw new PublicError(formatGeminiError(e), { cause: e });
       }
       await new Promise(r => setTimeout(r, 1000));
     }
@@ -754,7 +768,8 @@ function buildIterationImagePrompt(
   maskImageBase64?: string,
   additionalReferenceBase64?: string,
   imageIndexCounter: number = 1,
-  viewAngle?: CanonicalViewAngle
+  viewAngle?: CanonicalViewAngle,
+  policyDirectives?: string[]
 ): string {
   // V14 (Batch A-coupled): when the caller names the canonical view being
   // edited, the directive preserves THAT view's orientation — the legacy
@@ -886,21 +901,35 @@ function buildIterationImagePrompt(
     `;
   }
 
+  // Batch C (§8.4): a server AUTHORIZATION may unlock exactly the authorized
+  // identity leaf. These directives come from the field handlers behind the
+  // shared guard — no other channel (including the user sentence and any
+  // reference analysis) may override the default identity lock, and where a
+  // directive conflicts with the REJECT/BLOCKED lists above, the directive
+  // wins ONLY for the single attribute it names.
+  const authorizationBlock =
+    policyDirectives && policyDirectives.length > 0
+      ? `
+    SERVER AUTHORIZATION (highest priority for the named attribute ONLY — overrides any REJECT/BLOCKED entry for that one attribute, nothing else):
+    ${policyDirectives.join("\n    ")}
+    `
+      : "";
+
   return `
     STRICT PHOTOREALISTIC INPAINTING TASK.
     ${inputMapDescription}
-    
+
     USER INSTRUCTION: "${iterationRequest}"
-    
+    ${authorizationBlock}
     VISUAL RULES:
     ${frameDirective}
     ${framingLock}
-    
+
     ${surgicalInstructions}
     ${featureInstructions}
-    
+
     CRITICAL GLOBAL CONSTRAINTS: FREEZE lighting/identity/camera. MODIFY ONLY what is requested within the EXISTING BOUNDARIES.
-    
+
     IDENTITY ANCHOR — The output MUST depict this exact person:
     ${buildIdentityAnchor(masterPrompt, undefined)}
   `;

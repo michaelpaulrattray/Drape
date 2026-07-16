@@ -23,10 +23,14 @@ export const ETHNICITIES = [
   "Middle Eastern", "Polynesian",
 ];
 
+// `as const` (Batch C, IDENTITY_EDIT_INTERIM_POLICY §5.4): the identity
+// authorization contract derives literal unions from these closed lists so an
+// off-list structured value cannot compile. Runtime consumers are unaffected —
+// readonly tuples satisfy every existing read.
 export const SKIN_TONE_VALUES = [
   "Porcelain / Pale", "Fair / Light", "Medium / Olive",
   "Tan / Bronze", "Deep / Brown", "Ebony / Dark",
-];
+] as const;
 
 export const SKIN_TEXTURES = ["Raw / Standard", "Glass / Perfect", "Freckled", "Textured / Acneic", "Mature"];
 export const SKIN_FINISHES = ["Natural", "Matte / Powdered", "Dewy / Sweat", "Oily"];
@@ -69,6 +73,9 @@ export const HAIR_PARTINGS = ["Center", "Slight Off-Center", "Side", "Deep Side"
 export const HAIR_VOLUMES = ["Flat / Sleek", "Natural", "Voluminous", "Lifted Crown", "Face-Framing"];
 export const HAIR_TUCKS = ["None", "One Side", "Both Sides"];
 export const HAIR_FADES = ["None", "Low Taper", "Mid Fade", "High Fade", "Skin Fade"];
+// Promoted from the client control (Batch C review finding 4): the shared
+// closed list the structured-edit boundary enforces.
+export const HAIR_FLYAWAYS = ["None", "Natural", "Intentional"];
 
 export const NATURAL_HAIR_COLORS = [
   "Jet Black", "Off Black", "Dark Brown", "Med. Brown", "Light Brown",
@@ -82,7 +89,12 @@ export const DYED_HAIR_COLORS = [
   "Yellow", "Orange", "Peach", "Coral", "Red", "Burgundy",
 ];
 
-export const BODY_TYPE_VALUES = ["Ultra Thin", "Slim", "Athletic", "Muscular", "Curvy", "Petite"];
+export const BODY_TYPE_VALUES = ["Ultra Thin", "Slim", "Athletic", "Muscular", "Curvy", "Petite"] as const;
+
+/** The gender options the casting form offers (D-41: absence = engine's
+ *  choice — the AUTHORIZATION contract requires an explicit value, so the
+ *  open state is not a structured-edit value). */
+export const GENDER_VALUES = ["Male", "Female"] as const;
 
 /** Ethnicity blend entry — max 2 per cast (engine limit). */
 export interface EthnicityBlendEntry {

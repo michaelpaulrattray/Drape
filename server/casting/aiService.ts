@@ -287,6 +287,9 @@ export async function iterateModel(
     /** V14: canonical angle of the view being edited — selects the per-angle
      *  orientation-preservation directive in the iterate prompt. */
     viewAngle?: CanonicalViewAngle;
+    /** Batch C (§8.4): server-owned authorization directives — the only
+     *  channel that may unlock an identity attribute in the iterate prompt. */
+    policyDirectives?: string[];
     castingBrand?: string;
     ethnicityHint?: string;
     userId?: string;
@@ -312,7 +315,8 @@ export async function iterateModel(
     effectiveMask, // Use the composited mask overlay
     options.ethnicityHint, // Pass through ethnicityHint for phenotype lock
     options.userId || 'anonymous',
-    options.viewAngle
+    options.viewAngle,
+    options.policyDirectives
   );
 
   // Upload base64 to S3 for persistent storage

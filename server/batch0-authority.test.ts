@@ -66,6 +66,7 @@ import {
   createModelAsset,
 } from "./db";
 import { generateCastingImage } from "./casting/aiService";
+import { buildIdentityAnchor } from "./casting/geminiClient";
 import { appRouter } from "./routers";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
@@ -116,8 +117,17 @@ const asset = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
+// Batch C (§14): mint validity now checks revision membership per view —
+// the fixture package carries the D-12 legacy fingerprint matching the model
+// fixture's canon, so it reads as a healthy legacy package (the genesis case).
+const FIXTURE_CANON = buildIdentityAnchor("prompt", {});
 const ALL_SIX = ["frontClose", "threeQuarter", "sideClose", "frontFull", "sideFull", "backFull"].map(
-  (vt, i) => asset({ id: 100 + i, viewType: vt, storageUrl: `${R2_BASE}/models/7/${vt}.png` }),
+  (vt, i) => asset({
+    id: 100 + i,
+    viewType: vt,
+    storageUrl: `${R2_BASE}/models/7/${vt}.png`,
+    provenance: { identityText: FIXTURE_CANON },
+  }),
 );
 
 beforeEach(() => {
@@ -453,8 +463,8 @@ describe("models.delete drafts-only (founder ruling, review item 9)", () => {
 
 // ─── E9: reconcile — owned asset id, strict input, write-checked ───────────
 
-describe("generation.reconcile (E9, review fix 4)", () => {
-  it("legacy imageUrl input is REJECTED by the strict schema", async () => {
+describe("generation.reconcile — DISABLED (Batch C, R7 ratified: keep off; M4)", () => {
+  it("legacy imageUrl input is still REJECTED by the strict schema", async () => {
     const caller = appRouter.createCaller(authCtx());
     await expect(
       caller.generation.reconcile({ modelId: 7, imageUrl: "https://evil.example/x.png" } as never),
@@ -469,51 +479,22 @@ describe("generation.reconcile (E9, review fix 4)", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
-  it("an asset id not on the caller's model is NOT_FOUND (no fetch possible)", async () => {
-    vi.mocked(getModelById).mockResolvedValue(model() as never);
-    vi.mocked(getModelAssets).mockResolvedValue([asset({ id: 41 })] as never);
-    const caller = appRouter.createCaller(authCtx());
-    await expect(caller.generation.reconcile({ modelId: 7, assetId: 42 })).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
-  });
-
-  it("minted model refused (sealed identity document)", async () => {
-    vi.mocked(getModelById).mockResolvedValue(
-      model({ status: "active", agencyId: "MOD-26-ABCDEF" }) as never,
-    );
-    const caller = appRouter.createCaller(authCtx());
-    await expect(caller.generation.reconcile({ modelId: 7, assetId: 42 })).rejects.toMatchObject({
-      code: "PRECONDITION_FAILED",
-    });
-    expect(getModelAssets).not.toHaveBeenCalled();
-  });
-
-  it("archived model refused as NOT_FOUND", async () => {
-    vi.mocked(getModelById).mockResolvedValue(model({ status: "archived" }) as never);
-    const caller = appRouter.createCaller(authCtx());
-    await expect(caller.generation.reconcile({ modelId: 7, assetId: 42 })).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
-  });
-
-  it("fetches ONLY the selected owned asset's stored URL; db write failure is an error", async () => {
-    vi.mocked(getModelById).mockResolvedValue(model() as never);
-    vi.mocked(getModelAssets).mockResolvedValue([asset({ id: 42 })] as never);
-    vi.mocked(updateModel).mockResolvedValue({ success: false, error: "db down" });
-    const fetchSpy = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: { get: () => "image/png" },
-      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
-    });
+  it("a well-formed request refuses on EVERY status — no path writes the document from an image", async () => {
+    const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
     try {
-      const caller = appRouter.createCaller(authCtx());
-      await expect(caller.generation.reconcile({ modelId: 7, assetId: 42 })).rejects.toMatchObject({
-        code: "INTERNAL_SERVER_ERROR",
-      });
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
-      expect(fetchSpy).toHaveBeenCalledWith(`${R2_BASE}/models/7/frontFull.png`);
+      for (const m of [model(), model({ status: "active", agencyId: "MOD-26-ABCDEF" }), model({ status: "archived" })]) {
+        vi.mocked(getModelById).mockResolvedValue(m as never);
+        const caller = appRouter.createCaller(authCtx());
+        await expect(caller.generation.reconcile({ modelId: 7, assetId: 42 })).rejects.toMatchObject({
+          code: "PRECONDITION_FAILED",
+          message: expect.stringContaining("reconcile is off"),
+        });
+      }
+      // The disabled procedure touches NOTHING: no asset read, no fetch, no write
+      expect(getModelAssets).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(updateModel).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
     }

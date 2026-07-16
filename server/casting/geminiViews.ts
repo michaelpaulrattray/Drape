@@ -25,6 +25,7 @@ import {
   withSingleRetry503,
   buildIdentityAnchor,
 } from "./geminiClient";
+import { PublicError } from "../lib/publicError";
 import { withImageQueue } from "./geminiQueue";
 import { validateNotPlaceholder } from "./placeholderDetection";
 import { UPSCALE_PROMPT, getStudioSettings } from "./geminiPrompts";
@@ -122,9 +123,10 @@ export const generateFullBody = async (
         `FullBody (${model})`
       );
     } catch (e: any) {
-      log.warn({ err: e?.message }, `[FullBody] ${model} failed:`);
+      // Complete internal error server-side; only sanitized wording travels
+      log.warn({ err: e }, `[FullBody] ${model} failed:`);
       if (i === BODY_MODELS.length - 1) {
-        throw new Error(formatGeminiError(e));
+        throw new PublicError(formatGeminiError(e), { cause: e });
       }
       await new Promise(r => setTimeout(r, 1000));
     }
@@ -311,9 +313,10 @@ export const generateSingleView = async (
         `SingleView:${viewType} (${model})`
       );
     } catch (e: any) {
-      log.warn({ err: e?.message }, `[SingleView:${viewType}] ${model} failed:`);
+      // Complete internal error server-side; only sanitized wording travels
+      log.warn({ err: e }, `[SingleView:${viewType}] ${model} failed:`);
       if (i === VIEW_MODELS.length - 1) {
-        throw new Error(formatGeminiError(e));
+        throw new PublicError(formatGeminiError(e), { cause: e });
       }
       await new Promise(r => setTimeout(r, 1000));
     }
@@ -373,7 +376,9 @@ export const upscaleExistingImage = async (
 
     return { imageUrl, engineUsed: modelName };
   } catch (error) {
-    throw new Error(formatGeminiError(error));
+    // Complete internal error server-side; only sanitized wording travels
+    log.warn({ err: error }, "[Upscale] failed");
+    throw new PublicError(formatGeminiError(error), { cause: error });
   }
   }, 'upscaleExistingImage');
 };

@@ -57,8 +57,11 @@ export interface CastingTakeoverProps {
    *  optimistic fill. */
   onMinted: (modelId: number, info: { name: string; headshotUrl: string | null }) => void;
   /** Minted-edit save confirmed in the D-11 dialog — host closes the
-   *  takeover and runs boardOps.applyModelEdit with a node-local job. */
-  onIdentityCommit: (decision: 'update' | 'fork', changes: Record<string, unknown>) => void;
+   *  takeover and runs boardOps.applyModelEdit with a node-local job.
+   *  Batch C (review finding 7): resolves when the server ACCEPTED the
+   *  commit; rejects on a (free) refusal — the takeover then stays open with
+   *  the user's changes intact and the dialog shows the server's message. */
+  onIdentityCommit: (decision: 'update' | 'fork', changes: Record<string, unknown>) => Promise<void> | void;
   /** User backed out (Esc / back / close), after the leave-confirm if work exists. */
   onClose: () => void;
   /** D-38: fired just before close on minted-edit sessions with the CLIENT-
@@ -125,6 +128,10 @@ export function CastingTakeover({
     changes: Record<string, unknown>;
     labels: string[];
   } | null>(null);
+  // Finding 7: the D-11 dialog owns the fork round-trip — pending holds the
+  // dialog (and the takeover) open; a free refusal renders in the dialog.
+  const [identityCommitPending, setIdentityCommitPending] = useState(false);
+  const [identityCommitError, setIdentityCommitError] = useState<string | null>(null);
   // D-39c: a ghost slot in the view strip opens the mint dialog in upgrade
   // mode (add the missing views to an already-minted package)
   const [upgradeMode, setUpgradeMode] = useState(false);
@@ -246,6 +253,7 @@ export function CastingTakeover({
     isCasting,
     castingMessage,
     tierPlan,
+    mintIntegrity,
     handleCastAndContinue,
   } = useCastGate({
     currentModelId,
@@ -374,8 +382,12 @@ export function CastingTakeover({
     return () => window.removeEventListener('keydown', onKey, true);
   }, [attemptClose, confirmingLeave, showCastModal, isTopupOpen, identityDialog]);
 
+  // Founder ruling (Batch C final corrections): a minted identity must never
+  // present as editable-in-place. This session is honestly framed as the
+  // locked cast whose only identity door is FORK; the proper read-only Cast
+  // Profile with additive view generation is the recorded R7 deliverable.
   const title = isMintedEdit
-    ? `Edit — ${modelNameInStore || 'cast'}`
+    ? `${modelNameInStore || 'Cast'} — identity locked`
     : editContext?.draft
       ? 'Finish this cast'
       : 'Cast a model';
@@ -454,13 +466,15 @@ export function CastingTakeover({
               cost on the header pill: the tier dialog is the D-15 cost
               surface, and a header label would have to guess a tier. */}
           {isMintedEdit ? (
+            // Founder ruling: the door says where it leads BEFORE the user
+            // attempts a save — a minted identity only changes by forking
             <button
               type="button"
               disabled={!hydrated || genState.isGenerating}
               onClick={handleSaveChanges}
               className="px-4 py-1.5 rounded-canvas-pill transition-colors duration-200 disabled:opacity-40 text-canvas-md font-medium text-canvas-ink-soft bg-canvas-surface border-hairline border-canvas-border-strong hover:text-canvas-ink hover:border-canvas-ink"
             >
-              Save changes
+              Fork changes
             </button>
           ) : (
             <button
@@ -545,17 +559,41 @@ export function CastingTakeover({
         </div>
       )}
 
-      {/* The D-11 identity dialog (minted edits only) */}
+      {/* The D-11 identity dialog (minted edits only). Finding 7: the
+          dialog stays open through the round-trip — the takeover (and the
+          user's changes) survive a free server refusal, which renders here
+          in context. Success closes the dialog; the host closes the room. */}
       {identityDialog && editContext && (
         <IdentityChangeDialog
           boardId={editContext.boardId}
           itemId={editContext.itemId}
           changedLabels={identityDialog.labels}
-          onCancel={() => setIdentityDialog(null)}
+          contextOnly={Object.keys(identityDialog.changes).every((k) =>
+            k === 'castingBrand' || k === 'castingVibe',
+          )}
+          pending={identityCommitPending}
+          errorMessage={identityCommitError}
+          onCancel={() => {
+            if (identityCommitPending) return;
+            setIdentityDialog(null);
+            setIdentityCommitError(null);
+          }}
           onCommit={(decision) => {
             const changes = identityDialog.changes;
-            setIdentityDialog(null);
-            onIdentityCommit(decision, changes);
+            setIdentityCommitPending(true);
+            setIdentityCommitError(null);
+            Promise.resolve(onIdentityCommit(decision, changes))
+              .then(() => {
+                setIdentityDialog(null);
+              })
+              .catch((err: unknown) => {
+                setIdentityCommitError(
+                  err instanceof Error && err.message
+                    ? err.message
+                    : 'The fork was refused — nothing was charged.',
+                );
+              })
+              .finally(() => setIdentityCommitPending(false));
           }}
         />
       )}
@@ -565,6 +603,7 @@ export function CastingTakeover({
         onClose={() => setShowCastModal(false)}
         onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, upgradeMode, stayDraft)}
         tiers={tierPlan}
+        integrity={mintIntegrity}
         isCasting={isCasting}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}

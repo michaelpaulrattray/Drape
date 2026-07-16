@@ -6,7 +6,7 @@ import HairColorWheel from "./components/HairColorWheel";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { generateRandomPreferences } from "./castingHelpers";
-import { type GenerationState, type GeneratedAsset, type ModelPreferences, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS, CREDIT_COSTS } from "@/features/casting/constants";
+import { type GenerationState, type GeneratedAsset, type ModelPreferences, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS, CREDIT_COSTS, HAIR_FLYAWAYS } from "@/features/casting/constants";
 import { HAIR_STYLE_CONFIG, HAIR_TUCKS, HAIR_FADES } from "./hairStyleConfig";
 import { BrandSelector } from "./components/BrandSelector";
 import { FromPromptField, type ParsePromptResult } from "./components/FromPromptField";
@@ -270,10 +270,16 @@ export function ControlPanel({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-canvas-xl font-medium text-canvas-ink">
-              {isReadOnly ? (modelName || 'Cast model') : 'Casting'}
+              {isReadOnly || mintedEdit ? (modelName || 'Cast model') : 'Casting'}
             </div>
             <div className="text-canvas-md text-canvas-ink-soft">
-              {isReadOnly ? 'Identity locked' : 'Build your model from scratch'}
+              {/* Founder ruling (Batch C): a minted session never presents as
+                  freeform editing — the identity is locked; changes fork */}
+              {isReadOnly
+                ? 'Identity locked'
+                : mintedEdit
+                  ? 'Identity locked — changes fork a new draft'
+                  : 'Build your model from scratch'}
             </div>
           </div>
           {isReadOnly ? (
@@ -536,7 +542,7 @@ export function ControlPanel({
                               <ChipRow options={activeHairConfig.volumes} selected={prefs.hairVolume || ''} onSelect={v => updatePref('hairVolume', v)} />
                             </div>
                           )}
-                          <WarmSelectControl label="Flyaways" options={["None", "Natural", "Intentional"]} value={prefs.hairFlyaways || ""} onChange={v => updatePref('hairFlyaways', v)} />
+                          <WarmSelectControl label="Flyaways" options={[...HAIR_FLYAWAYS]} value={prefs.hairFlyaways || ""} onChange={v => updatePref('hairFlyaways', v)} />
                           <WarmSelectControl label="Tuck" options={HAIR_TUCKS} value={prefs.hairTuck || ""} onChange={v => updatePref('hairTuck', v)} />
                           {prefs.gender === 'Male' && (
                             <WarmSelectControl label="Facial hair" options={CHAR_OPTIONS.facialHair} value={prefs.facialHair || ""} onChange={v => updatePref('facialHair', v)} />
@@ -567,10 +573,11 @@ export function ControlPanel({
             <span>New model</span>
           </button>
         ) : mintedEdit ? (
-          // R3: identity changes save from the takeover's top bar — every
-          // save is an identity event (D-11); no direct generate here
+          // R3 + founder ruling: identity changes FORK from the takeover's
+          // top bar — a minted identity never changes in place (D-11/D-43);
+          // no direct generate here
           <p className="text-canvas-md text-canvas-ink-soft leading-normal text-center px-2 py-1">
-            Adjust the identity, then save from the top bar — changing a cast is an identity event.
+            Adjust the identity, then Fork changes from the top bar — a minted cast never changes in place.
           </p>
         ) : (
           <>

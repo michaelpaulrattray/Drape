@@ -30,11 +30,11 @@ const log = createModuleLogger("casting/geminiSuggestions");
 /** Shared fallback suggestions — used when Gemini fails or times out */
 export const FALLBACK_SUGGESTIONS = [
   "Slightly narrower jawline",
-  "Add subtle under-eye shadows",
-  "Warmer skin undertone",
+  "Brighter, softer lighting",
   "More prominent cheekbones",
   "Thicker, bushier eyebrows",
-  "Add a beauty mark on cheek",
+  "Messier windswept hair texture",
+  "Warmer expression",
 ];
 
 /**
@@ -133,11 +133,11 @@ Generate exactly 6 suggestions. Each must be:
 
 GOOD EXAMPLES:
 - "Slightly fuller lower lip"
-- "Add light freckles on nose"
 - "Stronger jawline definition"
-- "Warmer, golden skin undertone"
 - "Messier windswept texture"
-- "Add a subtle scar on eyebrow"
+- "Brighter, softer lighting"
+- "Deeper hazel eye color"
+- "Warmer expression"
 
 BAD EXAMPLES:
 - "Transcendent ethereal beauty" (vague)
@@ -148,6 +148,10 @@ BAD EXAMPLES:
 NEVER SUGGEST:
 - Makeup of any kind (blush, lipstick, eyeshadow, eyeliner, foundation, contour, highlight)
 - Cosmetic products or beauty treatments
+- Permanent marks of any kind: tattoos, ink, scars, freckles, moles, beauty marks, birthmarks, piercings — mark editing is not available
+- Clothing, accessories, jewelry, or headwear
+- Skin tone, apparent age, gender, build, or ethnicity changes
+- Eyelash changes of any kind
 - This is a BARE FACE casting studio. All suggestions must be natural physical features only.
 
 Return ONLY a JSON array of exactly 6 strings.`;
@@ -259,15 +263,13 @@ Understatement is critical: if the reference has subtle freckles, say "subtle" o
 FORMAT: Start with the attribute name, then describe EXACTLY what it looks like in the reference.
 
 GOOD (detailed, captures intensity):
-"Sparse, faint golden freckles — concentrated on nose bridge and upper cheeks only, barely visible"
 "Thick natural brows with brushed-up feathered texture and slightly unruly shape"
 "Textured wolf cut with choppy chin-length layers and wispy curtain bangs"
 "Full rounded lips with soft defined cupid's bow and natural pink tone"
-"Subtle under-eye hollows with faint blue-grey shadow, giving a lived-in look"
 "Sleek high ponytail pulled tight from the face, baby hairs at temples"
+"Almond eye shape with a deep crease and gently upturned outer corners"
 
 BAD (vague, will produce exaggerated results):
-"Add freckles" (no density, color, or placement — model will add too many)
 "Change the eyebrows" (no description of what they look like)
 "Use hairstyle from reference" (not descriptive at all)
 "Nice lips" (not specific enough)
@@ -275,8 +277,9 @@ BAD (vague, will produce exaggerated results):
 
 Return 4-6 suggestions. Each must be:
 - 8-20 words: enough detail to guide precise reproduction
-- Focused on ONE transferable attribute: hair, lips, brows, eye shape, 
-  nose shape, jawline, cheekbones, facial hair, or skin features
+- Focused on ONE transferable attribute: hair (style, color, texture, fringe,
+  parting), lips, brows, eye shape, eye color, nose shape, jawline, cheekbones,
+  or face shape
 - MATCH the reference exactly — include intensity words (subtle, faint, bold, heavy, sparse, dense, slight)
 ${hasModelImage ? "- Only suggest attributes that would visibly CHANGE the current model" : ""}
 
@@ -287,6 +290,9 @@ EXCLUDE — do NOT suggest:
 - Clothing brands or specific garments
 - Full "looks" or moods — each suggestion must be ONE physical attribute
 - ANY makeup (blush, lipstick, eyeshadow, eyeliner, contour, highlight, foundation)
+- Permanent marks of any kind: tattoos, ink, scars, freckles, moles, beauty marks, birthmarks, piercings — mark transfer is not available
+- Skin tone or skin texture transfer
+- Eyelash changes of any kind
 - This is a BARE FACE casting studio. All suggestions must be natural physical features only.
 
 ${masterPrompt ? `Current model context (for relevance): "${masterPrompt.substring(0, 300)}"` : ""}

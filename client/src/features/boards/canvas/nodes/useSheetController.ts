@@ -25,7 +25,9 @@ export interface SheetSlotState {
   pinned: boolean;
   stale: boolean;
   version: number;
-  failed: { reason: string } | null;
+  /** Ledger truth (Batch C final correction 1): `refunded` is what actually
+   *  recorded — 0 when the automatic refund failed. */
+  failed: { reason: string; refunded: number; refundReference?: string } | null;
 }
 
 /** Pure tile derivation — exported for tests. */

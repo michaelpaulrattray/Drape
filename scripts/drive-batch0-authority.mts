@@ -9,7 +9,7 @@
  *   E6  models.update carries no status authority (strict input) + FR-3(B)
  *   E7  legacy generation.mint is gone
  *   E8  archived reads as deleted (get / list / picker / packageState)
- *   E9  reconcile: legacy imageUrl rejected; foreign asset id rejected
+ *   E9  reconcile: legacy imageUrl rejected; procedure DISABLED (Batch C/R7)
  *   E10 masked iterate refused before any money moves
  *
  * Usage: pnpm dev (separate terminal), then: npx tsx scripts/drive-batch0-authority.mts
@@ -135,12 +135,14 @@ try {
   const e8d = await query("generation.packageState", { modelId: archivedId });
   check("E8d packageState on archived → NOT_FOUND", e8d.status === 404, `status=${e8d.status}`);
 
-  // ── E9: reconcile input authority ─────────────────────────────────────
+  // ── E9: reconcile input authority + Batch C disablement (R7 keep-off) ──
   const e9a = await mutate("generation.reconcile", { modelId: draftId, imageUrl: "https://evil.example/x.png" });
   check("E9a legacy imageUrl input rejected (strict)", e9a.status === 400 && e9a.text.includes("BAD_REQUEST"), `status=${e9a.status}`);
 
+  // Batch C: the procedure refuses EVERY well-formed request — identity
+  // documents change only through deliberate authorized operations.
   const e9b = await mutate("generation.reconcile", { modelId: draftId, assetId: mintedAssetId });
-  check("E9b another model's asset id → NOT_FOUND", e9b.status === 404 && e9b.text.includes("NOT_FOUND"), `status=${e9b.status}`);
+  check("E9b reconcile disabled (R7 keep-off)", e9b.status >= 400 && e9b.text.includes("reconcile is off"), `status=${e9b.status}`);
 
   // ── E10: masked iterate refused before money ──────────────────────────
   const balBefore = await query("credits.getBalance", undefined);

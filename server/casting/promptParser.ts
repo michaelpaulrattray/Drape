@@ -16,6 +16,7 @@
 import { TEXT_LIGHT_FALLBACK } from "@shared/modelRegistry";
 import { generateRandomPreferences, CASTING_BRANDS } from "@shared/castingOptions";
 import { getAiClient, SAFETY_SETTINGS, safeResponseText, withSingleRetry503, withTimeout, formatGeminiError } from "./geminiClient";
+import { PublicError } from "../lib/publicError";
 import { withTextQueue } from "./geminiQueue";
 import type { ModelPreferences } from "./geminiTypes";
 import { createModuleLogger } from "../logging/logger";
@@ -211,9 +212,10 @@ export async function parseCastingPrompt(prompt: string): Promise<ParsedCastAttr
         );
         return parsed;
       } catch (e) {
-        log.warn({ err: e instanceof Error ? e.message : String(e) }, `[PromptParser] ${model} failed`);
+        // Complete internal error server-side; only sanitized wording travels
+        log.warn({ err: e }, `[PromptParser] ${model} failed`);
         if (i === PARSER_MODELS.length - 1) {
-          throw new Error(formatGeminiError(e));
+          throw new PublicError(formatGeminiError(e), { cause: e });
         }
         await new Promise((r) => setTimeout(r, 500));
       }

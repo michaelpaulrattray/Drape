@@ -27,6 +27,7 @@ export {
   HAIR_VOLUMES,
   HAIR_TUCKS,
   HAIR_FADES,
+  HAIR_FLYAWAYS,
 } from "@shared/castingOptions";
 
 // ============ Brand & Vibe ============
