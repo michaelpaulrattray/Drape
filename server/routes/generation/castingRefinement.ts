@@ -18,6 +18,7 @@ import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
 import { classifyEditIdentityImpact, shouldRefuseIteration, selectStaleSiblingHeads } from "../../casting/editClassifier";
+import { iterationFramingForView } from "../../casting/iterationFraming";
 import { assertNotArchived } from "../../casting/modelGuards";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("routes/generation");
@@ -77,6 +78,19 @@ export const castingRefinementRouter = router({
       if (!targetAsset) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Asset not found" });
       }
+
+      // V1+V14 (Batch A-coupled): per-view framing from the exhaustive
+      // canonical maps — the close trio (frontClose/sideClose/threeQuarter)
+      // crops HEADSHOT, the body trio FULL_BODY, and the canonical angle
+      // travels with the crop so the prompt preserves THIS view's
+      // orientation (a sideClose edit must never be told "straight-on").
+      // Resolved HERE, before the generation record and deduction, so a
+      // non-canonical legacy viewType refuses instead of silently
+      // inheriting a wrong frame. Typed iteration is still an individual
+      // selected-image generation against this view's own image
+      // (un-composed until canon — no anchor references, no sibling
+      // propagation).
+      const framing = iterationFramingForView(targetAsset.viewType);
 
       // A1 SEAL (VC-R5 follow-up, D-43): a minted identity is immutable —
       // an identity-level edit typed against one view would rewrite who this
@@ -148,7 +162,8 @@ export const castingRefinementRouter = router({
               input.feedback,
               {
                 castingBrand: (model.technicalSchema as any)?.context?.casting_for,
-                frame: targetAsset.viewType === 'frontClose' ? 'HEADSHOT' : 'FULL_BODY',
+                frame: framing.crop,
+                viewAngle: framing.viewAngle,
                 maskBase64: input.maskBase64,
                 additionalReference: input.referenceImage,
                 ethnicityHint,

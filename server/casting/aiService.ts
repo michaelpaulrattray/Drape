@@ -5,6 +5,7 @@
  */
 
 import { IMAGE_PRO } from "@shared/modelRegistry";
+import type { CanonicalViewAngle } from "@shared/boardTypes";
 import * as gemini from "./geminiService";
 import type { SingleViewAngle } from "./geminiViews";
 import { storagePut } from "../storage";
@@ -283,6 +284,9 @@ export async function iterateModel(
     maskBase64?: string; // Base64 encoded mask overlay from frontend (transparent PNG with red strokes)
     additionalReference?: string;
     frame?: 'HEADSHOT' | 'FULL_BODY';
+    /** V14: canonical angle of the view being edited — selects the per-angle
+     *  orientation-preservation directive in the iterate prompt. */
+    viewAngle?: CanonicalViewAngle;
     castingBrand?: string;
     ethnicityHint?: string;
     userId?: string;
@@ -307,7 +311,8 @@ export async function iterateModel(
     undefined,
     effectiveMask, // Use the composited mask overlay
     options.ethnicityHint, // Pass through ethnicityHint for phenotype lock
-    options.userId || 'anonymous'
+    options.userId || 'anonymous',
+    options.viewAngle
   );
 
   // Upload base64 to S3 for persistent storage

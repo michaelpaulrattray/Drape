@@ -192,17 +192,12 @@ export function useCastingGeneration({
     }
   }, [currentMasterPrompt]);
 
-  // STABILIZATION ALLOWLIST (wrap, 2026-07-15) — deliberately restored, not
-  // a fossil revival. Audit V1 ruled per-view iterate should be uniform, but
-  // lifting the gate alone is UNSAFE: the server iterate path frames every
-  // non-frontClose view as FULL_BODY (V14) and masked edits would broaden
-  // without the classifier boundary. The real fix is V1+V14 TOGETHER
-  // (per-view framing + the unified masked-edit boundary) — see
-  // CASTING_SYSTEM_AUDIT_ADDENDUM_REVISED.md; this list dies there, not here.
-  // (The stage-lock plumbing D-46 retired stays deleted — audit V2.)
-  const isIterationAllowed = useMemo(() => {
-    return ['frontClose', 'frontFull', 'backFull'].includes(activeView);
-  }, [activeView]);
+  // V1+V14 (Batch A-coupled): the stabilization per-view allowlist is gone —
+  // typed iteration is uniform across the canonical six now that the server
+  // frames each view from the exhaustive canonical map (iterationFraming.ts).
+  // The server classifier + identity seal remain the real gates. Iteration
+  // is still an individual selected-image generation: it does not propagate
+  // to sibling views (the stale-writer marks divergence instead).
 
   // Handle initial generation (headshot)
   const handleGenerate = useCallback(async () => {
@@ -530,7 +525,6 @@ export function useCastingGeneration({
     refetchCreditsWithWarning,
     isFormValid,
     currentImageUrl,
-    isIterationAllowed,
     handleGenerate,
     handleRefineSubmit,
     handleEnhance,

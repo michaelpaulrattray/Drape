@@ -21,8 +21,6 @@ interface ImageViewerPanelProps {
   currentImageUrl: string | undefined;
   currentAssets: GeneratedAsset[];
   genState: GenerationState;
-  /** Stabilization gate (wrap 2026-07-15) — dies with the V1+V14 fix. */
-  isIterationAllowed: boolean;
   isMasking: boolean;
   maskPathsCount: number;
   formProgress: number;
@@ -46,7 +44,6 @@ export function ImageViewerPanel({
   currentImageUrl,
   currentAssets,
   genState,
-  isIterationAllowed,
   isMasking,
   maskPathsCount,
   formProgress,
@@ -380,7 +377,6 @@ export function ImageViewerPanel({
           <RefinePanel
             maskPathsCount={maskPathsCount}
             isMasking={isMasking}
-            isIterationAllowed={isIterationAllowed}
             textAreaRef={textAreaRef}
             handleGenerate={handleGenerate}
             handleEnhance={handleEnhance}

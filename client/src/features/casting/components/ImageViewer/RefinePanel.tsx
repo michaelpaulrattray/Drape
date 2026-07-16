@@ -18,13 +18,13 @@ const EXAMPLE_INTERVAL_MS = 4500;
 
 // ============ Types ============
 
-// The stage-lock branch (era-1, audit V2) is dead. The per-view iterate
-// gate is RESTORED for the stabilization wrap (see useCastingGeneration) —
-// it dies with the V1+V14 fix in the revised plan, not before.
+// The stage-lock branch (era-1, audit V2) and the stabilization per-view
+// iterate gate (V1, retired with the V1+V14 framing fix) are both dead:
+// the refine bar renders on every canonical view; the server classifier +
+// identity seal are the gates.
 interface RefinePanelProps {
   maskPathsCount: number;
   isMasking: boolean;
-  isIterationAllowed: boolean;
   textAreaRef: RefObject<HTMLTextAreaElement | null>;
   handleGenerate: () => void;
   handleEnhance: () => void;
@@ -41,7 +41,6 @@ const barShellClass =
 export function RefinePanel({
   maskPathsCount,
   isMasking,
-  isIterationAllowed,
   textAreaRef,
   handleGenerate,
   handleEnhance,
@@ -49,7 +48,6 @@ export function RefinePanel({
   referenceImage,
 }: RefinePanelProps) {
   const {
-    activeView,
     activeTool,
     refineInput,
     setRefineInput,
@@ -100,15 +98,6 @@ export function RefinePanel({
     }
   };
 
-  // Wrap honesty fix: every gated view gets a stated reason — the old code
-  // had copy only for sideClose, leaving ¾/Walk as a live-looking box that
-  // silently refused typing (the round-4 walk finding). Capability unchanged.
-  const iterationDisabledReason = isIterationAllowed
-    ? null
-    : activeView === 'sideClose'
-      ? 'Side profile cannot be edited directly yet. Edit the headshot or full body instead.'
-      : 'This view cannot be edited directly yet. Edit the headshot or full body instead.';
-
   const glowKeyframes = `
     @keyframes enhanceFloat {
       0%, 100% { transform: translateY(0px); }
@@ -132,18 +121,6 @@ export function RefinePanel({
               Erase
             </button>
           )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Iteration disabled (stabilization gate — reason always stated) ──
-  if (iterationDisabledReason) {
-    return (
-      <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
-        <div className={`flex items-center justify-center gap-2 p-3 ${barShellClass}`}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-ink-faint)" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-          <span className="text-canvas-lg text-canvas-ink-soft">{iterationDisabledReason}</span>
         </div>
       </div>
     );

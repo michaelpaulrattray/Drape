@@ -113,7 +113,6 @@ export function CastingWorkspace({
     refetchCreditsWithWarning,
     isFormValid,
     currentImageUrl,
-    isIterationAllowed,
     handleGenerate,
     handleRefineSubmit,
     handleEnhance,
@@ -265,7 +264,6 @@ export function CastingWorkspace({
           currentImageUrl={currentImageUrl ?? undefined}
           currentAssets={currentAssets}
           genState={genState}
-          isIterationAllowed={isIterationAllowed}
           isMasking={isMasking}
           maskPathsCount={maskPaths.length}
           formProgress={formProgress}

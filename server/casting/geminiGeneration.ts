@@ -13,6 +13,8 @@
  */
 
 import { IMAGE_PRO, IMAGE_FLASH, TEXT_PRO, TEXT_MID, TEXT_ECONOMY, TEXT_HEAVY_FALLBACK, TEXT_LIGHT_FALLBACK, IMAGE_FALLBACK } from "@shared/modelRegistry";
+import type { CanonicalViewAngle } from "@shared/boardTypes";
+import { ITERATION_FRAME_DIRECTIVES } from "./iterationFraming";
 import type { ModelPreferences, GeminiPart } from "./geminiTypes";
 import { ImageResolution, AspectRatio, GenerationMode } from "./geminiTypes";
 import {
@@ -540,7 +542,11 @@ export const generateCastingImage = async (
   castingVibe?: { editorial: number; commercial: number; runway: number },
   maskImageBase64?: string,
   ethnicityHint?: string,
-  userId: string = 'anonymous'
+  userId: string = 'anonymous',
+  // V14: canonical angle of the view being iterated — selects the per-angle
+  // orientation-preservation directive; absent on non-view paths (creation),
+  // which keep the legacy binary frame directive unchanged.
+  viewAngle?: CanonicalViewAngle
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   return withImageQueue(async () => {
   const ai = getAiClient();
@@ -591,7 +597,8 @@ NO: PERFECT SYMMETRY, CGI, CARTOON, ANIME, 3D RENDER, PLASTIC SKIN, DOLL LOOK`;
   if (mode === GenerationMode.ITERATE && iterationRequest) {
     textPrompt = buildIterationImagePrompt(
       iterationRequest, masterPrompt, frame, dynamicStudioSettings,
-      inputMapDescription, maskImageBase64, additionalReferenceBase64, imageIndexCounter
+      inputMapDescription, maskImageBase64, additionalReferenceBase64, imageIndexCounter,
+      viewAngle
     );
   } else {
     // Ethnicity phenotype lock — placed FIRST so image model can't override
@@ -746,11 +753,19 @@ function buildIterationImagePrompt(
   inputMapDescription: string,
   maskImageBase64?: string,
   additionalReferenceBase64?: string,
-  imageIndexCounter: number = 1
+  imageIndexCounter: number = 1,
+  viewAngle?: CanonicalViewAngle
 ): string {
-  const frameDirective = frame === 'FULL_BODY'
-    ? "FULL BODY FASHION SHOT. HEAD TO TOE VISIBLE."
-    : "STRAIGHT-ON HEADSHOT. CLOSE UP FACIAL PORTRAIT. MAINTAIN EXACT CAMERA DISTANCE.";
+  // V14 (Batch A-coupled): when the caller names the canonical view being
+  // edited, the directive preserves THAT view's orientation — the legacy
+  // binary told every close view "STRAIGHT-ON", which would rotate a
+  // sideClose/threeQuarter edit toward the camera. The binary fallback
+  // remains only for non-view callers (no canonical angle to preserve).
+  const frameDirective = viewAngle
+    ? ITERATION_FRAME_DIRECTIVES[viewAngle]
+    : frame === 'FULL_BODY'
+      ? "FULL BODY FASHION SHOT. HEAD TO TOE VISIBLE."
+      : "STRAIGHT-ON HEADSHOT. CLOSE UP FACIAL PORTRAIT. MAINTAIN EXACT CAMERA DISTANCE.";
 
   const framingLock = frame === 'HEADSHOT'
     ? `
