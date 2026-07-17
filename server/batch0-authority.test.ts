@@ -65,7 +65,7 @@ import {
   deductPoints,
   createModelAsset,
 } from "./db";
-import { generateCastingImage } from "./casting/aiService";
+import { CREDIT_COSTS, generateCastingImage } from "./casting/aiService";
 import { buildIdentityAnchor } from "./casting/geminiClient";
 import { appRouter } from "./routers";
 
@@ -638,5 +638,19 @@ describe("generatePdf minted gate (FR-2A, review fix 6)", () => {
     const caller = appRouter.createCaller(authCtx());
     const res = await caller.generation.generatePdf(pdfInput);
     expect(res.success).toBe(true);
+  });
+});
+
+describe("W1 export plan price authority", () => {
+  it("counts current filled canonical slots and prices 2K from the server upscale constant", async () => {
+    vi.mocked(getModelById).mockResolvedValue(
+      model({ status: "active", agencyId: "MOD-26-ABCDEF", mintedAt: new Date() }) as never,
+    );
+    vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never);
+    const caller = appRouter.createCaller(authCtx());
+    const plan = await caller.generation.exportPlan({ modelId: 7 });
+    expect(plan.viewCount).toBe(6);
+    expect(plan.tiers["1K"].totalCost).toBe(0);
+    expect(plan.tiers["2K"]).toMatchObject({ unitCost: CREDIT_COSTS.upscale, totalCost: 6 * CREDIT_COSTS.upscale });
   });
 });

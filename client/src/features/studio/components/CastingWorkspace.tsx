@@ -127,11 +127,17 @@ export function CastingWorkspace({
   });
 
   // Export hook
-  const { handleExport } = useCastingExport({
+  const {
+    handleExport,
+    exportPlan,
+    isExportPlanLoading,
+    exportPlanError,
+    retryExportPlan,
+    isExporting,
+  } = useCastingExport({
     currentModelId,
     currentAssets,
-    genState,
-    setGenState,
+    isOpen: showExportModal,
     setShowExportModal,
   });
 
@@ -230,6 +236,12 @@ export function CastingWorkspace({
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
         onExport={handleExport}
+        exportPlan={exportPlan}
+        isPlanLoading={isExportPlanLoading}
+        planError={exportPlanError}
+        onRetryPlan={retryExportPlan}
+        isExporting={isExporting}
+        viewCount={exportPlan?.viewCount}
         previewImage={
           currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl ?? undefined
         }

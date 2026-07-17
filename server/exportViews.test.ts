@@ -7,7 +7,9 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-  EXPORT_VIEW_FILENAMES,
+  EXPORT_VIEW_FILENAME_STEMS,
+  exportViewFilename,
+  imageFileTypeFromDataUrl,
   VIEW_TO_PDF_KEY,
   isCanonicalViewType,
   compCardViewOrder,
@@ -17,24 +19,30 @@ import { CANONICAL_VIEW_ANGLES, VIEW_ANGLE_LABELS } from "../shared/boardTypes";
 
 describe("EXPORT_VIEW_FILENAMES — all six slots, unique, in card order", () => {
   it("covers exactly the canonical six", () => {
-    expect(Object.keys(EXPORT_VIEW_FILENAMES).sort()).toEqual([...CANONICAL_VIEW_ANGLES].sort());
+    expect(Object.keys(EXPORT_VIEW_FILENAME_STEMS).sort()).toEqual([...CANONICAL_VIEW_ANGLES].sort());
   });
 
   it("filenames are unique and numbered 01–06 along COMP_CARD_VIEW_ORDER", () => {
-    const names = Object.values(EXPORT_VIEW_FILENAMES);
+    const names = Object.values(EXPORT_VIEW_FILENAME_STEMS);
     expect(new Set(names).size).toBe(6);
     // ZIP numbering follows the comp-card presentation order slot-by-slot
     COMP_CARD_VIEW_ORDER.forEach((angle, i) => {
-      const name = EXPORT_VIEW_FILENAMES[angle];
+      const name = EXPORT_VIEW_FILENAME_STEMS[angle];
       expect(name.startsWith(String(i + 1).padStart(2, "0") + "_")).toBe(true);
-      expect(name.endsWith(".png")).toBe(true);
+      expect(name.includes(".")).toBe(false);
     });
   });
 
   it("the era-0 trio's missing views are present (the V3 regression)", () => {
-    expect(EXPORT_VIEW_FILENAMES.threeQuarter).toBe("02_Three_Quarter_Head.png");
-    expect(EXPORT_VIEW_FILENAMES.sideFull).toBe("05_Full_Body_Walk.png");
-    expect(EXPORT_VIEW_FILENAMES.backFull).toBe("06_Full_Body_Rear.png");
+    expect(EXPORT_VIEW_FILENAME_STEMS.threeQuarter).toBe("02_Three_Quarter_Head");
+    expect(EXPORT_VIEW_FILENAME_STEMS.sideFull).toBe("05_Full_Body_Walk");
+    expect(EXPORT_VIEW_FILENAME_STEMS.backFull).toBe("06_Full_Body_Rear");
+  });
+
+  it("trusts encoded magic bytes over a lying MIME header", () => {
+    const jpegBytesWithPngMime = "data:image/png;base64,/9j/4AAQSkZJRgABAQ";
+    expect(imageFileTypeFromDataUrl(jpegBytesWithPngMime)).toEqual({ extension: "jpg", pdfFormat: "JPEG" });
+    expect(exportViewFilename("frontClose", jpegBytesWithPngMime)).toBe("01_Headshot_Primary.jpg");
   });
 });
 

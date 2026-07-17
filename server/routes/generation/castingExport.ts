@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getUserGenerations, getUserById,
 } from "../../db";
-import { POINT_COSTS } from "../../casting/aiService";
+import { CREDIT_COSTS, POINT_COSTS } from "../../casting/aiService";
 import {
   planMintPackage,
   executeMintPackage,
@@ -18,6 +18,8 @@ import { resolveExportEligibility, MISSING_AGENCY_ID_COPY } from "../../../share
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { generatePremiumIdentityPdf, PdfModelData } from "../../casting/pdfService";
+import { resolvePdfPreferences } from "../../casting/pdfPreferences";
+import { buildExportPlan } from "../../../shared/exportPlan";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../../logging/logger";
@@ -35,11 +37,20 @@ export const castingExportRouter = router({
   // Get point costs for all generation types
   costs: publicProcedure.query(() => POINT_COSTS),
 
+  /** D-15 export price authority. The server counts the current filled
+   *  canonical package slots and derives the paid tier from CREDIT_COSTS. */
+  exportPlan: protectedProcedure
+    .input(z.object({ modelId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      const state = await getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+      const viewCount = state.slots.filter((slot) => slot.filled && slot.url).length;
+      return buildExportPlan(viewCount, CREDIT_COSTS.upscale);
+    }),
+
   // Generate premium identity PDF document
   generatePdf: protectedProcedure
     .input(z.object({
       modelId: z.number(),
-      modelName: z.string(),
       images: z.object({
         headshot: z.string().optional(),
         threeQuarter: z.string().optional(), // audit V3: the D-39 slot the era-0 map dropped
@@ -92,40 +103,11 @@ export const castingExportRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       }
 
-      // Extract preferences from technical schema
-      const techSchema = model.technicalSchema as any || {};
-      const prefs = {
-        gender: techSchema.subject?.gender,
-        age: techSchema.subject?.age,
-        ethnicity: techSchema.subject?.ethnicity,
-        bodyType: techSchema.subject?.body_type,
-        skinTone: techSchema.subject?.skin_tone || techSchema.skin?.tone,
-        skinTexture: techSchema.skin?.texture,
-        skinFinish: techSchema.skin?.finish,
-        eyeColor: techSchema.subject?.eye_color,
-        hairColor: techSchema.subject?.hair_color,
-        hairStyle: techSchema.subject?.hair_style || techSchema.hair?.style,
-        hairLength: techSchema.subject?.hair_length,
-        hairTexture: techSchema.hair?.texture,
-        hairVolume: techSchema.hair?.volume,
-        hairFringe: techSchema.hair?.fringe,
-        hairParting: techSchema.hair?.parting,
-        hairFlyaways: techSchema.hair?.flyaways,
-        faceShape: techSchema.face?.shape,
-        jawline: techSchema.face?.jawline,
-        cheekbones: techSchema.face?.cheekbones,
-        cheeks: techSchema.face?.cheeks,
-        eyeShape: techSchema.face?.eye_shape,
-        noseShape: techSchema.face?.nose_shape,
-        lipShape: techSchema.face?.lip_shape,
-        eyebrowStyle: techSchema.face?.eyebrow_style,
-        castingBrand: techSchema.context?.casting_for,
-        castingVibe: techSchema.context?.vibe_blend,
-      };
+      const prefs = resolvePdfPreferences(model.technicalSchema, model.preferences);
 
       // Prepare PDF data
       const pdfData: PdfModelData = {
-        modelName: input.modelName || model.name || 'Unnamed Model',
+        modelName: model.name?.trim() || 'Unnamed Model',
         agencyId: exportId,
         sessionId: `SES-${model.id}`,
         createdAt: model.createdAt?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
@@ -146,7 +128,7 @@ export const castingExportRouter = router({
       return {
         success: true,
         pdfBase64: base64Pdf,
-        filename: `IDENTITY_${exportId}.pdf`,
+        filename: `LEGAL_IDENTITY_${exportId}.pdf`,
       };
     }),
 

@@ -8,6 +8,7 @@
 
 import { jsPDF } from 'jspdf';
 import crypto from 'crypto';
+import { imageFileTypeFromDataUrl } from '../../shared/exportViews';
 
 // Types for PDF generation
 export interface PdfModelData {
@@ -114,7 +115,7 @@ function addSquareImage(
   const side = Math.min(containerW, containerH);
   const imgX = containerX + (containerW - side) / 2;
   const imgY = containerY + (containerH - side) / 2;
-  doc.addImage(base64, 'PNG', imgX, imgY, side, side);
+  doc.addImage(base64, imageFileTypeFromDataUrl(base64).pdfFormat, imgX, imgY, side, side);
 }
 
 /** Display value or em-dash for missing data */

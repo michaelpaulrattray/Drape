@@ -4,10 +4,10 @@ import {
   createGeneration, updateGeneration, updateModel,
 } from "../../db";
 import {
-  iterateModel, enhanceUserPrompt, upscaleImage,
+  iterateModel, enhanceUserPrompt,
   generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGESTIONS,
   compactMasterPrompt, clearCastingSession,
-  POINT_COSTS, ImageResolution,
+  POINT_COSTS,
 } from "../../casting/aiService";
 import { withAtomicCredits, recordRefund, refundTruth } from "../../casting/atomicCredits";
 import { enforceDailyQuota } from "../../db/dailyQuota";
@@ -30,6 +30,7 @@ import { buildIdentityAnchor } from "../../casting/geminiClient";
 import { iterationFramingForView } from "../../casting/iterationFraming";
 import { assertNotArchived } from "../../casting/modelGuards";
 import { createModuleLogger } from "../../logging/logger";
+import { executePaidUpscale, normalizeUpscaleError } from "../../casting/upscaleService";
 const log = createModuleLogger("routes/generation");
 
 export const castingRefinementRouter = router({
@@ -331,7 +332,8 @@ export const castingRefinementRouter = router({
   upscale: protectedProcedure
     .input(z.object({
       imageUrl: z.string(),
-      resolution: z.enum(['1K', '2K', '4K']),
+      // Original-resolution export is free and never calls this paid route.
+      resolution: z.enum(['2K', '4K']),
     }))
     .mutation(async ({ ctx, input }) => {
       // Rate limit by user to prevent API abuse
@@ -346,27 +348,8 @@ export const castingRefinementRouter = router({
       // Daily quota enforcement — prevent one user from exhausting Gemini RPD
       await enforceDailyQuota(ctx.user.id);
 
-      const upscaleCost = POINT_COSTS.iterate;
-      const referenceId = `upscale-${Date.now()}`;
-
       try {
-        const result = await withAtomicCredits(
-          {
-            userId: ctx.user.id,
-            amount: upscaleCost,
-            description: `Upscale to ${input.resolution}`,
-            referenceId,
-          },
-          async () => {
-            const resolutionMap: Record<string, ImageResolution> = {
-              '1K': ImageResolution.STANDARD,
-              '2K': ImageResolution.HIGH,
-              '4K': ImageResolution.ULTRA,
-            };
-            const targetRes = resolutionMap[input.resolution] || ImageResolution.STANDARD;
-            return await upscaleImage(input.imageUrl, targetRes);
-          }
-        );
+        const result = await executePaidUpscale({ userId: ctx.user.id, ...input });
 
         return {
           success: true,
@@ -374,10 +357,7 @@ export const castingRefinementRouter = router({
         };
       } catch (error) {
         log.error({ err: error }, "[Upscale] Error:");
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to upscale image",
-        });
+        throw normalizeUpscaleError(error);
       }
     }),
 

@@ -24,16 +24,47 @@ export const COMP_CARD_VIEW_ORDER = [
   "backFull",
 ] as const satisfies readonly CanonicalViewAngle[];
 
-/** Filenames inside the export ZIP, one per canonical slot, numbered in
- *  comp-card order. */
-export const EXPORT_VIEW_FILENAMES: Record<CanonicalViewAngle, string> = {
-  frontClose: "01_Headshot_Primary.png",
-  threeQuarter: "02_Three_Quarter_Head.png",
-  sideClose: "03_Profile_Head.png",
-  frontFull: "04_Full_Body_Standing.png",
-  sideFull: "05_Full_Body_Walk.png",
-  backFull: "06_Full_Body_Rear.png",
+/** Extension-free filenames inside the export ZIP. The extension is derived
+ *  from the image bytes at export time; R2/R6 assets have historically been
+ *  served as JPEG bytes with PNG metadata, so MIME alone is not authority. */
+export const EXPORT_VIEW_FILENAME_STEMS: Record<CanonicalViewAngle, string> = {
+  frontClose: "01_Headshot_Primary",
+  threeQuarter: "02_Three_Quarter_Head",
+  sideClose: "03_Profile_Head",
+  frontFull: "04_Full_Body_Standing",
+  sideFull: "05_Full_Body_Walk",
+  backFull: "06_Full_Body_Rear",
 };
+
+export type ExportImageFileType = {
+  extension: "jpg" | "png" | "webp" | "gif" | "bin";
+  pdfFormat: "JPEG" | "PNG" | "WEBP" | "GIF";
+};
+
+/** Determine the encoded format from base64 magic bytes first, falling back
+ *  to the data-URL MIME only when the bytes are unknown. */
+export function imageFileTypeFromDataUrl(dataUrl: string): ExportImageFileType {
+  const payload = dataUrl.includes(",") ? dataUrl.slice(dataUrl.indexOf(",") + 1) : dataUrl;
+  if (payload.startsWith("/9j/")) return { extension: "jpg", pdfFormat: "JPEG" };
+  if (payload.startsWith("iVBORw0KGgo")) return { extension: "png", pdfFormat: "PNG" };
+  if (payload.startsWith("UklGR")) return { extension: "webp", pdfFormat: "WEBP" };
+  if (payload.startsWith("R0lGOD")) return { extension: "gif", pdfFormat: "GIF" };
+
+  const mime = /^data:image\/([^;,]+)/i.exec(dataUrl)?.[1]?.toLowerCase();
+  if (mime === "jpeg" || mime === "jpg") return { extension: "jpg", pdfFormat: "JPEG" };
+  if (mime === "png") return { extension: "png", pdfFormat: "PNG" };
+  if (mime === "webp") return { extension: "webp", pdfFormat: "WEBP" };
+  if (mime === "gif") return { extension: "gif", pdfFormat: "GIF" };
+  return { extension: "bin", pdfFormat: "PNG" };
+}
+
+export function filenameWithActualImageExtension(stem: string, dataUrl: string): string {
+  return `${stem}.${imageFileTypeFromDataUrl(dataUrl).extension}`;
+}
+
+export function exportViewFilename(angle: CanonicalViewAngle, dataUrl: string): string {
+  return filenameWithActualImageExtension(EXPORT_VIEW_FILENAME_STEMS[angle], dataUrl);
+}
 
 /** generatePdf's `images` keys per canonical slot (the PDF layout contract). */
 export const VIEW_TO_PDF_KEY: Record<CanonicalViewAngle, PdfImageKey> = {

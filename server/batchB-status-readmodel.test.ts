@@ -346,8 +346,11 @@ describe("generatePdf: status read-state and agencyId integrity are separate con
     vi.mocked(getUserById).mockResolvedValue({ id: 1, name: "Owner", email: "o@x.test", openId: "o", createdAt: new Date() } as never);
     const caller = appRouter.createCaller(authCtx());
     const res = await caller.generation.generatePdf(pdfInput);
-    expect(res.filename).toBe("IDENTITY_MOD-26-LEGACY.pdf");
-    const pdfData = vi.mocked(generatePremiumIdentityPdf).mock.calls[0][0] as { agencyId: string };
+    expect(res.filename).toBe("LEGAL_IDENTITY_MOD-26-LEGACY.pdf");
+    const pdfData = vi.mocked(generatePremiumIdentityPdf).mock.calls[0][0] as { agencyId: string; modelName: string };
     expect(pdfData.agencyId).toBe("MOD-26-LEGACY");
+    // The legacy client field says TEST; the persisted server row is the
+    // identity-name authority and must win.
+    expect(pdfData.modelName).toBe("Test Model");
   });
 });

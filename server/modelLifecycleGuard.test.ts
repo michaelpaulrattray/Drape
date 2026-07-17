@@ -296,7 +296,7 @@ describe("model lifecycle literal guard (Batch B)", () => {
     expect(serverGate).toBeLessThan(server.indexOf("generatePremiumIdentityPdf("));
     // ...and prints ONLY the resolver's verified ID
     expect(server).toContain("agencyId: exportId");
-    expect(server).toContain("filename: `IDENTITY_${exportId}.pdf`");
+    expect(server).toContain("filename: `LEGAL_IDENTITY_${exportId}.pdf`");
   });
 
   // ── Review correction 5: availability required before load/restore ──
