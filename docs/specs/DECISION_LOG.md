@@ -605,6 +605,14 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Prompt honesty:** Side and Three-quarter prompts use one frame-relative direction, and marks may render only where their recorded anatomical location is visible. This is prompt tightening, not a guarantee that the image model will never drift or hallucinate; visual calibration remains a separate R7 gate.
 
+### D-59 — Closing Casting preserves the draft without leaking its async session *(W4, 2026-07-17)*
+
+**Close contract:** Closing a board-originated Casting session invalidates its client session immediately, before the exit animation. Server generation already in flight may finish and persist normally, but its continuation cannot write into a closed or newer Studio session. A ready headshot auto-lands into the originating blank node exactly once. If the user leaves before the headshot exists, the node stays empty; completion is reported honestly as saved to Drafts with an **Open Draft** action. This is an R6 continuation guard, not R7 durable/background-job machinery.
+
+**Open choices:** Required fields deliberately delegated to the engine are stored as a strict true-only `engineChoice` map in model preferences. Those flags satisfy draft validity after reopen, but are stripped before creation-intent scanning and prompt generation. Fork, recast, and variation candidates carry untouched Open flags forward without passing that metadata to the content gate or Gemini; an explicit concrete edit clears only the flag for the field it replaces. The concrete generated values remain read-only technical-schema truth labelled **Resolved at casting**; they are never silently promoted into editable preferences.
+
+**Reference replacement:** The existing temporary iteration reference accepts drag-to-replace even when occupied, through the same file validation path as the empty slot. It remains one-generation input and does not become a persistent reference plate.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

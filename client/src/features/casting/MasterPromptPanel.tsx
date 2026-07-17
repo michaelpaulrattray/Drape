@@ -1,15 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { castingIdentityLabel, honestModelName } from './modelDisplayTruth';
+import {
+  resolvedEngineChoices,
+  type RequiredCastField,
+} from './engineChoicePersistence';
+import { captureCastingSession } from './castingSessionToken';
 
 // ============ Types ============
 
 interface ProfileSection {
   label: string;
-  items: { key: string; value: string }[];
+  items: { key: string; value: string; note?: string }[];
 }
 
 // Section heading — sentence case, no letter-spacing (§13.9)
@@ -21,6 +26,7 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 
 export function MasterPromptPanel() {
   const prefs = useCastingFormStore((s) => s.prefs);
+  const engineChoice = useCastingFormStore((s) => s.engineChoice);
   const updatePref = useCastingFormStore((s) => s.updatePref);
   const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
   const currentModelId = useCastingGenerationStore((s) => s.currentModelId);
@@ -39,6 +45,13 @@ export function MasterPromptPanel() {
     { modelId: currentModelId ?? 0 },
     { enabled: currentModelId != null, staleTime: 0 },
   );
+  const resolvedByField = useMemo(
+    () => new Map(
+      resolvedEngineChoices(currentTechnicalSchema, engineChoice)
+        .map((item) => [item.field, item] as const),
+    ),
+    [currentTechnicalSchema, engineChoice],
+  );
 
   useEffect(() => { setIsCopied(false); }, [specMode, currentMasterPrompt]);
 
@@ -50,6 +63,9 @@ export function MasterPromptPanel() {
   useEffect(() => {
     const refImage = prefs.referenceImage;
     if (refImage && refImage !== prevRefImage.current && currentAssets.length > 0) {
+      const session = captureCastingSession(
+        () => useCastingGenerationStore.getState().sessionToken,
+      );
       const currentImageUrl = currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl;
       setIsLoadingSuggestions(true);
       analyzeReferenceMutation.mutateAsync({
@@ -57,10 +73,12 @@ export function MasterPromptPanel() {
         currentModelImageBase64: currentImageUrl || undefined,
         masterPrompt: currentMasterPrompt || undefined,
       }).then((result) => {
-        if (result.attributes?.length) setSuggestions(result.attributes);
+        if (session.isCurrent() && result.attributes?.length) setSuggestions(result.attributes);
       }).catch(() => {
         // Silent fail — reference analysis is non-critical
-      }).finally(() => setIsLoadingSuggestions(false));
+      }).finally(() => {
+        if (session.isCurrent()) setIsLoadingSuggestions(false);
+      });
     }
     prevRefImage.current = refImage;
   }, [prefs.referenceImage, currentAssets.length]);
@@ -103,15 +121,23 @@ export function MasterPromptPanel() {
     setIsDragging(false);
   };
 
+  const profileItem = (key: string, value: string | undefined, field?: RequiredCastField) => {
+    if (value) return { key, value };
+    const resolved = field ? resolvedByField.get(field) : undefined;
+    return resolved
+      ? { key, value: resolved.value, note: 'Resolved at casting' }
+      : { key, value: '' };
+  };
+
   // Build profile sections from prefs
   const profileSections: ProfileSection[] = [
     {
       label: 'Identity',
       items: [
-        { key: 'Brand', value: prefs.castingBrand },
-        { key: 'Gender', value: prefs.gender },
-        { key: 'Age', value: prefs.age },
-        { key: 'Ethnicity', value: prefs.ethnicity },
+        profileItem('Brand', prefs.castingBrand, 'castingBrand'),
+        profileItem('Gender', prefs.gender, 'gender'),
+        profileItem('Age', prefs.age, 'age'),
+        profileItem('Ethnicity', prefs.ethnicity, 'ethnicity'),
         { key: 'Body', value: prefs.bodyType },
       ].filter((i) => i.value),
     },
@@ -124,14 +150,14 @@ export function MasterPromptPanel() {
         { key: 'Nose', value: prefs.noseShape },
         { key: 'Lips', value: prefs.lipShape },
         { key: 'Eyes', value: prefs.eyeShape },
-        { key: 'Eye color', value: prefs.eyeColor },
+        profileItem('Eye color', prefs.eyeColor, 'eyeColor'),
         { key: 'Brows', value: prefs.eyebrowStyle },
       ].filter((i) => i.value),
     },
     {
       label: 'Skin',
       items: [
-        { key: 'Tone', value: prefs.skinTone },
+        profileItem('Tone', prefs.skinTone, 'skinTone'),
         { key: 'Texture', value: prefs.skinTexture },
         { key: 'Finish', value: prefs.skinFinish },
       ].filter((i) => i.value),
@@ -139,8 +165,8 @@ export function MasterPromptPanel() {
     {
       label: 'Hair',
       items: [
-        { key: 'Color', value: prefs.hairColor },
-        { key: 'Style', value: prefs.hairStyle },
+        profileItem('Color', prefs.hairColor, 'hairColor'),
+        profileItem('Style', prefs.hairStyle, 'hairStyle'),
         { key: 'Length', value: prefs.hairLength },
         { key: 'Texture', value: prefs.hairTexture },
         { key: 'Volume', value: prefs.hairVolume },
@@ -264,9 +290,22 @@ export function MasterPromptPanel() {
                 <div>
                   <SectionLabel>Reference</SectionLabel>
                   {prefs.referenceImage ? (
-                    <div className="relative group">
-                      <div className="rounded-canvas-md overflow-hidden border-hairline border-canvas-border">
+                    <div
+                      className="relative group"
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                    >
+                      <div className={cn(
+                        'relative rounded-canvas-md overflow-hidden border-hairline transition-colors',
+                        isDragging ? 'border-canvas-ink' : 'border-canvas-border',
+                      )}>
                         <img src={prefs.referenceImage} alt="Reference" className="w-full object-cover" style={{ maxHeight: 120 }} />
+                        {isDragging && (
+                          <div className="absolute inset-0 z-10 pointer-events-none bg-canvas-surface/90 flex items-center justify-center text-canvas-md font-medium text-canvas-ink">
+                            Drop to replace
+                          </div>
+                        )}
                       </div>
                       <div className="mt-2 px-2.5 py-2 rounded-canvas-md bg-canvas-surface-inset text-canvas-sm text-canvas-ink-soft leading-normal">
                         <span className="font-medium">How to use:</span> name exactly what to take in the refine bar — e.g. "use the hairstyle from the reference" or "use the eye shape from the reference"
@@ -332,7 +371,10 @@ export function MasterPromptPanel() {
                       {section.items.map((item) => (
                         <div key={item.key} className="flex items-center justify-between py-1.5 px-2.5 rounded-canvas-sm bg-canvas-surface-inset">
                           <span className="text-canvas-md text-canvas-ink-soft">{item.key}</span>
-                          <span className="text-canvas-md font-medium text-canvas-ink-soft">{item.value}</span>
+                          <div className="text-right min-w-0 ml-3">
+                            <div className="text-canvas-md font-medium text-canvas-ink-soft truncate">{item.value}</div>
+                            {item.note && <div className="text-canvas-xs text-canvas-ink-faint">{item.note}</div>}
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -10,6 +10,7 @@ import {
   type Amendment,
 } from "@/features/casting/constants";
 import { buildCreationPreferences } from "@/features/casting/creationPayload";
+import { captureCastingSession } from '@/features/casting/castingSessionToken';
 import type { CastingBindings } from "./castingBindings";
 
 interface UseCastingGenerationParams {
@@ -18,6 +19,8 @@ interface UseCastingGenerationParams {
   isMasking: boolean;
   getGuideOverlayDataUrl: () => Promise<string | undefined>;
   clearMask: () => void;
+  /** Optional board host action for a headshot that finishes after exit. */
+  onBackgroundDraftReady?: (modelId: number) => void;
   /**
    * Where casting state lives — supplied by the caller (audit A1). /studio
    * passes useLegacyCastingBindings(); the canvas controller (M4) passes
@@ -32,14 +35,15 @@ export function useCastingGeneration({
   isMasking,
   getGuideOverlayDataUrl,
   clearMask,
+  onBackgroundDraftReady,
   bindings,
 }: UseCastingGenerationParams) {
   const {
     prefs,
     modelName,
     engineChoice,
-    updatePrefs,
     getReferenceImage,
+    getSessionToken,
     setGenState,
     currentModelId,
     setCurrentModelId,
@@ -112,6 +116,7 @@ export function useCastingGeneration({
     const ec = engineChoice ?? {};
     const ok = (field: string, value: unknown) => !!value || !!ec[field];
     return (
+      ok('castingBrand', prefs.castingBrand) &&
       ok('gender', prefs.gender) &&
       ok('age', prefs.age) &&
       (!!prefs.ethnicity ||
@@ -135,6 +140,7 @@ export function useCastingGeneration({
 
   // Fire-and-forget suggestion fetch (non-blocking, errors swallowed)
   const fetchSuggestions = useCallback(async (masterPrompt: string, imageUrl?: string) => {
+    const session = captureCastingSession(getSessionToken);
     setIsLoadingSuggestions(true);
     setSuggestions([]);
     try {
@@ -144,25 +150,26 @@ export function useCastingGeneration({
         activeView,
         profileSummary,
       });
-      if (result.suggestions?.length) {
+      if (session.isCurrent() && result.suggestions?.length) {
         setSuggestions(result.suggestions);
       }
     } catch (err) {
       console.warn('[Suggestions] Failed to fetch:', err);
     } finally {
-      setIsLoadingSuggestions(false);
+      if (session.isCurrent()) setIsLoadingSuggestions(false);
     }
-  }, [activeView, profileSummary]);
+  }, [activeView, profileSummary, getSessionToken]);
 
   // Compact prompt — MANUAL only (Batch C: iterations never auto-compact;
   // the server keeps raw text whenever compaction would touch mark language)
   const handleCompactPrompt = useCallback(async () => {
     if (!currentModelId || !currentMasterPrompt) return;
+    const session = captureCastingSession(getSessionToken);
     try {
       const result = await compactPromptMutation.mutateAsync({
         modelId: currentModelId,
       });
-      if (result.masterPrompt) {
+      if (session.isCurrent() && result.masterPrompt) {
         setCurrentMasterPrompt(result.masterPrompt);
         toast.success('Prompt compacted');
       }
@@ -182,18 +189,19 @@ export function useCastingGeneration({
 
   // Analyze reference image for attribute transfer
   const handleAnalyzeReference = useCallback(async (referenceBase64: string, currentImageBase64?: string) => {
+    const session = captureCastingSession(getSessionToken);
     try {
       const result = await analyzeReferenceMutation.mutateAsync({
         referenceImageBase64: referenceBase64,
         currentModelImageBase64: currentImageBase64,
         masterPrompt: currentMasterPrompt || undefined,
       });
-      return result.attributes || [];
+      return session.isCurrent() ? result.attributes || [] : [];
     } catch (err) {
       console.warn('[Reference] Failed to analyze:', err);
       return [];
     }
-  }, [currentMasterPrompt]);
+  }, [currentMasterPrompt, getSessionToken]);
 
   // V1+V14 (Batch A-coupled): the stabilization per-view allowlist is gone —
   // typed iteration is uniform across the canonical six now that the server
@@ -216,23 +224,21 @@ export function useCastingGeneration({
       return;
     }
 
+    const session = captureCastingSession(getSessionToken);
     setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 15000 });
 
-    // Engine's-choice brand resolves at fire time (founder ruling 2026-07-11
-    // — kills the silent Gucci fallback): a random pick from the eight,
-    // written back to the form so the user sees what the engine received,
-    // and recorded in preferences so the cast is reproducible (D-12)
+    // Open brand resolves at fire time (D-41). The explicit flag remains
+    // durable authority; the concrete pick stays read-only schema truth.
     let resolvedBrand = prefs.castingBrand;
-    if (!resolvedBrand) {
+    if (engineChoice.castingBrand) {
       resolvedBrand = CASTING_BRANDS[Math.floor(Math.random() * CASTING_BRANDS.length)];
-      updatePrefs({ castingBrand: resolvedBrand });
     }
 
     try {
       // Batch C (§10.3): the creation payload is built by a pure helper that
       // can never carry `referenceImage` — the strict server schema rejects
       // the key, and superjson would otherwise round-trip even undefined.
-      const backendPrefs = buildCreationPreferences(prefs, resolvedBrand);
+      const backendPrefs = buildCreationPreferences(prefs, resolvedBrand, engineChoice);
 
       console.log('[CastingStudio] Sending preferences to backend:', JSON.stringify(backendPrefs, null, 2));
 
@@ -242,11 +248,13 @@ export function useCastingGeneration({
         name: modelName || undefined,
       });
 
-      setCurrentModelId(modelResult.modelId ?? null);
-      setCurrentMasterPrompt(modelResult.masterPrompt || "");
-      setCurrentTechnicalSchema(modelResult.technicalSchema || null);
+      if (session.isCurrent()) {
+        setCurrentModelId(modelResult.modelId ?? null);
+        setCurrentMasterPrompt(modelResult.masterPrompt || "");
+        setCurrentTechnicalSchema(modelResult.technicalSchema || null);
+        setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot...", progress: 50 }));
+      }
 
-      setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot...", progress: 50 }));
       // Batch C (§10.3): a new cast is established from the selections and
       // brief alone — the server schema-rejects creation references.
       // References join after the first headshot, through the refine bar.
@@ -255,6 +263,15 @@ export function useCastingGeneration({
       });
 
       if (imageResult.success && imageResult.imageUrl) {
+        if (!session.isCurrent()) {
+          toast.success('Draft generated and saved to Drafts', {
+            duration: 10000,
+            action: onBackgroundDraftReady
+              ? { label: 'Open Draft', onClick: () => onBackgroundDraftReady(modelResult.modelId!) }
+              : undefined,
+          });
+          return;
+        }
         const newAsset: GeneratedAsset = {
           id: imageResult.assetId || Date.now(),
           viewType: "frontClose",
@@ -277,14 +294,15 @@ export function useCastingGeneration({
         fetchSuggestions(modelResult.masterPrompt || '', imageResult.imageUrl);
       }
 
-      setGenState({ isGenerating: false, currentStep: "", error: null });
+      if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
+      if (!session.isCurrent()) return;
       const message = error instanceof Error ? error.message : "Generation failed";
       setGenState({ isGenerating: false, currentStep: "", error: message });
       setFailedAction({ type: 'NEW' });
       toast.error(message);
     }
-  }, [isFormValid, creditsData, prefs, modelName, updatePrefs]);
+  }, [isFormValid, creditsData, prefs, modelName, engineChoice, getSessionToken, onBackgroundDraftReady]);
 
   // Handle iteration/refinement
   const performIteration = useCallback(async (prompt: string, maskBase64?: string) => {
@@ -296,6 +314,7 @@ export function useCastingGeneration({
       return;
     }
 
+    const session = captureCastingSession(getSessionToken);
     setGenState({ isGenerating: true, currentStep: maskBase64 ? "Applying surgical edit..." : "Iterating...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 8000 });
 
     try {
@@ -314,6 +333,8 @@ export function useCastingGeneration({
         maskBase64,
         referenceImage: freshRefImage || undefined,
       });
+
+      if (!session.isCurrent()) return;
 
       if (result.success && result.imageUrl) {
         const newAsset: GeneratedAsset = {
@@ -380,8 +401,9 @@ export function useCastingGeneration({
         // identity edits write the document atomically server-side.
       }
 
-      setGenState({ isGenerating: false, currentStep: "", error: null });
+      if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
+      if (!session.isCurrent()) return;
       const message = error instanceof Error ? error.message : "Iteration failed";
       // A1 stage 2: the identity seal's refusal is TAUGHT, not toasted —
       // the designed fork-guidance surface renders where the edit happened
@@ -400,12 +422,15 @@ export function useCastingGeneration({
       setFailedAction({ type: 'ITERATE', args: { text: prompt, view: activeView, mask: maskBase64 } });
       toast.error(message);
     }
-  }, [currentModelId, creditsData, currentAssets, activeView]);
+  }, [currentModelId, creditsData, currentAssets, activeView, getSessionToken]);
 
   const handleRefineSubmit = useCallback(async () => {
     if (!currentModelId || !currentImageUrl) return;
 
+    const session = captureCastingSession(getSessionToken);
+
     const maskBase64 = isMasking ? await getGuideOverlayDataUrl() : undefined;
+    if (!session.isCurrent()) return;
 
     if (activeTool === 'eraser') {
       if (!maskBase64) {
@@ -414,6 +439,7 @@ export function useCastingGeneration({
       }
       const prompt = "FIX ARTIFACT: Remove the content in the masked area. Inpaint with surrounding skin texture, lighting, and noise. Restore the background if needed. Do not add new objects.";
       await performIteration(prompt, maskBase64);
+      if (!session.isCurrent()) return;
       setActiveTool('none');
       clearMask();
       return;
@@ -429,6 +455,7 @@ export function useCastingGeneration({
         return;
       }
       await performIteration(refineInput, maskBase64);
+      if (!session.isCurrent()) return;
       setRefineInput("");
       setActiveTool('none');
       clearMask();
@@ -437,29 +464,32 @@ export function useCastingGeneration({
 
     if (refineInput.trim()) {
       await performIteration(refineInput, maskBase64);
+      if (!session.isCurrent()) return;
       setRefineInput("");
       setActiveTool('none');
       clearMask();
     }
-  }, [currentModelId, currentImageUrl, isMasking, activeTool, refineInput, performIteration, getGuideOverlayDataUrl, clearMask]);
+  }, [currentModelId, currentImageUrl, isMasking, activeTool, refineInput, performIteration, getGuideOverlayDataUrl, clearMask, getSessionToken]);
 
   // AI prompt enhancement
   const handleEnhance = useCallback(async () => {
     if (!refineInput.trim() || isEnhancing) return;
+    const session = captureCastingSession(getSessionToken);
     setIsEnhancing(true);
     try {
       const result = await enhanceMutation.mutateAsync({ prompt: refineInput.trim() });
-      if (result.success && result.enhancedPrompt) {
+      if (session.isCurrent() && result.success && result.enhancedPrompt) {
         setRefineInput(result.enhancedPrompt);
         toast.success("Prompt enhanced!");
       }
     } catch (error) {
+      if (!session.isCurrent()) return;
       console.error("Enhance error:", error);
       toast.error("Failed to enhance prompt");
     } finally {
-      setIsEnhancing(false);
+      if (session.isCurrent()) setIsEnhancing(false);
     }
-  }, [refineInput, isEnhancing]);
+  }, [refineInput, isEnhancing, getSessionToken]);
 
   // Retry handler — replays the exact failed action instead of always re-casting
   const handleRetry = useCallback(() => {

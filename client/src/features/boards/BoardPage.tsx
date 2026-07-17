@@ -79,6 +79,13 @@ function BoardPageImpl() {
   const [castTakeoverItemId, setCastTakeoverItemId] = useState<number | null>(null);
   // R3: Edit session on a placed cast (minted → D-11 routing; draft → promotion)
   const [castEditContext, setCastEditContext] = useState<CastEditContext | null>(null);
+  const activeCastSessionRef = useRef({
+    takeoverItemId: castTakeoverItemId,
+    editContext: castEditContext,
+  });
+  useEffect(() => {
+    activeCastSessionRef.current = { takeoverItemId: castTakeoverItemId, editContext: castEditContext };
+  }, [castTakeoverItemId, castEditContext]);
   const { user, isAuthenticated } = useAuth();
   const { startJob, completeJob, failJob } = useGenerationJobs();
 
@@ -667,6 +674,21 @@ function BoardPageImpl() {
     },
     [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation, utils],
   );
+
+  const handleBackgroundDraftReady = useCallback((modelId: number, itemId: number) => {
+    const active = activeCastSessionRef.current;
+    if (active.takeoverItemId !== null || active.editContext !== null) {
+      toast.info('Finish the open Casting session before opening this draft');
+      return;
+    }
+    setCastEditContext({
+      boardId,
+      itemId,
+      modelId,
+      draft: true,
+      originNeedsLanding: true,
+    });
+  }, [boardId]);
 
   // R3: the identity-event landing (D-11). Update regenerates THIS node
   // (job-driven progress on the card); fork lands a new draft node beside
@@ -2094,8 +2116,12 @@ function BoardPageImpl() {
           editContext={castEditContext}
           onMinted={handleTakeoverMinted}
           onDraftLanded={handleDraftLanded}
+          onBackgroundDraftReady={(modelId) =>
+            handleBackgroundDraftReady(modelId, castEditContext?.itemId ?? castTakeoverItemId!)
+          }
           onIdentityCommit={handleIdentityCommit}
           onClose={() => {
+            activeCastSessionRef.current = { takeoverItemId: null, editContext: null };
             setCastTakeoverItemId(null);
             setCastEditContext(null);
           }}

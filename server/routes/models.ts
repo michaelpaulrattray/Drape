@@ -10,6 +10,7 @@ import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
+import { stripEngineChoiceMetadata } from "../casting/engineChoiceMetadata";
 const log = createModuleLogger("routes/models");
 
 export const modelsRouter = router({
@@ -22,17 +23,22 @@ export const modelsRouter = router({
       // Debug: Log received preferences
       log.info({ preferences: input.preferences }, '[models.create] Received preferences');
 
+      // W4/R8: engineChoice is durable UI authority, not prompt content or
+      // identity prose. Keep it in the stored preferences but remove it from
+      // both the content scanner and Gemini prompt construction.
+      const promptPreferences = stripEngineChoiceMetadata(input.preferences);
+
       // Batch C (§10.2, M22): validate the complete creation intent BEFORE
       // the model save — presentation and cosmetic-lash language refuses
       // honestly with routing; nothing is silently stripped.
-      const intake = validateCreationIntent(input.preferences as Record<string, unknown>);
+      const intake = validateCreationIntent(promptPreferences as Record<string, unknown>);
       if (!intake.ok) {
         log.warn({ userId: ctx.user.id, code: intake.code, channel: intake.channel }, '[models.create] refused at intake');
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
       }
 
       // Generate master prompt (no point cost for this step)
-      const masterPrompt = await generateMasterPrompt(input.preferences as ModelPreferences);
+      const masterPrompt = await generateMasterPrompt(promptPreferences as ModelPreferences);
       
       // Debug: Log generated master prompt
       log.info({ data: masterPrompt.naturalDescription?.substring(0, 500) + '...' }, '[models.create] Generated master prompt:');

@@ -48,6 +48,8 @@ export interface CastEditContext {
   /** D-54: a comp-card tile was double-clicked — the environment opens
    *  focused on that view (viewType, e.g. 'sideClose'). */
   initialAngle?: string;
+  /** The originating board node was still blank when this saved draft opened. */
+  originNeedsLanding?: boolean;
 }
 
 export interface CastingTakeoverProps {
@@ -76,6 +78,8 @@ export interface CastingTakeoverProps {
    *  session stays open. Without this the walkable loop dead-ended at a
    *  close that dropped the work on the floor. */
   onDraftLanded?: (modelId: number, info: { name: string | null; headshotUrl: string | null }) => void;
+  /** Headshot completed after exit; the host can reopen the saved draft. */
+  onBackgroundDraftReady?: (modelId: number) => void;
 }
 
 /** Fields compared for identity changes (everything the form can set). */
@@ -122,11 +126,14 @@ export function CastingTakeover({
   onClose,
   onSessionSlots,
   onDraftLanded,
+  onBackgroundDraftReady,
 }: CastingTakeoverProps) {
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   // D-55: once a stays-draft confirm lands the draft on the board, closing
   // this session abandons NOTHING — the leave-confirm would be a false alarm
-  const [draftLanded, setDraftLanded] = useState(false);
+  const [draftLanded, setDraftLanded] = useState(
+    !!editContext?.draft && !editContext.originNeedsLanding,
+  );
   const [identityDialog, setIdentityDialog] = useState<{
     changes: Record<string, unknown>;
     labels: string[];
@@ -144,11 +151,14 @@ export function CastingTakeover({
   // the board — scale+fade entrance, mirrored exit, board visible around it
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
+  const closingStartedRef = useRef(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(raf);
   }, []);
   const startClose = useCallback(() => {
+    if (closingStartedRef.current) return;
+    closingStartedRef.current = true;
     setClosing(true);
     // D-38 straggler (R6 close-out log 1): a cosmetic iterate writes new
     // ledger heads mid-session — carry the CLIENT-HELD slot urls across the
@@ -164,6 +174,17 @@ export function CastingTakeover({
     // from the edit context, or the live session for a fresh cast.
     const state = useCastingGenerationStore.getState();
     const sessionModelId = editContext?.modelId ?? state.currentModelId;
+    const needsBoardLanding = !draftLanded && (!editContext || !!editContext.originNeedsLanding);
+    const headshot = state.currentAssets.find(
+      (asset) => asset.viewType === 'frontClose' && asset.storageUrl,
+    );
+    if (needsBoardLanding && sessionModelId && headshot && onDraftLanded) {
+      setDraftLanded(true);
+      onDraftLanded(sessionModelId, {
+        name: honestModelName(useCastingFormStore.getState().modelName),
+        headshotUrl: headshot.storageUrl,
+      });
+    }
     if (sessionModelId) {
       onSessionSlots?.(
         sessionModelId,
@@ -172,8 +193,12 @@ export function CastingTakeover({
           .map((a) => ({ angle: a.viewType, url: a.storageUrl })),
       );
     }
+    // W4/R2: leaving becomes authoritative NOW, not after the 210ms exit
+    // animation. A headshot resolving during that window must take the
+    // background-draft path and must never write into this closing session.
+    state.invalidateSession();
     window.setTimeout(onClose, 210);
-  }, [onClose, onSessionSlots, editContext]);
+  }, [onClose, onSessionSlots, onDraftLanded, editContext, draftLanded]);
 
   // Session setup: always a clean slate; edit sessions then hydrate via the
   // workspace's gallery path (canvas.castModelId), and minted edits raise the
@@ -283,6 +308,7 @@ export function CastingTakeover({
   });
 
   const hasHeadshot = currentAssets.some((a) => a.viewType === 'frontClose' && a.storageUrl);
+  const needsBoardLanding = !draftLanded && (!editContext || !!editContext.originNeedsLanding);
 
   // Unsaved work: minted edits = a non-empty identity diff; authoring
   // sessions = a draft in progress (which persists server-side either way)
@@ -513,6 +539,7 @@ export function CastingTakeover({
           isAuthenticated={isAuthenticated}
           isReadOnly={false}
           onNewModel={resetCastingSession}
+          onBackgroundDraftReady={onBackgroundDraftReady}
         />
         {/* Cold-mount loader (P1): edit sessions hydrate the model first —
             never flash the default studio */}
@@ -539,9 +566,15 @@ export function CastingTakeover({
             <p className="text-canvas-md text-canvas-ink-soft mb-4" style={{ lineHeight: 1.55 }}>
               {isMintedEdit
                 ? 'Unsaved identity changes are discarded — the placed cast stays as it is.'
-                : genState.isGenerating
-                  ? 'This cast keeps generating and saves to your draft — nothing will land on this board.'
-                  : 'Your draft stays in your studio, but nothing will land on this board.'}
+                : genState.isGenerating && !hasHeadshot && needsBoardLanding
+                  ? 'Generation will continue and save to Drafts. Until the headshot is ready, this node stays empty.'
+                  : hasHeadshot && needsBoardLanding
+                    ? genState.isGenerating
+                      ? 'Your draft will be placed on this board before Casting closes. The in-flight change will keep saving to this draft.'
+                      : 'Your draft will be placed on this board before Casting closes.'
+                    : genState.isGenerating
+                      ? 'Your draft is already saved. The in-flight change will keep saving to it.'
+                      : 'Your draft is already saved. Closing Casting will not delete it.'}
             </p>
             <div className="flex justify-end gap-2">
               <button

@@ -52,6 +52,10 @@ import { buildStructuredPatch } from "../casting/identity/structuredEdit";
 import { commitAnchorReRoll, commitIdentityEdit, computeIdentityCommit } from "../casting/identity/identityCommit";
 import { currentRevisionId, identityStampFor } from "../casting/identity/anchorSelector";
 import { buildIdentityAnchor } from "../casting/geminiClient";
+import {
+  clearEngineChoiceForChanges,
+  prepareCandidatePreferences,
+} from "../casting/engineChoiceMetadata";
 import { enforceDailyQuota } from "../db/dailyQuota";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import type {
@@ -712,10 +716,12 @@ async function generateCastCandidate(opts: { userId: number; prefs: ModelPrefere
   // forkable while the candidate's real intent (attributes + features) is
   // fully validated. Callers validate intake BEFORE deducting; this second
   // check fails closed if a new caller forgot.
-  const prefs = { ...opts.prefs } as ModelPreferences & Record<string, unknown>;
-  delete prefs.referenceImage;
-  prefs.userPrompt = "";
-  const intake = validateCreationIntent(prefs);
+  const inherited = { ...opts.prefs } as ModelPreferences & Record<string, unknown>;
+  delete inherited.referenceImage;
+  inherited.userPrompt = "";
+  const candidate = prepareCandidatePreferences(inherited);
+  const prefs = resolveEngineChoices(candidate.promptPreferences);
+  const intake = validateCreationIntent(prefs as Record<string, unknown>);
   if (!intake.ok) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
   }
@@ -725,7 +731,7 @@ async function generateCastCandidate(opts: { userId: number; prefs: ModelPrefere
     name: DRAFT_AUTO_NAME,
     masterPrompt: masterPrompt.naturalDescription,
     technicalSchema: masterPrompt.technicalSchema,
-    preferences: prefs,
+    preferences: candidate.storeResolved(prefs),
     status: "draft",
   });
   if (!model.success || !model.modelId) {
@@ -1005,10 +1011,13 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   // CREATION path: merge keeps its creation semantics, references are
   // cleared (§10.3), and intake validation refuses FREE, before deduction
   // (§10.2 — this door previously deducted first).
-  const merged = resolveEngineChoices(mergeAttributeChanges(current, input.changes)) as ModelPreferences & Record<string, unknown>;
+  const merged = clearEngineChoiceForChanges(
+    mergeAttributeChanges(current, input.changes),
+    Object.keys(input.changes),
+  ) as ModelPreferences & Record<string, unknown>;
   delete merged.referenceImage;
   merged.userPrompt = ""; // inherited briefs are inert in NEW-mode derivation — see generateCastCandidate
-  const intake = validateCreationIntent(merged);
+  const intake = validateCreationIntent(prepareCandidatePreferences(merged).promptPreferences as Record<string, unknown>);
   if (!intake.ok) {
     log.warn({ itemId: input.itemId, code: intake.code, channel: intake.channel }, "applyModelEdit fork refused at intake (free)");
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
@@ -1179,7 +1188,7 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
   const base = { ...((model.preferences ?? {}) as Record<string, unknown>) };
   delete base.referenceImage;
   base.userPrompt = ""; // inherited briefs are inert in NEW-mode derivation — see generateCastCandidate
-  const intake = validateCreationIntent(base);
+  const intake = validateCreationIntent(prepareCandidatePreferences(base).promptPreferences as Record<string, unknown>);
   if (!intake.ok) {
     log.warn({ itemId: input.itemId, code: intake.code, channel: intake.channel }, "Variations refused at intake (free)");
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
@@ -1201,7 +1210,7 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
     positions.map(() =>
       // Each candidate re-resolves engine choices — an open brand rolls fresh
       // per candidate (D-41 records the pick in the model's preferences)
-      generateCastCandidate({ userId: input.userId, prefs: resolveEngineChoices({ ...base } as ModelPreferences), cost: unitCost }),
+      generateCastCandidate({ userId: input.userId, prefs: { ...base } as ModelPreferences, cost: unitCost }),
     ),
   );
 

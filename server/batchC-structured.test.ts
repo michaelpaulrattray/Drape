@@ -385,6 +385,30 @@ describe("creation doors reordered: refusal precedes deduction (M22)", () => {
     expect(prefs.referenceImage).toBeUndefined();
   });
 
+  it("fork preserves untouched Open flags, clears an explicitly set flag, and never prompts with metadata", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({
+      preferences: {
+        castingBrand: "Prada",
+        eyeColor: "Hazel",
+        hairColor: "Dark Brown",
+        engineChoice: { eyeColor: true, hairColor: true },
+      },
+    }) as never);
+
+    await executeApplyModelEdit({
+      userId: 1,
+      itemId: 3,
+      decision: "fork",
+      changes: { eyeColor: "Blue" },
+    });
+
+    const promptPrefs = vi.mocked(generateMasterPrompt).mock.calls[0][0] as unknown as Record<string, unknown>;
+    const storedPrefs = vi.mocked(createModel).mock.calls[0][0].preferences as Record<string, unknown>;
+    expect(promptPrefs.engineChoice).toBeUndefined();
+    expect(storedPrefs.engineChoice).toEqual({ hairColor: true });
+    expect(storedPrefs.eyeColor).toBe("Blue");
+  });
+
   it("canvas runGeneration: an intake refusal happens BEFORE the deduction (was deduct-then-parse)", async () => {
     await expect(
       executeRunGeneration({ userId: 1, itemId: 3, userPrompt: "girl in a leather jacket" }),
@@ -410,6 +434,23 @@ describe("creation doors reordered: refusal precedes deduction (M22)", () => {
       executeRunVariations({ userId: 1, itemId: 3, count: 2 }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(deductPoints).not.toHaveBeenCalled();
+  });
+
+  it("variations preserve Open flags on candidates but never send metadata to intake or Gemini", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model({
+      preferences: {
+        castingBrand: "Prada",
+        eyeColor: "Hazel",
+        engineChoice: { eyeColor: true },
+      },
+    }) as never);
+
+    const result = await executeRunVariations({ userId: 1, itemId: 3, count: 1 });
+    expect(result.variations).toHaveLength(1);
+    const promptPrefs = vi.mocked(generateMasterPrompt).mock.calls[0][0] as unknown as Record<string, unknown>;
+    const storedPrefs = vi.mocked(createModel).mock.calls[0][0].preferences as Record<string, unknown>;
+    expect(promptPrefs.engineChoice).toBeUndefined();
+    expect(storedPrefs.engineChoice).toEqual({ eyeColor: true });
   });
 });
 

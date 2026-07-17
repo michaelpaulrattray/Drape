@@ -11,6 +11,9 @@ const DEFAULT_GEN_STATE: GenerationState = {
 
 // Generation store state interface
 interface CastingGenerationState {
+  /** Monotonic client-session generation. Reset invalidates all continuations. */
+  sessionToken: number;
+  invalidateSession: () => void;
   // Generation status
   genState: GenerationState;
   setGenState: (state: GenerationState | ((prev: GenerationState) => GenerationState)) => void;
@@ -71,6 +74,12 @@ interface CastingGenerationState {
 export const useCastingGenerationStore = create<CastingGenerationState>()(
   devtools(
     (set, get) => ({
+      sessionToken: 0,
+      invalidateSession: () => set(
+        (state) => ({ sessionToken: state.sessionToken + 1 }),
+        false,
+        'invalidateSession',
+      ),
       // Generation status
       genState: { ...DEFAULT_GEN_STATE },
       setGenState: (stateOrFn) => set(
@@ -164,7 +173,8 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
       },
       
       // Reset all generation state
-      resetGeneration: () => set({
+      resetGeneration: () => set((state) => ({
+        sessionToken: state.sessionToken + 1,
         genState: { ...DEFAULT_GEN_STATE },
         currentModelId: null,
         currentAssets: [],
@@ -178,7 +188,7 @@ export const useCastingGenerationStore = create<CastingGenerationState>()(
         amendments: [],
         identityWarning: null,
         failedAction: null,
-      }, false, 'resetGeneration'),
+      }), false, 'resetGeneration'),
     }),
     { name: 'CastingGenerationStore' }
   )

@@ -30,12 +30,15 @@ import { useCastingGeneration } from '@/features/casting/hooks/useCastingGenerat
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { PackageHealthDialog } from '@/features/casting/components/PackageHealthDialog';
+import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
 
 export interface CastingWorkspaceProps {
   user: { role?: string } | null;
   isAuthenticated: boolean;
   isReadOnly: boolean;
   onNewModel: () => void;
+  /** Opens a draft whose headshot finished after this workspace closed. */
+  onBackgroundDraftReady?: (modelId: number) => void;
   /** Studio's entrance choreography; hosts without it default to visible. */
   leftReady?: boolean;
   rightReady?: boolean;
@@ -46,6 +49,7 @@ export function CastingWorkspace({
   isAuthenticated,
   isReadOnly,
   onNewModel,
+  onBackgroundDraftReady,
   leftReady = true,
   rightReady = true,
 }: CastingWorkspaceProps) {
@@ -55,7 +59,7 @@ export function CastingWorkspace({
   const mintedEdit = useStudioStore((s) => s.mintedEditContext !== null);
 
   // Casting stores
-  const { prefs, modelName } = useCastingFormStore();
+  const { prefs, modelName, engineChoice } = useCastingFormStore();
   const { genState, setGenState, currentModelId, currentAssets } = useCastingGenerationStore();
   const {
     activeView,
@@ -124,6 +128,7 @@ export function CastingWorkspace({
     isMasking,
     getGuideOverlayDataUrl,
     clearMask,
+    onBackgroundDraftReady,
     bindings: castingBindings,
   });
 
@@ -193,7 +198,9 @@ export function CastingWorkspace({
         // Restore form preferences so ControlPanel shows actual model identity
         if ((model as any).preferences) {
           const formStore = useCastingFormStore.getState();
-          formStore.setPrefs((model as any).preferences as any);
+          const restored = editablePreferencesFromStored((model as any).preferences);
+          formStore.setPrefs(restored.preferences);
+          formStore.setEngineChoices(restored.engineChoice);
           formStore.setModelName(model.name || '');
         }
         // Minted edit: the D-11 diff baseline is THIS payload — the same
@@ -201,9 +208,10 @@ export function CastingWorkspace({
         // re-read from the store later (timing-free by construction)
         const studio = useStudioStore.getState();
         if (studio.mintedEditContext?.modelId === model.id) {
+          const restored = editablePreferencesFromStored((model as any).preferences ?? {});
           studio.setMintedEditContext({
             ...studio.mintedEditContext,
-            baselinePrefs: JSON.parse(JSON.stringify((model as any).preferences ?? {})),
+            baselinePrefs: JSON.parse(JSON.stringify(restored.preferences)),
           });
         }
       })
@@ -226,9 +234,23 @@ export function CastingWorkspace({
 
   // Form completion progress (12 fields)
   const formProgress = useMemo(() => {
-    const c = [!!prefs.castingBrand, !!(prefs.castingVibe && (prefs.castingVibe.editorial > 0 || prefs.castingVibe.commercial > 0 || prefs.castingVibe.runway > 0)), !!prefs.gender, !!(prefs.age && prefs.ethnicity), !!prefs.bodyType, !!prefs.faceShape, !!prefs.skinTone, !!(prefs.skinTexture || prefs.skinFinish), !!prefs.eyeColor, !!prefs.eyeColor, !!prefs.hairColor, !!prefs.hairStyle];
+    const c = [
+      !!prefs.castingBrand || !!engineChoice.castingBrand,
+      !!(prefs.castingVibe && (prefs.castingVibe.editorial > 0 || prefs.castingVibe.commercial > 0 || prefs.castingVibe.runway > 0)),
+      !!prefs.gender || !!engineChoice.gender,
+      (!!prefs.age || !!engineChoice.age)
+        && (!!prefs.ethnicity || !!prefs.ethnicityBlend?.length || !!engineChoice.ethnicity),
+      !!prefs.bodyType,
+      !!prefs.faceShape,
+      !!prefs.skinTone || !!engineChoice.skinTone,
+      !!(prefs.skinTexture || prefs.skinFinish),
+      !!prefs.eyeColor || !!engineChoice.eyeColor,
+      !!prefs.eyeColor || !!engineChoice.eyeColor,
+      !!prefs.hairColor || !!engineChoice.hairColor,
+      !!prefs.hairStyle || !!engineChoice.hairStyle,
+    ];
     return Math.round((c.filter(Boolean).length / 12) * 100);
-  }, [prefs]);
+  }, [prefs, engineChoice]);
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative w-full">

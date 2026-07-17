@@ -252,6 +252,25 @@ describe("models.create intake (M22)", () => {
     const ok = await caller.models.create({ preferences: { features: "a fine-line rose tattoo on the shoulder" } });
     expect(ok.success).toBe(true);
   });
+
+  it("stores Open-choice authority but never sends it to intake or Gemini", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    const ok = await caller.models.create({
+      preferences: {
+        gender: "Female",
+        engineChoice: { gender: true, eyeColor: true },
+      },
+    });
+
+    expect(ok.success).toBe(true);
+    expect(generateMasterPrompt).toHaveBeenCalledWith({ gender: "Female" });
+    expect(createModel).toHaveBeenCalledWith(expect.objectContaining({
+      preferences: {
+        gender: "Female",
+        engineChoice: { gender: true, eyeColor: true },
+      },
+    }));
+  });
 });
 
 // ─── M5: compactPrompt protected-language guard ──────────────────────────────

@@ -1,18 +1,19 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { type ModelPreferences } from '../constants';
+import {
+  REQUIRED_CAST_FIELDS,
+  type EngineChoiceFlags,
+  type RequiredCastField,
+} from '../engineChoicePersistence';
+
+export { REQUIRED_CAST_FIELDS, type RequiredCastField } from '../engineChoicePersistence';
 
 /**
  * Required fields for a cast (mirrors useCastingGeneration's isFormValid).
  * Each is satisfied by a value OR by an explicit Engine's-choice flag (D-41).
  * `ethnicity` is satisfied by either the legacy string or a non-empty blend.
  */
-export const REQUIRED_CAST_FIELDS = [
-  'castingBrand', 'gender', 'age', 'ethnicity',
-  'skinTone', 'eyeColor', 'hairColor', 'hairStyle',
-] as const;
-export type RequiredCastField = (typeof REQUIRED_CAST_FIELDS)[number];
-
 // Default preferences for a new model. Gender / age / brand deliberately
 // start EMPTY (founder ruling 2026-07-11): their old silent defaults
 // (Female / 23 / Gucci) masqueraded as choices — absence now means
@@ -64,7 +65,9 @@ interface CastingFormState {
   /** Engine's-choice flags (D-41): required fields the user explicitly
    *  delegated to the engine. UI-only validation state — never a sentinel
    *  string in prompts; absence in prefs IS the engine directive. */
-  engineChoice: Partial<Record<RequiredCastField, boolean>>;
+  engineChoice: EngineChoiceFlags;
+  /** Hydration-only replacement from persisted explicit Open flags. */
+  setEngineChoices: (flags: EngineChoiceFlags) => void;
   /** Toggle a field's Engine's-choice state. Turning it ON clears the
    *  field's value (delegating un-chooses); selecting a value clears it. */
   setEngineChoice: (field: RequiredCastField, on: boolean) => void;
@@ -159,6 +162,7 @@ export const useCastingFormStore = create<CastingFormState>()(
       ),
 
       engineChoice: {},
+      setEngineChoices: (flags) => set({ engineChoice: { ...flags } }, false, 'setEngineChoices'),
       setEngineChoice: (field, on) => set(
         (state) => ({
           engineChoice: { ...state.engineChoice, [field]: on },

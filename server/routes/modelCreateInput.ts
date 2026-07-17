@@ -61,6 +61,18 @@ export const modelCreatePreferencesSchema = z.object({
   // Additional
   features: z.string().optional(),
   userPrompt: z.string().optional(),
+  // W4/R8: explicit Open choices are durable UI authority. True-only and
+  // closed-keyed; generated resolutions remain in technicalSchema.
+  engineChoice: z.object({
+    castingBrand: z.literal(true).optional(),
+    gender: z.literal(true).optional(),
+    age: z.literal(true).optional(),
+    ethnicity: z.literal(true).optional(),
+    skinTone: z.literal(true).optional(),
+    eyeColor: z.literal(true).optional(),
+    hairColor: z.literal(true).optional(),
+    hairStyle: z.literal(true).optional(),
+  }).strict().optional(),
   // Batch C (§10.3, M22): `referenceImage` is GONE and the object is
   // STRICT — a creation reference is schema-REJECTED, never silently
   // ignored. References join after the first headshot, through the

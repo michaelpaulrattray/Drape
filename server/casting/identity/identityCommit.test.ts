@@ -33,6 +33,25 @@ describe("computeIdentityCommit — pure §8.6 document computation", () => {
     expect(out.masterPrompt).toContain(identityFragmentLine("person.face.jawline", "jawline: broad angular jaw, squared"));
   });
 
+  it("an explicit identity edit clears only that field's persisted Open flag", () => {
+    const hairColorPatch: AuthorizedIdentityPatch = {
+      edits: [{ kind: "leaf", leaf: "person.hair.color", operation: "modify", value: { base: "Auburn", override: "" } }],
+      source: "text",
+    };
+    const out = computeIdentityCommit({
+      ...MODEL,
+      preferences: {
+        ...MODEL.preferences,
+        hairColor: "Dark Brown",
+        eyeColor: "Hazel",
+        engineChoice: { hairColor: true, eyeColor: true },
+      },
+    }, hairColorPatch);
+
+    expect((out.preferences as unknown as Record<string, unknown>).engineChoice).toEqual({ eyeColor: true });
+    expect(out.preferences.hairColor).toBe("Auburn");
+  });
+
   it.each(["Long", "Very Long"] as const)(
     "a %s hair-length band edit propagates through the master identity pathway (D-56.1 final)",
     (band) => {

@@ -52,6 +52,16 @@ describe("models.create payload never carries referenceImage (§10.3)", () => {
     expect(validateCreationIntent(payload as Record<string, unknown>)).toEqual({ ok: true });
   });
 
+  it('persists explicit Open flags as a true-only additive preference key', () => {
+    const payload = buildCreationPreferences(ORDINARY_FORM, 'Prada', {
+      skinTone: true,
+      eyeColor: true,
+      hairStyle: false,
+    });
+    expect(payload.engineChoice).toEqual({ skinTone: true, eyeColor: true });
+    expect(modelCreatePreferencesSchema.safeParse(overTheWire(payload)).success).toBe(true);
+  });
+
   it("a reference selected before the first headshot cannot leak into creation", () => {
     const withReference: ModelPreferences = {
       ...ORDINARY_FORM,

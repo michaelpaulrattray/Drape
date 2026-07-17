@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
 import HairColorWheel from "./components/HairColorWheel";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
+import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
+import { resolvedEngineChoices } from '@/features/casting/engineChoicePersistence';
 import { generateRandomPreferences } from "./castingHelpers";
 import { type GenerationState, type GeneratedAsset, type ModelPreferences, SKIN_TEXTURES, SKIN_FINISHES, CHAR_OPTIONS, CREDIT_COSTS, HAIR_FLYAWAYS } from "@/features/casting/constants";
 import { HAIR_STYLE_CONFIG, HAIR_TUCKS, HAIR_FADES } from "./hairStyleConfig";
@@ -139,7 +141,12 @@ export function ControlPanel({
   const updatePrefs = useCastingFormStore((s) => s.updatePrefs);
   const setPrefs = useCastingFormStore((s) => s.setPrefs);
   const engineChoice = useCastingFormStore((s) => s.engineChoice);
+  const currentTechnicalSchema = useCastingGenerationStore((s) => s.currentTechnicalSchema);
   const { showMobilePanel } = useCastingUIStore();
+  const resolvedOpenFields = useMemo(
+    () => resolvedEngineChoices(currentTechnicalSchema, engineChoice),
+    [currentTechnicalSchema, engineChoice],
+  );
 
   const [showAdvancedFace, setShowAdvancedFace] = useState(false);
   const [showAdvancedHair, setShowAdvancedHair] = useState(false);
@@ -316,6 +323,18 @@ export function ControlPanel({
       )}
 
       <SummaryStrip prefs={prefs as unknown as Record<string, unknown>} ethnicityBlend={ethnicityBlend} />
+
+      {resolvedOpenFields.length > 0 && (
+        <div className="mx-4 mb-2 px-3 py-2.5 rounded-canvas-md bg-canvas-surface-inset border-hairline border-canvas-border">
+          <p className="text-canvas-md font-medium text-canvas-ink-soft">Open choices resolved at casting</p>
+          <p className="mt-0.5 text-canvas-sm text-canvas-ink-faint leading-normal">
+            {resolvedOpenFields.map((item) => item.label).join(', ')} stay read-only in Profile.{' '}
+            {mintedEdit
+              ? 'Choosing a value here becomes part of a new fork.'
+              : 'Choose a value here only to change this draft.'}
+          </p>
+        </div>
+      )}
 
       {/* Read-only banner */}
       {isReadOnly && (

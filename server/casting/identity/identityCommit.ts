@@ -35,6 +35,7 @@ import {
   selectStaleSiblingHeads,
 } from "./anchorSelector";
 import { createModuleLogger } from "../../logging/logger";
+import { clearEngineChoiceForChanges } from "../engineChoiceMetadata";
 
 const log = createModuleLogger("casting/identity/identityCommit");
 
@@ -73,7 +74,10 @@ export function computeIdentityCommit(
   preferences: ModelPreferences;
   fragments: string[];
 } {
-  const currentPrefs = ((model.preferences ?? {}) as ModelPreferences) || {};
+  const currentPrefs = clearEngineChoiceForChanges(
+    model.preferences,
+    patch.edits.map(editField),
+  ) as ModelPreferences;
   const currentSchema = ((model.technicalSchema ?? {}) as TechnicalSchema) || {};
 
   let preferences: ModelPreferences = { ...currentPrefs };

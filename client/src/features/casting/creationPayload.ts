@@ -12,11 +12,14 @@
  * real creation payload against the real server schema.
  */
 import type { ModelPreferences } from "./constants";
+import { sanitizeEngineChoice, type EngineChoiceFlags } from './engineChoicePersistence';
 
 export function buildCreationPreferences(
   prefs: ModelPreferences,
   resolvedBrand: string | undefined,
+  engineChoice: EngineChoiceFlags = {},
 ) {
+  const durableEngineChoice = sanitizeEngineChoice(engineChoice);
   return {
     gender: prefs.gender,
     age: prefs.age,
@@ -51,5 +54,8 @@ export function buildCreationPreferences(
     features: prefs.features,
     userPrompt: prefs.userPrompt,
     ethnicityBlend: prefs.ethnicityBlend,
+    ...(Object.keys(durableEngineChoice).length > 0
+      ? { engineChoice: durableEngineChoice }
+      : {}),
   };
 }

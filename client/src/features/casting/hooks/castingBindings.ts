@@ -52,6 +52,8 @@ export interface CastingBindings {
   isMintedEditSession: boolean;
   /** Fresh read mid-mutation — never a render-time closure value. */
   getReferenceImage: () => string | undefined;
+  /** Fresh session generation; late async continuations must compare it. */
+  getSessionToken: () => number;
 
   /* ── Generation state ─────────────────────────────────── */
   genState: GenerationState;
@@ -156,6 +158,7 @@ export function useLegacyCastingBindings(): CastingBindings {
     updatePrefs,
     isMintedEditSession,
     getReferenceImage: () => useCastingFormStore.getState().prefs.referenceImage,
+    getSessionToken: () => useCastingGenerationStore.getState().sessionToken,
 
     genState,
     setGenState,
