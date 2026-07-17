@@ -31,6 +31,7 @@ import { iterationFramingForView } from "../../casting/iterationFraming";
 import { assertNotArchived } from "../../casting/modelGuards";
 import { createModuleLogger } from "../../logging/logger";
 import { executePaidUpscale, normalizeUpscaleError } from "../../casting/upscaleService";
+import { staledAnglesForAssetIds } from "../../casting/identity/staleResponse";
 const log = createModuleLogger("routes/generation");
 
 export const castingRefinementRouter = router({
@@ -251,6 +252,8 @@ export const castingRefinementRouter = router({
             masterPrompt: commit.masterPrompt,
             technicalSchema: commit.technicalSchema,
             assetId: commit.assetId,
+            staledAngles: staledAnglesForAssetIds(assets, commit.staledAssetIds),
+            staleMessage: REFUSAL_COPY.siblingsNeedRefresh,
           };
         }
 
@@ -311,6 +314,8 @@ export const castingRefinementRouter = router({
           imageUrl: result.imageUrl,
           pointsCost: POINT_COSTS.iterate,
           assetId: assetResult.assetId,
+          staledAngles: [],
+          staleMessage: null,
         };
       } catch (error) {
         const auditFailed = await updateGeneration(genResult.generationId, {

@@ -597,6 +597,14 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Why:** lifecycle state belongs to the model, not to the placement snapshot. The prior D-42 stamp was honest only at placement time and became a lie after another placement minted the same draft.
 
+### D-58 — Package health is the R6 repair surface; in-flight state is same-tab only *(W3, 2026-07-17)*
+
+**What:** Casting Studio exposes one package-health surface backed by the existing server-owned package, refresh-plan, mint-integrity, version, pin, restore, and refresh procedures. It shows stale and failed rows, exact server-planned per-view costs, compatible-version restore, and an explicit route from mint-integrity blockers. Successful refreshes return their real asset ledger ids so the open Studio session never invents a client id. An authorized identity iterate returns the exact canonical sibling angles written stale plus the ratified quiet refresh notice; image-only edits return no stale angles.
+
+**Concurrency boundary:** Canvas and Studio share a small same-tab, per-model in-flight registry so work started in one surface is visible in the other and overlapping refreshes are reference-counted. This is UI coordination only. It does not claim durable/background job recovery, cross-tab truth, or state that survives reload; server-persisted generation-job state remains R7.
+
+**Prompt honesty:** Side and Three-quarter prompts use one frame-relative direction, and marks may render only where their recorded anatomical location is visible. This is prompt tightening, not a guarantee that the image model will never drift or hallucinate; visual calibration remains a separate R7 gate.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

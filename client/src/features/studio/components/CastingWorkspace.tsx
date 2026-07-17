@@ -29,6 +29,7 @@ import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
 import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
+import { PackageHealthDialog } from '@/features/casting/components/PackageHealthDialog';
 
 export interface CastingWorkspaceProps {
   user: { role?: string } | null;
@@ -246,6 +247,7 @@ export function CastingWorkspace({
           currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl ?? undefined
         }
       />
+      <PackageHealthDialog />
 
       {/* Left Panel — Control (slides from left) */}
       <AnimatedPanel

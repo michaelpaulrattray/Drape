@@ -168,8 +168,8 @@ export const generateRemainingViews = async (
   }
 
   const viewConfigs = [
-    { key: 'sideClose', prompt: `SIDE PROFILE PORTRAIT. Head and shoulders only. Facing Right. ${wardrobeConstraint} Same subject.` },
-    { key: 'sideFull', prompt: `FULL BODY SIDE PROFILE. Walking motion. Facing Right. ${wardrobeConstraint} Same subject.` },
+    { key: 'sideClose', prompt: `STRICT RIGHT-FACING SIDE PROFILE PORTRAIT. Head and shoulders only. The subject's nose points toward the RIGHT EDGE OF THE OUTPUT FRAME; show one eye and a true 90-degree profile, never a three-quarter view. ${wardrobeConstraint} Same subject.` },
+    { key: 'sideFull', prompt: `STRICT RIGHT-FACING FULL BODY SIDE PROFILE. Walking motion. The subject's nose and toes point toward the RIGHT EDGE OF THE OUTPUT FRAME; keep the torso in true profile. ${wardrobeConstraint} Same subject.` },
     { key: 'backFull', prompt: `FULL BODY FROM BEHIND. Walking away. ${wardrobeConstraint} Same subject. No new back tattoos.` }
   ];
 
@@ -182,7 +182,7 @@ export const generateRemainingViews = async (
         contents: {
           parts: [
             { inlineData: { data: base64Data, mimeType: mimeType } },
-            { text: `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${config.prompt}\n\n${identityAnchor}\n\nTHE ATTACHED IMAGE IS THIS EXACT PERSON. Match their face, skin, and any tattoos/marks precisely.\n\n${dynamicStudioSettings}` }
+            { text: `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${config.prompt}\n\n${identityAnchor}\n\nTHE ATTACHED IMAGE IS THIS EXACT PERSON. Match their face, skin, and any tattoos/marks precisely. Render a mark only when its recorded anatomical location is visible from this requested angle; never move or mirror it onto another body surface.\n\n${dynamicStudioSettings}` }
           ]
         },
         config: {
@@ -244,11 +244,11 @@ export type SingleViewAngle = Exclude<CanonicalViewAngle, "frontClose" | "frontF
 
 /** Per-angle prompt tasks, keyed by canonical angle — exported for tests. */
 export const SINGLE_VIEW_PROMPTS: Record<SingleViewAngle, (wardrobeConstraint: string) => string> = {
-  sideClose: (wardrobeConstraint) => `SIDE PROFILE PORTRAIT. Head and shoulders only. Facing Right. ${wardrobeConstraint} Same subject.`,
-  sideFull: (wardrobeConstraint) => `FULL BODY SIDE PROFILE. Walking motion. Facing Right. ${wardrobeConstraint} Same subject.`,
+  sideClose: (wardrobeConstraint) => `STRICT RIGHT-FACING SIDE PROFILE PORTRAIT. Head and shoulders only. The subject's nose points toward the RIGHT EDGE OF THE OUTPUT FRAME; show one eye and a true 90-degree profile, never a three-quarter view. ${wardrobeConstraint} Same subject.`,
+  sideFull: (wardrobeConstraint) => `STRICT RIGHT-FACING FULL BODY SIDE PROFILE. Walking motion. The subject's nose and toes point toward the RIGHT EDGE OF THE OUTPUT FRAME; keep the torso in true profile. ${wardrobeConstraint} Same subject.`,
   backFull: (wardrobeConstraint) => `FULL BODY FROM BEHIND. Walking away. ${wardrobeConstraint} Same subject. No new back tattoos.`,
   // D-39 face cluster: ~45° is the safest person-rotation (angles research)
-  threeQuarter: (wardrobeConstraint) => `THREE-QUARTER PORTRAIT. Head and shoulders only, face turned 45 degrees to the right of camera — a classic three-quarter angle. Both eyes visible. ${wardrobeConstraint} Same subject.`,
+  threeQuarter: (wardrobeConstraint) => `RIGHT-FACING THREE-QUARTER PORTRAIT. Head and shoulders only. The subject's nose points diagonally toward the RIGHT EDGE OF THE OUTPUT FRAME at a 45-degree turn; both eyes remain visible. Never mirror the direction. ${wardrobeConstraint} Same subject.`,
 };
 
 /**
@@ -275,7 +275,7 @@ export const generateSingleView = async (
     : "Attire: Minimalist black activewear.";
 
   const prompt = SINGLE_VIEW_PROMPTS[viewType](wardrobeConstraint);
-  const fullPrompt = `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${prompt}\n\n${identityAnchor}\n\nTHE ATTACHED IMAGE IS THIS EXACT PERSON. Match their face, skin, and any tattoos/marks precisely.\n\n${dynamicStudioSettings}`;
+  const fullPrompt = `STRICT CHARACTER CONSISTENCY REQUIRED.\nReference image provided.\nTASK: ${prompt}\n\n${identityAnchor}\n\nTHE ATTACHED IMAGE IS THIS EXACT PERSON. Match their face, skin, and any tattoos/marks precisely. Render a mark only when its recorded anatomical location is visible from this requested angle; never move or mirror it onto another body surface.\n\n${dynamicStudioSettings}`;
 
   const executeViewGen = async (model: string) => {
     const response = await ai.models.generateContent({

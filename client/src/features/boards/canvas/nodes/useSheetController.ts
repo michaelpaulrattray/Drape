@@ -16,6 +16,9 @@ import type { CanonicalViewAngle, BoardItemCanvasMetadata } from "@shared/boardT
 import { isActionableStale } from "@shared/refreshPolicy";
 import type { CastNodeData } from "./CastNode";
 import type { SheetTile } from "../CharacterSheetImageArea";
+import { useCastingRefreshStore } from "@/features/casting/stores/useCastingRefreshStore";
+
+const EMPTY_REFRESHING_ANGLES: CanonicalViewAngle[] = [];
 
 export interface SheetSlotState {
   angle: CanonicalViewAngle;
@@ -90,7 +93,12 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     return map;
   }, [boardEdges, items, data.itemId]);
 
-  const [refreshingAngles, setRefreshingAngles] = useState<ReadonlySet<CanonicalViewAngle>>(new Set());
+  const refreshingList = useCastingRefreshStore((s) =>
+    modelId ? s.refreshingByModel[modelId] : undefined,
+  ) ?? EMPTY_REFRESHING_ANGLES;
+  const refreshingAngles = useMemo(() => new Set(refreshingList), [refreshingList]);
+  const beginRefresh = useCastingRefreshStore((s) => s.begin);
+  const endRefresh = useCastingRefreshStore((s) => s.end);
   const [popoverAngle, setPopoverAngle] = useState<CanonicalViewAngle | null>(null);
   const [bulkRefreshOpen, setBulkRefreshOpen] = useState(false);
 
@@ -132,21 +140,15 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
   }, [modelId, utils]);
 
   const refreshMutation = trpc.generation.refreshSlots.useMutation({
-    onMutate: ({ angles }) => {
-      setRefreshingAngles((prev) => {
-        const next = new Set(prev);
-        for (const a of angles) next.add(a);
-        return next;
-      });
+    onMutate: ({ modelId: targetModelId, angles }) => {
+      beginRefresh(targetModelId, angles);
     },
     onError: (err) => toast.error(err.message),
-    onSettled: (_data, _err, { angles }) => {
-      setRefreshingAngles((prev) => {
-        const next = new Set(prev);
-        for (const a of angles) next.delete(a);
-        return next;
-      });
-      invalidatePackage();
+    onSettled: (_data, _err, { modelId: targetModelId, angles }) => {
+      endRefresh(targetModelId, angles);
+      void utils.generation.packageState.invalidate({ modelId: targetModelId });
+      void utils.generation.refreshSlotsPlan.invalidate({ modelId: targetModelId });
+      void utils.credits.getBalance.invalidate();
     },
   });
 

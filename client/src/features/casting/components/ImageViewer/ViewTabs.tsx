@@ -4,6 +4,8 @@ import { refundOutcomeText } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
+import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
+import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
 
 // ============ Types ============
 
@@ -192,6 +194,10 @@ export function ViewTabs() {
       .filter((s) => s.stale && !s.pinned && s.filled)
       .map((s) => s.angle as ViewType),
   );
+  const issueCount = (packageQuery.data?.slots ?? []).filter((slot) => slot.stale || !!slot.failed).length;
+  const refreshingCount = useCastingRefreshStore((s) =>
+    currentModelId ? new Set(s.refreshingByModel[currentModelId] ?? []).size : 0,
+  );
   const [hovered, setHovered] = useState(false);
 
   const getAsset = (vt: ViewType) => currentAssets.find((a) => a.viewType === vt);
@@ -222,11 +228,22 @@ export function ViewTabs() {
               isStale={staleAngles.has(vt)}
             />
           ) : failedByAngle.has(vt) ? (
-            <FailedSlot key={vt} label={label} failure={failedByAngle.get(vt)!} onRetry={openPackage} />
+            <FailedSlot key={vt} label={label} failure={failedByAngle.get(vt)!} onRetry={() => openPackageHealth(vt)} />
           ) : (
             <GhostSlot key={vt} label={label} onClick={openPackage} />
           ),
         )}
+        <button
+          type="button"
+          onClick={(event) => { event.stopPropagation(); openPackageHealth(); }}
+          className="w-[72px] px-1 py-1.5 text-center text-canvas-xs font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors"
+        >
+          {refreshingCount > 0
+            ? `${refreshingCount} refreshing`
+            : issueCount > 0
+              ? `${issueCount} to review`
+              : 'Package health'}
+        </button>
       </div>
     </div>
   );

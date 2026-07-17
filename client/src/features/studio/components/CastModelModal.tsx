@@ -79,6 +79,8 @@ export interface CastModelModalProps {
   fixedName?: string;
   /** Existing draft nickname. Prefills the mint door but remains editable. */
   initialName?: string;
+  /** Opens the shared Package health surface for stale/failed mint blockers. */
+  onResolvePackage?: () => void;
   /** VC-R6 final r2 / defect 4: this subject is an EXISTING placed draft
    *  (re-editing to add views), not a fresh first cast. The dialog then
    *  reads as ADDING VIEWS ("Add N views — she stays a draft"), the primary
@@ -99,6 +101,7 @@ export function CastModelModal({
   mode = 'mint',
   fixedName,
   initialName,
+  onResolvePackage,
   existingDraft = false,
 }: CastModelModalProps) {
   const [name, setName] = useState(() => initialMintName(initialName));
@@ -309,6 +312,15 @@ export function CastModelModal({
                   {m}
                 </div>
               ))}
+              {onResolvePackage && (
+                <button
+                  type="button"
+                  onClick={onResolvePackage}
+                  className="mt-2 text-canvas-sm font-medium text-canvas-ink hover:text-canvas-ink-soft transition-colors"
+                >
+                  Review and refresh views
+                </button>
+              )}
             </div>
           )}
 

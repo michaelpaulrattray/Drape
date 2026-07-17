@@ -30,6 +30,8 @@ import { useDebugShortcuts } from '@/features/studio/hooks/useDebugShortcuts';
 import { CastModelModal } from '@/features/studio/components/CastModelModal';
 import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
+import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
+import { honestModelName } from '@/features/casting/modelDisplayTruth';
 
 export default function DrapeStudio() {
   const [, navigate] = useLocation();
@@ -37,6 +39,7 @@ export default function DrapeStudio() {
 
   // Studio store
   const { activeTool, canvas, setCanvas, wardrobeStart } = useStudioStore();
+  const modelName = useCastingFormStore((s) => s.modelName);
 
   // Sidebar: profile, billing, referral modals
   const [showSettings, setShowSettings] = useState(false);
@@ -280,6 +283,8 @@ export default function DrapeStudio() {
         isCasting={isCasting}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
+        initialName={honestModelName(modelName)}
+        onResolvePackage={() => openPackageHealth()}
       />
 
       <CreditTopupModal

@@ -98,7 +98,7 @@ export async function planRefreshSlots(input: {
 }
 
 export interface RefreshResult {
-  refreshed: Array<{ angle: CanonicalViewAngle; imageUrl: string }>;
+  refreshed: Array<{ angle: CanonicalViewAngle; imageUrl: string; assetId: number }>;
   failed: Array<{
     angle: CanonicalViewAngle;
     label: string;
@@ -181,7 +181,7 @@ export async function executeRefreshSlots(input: {
   const results = await Promise.all(input.angles.map((angle) => generatePackageSlot(ctx, angle)));
   const refreshed = results
     .filter((r): r is Extract<SlotGenResult, { ok: true }> => r.ok)
-    .map((r) => ({ angle: r.angle, imageUrl: r.imageUrl }));
+    .map((r) => ({ angle: r.angle, imageUrl: r.imageUrl, assetId: r.assetId! }));
   const failed = results
     .filter((r): r is Extract<SlotGenResult, { ok: false }> => !r.ok)
     .map(({ angle, label, reason, refunded, refundReference, markerPersisted }) => ({

@@ -33,13 +33,15 @@ describe("SINGLE_VIEW_PROMPTS — canonical keys, no wire names", () => {
     }
   });
 
-  it("each angle keeps its intended framing (prompt text unchanged by the rename)", () => {
+  it("each angle keeps its intended framing and explicit frame-relative direction", () => {
     expect(SINGLE_VIEW_PROMPTS.sideClose(WARDROBE)).toContain("SIDE PROFILE PORTRAIT");
     expect(SINGLE_VIEW_PROMPTS.sideFull(WARDROBE)).toContain("FULL BODY SIDE PROFILE");
     expect(SINGLE_VIEW_PROMPTS.sideFull(WARDROBE)).toContain("Walking motion");
     expect(SINGLE_VIEW_PROMPTS.backFull(WARDROBE)).toContain("FULL BODY FROM BEHIND");
     expect(SINGLE_VIEW_PROMPTS.threeQuarter(WARDROBE)).toContain("THREE-QUARTER PORTRAIT");
-    expect(SINGLE_VIEW_PROMPTS.threeQuarter(WARDROBE)).toContain("45 degrees");
+    expect(SINGLE_VIEW_PROMPTS.threeQuarter(WARDROBE)).toContain("45-degree");
+    expect(SINGLE_VIEW_PROMPTS.sideClose(WARDROBE)).toContain("RIGHT EDGE OF THE OUTPUT FRAME");
+    expect(SINGLE_VIEW_PROMPTS.threeQuarter(WARDROBE)).toContain("RIGHT EDGE OF THE OUTPUT FRAME");
   });
 
   it("prompts are distinct per angle — no two views share a framing", () => {

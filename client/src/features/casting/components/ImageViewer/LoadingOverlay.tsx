@@ -60,13 +60,12 @@ const CONTEXTUAL_TIPS: Record<string, string[]> = {
 };
 
 const FALLBACK_TIPS = [
-  'Undo and redo preserve your full history',
   'Export packs include a full identity document',
-  'Every generation is saved — scroll through your version history anytime',
+  'Each view keeps its own version history in Package health',
   'Hold compare to see the previous version side by side',
   'Your model\'s identity prompt is portable across studios',
   'The spec panel shows exactly what the AI was told to generate',
-  'Drag the history slider to revisit any previous version',
+  'Refresh out-of-sync views when you are ready to update the whole card',
 ];
 
 // ============ Component ============

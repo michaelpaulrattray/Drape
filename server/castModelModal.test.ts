@@ -96,6 +96,33 @@ describe("fresh cast and upgrade modes keep their shapes", () => {
   });
 });
 
+describe("W3 mint blockers route into Package health", () => {
+  it("adds a working review-and-refresh door when integrity blocks minting", () => {
+    const failedIntegrity = {
+      draft: {
+        anchor: { ok: true },
+        displayHeadshot: { ok: true },
+        tierViews: [{ angle: "sideClose", label: "Side profile", present: true, ok: false, message: "Side profile is out of sync" }],
+        ok: false,
+      },
+      core: {
+        anchor: { ok: true },
+        displayHeadshot: { ok: true },
+        tierViews: [{ angle: "sideClose", label: "Side profile", present: true, ok: false, message: "Side profile is out of sync" }],
+        ok: false,
+      },
+      production: {
+        anchor: { ok: true },
+        displayHeadshot: { ok: true },
+        tierViews: [{ angle: "sideClose", label: "Side profile", present: true, ok: false, message: "Side profile is out of sync" }],
+        ok: false,
+      },
+    };
+    const html = render({ integrity: failedIntegrity, onResolvePackage: () => {} });
+    expect(html).toContain("Review and refresh views");
+  });
+});
+
 describe("confirmArgsForDoor — what each door actually sends (behavior, not copy)", () => {
   it("mint door: trimmed name, stayDraft false — on both paths", () => {
     for (const addFirst of [true, false]) {

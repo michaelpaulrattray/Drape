@@ -344,6 +344,12 @@ export function useCastingGeneration({
           timestamp: Date.now(),
         };
         addAmendment(amendment);
+
+        if (result.staledAngles.length > 0 && result.staleMessage) {
+          setIdentityWarning(result.staleMessage);
+        } else {
+          setIdentityWarning(null);
+        }
         
         toast.success("Iteration complete!");
         refetchCreditsWithWarning();
