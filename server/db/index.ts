@@ -51,7 +51,7 @@ export {
   getModelById,
   getModelByAgencyId,
   getUserModels,
-  getArchivedModelIdsIn,
+  getModelStatusesIn,
   updateModel,
   mintModel,
   deleteModel,

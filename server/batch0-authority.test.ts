@@ -26,7 +26,7 @@ vi.mock("./db", async (importOriginal) => {
     getBoardById: vi.fn(),
     getBoardItemById: vi.fn(),
     getBoardItems: vi.fn(),
-    getArchivedModelIdsIn: vi.fn().mockResolvedValue(new Set()),
+    getModelStatusesIn: vi.fn().mockResolvedValue(new Map()),
     updateModel: vi.fn().mockResolvedValue({ success: true }),
     mintModel: vi.fn().mockResolvedValue({ success: true }),
     deleteModel: vi.fn().mockResolvedValue({ success: true }),
@@ -58,7 +58,7 @@ import {
   getBoardById,
   getBoardItemById,
   getBoardItems,
-  getArchivedModelIdsIn,
+  getModelStatusesIn,
   updateModel,
   mintModel,
   deleteModel,
@@ -137,7 +137,7 @@ beforeEach(() => {
   vi.mocked(getBoardById).mockReset();
   vi.mocked(getBoardItemById).mockReset();
   vi.mocked(getBoardItems).mockReset();
-  vi.mocked(getArchivedModelIdsIn).mockReset().mockResolvedValue(new Set());
+  vi.mocked(getModelStatusesIn).mockReset().mockResolvedValue(new Map());
   vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true });
   vi.mocked(mintModel).mockClear().mockResolvedValue({ success: true });
   vi.mocked(deleteModel).mockClear().mockResolvedValue({ success: true });
@@ -308,7 +308,23 @@ describe("archived exclusion (FR-4 / E8)", () => {
     const res = await caller.boards.getItemModelInfo({ itemId: 11 });
     expect(res.model?.id).toBe(7);
     expect(res.sourceArchived).toBe(false);
+    expect(res.sourceDraft).toBe(true);
     expect(res.assetCount).toBe(1);
+  });
+
+  it("boards.getItemModelInfo degrades a hard-deleted source like archived", async () => {
+    vi.mocked(getBoardItemById).mockResolvedValue({
+      id: 11, boardId: 3, type: "model", label: "Deleted draft", imageUrl: `${R2_BASE}/x.png`,
+      metadata: {}, createdAt: new Date(), sourceModelId: 7, deletedAt: null,
+    } as never);
+    vi.mocked(getBoardById).mockResolvedValue({ id: 3, userId: 1, status: "active" } as never);
+    vi.mocked(getModelById).mockResolvedValue(null);
+    const caller = appRouter.createCaller(authCtx());
+    const res = await caller.boards.getItemModelInfo({ itemId: 11 });
+    expect(res.model).toBeNull();
+    expect(res.sourceArchived).toBe(true);
+    expect(res.sourceDraft).toBe(false);
+    expect(getModelAssets).not.toHaveBeenCalled();
   });
 
   it("boards.getItems flags placements whose source model is archived (review item 2)", async () => {
@@ -317,17 +333,40 @@ describe("archived exclusion (FR-4 / E8)", () => {
       { id: 1, boardId: 3, sourceModelId: 7, label: "Archived-sourced" },
       { id: 2, boardId: 3, sourceModelId: 8, label: "Live-sourced" },
       { id: 3, boardId: 3, sourceModelId: null, label: "Unlinked" },
+      { id: 4, boardId: 3, sourceModelId: 9, label: "Draft-sourced" },
+      { id: 5, boardId: 3, sourceModelId: 10, label: "Deleted-sourced" },
     ] as never);
-    vi.mocked(getArchivedModelIdsIn).mockResolvedValue(new Set([7]));
+    vi.mocked(getModelStatusesIn).mockResolvedValue(new Map([
+      [7, "archived"],
+      [8, "active"],
+      [9, "draft"],
+    ]));
     const caller = appRouter.createCaller(authCtx());
     const res = await caller.boards.getItems({ boardId: 3 });
-    expect(res.map((i) => [i.id, i.sourceArchived])).toEqual([
-      [1, true],
-      [2, false],
-      [3, false],
+    expect(res.map((i) => [i.id, i.sourceArchived, i.sourceDraft])).toEqual([
+      [1, true, false],
+      [2, false, false],
+      [3, false, false],
+      [4, false, true],
+      [5, true, false],
     ]);
     // Stored snapshot survives — the flag ADDS, it never strips
     expect(res[0].label).toBe("Archived-sourced");
+  });
+
+  it("boards.getItems clears every duplicate placement's Draft truth after one mint", async () => {
+    vi.mocked(getBoardById).mockResolvedValue({ id: 3, userId: 1, status: "active" } as never);
+    vi.mocked(getBoardItems).mockResolvedValue([
+      { id: 1, boardId: 3, sourceModelId: 9, label: "Chelsea" },
+      { id: 2, boardId: 3, sourceModelId: 9, label: "Chelsea" },
+    ] as never);
+    vi.mocked(getModelStatusesIn)
+      .mockResolvedValueOnce(new Map([[9, "draft"]]))
+      .mockResolvedValueOnce(new Map([[9, "active"]]));
+
+    const caller = appRouter.createCaller(authCtx());
+    expect((await caller.boards.getItems({ boardId: 3 })).map((item) => item.sourceDraft)).toEqual([true, true]);
+    expect((await caller.boards.getItems({ boardId: 3 })).map((item) => item.sourceDraft)).toEqual([false, false]);
   });
 });
 

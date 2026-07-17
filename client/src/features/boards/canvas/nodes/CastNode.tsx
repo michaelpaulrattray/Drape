@@ -56,6 +56,9 @@ export interface CastNodeData extends Record<string, unknown> {
   /** Batch 0 (FR-4): source model archived — the node face degrades to the
    *  D-12 "Source unavailable" state; stored snapshot data is retained. */
   sourceArchived?: boolean;
+  /** W2: live model status from boards.getItems. Provenance remains only the
+   *  optimistic/fallback snapshot while server truth is unavailable. */
+  sourceDraft?: boolean;
   /** VC-R6b bug 4: rename commits through the host (boardOps label update) */
   onRename?: (itemId: number, label: string) => void;
 }
@@ -88,7 +91,11 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   const isView = prov?.type === "cast_view";
   const cardWidth = isView ? 200 : 280;
   // D-42: placed drafts wear their status in the label row
-  const isDraft = isLibrary && prov?.type === "library_cast" && prov.draft === true;
+  const isDraft = isLibrary && (
+    typeof data.sourceDraft === "boolean"
+      ? data.sourceDraft
+      : prov?.type === "library_cast" && prov.draft === true
+  );
   // D-43: a non-draft library cast is a MINTED identity — recast is sealed
   const isMinted = isLibrary && !isDraft;
   // Label grammar (founder, drive 2): the NAME is the label — "jerrryt",

@@ -32,6 +32,7 @@ import { CastModelModal } from '../components/CastModelModal';
 import { useCastGate } from '../hooks/useCastGate';
 import { resetCastingSession } from '../hooks/castingSessionReset';
 import { IdentityChangeDialog } from './IdentityChangeDialog';
+import { honestModelName } from '@/features/casting/modelDisplayTruth';
 
 export interface CastEditContext {
   boardId: number;
@@ -386,11 +387,14 @@ export function CastingTakeover({
   // present as editable-in-place. This session is honestly framed as the
   // locked cast whose only identity door is FORK; the proper read-only Cast
   // Profile with additive view generation is the recorded R7 deliverable.
+  const displayModelName = honestModelName(modelNameInStore);
   const title = isMintedEdit
-    ? `${modelNameInStore || 'Cast'} — identity locked`
+    ? `${displayModelName || 'Cast'} — identity locked`
     : editContext?.draft
-      ? 'Finish this cast'
-      : 'Cast a model';
+      ? displayModelName ? `${displayModelName} — finish this cast` : 'Finish this cast'
+      : currentModelId && displayModelName
+        ? `${displayModelName} — draft`
+        : 'Cast a model';
 
   const open = entered && !closing;
 
@@ -609,6 +613,7 @@ export function CastingTakeover({
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
         mode={upgradeMode ? 'upgrade' : 'mint'}
         fixedName={upgradeMode ? modelNameInStore : undefined}
+        initialName={!upgradeMode ? displayModelName : undefined}
         // Defect 4: an existing placed draft's tier dialog leads with adding
         // views; a fresh cast leads with mint. Every door says where it leads.
         existingDraft={!!editContext?.draft}

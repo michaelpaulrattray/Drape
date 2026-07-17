@@ -5,9 +5,10 @@
  * plan-derived (server truth, D-15) — never client literals. Upgrading
  * later costs the same: pricing counts only missing slots.
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Camera, ChevronRight, Loader2 } from 'lucide-react';
 import type { MintTier } from '@shared/boardTypes';
+import { honestModelName } from '@/features/casting/modelDisplayTruth';
 
 export type TierPlan = Record<MintTier, { missing: string[]; cost: number }>;
 
@@ -49,6 +50,11 @@ export function confirmArgsForDoor(
     : { characterName: opts.addFirst ? trimmed : '', tier: opts.tier, stayDraft: true };
 }
 
+/** D-55/W2: only a founder-visible draft label may prefill the mint door. */
+export function initialMintName(value?: string | null): string {
+  return honestModelName(value);
+}
+
 export interface CastModelModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -71,6 +77,8 @@ export interface CastModelModalProps {
   mode?: 'mint' | 'upgrade';
   /** The minted model's name, passed through onConfirm in upgrade mode */
   fixedName?: string;
+  /** Existing draft nickname. Prefills the mint door but remains editable. */
+  initialName?: string;
   /** VC-R6 final r2 / defect 4: this subject is an EXISTING placed draft
    *  (re-editing to add views), not a fresh first cast. The dialog then
    *  reads as ADDING VIEWS ("Add N views — she stays a draft"), the primary
@@ -90,15 +98,26 @@ export function CastModelModal({
   previewImage,
   mode = 'mint',
   fixedName,
+  initialName,
   existingDraft = false,
 }: CastModelModalProps) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => initialMintName(initialName));
+  const nameEditedRef = useRef(false);
   const [tier, setTier] = useState<MintTier>('core');
   const upgrade = mode === 'upgrade';
   // Defect 4: an existing draft's dialog leads with ADDING VIEWS; mint is the
   // distinct deliberate step. A fresh cast leads with mint (name commits).
   const addFirst = existingDraft && !upgrade;
   const selectedGenerates = (tiers?.[tier]?.cost ?? 0) > 0;
+
+  useEffect(() => {
+    if (!isOpen) {
+      nameEditedRef.current = false;
+      return;
+    }
+    if (upgrade || nameEditedRef.current) return;
+    setName(initialMintName(initialName));
+  }, [initialName, isOpen, upgrade]);
 
   // Upgrade: land on the first tier that still has something to add
   useEffect(() => {
@@ -206,7 +225,10 @@ export function CastModelModal({
                 autoFocus={!addFirst}
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  nameEditedRef.current = true;
+                  setName(e.target.value);
+                }}
                 onKeyDown={(e) => {
                   // Enter in the name field is the mint intent on both paths
                   if (e.key === 'Enter') (addFirst ? doMint : handleConfirm)();

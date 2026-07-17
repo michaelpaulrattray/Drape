@@ -19,6 +19,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   CastModelModal,
   confirmArgsForDoor,
+  initialMintName,
   type TierPlan,
 } from "../client/src/features/studio/components/CastModelModal";
 
@@ -66,6 +67,13 @@ describe("V9 — placed-draft Edit (addFirst) has a working name-and-mint door",
   it("the mint door starts disabled with the name hint — enabled is the drive's job", () => {
     const html = render({ existingDraft: true });
     expect(html).toContain("Enter a name to mint her identity");
+  });
+
+  it("prefills the stored honest draft nickname and rejects the auto-name sentinel", () => {
+    expect(initialMintName("  Chelsea  ")).toBe("Chelsea");
+    expect(initialMintName("Draft Model")).toBe("");
+    expect(render({ existingDraft: true, initialName: "Chelsea" })).toContain('value="Chelsea"');
+    expect(render({ existingDraft: true, initialName: "Draft Model" })).toContain('value=""');
   });
 });
 

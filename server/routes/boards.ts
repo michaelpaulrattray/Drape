@@ -23,7 +23,7 @@ import {
   deleteBoardItems,
   getModelById,
   getModelAssets,
-  getArchivedModelIdsIn,
+  getModelStatusesIn,
   addBoardItemVersion,
   getBoardItemVersions,
   getLatestVersionNumber,
@@ -32,6 +32,7 @@ import {
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
+import { isModelAvailableStatus, isModelDraftStatus } from "../../shared/modelLifecycle";
 
 const log = createModuleLogger("routes/boards");
 
@@ -236,9 +237,11 @@ export const boardsRouter = router({
       return { ids };
     }),
 
-  /** Get all items for a board. Batch 0 (FR-4, review item 2): items whose
-   *  source model is ARCHIVED carry `sourceArchived: true` so the node
-   *  renders the D-12 "Source unavailable" state — the stored snapshot
+  /** Get all items for a board. Model-linked placements carry live server
+   *  lifecycle truth. Archived or hard-deleted sources degrade through the
+   *  existing `sourceArchived` unavailable state; `sourceDraft` keeps every
+   *  duplicate placement in sync after one placement mints the model. The
+   *  unavailable flag renders D-12's state while the stored snapshot
    *  (label/imageUrl/metadata) stays as historical evidence, but the
    *  placement must not render as if its source still exists. */
   getItems: protectedProcedure
@@ -249,10 +252,11 @@ export const boardsRouter = router({
       const sourceIds = Array.from(
         new Set(items.map((i) => i.sourceModelId).filter((id): id is number => !!id)),
       );
-      const archivedIds = await getArchivedModelIdsIn(sourceIds);
+      const statuses = await getModelStatusesIn(sourceIds);
       return items.map((i) => ({
         ...i,
-        sourceArchived: !!i.sourceModelId && archivedIds.has(i.sourceModelId),
+        sourceArchived: !!i.sourceModelId && !isModelAvailableStatus(statuses.get(i.sourceModelId)),
+        sourceDraft: !!i.sourceModelId && isModelDraftStatus(statuses.get(i.sourceModelId)),
       }));
     }),
 
@@ -424,16 +428,17 @@ export const boardsRouter = router({
           },
           model: null,
           sourceArchived: false,
+          sourceDraft: false,
         };
       }
 
       const sourceModel = await getModelById(item.sourceModelId);
-      // Batch 0 (FR-4, review fix 7 + item 2): an ARCHIVED source model is
-      // deleted — the item's stored snapshot (label/imageUrl/metadata) is
-      // preserved, but the model document and asset ledger are not exposed.
+      // Archived and hard-deleted sources are unavailable. The item's stored
+      // snapshot is preserved, but no model document or ledger is exposed.
       // `sourceArchived` lets the client say "Source unavailable" explicitly
       // instead of conflating this with an ordinary unlinked item.
-      const sourceArchived = !!sourceModel && sourceModel.status === "archived";
+      const sourceArchived = !isModelAvailableStatus(sourceModel?.status);
+      const sourceDraft = isModelDraftStatus(sourceModel?.status);
       const model = sourceModel && !sourceArchived ? sourceModel : null;
       const assets = model ? await getModelAssets(item.sourceModelId) : [];
 
@@ -459,6 +464,7 @@ export const boardsRouter = router({
             }
           : null,
         sourceArchived,
+        sourceDraft,
         assetCount: assets.length,
         latestAssetId: assets.length > 0 ? assets[0].id : null,
       };

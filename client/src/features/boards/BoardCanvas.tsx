@@ -54,6 +54,8 @@ export type BoardItemRecord = {
   /** Batch 0 (FR-4): the source model is archived — render "Source
    *  unavailable" (D-12) while keeping the stored snapshot data. */
   sourceArchived?: boolean;
+  /** Live server status truth; overrides the provenance snapshot after mint. */
+  sourceDraft?: boolean;
 };
 
 type BoardCanvasProps = {
@@ -164,6 +166,7 @@ function itemToNode(
         pinned: meta.pinned === true,
         version: meta.version ?? 1, // stamped by landing ops (R3 fix — never hardcode)
         sourceArchived: item.sourceArchived === true, // FR-4: degrade to "Source unavailable"
+        sourceDraft: item.sourceDraft,
         onRename, // VC-R6b bug 4: cast nodes are renameable like every node
       } satisfies CastNodeData,
     } as CastFlowNode;

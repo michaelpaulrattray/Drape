@@ -82,21 +82,19 @@ export async function getUserModels(userId: number, limit: number = 50) {
     .limit(limit);
 }
 
-/**
- * Batch 0 (FR-4, review item 2): which of these model ids are archived.
- * Board reads use this to mark placements whose source is deleted-by-archive
- * so the client renders the D-12 "Source unavailable" state.
- */
-export async function getArchivedModelIdsIn(modelIds: number[]): Promise<Set<number>> {
-  if (modelIds.length === 0) return new Set();
+/** One-query status truth for model-linked board placements. Missing ids are
+ * deliberately absent from the map so callers can distinguish a hard-deleted
+ * source from an unlinked board item. */
+export async function getModelStatusesIn(modelIds: number[]): Promise<Map<number, string>> {
+  if (modelIds.length === 0) return new Map();
   const db = await getDb();
-  if (!db) return new Set();
+  if (!db) return new Map();
 
   const rows = await db
-    .select({ id: models.id })
+    .select({ id: models.id, status: models.status })
     .from(models)
-    .where(and(inArray(models.id, modelIds), eq(models.status, "archived")));
-  return new Set(rows.map((r) => r.id));
+    .where(inArray(models.id, modelIds));
+  return new Map(rows.map((row) => [row.id, row.status]));
 }
 
 export async function updateModel(

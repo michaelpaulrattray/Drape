@@ -1763,6 +1763,9 @@ function BoardPageImpl() {
           // FR-4 (Batch 0): archived-source placements degrade to the D-12
           // "Source unavailable" render — the flag must survive this rebuild
           sourceArchived: item.sourceArchived === true,
+          // Optimistic landing owns the short pre-refetch window; after that,
+          // the server's live model status synchronizes every placement.
+          sourceDraft: fill ? fill.draft === true : item.sourceDraft,
         };
       });
     // Pending forks overlay the cache (bug-3 fix) — refetches can't clobber

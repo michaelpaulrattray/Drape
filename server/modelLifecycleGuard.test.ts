@@ -222,9 +222,10 @@ describe("model lifecycle literal guard (Batch B)", () => {
     expect(src).toContain("inArray(models.status, [...MODEL_MINTED_STATUSES])");
     expect(count(src, /eq\(models\.status,\s*["'](active|locked)["']\)/g)).toBe(0);
     // Pinned survivors: the drafts-source filter, Batch 0's archived helper,
-    // and getUserModels' archived exclusion.
+    // and getUserModels' archived exclusion. W2 removed the superseded
+    // archived-id reader; board availability now comes from one status map.
     expect(count(src, /eq\(models\.status,\s*["']draft["']\)/g)).toBe(1);
-    expect(count(src, /eq\(models\.status,\s*["']archived["']\)/g)).toBe(1);
+    expect(count(src, /eq\(models\.status,\s*["']archived["']\)/g)).toBe(0);
     expect(count(src, /ne\(models\.status,\s*["']archived["']\)/g)).toBe(1);
   });
 
@@ -333,24 +334,47 @@ describe("model lifecycle literal guard (Batch B)", () => {
 
   // ── Documented-intentional board provenance boundary (NOT redesigned in Batch B) ──
 
-  it("CastNode reads the server-stamped provenance snapshot — pinned intentional, not an ad-hoc derivation", () => {
-    // The draft flag on a placed node is stamped by fillFromLibrary from the
-    // shared read model at fill time and reconciled at the established
-    // fill/mint boundaries; live package truth comes from packageState via
-    // useSheetController. CastNode itself must keep reading the stamp — a
-    // direct status literal appearing here would be a new derivation.
+  it("CastNode prefers live sourceDraft truth and keeps provenance only as the optimistic fallback", () => {
+    // W2 deliberately supersedes the fill-time-only pin: minting one of two
+    // placements must clear both badges after the board refetches.
     const src = read("client/src/features/boards/canvas/nodes/CastNode.tsx");
+    expect(src).toContain('typeof data.sourceDraft === "boolean"');
     expect(src).toContain('prov?.type === "library_cast" && prov.draft === true');
     expect(count(src, /\bstatus\s*[!=]==?\s*["'](draft|active|locked|archived)["']/g)).toBe(0);
+
+    // Preserve `undefined` through the board adapters so provenance remains a
+    // real fallback for an optimistic node that predates the server refetch.
+    expect(read("client/src/features/boards/BoardCanvas.tsx")).toContain("sourceDraft: item.sourceDraft");
+    expect(read("client/src/features/boards/BoardPage.tsx")).toContain("sourceDraft: fill ? fill.draft === true : item.sourceDraft");
   });
 
-  it("boards.getItemModelInfo keeps EXACTLY the Batch 0 archived-source boundary", () => {
-    // The one sanctioned archived comparison outside modelGuards: the D-12
-    // "Source unavailable" degradation (Batch 0, review fix 7). Pinned so a
-    // second direct status read cannot creep into the boards router.
+  it("minting a placed draft invalidates the board read model so every duplicate placement resyncs", () => {
+    const src = read("client/src/features/boards/BoardPage.tsx");
+    const mutationStart = src.indexOf("const landMintedCastMutation");
+    const mutationEnd = src.indexOf("const handleTakeoverMinted", mutationStart);
+    expect(mutationStart).toBeGreaterThan(-1);
+    expect(mutationEnd).toBeGreaterThan(mutationStart);
+    expect(src.slice(mutationStart, mutationEnd)).toContain("utils.boards.getItems.invalidate({ boardId })");
+  });
+
+  it("boards derives draft and unavailable flags through the shared lifecycle read model", () => {
     const src = read("server/routes/boards.ts");
-    expect(count(src, /\bstatus\s*[!=]==?\s*["']archived["']/g)).toBe(1);
-    expect(count(src, /\bstatus\s*[!=]==?\s*["'](draft|active|locked)["']/g)).toBe(0);
+    expect(count(src, /\bstatus\s*[!=]==?\s*["'](draft|active|locked|archived)["']/g)).toBe(0);
+    expect(src).toContain("isModelAvailableStatus");
+    expect(src).toContain("isModelDraftStatus");
     expect(src).toContain("sourceArchived");
+    expect(src).toContain("sourceDraft");
+  });
+
+  it("Studio shows honest name/identifier truth and prefills the mint door", () => {
+    const profile = read("client/src/features/casting/MasterPromptPanel.tsx");
+    expect(profile).not.toContain("MOD-{headAsset.id}");
+    expect(profile).toContain("modelQuery.data?.agencyId");
+    expect(profile).toContain("castingIdentityLabel");
+    expect(read("client/src/features/casting/modelDisplayTruth.ts")).toContain("return 'Draft'");
+
+    const takeover = read("client/src/features/studio/takeover/CastingTakeover.tsx");
+    expect(takeover).toContain("honestModelName");
+    expect(takeover).toContain("initialName={!upgradeMode ? displayModelName : undefined}");
   });
 });

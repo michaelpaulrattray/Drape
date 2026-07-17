@@ -3,6 +3,7 @@ import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
+import { castingIdentityLabel, honestModelName } from './modelDisplayTruth';
 
 // ============ Types ============
 
@@ -22,6 +23,8 @@ export function MasterPromptPanel() {
   const prefs = useCastingFormStore((s) => s.prefs);
   const updatePref = useCastingFormStore((s) => s.updatePref);
   const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
+  const currentModelId = useCastingGenerationStore((s) => s.currentModelId);
+  const modelName = useCastingFormStore((s) => s.modelName);
   const currentMasterPrompt = useCastingGenerationStore((s) => s.currentMasterPrompt);
   const currentTechnicalSchema = useCastingGenerationStore((s) => s.currentTechnicalSchema);
 
@@ -32,6 +35,10 @@ export function MasterPromptPanel() {
   const [isDragging, setIsDragging] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const modelQuery = trpc.models.get.useQuery(
+    { modelId: currentModelId ?? 0 },
+    { enabled: currentModelId != null, staleTime: 0 },
+  );
 
   useEffect(() => { setIsCopied(false); }, [specMode, currentMasterPrompt]);
 
@@ -160,6 +167,12 @@ export function MasterPromptPanel() {
 
   const headAsset = currentAssets.find((a) => a.viewType === 'frontClose');
   const viewCount = new Set(currentAssets.map((a) => a.viewType)).size;
+  const honestName = honestModelName(modelName, modelQuery.data?.name);
+  const identityLabel = castingIdentityLabel({
+    status: modelQuery.data?.status,
+    agencyId: modelQuery.data?.agencyId,
+    pending: modelQuery.isLoading,
+  });
 
   return (
     <div
@@ -226,13 +239,18 @@ export function MasterPromptPanel() {
                     <div className="w-10 h-10 rounded-canvas-md overflow-hidden flex-shrink-0 border-hairline border-canvas-border">
                       <img src={headAsset.storageUrl} alt="Model" className="w-full h-full object-cover" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-canvas-lg font-medium text-canvas-ink">
-                        MOD-{headAsset.id}
+                        {honestName || identityLabel}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-[5px] h-[5px] rounded-full bg-canvas-ink" />
-                        <span className="text-canvas-sm text-canvas-ink-soft">
+                      <div className="flex items-center gap-1.5 text-canvas-sm text-canvas-ink-soft">
+                        {honestName && (
+                          <>
+                            <span>{identityLabel}</span>
+                            <div className="w-[5px] h-[5px] rounded-full bg-canvas-ink" />
+                          </>
+                        )}
+                        <span>
                           {viewCount} view{viewCount !== 1 ? 's' : ''}
                         </span>
                       </div>
