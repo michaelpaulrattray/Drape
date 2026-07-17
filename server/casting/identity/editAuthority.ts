@@ -50,6 +50,7 @@ import {
 } from "./identityFieldHandlers";
 import { detectMarkCategories, detectMarkOperation } from "./marksVocabulary";
 import { REFUSAL_COPY } from "./refusalCopy";
+import { dependentPromptDirectives } from "./identityDependencies";
 
 const log = createModuleLogger("casting/identity/editAuthority");
 
@@ -656,7 +657,7 @@ export async function authorizeEditRequest(
   const promptDirectives = patch.edits.flatMap((edit) => {
     if (edit.kind !== "leaf") return [];
     return leafDirectives(edit);
-  });
+  }).concat(dependentPromptDirectives(patch));
 
   const authorization: GenerationAuthorization = {
     modelId: model.id,

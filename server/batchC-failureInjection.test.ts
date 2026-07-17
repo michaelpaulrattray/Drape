@@ -124,6 +124,10 @@ vi.mock("./db/connection", async (importOriginal) => {
     withTransaction: vi.fn(async (cb: (t: unknown) => Promise<unknown>) => cb(makeTx())),
   };
 });
+vi.mock("./storage", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./storage")>();
+  return { ...actual, storageDelete: vi.fn().mockResolvedValue({ success: true }) };
+});
 vi.mock("./db/dailyQuota", () => ({ enforceDailyQuota: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("./security/rateLimit", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./security/rateLimit")>();
@@ -135,10 +139,18 @@ vi.mock("./casting/aiService", async (importOriginal) => {
     ...actual,
     generateMasterPrompt: vi.fn().mockResolvedValue({ naturalDescription: "desc", technicalSchema: {} }),
     generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/x.png", engineUsed: "test" }),
+    generateCastingImageRaw: vi.fn().mockResolvedValue({ imageBase64: "data:image/png;base64,eA==", engineUsed: "test" }),
+    uploadRawCandidate: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/gated.png", storageKey: "casting/gated.png" }),
     generateFullBody: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/b.png", engineUsed: "test" }),
     generateRemainingViews: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/v.png", engineUsed: "test" }),
     iterateModel: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/i.png", engineUsed: "test" }),
+    iterateModelRaw: vi.fn().mockResolvedValue({ imageBase64: "data:image/png;base64,aQ==", engineUsed: "test" }),
+    clearCastingSession: vi.fn(),
   };
+});
+vi.mock("./casting/identity/editGate", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/identity/editGate")>();
+  return { ...actual, verifyIdentityEdit: vi.fn().mockResolvedValue({ ok: true, checked: true, violations: [] }) };
 });
 vi.mock("./casting/promptParser", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/promptParser")>();
@@ -184,12 +196,17 @@ import {
   addCredits,
 } from "./db";
 import { addBoardEdge, getEdgesFrom } from "./db/boardEdges";
-import { iterateModel, generateCastingImage, generateMasterPrompt, generateRemainingViews } from "./casting/aiService";
+import {
+  iterateModel, iterateModelRaw, generateCastingImage, generateCastingImageRaw,
+  generateMasterPrompt, generateRemainingViews, uploadRawCandidate, clearCastingSession,
+} from "./casting/aiService";
+import { verifyIdentityEdit } from "./casting/identity/editGate";
 import { refundReferenceFor } from "./casting/atomicCredits";
 import { PublicError } from "./lib/publicError";
 import { executeMintPackage } from "./casting/mintPackage";
 import { executeApplyModelEdit, executeRunGeneration, executeRunVariations } from "./lib/boardOps";
 import { appRouter } from "./routers";
+import { storageDelete } from "./storage";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 function authCtx(userId = 1): TrpcContext {
@@ -240,7 +257,18 @@ beforeEach(() => {
   vi.mocked(deductCredits).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(addCredits).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(iterateModel).mockClear();
+  vi.mocked(iterateModelRaw).mockClear();
   vi.mocked(generateCastingImage).mockClear();
+  vi.mocked(generateCastingImageRaw).mockClear();
+  vi.mocked(clearCastingSession).mockClear();
+  vi.mocked(uploadRawCandidate).mockReset().mockResolvedValue({
+    imageUrl: "https://pub-test.r2.dev/gated.png",
+    storageKey: "casting/gated.png",
+  });
+  vi.mocked(verifyIdentityEdit).mockReset().mockResolvedValue({
+    ok: true, checked: true, violations: [],
+  });
+  vi.mocked(storageDelete).mockReset().mockResolvedValue({ success: true });
   vi.mocked(generateMasterPrompt).mockClear();
   vi.mocked(generateRemainingViews).mockClear();
   llmScript.classify = '{"kind":"imageOnly","categories":["image.lighting"],"operations":{}}';
@@ -328,6 +356,7 @@ describe("generation.iterate boundaries", () => {
     expect(deductCredits).toHaveBeenCalledTimes(1);
     expect(addCredits).toHaveBeenCalledTimes(1);
     expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("gen-11"));
+    expect(verifyIdentityEdit).not.toHaveBeenCalled();
   });
 
   it("createGeneration failure refuses BEFORE any deduction or image call", async () => {
@@ -346,8 +375,55 @@ describe("generation.iterate boundaries", () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.generation.iterate({ modelId: 7, feedback: "sharper jawline", assetId: 100 });
     expect(result.success).toBe(true);
+    expect(iterateModelRaw).toHaveBeenCalledTimes(1);
     expect(result.assetId).toBe(888); // the committed anchor
     expect(addCredits).not.toHaveBeenCalled();
+  });
+
+  it("identity gate rejects both candidates ⇒ no upload or commit, charge refunded once", async () => {
+    llmScript.classify = '{"kind":"identity","categories":["person.face.jawline"],"operations":{}}';
+    vi.mocked(verifyIdentityEdit).mockResolvedValue({
+      ok: false,
+      checked: true,
+      violations: ["overall.facialIdentity"],
+    });
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({ modelId: 7, feedback: "make the jawline sharper", assetId: 100 }),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining("refunded"),
+    });
+
+    expect(iterateModelRaw).toHaveBeenCalledTimes(2);
+    expect(uploadRawCandidate).not.toHaveBeenCalled();
+    expect(tx.inserts.some((row) => "provenance" in row)).toBe(false);
+    expect(addCredits).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("gen-11"));
+    expect(updateGeneration).toHaveBeenCalledWith(11, expect.objectContaining({
+      status: "failed",
+      metadata: expect.objectContaining({
+        identityGate: expect.objectContaining({ attemptCount: 2 }),
+      }),
+    }));
+  });
+
+  it("identity verifier unavailable after one re-check ⇒ one candidate, no upload, and truthful refund", async () => {
+    llmScript.classify = '{"kind":"identity","categories":["person.face.jawline"],"operations":{}}';
+    vi.mocked(verifyIdentityEdit).mockResolvedValue({ ok: false, checked: false, violations: [] });
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(
+      caller.generation.iterate({ modelId: 7, feedback: "make the jawline sharper", assetId: 100 }),
+    ).rejects.toMatchObject({
+      message: expect.stringMatching(/couldn't be verified.*refunded/i),
+    });
+
+    expect(iterateModelRaw).toHaveBeenCalledTimes(1);
+    expect(verifyIdentityEdit).toHaveBeenCalledTimes(2);
+    expect(uploadRawCandidate).not.toHaveBeenCalled();
+    expect(tx.inserts).toHaveLength(0);
+    expect(addCredits).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -405,6 +481,52 @@ describe("applyModelEdit boundaries", () => {
     expect(addCredits).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["hair color", { hairColor: "Copper" }],
+    ["skin tone", { skinTone: "Ebony / Dark" }],
+    ["face field", { jawline: "Sharp / Chiseled" }],
+  ])("UPDATE %s is an intentional structured recast, not a surgical identity edit", async (_label, changes) => {
+    const result = await executeApplyModelEdit({
+      userId: 1,
+      itemId: 3,
+      decision: "update",
+      changes,
+    });
+
+    expect(result.decision).toBe("update");
+    expect(verifyIdentityEdit).not.toHaveBeenCalled();
+    expect(generateCastingImageRaw).toHaveBeenCalledTimes(1);
+    expect(uploadRawCandidate).toHaveBeenCalledTimes(1);
+    expect(tx.inserts.some((row) => "provenance" in row)).toBe(true);
+  });
+
+  it("UPDATE recast never consults the same-person verifier, even when that verifier is forced to fail", async () => {
+    vi.mocked(verifyIdentityEdit).mockResolvedValue({
+      ok: false,
+      checked: true,
+      violations: ["person.skinTone"],
+    });
+
+    const result = await executeApplyModelEdit({
+      userId: 1,
+      itemId: 3,
+      decision: "update",
+      changes: { jawline: "Sharp / Chiseled" },
+    });
+
+    expect(result.decision).toBe("update");
+    expect(verifyIdentityEdit).not.toHaveBeenCalled();
+    expect(generateCastingImageRaw).toHaveBeenCalledTimes(1);
+    expect(uploadRawCandidate).toHaveBeenCalledTimes(1);
+    expect(addCredits).not.toHaveBeenCalled();
+    expect(updateGeneration).toHaveBeenCalledWith(11, expect.objectContaining({
+      status: "completed",
+      metadata: expect.objectContaining({
+        operationMode: "structured_recast",
+      }),
+    }));
+  });
+
   it("UPDATE: version-row (second write) failure rolls back the WHOLE landing — refund recorded, honest message, no half state", async () => {
     tx.failVersionInsert = true; // inside the shared identity+landing tx
     await expect(
@@ -416,6 +538,32 @@ describe("applyModelEdit boundaries", () => {
     expect(refundRef.startsWith("refund:apply-edit-3-")).toBe(true);
     // the transaction never produced the version row
     expect(tx.inserts.some((i) => "version" in i && "itemId" in i)).toBe(false);
+    expect(storageDelete).toHaveBeenCalledWith("casting/gated.png");
+  });
+
+  it("UPDATE: passing-candidate cleanup failure is logged but never blocks the refund", async () => {
+    tx.failVersionInsert = true;
+    vi.mocked(storageDelete).mockRejectedValueOnce(new Error("R2 unavailable"));
+
+    await expect(
+      executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } }),
+    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+
+    expect(storageDelete).toHaveBeenCalledTimes(1);
+    expect(addCredits).toHaveBeenCalledTimes(1);
+  });
+
+  it("UPDATE: upload failure clears the rejected NEW-mode model session even without a storage key", async () => {
+    vi.mocked(uploadRawCandidate).mockRejectedValueOnce(new Error("R2 upload unavailable"));
+
+    await expect(
+      executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } }),
+    ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
+
+    expect(generateCastingImageRaw).toHaveBeenCalledTimes(1);
+    expect(storageDelete).not.toHaveBeenCalled();
+    expect(clearCastingSession).toHaveBeenCalledWith("1", 7);
+    expect(addCredits).toHaveBeenCalledTimes(1);
   });
 
   it("UPDATE: node-stamp failure rolls back the WHOLE landing the same way", async () => {
@@ -450,6 +598,9 @@ describe("applyModelEdit boundaries", () => {
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: {}, intent: "rerun" }),
     ).rejects.toMatchObject({ message: expect.stringContaining("refunded") });
     expect(addCredits).toHaveBeenCalledTimes(1);
+    expect(verifyIdentityEdit).not.toHaveBeenCalled();
+    expect(generateCastingImageRaw).not.toHaveBeenCalled();
+    expect(generateCastingImage).toHaveBeenCalledTimes(1);
   });
 
   it("RECAST (rerun, empty changes) is an anchor re-roll, not a 'nothing to change' refusal", async () => {
@@ -590,8 +741,8 @@ describe("public error sanitization at the paid doors", () => {
     expect(res.failed[0].reason).toBe("The engine rejected this request. Adjust the instruction and try again.");
   });
 
-  it("applyModelEdit update: a raw generation error is sanitized while the refund truth travels", async () => {
-    vi.mocked(generateCastingImage).mockRejectedValue(new Error(RAW_INTERNAL));
+  it("applyModelEdit recast: a raw generation error is sanitized while the refund truth travels", async () => {
+    vi.mocked(generateCastingImageRaw).mockRejectedValue(new Error(RAW_INTERNAL));
     let message = "";
     try {
       await executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } });
@@ -599,7 +750,7 @@ describe("public error sanitization at the paid doors", () => {
       message = (e as Error).message;
     }
     expect(message).not.toContain("SECRET_TOKEN");
-    expect(message).toContain("The update failed.");
+    expect(message).toContain("The recast failed.");
     expect(message).toContain("refunded");
   });
 

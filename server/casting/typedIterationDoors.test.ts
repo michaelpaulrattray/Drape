@@ -106,8 +106,24 @@ vi.mock("./aiService", async (importOriginal) => {
       imageUrl: "https://pub-test.r2.dev/iterate/new.png",
       engineUsed: "test",
     }),
+    iterateModelRaw: vi.fn().mockResolvedValue({
+      imageBase64: "data:image/png;base64,bmV3",
+      engineUsed: "test",
+    }),
+    uploadRawCandidate: vi.fn().mockResolvedValue({
+      imageUrl: "https://pub-test.r2.dev/iterate/new.png",
+      storageKey: "iterate/new.png",
+    }),
     compactMasterPrompt: vi.fn().mockResolvedValue("compacted"),
   };
+});
+vi.mock("./identity/editGate", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./identity/editGate")>();
+  return { ...actual, verifyIdentityEdit: vi.fn().mockResolvedValue({ ok: true, checked: true, violations: [] }) };
+});
+vi.mock("../storage", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../storage")>();
+  return { ...actual, storageDelete: vi.fn().mockResolvedValue({ success: true }) };
 });
 // The authority's LLM seam — scripted per test, dead when fail=true
 vi.mock("../wardrobe/utils", async (importOriginal) => {
@@ -137,7 +153,7 @@ import {
   deductCredits,
   addCredits,
 } from "../db";
-import { iterateModel } from "./aiService";
+import { iterateModel, iterateModelRaw } from "./aiService";
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { ITERATION_CROP_BY_VIEW } from "./iterationFraming";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
@@ -195,6 +211,8 @@ const assetIdFor = (vt: string) => SIX_ASSETS.find((a) => a.viewType === vt)!.id
 
 const IDENTITY_JAWLINE = '{"kind":"identity","categories":["person.face.jawline"],"operations":{}}';
 const NORMALIZED_JAWLINE = '{"edits":[{"leaf":"person.face.jawline","value":"broad angular jaw, squared"}]}';
+const IDENTITY_HAIR_LENGTH = '{"kind":"identity","categories":["person.hair.length"],"operations":{}}';
+const NORMALIZED_HAIR_LENGTH = '{"edits":[{"leaf":"person.hair.length","value":"Very Long"}]}';
 
 beforeEach(() => {
   vi.mocked(getModelById).mockReset().mockResolvedValue(model() as never);
@@ -207,6 +225,10 @@ beforeEach(() => {
   vi.mocked(addCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(iterateModel).mockClear().mockResolvedValue({
     imageUrl: "https://pub-test.r2.dev/iterate/new.png",
+    engineUsed: "test",
+  } as never);
+  vi.mocked(iterateModelRaw).mockClear().mockResolvedValue({
+    imageBase64: "data:image/png;base64,bmV3",
     engineUsed: "test",
   } as never);
   llmScript.classify = '{"kind":"imageOnly","categories":["image.lighting"],"operations":{}}';
@@ -436,7 +458,7 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
     expect(addCredits).not.toHaveBeenCalled();
 
     // §8.4: the image call carried the handler directives, never raw text
-    const [, , , options] = vi.mocked(iterateModel).mock.calls[0];
+    const [, , , options] = vi.mocked(iterateModelRaw).mock.calls[0];
     expect(options?.policyDirectives?.join(" ")).toContain("jawline only");
   });
 
@@ -454,6 +476,53 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
     // No out-of-transaction identity writes happened
     expect(updateModel).not.toHaveBeenCalled();
     expect(createModelAsset).not.toHaveBeenCalled();
+  });
+
+  it("records and releases only reviewed hair-geometry dependents for a length edit", async () => {
+    llmScript.classify = IDENTITY_HAIR_LENGTH;
+    llmScript.normalize = NORMALIZED_HAIR_LENGTH;
+    vi.mocked(getModelById).mockResolvedValue(model({
+      masterPrompt: "A man with short tapered hair and a rose tattoo note.",
+      technicalSchema: { subject: { hair_color: "Black", hair_style: "short tapered" } },
+      preferences: {
+        hairColor: "Black",
+        hairStyle: "Tapered",
+        hairLength: "Short",
+        hairTexture: "Curly",
+        hairHairline: "Straight",
+        hairFringe: "None",
+      },
+    }) as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    await caller.generation.iterate({
+      modelId: 7,
+      feedback: "make his hair very long",
+      assetId: assetIdFor("frontClose"),
+    });
+
+    const update = tx.modelUpdates[0];
+    const preferences = update.preferences as Record<string, unknown>;
+    expect(preferences.hairLength).toBe("Very Long");
+    expect(preferences.hairStyle).toBe("");
+    expect(preferences.hairTexture).toBe("Curly");
+    expect(preferences.hairHairline).toBe("Straight");
+    expect(String(update.masterPrompt)).toContain("IDENTITY RELEASE — person.hair.style");
+    expect(String(update.masterPrompt)).toContain("rose tattoo note");
+
+    const anchorRow = tx.assetInserts[0] as { provenance: Record<string, unknown> };
+    expect(anchorRow.provenance.releasedIdentityDependents).toEqual([
+      "person.hair.style",
+      "person.hair.fringe",
+      "person.hair.parting",
+      "person.hair.volume",
+      "person.hair.fade",
+      "person.hair.flyaways",
+      "person.hair.tuck",
+    ]);
+    const [, , , options] = vi.mocked(iterateModelRaw).mock.calls[0];
+    expect(options?.policyDirectives?.join(" ")).toContain("EXPECTED PHYSICAL CONSEQUENCES");
+    expect(options?.policyDirectives?.join(" ")).toContain("Do not change hair color");
   });
 
   it("a reference-assisted identity edit rides the same commit with source 'reference'", async () => {

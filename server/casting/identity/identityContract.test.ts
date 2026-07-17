@@ -138,14 +138,14 @@ describe("§5.5 base/override pairs — both members always written (M18 proof 7
     expect(isValidOverridePairValue("person.hair.color", { base: "", override: "" })).toBe(false);
   });
 
-  it("rule-2: a hairstyle CHANGE resets the sub-selectors; an unchanged style keeps them", () => {
+  it("rule-2: a hairstyle change resets reviewed geometry but leaves protected texture untouched", () => {
     const handler = handlerFor("person.hair.style");
     const changed = handler.buildPreferencePatch(
       { base: "Pixie", override: "" },
       { hairStyle: "Bob", hairLength: "Long", hairTexture: "Wavy" },
     ) as Record<string, string>;
     expect(changed.hairLength).toBe("");
-    expect(changed.hairTexture).toBe("");
+    expect(changed).not.toHaveProperty("hairTexture");
     const unchanged = handler.buildPreferencePatch(
       { base: "Bob", override: "" },
       { hairStyle: "Bob", hairLength: "Long" },

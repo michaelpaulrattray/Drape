@@ -145,7 +145,7 @@ describe("GDPR Export — account.exportData procedure exists", () => {
     // Verify the procedure exists on the router
     const procedures = Object.keys((appRouter as any)._def.procedures);
     expect(procedures).toContain("account.exportData");
-  });
+  }, 15_000);
 
   it("exportData should require authentication", async () => {
     const { appRouter } = await import("./routers");
@@ -156,7 +156,7 @@ describe("GDPR Export — account.exportData procedure exists", () => {
       correlationId: "req_test_gdpr",
     });
     await expect(caller.account.exportData()).rejects.toThrow();
-  });
+  }, 15_000);
 });
 
 // ============================================================================

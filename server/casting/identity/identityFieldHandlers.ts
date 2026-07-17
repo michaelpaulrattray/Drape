@@ -262,7 +262,7 @@ export const IDENTITY_FIELD_HANDLERS = {
     "person.hair.style", "hairStyle", "hairStyleOverride", "subject.hair_style",
     (value, current) => {
       const changed = renderPairValue(value) !== (current.hairStyleOverride || current.hairStyle || "");
-      const resets = ["hairLength", "hairTexture", "hairFringe", "hairParting", "hairVolume", "hairTuck", "hairFlyaways", "hairFade"] as const;
+      const resets = ["hairLength", "hairFringe", "hairParting", "hairVolume", "hairTuck", "hairFlyaways", "hairFade"] as const;
       return Object.fromEntries(
         resets.map((k) => [k, changed ? "" : ((current[k] as string | undefined) ?? "")]),
       );

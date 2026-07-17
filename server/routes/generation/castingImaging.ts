@@ -130,6 +130,8 @@ export const castingImagingRouter = router({
             frame: 'HEADSHOT',
             ethnicityHint,
             userId: String(ctx.user.id),
+            modelId: input.modelId,
+            technicalSchema: model.technicalSchema ?? undefined,
           }
         );
 

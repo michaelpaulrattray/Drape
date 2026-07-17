@@ -55,7 +55,8 @@ const log = createModuleLogger("casting/geminiGeneration");
 /**
  * Persists between calls so iterations reuse the same conversation.
  * The model retains visual memory of what it generated, reducing identity drift.
- * Keyed by userId for concurrent user isolation.
+ * Keyed by userId + modelId. A user's models must never share visual chat
+ * history: a fork/variation is a different person, even on the same account.
  */
 interface CastingSession {
   chat: any;
@@ -67,6 +68,41 @@ const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_SESSIONS = 200;
 const EVICTION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const sessionMap = new Map<string, CastingSession>();
+
+export function castingSessionKey(userId: string, modelId: string | number): string {
+  return `${userId}:${modelId}`;
+}
+
+export function getCastingSessionFor<T>(
+  sessions: Map<string, T>,
+  userId: string,
+  modelId: string | number,
+): T | undefined {
+  return sessions.get(castingSessionKey(userId, modelId));
+}
+
+export function setCastingSessionFor<T>(
+  sessions: Map<string, T>,
+  userId: string,
+  modelId: string | number,
+  session: T,
+): void {
+  sessions.set(castingSessionKey(userId, modelId), session);
+}
+
+export function deleteCastingSessionsFor<T>(
+  sessions: Map<string, T>,
+  userId: string,
+  modelId?: string | number,
+): number {
+  if (modelId !== undefined) return sessions.delete(castingSessionKey(userId, modelId)) ? 1 : 0;
+  const prefix = `${userId}:`;
+  let deleted = 0;
+  for (const key of Array.from(sessions.keys())) {
+    if (key.startsWith(prefix) && sessions.delete(key)) deleted++;
+  }
+  return deleted;
+}
 
 /** Evict sessions older than TTL to prevent memory leaks */
 function evictStaleSessions(): void {
@@ -104,9 +140,14 @@ export const stopSessionEviction = () => {
 export const getSessionCount = () => sessionMap.size;
 
 /** Clear the chat session for a specific user (e.g. when starting a new casting) */
-export const clearCastingSession = (userId: string) => {
-  sessionMap.delete(userId);
-  log.info(`[CastingSession] Cleared for user ${userId}`);
+export const clearCastingSession = (userId: string, modelId?: string | number) => {
+  if (modelId !== undefined) {
+    deleteCastingSessionsFor(sessionMap, userId, modelId);
+    log.info({ userId, modelId }, "[CastingSession] Cleared model session");
+  } else {
+    deleteCastingSessionsFor(sessionMap, userId);
+    log.info({ userId }, "[CastingSession] Cleared all user sessions");
+  }
   evictStaleSessions();
 };
 
@@ -554,7 +595,10 @@ export const generateCastingImage = async (
   // Batch C (§8.4): server-owned authorization directives from the field
   // handlers — the ONLY channel that may unlock an identity attribute in the
   // iterate/transfer prompt. Never the raw user sentence.
-  policyDirectives?: string[]
+  policyDirectives?: string[],
+  modelId?: string | number,
+  technicalSchema?: unknown,
+  forceFreshSession: boolean = false,
 ): Promise<{ imageUrl: string; engineUsed: string }> => {
   return withImageQueue(async () => {
   const ai = getAiClient();
@@ -611,7 +655,7 @@ NO: PERFECT SYMMETRY, CGI, CARTOON, ANIME, 3D RENDER, PLASTIC SKIN, DOLL LOOK`;
     textPrompt = buildIterationImagePrompt(
       iterationRequest, masterPrompt, frame, dynamicStudioSettings,
       inputMapDescription, maskImageBase64, additionalReferenceBase64, imageIndexCounter,
-      viewAngle, policyDirectives
+      viewAngle, policyDirectives, technicalSchema
     );
   } else {
     // Ethnicity phenotype lock — placed FIRST so image model can't override
@@ -666,7 +710,11 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
   };
 
   // ── PATH 1: Chat-based iteration (session exists) ──
-  const userSession = sessionMap.get(userId);
+  const sessionKey = modelId === undefined ? null : castingSessionKey(userId, modelId);
+  if (forceFreshSession && sessionKey) sessionMap.delete(sessionKey);
+  const userSession = !forceFreshSession && modelId !== undefined
+    ? getCastingSessionFor(sessionMap, userId, modelId)
+    : undefined;
   if (mode === GenerationMode.ITERATE && userSession) {
     try {
       log.info(`[CastingSession] Sending iteration through chat for user ${userId}`);
@@ -680,14 +728,14 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
       return { imageUrl, engineUsed: userSession.model + ' (chat)' };
     } catch (e: any) {
       log.warn({ err: e?.message }, `[CastingSession] Chat iteration failed for user ${userId}, falling back to stateless:`);
-      sessionMap.delete(userId);
+      if (sessionKey) sessionMap.delete(sessionKey);
       // Fall through to stateless
     }
   }
 
   // ── PATH 2: Chat-based NEW generation (create session) ──
   if (mode === GenerationMode.NEW) {
-    sessionMap.delete(userId);
+    if (sessionKey) sessionMap.delete(sessionKey);
     const PRIMARY_MODEL = IMAGE_PRO;
     try {
       const chat = ai.chats.create({
@@ -704,12 +752,14 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
         `CastingChat NEW (${PRIMARY_MODEL})`
       );
       const imageUrl = extractImage(response);
-      sessionMap.set(userId, { chat, model: PRIMARY_MODEL, lastUsed: Date.now() });
+      if (modelId !== undefined) {
+        setCastingSessionFor(sessionMap, userId, modelId, { chat, model: PRIMARY_MODEL, lastUsed: Date.now() });
+      }
       log.info(`[CastingSession] Session created for user ${userId} — iterations will use chat`);
       return { imageUrl, engineUsed: PRIMARY_MODEL };
     } catch (e: any) {
       log.warn({ err: e?.message }, `[CastingSession] Chat creation failed for user ${userId}, falling back to stateless:`);
-      sessionMap.delete(userId);
+      if (sessionKey) sessionMap.delete(sessionKey);
       // Fall through to stateless
     }
   }
@@ -759,7 +809,7 @@ DO NOT let hair or skin choices erase the facial structure of the stated heritag
 // ITERATION IMAGE PROMPT BUILDER (private helper)
 // ============================================================================
 
-function buildIterationImagePrompt(
+export function buildIterationImagePrompt(
   iterationRequest: string,
   masterPrompt: string,
   frame: 'HEADSHOT' | 'FULL_BODY',
@@ -769,7 +819,8 @@ function buildIterationImagePrompt(
   additionalReferenceBase64?: string,
   imageIndexCounter: number = 1,
   viewAngle?: CanonicalViewAngle,
-  policyDirectives?: string[]
+  policyDirectives?: string[],
+  technicalSchema?: unknown,
 ): string {
   // V14 (Batch A-coupled): when the caller names the canonical view being
   // edited, the directive preserves THAT view's orientation — the legacy
@@ -931,6 +982,6 @@ function buildIterationImagePrompt(
     CRITICAL GLOBAL CONSTRAINTS: FREEZE lighting/identity/camera. MODIFY ONLY what is requested within the EXISTING BOUNDARIES.
 
     IDENTITY ANCHOR — The output MUST depict this exact person:
-    ${buildIdentityAnchor(masterPrompt, undefined)}
+    ${buildIdentityAnchor(masterPrompt, technicalSchema)}
   `;
 }

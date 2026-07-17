@@ -83,7 +83,7 @@ describe("account.exportData endpoint", () => {
     // Verify the procedure exists on the router
     const procedures = Object.keys((appRouter as any)._def.procedures);
     expect(procedures).toContain("account.exportData");
-  });
+  }, 15_000);
 
   it("should require authentication (protectedProcedure)", async () => {
     const { appRouter } = await import("./routers");

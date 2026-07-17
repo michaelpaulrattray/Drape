@@ -212,7 +212,7 @@ export const buildIdentityAnchor = (masterPrompt: string, schema?: any): string 
     subject.age && `Age: ${subject.age}`,
     subject.ethnicity && `Ethnicity: ${subject.ethnicity}`,
     subject.skin_tone && `Skin tone: ${subject.skin_tone}`,
-    subject.hair_color && `Hair: ${subject.hair_color}, ${subject.hair_style || ''}`,
+    subject.hair_color && `Hair: ${[subject.hair_color, subject.hair_style].filter(Boolean).join(", ")}`,
     subject.eye_color && `Eyes: ${subject.eye_color}`,
     face.face_shape && `Face shape: ${face.face_shape}`,
     face.jawline && `Jawline: ${face.jawline}`,

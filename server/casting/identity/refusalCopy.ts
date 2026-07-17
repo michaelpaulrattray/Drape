@@ -40,6 +40,19 @@ export const REFUSAL_COPY = {
   siblingsNeedRefresh:
     "The other views still show the previous identity — refresh them when you're ready to bring the whole card in line.",
 
+  /** W5 identity-output gate: the image engine changed protected traits. */
+  identityDrift: (name: string | null) =>
+    `The edited image didn't preserve ${name || "this model"}'s identity — only the requested change may differ. Nothing was saved.`,
+
+  /** W5 identity-output gate: the verifier itself could not return a safe verdict. */
+  identityVerificationUnavailable:
+    "The edit couldn't be verified just now — nothing was changed. Try again in a moment.",
+
+  /** An identity classification without its typed patch is never allowed to
+   * fall through to the image-only path. */
+  identityAuthorizationUnavailable:
+    "The identity edit couldn't be authorized safely — nothing was changed or charged. Try again in a moment.",
+
   /** Identity edit typed against a non-anchor view. */
   nonAnchorView:
     "Identity changes happen on the headshot — it anchors every other view. Open the headshot and make the change there.",
@@ -84,7 +97,7 @@ export const REFUSAL_COPY = {
    *  The durable value is always the band the user named; vague or
    *  conflicting wording can justify none, so it refuses free. */
   hairLengthVague:
-    "Say exactly how long — 'short', 'medium', 'long', 'very long', or wording like 'chin-length' or 'waist-length'. Nothing was charged.",
+    "Choose one clear final hair length — 'short', 'medium', 'long', 'very long', or one matching length such as 'chin-length' or 'waist-length'. If you named more than one length, choose the single result you want. Nothing was charged.",
 
   /** §7.4 — cross-revision restore (headshots AND sibling views). */
   crossRevisionRestore:

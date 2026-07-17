@@ -58,6 +58,15 @@ interface GenerationResult {
   engineUsed?: string;
 }
 
+export interface RawGenerationResult {
+  imageBase64: string;
+  engineUsed?: string;
+}
+
+export interface UploadedGenerationResult extends GenerationResult {
+  storageKey: string;
+}
+
 // ============ Credit Costs ============
 // 1 credit ≈ $0.01 | Pro model costs, Flash fallback = 50% cost
 
@@ -85,7 +94,7 @@ export const POINT_COSTS = CREDIT_COSTS;
 /**
  * Fetch a URL and return as base64 data URL (for S3/HTTP URLs → Gemini input)
  */
-async function fetchAsBase64(url: string): Promise<string> {
+export async function fetchImageAsBase64(url: string): Promise<string> {
   if (!url.startsWith('http')) return url;
   const response = await fetch(url);
   const buffer = Buffer.from(await response.arrayBuffer());
@@ -100,11 +109,18 @@ async function fetchAsBase64(url: string): Promise<string> {
  * Convert base64 data URL to S3 URL
  */
 async function uploadBase64ToS3(base64DataUrl: string, prefix: string): Promise<string> {
+  return (await uploadRawCandidate(base64DataUrl, prefix)).imageUrl;
+}
+
+/** Persist a gate-approved raw candidate and retain its exact storage key so
+ * a later database-commit failure can clean up the object without parsing a
+ * public URL. */
+export async function uploadRawCandidate(base64DataUrl: string, prefix: string): Promise<UploadedGenerationResult> {
   const base64Data = base64DataUrl.replace(/^data:.*?;base64,/, "");
   const buffer = Buffer.from(base64Data, "base64");
   const filename = `${prefix}/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-  const { url } = await storagePut(filename, buffer, "image/png");
-  return url;
+  const { key, url } = await storagePut(filename, buffer, "image/png");
+  return { imageUrl: url, storageKey: key };
 }
 
 /**
@@ -167,9 +183,7 @@ export async function enhanceUserPrompt(originalPrompt: string): Promise<string>
 /**
  * Generate casting image (headshot)
  */
-export async function generateCastingImage(
-  masterPrompt: string,
-  options: {
+export interface CastingGenerationOptions {
     referenceImage?: string;
     resolution?: gemini.ImageResolution;
     aspectRatio?: gemini.AspectRatio;
@@ -182,8 +196,15 @@ export async function generateCastingImage(
     maskImage?: string;
     ethnicityHint?: string;
     userId?: string;
-  } = {}
-): Promise<GenerationResult> {
+    modelId?: string | number;
+    technicalSchema?: unknown;
+    forceFreshSession?: boolean;
+}
+
+export async function generateCastingImageRaw(
+  masterPrompt: string,
+  options: CastingGenerationOptions = {},
+): Promise<RawGenerationResult> {
   log.info({
     castingBrand: options.castingBrand,
     frame: options.frame,
@@ -204,7 +225,12 @@ export async function generateCastingImage(
     options.castingVibe,
     options.maskImage,
     options.ethnicityHint,
-    options.userId || 'anonymous'
+    options.userId || 'anonymous',
+    undefined,
+    undefined,
+    options.modelId,
+    options.technicalSchema,
+    options.forceFreshSession || false,
   );
 
   log.info({
@@ -212,8 +238,17 @@ export async function generateCastingImage(
     engineUsed: result.engineUsed,
   }, '[aiService.generateCastingImage] Result received');
 
+  return { imageBase64: result.imageUrl, engineUsed: result.engineUsed };
+}
+
+export async function generateCastingImage(
+  masterPrompt: string,
+  options: CastingGenerationOptions = {},
+): Promise<GenerationResult> {
+  const result = await generateCastingImageRaw(masterPrompt, options);
+
   // Upload base64 to S3 for persistent storage
-  const s3Url = await uploadBase64ToS3(result.imageUrl, "casting");
+  const s3Url = await uploadBase64ToS3(result.imageBase64, "casting");
 
   log.info({ data: s3Url.substring(0, 80) + '...' }, '[aiService.generateCastingImage] Uploaded to S3:');
 
@@ -233,7 +268,7 @@ export async function generateFullBody(
   technicalSchema?: any,
   bodyType?: string
 ): Promise<GenerationResult> {
-  const headshotBase64 = await fetchAsBase64(headshotUrl);
+  const headshotBase64 = await fetchImageAsBase64(headshotUrl);
 
   const base64Result = await gemini.generateFullBody(masterPrompt, headshotBase64, gender, technicalSchema, bodyType);
 
@@ -258,7 +293,7 @@ export async function generateRemainingViews(
   viewType: SingleViewAngle,
   technicalSchema?: any
 ): Promise<GenerationResult> {
-  const sourceBase64 = await fetchAsBase64(sourceImageUrl);
+  const sourceBase64 = await fetchImageAsBase64(sourceImageUrl);
 
   // Use the new single view generation function
   const result = await gemini.generateSingleView(masterPrompt, sourceBase64, gender, viewType, technicalSchema);
@@ -275,11 +310,7 @@ export async function generateRemainingViews(
 /**
  * Iterate on existing image
  */
-export async function iterateModel(
-  masterPrompt: string,
-  currentImageUrl: string,
-  iterationRequest: string,
-  options: {
+export interface IterationGenerationOptions {
     maskImage?: string;
     maskBase64?: string; // Base64 encoded mask overlay from frontend (transparent PNG with red strokes)
     additionalReference?: string;
@@ -293,9 +324,18 @@ export async function iterateModel(
     castingBrand?: string;
     ethnicityHint?: string;
     userId?: string;
-  } = {}
-): Promise<GenerationResult> {
-  const currentBase64 = await fetchAsBase64(currentImageUrl);
+    modelId?: string | number;
+    technicalSchema?: unknown;
+    forceFreshSession?: boolean;
+}
+
+export async function iterateModelRaw(
+  masterPrompt: string,
+  currentImageUrl: string,
+  iterationRequest: string,
+  options: IterationGenerationOptions = {},
+): Promise<RawGenerationResult> {
+  const currentBase64 = await fetchImageAsBase64(currentImageUrl);
 
   // The frontend now sends the mask already composited with the base image (matches SOT)
   // No server-side compositing needed — pass through directly
@@ -316,11 +356,25 @@ export async function iterateModel(
     options.ethnicityHint, // Pass through ethnicityHint for phenotype lock
     options.userId || 'anonymous',
     options.viewAngle,
-    options.policyDirectives
+    options.policyDirectives,
+    options.modelId,
+    options.technicalSchema,
+    options.forceFreshSession || false,
   );
 
+  return { imageBase64: result.imageUrl, engineUsed: result.engineUsed };
+}
+
+export async function iterateModel(
+  masterPrompt: string,
+  currentImageUrl: string,
+  iterationRequest: string,
+  options: IterationGenerationOptions = {},
+): Promise<GenerationResult> {
+  const result = await iterateModelRaw(masterPrompt, currentImageUrl, iterationRequest, options);
+
   // Upload base64 to S3 for persistent storage
-  const s3Url = await uploadBase64ToS3(result.imageUrl, "iterate");
+  const s3Url = await uploadBase64ToS3(result.imageBase64, "iterate");
 
   return {
     imageUrl: s3Url,
@@ -335,7 +389,7 @@ export async function upscaleImage(
   currentImageUrl: string,
   targetResolution: gemini.ImageResolution
 ): Promise<GenerationResult> {
-  const currentBase64 = await fetchAsBase64(currentImageUrl);
+  const currentBase64 = await fetchImageAsBase64(currentImageUrl);
 
   const result = await gemini.upscaleExistingImage(currentBase64, targetResolution);
 

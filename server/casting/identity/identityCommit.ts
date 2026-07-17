@@ -36,6 +36,10 @@ import {
 } from "./anchorSelector";
 import { createModuleLogger } from "../../logging/logger";
 import { clearEngineChoiceForChanges } from "../engineChoiceMetadata";
+import {
+  dependentFieldsForPatch,
+  type HairGeometryDependentField,
+} from "./identityDependencies";
 
 const log = createModuleLogger("casting/identity/identityCommit");
 
@@ -45,6 +49,15 @@ export function editField(edit: AuthorizedIdentityEdit): AuthorizableIdentityFie
 
 function editValue(edit: AuthorizedIdentityEdit): unknown {
   return edit.kind === "leaf" ? edit.value : edit.edit.value;
+}
+
+/** Resetting handlers run before the fields they can reset, so every value
+ * the user explicitly authorized wins regardless of incoming patch order. */
+function editApplicationPriority(edit: AuthorizedIdentityEdit): number {
+  const field = editField(edit);
+  if (field === "person.gender") return 0;
+  if (field === "person.hair.style") return 1;
+  return 2;
 }
 
 /** The deterministic identity-fragment line this commit writes into the
@@ -61,6 +74,46 @@ const FRAGMENT_LINE_PATTERN = (field: AuthorizableIdentityField) =>
 
 /** Pure §8.6 document computation — exported for tests. Returns the complete
  *  post-commit document state without touching the database. */
+/** A release does not invent a replacement value. It makes the newly accepted
+ * anchor authoritative for that physically coupled detail and explicitly
+ * supersedes older natural-language prose that cannot be safely rewritten. */
+export function identityReleaseLine(field: HairGeometryDependentField): string {
+  return `IDENTITY RELEASE — ${field} (supersedes every earlier ${field.split(".").pop()} description): unset; derive it only as required by the explicitly requested identity change, then treat the accepted anchor image as authority.`;
+}
+
+const RELEASE_LINE_PATTERN = (field: AuthorizableIdentityField) =>
+  new RegExp(`^IDENTITY RELEASE — ${field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} .*$`, "gm");
+
+const RELEASE_PREFERENCE_KEYS: Record<HairGeometryDependentField, readonly (keyof ModelPreferences)[]> = {
+  "person.hair.style": ["hairStyle", "hairStyleOverride"],
+  "person.hair.length": ["hairLength"],
+  "person.hair.fringe": ["hairFringe"],
+  "person.hair.parting": ["hairParting"],
+  "person.hair.volume": ["hairVolume"],
+  "person.hair.fade": ["hairFade"],
+  "person.hair.flyaways": ["hairFlyaways"],
+  "person.hair.tuck": ["hairTuck"],
+};
+
+function releaseDependentField(
+  field: HairGeometryDependentField,
+  preferences: ModelPreferences,
+  technicalSchema: TechnicalSchema,
+): ModelPreferences {
+  const released = { ...preferences };
+  const writable = released as Record<string, unknown>;
+  for (const key of RELEASE_PREFERENCE_KEYS[field]) writable[key] = "";
+  if (field === "person.hair.style") {
+    const subject = technicalSchema.subject;
+    if (subject && typeof subject === "object") {
+      const nextSubject = { ...(subject as Record<string, unknown>) };
+      delete nextSubject.hair_style;
+      technicalSchema.subject = nextSubject;
+    }
+  }
+  return released;
+}
+
 export function computeIdentityCommit(
   model: {
     masterPrompt: string;
@@ -73,6 +126,7 @@ export function computeIdentityCommit(
   technicalSchema: TechnicalSchema;
   preferences: ModelPreferences;
   fragments: string[];
+  releasedDependents: HairGeometryDependentField[];
 } {
   const currentPrefs = clearEngineChoiceForChanges(
     model.preferences,
@@ -84,8 +138,25 @@ export function computeIdentityCommit(
   const technicalSchema: TechnicalSchema = structuredClone(currentSchema);
   let masterPrompt = model.masterPrompt ?? "";
   const fragments: string[] = [];
+  const releasedDependents = dependentFieldsForPatch(patch);
 
-  for (const edit of patch.edits) {
+  // Release only the reviewed, statically coupled leaves. The accepted image
+  // becomes their authority; no LLM-generated value is written into canon.
+  for (const field of releasedDependents) {
+    preferences = releaseDependentField(field, preferences, technicalSchema);
+    masterPrompt = masterPrompt
+      .replace(FRAGMENT_LINE_PATTERN(field), "")
+      .replace(RELEASE_LINE_PATTERN(field), "")
+      .replace(/\n{3,}/g, "\n\n");
+    masterPrompt = `${masterPrompt.trimEnd()}\n\n${identityReleaseLine(field)}`;
+  }
+
+  const orderedEdits = patch.edits
+    .map((edit, index) => ({ edit, index }))
+    .sort((a, b) => editApplicationPriority(a.edit) - editApplicationPriority(b.edit) || a.index - b.index)
+    .map(({ edit }) => edit);
+
+  for (const edit of orderedEdits) {
     const field = editField(edit);
     const handler = handlerFor(field);
     const value = editValue(edit);
@@ -114,11 +185,14 @@ export function computeIdentityCommit(
     // 3. Master-description fragment — replace this field's earlier fragment only
     const fragment = (handler.buildPromptFragment as (v: unknown) => string)(value);
     fragments.push(fragment);
-    masterPrompt = masterPrompt.replace(FRAGMENT_LINE_PATTERN(field), "").replace(/\n{3,}/g, "\n\n");
+    masterPrompt = masterPrompt
+      .replace(FRAGMENT_LINE_PATTERN(field), "")
+      .replace(RELEASE_LINE_PATTERN(field), "")
+      .replace(/\n{3,}/g, "\n\n");
     masterPrompt = `${masterPrompt.trimEnd()}\n\n${identityFragmentLine(field, fragment)}`;
   }
 
-  return { masterPrompt, technicalSchema, preferences, fragments };
+  return { masterPrompt, technicalSchema, preferences, fragments, releasedDependents };
 }
 
 export interface IdentityCommitInput {
@@ -154,6 +228,7 @@ export interface IdentityCommitResult {
   technicalSchema: TechnicalSchema;
   preferences: ModelPreferences;
   staledAssetIds: number[];
+  releasedDependents: HairGeometryDependentField[];
 }
 
 /**
@@ -252,6 +327,7 @@ export async function commitIdentityEdit(input: IdentityCommitInput): Promise<Id
           // authorized and committed — never an arbitrary write map.
           identityEdits: input.patch.edits,
           identityEditSource: input.patch.source,
+          releasedIdentityDependents: computed.releasedDependents,
         },
       })
       .$returningId();
@@ -272,7 +348,14 @@ export async function commitIdentityEdit(input: IdentityCommitInput): Promise<Id
   });
 
   log.info(
-    { modelId: input.model.id, revisionId, assetId, staled: staleIds.length, source: input.patch.source },
+    {
+      modelId: input.model.id,
+      revisionId,
+      assetId,
+      staled: staleIds.length,
+      source: input.patch.source,
+      releasedDependents: computed.releasedDependents,
+    },
     "[identityCommit] committed",
   );
 
@@ -283,5 +366,6 @@ export async function commitIdentityEdit(input: IdentityCommitInput): Promise<Id
     technicalSchema: computed.technicalSchema,
     preferences: computed.preferences,
     staledAssetIds: staleIds,
+    releasedDependents: computed.releasedDependents,
   };
 }

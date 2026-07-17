@@ -50,7 +50,7 @@ export async function updateGeneration(
   data: Partial<
     Pick<
       InsertGeneration,
-      "status" | "resultUrl" | "errorMessage" | "completedAt"
+      "status" | "resultUrl" | "errorMessage" | "completedAt" | "metadata"
     >
   >
 ): Promise<{ success: boolean; error?: string }> {

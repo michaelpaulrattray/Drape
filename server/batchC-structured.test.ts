@@ -3,7 +3,7 @@
  * ordering (M22 ⊕: the deduct-before-parse doors reordered), and the
  * Canvas/Wardrobe isolation boundary (M19).
  *
- * applyModelEdit's UPDATE branch is a `source:"structured"` §8.6 commit:
+ * applyModelEdit's UPDATE branch is a `source:"structured"` recast commit:
  * unknown keys reject at the wire; non-identity keys refuse honestly;
  * presentation and `features` cannot be smuggled; the commit lands document +
  * anchor + new revision + stale flags (pinned included) atomically; minted
@@ -90,6 +90,8 @@ vi.mock("./casting/aiService", async (importOriginal) => {
     ...actual,
     generateMasterPrompt: vi.fn().mockResolvedValue({ naturalDescription: "new desc", technicalSchema: {} }),
     generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", engineUsed: "test" }),
+    generateCastingImageRaw: vi.fn().mockResolvedValue({ imageBase64: "data:image/png;base64,bmV3", engineUsed: "test" }),
+    uploadRawCandidate: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", storageKey: "casting/new.png" }),
   };
 });
 vi.mock("./casting/promptParser", async (importOriginal) => {
@@ -107,7 +109,7 @@ import {
   updateModel,
   deductPoints,
 } from "./db";
-import { generateMasterPrompt, generateCastingImage } from "./casting/aiService";
+import { generateMasterPrompt, generateCastingImage, generateCastingImageRaw } from "./casting/aiService";
 import {
   executeApplyModelEdit,
   executeRunGeneration,
@@ -162,6 +164,7 @@ beforeEach(() => {
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(generateMasterPrompt).mockClear();
   vi.mocked(generateCastingImage).mockClear();
+  vi.mocked(generateCastingImageRaw).mockClear();
   tx.reset();
 });
 
@@ -227,8 +230,8 @@ describe("runGeneration attributes wire schema (final correction 3)", () => {
 
 // ─── M6: the update branch is a structured §8.6 commit ──────────────────────
 
-describe("applyModelEdit UPDATE = source:'structured' §8.6 commit (M6)", () => {
-  it("a valid identity change commits document + anchor + new revision + stale flags (pinned included), FREE validation first", async () => {
+describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () => {
+  it("a valid recast commits document + new anchor/revision + stale flags (pinned included), FREE validation first", async () => {
     const result = await executeApplyModelEdit({
       userId: 1, itemId: 3, decision: "update",
       changes: { jawline: "Sharp / Chiseled", bodyType: "Athletic" },
@@ -253,6 +256,10 @@ describe("applyModelEdit UPDATE = source:'structured' §8.6 commit (M6)", () => 
     expect(tx.staleUpdates).toHaveLength(1);
     // Paid exactly once, after validation
     expect(deductPoints).toHaveBeenCalledTimes(1);
+    expect(generateCastingImageRaw).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ modelId: 7 }),
+    );
   });
 
   it("non-identity keys (brand/vibe/brief/features) refuse the update FREE — the features escape hatch is closed", async () => {
@@ -383,6 +390,10 @@ describe("creation doors reordered: refusal precedes deduction (M22)", () => {
     await executeApplyModelEdit({ userId: 1, itemId: 3, decision: "fork", changes: { jawline: "Sharp / Chiseled" } });
     const prefs = vi.mocked(createModel).mock.calls[0][0].preferences as Record<string, unknown>;
     expect(prefs.referenceImage).toBeUndefined();
+    expect(generateCastingImage).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ modelId: 88 }),
+    );
   });
 
   it("fork preserves untouched Open flags, clears an explicitly set flag, and never prompts with metadata", async () => {

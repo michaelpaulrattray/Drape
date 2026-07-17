@@ -606,6 +606,12 @@ export function ControlPanel({
               </div>
             )}
 
+            {currentAssets.length > 0 && (
+              <p className="mb-3 px-1 text-canvas-sm text-canvas-ink-soft leading-normal text-center">
+                Recasting uses the panel settings to create a new draft identity. The person may look different.
+              </p>
+            )}
+
             <button
               data-debug-generate
               onClick={handleGenerate}

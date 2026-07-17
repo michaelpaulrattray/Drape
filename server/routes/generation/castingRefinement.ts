@@ -4,7 +4,7 @@ import {
   createGeneration, updateGeneration, updateModel,
 } from "../../db";
 import {
-  iterateModel, enhanceUserPrompt,
+  iterateModel, iterateModelRaw, uploadRawCandidate, enhanceUserPrompt,
   generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGESTIONS,
   compactMasterPrompt, clearCastingSession,
   POINT_COSTS,
@@ -32,6 +32,11 @@ import { assertNotArchived } from "../../casting/modelGuards";
 import { createModuleLogger } from "../../logging/logger";
 import { executePaidUpscale, normalizeUpscaleError } from "../../casting/upscaleService";
 import { staledAnglesForAssetIds } from "../../casting/identity/staleResponse";
+import { runGatedIdentityGeneration } from "../../casting/identity/editGateFlow";
+import type { IdentityGateVerdict } from "../../casting/identity/editGate";
+import { storageDelete } from "../../storage";
+import { dependentFieldsForPatch } from "../../casting/identity/identityDependencies";
+import { requireIdentityPatch } from "../../casting/identity/identityAuthorizationGuard";
 const log = createModuleLogger("routes/generation");
 
 export const castingRefinementRouter = router({
@@ -123,18 +128,24 @@ export const castingRefinementRouter = router({
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: decision.message });
       }
       const authorization = decision.authorization;
+      const identityPatch = requireIdentityPatch(authorization);
+      const releasedIdentityDependents = identityPatch
+        ? dependentFieldsForPatch(identityPatch)
+        : [];
 
+      const generationMetadata = {
+        feedback: input.feedback,
+        assetId: input.assetId,
+        authorizationClass: authorization.class,
+        releasedIdentityDependents,
+      };
       const genResult = await createGeneration({
         userId: ctx.user.id,
         modelId: input.modelId,
         type: "iteration",
         status: "processing",
         pointsCost: POINT_COSTS.iterate,
-        metadata: {
-          feedback: input.feedback,
-          assetId: input.assetId,
-          authorizationClass: authorization.class,
-        },
+        metadata: generationMetadata,
       });
       // Review finding 2: a failed audit-row insert is detected BEFORE any
       // money moves — never charge while pretending an audit row exists, and
@@ -144,6 +155,7 @@ export const castingRefinementRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the edit — you weren't charged. Try again." });
       }
       const chargeReferenceId = `gen-${genResult.generationId}`;
+      const identityGateAudit: Array<{ attempt: 1 | 2; verdict: IdentityGateVerdict }> = [];
 
       try {
         const result = await withAtomicCredits(
@@ -163,20 +175,40 @@ export const castingRefinementRouter = router({
             const ethnicityHint = buildEthnicityHint(prefs);
             const reinforcedPrompt = buildReinforcedPrompt(model.masterPrompt || "", prefs);
 
-            const iterResult = await iterateModel(
-              reinforcedPrompt,
-              targetAsset.storageUrl,
-              input.feedback,
-              {
-                castingBrand: (model.technicalSchema as any)?.context?.casting_for,
-                frame: framing.crop,
-                viewAngle: framing.viewAngle,
-                additionalReference: input.referenceImage,
-                policyDirectives: authorization.promptDirectives,
-                ethnicityHint,
-                userId: String(ctx.user.id),
-              }
-            );
+            const commonOptions = {
+              castingBrand: (model.technicalSchema as any)?.context?.casting_for,
+              frame: framing.crop,
+              viewAngle: framing.viewAngle,
+              additionalReference: input.referenceImage,
+              policyDirectives: authorization.promptDirectives,
+              ethnicityHint,
+              userId: String(ctx.user.id),
+              modelId: input.modelId,
+              technicalSchema: model.technicalSchema ?? undefined,
+            } as const;
+
+            const iterResult = authorization.class === "identity"
+              ? await runGatedIdentityGeneration({
+                  sourceImage: targetAsset.storageUrl,
+                  patch: identityPatch!,
+                  frame: framing.crop,
+                  modelName: model.name,
+                  generate: (attempt) => iterateModelRaw(
+                    reinforcedPrompt,
+                    targetAsset.storageUrl,
+                    input.feedback,
+                    { ...commonOptions, forceFreshSession: attempt === 2 },
+                  ),
+                  resetRejectedSession: () => clearCastingSession(String(ctx.user.id), input.modelId),
+                  upload: (candidate) => uploadRawCandidate(candidate.imageBase64, "iterate"),
+                  onVerdict: (attempt, verdict) => identityGateAudit.push({ attempt, verdict }),
+                })
+              : await iterateModel(
+                  reinforcedPrompt,
+                  targetAsset.storageUrl,
+                  input.feedback,
+                  commonOptions,
+                );
 
             if (!iterResult.imageUrl) {
               throw new TRPCError({
@@ -185,11 +217,15 @@ export const castingRefinementRouter = router({
               });
             }
 
-            return { imageUrl: iterResult.imageUrl, engineUsed: iterResult.engineUsed };
+            return {
+              imageUrl: iterResult.imageUrl,
+              engineUsed: iterResult.engineUsed,
+              storageKey: "storageKey" in iterResult ? iterResult.storageKey : undefined,
+            };
           }
         );
 
-        if (authorization.class === "identity" && authorization.identityPatch) {
+        if (authorization.class === "identity") {
           // §8.6 ATOMIC IDENTITY COMMIT: preference patch + schema write +
           // master-description fragments + new anchor asset (role `anchor`)
           // + new identityRevisionId + stale flags on every filled sibling,
@@ -201,7 +237,7 @@ export const castingRefinementRouter = router({
           try {
             commit = await commitIdentityEdit({
               model,
-              patch: authorization.identityPatch,
+              patch: identityPatch!,
               newAnchor: {
                 storageUrl: result.imageUrl,
                 pointsCost: POINT_COSTS.iterate,
@@ -212,6 +248,18 @@ export const castingRefinementRouter = router({
             });
           } catch (commitError) {
             // The commit rolled back — no partial identity state survives.
+            const uploadedKey = typeof result.storageKey === "string" ? result.storageKey : undefined;
+            if (uploadedKey) {
+              try {
+                const deleted = await storageDelete(uploadedKey);
+                if (!deleted.success) {
+                  log.error({ modelId: input.modelId, uploadedKey }, "[iterate] passing candidate cleanup failed after commit rollback");
+                }
+              } catch (cleanupError) {
+                log.error({ err: cleanupError, modelId: input.modelId, uploadedKey }, "[iterate] passing candidate cleanup threw after commit rollback");
+              }
+              clearCastingSession(String(ctx.user.id), input.modelId);
+            }
             // Refund under the charge's DERIVED refund id (finding 1), and
             // the outgoing message carries the refund TRUTH (correction 1).
             const outcome = await recordRefund(
@@ -237,6 +285,14 @@ export const castingRefinementRouter = router({
             status: "completed",
             resultUrl: result.imageUrl,
             completedAt: new Date(),
+            metadata: {
+              ...generationMetadata,
+              identityGate: {
+                attemptCount: identityGateAudit.length,
+                verdicts: identityGateAudit,
+                releasedIdentityDependents: commit.releasedDependents,
+              },
+            },
           });
           if (!auditDone.success) {
             log.error(
@@ -322,6 +378,16 @@ export const castingRefinementRouter = router({
           status: "failed",
           errorMessage: error instanceof Error ? error.message : "Unknown error",
           completedAt: new Date(),
+          ...(identityGateAudit.length > 0 ? {
+            metadata: {
+              ...generationMetadata,
+              identityGate: {
+                attemptCount: identityGateAudit.length,
+                verdicts: identityGateAudit,
+                releasedIdentityDependents,
+              },
+            },
+          } : {}),
         });
         if (!auditFailed.success) {
           log.error(

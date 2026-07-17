@@ -38,6 +38,9 @@ import { addBoardEdge, getEdgesForItem, removeBoardEdge, getEdgesFrom } from "..
 import {
   generateMasterPrompt,
   generateCastingImage,
+  generateCastingImageRaw,
+  uploadRawCandidate,
+  clearCastingSession,
   CREDIT_COSTS,
   type ModelPreferences,
 } from "../casting/aiService";
@@ -68,6 +71,7 @@ import { VIEW_ANGLE_LABELS, CANONICAL_VIEW_ANGLES } from "../../shared/boardType
 import { isModelDraftStatus, isModelAvailableStatus } from "../../shared/modelLifecycle";
 import type { BoardItemKind, BoardEdgeRelation } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
+import { storageDelete } from "../storage";
 
 const log = createModuleLogger("lib/boardOps");
 
@@ -397,6 +401,8 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       frame: "HEADSHOT",
       ethnicityHint,
       userId: String(input.userId),
+      modelId,
+      technicalSchema: masterPrompt.technicalSchema,
     });
     if (!result.imageUrl) {
       const auditFailed = await updateGeneration(genRecord.generationId, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
@@ -754,6 +760,8 @@ async function generateCastCandidate(opts: { userId: number; prefs: ModelPrefere
       frame: "HEADSHOT",
       ethnicityHint: buildEthnicityHint(prefs as never),
       userId: String(opts.userId),
+      modelId: model.modelId,
+      technicalSchema: masterPrompt.technicalSchema,
     },
   );
   if (!result.imageUrl) {
@@ -842,7 +850,12 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     // refusal.
     const isRerun = input.intent === "rerun" && Object.keys(input.changes).length === 0;
     let identityPatch: import("../casting/identity/identityTypes").AuthorizedIdentityPatch | null = null;
-    let generationDoc = { masterPrompt: model.masterPrompt || "", preferences: current };
+    let generationDoc = {
+      masterPrompt: model.masterPrompt || "",
+      preferences: current,
+      technicalSchema: model.technicalSchema ?? {},
+    };
+    let releasedIdentityDependents: string[] = [];
     if (!isRerun) {
       const structured = buildStructuredPatch(input.changes, current);
       if (!structured.ok) {
@@ -854,13 +867,18 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       // deliberately updated identity; the atomic commit below persists the
       // exact same computation.
       const computed = computeIdentityCommit(model, structured.patch);
-      generationDoc = { masterPrompt: computed.masterPrompt, preferences: computed.preferences as Record<string, unknown> };
+      generationDoc = {
+        masterPrompt: computed.masterPrompt,
+        preferences: computed.preferences as Record<string, unknown>,
+        technicalSchema: computed.technicalSchema,
+      };
+      releasedIdentityDependents = computed.releasedDependents;
     }
 
     const chargeReferenceId = `apply-edit-${input.itemId}-${randomUUID()}`;
     const deduct = await deductPoints(
       input.userId, cost, "generation",
-      `Identity update (pending)`, chargeReferenceId,
+      `Model recast (pending)`, chargeReferenceId,
     );
     if (!deduct.success) {
       throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
@@ -876,6 +894,8 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     // correct. No external image call runs inside the transaction.
     let imageUrl: string;
     let committedRevision: string;
+    let uploadedStorageKey: string | undefined;
+    let auditGenerationId: number | undefined;
     try {
       const genRecord = await createGeneration({
         userId: input.userId, modelId: model.id, type: "castingImage", status: "processing", pointsCost: cost,
@@ -885,23 +905,35 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       if (!genRecord.success || !genRecord.generationId) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the update" });
       }
-      const result = await generateCastingImage(
-        buildReinforcedPrompt(generationDoc.masterPrompt, generationDoc.preferences as never),
-        {
-          castingBrand: (generationDoc.preferences as { castingBrand?: string }).castingBrand || "Generic",
-          frame: "HEADSHOT",
-          ethnicityHint: buildEthnicityHint(generationDoc.preferences as never),
-          userId: String(input.userId),
-        },
-      );
+      auditGenerationId = genRecord.generationId;
+      const assets = await getModelAssets(model.id);
+      const generationOptions = {
+        castingBrand: (generationDoc.preferences as { castingBrand?: string }).castingBrand || "Generic",
+        frame: "HEADSHOT" as const,
+        ethnicityHint: buildEthnicityHint(generationDoc.preferences as never),
+        userId: String(input.userId),
+        modelId: model.id,
+        technicalSchema: generationDoc.technicalSchema,
+      };
+      const generationPrompt = buildReinforcedPrompt(generationDoc.masterPrompt, generationDoc.preferences as never);
+      const result = isRerun
+        ? await generateCastingImage(generationPrompt, generationOptions)
+        : await (async () => {
+            // Founder ruling (2026-07-18): changing Casting panel fields is
+            // an intentional RECAST, not a same-person surgical iteration.
+            // Generate a new identity from the updated casting document, but
+            // retain tracked-upload cleanup if the atomic landing fails.
+            const candidate = await generateCastingImageRaw(generationPrompt, generationOptions);
+            const uploaded = await uploadRawCandidate(candidate.imageBase64, "casting");
+            uploadedStorageKey = uploaded.storageKey;
+            return { ...uploaded, engineUsed: candidate.engineUsed };
+          })();
       if (!result.imageUrl) {
         const auditFailed = await updateGeneration(genRecord.generationId, { status: "failed", errorMessage: "No image generated", completedAt: new Date() });
         if (!auditFailed.success) log.error({ itemId: input.itemId, modelId: model.id }, "applyModelEdit: audit-row failure write failed — audit gap");
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
       }
       imageUrl = result.imageUrl;
-
-      const assets = await getModelAssets(model.id);
 
       // Precompute the board landing (reads BEFORE the transaction; the
       // landing callback performs writes only). Final correction 3: the node
@@ -944,7 +976,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
           },
           version: {
             itemId: input.itemId, version, imageUrl: result.imageUrl,
-            prompt: input.intent === "rerun" ? "Recast" : `Identity update: ${Object.keys(input.changes).join(", ")}`,
+            prompt: input.intent === "rerun" ? "Recast" : `Recast from settings: ${Object.keys(input.changes).join(", ")}`,
             tool: input.intent === "rerun" ? "rerun" : "attributes",
           },
         });
@@ -983,7 +1015,17 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
 
       // The identity is durably committed — an audit-row failure past this
       // point is an audit gap, never a refund (finding 3, invariant 2)
-      const auditDone = await updateGeneration(genRecord.generationId, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
+      const auditDone = await updateGeneration(genRecord.generationId, {
+        status: "completed",
+        resultUrl: result.imageUrl,
+        completedAt: new Date(),
+        ...(!isRerun ? {
+          metadata: {
+            operationMode: "structured_recast",
+            releasedIdentityDependents,
+          },
+        } : {}),
+      });
       if (!auditDone.success) {
         log.error({ itemId: input.itemId, modelId: model.id, generationId: genRecord.generationId }, "applyModelEdit: audit-row completion write failed AFTER commit — audit gap, result stands");
       }
@@ -991,9 +1033,39 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       // Nothing durable survived (commit rolls back) — refund once, checked,
       // and carry the refund TRUTH out (corrections 1). Outward wording is
       // sanitized: raw internal error text is logged, never sent.
-      log.error({ err: error, itemId: input.itemId, modelId: model.id }, "applyModelEdit update failed inside the durable boundary");
-      const outcome = await recordRefund(input.userId, cost, `Identity update failed (refund)`, chargeReferenceId);
-      const baseMessage = publicErrorMessage(error, "The update failed.");
+      log.error({ err: error, itemId: input.itemId, modelId: model.id }, "applyModelEdit recast failed inside the durable boundary");
+      if (uploadedStorageKey) {
+        try {
+          const deleted = await storageDelete(uploadedStorageKey);
+          if (!deleted.success) {
+            log.error({ itemId: input.itemId, modelId: model.id, uploadedStorageKey }, "applyModelEdit: passing candidate cleanup failed after rollback");
+          }
+        } catch (cleanupError) {
+          log.error({ err: cleanupError, itemId: input.itemId, modelId: model.id, uploadedStorageKey }, "applyModelEdit: passing candidate cleanup threw after rollback");
+        }
+      }
+      // NEW-mode generation replaces this model's visual chat memory before
+      // upload/commit completes. Any failed recast must discard that session
+      // even when upload failed before producing a storage key.
+      clearCastingSession(String(input.userId), model.id);
+      if (auditGenerationId) {
+        const auditFailed = await updateGeneration(auditGenerationId, {
+          status: "failed",
+          errorMessage: error instanceof Error ? error.message : "Unknown error",
+          completedAt: new Date(),
+          ...(!isRerun ? {
+            metadata: {
+              operationMode: "structured_recast",
+              releasedIdentityDependents,
+            },
+          } : {}),
+        });
+        if (!auditFailed.success) {
+          log.error({ itemId: input.itemId, modelId: model.id, generationId: auditGenerationId }, "applyModelEdit: audit-row failure write failed — audit gap");
+        }
+      }
+      const outcome = await recordRefund(input.userId, cost, `Model recast failed (refund)`, chargeReferenceId);
+      const baseMessage = publicErrorMessage(error, "The recast failed.");
       throw new TRPCError({
         code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
         message: `${baseMessage} ${refundTruth(outcome)}`,
@@ -1003,7 +1075,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     // The identity AND its board landing committed together (one
     // transaction) — there is no post-boundary board synchronization left to
     // fail silently, and nothing to repair.
-    log.info({ itemId: input.itemId, modelId: model.id, changed: Object.keys(input.changes), rerun: isRerun, revision: committedRevision }, "Identity updated");
+    log.info({ itemId: input.itemId, modelId: model.id, changed: Object.keys(input.changes), rerun: isRerun, revision: committedRevision }, "Model recast");
     return { decision: "update" as const, itemId: input.itemId, modelId: model.id, imageUrl };
   }
 

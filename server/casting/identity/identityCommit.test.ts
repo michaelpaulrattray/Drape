@@ -5,7 +5,7 @@
  * byte-for-byte preservation of protected mark/amendment language (M5/M6).
  */
 import { describe, it, expect } from "vitest";
-import { computeIdentityCommit, identityFragmentLine } from "./identityCommit";
+import { computeIdentityCommit, identityFragmentLine, identityReleaseLine } from "./identityCommit";
 import type { AuthorizedIdentityPatch } from "./identityTypes";
 
 const MODEL = {
@@ -64,6 +64,81 @@ describe("computeIdentityCommit — pure §8.6 document computation", () => {
       expect(out.masterPrompt).toContain(identityFragmentLine("person.hair.length", `hair length: ${band}`));
     },
   );
+
+  it("a hair-length edit releases only the reviewed geometry leaves and preserves protected hair traits", () => {
+    const patch: AuthorizedIdentityPatch = {
+      edits: [{ kind: "leaf", leaf: "person.hair.length", operation: "modify", value: "Very Long" }],
+      source: "text",
+    };
+    const out = computeIdentityCommit({
+      masterPrompt: `${MODEL.masterPrompt}\n\n${identityFragmentLine("person.hair.style", "hair style: tapered side part")}`,
+      technicalSchema: {
+        ...MODEL.technicalSchema,
+        subject: { hair_color: "Dark Brown", hair_style: "tapered side part" },
+      },
+      preferences: {
+        ...MODEL.preferences,
+        hairStyle: "Tapered",
+        hairStyleOverride: "side part",
+        hairLength: "Short",
+        hairFringe: "None",
+        hairParting: "Side",
+        hairVolume: "Low",
+        hairFade: "Tapered",
+        hairFlyaways: "None",
+        hairTuck: "Behind ears",
+        hairTexture: "Straight",
+        hairHairline: "Widow's peak",
+      },
+    }, patch);
+
+    expect(out.releasedDependents.sort()).toEqual([
+      "person.hair.fade",
+      "person.hair.flyaways",
+      "person.hair.fringe",
+      "person.hair.parting",
+      "person.hair.style",
+      "person.hair.tuck",
+      "person.hair.volume",
+    ]);
+    expect(out.preferences.hairLength).toBe("Very Long");
+    for (const key of ["hairStyle", "hairStyleOverride", "hairFringe", "hairParting", "hairVolume", "hairFade", "hairFlyaways", "hairTuck"] as const) {
+      expect(out.preferences[key], `${key} must be released`).toBe("");
+    }
+    expect(out.preferences.hairColor).toBe("Dark Brown");
+    expect(out.preferences.hairTexture).toBe("Straight");
+    expect(out.preferences.hairHairline).toBe("Widow's peak");
+    expect((out.technicalSchema.subject as Record<string, unknown>).hair_style).toBeUndefined();
+    expect(out.masterPrompt).not.toContain("hair style: tapered side part");
+    expect(out.masterPrompt).toContain(identityReleaseLine("person.hair.style"));
+  });
+
+  it("an explicitly authorized style is not released when length and style are edited together", () => {
+    const patch: AuthorizedIdentityPatch = {
+      source: "text",
+      edits: [
+        { kind: "leaf", leaf: "person.hair.length", operation: "modify", value: "Long" },
+        { kind: "leaf", leaf: "person.hair.style", operation: "modify", value: { base: "", override: "long layers" } },
+      ],
+    };
+    const out = computeIdentityCommit({
+      ...MODEL,
+      preferences: { ...MODEL.preferences, hairTexture: "Curly" },
+    }, patch);
+    expect(out.releasedDependents).not.toContain("person.hair.length");
+    expect(out.releasedDependents).not.toContain("person.hair.style");
+    expect(out.preferences.hairLength).toBe("Long");
+    expect(out.preferences.hairStyleOverride).toBe("long layers");
+    expect(out.preferences.hairTexture).toBe("Curly");
+    expect(out.masterPrompt).toContain("IDENTITY UPDATE — person.hair.length");
+    expect(out.masterPrompt).toContain("IDENTITY UPDATE — person.hair.style");
+  });
+
+  it("non-coupled identity edits release nothing", () => {
+    const out = computeIdentityCommit(MODEL, jawlinePatch);
+    expect(out.releasedDependents).toEqual([]);
+    expect(out.masterPrompt).not.toContain("IDENTITY RELEASE");
+  });
 
   it("PROTECTED LANGUAGE: existing mark/body-art prose survives byte-for-byte (M5)", () => {
     const out = computeIdentityCommit(MODEL, jawlinePatch);

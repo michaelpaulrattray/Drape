@@ -613,6 +613,14 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Reference replacement:** The existing temporary iteration reference accepts drag-to-replace even when occupied, through the same file validation path as the empty slot. It remains one-generation input and does not become a persistent reference plate.
 
+### D-60 — Recast and iteration are different identity contracts *(founder ruling, 2026-07-18)*
+
+**Structured panel = recast:** once a draft headshot exists, changing Casting panel settings and pressing **Recast model** deliberately casts a new draft identity from those settings. The person may change. This is not a same-person surgical edit and must not be compared with the old anchor. Recast remains draft-only; minted identity changes still require Fork. It validates before charge, computes the updated casting document deterministically, generates one NEW-mode candidate, tracks its upload, and commits document + new anchor + revision + sibling stale state + board landing atomically. Failure keeps refund and tracked-upload cleanup truth. Audit metadata names `structured_recast`.
+
+**LLM/reference/surgical = iteration:** free-text, reference-assisted, and surgical edits operate on the accepted person. Only the explicitly authorized identity delta may change; the post-generation identity gate stays strict and fail-closed before upload or canon commit. Session scope is per user + model, and an isolated retry always starts from the original accepted source.
+
+**UX:** R6 states beside the populated-panel action that recasting creates a new draft identity and the person may look different. R7 owns the fuller mode separation, confirmation, interactive clarification, and error/modal redesign. No operation refreshes siblings or spends credits automatically.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
