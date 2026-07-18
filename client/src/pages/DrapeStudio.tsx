@@ -27,7 +27,7 @@ import { useCastingFormStore } from '@/features/casting/stores/useCastingFormSto
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useDebugShortcuts } from '@/features/studio/hooks/useDebugShortcuts';
-import { CastModelModal } from '@/features/studio/components/CastModelModal';
+import { CastModelModal, draftNameToPersist } from '@/features/studio/components/CastModelModal';
 import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
 import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
@@ -85,6 +85,12 @@ export default function DrapeStudio() {
   // board takeover)
   const { currentModelId, currentAssets } = useCastingGenerationStore();
   const { isTopupOpen, setIsTopupOpen } = useCastingUIStore();
+  const utils = trpc.useUtils();
+  const persistedModel = trpc.models.get.useQuery(
+    { modelId: currentModelId ?? 0 },
+    { enabled: currentModelId != null, staleTime: 0 },
+  );
+  const updateDraftName = trpc.models.update.useMutation();
 
   // Credits for the sidebar / top-up / cast gate (same query key as the
   // workspace's internal query — TanStack dedupes)
@@ -152,6 +158,45 @@ export default function DrapeStudio() {
     currentAssets,
     refetchCreditsWithWarning,
   });
+
+  const dismissCastModal = useCallback((typedName: string) => {
+    setShowCastModal(false);
+    const nextName = typedName.trim();
+    if (!nextName || canvas.isMinted) return;
+
+    // W6-C: before a model row exists, the label stays with the form and
+    // rides the existing models.create name field. Once a row exists, save
+    // through the display-name-only route; this can never mint the model.
+    useCastingFormStore.getState().setModelName(nextName);
+    if (currentModelId == null) return;
+
+    const pendingName = draftNameToPersist(
+      nextName,
+      persistedModel.data?.name ?? modelName,
+    );
+    if (!pendingName) return;
+
+    void updateDraftName.mutateAsync({ modelId: currentModelId, name: pendingName })
+      .then(() => {
+        // Cache refresh is follow-up optics, not part of the durable save.
+        // Its failure must never falsely claim the name was forgotten.
+        void Promise.all([
+          utils.models.get.invalidate({ modelId: currentModelId }),
+          utils.boardOps.listCastableModels.invalidate(),
+        ]).catch(() => undefined);
+      })
+      .catch(() => {
+        toast.error("Couldn't save the name — it will not be remembered");
+      });
+  }, [
+    canvas.isMinted,
+    currentModelId,
+    modelName,
+    persistedModel.data?.name,
+    setShowCastModal,
+    updateDraftName,
+    utils,
+  ]);
 
   // A view-strip ghost opens the mint gate (D-46 one view system — in /studio
   // every model is a draft until cast, so "add a view" is a mint away)
@@ -277,7 +322,7 @@ export default function DrapeStudio() {
 
       <CastModelModal
         isOpen={showCastModal}
-        onClose={() => setShowCastModal(false)}
+        onClose={dismissCastModal}
         onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, false, stayDraft)}
         tiers={tierPlan}
         integrity={mintIntegrity}

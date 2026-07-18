@@ -46,12 +46,9 @@ export function mintTierForPlan(tiers: TierPlan | undefined, selected: MintTier)
   return hasCompleteMintPackage(tiers) ? 'production' : selected;
 }
 
-/** The arguments each door sends — pure, exported for tests. Honesty rule:
- *  the stays-draft door carries the typed name ONLY on the placed-draft
- *  path (addFirst), whose copy explains it as an optional draft label. A
- *  fresh cast's field is labeled "this mints its identity" (founder-ruled
- *  wording), so its stays-draft door must never silently harvest that
- *  value as a nickname. Mint always names; the guard is the caller's. */
+/** The arguments each door sends — pure, exported for tests. W6-C makes the
+ * name field an explicit draft label on every non-upgrade path, so either
+ * stays-draft door may carry it. Mint still requires and locks the name. */
 export function confirmArgsForDoor(
   door: 'mint' | 'addViews',
   opts: { addFirst: boolean; name: string; tier: MintTier },
@@ -59,7 +56,14 @@ export function confirmArgsForDoor(
   const trimmed = opts.name.trim();
   return door === 'mint'
     ? { characterName: trimmed, tier: opts.tier, stayDraft: false }
-    : { characterName: opts.addFirst ? trimmed : '', tier: opts.tier, stayDraft: true };
+    : { characterName: trimmed, tier: opts.tier, stayDraft: true };
+}
+
+/** Returns the display-only rename that still needs server persistence. */
+export function draftNameToPersist(typedName: string, storedName?: string | null): string | null {
+  const next = typedName.trim();
+  if (!next || next === honestModelName(storedName)) return null;
+  return next;
 }
 
 /** D-55/W2: only a founder-visible draft label may prefill the mint door. */
@@ -69,7 +73,8 @@ export function initialMintName(value?: string | null): string {
 
 export interface CastModelModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  /** Every dismissal carries the current draft label back to its host. */
+  onClose: (typedName: string) => void;
   /** Called with (characterName, tier, stayDraft) — stayDraft = trap ruling
    *  (a): generate the tier's views, the model STAYS a draft (no name). */
   onConfirm: (characterName: string, tier: MintTier, stayDraft?: boolean) => void;
@@ -184,12 +189,29 @@ export function CastModelModal({
     onConfirm(args.characterName, args.tier, args.stayDraft);
   }, [addFirst, name, onConfirm, tier, selectedGenerates]);
 
+  const requestClose = useCallback(() => onClose(name), [name, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      requestClose();
+    };
+    window.addEventListener('keydown', handleEscape, true);
+    return () => window.removeEventListener('keydown', handleEscape, true);
+  }, [isOpen, requestClose]);
+
   if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) requestClose();
+      }}
     >
       <div className="w-full overflow-hidden rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border-strong" style={{ maxWidth: 380 }}>
         {/* Preview thumbnail */}
@@ -237,9 +259,7 @@ export function CastModelModal({
                 </p>
               )}
               <label className="block text-canvas-xs font-medium text-canvas-ink-soft mb-1.5">
-                {addFirst && !packageComplete
-                  ? 'Name — optional draft label until you mint'
-                  : 'Name — this mints its identity'}
+                Name — saved as this model&apos;s draft label until you mint
               </label>
               <input
                 autoFocus={!addFirst || packageComplete}
@@ -367,7 +387,7 @@ export function CastModelModal({
           {/* Actions — every door says where it leads (defect 4) */}
           {upgrade ? (
             <div className="flex justify-end gap-3">
-              <button onClick={onClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors">
+              <button onClick={requestClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors">
                 Keep editing
               </button>
               <button
@@ -424,7 +444,7 @@ export function CastModelModal({
             if (packageComplete) {
               return (
                 <div className="flex justify-end items-center gap-2.5">
-                  <button onClick={onClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors mr-1">
+                  <button onClick={requestClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors mr-1">
                     Keep editing
                   </button>
                   {mintBtn(true)}
@@ -433,7 +453,7 @@ export function CastModelModal({
             }
             return (
               <div className="flex justify-end items-center gap-2.5">
-                <button onClick={onClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors mr-1">
+                <button onClick={requestClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors mr-1">
                   Keep editing
                 </button>
                 {addFirst

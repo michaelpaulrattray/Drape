@@ -28,7 +28,7 @@ import type { ModelPreferences } from '@/features/casting/constants';
 import { useStudioStore } from '../stores/useStudioStore';
 import { BrandLoader } from '@/components/BrandLoader';
 import { CastingWorkspace } from '../components/CastingWorkspace';
-import { CastModelModal } from '../components/CastModelModal';
+import { CastModelModal, draftNameToPersist } from '../components/CastModelModal';
 import { useCastGate } from '../hooks/useCastGate';
 import { resetCastingSession } from '../hooks/castingSessionReset';
 import { IdentityChangeDialog } from './IdentityChangeDialog';
@@ -250,6 +250,12 @@ export function CastingTakeover({
   const prefs = useCastingFormStore((s) => s.prefs);
   const modelNameInStore = useCastingFormStore((s) => s.modelName);
   const { isTopupOpen, setIsTopupOpen } = useCastingUIStore();
+  const utils = trpc.useUtils();
+  const persistedModel = trpc.models.get.useQuery(
+    { modelId: currentModelId ?? 0 },
+    { enabled: currentModelId != null, staleTime: 0 },
+  );
+  const updateDraftName = trpc.models.update.useMutation();
 
   // Baseline for the identity diff — written by the hydration path itself
   // (CastingWorkspace) from the exact payload that filled the form. The old
@@ -308,6 +314,43 @@ export function CastingTakeover({
       });
     },
   });
+
+  const dismissCastModal = useCallback((typedName: string) => {
+    setShowCastModal(false);
+    const nextName = typedName.trim();
+    if (!nextName || isMintedEdit) return;
+
+    // W6-C: the open session keeps the label even if its server save fails.
+    useCastingFormStore.getState().setModelName(nextName);
+    if (currentModelId == null) return;
+
+    const pendingName = draftNameToPersist(
+      nextName,
+      persistedModel.data?.name ?? modelNameInStore,
+    );
+    if (!pendingName) return;
+
+    void updateDraftName.mutateAsync({ modelId: currentModelId, name: pendingName })
+      .then(() => {
+        // Cache refresh is follow-up optics, not part of the durable save.
+        // Its failure must never falsely claim the name was forgotten.
+        void Promise.all([
+          utils.models.get.invalidate({ modelId: currentModelId }),
+          utils.boardOps.listCastableModels.invalidate(),
+        ]).catch(() => undefined);
+      })
+      .catch(() => {
+        toast.error("Couldn't save the name — it will not be remembered");
+      });
+  }, [
+    currentModelId,
+    isMintedEdit,
+    modelNameInStore,
+    persistedModel.data?.name,
+    setShowCastModal,
+    updateDraftName,
+    utils,
+  ]);
 
   const hasHeadshot = currentAssets.some((a) => a.viewType === 'frontClose' && a.storageUrl);
   const needsBoardLanding = !draftLanded && (!editContext || !!editContext.originNeedsLanding);
@@ -649,7 +692,7 @@ export function CastingTakeover({
 
       <CastModelModal
         isOpen={showCastModal}
-        onClose={() => setShowCastModal(false)}
+        onClose={dismissCastModal}
         onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, upgradeMode, stayDraft)}
         tiers={tierPlan}
         integrity={mintIntegrity}
