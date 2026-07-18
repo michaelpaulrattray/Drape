@@ -25,19 +25,19 @@ export async function createModel(
   }
 
   try {
-    const result = await db.insert(models).values({
+    // R7-1A exact-insert authority: selecting the user's newest row after an
+    // insert can return a sibling concurrent cast/fork/variation. The id
+    // returned by this insert is the only model this caller may own.
+    const [inserted] = await db.insert(models).values({
       ...data,
       status: "draft",
-    });
+    }).$returningId();
 
-    const inserted = await db
-      .select()
-      .from(models)
-      .where(eq(models.userId, data.userId))
-      .orderBy(desc(models.createdAt))
-      .limit(1);
-
-    return { success: true, modelId: inserted[0]?.id };
+    if (!inserted?.id) {
+      log.error({ userId: data.userId }, "[Database] Model insert returned no id");
+      return { success: false, error: "Failed to create model" };
+    }
+    return { success: true, modelId: inserted.id };
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to create model:");
     return { success: false, error: "Failed to create model" };

@@ -157,13 +157,13 @@ describe("castingRefinement router has Phase 2 procedures", () => {
     expect(procedures).toHaveProperty("clearSession");
   });
 
-  it("still has existing procedures (iterate, upscale, enhance, proxyImage)", async () => {
+  it("keeps supported procedures and permanently closes the retired raw-URL upscale door", async () => {
     const { castingRefinementRouter } = await import(
       "../routes/generation/castingRefinement"
     );
     const procedures = castingRefinementRouter._def.procedures;
     expect(procedures).toHaveProperty("iterate");
-    expect(procedures).toHaveProperty("upscale");
+    expect(procedures).not.toHaveProperty("upscale");
     expect(procedures).toHaveProperty("enhance");
     expect(procedures).toHaveProperty("proxyImage");
   });

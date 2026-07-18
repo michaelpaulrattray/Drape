@@ -82,7 +82,7 @@ describe("no automatic reconcile caller survives (M4)", () => {
 describe("image-only branches never write identity documents or stale flags (M17)", () => {
   it("iterate's image-only path has no updateModel / stale / compaction call", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");
-    const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("upscale:"));
+    const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("// Proxy endpoint"));
     // The ONLY identity write in iterate is the atomic commit
     expect(iterateBlock).toContain("commitIdentityEdit");
     expect(iterateBlock).not.toContain("updateModel(");
@@ -121,7 +121,7 @@ describe("no raw newest-headshot selector bypasses the shared anchor selector (M
 describe("masked editing stays closed (M3)", () => {
   it("the server mask refusal remains the FIRST check in iterate", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");
-    const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("upscale:"));
+    const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("// Proxy endpoint"));
     const maskRefusal = iterateBlock.indexOf("maskBase64");
     const rateLimit = iterateBlock.indexOf("checkRateLimit");
     const modelLoad = iterateBlock.indexOf("getModelById");

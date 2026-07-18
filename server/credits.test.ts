@@ -6,11 +6,10 @@ import type { TrpcContext } from "./_core/context";
 vi.mock("./db", () => ({
   getUserCredits: vi.fn(),
   getCreditTransactions: vi.fn(),
-  deductCredits: vi.fn(),
-  addCredits: vi.fn(),
 }));
 
-import { getUserCredits, getCreditTransactions, deductCredits, addCredits } from "./db";
+import { getUserCredits, getCreditTransactions } from "./db";
+import { creditsRouter } from "./routes/credits";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -114,40 +113,15 @@ describe("credits.getTransactions", () => {
   });
 });
 
-describe("credits.deduct", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("deducts credits successfully", async () => {
-    vi.mocked(deductCredits).mockResolvedValue({ success: true, newBalance: 90 });
-
-    const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
-
-    const result = await caller.credits.deduct({
-      amount: 10,
-      type: "generation",
-      description: "Model generation",
-    });
-
-    expect(result).toEqual({ success: true, newBalance: 90 });
-    expect(deductCredits).toHaveBeenCalledWith(1, 10, "generation", "Model generation", undefined, undefined);
-  });
-
-  it("throws error when insufficient credits", async () => {
-    vi.mocked(deductCredits).mockResolvedValue({ success: false, error: "Insufficient credits" });
-
-    const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
-
-    await expect(
-      caller.credits.deduct({
-        amount: 1000,
-        type: "generation",
-        description: "Model generation",
-      })
-    ).rejects.toThrow("Insufficient credits");
+describe("credits write authority (R7-1A)", () => {
+  it("exposes reads only — clients cannot add or deduct credits", () => {
+    const procedures = creditsRouter._def.procedures;
+    expect(procedures).toHaveProperty("getBalance");
+    expect(procedures).toHaveProperty("getTransactions");
+    expect(procedures).toHaveProperty("checkBalance");
+    expect(procedures).toHaveProperty("getCosts");
+    expect(procedures).not.toHaveProperty("add");
+    expect(procedures).not.toHaveProperty("deduct");
   });
 });
 

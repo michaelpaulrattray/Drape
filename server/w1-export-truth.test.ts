@@ -97,11 +97,11 @@ describe("W1 paid upscale authority", () => {
     clock.mockRestore();
   });
 
-  it("keeps the route wired to the refund-truth-preserving normalizer", () => {
+  it("keeps the refund-truth primitive internal after the public route is retired", () => {
     const route = readFileSync(new URL("./routes/generation/castingRefinement.ts", import.meta.url), "utf8");
-    expect(route).toContain("throw normalizeUpscaleError(error)");
-    expect(route).toContain("resolution: z.enum(['2K', '4K'])");
-    expect(route).not.toContain("resolution: z.enum(['1K', '2K', '4K'])");
+    expect(route).not.toContain("normalizeUpscaleError");
+    expect(route).not.toContain("executePaidUpscale");
+    expect(route).not.toContain("upscale: protectedProcedure");
   });
 });
 
@@ -189,12 +189,15 @@ describe("W5-E atomic Identity Pack ruling", () => {
     expect(hook).not.toMatch(/Images downloaded without|downloaded instead/);
   });
 
-  it("preserves the hidden paid-upscale capability for a later approved surface", () => {
+  it("keeps export at current resolution and exposes no hidden paid-upscale route", () => {
     const preparation = readFileSync(new URL("../client/src/features/export/prepareExportViews.ts", import.meta.url), "utf8");
     const route = readFileSync(new URL("./routes/generation/castingRefinement.ts", import.meta.url), "utf8");
+    // The unreachable compatibility branch is deferred cleanup; importantly,
+    // no tRPC mutation can supply it or fetch a client-selected URL.
     expect(preparation).toContain('resolution === "2K"');
     expect(preparation).toContain("mutations.upscale");
-    expect(route).toContain("upscale: protectedProcedure");
+    expect(route).not.toContain("upscale: protectedProcedure");
+    expect(route).not.toContain("executePaidUpscale");
   });
 });
 

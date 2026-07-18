@@ -33,7 +33,6 @@ import { buildIdentityAnchor } from "../../casting/geminiClient";
 import { iterationFramingForView } from "../../casting/iterationFraming";
 import { assertNotArchived } from "../../casting/modelGuards";
 import { createModuleLogger } from "../../logging/logger";
-import { executePaidUpscale, normalizeUpscaleError } from "../../casting/upscaleService";
 import { staledAnglesForAssetIds } from "../../casting/identity/staleResponse";
 import { runGatedIdentityGeneration } from "../../casting/identity/editGateFlow";
 import type { IdentityGateVerdict } from "../../casting/identity/editGate";
@@ -409,39 +408,6 @@ export const castingRefinementRouter = router({
           );
         }
         throw error;
-      }
-    }),
-
-  // Upscale existing image
-  upscale: protectedProcedure
-    .input(z.object({
-      imageUrl: z.string(),
-      // Original-resolution export is free and never calls this paid route.
-      resolution: z.enum(['2K', '4K']),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      // Rate limit by user to prevent API abuse
-      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
-      if (!rateCheck.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: rateLimitError(rateCheck.resetIn),
-        });
-      }
-
-      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
-      await enforceDailyQuota(ctx.user.id);
-
-      try {
-        const result = await executePaidUpscale({ userId: ctx.user.id, ...input });
-
-        return {
-          success: true,
-          imageUrl: result.imageUrl,
-        };
-      } catch (error) {
-        log.error({ err: error }, "[Upscale] Error:");
-        throw normalizeUpscaleError(error);
       }
     }),
 

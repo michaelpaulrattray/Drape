@@ -1,6 +1,6 @@
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { 
-  getUserCredits, getCreditTransactions, deductCredits, addCredits,
+  getUserCredits, getCreditTransactions,
 } from "../db";
 import { CREDIT_COSTS } from "../casting/aiService";
 import { z } from "zod";
@@ -30,60 +30,6 @@ export const creditsRouter = router({
     .query(async ({ ctx, input }) => {
       const transactions = await getCreditTransactions(ctx.user.id, input?.limit ?? 20);
       return transactions;
-    }),
-
-  deduct: protectedProcedure
-    .input(z.object({
-      amount: z.number().positive(),
-      type: z.enum(["generation", "purchase", "bonus", "refund", "signup", "topup", "subscription"]),
-      description: z.string(),
-      referenceId: z.string().optional(),
-      engineUsed: z.string().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const result = await deductCredits(
-        ctx.user.id,
-        input.amount,
-        input.type,
-        input.description,
-        input.referenceId,
-        input.engineUsed
-      );
-      
-      if (!result.success) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: result.error || "Failed to deduct credits",
-        });
-      }
-      
-      return { success: true, newBalance: result.newBalance };
-    }),
-
-  add: protectedProcedure
-    .input(z.object({
-      amount: z.number().positive(),
-      type: z.enum(["generation", "purchase", "bonus", "refund", "signup", "topup", "subscription"]),
-      description: z.string(),
-      referenceId: z.string().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const result = await addCredits(
-        ctx.user.id,
-        input.amount,
-        input.type,
-        input.description,
-        input.referenceId
-      );
-      
-      if (!result.success) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: result.error || "Failed to add credits",
-        });
-      }
-      
-      return { success: true, newBalance: result.newBalance };
     }),
 
   checkBalance: protectedProcedure

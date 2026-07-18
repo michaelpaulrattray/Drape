@@ -648,6 +648,14 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Release discipline:** R7-1/R7-2 are never unattended full-auto work. Every schema batch is additive and forward-only, proves itself against a disposable database and mixed-version client/server behavior, receives Fable review, migrates production before dependent code, and deploys only in an explicit window when no founder drive is active. Paid drives record exact balance, charge, and refund truth. R7-5 cleanup remains dry-run and separately production-authorized; R7-6 is design/calibration only; R7-7 stays server-feature-flagged with R6 refusals as fallback.
 
+### D-63 — R7-1 trust foundation starts by closing public write doors and returning exact insert ids *(R7-1A, 2026-07-19)*
+
+**Execution authority:** `CASTING_SYSTEM_R7_1_TRUST_FOUNDATION_EXECUTION_PLAN.md` governs R7-1. Its first independently shippable batch removes the authenticated `credits.add` and `credits.deduct` procedures. Credit balance changes remain server-owned through generation, billing, Stripe, referral, admin/change-request, and refund flows; clients retain read-only credit procedures.
+
+**Retired upscale door:** the public `generation.upscale` procedure is removed. R6 already removed its connected UI, while the residual route accepted an arbitrary client URL, performed an unrestricted server fetch, charged under a fresh reference on every call, and produced no owned asset or generation record. It must not be restored for convenience. Any future quality feature requires a server-owned asset id, ownership proof, a persisted operation, and the ratified package-quality contract.
+
+**Exact model identity:** `createModel` returns the id produced by its own insert via `$returningId()`. It never discovers the result by selecting the user's newest model, so concurrent casts, forks, variations, and Canvas creation cannot receive a sibling operation's id.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |
