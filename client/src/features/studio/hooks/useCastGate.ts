@@ -15,7 +15,7 @@ import { useCastingGenerationStore } from '@/features/casting/stores/useCastingG
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useStudioStore } from '../stores/useStudioStore';
 import { captureCastingSession } from '@/features/casting/castingSessionToken';
-import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
+import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
 import type { GeneratedAsset } from '@/features/casting/constants';
 import type { CanonicalViewAngle, MintTier } from '@shared/boardTypes';
 
@@ -45,6 +45,7 @@ export function useCastGate({
 
   const [showCastModal, setShowCastModal] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
+  const [castingOperation, setCastingOperation] = useState<'mint' | 'addViews' | 'upgrade' | null>(null);
   const [viewsGenerating, setViewsGenerating] = useState(false);
   const [castingMessage, setCastingMessage] = useState('');
 
@@ -61,15 +62,24 @@ export function useCastGate({
         toast.error('No model to cast');
         return;
       }
+      const operationMode = upgrade ? 'upgrade' : stayDraft ? 'addViews' : 'mint';
       setIsCasting(true);
+      setCastingOperation(operationMode);
       const missingAngles = (planQuery.data?.tiers[tier]?.missing ?? []) as CanonicalViewAngle[];
       const missingCount = missingAngles.length;
       const session = captureCastingSession(
         () => useCastingGenerationStore.getState().sessionToken,
       );
-      if (missingAngles.length > 0) {
-        useCastingRefreshStore.getState().begin(currentModelId, missingAngles);
-      }
+      // Every missing-view run uses the registry as the one per-angle truth.
+      // `operationMode` separately keeps a true mint's close/landing ceremony
+      // blocked; stays-draft and upgrade work may outlive this hook.
+      const backgroundOperation = missingAngles.length > 0
+        ? beginCastingOperation({
+            kind: 'addViews',
+            modelId: currentModelId,
+            angles: missingAngles,
+          })
+        : null;
       setViewsGenerating(missingAngles.length > 0);
       setCastingMessage(
         missingCount > 0
@@ -115,6 +125,17 @@ export function useCastGate({
           castStore.setCurrentAssets(newAssets);
           castStore.pushHistory(newAssets);
         }
+
+        backgroundOperation?.succeed({
+          modelId: currentModelId,
+          assets: result.generated.map((row) => ({
+            angle: row.angle,
+            assetId: row.assetId ?? Date.now(),
+            url: row.imageUrl,
+          })),
+          name: characterName.trim() || null,
+          background: !session.isCurrent(),
+        });
 
         // Batch B: the post-action gate state is the SERVER result's status
         // truth (result.minted), never an inference from which action the
@@ -186,14 +207,19 @@ export function useCastGate({
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Casting failed';
+        backgroundOperation?.fail({
+          message,
+          background: !session.isCurrent(),
+          // useCastGate already owns this refund-honest notice even after
+          // the takeover unmounts; the app subscriber must not duplicate it.
+          notifyFailure: false,
+        });
         toast.error(message);
         refetchCreditsWithWarning();
       } finally {
-        if (missingAngles.length > 0) {
-          useCastingRefreshStore.getState().end(currentModelId, missingAngles);
-        }
         if (session.isCurrent()) {
           setIsCasting(false);
+          setCastingOperation(null);
           setViewsGenerating(false);
           setCastingMessage('');
         }
@@ -217,6 +243,7 @@ export function useCastGate({
     showCastModal,
     setShowCastModal,
     isCasting,
+    castingOperation,
     viewsGenerating,
     isMinted,
     castingMessage,

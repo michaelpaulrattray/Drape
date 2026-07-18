@@ -29,6 +29,10 @@ import { useCastingGeneration } from '@/features/casting/hooks/useCastingGenerat
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { PackageHealthDialog } from '@/features/casting/components/PackageHealthDialog';
 import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
+import {
+  getActiveCastingOperations,
+  subscribeCastingOperations,
+} from '@/features/casting/pendingCastRegistry';
 
 export interface CastingWorkspaceProps {
   user: { role?: string } | null;
@@ -36,7 +40,7 @@ export interface CastingWorkspaceProps {
   isReadOnly: boolean;
   onNewModel: () => void;
   /** Opens a draft whose headshot finished after this workspace closed. */
-  onBackgroundDraftReady?: (modelId: number) => void;
+  onBackgroundDraftReady?: (modelId: number, landed: boolean) => void;
   /** Studio's entrance choreography; hosts without it default to visible. */
   leftReady?: boolean;
   rightReady?: boolean;
@@ -124,6 +128,64 @@ export function CastingWorkspace({
     onBackgroundDraftReady,
     bindings: castingBindings,
   });
+
+  // W6-A: a reopened Casting surface reads the same-tab operation handoff
+  // instead of pretending the model is idle. Settlement applies plain asset
+  // data only when this is still the matching live model; the W4 session
+  // token remains the authority for every originating continuation.
+  useEffect(() => {
+    const showRejoinedOperation = (modelId: number) => {
+      if (getActiveCastingOperations(modelId).length === 0) return;
+      const store = useCastingGenerationStore.getState();
+      if (!store.genState.isGenerating) {
+        store.setGenState({
+          isGenerating: true,
+          currentStep: 'An earlier edit is still finishing…',
+          error: null,
+        });
+      }
+    };
+
+    if (currentModelId !== null) showRejoinedOperation(currentModelId);
+
+    return subscribeCastingOperations((event) => {
+      const liveModelId = useCastingGenerationStore.getState().currentModelId;
+      if (event.operation.modelId === null || event.operation.modelId !== liveModelId) return;
+
+      if (event.phase !== 'settle') {
+        showRejoinedOperation(event.operation.modelId);
+        return;
+      }
+
+      const store = useCastingGenerationStore.getState();
+      if (event.outcome.status === 'success' && event.outcome.assets.length > 0) {
+        const changed = event.outcome.assets.some((incoming) => {
+          const current = store.currentAssets.find((asset) => asset.viewType === incoming.angle);
+          return !current || current.id !== incoming.assetId || current.storageUrl !== incoming.url;
+        });
+        if (changed) {
+          const changedAngles = new Set<string>(event.outcome.assets.map((asset) => asset.angle));
+          const nextAssets = [
+            ...store.currentAssets.filter((asset) => !changedAngles.has(asset.viewType)),
+            ...event.outcome.assets.map((asset) => ({
+              id: asset.assetId,
+              viewType: asset.angle,
+              storageUrl: asset.url,
+            })),
+          ];
+          store.setCurrentAssets(nextAssets);
+          store.pushHistory(nextAssets);
+        }
+      }
+
+      if (
+        getActiveCastingOperations(liveModelId).length === 0
+        && store.genState.currentStep === 'An earlier edit is still finishing…'
+      ) {
+        store.setGenState({ isGenerating: false, currentStep: '', error: null });
+      }
+    });
+  }, [currentModelId]);
 
   // Hydrate casting store for gallery/edit-loaded models (assets in DB, not
   // Zustand). IMPERATIVE fetch, not useQuery: a hook would serve the STALE

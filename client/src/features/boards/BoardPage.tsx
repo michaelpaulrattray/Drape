@@ -38,6 +38,11 @@ import { GroupContextMenu } from './canvas/GroupContextMenu';
 import JSZip from 'jszip';
 import { withPlacementCustomLabel } from './canvas/castNodeLabel';
 import { dedupeVariationEdges, settleVariationEdges } from './canvas/variationEdges';
+import {
+  registerCastingOperationOriginProvider,
+  remapCastingOperationOriginItem,
+  subscribeCastingOperations,
+} from '@/features/casting/pendingCastRegistry';
 
 /* ── Component ────────────────────────────────────────────── */
 
@@ -88,6 +93,12 @@ function BoardPageImpl() {
   useEffect(() => {
     activeCastSessionRef.current = { takeoverItemId: castTakeoverItemId, editContext: castEditContext };
   }, [castTakeoverItemId, castEditContext]);
+
+  useEffect(() => registerCastingOperationOriginProvider(() => {
+    const active = activeCastSessionRef.current;
+    const itemId = active.editContext?.itemId ?? active.takeoverItemId;
+    return itemId === null ? null : { boardId, itemId };
+  }), [boardId]);
   const { user, isAuthenticated } = useAuth();
   const { startJob, completeJob, failJob } = useGenerationJobs();
 
@@ -182,6 +193,62 @@ function BoardPageImpl() {
   // Fresh items for event listeners registered once (no re-subscription churn)
   const itemsRef = useRef<typeof items>(undefined);
   itemsRef.current = items;
+  const castingOperationOwnerRef = useRef({ utils, startJob });
+  castingOperationOwnerRef.current = { utils, startJob };
+
+  useEffect(() => subscribeCastingOperations((event) => {
+    const owner = castingOperationOwnerRef.current;
+    const origin = event.operation.origin;
+    if (!origin || origin.boardId !== boardId) return;
+
+    if (event.phase === 'begin' && event.operation.kind === 'newCast') {
+      owner.startJob({
+        itemId: origin.itemId,
+        operation: 'castHeadshot',
+        phaseLabel: 'Casting headshot…',
+        estimatedDurationMs: 30_000,
+        startedAt: event.operation.startedAt,
+      });
+      return;
+    }
+
+    if (event.phase === 'begin' && event.operation.modelId !== null) {
+      // A comp card can show its exact refreshing angles. A headshot-only
+      // node has no sheet yet, so it needs the ordinary node progress card
+      // until the edit/new views create something the strip can represent.
+      const packageState = owner.utils.generation.packageState.getData({ modelId: event.operation.modelId });
+      const filledCount = packageState?.slots.filter((slot) => slot.filled).length ?? 0;
+      if (filledCount < 2) {
+        owner.startJob({
+          itemId: origin.itemId,
+          operation: event.operation.kind === 'iterate' ? 'runRefinement' : 'generateViews',
+          phaseLabel: event.operation.kind === 'iterate' ? 'Applying edit…' : 'Generating views…',
+          estimatedDurationMs: event.operation.kind === 'iterate' ? 25_000 : 60_000,
+          startedAt: event.operation.startedAt,
+        });
+      }
+      return;
+    }
+
+    if (event.phase !== 'settle') return;
+
+    if (event.operation.kind === 'newCast' && event.outcome.status === 'success') {
+      const headshot = event.outcome.assets.find((asset) => asset.angle === 'frontClose');
+      if (event.outcome.background && headshot) {
+        useOptimisticFills.getState().setFill(origin.itemId, {
+          imageUrl: headshot.url,
+          label: event.outcome.name,
+          modelId: event.outcome.modelId,
+          draft: true,
+        });
+      }
+    }
+
+    if (event.operation.modelId !== null) {
+      void owner.utils.generation.packageState.invalidate({ modelId: event.operation.modelId });
+    }
+    void owner.utils.credits.getBalance.invalidate();
+  }), [boardId]);
 
   // R4: client-side cascade knowledge for the delete trust net (which nodes
   // fall with a root) — invalidated whenever an op adds edges
@@ -684,7 +751,7 @@ function BoardPageImpl() {
     [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation, utils],
   );
 
-  const handleBackgroundDraftReady = useCallback((modelId: number, itemId: number) => {
+  const handleBackgroundDraftReady = useCallback((modelId: number, itemId: number, landed: boolean) => {
     const active = activeCastSessionRef.current;
     if (active.takeoverItemId !== null || active.editContext !== null) {
       toast.info('Finish the open Casting session before opening this draft');
@@ -695,7 +762,7 @@ function BoardPageImpl() {
       itemId,
       modelId,
       draft: true,
-      originNeedsLanding: true,
+      originNeedsLanding: !landed,
     });
   }, [boardId]);
 
@@ -1479,6 +1546,22 @@ function BoardPageImpl() {
       // If the picker/takeover was opened on the temp node, follow it to the real id
       setCastPickerItemId((prev) => (prev === ctx?.tempId ? result.itemId : prev));
       setCastTakeoverItemId((prev) => (prev === ctx?.tempId ? result.itemId : prev));
+      if (ctx?.tempId) {
+        remapCastingOperationOriginItem(ctx.tempId, result.itemId);
+        const jobs = useGenerationJobs.getState();
+        const pendingJob = jobs.jobs[ctx.tempId];
+        if (pendingJob) {
+          jobs.clearJob(ctx.tempId);
+          jobs.startJob({
+            itemId: result.itemId,
+            operation: pendingJob.operation,
+            engine: pendingJob.engine,
+            phaseLabel: pendingJob.phaseLabel,
+            estimatedDurationMs: pendingJob.estimatedDurationMs,
+            startedAt: pendingJob.startedAt,
+          });
+        }
+      }
       selectNodeRef.current?.(result.itemId);
     },
     onError: (_err, _vars, ctx) => {
@@ -2155,8 +2238,8 @@ function BoardPageImpl() {
           editContext={castEditContext}
           onMinted={handleTakeoverMinted}
           onDraftLanded={handleDraftLanded}
-          onBackgroundDraftReady={(modelId) =>
-            handleBackgroundDraftReady(modelId, castEditContext?.itemId ?? castTakeoverItemId!)
+          onBackgroundDraftReady={(modelId, landed) =>
+            handleBackgroundDraftReady(modelId, castEditContext?.itemId ?? castTakeoverItemId!, landed)
           }
           onIdentityCommit={handleIdentityCommit}
           onClose={() => {

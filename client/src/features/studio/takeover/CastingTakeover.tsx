@@ -79,7 +79,7 @@ export interface CastingTakeoverProps {
    *  close that dropped the work on the floor. */
   onDraftLanded?: (modelId: number, info: { name: string | null; headshotUrl: string | null }) => void;
   /** Headshot completed after exit; the host can reopen the saved draft. */
-  onBackgroundDraftReady?: (modelId: number) => void;
+  onBackgroundDraftReady?: (modelId: number, landed: boolean) => void;
 }
 
 /** Fields compared for identity changes (everything the form can set). */
@@ -279,6 +279,7 @@ export function CastingTakeover({
     showCastModal,
     setShowCastModal,
     isCasting,
+    castingOperation,
     viewsGenerating,
     castingMessage,
     tierPlan,
@@ -324,16 +325,20 @@ export function CastingTakeover({
   // still warrants the confirm
   const workInProgress = isMintedEdit
     ? unsavedDiff() !== null
-    : genState.isGenerating || (currentModelId !== null && !draftLanded);
+    : genState.isGenerating
+      || (isCasting && castingOperation !== 'mint')
+      || (currentModelId !== null && !draftLanded);
 
   const attemptClose = useCallback(() => {
-    if (isCasting) return; // mint in flight — landing imminent, don't tear down
+    // A true mint still owns a synchronous landing ceremony. Add Views and
+    // upgrades are background-safe and must honor the continuation copy.
+    if (isCasting && castingOperation === 'mint') return;
     if (workInProgress) {
       setConfirmingLeave(true);
       return;
     }
     startClose();
-  }, [isCasting, workInProgress, startClose]);
+  }, [isCasting, castingOperation, workInProgress, startClose]);
 
   const handleSaveChanges = useCallback(() => {
     const diff = unsavedDiff();
@@ -567,6 +572,8 @@ export function CastingTakeover({
             <p className="text-canvas-md text-canvas-ink-soft mb-4" style={{ lineHeight: 1.55 }}>
               {isMintedEdit
                 ? 'Unsaved identity changes are discarded — the placed cast stays as it is.'
+                : isCasting && castingOperation !== 'mint'
+                  ? 'Your new views will keep generating and appear on this card when they are ready.'
                 : genState.isGenerating && !hasHeadshot && needsBoardLanding
                   ? 'Generation will continue and save to Drafts. Until the headshot is ready, this node stays empty.'
                   : hasHeadshot && needsBoardLanding

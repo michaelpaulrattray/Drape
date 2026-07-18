@@ -11,7 +11,8 @@ import {
 } from "@/features/casting/constants";
 import { buildCreationPreferences } from "@/features/casting/creationPayload";
 import { captureCastingSession } from '@/features/casting/castingSessionToken';
-import { beginPendingCast } from '@/features/casting/pendingCastRegistry';
+import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
+import type { CanonicalViewAngle } from '@shared/boardTypes';
 import type { CastingBindings } from "./castingBindings";
 
 interface UseCastingGenerationParams {
@@ -21,7 +22,7 @@ interface UseCastingGenerationParams {
   getGuideOverlayDataUrl: () => Promise<string | undefined>;
   clearMask: () => void;
   /** Optional board host action for a headshot that finishes after exit. */
-  onBackgroundDraftReady?: (modelId: number) => void;
+  onBackgroundDraftReady?: (modelId: number, landed: boolean) => void;
   /**
    * Where casting state lives — supplied by the caller (audit A1). /studio
    * passes useLegacyCastingBindings(); the canvas controller (M4) passes
@@ -226,7 +227,11 @@ export function useCastingGeneration({
     }
 
     const session = captureCastingSession(getSessionToken);
-    const pendingCast = beginPendingCast(onBackgroundDraftReady);
+    const castingOperation = beginCastingOperation({
+      kind: 'newCast',
+      angles: ['frontClose'],
+      openDraft: onBackgroundDraftReady,
+    });
     setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 15000 });
 
     // Open brand resolves at fire time (D-41). The explicit flag remains
@@ -250,6 +255,12 @@ export function useCastingGeneration({
         name: modelName || undefined,
       });
 
+      // The op begins before models.create so the originating node responds
+      // immediately. Bind the durable model id as soon as the row exists;
+      // this also makes the headshot's per-angle busy state discoverable by
+      // a reopened Casting session.
+      castingOperation.setModelId(modelResult.modelId!);
+
       if (session.isCurrent()) {
         setCurrentModelId(modelResult.modelId ?? null);
         setCurrentMasterPrompt(modelResult.masterPrompt || "");
@@ -264,12 +275,24 @@ export function useCastingGeneration({
         modelId: modelResult.modelId!,
       });
 
+      if (!imageResult.success || !imageResult.imageUrl) {
+        throw new Error('The headshot did not finish generating');
+      }
+
       if (imageResult.success && imageResult.imageUrl) {
         if (!session.isCurrent()) {
-          pendingCast.succeedInBackground(modelResult.modelId!);
+          castingOperation.succeed({
+            modelId: modelResult.modelId!,
+            assets: [{
+              angle: 'frontClose',
+              assetId: imageResult.assetId || Date.now(),
+              url: imageResult.imageUrl,
+            }],
+            name: modelName.trim() || null,
+            background: true,
+          });
           return;
         }
-        pendingCast.finishInForeground();
         const newAsset: GeneratedAsset = {
           id: imageResult.assetId || Date.now(),
           viewType: "frontClose",
@@ -290,16 +313,25 @@ export function useCastingGeneration({
         
         // Fire-and-forget: fetch suggestions (session lifecycle handled server-side)
         fetchSuggestions(modelResult.masterPrompt || '', imageResult.imageUrl);
+
+        // Foreground settlement still completes the originating node's job,
+        // but the app-level owner suppresses the background-only notice and
+        // leaves landing to the takeover's normal close ceremony.
+        castingOperation.succeed({
+          modelId: modelResult.modelId!,
+          assets: [{ angle: 'frontClose', assetId: newAsset.id, url: newAsset.storageUrl }],
+          name: modelName.trim() || null,
+          background: false,
+        });
       }
 
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Generation failed";
+      castingOperation.fail({ message, background: !session.isCurrent() });
       if (!session.isCurrent()) {
-        pendingCast.failInBackground(message);
         return;
       }
-      pendingCast.finishInForeground();
       setGenState({ isGenerating: false, currentStep: "", error: message });
       setFailedAction({ type: 'NEW' });
       toast.error(message);
@@ -317,6 +349,11 @@ export function useCastingGeneration({
     }
 
     const session = captureCastingSession(getSessionToken);
+    const castingOperation = beginCastingOperation({
+      kind: 'iterate',
+      modelId: currentModelId,
+      angles: [activeView as CanonicalViewAngle],
+    });
     setGenState({ isGenerating: true, currentStep: maskBase64 ? "Applying surgical edit..." : "Iterating...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 8000 });
 
     try {
@@ -336,7 +373,27 @@ export function useCastingGeneration({
         referenceImage: freshRefImage || undefined,
       });
 
-      if (!session.isCurrent()) return;
+      if (!result.success || !result.imageUrl) {
+        throw new Error('The edit did not produce an image');
+      }
+
+      if (!session.isCurrent()) {
+        castingOperation.succeed({
+          modelId: currentModelId,
+          assets: [{
+            angle: activeView as CanonicalViewAngle,
+            assetId: result.assetId || Date.now(),
+            url: result.imageUrl,
+          }],
+          background: true,
+        });
+        // Cache truth must advance even though the closed session stays
+        // immutable. Board and reopened Studio consumers receive the plain
+        // result through the operation registry.
+        void utils.generation.packageState.invalidate({ modelId: currentModelId });
+        void utils.credits.getBalance.invalidate();
+        return;
+      }
 
       if (result.success && result.imageUrl) {
         const newAsset: GeneratedAsset = {
@@ -394,6 +451,16 @@ export function useCastingGeneration({
         } else {
           fetchSuggestions(updatedPrompt, result.imageUrl);
         }
+
+        castingOperation.succeed({
+          modelId: currentModelId,
+          assets: [{
+            angle: activeView as CanonicalViewAngle,
+            assetId: newAsset.id,
+            url: newAsset.storageUrl,
+          }],
+          background: false,
+        });
         
         // Batch C (R7 ratified — reconcile KEPT OFF, M4): the automatic
         // reconcile call after every iterate is REMOVED. Identity documents
@@ -405,8 +472,9 @@ export function useCastingGeneration({
 
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
-      if (!session.isCurrent()) return;
       const message = error instanceof Error ? error.message : "Iteration failed";
+      castingOperation.fail({ message, background: !session.isCurrent() });
+      if (!session.isCurrent()) return;
       // A1 stage 2: the identity seal's refusal is TAUGHT, not toasted —
       // the designed fork-guidance surface renders where the edit happened
       // (D-40), with a working Fork door. No failed-action retry: retrying
