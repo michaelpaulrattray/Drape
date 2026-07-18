@@ -1,5 +1,7 @@
 # Casting-system audit — stabilization wrap state
 
+> **FINAL CLOSURE UPDATE — 2026-07-19.** This file is the historical state captured by the interrupted 2026-07-15 stabilization terminal. Its old HEAD, worktree inventory, open items, and “Recommended next action” are evidence of that checkpoint, **not current instructions**. R6 subsequently shipped Batch 0, A-safe, A-coupled, B, C, W1–W6, and the founder-tested post-live corrections. R6 closes at production baseline `e66b8db`; the complete closure record is D-61 in `DECISION_LOG.md`. R7 is founder-ratified in D-62 and `CASTING_SYSTEM_R7_REVIEW_AND_EXECUTION_PLAN.md`. Do not resume any old action from the body below.
+
 **Written:** 2026-07-15, by the interrupted implementation terminal, per the bounded stabilization prompt and `CASTING_SYSTEM_AUDIT_ADDENDUM_REVISED.md` §5 "Wrap — stabilization only".
 **This note states the actual post-wrap truth. New work should trust it and the live diff over any historical paragraph.**
 

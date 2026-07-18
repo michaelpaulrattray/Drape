@@ -621,6 +621,33 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **UX:** R6 states beside the populated-panel action that recasting creates a new draft identity and the person may look different. R7 owns the fuller mode separation, confirmation, interactive clarification, and error/modal redesign. No operation refreshes siblings or spends credits automatically.
 
+### D-61 — R6 is closed at the founder-tested production baseline *(founder-confirmed 2026-07-18; recorded during R7-0)*
+
+**Closure baseline:** R6 closes at `e66b8db`, deployed through `local-migration` and founder-tested on production. The W5/W6 and post-live correction chain completed the release blockers that the original wrap record could not yet describe: same-person post-generation identity gating; truthful structured recast; strip/package status truth; atomic free identity-pack export; refund/public-error honesty; same-tab background operation handoff and originating-node progress; Add Views continuation; neutral completed-package mint UX; durable draft-name persistence; immediate synchronization of committed identity documents; board thumbnail clear-on-last-delete; visible restore refusals; chained headshot identity edits from a verified current display row; and live model-name propagation to linked Canvas placements.
+
+**Founder drive:** the final two post-live checks passed: (1) an image-only headshot edit followed by an authorized identity edit succeeds against the current display headshot without weakening anchor/revision authority; (2) saving a draft name updates the linked Canvas node without minting or a page refresh. Full R6 creation, package, refresh, mint, fork, variation, export, history-refusal, naming, and lifecycle walks were completed in the preceding founder passes.
+
+**Honest boundary:** R6 does not claim cross-tab/reload job recovery, a minted Cast Profile, strip-owned package actions, true identity rollback, archive/R2 cleanup, generation-time quality choice, persistent plates/marks/zones, or a visual-evidence composer. Same-tab stores remain presentation coordination over server-persisted assets/charges/refunds; those named boundaries become the ratified R7 program in D-62.
+
+### D-62 — R7 is a gated program, not the old 1.5-day hardening batch *(founder-ratified 2026-07-19 after Fable architecture approval)*
+
+**Authoritative plan:** `CASTING_SYSTEM_R7_REVIEW_AND_EXECUTION_PLAN.md` supersedes the old R7 sizing and sequencing in `PASS_1_BUILD_PLAN.md`. R7 executes as R7-0 through R7-8: documentation/decision closure → trust foundation → durable operations → product-surface split → strip/history UX → lifecycle/archive → Batch D design/calibration → feature-flagged composer → quality/reference-sheet/dogfood closure. The composer never precedes the concurrency, idempotency, exact-id, and durable-operation foundations it depends on.
+
+**Eight founder rulings:**
+
+1. pinning retires, but its data migration waits for the R7-6 effective-snapshot/per-slot-selection contract and uses that contract verbatim in R7-7;
+2. identity history keeps immutable parentage internally and presents a simple active timeline; restore creates a new current snapshot and destroys no evidence;
+3. first unseen-region evidence requires Accept / Retry / Cancel and never silently becomes canon;
+4. post-mint missing views may derive from the sealed snapshot but never silently extend identity canon;
+5. the first minted Cast Profile is read-only for visual changes; presentation routes to Canvas/Wardrobe and identity change to Fork;
+6. generation quality is a persisted package default chosen before generation, with resolution/cost shown at every paid confirmation and no export-time surprise upscale;
+7. tattoo/ink is the first calibrated composer category; every other mark family stays refused until separately proven and enabled;
+8. archive hides immediately, is recoverable for 30 days, then is purge-eligible; confirmed privacy erasure bypasses recovery, historical placements degrade to `Source unavailable`, and the final non-image retention period must match published privacy/accounting policy before launch.
+
+**Permanent product boundaries:** Casting defines the reusable person/character sheet; Wardrobe and Canvas own outfits. Missing views and package repair are deliberate priced actions; nothing refreshes or spends automatically. Temporary iteration references are not persistent plates. No Photoshop-style reveal layer or saved layer stack will be built. Inputs/provenance can be reproducible; unseeded generated pixels are not promised exact.
+
+**Release discipline:** R7-1/R7-2 are never unattended full-auto work. Every schema batch is additive and forward-only, proves itself against a disposable database and mixed-version client/server behavior, receives Fable review, migrates production before dependent code, and deploys only in an explicit window when no founder drive is active. Paid drives record exact balance, charge, and refund truth. R7-5 cleanup remains dry-run and separately production-authorized; R7-6 is design/calibration only; R7-7 stays server-feature-flagged with R6 refusals as fallback.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

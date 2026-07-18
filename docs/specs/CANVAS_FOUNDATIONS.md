@@ -475,25 +475,27 @@ Milestone-by-milestone ordering, sizing, and founder checkpoints live in **`PASS
 
 ---
 
-## 10. Success criteria for pass 1
+## 10. Current success criteria — R6 production baseline / R7 entry gate
 
-All demonstrable on a real board:
+> **Rewritten in R7-0 (2026-07-19).** The former list described retired inline prompt/attribute chrome, `RefinementStudio`, and pre-D-56 pin/staleness semantics. These criteria describe the shipped takeover + character-sheet system at the R7 entry baseline. R7's new capabilities gain their own acceptance criteria in `CASTING_SYSTEM_R7_REVIEW_AND_EXECUTION_PLAN.md`; they are not falsely claimed here.
 
-1. Drop a cast node, type a natural-language prompt, hit Run (cost shown beforehand), receive a headshot in the node in ~20s. Prompt parsed server-side into structured `CastAttributes`; node provenance is `cast_root` with `engine` recorded.
-2. A freshly-dropped cast node is auto-selected with the attribute rows visible (faint "Add" values); Run stays disabled until prompt text or a set attribute exists.
-3. A first-time user landing on an empty board sees the designed empty state / first-run intro (design system §11), dismissible and never seen again.
-4. Selecting a completed root reveals the specified chrome (1px border, `+ Views · vN · ···` strip, collapsed attribute summary line that expands to rows on tap, 6-icon toolbar). Every paid affordance shows its cost from plan data — no hardcoded credit numbers anywhere in the client.
-5. Identity work happens in the casting environment (takeover); saving changes to a placed cast routes through the D-11 dialog — **fork-or-keep on minted models (D-43), no update path, server-enforced**; drafts edit freely until mint.
-6. A minted model's root renders its package as the comp card (headshot-dominant mosaic, ghost tiles for empty slots); popping a tile out materializes a 200-wide view placement with `cast_view` provenance, an `InputSnapshot`, and a `generated_from_cast` edge carrying `{ viewAngle }` — and deleting the root then raises the red cascade dialog over it.
-7. Rerun on a completed root offers **Fork new cast / Recast this cast**; fork creates a `forked_from` sibling; recast routes through the stale flow. Rerun on a view is a plain new version.
-8. Staleness is model-level (`model_assets.status`) and ships dormant in pass 1 (D-43 removed its trigger): stale tiles render dim + dotted, pinned slots are exempt from all staleness pressure (per-slot pin toggle works), per-tile quality refresh (headshot excluded) and the aggregate `{N} stale` → bulk-refresh dialog exist and are plan-priced.
-9. A failed generation renders the `error` status variant with a retry action — never a blank card.
-10. Edit opens the refinement studio (full-screen room, no scrim); all four tabs work on a root; Attributes is read-only on a view with a link to the root; `← Boards`/Esc returns with canvas state preserved. `RefinementStudio` is props-only (`itemId`, `onClose`), no router imports.
-11. "Add from library" places an existing model as a `library_cast` node (and a garment as `library_garment`, if pass-1 scope allows) — boards don't start from zero.
-12. Deleting a node shows an Undo toast and `Cmd+Z` restores it (cascade units restore together); arrow-nudge and the full keyboard table (Decision 7) work.
-13. All mutations go through `boardOps`; `boardState.getSnapshot()` returns valid typed JSON; no canvas component imports the three casting stores; `useGenerationJobs` is the only global store in canvas code.
-14. `/studio?tool=…` entries still work unchanged.
-15. The design system is followed component by component — no custom shadows, gradients, or off-token colors; zoom-tier behavior (design system §12) verified at 40% on a 30+ node board.
+All demonstrable on a real board unless the criterion names the standalone Studio entry:
+
+1. **First cast:** dropping a Cast node opens the picker; **Cast new model** opens the Casting takeover. A validated natural-language brief and/or structured settings show the server-planned cost before generation, create one draft model with a real returned id, and produce its canonical headshot.
+2. **Honest close/continuation:** leaving during same-tab headshot iteration or Add Views never leaks a stale Casting session. The originating node shows truthful progress when linked, completed work lands exactly once, and a headshot completed after an unlinked close is saved to Drafts with one **Open Draft** action. Reload/cross-tab recovery is explicitly R7, not claimed here.
+3. **First-run entry:** a first-time user on an empty board sees the designed intro/empty state, may dismiss it, and does not see it again after the server-backed flag persists.
+4. **Draft character sheet:** two or more filled canonical slots render the six-slot comp card on the Canvas whether the model is draft or minted. Empty, generating, current, stale, and failed slots are visually distinct; the Draft badge is live model status, not placement-era inference.
+5. **Live placement truth:** linked placements read the model's current name and lifecycle. Naming a draft updates ordinary linked Canvas labels without minting or refresh; an explicit placement-only rename still wins; archived or missing sources degrade to **Source unavailable** while retaining the snapshot.
+6. **Two authoring contracts:** on a draft, structured settings + **Recast model** deliberately create a new draft identity and say the person may change. Text/reference refinement operates on the accepted person and passes the strict post-generation identity gate. Unsupported, ambiguous, presentation, mark, and masked edits refuse before money according to D-56.
+7. **Identity revision flow:** an authorized draft identity edit commits the new anchor, identity documents, revision, and sibling stale rows atomically. An image-only edit changes only the selected asset. A verified current display headshot may receive the next authorized identity edit without weakening server-owned revision authority.
+8. **Package care:** the strip's stale/failed/refreshing/missing truth agrees with Package Health and the Canvas mosaic. Package Health shows exact plan prices, refreshes/retries only after an explicit click, names/refunds per-slot failures, clears stale presentation only after server confirmation, and never spends automatically.
+9. **Views without minting:** adding Core or full-card views may keep a model draft. Closing the modal/takeover during Add Views is safe in the same tab, every completed slot keeps its real ledger id, and reopening reads the resulting package from server truth.
+10. **Mint ceremony and minted immutability:** mint requires a non-empty name and clean draft state, selected-tier integrity, and no failed required slot. Successful mint gives one stable agency id and updates every linked placement. Minted visual identity never changes in place; the current R6 surface routes change to Fork and missing views to the deliberate upgrade door.
+11. **Fork, recast, and variation lineage:** fork creates a distinct draft/model identity and a `forked_from` relationship; variation creates a new draft placement with the intended lineage edge; board-door recast/identity landing is atomic and reports a durable library result if placement fails.
+12. **Export truth:** unminted export refuses and routes to mint. Model Library exports the free current-resolution six-view identity pack with correct labels and identity PDF; no hidden 2K generation or surprise charge occurs.
+13. **Version truth:** **Use this version** is free compatible asset reuse inside the current identity revision, appends a new display head, preserves siblings, and visibly refuses no-op or cross-revision selection. It is never described as identity rollback.
+14. **Canvas trust and recovery:** node delete/Undo, duplicate, selection, nudge, lineage, thumbnail clear-on-last-delete, and library placement work without corrupting the underlying model. Failed generation renders a named recoverable state rather than a blank card; unrelated nodes remain untouched.
+15. **Architecture, accessibility, and parity:** Canvas code respects the permanent casting-store import boundary; paid Canvas copy contains no hardcoded credit literals; takeover Escape/modal ownership is deterministic; `/studio?tool=casting` smoke-passes after casting changes; the tokenized monochrome design and interaction grammar remain legible on a 30+ node board.
 
 ---
 

@@ -4,6 +4,8 @@
 
 > **RESEQUENCED 2026-07-11.** M1–M4 shipped and their history is preserved below. The founder's D-32…D-37 rulings (VC2 driving + ElevenLabs Flows study) restructured everything after M4: casting authoring moves off the canvas into an overlay-hosted takeover environment (D-35, Option B), the canvas receives finished reference assets, and the original M2b/M5–M10 are replaced by **R1–R7**. Old milestone sections live in git history (P-1).
 
+> **R7 SUPERSEDED 2026-07-19.** The original R7 row/section below is retained as pass-1 history, but its 1.5-day sizing and single hardening-batch shape are no longer executable. R6 deferred a much larger trust, durable-operation, product-UX, lifecycle, and evidence-composer program. The founder-ratified authority is now `CASTING_SYSTEM_R7_REVIEW_AND_EXECUTION_PLAN.md` (D-62).
+
 **Two shape requirements from the original ratification, and their current status:**
 
 1. **An interactive cast node reaches the founder as early as possible, even rough.** Honored — VC2 delivered 2026-07-11, loop confirmed working.
@@ -35,8 +37,8 @@
 | R4 | Canvas grammar: toolbar, fork/recast, variations, delete+undo, keyboard incl. Cmd+C/V→Duplicate (old M6) | ✅ shipped 2026-07-12 | **VC-R4 ruled: grammar passes** (+ fix batch, D-47…D-49) |
 | R5 | Edges, refresh/pin, snapshots, character sheet + composer (old M7 + D-29 as amended by D-39 + D-30; **identity-edit staleness deleted by D-43** — per-tile quality refresh, pins, and aggregate refresh remain) | 2.5–3 | **VC-R5 — lineage and the sheet** |
 | R6 | First-touch (old M9) + **full environment restyle to canvas language** (named slot; scope amended 2026-07-11 to include the panel header, progress donut, and viewer/master-prompt chrome) | 3–3.5 | **VC-R6 — first-run + the environment in Drape's language** |
-| R7 | Hardening + success-criteria sweep (old M10; **watch for silent-audit-gap failures** — the bug-4 class where an action applies but its audit write dies) | 1.5 | Dogfood start |
-| | **Remaining total** | **≈ 17.5–20 focused days** | |
+| R7 | **Superseded:** historical hardening scope absorbed into R7-8; see the ratified R7 plan | — | Gated R7 program |
+| | **Historical remaining total (obsolete)** | **was ≈ 17.5–20 focused days** | Re-estimate per ratified R7 phase |
 
 The pre-ruling plan had 18–19.5 days remaining with M8's from-scratch `RefinementStudio` as the riskiest item; the R-sequence deletes that build entirely (the existing studio casting flow *is* the environment) and absorbs M5's canvas popovers into R3's environment-side identity events.
 
@@ -164,7 +166,9 @@ Gate: full gates + studio smoke.
 > - **C7**: picker N+1 (two queries), D-27 live board thumbnails (debounced), AddNodeMenu reconciled to ruling B (Cast · Note; dead wardrobe/upload rows + legacy right panel deleted), **label pass — engine slot dead on all node chrome (founder note; drive O4b)**, **D-9 first-run intro** (`canvasIntroSeen` migration 0004 — **prod migration gates the deploy sync**; drive H1–H4), DS §11.1/§11.2 reconciled.
 > - **Founder confirmations en route:** R-7 floor verified unified across board/viewer/studio (screenshot set `docs/specs/references/r7-floor-*.png`); intro reference `d9-first-run-intro.png`.
 
-## R7 — Hardening + success-criteria sweep → dogfood
+## Historical R7 — hardening sweep *(superseded by the 2026-07-19 R7 charter)*
+
+> These bullets survive as provenance. Their work is mapped into the ratified R7 phases; do not execute this section as a standalone batch.
 
 - Walk all 15 success criteria in `CANVAS_FOUNDATIONS.md` §10 (as rewritten in R5/R7 for the takeover + sheet model) on a real board; fails become fix-or-log decisions with the founder.
 - Full-suite gates; `pnpm build` sanity; headless golden path (drop → picker → cast in takeover → mint → land → views → stale → edit → back).
@@ -185,7 +189,7 @@ Gate: full gates + studio smoke.
 
 - **Takeover/studio dual-hosting divergence** — one `CastingWorkspace`, two hosts; any drift is a wiring bug. Studio smoke after every casting-adjacent milestone.
 - **Store lifecycle in the takeover** (reset-on-open vs shared session autosave): a half-finished takeover session resumes in `/studio` and vice versa — one casting session wherever you enter it. If dogfooding shows confusion, isolation is a scoped-storage-key change, not an architecture change.
-- **`$returningId` id-lookup class (R7 sweep target):** `createGeneration` returned the caller's *newest row by `createdAt`* instead of the inserted id — under the parallel mint, five concurrent inserts all got one id and four audit rows stuck `processing` forever (fixed at VC-R3b with `$returningId()`). `createModel` (`server/db/models.ts:32`) and `createModelAsset` (`:309`) still use the same newest-row pattern; harmless today (returns unused or non-concurrent) but they are the same latent bug — convert both to `$returningId()` in R7 and grep for any other newest-row-after-insert lookups.
+- **`$returningId` id-lookup class (R7-1 target, corrected 2026-07-19):** `createGeneration` once returned the caller's *newest row by `createdAt`* instead of the inserted id — under parallel mint, five inserts could receive one id and leave audit rows stuck `processing` (fixed at VC-R3b). `createModelAsset` was subsequently converted to `$returningId()` during R6. `createModel` still uses newest-row-after-insert and remains a real concurrent wrong-model-id race; R7-1 converts it and sweeps for any remaining copies.
 - **Parser quality on the chosen model** (D-14): canaries decide early (R2 day 1); escalation is a model swap behind one function.
 - **Sheet template edge cases** (D-29): fixed comp-grid templates by view count keep this bounded; pop-out covers anything a template can't.
 - **Scope pressure:** cut-line order if the days slip: picker filters (R6) → first-run intro (R6, fast-follow) → environment restyle (R6, → polish pass, but it stays a *named* item per the founder's ruling). Fork/recast, pin, undo, cost display, and the identity-event flow are not cuttable — they're the ratified trust layer.
