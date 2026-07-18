@@ -253,7 +253,7 @@ function itemToNode(
 }
 
 /** Build a fingerprint of item data (excluding position) for change detection */
-function itemFingerprint(item: BoardItemRecord): string {
+export function itemFingerprint(item: BoardItemRecord): string {
   // Canvas-relevant metadata (status/pinned/attributes) must invalidate the
   // node — completion, errors, and staleness all arrive via metadata.
   const meta = (item.metadata ?? {}) as BoardItemCanvasMetadata;
@@ -264,7 +264,12 @@ function itemFingerprint(item: BoardItemRecord): string {
     up: meta.userPrompt ?? '',
     a: meta.attributes ? Object.keys(meta.attributes).length : 0,
   });
-  return `${item.id}|${item.type}|${item.kind ?? ''}|${item.label ?? ''}|${item.imageUrl ?? ''}|${item.width}|${item.height}|${item.zIndex}|${metaSig}`;
+  // Live source truth is joined onto board items rather than stamped into the
+  // placement row. It must participate in the fingerprint or a successful
+  // model rename/status change can refetch correctly while React Flow keeps
+  // rendering the node data from before the refetch.
+  const sourceSig = `${item.sourceModelId ?? ''}|${item.sourceName ?? ''}|${item.sourceDraft === true}|${item.sourceArchived === true}`;
+  return `${item.id}|${item.type}|${item.kind ?? ''}|${item.label ?? ''}|${item.imageUrl ?? ''}|${item.width}|${item.height}|${item.zIndex}|${sourceSig}|${metaSig}`;
 }
 
 /* ── Component ────────────────────────────────────────────── */

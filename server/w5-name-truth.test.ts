@@ -3,6 +3,28 @@ import {
   resolveCastPlacementLabel,
   withPlacementCustomLabel,
 } from '../client/src/features/boards/canvas/castNodeLabel';
+import {
+  itemFingerprint,
+  type BoardItemRecord,
+} from '../client/src/features/boards/BoardCanvas';
+
+const boardItem = (overrides: Partial<BoardItemRecord> = {}): BoardItemRecord => ({
+  id: 19,
+  type: 'model',
+  kind: 'cast_config',
+  label: 'Cast',
+  imageUrl: 'https://example.com/headshot.png',
+  positionX: 100,
+  positionY: 200,
+  width: 280,
+  height: 420,
+  zIndex: 1,
+  metadata: null,
+  sourceModelId: 93,
+  sourceDraft: true,
+  sourceName: null,
+  ...overrides,
+});
 
 describe('W5-C live model-name and placement-label truth', () => {
   it('uses the live source name over a stale stamped label', () => {
@@ -30,5 +52,17 @@ describe('W5-C live model-name and placement-label truth', () => {
       pinned: true,
       customLabel: true,
     });
+  });
+
+  it('rebuilds React Flow node data when the live model name changes', () => {
+    expect(itemFingerprint(boardItem({ sourceName: null }))).not.toBe(
+      itemFingerprint(boardItem({ sourceName: 'Haniel' })),
+    );
+  });
+
+  it('still ignores position-only server echoes', () => {
+    expect(itemFingerprint(boardItem({ positionX: 100, positionY: 200 }))).toBe(
+      itemFingerprint(boardItem({ positionX: 640, positionY: 480 })),
+    );
   });
 });
