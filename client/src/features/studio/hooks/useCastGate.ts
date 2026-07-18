@@ -14,8 +14,10 @@ import { slotFailureMessage } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useStudioStore } from '../stores/useStudioStore';
+import { captureCastingSession } from '@/features/casting/castingSessionToken';
+import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
 import type { GeneratedAsset } from '@/features/casting/constants';
-import type { MintTier } from '@shared/boardTypes';
+import type { CanonicalViewAngle, MintTier } from '@shared/boardTypes';
 
 interface UseCastGateParams {
   currentModelId: number | null;
@@ -43,6 +45,7 @@ export function useCastGate({
 
   const [showCastModal, setShowCastModal] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
+  const [viewsGenerating, setViewsGenerating] = useState(false);
   const [castingMessage, setCastingMessage] = useState('');
 
   const utils = trpc.useUtils();
@@ -59,7 +62,15 @@ export function useCastGate({
         return;
       }
       setIsCasting(true);
-      const missingCount = planQuery.data?.tiers[tier]?.missing.length ?? 0;
+      const missingAngles = (planQuery.data?.tiers[tier]?.missing ?? []) as CanonicalViewAngle[];
+      const missingCount = missingAngles.length;
+      const session = captureCastingSession(
+        () => useCastingGenerationStore.getState().sessionToken,
+      );
+      if (missingAngles.length > 0) {
+        useCastingRefreshStore.getState().begin(currentModelId, missingAngles);
+      }
+      setViewsGenerating(missingAngles.length > 0);
       setCastingMessage(
         missingCount > 0
           ? `Casting ${missingCount} view${missingCount === 1 ? '' : 's'}...`
@@ -84,7 +95,7 @@ export function useCastGate({
         });
 
         // Land freshly generated views in the studio viewer state
-        if (result.generated.length > 0) {
+        if (session.isCurrent() && result.generated.length > 0) {
           const castStore = useCastingGenerationStore.getState();
           const fresh: GeneratedAsset[] = result.generated.map((g, i) => ({
             // The REAL ledger id (D-55 / VC-R6 final r2 defect 1): the draft
@@ -110,10 +121,12 @@ export function useCastGate({
         // client requested — a stays-draft request on an inconsistent row,
         // or an upgrade on a legacy 'locked' model, must read what the
         // server says, not what the client asked for.
-        setCanvas({
-          isMinted: result.minted,
-          ...(result.minted ? { castModelId: currentModelId } : {}),
-        });
+        if (session.isCurrent()) {
+          setCanvas({
+            isMinted: result.minted,
+            ...(result.minted ? { castModelId: currentModelId } : {}),
+          });
+        }
 
         // Slot failures surface honestly (D-39/D-40 + Batch C final
         // correction 1): the sentence derives from the ledger's actual
@@ -125,12 +138,15 @@ export function useCastGate({
           toast.error(slotFailureMessage(f), { duration: 9000 });
         }
 
-        setShowCastModal(false);
+        if (session.isCurrent()) setShowCastModal(false);
         utils.models.get.invalidate({ modelId: currentModelId });
         utils.generation.packageState.invalidate({ modelId: currentModelId });
         utils.generation.mintPackagePlan.invalidate({ modelId: currentModelId });
 
-        if (upgrade || stayDraft) {
+        if (!session.isCurrent()) {
+          // The durable server result and its user-facing outcome above still
+          // stand, but a closed/newer Casting session must never be rewritten.
+        } else if (upgrade || stayDraft) {
           // D-39c upgrade / trap-(a) stays-draft views: stay in the session;
           // the new views filling the strip ARE the feedback (D-40, no toast).
           if (stayDraft) {
@@ -173,8 +189,14 @@ export function useCastGate({
         toast.error(message);
         refetchCreditsWithWarning();
       } finally {
-        setIsCasting(false);
-        setCastingMessage('');
+        if (missingAngles.length > 0) {
+          useCastingRefreshStore.getState().end(currentModelId, missingAngles);
+        }
+        if (session.isCurrent()) {
+          setIsCasting(false);
+          setViewsGenerating(false);
+          setCastingMessage('');
+        }
       }
     },
     [
@@ -195,6 +217,7 @@ export function useCastGate({
     showCastModal,
     setShowCastModal,
     isCasting,
+    viewsGenerating,
     isMinted,
     castingMessage,
     tierPlan: planQuery.data?.tiers,

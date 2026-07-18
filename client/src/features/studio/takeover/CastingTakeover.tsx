@@ -279,6 +279,7 @@ export function CastingTakeover({
     showCastModal,
     setShowCastModal,
     isCasting,
+    viewsGenerating,
     castingMessage,
     tierPlan,
     mintIntegrity,
@@ -646,6 +647,7 @@ export function CastingTakeover({
         tiers={tierPlan}
         integrity={mintIntegrity}
         isCasting={isCasting}
+        viewsGenerating={viewsGenerating}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
         mode={upgradeMode ? 'upgrade' : 'mint'}

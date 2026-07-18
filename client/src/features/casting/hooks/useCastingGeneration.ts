@@ -11,6 +11,7 @@ import {
 } from "@/features/casting/constants";
 import { buildCreationPreferences } from "@/features/casting/creationPayload";
 import { captureCastingSession } from '@/features/casting/castingSessionToken';
+import { beginPendingCast } from '@/features/casting/pendingCastRegistry';
 import type { CastingBindings } from "./castingBindings";
 
 interface UseCastingGenerationParams {
@@ -225,6 +226,7 @@ export function useCastingGeneration({
     }
 
     const session = captureCastingSession(getSessionToken);
+    const pendingCast = beginPendingCast(onBackgroundDraftReady);
     setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 15000 });
 
     // Open brand resolves at fire time (D-41). The explicit flag remains
@@ -264,14 +266,10 @@ export function useCastingGeneration({
 
       if (imageResult.success && imageResult.imageUrl) {
         if (!session.isCurrent()) {
-          toast.success('Draft generated and saved to Drafts', {
-            duration: 10000,
-            action: onBackgroundDraftReady
-              ? { label: 'Open Draft', onClick: () => onBackgroundDraftReady(modelResult.modelId!) }
-              : undefined,
-          });
+          pendingCast.succeedInBackground(modelResult.modelId!);
           return;
         }
+        pendingCast.finishInForeground();
         const newAsset: GeneratedAsset = {
           id: imageResult.assetId || Date.now(),
           viewType: "frontClose",
@@ -296,8 +294,12 @@ export function useCastingGeneration({
 
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
-      if (!session.isCurrent()) return;
       const message = error instanceof Error ? error.message : "Generation failed";
+      if (!session.isCurrent()) {
+        pendingCast.failInBackground(message);
+        return;
+      }
+      pendingCast.finishInForeground();
       setGenState({ isGenerating: false, currentStep: "", error: message });
       setFailedAction({ type: 'NEW' });
       toast.error(message);

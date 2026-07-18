@@ -1,4 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
@@ -19,10 +21,29 @@ import AdminInviteCodes from "./pages/AdminInviteCodes";
 import AppLobby from "./pages/AppLobby";
 import { BoardPage } from "./features/boards/BoardPage";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
+import { subscribePendingCastOutcomes } from "./features/casting/pendingCastRegistry";
 
 
 /** Lobby views share one transition key so the rail doesn't remount between them. */
 const LOBBY_ROUTES = new Set(['/app', '/app/boards', '/app/models', '/app/garments', '/app/looks']);
+
+/** Always-mounted owner for a cast that settles after its originating surface
+ * closes or the user navigates elsewhere in this tab. */
+function PendingCastOutcomeToasts() {
+  useEffect(() => subscribePendingCastOutcomes((outcome) => {
+    if (outcome.kind === 'success') {
+      toast.success('Draft generated and saved to Drafts', {
+        duration: 10000,
+        action: outcome.openDraft
+          ? { label: 'Open Draft', onClick: outcome.openDraft }
+          : undefined,
+      });
+      return;
+    }
+    toast.error(outcome.message, { duration: 10000 });
+  }), []);
+  return null;
+}
 
 function Router() {
   const [location] = useLocation();
@@ -72,6 +93,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
+          <PendingCastOutcomeToasts />
           <AnnouncementBanner />
           <Router />
         </TooltipProvider>

@@ -123,6 +123,27 @@ describe("W3 mint blockers route into Package health", () => {
   });
 });
 
+describe("W5-F truthful background-view copy", () => {
+  it("does not claim views are generating while a zero-view mint only saves identity", () => {
+    const html = render({
+      isCasting: true,
+      castingMessage: "Saving identity...",
+      viewsGenerating: false,
+    });
+    expect(html).toContain("Saving identity...");
+    expect(html).not.toContain("These views will continue generating");
+  });
+
+  it("shows the continuation guidance when the server plan has missing views", () => {
+    const html = render({
+      isCasting: true,
+      castingMessage: "Casting 3 views...",
+      viewsGenerating: true,
+    });
+    expect(html).toContain("These views will continue generating");
+  });
+});
+
 describe("confirmArgsForDoor — what each door actually sends (behavior, not copy)", () => {
   it("mint door: trimmed name, stayDraft false — on both paths", () => {
     for (const addFirst of [true, false]) {

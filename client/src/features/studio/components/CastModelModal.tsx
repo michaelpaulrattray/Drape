@@ -70,6 +70,8 @@ export interface CastModelModalProps {
   isCasting: boolean;
   /** Progress message during casting */
   castingMessage?: string;
+  /** Server-plan truth: this operation is creating missing image views. */
+  viewsGenerating?: boolean;
   /** Preview image URL (headshot) */
   previewImage?: string;
   /** Upgrade mode (D-39c): the model is already minted and named — no name
@@ -97,6 +99,7 @@ export function CastModelModal({
   integrity,
   isCasting,
   castingMessage,
+  viewsGenerating = false,
   previewImage,
   mode = 'mint',
   fixedName,
@@ -328,14 +331,21 @@ export function CastModelModal({
           {isCasting && castingMessage && (
             <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-canvas-md bg-canvas-surface-inset text-canvas-lg text-canvas-ink-soft">
               <Loader2 className="w-3 h-3 animate-spin" />
-              <span>{castingMessage}</span>
+              <div>
+                <span className="block">{castingMessage}</span>
+                {viewsGenerating && (
+                  <span className="block text-canvas-sm mt-0.5">
+                    You can keep editing. These views will continue generating and appear in the view strip.
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
           {/* Actions — every door says where it leads (defect 4) */}
           {upgrade ? (
             <div className="flex justify-end gap-3">
-              <button onClick={onClose} disabled={isCasting} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors disabled:opacity-40">
+              <button onClick={onClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors">
                 Keep editing
               </button>
               <button
@@ -391,7 +401,7 @@ export function CastModelModal({
             );
             return (
               <div className="flex justify-end items-center gap-2.5">
-                <button onClick={onClose} disabled={isCasting} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors disabled:opacity-40 mr-1">
+                <button onClick={onClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors mr-1">
                   Keep editing
                 </button>
                 {addFirst

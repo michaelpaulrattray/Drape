@@ -84,8 +84,10 @@ describe('W4 close and landing truth', () => {
 
   it('reports background completion honestly and offers the board host an Open Draft action', () => {
     const generation = read('client/src/features/casting/hooks/useCastingGeneration.ts');
-    expect(generation).toContain("toast.success('Draft generated and saved to Drafts'");
-    expect(generation).toContain("{ label: 'Open Draft'");
+    expect(generation).toContain('pendingCast.succeedInBackground(modelResult.modelId!)');
+    const app = read('client/src/App.tsx');
+    expect(app).toContain("toast.success('Draft generated and saved to Drafts'");
+    expect(app).toContain("{ label: 'Open Draft'");
     const board = read('client/src/features/boards/BoardPage.tsx');
     expect(board).toContain('originNeedsLanding: true');
     expect(board).toContain('handleBackgroundDraftReady');

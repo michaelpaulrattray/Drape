@@ -142,6 +142,7 @@ export default function DrapeStudio() {
     showCastModal,
     setShowCastModal,
     isCasting,
+    viewsGenerating,
     castingMessage,
     tierPlan,
     mintIntegrity,
@@ -281,6 +282,7 @@ export default function DrapeStudio() {
         tiers={tierPlan}
         integrity={mintIntegrity}
         isCasting={isCasting}
+        viewsGenerating={viewsGenerating}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
         initialName={honestModelName(modelName)}
