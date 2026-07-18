@@ -44,6 +44,29 @@ import {
   subscribeCastingOperations,
 } from '@/features/casting/pendingCastRegistry';
 
+type ThumbnailCandidate = {
+  id: number;
+  imageUrl?: string | null;
+};
+
+export type ThumbnailDecision = { set: string } | { clear: true } | null;
+
+/** Pure D-27 thumbnail authority: newest image wins; no images means clear. */
+export function nextThumbnail(
+  items: readonly ThumbnailCandidate[] | undefined,
+  current: string | null | undefined,
+): ThumbnailDecision {
+  if (!items) return null;
+  const newest = [...items]
+    .filter((item) => item.id > 0 && !!item.imageUrl && /^https?:\/\//.test(item.imageUrl))
+    .sort((a, b) => b.id - a.id)[0];
+
+  if (newest?.imageUrl) {
+    return newest.imageUrl === current ? null : { set: newest.imageUrl };
+  }
+  return current ? { clear: true } : null;
+}
+
 /* ── Component ────────────────────────────────────────────── */
 
 export function BoardPage() {
@@ -273,22 +296,89 @@ function BoardPageImpl() {
   // landings writes once. Quiet on failure (a stale thumbnail is cosmetic).
   const thumbnailMutation = trpc.boards.update.useMutation();
   const thumbnailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastThumbnailRef = useRef<string | null>(null);
+  const pendingThumbnailRef = useRef<{ boardId: number; thumbnailUrl: string | null } | null>(null);
+  const thumbnailWriteRef = useRef<(input: { boardId: number; thumbnailUrl: string | null }) => void>(() => undefined);
+  thumbnailWriteRef.current = (input) => {
+    // Patch any warm lobby/board read models before navigation can render
+    // their old thumbnail. The refetch below restores server truth on either
+    // success or failure, so this optimism cannot become authority.
+    utils.boards.get.setData({ id: input.boardId }, (old) =>
+      old ? { ...old, thumbnailUrl: input.thumbnailUrl } : old,
+    );
+    utils.boards.list.setData(undefined, (old) =>
+      old?.map((candidate) => candidate.id === input.boardId
+        ? { ...candidate, thumbnailUrl: input.thumbnailUrl }
+        : candidate),
+    );
+    utils.lobby.recentWork.setData(undefined, (old) =>
+      old?.map((candidate) => candidate.tool === 'canvas' && candidate.boardId === input.boardId
+        ? { ...candidate, thumbnailUrl: input.thumbnailUrl }
+        : candidate),
+    );
+    // Use the promise directly: hook-level observer callbacks can disappear
+    // with BoardPage, but this completion must still refresh a lobby that
+    // mounted while the flushed clear was in flight.
+    void thumbnailMutation.mutateAsync(input)
+      .catch(() => undefined)
+      .finally(() => {
+        void utils.boards.get.cancel({ id: input.boardId })
+          .then(() => utils.boards.get.refetch({ id: input.boardId }));
+        void utils.boards.list.cancel()
+          .then(() => utils.boards.list.refetch());
+        void utils.lobby.recentWork.cancel()
+          .then(() => utils.lobby.recentWork.refetch());
+      });
+  };
+  const thumbnailBoardIdRef = useRef(boardId);
+  // `undefined` means "not initialized from server yet"; `null` means a
+  // deliberate local clear and must not fall back to a stale board query.
+  const lastThumbnailRef = useRef<string | null | undefined>(undefined);
+  // Leaving the board must not discard an already-derived clear: that would
+  // reproduce the founder's stale lobby card whenever they navigate back in
+  // under four seconds. Ordinary item changes still cancel in the main
+  // effect cleanup below, preserving delete-then-undo protection.
+  useEffect(() => () => {
+    const pending = pendingThumbnailRef.current;
+    if (!pending || pending.thumbnailUrl !== null) return;
+    if (thumbnailTimerRef.current) {
+      clearTimeout(thumbnailTimerRef.current);
+      thumbnailTimerRef.current = null;
+    }
+    pendingThumbnailRef.current = null;
+    thumbnailWriteRef.current(pending);
+  }, [boardId]);
   useEffect(() => {
     if (!board || !items) return;
-    const newest = [...items]
-      .filter((i) => i.id > 0 && !!i.imageUrl && /^https?:\/\//.test(i.imageUrl))
-      .sort((a, b) => b.id - a.id)[0];
-    if (!newest?.imageUrl) return;
-    const current = lastThumbnailRef.current ?? board.thumbnailUrl;
-    if (newest.imageUrl === current) return;
+    // Wouter can retain BoardPageImpl across board-to-board navigation. A
+    // thumbnail decision must never inherit the previous board's local truth.
+    if (thumbnailBoardIdRef.current !== boardId) {
+      thumbnailBoardIdRef.current = boardId;
+      lastThumbnailRef.current = undefined;
+    }
+    const current = lastThumbnailRef.current === undefined
+      ? board.thumbnailUrl
+      : lastThumbnailRef.current;
+    const decision = nextThumbnail(items, current);
+    if (!decision) return;
     if (thumbnailTimerRef.current) clearTimeout(thumbnailTimerRef.current);
+    const pending = {
+      boardId,
+      thumbnailUrl: 'set' in decision ? decision.set : null,
+    };
+    pendingThumbnailRef.current = pending;
     thumbnailTimerRef.current = setTimeout(() => {
-      lastThumbnailRef.current = newest.imageUrl;
-      thumbnailMutation.mutate({ boardId, thumbnailUrl: newest.imageUrl! });
+      if (pendingThumbnailRef.current !== pending) return;
+      pendingThumbnailRef.current = null;
+      lastThumbnailRef.current = pending.thumbnailUrl;
+      thumbnailTimerRef.current = null;
+      thumbnailWriteRef.current(pending);
     }, 4000);
     return () => {
-      if (thumbnailTimerRef.current) clearTimeout(thumbnailTimerRef.current);
+      if (thumbnailTimerRef.current) {
+        clearTimeout(thumbnailTimerRef.current);
+        thumbnailTimerRef.current = null;
+      }
+      pendingThumbnailRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, board, boardId]);

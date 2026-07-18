@@ -121,7 +121,7 @@ export const boardsRouter = router({
       name: z.string().max(128).optional(),
       description: z.string().max(1000).optional(),
       status: z.enum(["active", "archived"]).optional(),
-      thumbnailUrl: z.string().url().optional(),
+      thumbnailUrl: z.string().url().nullable().optional(),
       thumbnailKey: z.string().max(256).optional(),
     }))
     .mutation(async ({ ctx, input }) => {

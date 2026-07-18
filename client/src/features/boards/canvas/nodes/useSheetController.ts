@@ -187,7 +187,13 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
           : old,
       );
       void utils.generation.packageState.invalidate({ modelId });
-      void utils.generation.slotVersions.invalidate({ modelId, angle: res.angle });
+    },
+    onError: (err) => toast.error(err.message),
+    onSettled: (_data, _err, variables) => {
+      void utils.generation.slotVersions.invalidate({
+        modelId: variables.modelId,
+        angle: variables.angle,
+      });
     },
   });
 
