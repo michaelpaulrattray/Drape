@@ -43,7 +43,6 @@ const CLIENT_READ_SCOPE = [
   "client/src/features/studio/hooks/useSessionReset.ts",
   "client/src/features/studio/hooks/useLoadWardrobeModel.ts",
   "client/src/features/export/useExportPack.ts",
-  "client/src/features/casting/hooks/useCastingExport.ts",
   "client/src/features/boards/canvas/nodes/useSheetController.ts",
   "client/src/features/boards/components/NodeInfoPanel.tsx",
 ];
@@ -202,12 +201,11 @@ describe("model lifecycle literal guard (Batch B)", () => {
         `${rel} must consume shared/modelLifecycle`,
       ).toBe(true);
     }
-    // EVERY export surface — the two client hooks AND the authoritative
+    // EVERY export surface — the library client hook AND the authoritative
     // server PDF route — consumes the ONE shared eligibility gate (which
     // wraps the lifecycle predicate): review correction 1 + final round A.
     for (const rel of [
       "client/src/features/export/useExportPack.ts",
-      "client/src/features/casting/hooks/useCastingExport.ts",
       "server/routes/generation/castingExport.ts",
     ]) {
       expect(
@@ -257,9 +255,7 @@ describe("model lifecycle literal guard (Batch B)", () => {
     // boundary (`.mutateAsync` as a reference), never invoked directly —
     // `.mutateAsync(` calls inside an export action would bypass the boundary.
     const actionSlices: Array<[string, string, string | undefined]> = [
-      ["client/src/features/export/useExportPack.ts", "const downloadPdf", "const downloadZip"],
       ["client/src/features/export/useExportPack.ts", "const downloadZip", "return {"],
-      ["client/src/features/casting/hooks/useCastingExport.ts", "const handleExport", undefined],
     ];
     for (const [rel, from, to] of actionSlices) {
       const body = slice(read(rel), from, to);
@@ -278,7 +274,6 @@ describe("model lifecycle literal guard (Batch B)", () => {
     // route (final round A: the server once fabricated `MOD-YY-DRAFT`)
     for (const rel of [
       "client/src/features/export/useExportPack.ts",
-      "client/src/features/casting/hooks/useCastingExport.ts",
       "server/routes/generation/castingExport.ts",
     ]) {
       // The two fallback shapes that existed: `|| "DRAFT"` style defaults and

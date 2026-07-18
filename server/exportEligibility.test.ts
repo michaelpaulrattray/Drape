@@ -67,7 +67,7 @@ describe("resolveExportEligibility — the full status × agencyId table", () =>
 // ── Final review round C: BEHAVIOR-LEVEL zero-mutation proof ────────────────
 //
 // withExportEligibility is the real action boundary every export flow runs
-// through (useExportPack.downloadPdf/downloadZip, useCastingExport
+// through (useExportPack.downloadZip
 // .handleExport — pinned by the literal guard). These tests EXECUTE that
 // boundary with spied mutation functions and prove that on every rejected
 // row the runner is never entered and every mutation call count stays zero.

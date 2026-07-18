@@ -1,6 +1,6 @@
 /**
  * Export-map closure (Batch A-safe): the shared canonical-six export module
- * that useExportPack and useCastingExport both ride. The era-0 trio maps
+ * that useExportPack rides. The era-0 trio maps
  * (frontClose/frontFull/sideClose only) silently dropped three-quarter,
  * walk, and back views from export packs — these tests pin every map to
  * ALL SIX canonical view angles so a trio regression cannot come back.

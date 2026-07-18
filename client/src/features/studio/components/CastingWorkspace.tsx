@@ -4,8 +4,8 @@
  * One casting surface, two hosts (D-35 Option B): DrapeStudio's casting tool
  * and the board's CastingTakeover.
  *
- * Owns the casting hook wiring and the casting-scoped modals (StageLock,
- * Export). The mint gate (CastModelModal + useCastGate) and credit top-up
+ * Owns the casting hook wiring and package-health dialog. The mint gate
+ * (CastModelModal + useCastGate) and credit top-up
  * belong to the hosts — the studio triggers the gate from its sidebar, the
  * takeover from its top bar.
  */
@@ -24,10 +24,8 @@ import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { ControlPanel } from '@/features/casting/ControlPanel';
 import { ImageViewerPanel } from '@/features/casting/ImageViewerPanel';
 import { MasterPromptPanel } from '@/features/casting/MasterPromptPanel';
-import { ExportModal } from '@/features/casting/ExportModal';
 import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
-import { useCastingExport } from '@/features/casting/hooks/useCastingExport';
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { PackageHealthDialog } from '@/features/casting/components/PackageHealthDialog';
 import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
@@ -61,12 +59,7 @@ export function CastingWorkspace({
   // Casting stores
   const { prefs, modelName, engineChoice } = useCastingFormStore();
   const { genState, setGenState, currentModelId, currentAssets } = useCastingGenerationStore();
-  const {
-    activeView,
-    activeTool: castingActiveTool,
-    showExportModal,
-    setShowExportModal,
-  } = useCastingUIStore();
+  const { activeView, activeTool: castingActiveTool } = useCastingUIStore();
 
   // Eagerly preload casting images into browser cache (warm S3 URLs)
   const castingAssetUrls = useMemo(
@@ -130,21 +123,6 @@ export function CastingWorkspace({
     clearMask,
     onBackgroundDraftReady,
     bindings: castingBindings,
-  });
-
-  // Export hook
-  const {
-    handleExport,
-    exportPlan,
-    isExportPlanLoading,
-    exportPlanError,
-    retryExportPlan,
-    isExporting,
-  } = useCastingExport({
-    currentModelId,
-    currentAssets,
-    isOpen: showExportModal,
-    setShowExportModal,
   });
 
   // Hydrate casting store for gallery/edit-loaded models (assets in DB, not
@@ -254,21 +232,6 @@ export function CastingWorkspace({
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative w-full">
-      {/* Export Modal */}
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        onExport={handleExport}
-        exportPlan={exportPlan}
-        isPlanLoading={isExportPlanLoading}
-        planError={exportPlanError}
-        onRetryPlan={retryExportPlan}
-        isExporting={isExporting}
-        viewCount={exportPlan?.viewCount}
-        previewImage={
-          currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl ?? undefined
-        }
-      />
       <PackageHealthDialog />
 
       {/* Left Panel — Control (slides from left) */}

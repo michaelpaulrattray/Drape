@@ -18,7 +18,7 @@ export interface PreparedExportView extends ExportViewOutcome {
 }
 
 interface ExportMutations {
-  upscale: (input: { imageUrl: string; resolution: "2K" }) => Promise<{ success: boolean; imageUrl?: string }>;
+  upscale?: (input: { imageUrl: string; resolution: "2K" }) => Promise<{ success: boolean; imageUrl?: string }>;
   proxyImage: (input: { imageUrl: string }) => Promise<{ success: boolean; base64?: string }>;
 }
 
@@ -101,6 +101,7 @@ export async function prepareExportViews({
 
     if (resolution === "2K") {
       try {
+        if (!mutations.upscale) throw new Error("Paid upscale is unavailable for this export.");
         const result = await mutations.upscale({ imageUrl: source.storageUrl, resolution: "2K" });
         if (!result.success || !result.imageUrl) throw new Error("The upscale returned no 2K image.");
         paidUpscaleSucceeded = true;
@@ -153,6 +154,42 @@ export async function prepareExportViews({
   }
 
   return outcomes;
+}
+
+/** The customer-facing Identity Pack is atomic: every current view and the
+ * identity PDF must exist before any ZIP can be delivered. */
+export function requireCompleteExportViews(
+  outcomes: PreparedExportView[],
+  expectedCount: number,
+): void {
+  const complete = outcomes.filter((view) => view.dataUrl && view.filename).length;
+  if (outcomes.length !== expectedCount || complete !== expectedCount) {
+    throw new Error("One or more casting views could not be prepared for the identity pack.");
+  }
+}
+
+export function requireIdentityPdf(result: {
+  success: boolean;
+  pdfBase64?: string;
+  filename?: string;
+}): { pdfBase64: string; filename: string } {
+  if (!result.success || !result.pdfBase64 || !result.filename) {
+    throw new Error("The identity document could not be created.");
+  }
+  return { pdfBase64: result.pdfBase64, filename: result.filename };
+}
+
+/** PDF-first delivery boundary. If document generation fails, archive
+ * construction and browser delivery are structurally unreachable. */
+export async function deliverAtomicIdentityPack<T>(options: {
+  generatePdf: () => Promise<{ success: boolean; pdfBase64?: string; filename?: string }>;
+  buildArchive: (pdf: { pdfBase64: string; filename: string }) => Promise<T>;
+  deliver: (archive: T) => void | Promise<void>;
+}): Promise<T> {
+  const pdf = requireIdentityPdf(await options.generatePdf());
+  const archive = await options.buildArchive(pdf);
+  await options.deliver(archive);
+  return archive;
 }
 
 export function standingPaidUpscaleCopy(

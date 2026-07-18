@@ -1,6 +1,6 @@
 /**
  * exportViews — the ONE canonical-six export mapping, shared by every export
- * surface (useCastingExport, useExportPack) so no hook can regress to an
+ * surface (useExportPack) so the library export cannot regress to an
  * era-0 trio map again (audit V3's last copy lived in useExportPack and
  * silently dropped three-quarter, walk, and back from the export-verb packs).
  *

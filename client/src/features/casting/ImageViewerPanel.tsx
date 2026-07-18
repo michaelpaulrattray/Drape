@@ -80,13 +80,7 @@ export function ImageViewerPanel({
     activeView,
     activeTool,
     setRefineInput,
-    setShowExportModal,
   } = useCastingUIStore();
-
-  // A4 belt-slimming: the export VERB rides the ··· menu (the floating
-  // NextStepChip and its hook are dead). Same availability rule the chip
-  // had — a full-body view exists, so the identity pack is exportable.
-  const canExportPack = currentAssets.some((a) => a.viewType === 'frontFull');
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
@@ -451,11 +445,6 @@ export function ImageViewerPanel({
             // Menu Retry retired for casting (A4) — the error state's named
             // retry (StudioCanvas onRetry) is the one retry surface
             isGenerating={genState.isGenerating}
-            extraMenuItems={
-              !isReadOnly && canExportPack
-                ? [{ label: 'Export identity pack', onClick: () => setShowExportModal(true) }]
-                : undefined
-            }
             shortcuts={isReadOnly
               ? [...(compareUrl ? [{ key: 'Hold', label: 'Compare' }] : [])]
               : [

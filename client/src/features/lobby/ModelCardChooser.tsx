@@ -94,7 +94,7 @@ export function ModelCardChooser({ model, onClose }: { model: ChooserModel | nul
     {
       icon: Package,
       verb: 'Export identity pack',
-      desc: 'Original-resolution or paid 2K views, with the identity document.',
+      desc: 'Current casting views and the identity document — free.',
       onPick: () => setMode('export'),
     },
   ];

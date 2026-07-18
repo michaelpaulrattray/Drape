@@ -1,69 +1,12 @@
 /**
- * Export Pack Tests — useExportPack constants, view mapping, and label formatting.
+ * Export Pack Tests — current library-export naming and data formatting.
  *
- * Tests the view label/filename mapping, PDF key mapping, attribute formatting,
- * and export panel data derivation logic.
- *
- * Note: The app has 3 view types: frontClose (Headshot), frontFull (Full Body), sideClose (Profile).
+ * Canonical six-view mapping is tested against the shared implementation in
+ * exportViews.test.ts; this file does not carry another hardcoded copy.
  */
 import { describe, it, expect } from "vitest";
 import { isModelMintedStatus } from "../shared/modelLifecycle";
 import { resolveExportEligibility } from "../shared/exportEligibility";
-
-// ── View Label & Filename Mapping ─────────────────────────────
-
-describe("Export View Mapping", () => {
-  const VIEW_LABELS: Record<string, string> = {
-    frontClose: "Headshot",
-    frontFull: "Full Body",
-    sideClose: "Profile",
-  };
-
-  const VIEW_FILENAMES: Record<string, string> = {
-    frontClose: "01_Headshot_Primary.png",
-    frontFull: "02_Full_Body_Standing.png",
-    sideClose: "03_Profile_Head.png",
-  };
-
-  const VIEW_TO_PDF_KEY: Record<string, string> = {
-    frontClose: "headshot",
-    frontFull: "fullBody",
-    sideClose: "profile",
-  };
-
-  it("should have labels for all 3 standard view types", () => {
-    expect(Object.keys(VIEW_LABELS)).toHaveLength(3);
-    expect(VIEW_LABELS.frontClose).toBe("Headshot");
-    expect(VIEW_LABELS.frontFull).toBe("Full Body");
-    expect(VIEW_LABELS.sideClose).toBe("Profile");
-  });
-
-  it("should have numbered filenames for ZIP ordering", () => {
-    expect(VIEW_FILENAMES.frontClose).toMatch(/^01_/);
-    expect(VIEW_FILENAMES.frontFull).toMatch(/^02_/);
-    expect(VIEW_FILENAMES.sideClose).toMatch(/^03_/);
-  });
-
-  it("all filenames should end with .png", () => {
-    Object.values(VIEW_FILENAMES).forEach((fn) => {
-      expect(fn).toMatch(/\.png$/);
-    });
-  });
-
-  it("should map view types to PDF keys", () => {
-    expect(VIEW_TO_PDF_KEY.frontClose).toBe("headshot");
-    expect(VIEW_TO_PDF_KEY.frontFull).toBe("fullBody");
-    expect(VIEW_TO_PDF_KEY.sideClose).toBe("profile");
-  });
-
-  it("all view types should have both labels and filenames", () => {
-    const viewTypes = Object.keys(VIEW_LABELS);
-    viewTypes.forEach((vt) => {
-      expect(VIEW_FILENAMES).toHaveProperty(vt);
-      expect(VIEW_TO_PDF_KEY).toHaveProperty(vt);
-    });
-  });
-});
 
 // ── Attribute Formatting ──────────────────────────────────────
 
@@ -90,46 +33,6 @@ describe("Attribute Label Formatting", () => {
   it("should handle multi-part camelCase", () => {
     expect(formatLabel("bodyType")).toBe("Body Type");
     expect(formatLabel("faceShape")).toBe("Face Shape");
-  });
-});
-
-// ── View Asset Sorting ────────────────────────────────────────
-
-describe("View Asset Sorting", () => {
-  const ORDER = ["frontClose", "frontFull", "sideClose"];
-
-  it("should sort assets in the correct display order", () => {
-    const unsorted = [
-      { viewType: "sideClose", storageUrl: "url3" },
-      { viewType: "frontClose", storageUrl: "url1" },
-      { viewType: "frontFull", storageUrl: "url2" },
-    ];
-
-    const sorted = [...unsorted].sort(
-      (a, b) => ORDER.indexOf(a.viewType) - ORDER.indexOf(b.viewType),
-    );
-
-    expect(sorted[0].viewType).toBe("frontClose");
-    expect(sorted[1].viewType).toBe("frontFull");
-    expect(sorted[2].viewType).toBe("sideClose");
-  });
-
-  it("should filter out unknown view types", () => {
-    const VIEW_LABELS: Record<string, string> = {
-      frontClose: "Headshot",
-      frontFull: "Full Body",
-      sideClose: "Profile",
-    };
-
-    const assets = [
-      { viewType: "frontClose", storageUrl: "url1" },
-      { viewType: "unknownView", storageUrl: "url2" },
-      { viewType: "frontFull", storageUrl: "url3" },
-    ];
-
-    const filtered = assets.filter((a) => VIEW_LABELS[a.viewType]);
-    expect(filtered).toHaveLength(2);
-    expect(filtered.map((a) => a.viewType)).toEqual(["frontClose", "frontFull"]);
   });
 });
 
@@ -215,8 +118,8 @@ describe("ZIP Filename Generation", () => {
 
   it("should generate correct ZIP filename format", () => {
     const safeName = "JANE_DOE";
-    const zipFilename = `CASTING_PACK_${safeName}_2K.zip`;
-    expect(zipFilename).toBe("CASTING_PACK_JANE_DOE_2K.zip");
+    const zipFilename = `CASTING_PACK_${safeName}_CURRENT.zip`;
+    expect(zipFilename).toBe("CASTING_PACK_JANE_DOE_CURRENT.zip");
   });
 
   it("should generate correct PDF filename format", () => {
@@ -246,15 +149,14 @@ describe("ZIP Filename Generation", () => {
 describe("Export Step Labels", () => {
   const STEP_LABELS: Record<string, string> = {
     idle: "",
-    minting: "Minting identity...",
-    upscaling: "Upscaling to 2K...",
+    preparing: "Preparing the current views...",
     "generating-pdf": "Generating document...",
     compressing: "Compressing pack...",
     done: "Complete",
   };
 
   it("should have labels for all export steps", () => {
-    expect(Object.keys(STEP_LABELS)).toHaveLength(6);
+    expect(Object.keys(STEP_LABELS)).toHaveLength(5);
   });
 
   it("idle step should have empty label", () => {
@@ -284,38 +186,6 @@ describe("Mint Status", () => {
   it("agencyId format should match MOD-YY-XXXXXX pattern (integrity detail, not read state)", () => {
     const agencyId = "MOD-26-A1B2C3";
     expect(agencyId).toMatch(/^MOD-\d{2}-[A-F0-9]{6}$/);
-  });
-});
-
-// ── Tool Availability — Export Gate ─────────────────────────────
-
-describe("Export Tool Availability", () => {
-  function getExportAvailability(canvas: { hasFullBody: boolean; modelSource: string | null }) {
-    if (!canvas.hasFullBody) return { enabled: false, tooltip: "Generate full body to unlock export" };
-    if (canvas.modelSource !== "cast") return { enabled: false, tooltip: "Export requires a cast model" };
-    return { enabled: true, tooltip: "Export Identity Pack" };
-  }
-
-  it("should be enabled when model has full body and is cast", () => {
-    const result = getExportAvailability({ hasFullBody: true, modelSource: "cast" });
-    expect(result.enabled).toBe(true);
-  });
-
-  it("should be disabled when no full body", () => {
-    const result = getExportAvailability({ hasFullBody: false, modelSource: "cast" });
-    expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain("full body");
-  });
-
-  it("should be disabled for uploaded models", () => {
-    const result = getExportAvailability({ hasFullBody: true, modelSource: "uploaded" });
-    expect(result.enabled).toBe(false);
-    expect(result.tooltip).toContain("cast model");
-  });
-
-  it("should be disabled when modelSource is null", () => {
-    const result = getExportAvailability({ hasFullBody: true, modelSource: null });
-    expect(result.enabled).toBe(false);
   });
 });
 
@@ -357,27 +227,6 @@ describe("Saved Looks", () => {
     expect(safeName).toMatch(/^[a-zA-Z0-9_]+$/);
   });
 
-  it("should display correct file count in ZIP label", () => {
-    const viewCount = 3;
-    const lookCount = 3;
-    const label = `${viewCount + lookCount} files`;
-    expect(label).toBe("6 files");
-  });
-
-  it("should show correct footer text when looks exist", () => {
-    const viewCount = 3;
-    const lookCount = 2;
-    const text = `${viewCount} views + ${lookCount} looks · 2K resolution`;
-    expect(text).toBe("3 views + 2 looks · 2K resolution");
-  });
-
-  it("should show default footer text when no looks", () => {
-    const lookCount = 0;
-    const text = lookCount > 0
-      ? `3 views + ${lookCount} looks · 2K resolution`
-      : "All exports rendered at 2K resolution";
-    expect(text).toBe("All exports rendered at 2K resolution");
-  });
 });
 
 // ── Looks Display Name ──────────────────────────────────────

@@ -101,8 +101,6 @@ export interface CastingBindings {
   setIsEnhancing: (b: boolean) => void;
   setIsTopupOpen: (b: boolean) => void;
 
-  /* ── Export ────────────────────────────────────────────── */
-  setShowExportModal: (b: boolean) => void;
 }
 
 /**
@@ -148,7 +146,6 @@ export function useLegacyCastingBindings(): CastingBindings {
     isEnhancing,
     setIsEnhancing,
     setIsTopupOpen,
-    setShowExportModal,
   } = useCastingUIStore();
 
   return {
@@ -201,6 +198,5 @@ export function useLegacyCastingBindings(): CastingBindings {
     setIsEnhancing,
     setIsTopupOpen,
 
-    setShowExportModal,
   };
 }

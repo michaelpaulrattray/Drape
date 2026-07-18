@@ -34,8 +34,6 @@ interface CastingUIState {
   // Modal states
   isTopupOpen: boolean;
   setIsTopupOpen: (open: boolean) => void;
-  showExportModal: boolean;
-  setShowExportModal: (show: boolean) => void;
 
   // Reset UI state
   resetUI: () => void;
@@ -71,8 +69,6 @@ export const useCastingUIStore = create<CastingUIState>()(
       // Modal states
       isTopupOpen: false,
       setIsTopupOpen: (open) => set({ isTopupOpen: open }, false, 'setIsTopupOpen'),
-      showExportModal: false,
-      setShowExportModal: (show) => set({ showExportModal: show }, false, 'setShowExportModal'),
 
       // Reset UI state
       resetUI: () => set({
@@ -83,7 +79,6 @@ export const useCastingUIStore = create<CastingUIState>()(
         refineInput: '',
         isEnhancing: false,
         isTopupOpen: false,
-        showExportModal: false,
       }, false, 'resetUI'),
     }),
     { name: 'CastingUIStore' }

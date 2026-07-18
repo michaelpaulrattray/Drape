@@ -11,9 +11,12 @@ import {
 import {
   assertExportPlanMatchesAssets,
   claimExportRun,
+  deliverAtomicIdentityPack,
   canonicalExportAssets,
   prepareExportViews,
   preparedPdfImages,
+  requireCompleteExportViews,
+  requireIdentityPdf,
   standingPaidUpscaleCopy,
 } from "../client/src/features/export/prepareExportViews";
 import { executePaidUpscale, normalizeUpscaleError } from "./casting/upscaleService";
@@ -118,6 +121,80 @@ describe("W1 PDF identity-document authority", () => {
     const prefs = resolvePdfPreferences({}, { gender: "   " });
     expect(prefs.gender).toBeUndefined();
     expect(prefs.hairLength).toBeUndefined();
+  });
+
+  it("keeps the saved model name wired into the generated identity document", () => {
+    const route = readFileSync(new URL("./routes/generation/castingExport.ts", import.meta.url), "utf8");
+    const service = readFileSync(new URL("./casting/pdfService.ts", import.meta.url), "utf8");
+    expect(route).toContain("modelName: model.name?.trim() || 'Unnamed Model'");
+    expect(service).toContain("data.modelName.toUpperCase()");
+  });
+});
+
+describe("W5-E atomic Identity Pack ruling", () => {
+  it("requires every prepared view and a successful named PDF", () => {
+    const complete = Array.from({ length: 6 }, (_, index) => ({
+      viewType: "frontClose",
+      sourceUrl: `source-${index}`,
+      paidUpscaleSucceeded: false,
+      deliveredUrl: `delivered-${index}`,
+      deliveredResolution: "1K",
+      dataUrl: "data:image/png;base64,AA==",
+      filename: `${index}.png`,
+      issues: [],
+    })) as any;
+    expect(() => requireCompleteExportViews(complete, 6)).not.toThrow();
+    expect(() => requireCompleteExportViews([{ ...complete[0], dataUrl: null }], 1)).toThrow("could not be prepared");
+    expect(requireIdentityPdf({ success: true, pdfBase64: "cGRm", filename: "identity.pdf" }))
+      .toEqual({ pdfBase64: "cGRm", filename: "identity.pdf" });
+    expect(() => requireIdentityPdf({ success: false })).toThrow("identity document could not be created");
+  });
+
+  it("does not build or deliver an archive when the mandatory PDF fails", async () => {
+    const buildArchive = vi.fn(async () => new Blob());
+    const deliver = vi.fn();
+    await expect(deliverAtomicIdentityPack({
+      generatePdf: vi.fn(async () => ({ success: false })),
+      buildArchive,
+      deliver,
+    })).rejects.toThrow("identity document could not be created");
+    expect(buildArchive).toHaveBeenCalledTimes(0);
+    expect(deliver).toHaveBeenCalledTimes(0);
+  });
+
+  it("exposes one free library action, no Studio action, and no UI-connected upscale mutation", () => {
+    const dialog = readFileSync(new URL("../client/src/features/export/ExportPackDialog.tsx", import.meta.url), "utf8");
+    const hook = readFileSync(new URL("../client/src/features/export/useExportPack.ts", import.meta.url), "utf8");
+    const viewer = readFileSync(new URL("../client/src/features/casting/ImageViewerPanel.tsx", import.meta.url), "utf8");
+    const workspace = readFileSync(new URL("../client/src/features/studio/components/CastingWorkspace.tsx", import.meta.url), "utf8");
+    const chooser = readFileSync(new URL("../client/src/features/lobby/ModelCardChooser.tsx", import.meta.url), "utf8");
+
+    expect(dialog).toContain('"Export identity pack"');
+    expect(dialog.match(/pack\.downloadZip\(\)/g)).toHaveLength(1);
+    expect(dialog).not.toMatch(/2K upscale|PDF only|downloadPdf|setResolution/);
+    expect(dialog).toContain("This export costs 0 credits.");
+    expect(viewer).not.toContain("Export identity pack");
+    expect(workspace).not.toMatch(/ExportModal|useCastingExport|showExportModal/);
+    expect(chooser).toContain("Current casting views and the identity document — free.");
+    expect(chooser).not.toContain("2K");
+
+    const actionStart = hook.indexOf("const downloadZip");
+    const action = hook.slice(actionStart, hook.indexOf("return {", actionStart));
+    expect(action).toContain('resolution: "1K"');
+    expect(action).not.toMatch(/upscaleMutation|generation\.upscale|ExportResolution/);
+    expect(action).toContain("deliverAtomicIdentityPack");
+    expect(action.indexOf("generatePdf: () => mutations.generatePdf")).toBeGreaterThan(-1);
+    expect(action.indexOf("generatePdf: () => mutations.generatePdf")).toBeLessThan(action.indexOf("const zip = new JSZip()"));
+    expect(hook).toContain("Identity pack was not downloaded");
+    expect(hook).not.toMatch(/Images downloaded without|downloaded instead/);
+  });
+
+  it("preserves the hidden paid-upscale capability for a later approved surface", () => {
+    const preparation = readFileSync(new URL("../client/src/features/export/prepareExportViews.ts", import.meta.url), "utf8");
+    const route = readFileSync(new URL("./routes/generation/castingRefinement.ts", import.meta.url), "utf8");
+    expect(preparation).toContain('resolution === "2K"');
+    expect(preparation).toContain("mutations.upscale");
+    expect(route).toContain("upscale: protectedProcedure");
   });
 });
 
