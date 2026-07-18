@@ -36,6 +36,8 @@ import { isLineageEdge, type CanonicalViewAngle } from '@shared/boardTypes';
 import { SpawnMenu } from './canvas/SpawnMenu';
 import { GroupContextMenu } from './canvas/GroupContextMenu';
 import JSZip from 'jszip';
+import { withPlacementCustomLabel } from './canvas/castNodeLabel';
+import { dedupeVariationEdges, settleVariationEdges } from './canvas/variationEdges';
 
 /* ── Component ────────────────────────────────────────────── */
 
@@ -503,9 +505,16 @@ function BoardPageImpl() {
       // node's label is board annotation ("character 1"), independent of the
       // model's name. Renaming the MODEL happens in the environment/library,
       // never from a placement.
-      updateItemMutation.mutate({ itemId, label });
+      const item = items?.find((candidate) => candidate.id === itemId);
+      updateItemMutation.mutate({
+        itemId,
+        label,
+        ...(item?.sourceModelId
+          ? { metadata: withPlacementCustomLabel(item.metadata as Record<string, unknown> | null) }
+          : {}),
+      });
     },
-    [updateItemMutation],
+    [items, updateItemMutation],
   );
 
   const handleViewportChange = useCallback(
@@ -1055,12 +1064,19 @@ function BoardPageImpl() {
   const runVariationsMutation = trpc.boardOps.runVariations.execute.useMutation({
     onSuccess: (result) => {
       const temps = variationTempsRef.current;
+      const landedByTempId = new Map(
+        temps.map((temp) => {
+          const landed = result.variations.find((variation) => variation.index === temp.index);
+          return [temp.tempId, landed?.itemId ?? 0] as const;
+        }),
+      );
       setPendingForks((pf) =>
         pf
           .filter((p) => {
             const temp = temps.find((t) => t.tempId === p.id);
-            // Drop temps whose candidate failed (named-and-refunded below)
-            return !(temp && result.failures.some((f) => f.index === temp.index));
+            // Every temp settles now: failed/unreported candidates disappear;
+            // successful candidates remap below.
+            return !temp || Boolean(landedByTempId.get(temp.tempId));
           })
           .map((p) => {
             const temp = temps.find((t) => t.tempId === p.id);
@@ -1076,6 +1092,9 @@ function BoardPageImpl() {
               },
             };
           }),
+      );
+      utils.boardOps.listEdges.setData({ boardId }, (old) =>
+        settleVariationEdges(old ?? [], landedByTempId),
       );
       for (const failure of result.failures) {
         const temp = temps.find((t) => t.index === failure.index);
@@ -1096,6 +1115,10 @@ function BoardPageImpl() {
       const temps = variationTempsRef.current;
       variationTempsRef.current = [];
       setPendingForks((pf) => pf.filter((p) => !temps.some((t) => t.tempId === p.id)));
+      const failedTemps = new Map(temps.map((temp) => [temp.tempId, 0] as const));
+      utils.boardOps.listEdges.setData({ boardId }, (old) =>
+        settleVariationEdges(old ?? [], failedTemps),
+      );
       for (const t of temps) failJob(t.tempId, err.message);
       utils.boards.getItems.invalidate({ boardId });
       toast.error(err.message);
@@ -1130,6 +1153,18 @@ function BoardPageImpl() {
       });
       variationTempsRef.current = temps.map(({ tempId, index }) => ({ tempId, index }));
       setPendingForks((pf) => [...pf, ...temps.map((t) => t.temp)]);
+      utils.boardOps.listEdges.setData({ boardId }, (old) =>
+        dedupeVariationEdges([
+          ...(old ?? []),
+          ...temps.map((temp) => ({
+            id: temp.tempId,
+            source: detail.itemId,
+            target: temp.tempId,
+            relation: 'variant_of' as const,
+            metadata: null,
+          })),
+        ]),
+      );
       runVariationsMutation.mutate({ boardId, itemId: detail.itemId, count: detail.count });
     };
     window.addEventListener('board-run-variations', onRunVariations);
@@ -1788,6 +1823,7 @@ function BoardPageImpl() {
           // Optimistic landing owns the short pre-refetch window; after that,
           // the server's live model status synchronizes every placement.
           sourceDraft: fill ? fill.draft === true : item.sourceDraft,
+          sourceName: item.sourceName,
         };
       });
     // Pending forks overlay the cache (bug-3 fix) — refetches can't clobber
@@ -2052,6 +2088,9 @@ function BoardPageImpl() {
           position={{ x: nodeContextMenu.x, y: nodeContextMenu.y }}
           nodeId={nodeContextMenu.nodeId}
           imageUrl={nodeContextMenu.imageUrl}
+          renamePlacementOnly={Boolean(
+            items?.find((i) => i.id === nodeContextMenu.nodeId)?.sourceModelId
+          )}
           canCollapse={(() => {
             const item = items?.find((i) => i.id === nodeContextMenu.nodeId);
             const meta = (item?.metadata ?? {}) as { provenance?: { type?: string } };

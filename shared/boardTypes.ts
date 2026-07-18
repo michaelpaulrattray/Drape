@@ -130,6 +130,9 @@ export interface BoardItemCanvasMetadata {
   attributes?: CastAttributes;
   /** The submitted natural-language prompt (verbatim). */
   userPrompt?: string;
+  /** The user deliberately renamed this one canvas placement. Model-linked
+   * nodes otherwise display the source model's live server name. */
+  customLabel?: boolean;
   // Legacy keys still written by BoardCastingPanel until M4 deletes it:
   viewType?: string;
   isGenerating?: boolean;

@@ -13,6 +13,7 @@ import { HAIR_STYLE_CONFIG, HAIR_TUCKS, HAIR_FADES } from "./hairStyleConfig";
 import { BrandSelector } from "./components/BrandSelector";
 import { FromPromptField, type ParsePromptResult } from "./components/FromPromptField";
 import { EngineChoiceChip } from "./components/EngineChoiceChip";
+import { honestModelName } from './modelDisplayTruth';
 import { ParseSummaryStrip, type ParseSummary, type ParsedChip } from "./components/ParseSummaryStrip";
 import {
   FieldLabel, ChipRow, OptionGrid, WarmSelectControl, EyeGrid,
@@ -135,6 +136,7 @@ export function ControlPanel({
   user, isFormValid, genState, currentAssets, handleGenerate,
   isReadOnly, onNewModel, modelName, mintedEdit,
 }: ControlPanelProps) {
+  const displayModelName = honestModelName(modelName);
   // Use store's functional updaters — no stale closure risk
   const prefs = useCastingFormStore((s) => s.prefs);
   const updatePref = useCastingFormStore((s) => s.updatePref);
@@ -277,7 +279,11 @@ export function ControlPanel({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-canvas-xl font-medium text-canvas-ink">
-              {isReadOnly || mintedEdit ? (modelName || 'Cast model') : 'Casting'}
+              {isReadOnly || mintedEdit
+                ? (displayModelName || 'Cast model')
+                : currentAssets.length > 0 && displayModelName
+                  ? `${displayModelName} — draft`
+                  : 'Casting'}
             </div>
             <div className="text-canvas-md text-canvas-ink-soft">
               {/* Founder ruling (Batch C): a minted session never presents as

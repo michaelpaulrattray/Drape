@@ -12,6 +12,7 @@ import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { slotFailureMessage } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
+import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
 import { useStudioStore } from '../stores/useStudioStore';
 import type { GeneratedAsset } from '@/features/casting/constants';
 import type { MintTier } from '@shared/boardTypes';
@@ -135,6 +136,9 @@ export function useCastGate({
           if (stayDraft) {
             // The nickname must reach the picker's Drafts section honestly
             utils.boardOps.listCastableModels.invalidate();
+            if (nickname) {
+              useCastingFormStore.getState().setModelName(nickname);
+            }
             // VC-R6 final fix 1(b): the draft LANDS on its node now — the
             // loop must not dead-end at a close that drops it
             onStayDraft?.(currentModelId, nickname);

@@ -252,12 +252,16 @@ export const boardsRouter = router({
       const sourceIds = Array.from(
         new Set(items.map((i) => i.sourceModelId).filter((id): id is number => !!id)),
       );
-      const statuses = await getModelStatusesIn(sourceIds);
-      return items.map((i) => ({
-        ...i,
-        sourceArchived: !!i.sourceModelId && !isModelAvailableStatus(statuses.get(i.sourceModelId)),
-        sourceDraft: !!i.sourceModelId && isModelDraftStatus(statuses.get(i.sourceModelId)),
-      }));
+      const statuses = await getModelStatusesIn(sourceIds, ctx.user.id);
+      return items.map((i) => {
+        const source = i.sourceModelId ? statuses.get(i.sourceModelId) : undefined;
+        return {
+          ...i,
+          sourceArchived: !!i.sourceModelId && !isModelAvailableStatus(source?.status),
+          sourceDraft: !!i.sourceModelId && isModelDraftStatus(source?.status),
+          sourceName: source?.name ?? null,
+        };
+      });
     }),
 
   /** Update a single item (label, position, metadata) */

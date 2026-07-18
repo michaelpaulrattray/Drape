@@ -337,18 +337,22 @@ describe("archived exclusion (FR-4 / E8)", () => {
       { id: 5, boardId: 3, sourceModelId: 10, label: "Deleted-sourced" },
     ] as never);
     vi.mocked(getModelStatusesIn).mockResolvedValue(new Map([
-      [7, "archived"],
-      [8, "active"],
-      [9, "draft"],
+      [7, { status: "archived", name: "Archived source" }],
+      [8, { status: "active", name: "Live source" }],
+      [9, { status: "draft", name: "Fresh draft name" }],
     ]));
     const caller = appRouter.createCaller(authCtx());
     const res = await caller.boards.getItems({ boardId: 3 });
+    expect(getModelStatusesIn).toHaveBeenCalledWith([7, 8, 9, 10], 1);
     expect(res.map((i) => [i.id, i.sourceArchived, i.sourceDraft])).toEqual([
       [1, true, false],
       [2, false, false],
       [3, false, false],
       [4, false, true],
       [5, true, false],
+    ]);
+    expect(res.map((i) => i.sourceName)).toEqual([
+      "Archived source", "Live source", null, "Fresh draft name", null,
     ]);
     // Stored snapshot survives — the flag ADDS, it never strips
     expect(res[0].label).toBe("Archived-sourced");
@@ -361,12 +365,14 @@ describe("archived exclusion (FR-4 / E8)", () => {
       { id: 2, boardId: 3, sourceModelId: 9, label: "Chelsea" },
     ] as never);
     vi.mocked(getModelStatusesIn)
-      .mockResolvedValueOnce(new Map([[9, "draft"]]))
-      .mockResolvedValueOnce(new Map([[9, "active"]]));
+      .mockResolvedValueOnce(new Map([[9, { status: "draft", name: "Chelsea" }]]))
+      .mockResolvedValueOnce(new Map([[9, { status: "active", name: "Chelsea minted" }]]));
 
     const caller = appRouter.createCaller(authCtx());
     expect((await caller.boards.getItems({ boardId: 3 })).map((item) => item.sourceDraft)).toEqual([true, true]);
-    expect((await caller.boards.getItems({ boardId: 3 })).map((item) => item.sourceDraft)).toEqual([false, false]);
+    const minted = await caller.boards.getItems({ boardId: 3 });
+    expect(minted.map((item) => item.sourceDraft)).toEqual([false, false]);
+    expect(minted.map((item) => item.sourceName)).toEqual(["Chelsea minted", "Chelsea minted"]);
   });
 });
 

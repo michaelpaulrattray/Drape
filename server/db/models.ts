@@ -82,19 +82,24 @@ export async function getUserModels(userId: number, limit: number = 50) {
     .limit(limit);
 }
 
-/** One-query status truth for model-linked board placements. Missing ids are
+export type ModelPlacementTruth = { status: string; name: string | null };
+
+/** One-query lifecycle + name truth for model-linked board placements. Missing ids are
  * deliberately absent from the map so callers can distinguish a hard-deleted
  * source from an unlinked board item. */
-export async function getModelStatusesIn(modelIds: number[]): Promise<Map<number, string>> {
+export async function getModelStatusesIn(
+  modelIds: number[],
+  userId: number,
+): Promise<Map<number, ModelPlacementTruth>> {
   if (modelIds.length === 0) return new Map();
   const db = await getDb();
   if (!db) return new Map();
 
   const rows = await db
-    .select({ id: models.id, status: models.status })
+    .select({ id: models.id, status: models.status, name: models.name })
     .from(models)
-    .where(inArray(models.id, modelIds));
-  return new Map(rows.map((row) => [row.id, row.status]));
+    .where(and(inArray(models.id, modelIds), eq(models.userId, userId)));
+  return new Map(rows.map((row) => [row.id, { status: row.status, name: row.name }]));
 }
 
 export async function updateModel(

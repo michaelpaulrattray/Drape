@@ -55,6 +55,8 @@ type NodeContextMenuProps = {
   imageUrl: string | null;
   /** True only for popped-out views (cast_view provenance) — shows Collapse. */
   canCollapse?: boolean;
+  /** Model-linked nodes rename only this canvas placement, never the model. */
+  renamePlacementOnly?: boolean;
   onAction: (action: NodeContextAction, nodeId: number) => void;
   onClose: () => void;
 };
@@ -66,6 +68,7 @@ export function NodeContextMenu({
   nodeId,
   imageUrl,
   canCollapse,
+  renamePlacementOnly,
   onAction,
   onClose,
 }: NodeContextMenuProps) {
@@ -96,7 +99,7 @@ export function NodeContextMenu({
 
   // Clamp position to viewport
   const adjustedPosition = (() => {
-    const menuW = 208;
+    const menuW = renamePlacementOnly ? 272 : 208;
     const menuH = 220;
     const pad = 12;
     let x = position.x;
@@ -154,7 +157,7 @@ export function NodeContextMenu({
 
       <div
         style={{
-          width: 208,
+          width: renamePlacementOnly ? 272 : 208,
           borderRadius: 12,
           background: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(20px) saturate(1.3)',
@@ -220,7 +223,11 @@ export function NodeContextMenu({
                       >
                         <Icon className="w-[15px] h-[15px]" />
                       </span>
-                      <span className="flex-1 text-left">{item.label}</span>
+                      <span className="flex-1 text-left">
+                        {item.action === 'rename' && renamePlacementOnly
+                          ? 'Rename node (this placement only)'
+                          : item.label}
+                      </span>
                     </button>
                   );
                 })}

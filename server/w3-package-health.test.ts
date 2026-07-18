@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { staledAnglesForAssetIds } from './casting/identity/staleResponse';
 import { useCastingRefreshStore } from '../client/src/features/casting/stores/useCastingRefreshStore';
+import { shouldClearIdentityWarning } from '../client/src/features/casting/components/PackageHealthDialog';
 import { SINGLE_VIEW_PROMPTS } from './casting/geminiViews';
 
 const root = path.join(__dirname, '..');
@@ -105,5 +106,34 @@ describe('W3 prompt and copy honesty', () => {
     expect(loading).not.toContain('Drag the history slider');
     const views = read('server/casting/geminiViews.ts');
     expect(views).toContain('never move or mirror it onto another body surface');
+  });
+});
+
+describe('W5-B strip and warning truth', () => {
+  it('clears the warning only after fully fresh server truth and no in-flight view', () => {
+    const fresh = [{ stale: false, failed: null }, { stale: false, failed: null }];
+    expect(shouldClearIdentityWarning(fresh, [])).toBe(true);
+    expect(shouldClearIdentityWarning([{ stale: true, failed: null }], [])).toBe(false);
+    expect(shouldClearIdentityWarning([{ stale: false, failed: { reason: 'failed' } }], [])).toBe(false);
+    expect(shouldClearIdentityWarning(fresh, ['sideClose'])).toBe(false);
+  });
+
+  it('refetches server package truth before clearing the client warning', () => {
+    const dialog = read('client/src/features/casting/components/PackageHealthDialog.tsx');
+    expect(dialog).toContain('packageState.fetch({ modelId: variables.modelId })');
+    expect(dialog).toContain('shouldClearIdentityWarning(freshPackage.slots, remaining)');
+    expect(dialog).toContain('castingState.setIdentityWarning(null)');
+  });
+
+  it('renders current, stale, refreshing, failed, and missing as distinct strip states without a refresh mutation', () => {
+    const strip = read('client/src/features/casting/components/ImageViewer/ViewTabs.tsx');
+    for (const contract of ['ViewThumbnail', 'isStale', 'isRefreshing', 'FailedSlot', 'GhostSlot', 'RefreshingSlot']) {
+      expect(strip).toContain(contract);
+    }
+    expect(strip).toContain('aria-busy={isRefreshing || undefined}');
+    expect(strip).toContain('refreshingSet.has(vt) && !hasAsset(vt)');
+    expect(strip).toContain('Out of sync — open Package health to refresh');
+    expect(strip).not.toContain('refresh from the comp card');
+    expect(strip).not.toContain('refreshSlots.useMutation');
   });
 });

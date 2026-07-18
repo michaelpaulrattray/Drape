@@ -41,6 +41,7 @@ import { BulkRefreshDialog } from "../BulkRefreshDialog";
 import { CostLabel } from "../CostLabel";
 import { useSheetController } from "./useSheetController";
 import type { Provenance, NodeStatus, CastAttributes } from "@shared/boardTypes";
+import { resolveCastPlacementLabel } from "../castNodeLabel";
 
 export interface CastNodeData extends Record<string, unknown> {
   itemId: number;
@@ -59,6 +60,8 @@ export interface CastNodeData extends Record<string, unknown> {
   /** W2: live model status from boards.getItems. Provenance remains only the
    *  optimistic/fallback snapshot while server truth is unavailable. */
   sourceDraft?: boolean;
+  sourceName?: string | null;
+  customLabel?: boolean;
   /** VC-R6b bug 4: rename commits through the host (boardOps label update) */
   onRename?: (itemId: number, label: string) => void;
 }
@@ -104,7 +107,11 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // on unnamed empty nodes (a type placeholder, not a prefix). Draft state
   // moved OFF the label crumb onto a real badge on the card face
   // (VC-R6 final fix 1 — a word in the crumb was missable; the state isn't).
-  const baseLabel = data.label || "Cast";
+  const baseLabel = resolveCastPlacementLabel({
+    itemLabel: data.label,
+    sourceName: data.sourceName,
+    customLabel: data.customLabel,
+  });
   const typeLabel =
     prov?.type === "cast_view"
       ? `${baseLabel} · ${VIEW_ANGLE_LABEL[prov.viewAngle] ?? prov.viewAngle}`
@@ -147,7 +154,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   useEffect(() => {
     const onRenameEvent = (e: Event) => {
       if ((e as CustomEvent<{ itemId: number }>).detail?.itemId === data.itemId) {
-        setRenameText(data.label ?? "");
+        setRenameText(baseLabel);
         setRenaming(true);
         setTimeout(() => {
           renameInputRef.current?.focus();
@@ -157,9 +164,9 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
     };
     window.addEventListener("board-rename-node", onRenameEvent);
     return () => window.removeEventListener("board-rename-node", onRenameEvent);
-  }, [data.itemId, data.label]);
+  }, [data.itemId, baseLabel]);
   const commitRename = () => {
-    if (renaming && renameText.trim() && renameText.trim() !== data.label) {
+    if (renaming && renameText.trim() && renameText.trim() !== baseLabel) {
       data.onRename?.(data.itemId, renameText.trim());
     }
     setRenaming(false);

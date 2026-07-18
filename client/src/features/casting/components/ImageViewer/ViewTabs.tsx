@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { refundOutcomeText } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
@@ -26,6 +27,7 @@ function ViewThumbnail({
   onClick,
   isHovered,
   isStale,
+  isRefreshing,
 }: {
   src: string;
   label: string;
@@ -36,10 +38,19 @@ function ViewThumbnail({
    *  the strip is where the divergent edit is MADE, so the consequence must
    *  be visible here first (D-40). */
   isStale?: boolean;
+  isRefreshing?: boolean;
 }) {
+  const stateLabel = isRefreshing
+    ? `${label} is refreshing against the current identity`
+    : isStale
+      ? `${label} is out of sync — open Package health to refresh it`
+      : label;
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
+      aria-label={stateLabel}
+      aria-busy={isRefreshing || undefined}
+      title={stateLabel}
       className="relative overflow-hidden transition-all duration-200 rounded-canvas-md bg-canvas-surface"
       style={{
         width: 72,
@@ -60,15 +71,24 @@ function ViewThumbnail({
         src={src}
         alt={label}
         className="w-full h-full object-cover transition-opacity duration-200"
-        style={{ opacity: isStale ? 0.6 : 1 }}
+        style={{ opacity: isRefreshing ? 0.42 : isStale ? 0.6 : 1 }}
       />
       {/* Stale dot — ink, top-right, screen-legible (matches the mosaic tile) */}
-      {isStale && (
+      {isStale && !isRefreshing && (
         <span
           className="absolute top-1 right-1 rounded-full bg-canvas-ink"
           style={{ width: 6, height: 6, boxShadow: '0 0 0 1.5px var(--color-canvas-surface)' }}
-          title="Out of sync with a recent edit — refresh from the comp card"
+          title="Out of sync — open Package health to refresh"
         />
+      )}
+      {isRefreshing && (
+        <span
+          className="absolute top-1 right-1 flex items-center justify-center rounded-full bg-canvas-surface text-canvas-ink"
+          style={{ width: 17, height: 17, boxShadow: '0 0 0 1px var(--color-canvas-border-strong)' }}
+          aria-hidden="true"
+        >
+          <Loader2 className="w-2.5 h-2.5 animate-spin" />
+        </span>
       )}
       <div
         className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-center"
@@ -79,6 +99,22 @@ function ViewThumbnail({
         </span>
       </div>
     </button>
+  );
+}
+
+function RefreshingSlot({ label }: { label: string }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center gap-1 rounded-canvas-md bg-canvas-surface-inset text-canvas-ink-soft"
+      style={{ width: 72, height: 90, border: '0.5px solid var(--color-canvas-border-strong)' }}
+      role="status"
+      aria-label={`${label} is generating`}
+      aria-live="polite"
+    >
+      <Loader2 className="w-3 h-3 animate-spin" />
+      <span className="text-canvas-xs font-medium">{label}</span>
+      <span className="text-canvas-xs text-canvas-ink-faint">Generating</span>
+    </div>
   );
 }
 
@@ -154,6 +190,7 @@ const PACKAGE_SLOTS: Array<{ vt: ViewType; label: string }> = [
   { vt: 'sideFull', label: 'Walk' },
   { vt: 'backFull', label: 'Back' },
 ];
+const EMPTY_REFRESHING_ANGLES: ViewType[] = [];
 
 export function ViewTabs() {
   const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
@@ -195,9 +232,11 @@ export function ViewTabs() {
       .map((s) => s.angle as ViewType),
   );
   const issueCount = (packageQuery.data?.slots ?? []).filter((slot) => slot.stale || !!slot.failed).length;
-  const refreshingCount = useCastingRefreshStore((s) =>
-    currentModelId ? new Set(s.refreshingByModel[currentModelId] ?? []).size : 0,
-  );
+  const refreshing = useCastingRefreshStore((s) =>
+    currentModelId ? s.refreshingByModel[currentModelId] : undefined,
+  ) ?? EMPTY_REFRESHING_ANGLES;
+  const refreshingSet = useMemo(() => new Set(refreshing), [refreshing]);
+  const refreshingCount = refreshingSet.size;
   const [hovered, setHovered] = useState(false);
 
   const getAsset = (vt: ViewType) => currentAssets.find((a) => a.viewType === vt);
@@ -214,7 +253,9 @@ export function ViewTabs() {
     >
       <div className="contents pointer-events-auto">
         {PACKAGE_SLOTS.map(({ vt, label }) =>
-          hasAsset(vt) ? (
+          refreshingSet.has(vt) && !hasAsset(vt) ? (
+            <RefreshingSlot key={vt} label={label} />
+          ) : hasAsset(vt) ? (
             <ViewThumbnail
               key={vt}
               src={getAsset(vt)!.storageUrl}
@@ -226,6 +267,7 @@ export function ViewTabs() {
               // guarantees a just-edited view isn't stale (the writer marks
               // siblings only); a stale view you SWITCH to must say so.
               isStale={staleAngles.has(vt)}
+              isRefreshing={refreshingSet.has(vt)}
             />
           ) : failedByAngle.has(vt) ? (
             <FailedSlot key={vt} label={label} failure={failedByAngle.get(vt)!} onRetry={() => openPackageHealth(vt)} />

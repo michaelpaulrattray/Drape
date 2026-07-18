@@ -56,6 +56,8 @@ export type BoardItemRecord = {
   sourceArchived?: boolean;
   /** Live server status truth; overrides the provenance snapshot after mint. */
   sourceDraft?: boolean;
+  /** Live server model name for model-linked placements. */
+  sourceName?: string | null;
 };
 
 type BoardCanvasProps = {
@@ -167,6 +169,8 @@ function itemToNode(
         version: meta.version ?? 1, // stamped by landing ops (R3 fix — never hardcode)
         sourceArchived: item.sourceArchived === true, // FR-4: degrade to "Source unavailable"
         sourceDraft: item.sourceDraft,
+        sourceName: item.sourceName,
+        customLabel: meta.customLabel === true,
         onRename, // VC-R6b bug 4: cast nodes are renameable like every node
       } satisfies CastNodeData,
     } as CastFlowNode;

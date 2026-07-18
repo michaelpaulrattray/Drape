@@ -14,6 +14,14 @@ export function openPackageHealth(angle?: CanonicalViewAngle) {
   window.dispatchEvent(new CustomEvent(OPEN_PACKAGE_HEALTH, { detail: { angle } }));
 }
 
+export function shouldClearIdentityWarning(
+  slots: Array<{ stale: boolean; failed: unknown }>,
+  refreshingAngles: readonly CanonicalViewAngle[],
+): boolean {
+  return refreshingAngles.length === 0
+    && slots.every((slot) => !slot.stale && !slot.failed);
+}
+
 export function PackageHealthDialog() {
   const modelId = useCastingGenerationStore((s) => s.currentModelId);
   const setCurrentAssets = useCastingGenerationStore((s) => s.setCurrentAssets);
@@ -74,11 +82,13 @@ export function PackageHealthDialog() {
   const endRefresh = useCastingRefreshStore((s) => s.end);
   const refreshingSet = useMemo(() => new Set(refreshing), [refreshing]);
 
-  const invalidate = (targetModelId: number) => {
-    void utils.generation.packageState.invalidate({ modelId: targetModelId });
-    void utils.generation.refreshSlotsPlan.invalidate({ modelId: targetModelId });
-    void utils.generation.mintPackagePlan.invalidate({ modelId: targetModelId });
-    void utils.credits.getBalance.invalidate();
+  const invalidate = async (targetModelId: number) => {
+    await Promise.all([
+      utils.generation.packageState.invalidate({ modelId: targetModelId }),
+      utils.generation.refreshSlotsPlan.invalidate({ modelId: targetModelId }),
+      utils.generation.mintPackagePlan.invalidate({ modelId: targetModelId }),
+      utils.credits.getBalance.invalidate(),
+    ]);
   };
 
   const refreshMutation = trpc.generation.refreshSlots.useMutation({
@@ -101,14 +111,28 @@ export function PackageHealthDialog() {
       }
     },
     onError: (error) => toast.error(error.message),
-    onSettled: (_data, _error, variables) => {
+    onSettled: async (_data, _error, variables) => {
       endRefresh(variables.modelId, variables.angles);
-      invalidate(variables.modelId);
+      await invalidate(variables.modelId);
+      try {
+        const freshPackage = await utils.generation.packageState.fetch({ modelId: variables.modelId });
+        const remaining = useCastingRefreshStore.getState().refreshingByModel[variables.modelId] ?? [];
+        const castingState = useCastingGenerationStore.getState();
+        if (
+          castingState.currentModelId === variables.modelId
+          && shouldClearIdentityWarning(freshPackage.slots, remaining)
+        ) {
+          castingState.setIdentityWarning(null);
+        }
+      } catch {
+        // Server truth could not be confirmed. Leave the warning standing;
+        // clearing optimistically would make the strip and banner disagree.
+      }
     },
   });
 
   const pinMutation = trpc.generation.setSlotPinned.useMutation({
-    onSuccess: (_result, variables) => invalidate(variables.modelId),
+    onSuccess: (_result, variables) => { void invalidate(variables.modelId); },
     onError: (error) => toast.error(error.message),
   });
 
@@ -122,7 +146,7 @@ export function PackageHealthDialog() {
         ]);
       }
       setVersionAngle(null);
-      invalidate(result.modelId);
+      void invalidate(result.modelId);
       void utils.generation.slotVersions.invalidate({ modelId: result.modelId, angle: result.angle });
     },
     onError: (error) => toast.error(error.message),

@@ -159,6 +159,7 @@ const token = await new SignJWT({
 const browser = await puppeteer.launch({
   executablePath: EDGE,
   headless: "new" as never,
+  pipe: true,
   args: ["--window-size=1600,1000"],
   defaultViewport: { width: 1600, height: 1000 },
 });
@@ -2890,6 +2891,9 @@ if (!paidEnabled("L")) {
       check("L2 popover shows the plan-derived total (~700 credits at 2)", costShown);
 
       const countBefore = await nodeCount();
+      const edgeCountBefore = await page.evaluate(
+        () => document.querySelectorAll('.react-flow__edge').length,
+      );
       await clickByText("Generate");
       // Two optimistic temps, essentially immediately
       let tempsAtMs = -1;
@@ -2899,6 +2903,19 @@ if (!paidEnabled("L")) {
         await sleep(50);
       }
       check("L3 two candidate temps render immediately (<1.5s)", tempsAtMs >= 0 && tempsAtMs < 1500, `${tempsAtMs}ms`);
+      let optimisticEdges = -1;
+      for (let i = 0; i < 20; i++) {
+        optimisticEdges = await page.evaluate(
+          () => document.querySelectorAll('.react-flow__edge').length,
+        );
+        if (optimisticEdges >= edgeCountBefore + 2) break;
+        await sleep(50);
+      }
+      check(
+        "L3b both loading candidates have visible lineage connectors",
+        optimisticEdges === edgeCountBefore + 2,
+        `before=${edgeCountBefore} during=${optimisticEdges}`,
+      );
 
       console.log("   L: generating 2 variations (real, ~700 credits)...");
       const countDuring = await nodeCount();
@@ -2932,6 +2949,14 @@ if (!paidEnabled("L")) {
         await sleep(1000);
       }
       check("L6 candidates visible on the board", domLanded);
+      const settledEdgeCount = await page.evaluate(
+        () => document.querySelectorAll('.react-flow__edge').length,
+      );
+      check(
+        "L6b settlement leaves exactly one connector per candidate",
+        settledEdgeCount === edgeCountBefore + 2,
+        `before=${edgeCountBefore} after=${settledEdgeCount}`,
+      );
 
       // Ledger: exactly the landed count was kept (700 for 2; failures refund)
       await sleep(2000);
