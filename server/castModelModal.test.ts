@@ -19,7 +19,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   CastModelModal,
   confirmArgsForDoor,
+  hasCompleteMintPackage,
   initialMintName,
+  mintTierForPlan,
   type TierPlan,
 } from "../client/src/features/studio/components/CastModelModal";
 
@@ -27,6 +29,12 @@ const tiers: TierPlan = {
   draft: { missing: [], cost: 0 },
   core: { missing: ["sideClose", "threeQuarter", "frontFull"], cost: 950 },
   production: { missing: ["sideClose", "threeQuarter", "frontFull", "sideFull", "backFull"], cost: 1550 },
+};
+
+const completeTiers: TierPlan = {
+  draft: { missing: [], cost: 700 },
+  core: { missing: [], cost: 900 },
+  production: { missing: [], cost: 1_500 },
 };
 
 function render(props: Partial<Parameters<typeof CastModelModal>[0]> = {}) {
@@ -52,10 +60,10 @@ describe("V9 — placed-draft Edit (addFirst) has a working name-and-mint door",
     const html = render({ existingDraft: true });
     expect(html).toContain("Name — optional draft label until you mint");
     // …and says which door does what: mint locks, add-views stays a draft
-    expect(html).toContain("locks her identity");
+    expect(html).toContain("locks its identity");
     expect(html).toContain("stays a draft");
     // The mint-trigger label belongs to the fresh-cast path only
-    expect(html).not.toContain("this mints her identity");
+    expect(html).not.toContain("this mints its identity");
   });
 
   it("renders BOTH labeled doors: Add views (stays draft) and Name & mint", () => {
@@ -66,7 +74,7 @@ describe("V9 — placed-draft Edit (addFirst) has a working name-and-mint door",
 
   it("the mint door starts disabled with the name hint — enabled is the drive's job", () => {
     const html = render({ existingDraft: true });
-    expect(html).toContain("Enter a name to mint her identity");
+    expect(html).toContain("Enter a name to mint this model&#x27;s identity");
   });
 
   it("prefills the stored honest draft nickname and rejects the auto-name sentinel", () => {
@@ -84,7 +92,7 @@ describe("fresh cast and upgrade modes keep their shapes", () => {
     expect(html).toContain("Name &amp; mint");
     expect(html).toContain("Cast this model");
     // On a fresh cast the name field IS the mint trigger — the label says so
-    expect(html).toContain("Name — this mints her identity");
+    expect(html).toContain("Name — this mints its identity");
   });
 
   it("upgrade: NO name field (name is fixed), no mint door — only Add views", () => {
@@ -93,6 +101,59 @@ describe("fresh cast and upgrade modes keep their shapes", () => {
     expect(html).not.toContain("Name &amp; mint");
     expect(html).toContain("Add views");
     expect(html).toContain("Complete the card");
+  });
+});
+
+describe("W6-B complete package collapses to one honest mint door", () => {
+  it("uses missing-slot truth rather than price to decide completeness", () => {
+    expect(hasCompleteMintPackage(completeTiers)).toBe(true);
+    expect(hasCompleteMintPackage({
+      draft: { missing: [], cost: 0 },
+      core: { missing: ["sideClose"], cost: 0 },
+      production: { missing: [], cost: 0 },
+    })).toBe(false);
+  });
+
+  it("uses the production tier for a completed package", () => {
+    expect(mintTierForPlan(completeTiers, "core")).toBe("production");
+    expect(mintTierForPlan(tiers, "core")).toBe("core");
+  });
+
+  it("hides the redundant tier and add-views choices while preserving naming and minting", () => {
+    const html = render({ tiers: completeTiers, existingDraft: true, initialName: "Haniel" });
+    expect(html).toContain("Ready to mint — all six views are complete. No new views to generate.");
+    expect(html).toContain('value="Haniel"');
+    expect(html).toContain("Name &amp; mint");
+    expect(html).not.toContain("Core identity");
+    expect(html).not.toContain("Full comp card");
+    expect(html).not.toContain(">Add views<");
+  });
+
+  it("keeps the production integrity refusal and repair door in the collapsed state", () => {
+    const ok = {
+      anchor: { ok: true },
+      displayHeadshot: { ok: true },
+      tierViews: [],
+      ok: true,
+    };
+    const html = render({
+      tiers: completeTiers,
+      initialName: "Haniel",
+      onResolvePackage: () => {},
+      integrity: {
+        draft: ok,
+        core: ok,
+        production: {
+          ...ok,
+          anchor: { ok: false, message: "Headshot anchor needs review" },
+          ok: false,
+        },
+      },
+    });
+    expect(html).toContain("Headshot anchor needs review");
+    expect(html).toContain("Review and refresh views");
+    expect(html).toContain('title="Headshot anchor needs review"');
+    expect(html).toContain("Name &amp; mint");
   });
 });
 
@@ -156,7 +217,7 @@ describe("confirmArgsForDoor — what each door actually sends (behavior, not co
   });
 
   it("FRESH cast Add views: the mint-labeled field's value is NOT harvested as a nickname", () => {
-    // The fresh field says "this mints her identity" (founder-ruled wording)
+    // The fresh field says "this mints its identity" (founder-ruled wording)
     // — so a typed name must not silently ride the stays-draft door
     expect(confirmArgsForDoor("addViews", { addFirst: false, name: "Vera", tier: "core" })).toEqual({
       characterName: "",

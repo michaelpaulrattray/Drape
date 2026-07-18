@@ -34,10 +34,22 @@ const TIER_COPY: Record<MintTier, { name: string; purpose: string }> = {
 
 const TIER_ORDER: MintTier[] = ['draft', 'core', 'production'];
 
+/** A complete package is defined by the server's missing-slot lists. Cost is
+ * pricing truth, not package-health truth, and must never drive this branch. */
+export function hasCompleteMintPackage(tiers?: TierPlan): boolean {
+  return !!tiers && TIER_ORDER.every((tier) => tiers[tier].missing.length === 0);
+}
+
+/** The collapsed complete-package door uses the full-card tier. Every tier
+ * is zero-work in that state, but production is the honest final intent. */
+export function mintTierForPlan(tiers: TierPlan | undefined, selected: MintTier): MintTier {
+  return hasCompleteMintPackage(tiers) ? 'production' : selected;
+}
+
 /** The arguments each door sends — pure, exported for tests. Honesty rule:
  *  the stays-draft door carries the typed name ONLY on the placed-draft
  *  path (addFirst), whose copy explains it as an optional draft label. A
- *  fresh cast's field is labeled "this mints her identity" (founder-ruled
+ *  fresh cast's field is labeled "this mints its identity" (founder-ruled
  *  wording), so its stays-draft door must never silently harvest that
  *  value as a nickname. Mint always names; the guard is the caller's. */
 export function confirmArgsForDoor(
@@ -85,7 +97,7 @@ export interface CastModelModalProps {
   onResolvePackage?: () => void;
   /** VC-R6 final r2 / defect 4: this subject is an EXISTING placed draft
    *  (re-editing to add views), not a fresh first cast. The dialog then
-   *  reads as ADDING VIEWS ("Add N views — she stays a draft"), the primary
+   *  reads as ADDING VIEWS ("Add N views — the model stays a draft"), the primary
    *  is "Add views", and mint (name + mint) is a distinct labeled door.
    *  Every door says where it leads. */
   existingDraft?: boolean;
@@ -114,6 +126,8 @@ export function CastModelModal({
   // Defect 4: an existing draft's dialog leads with ADDING VIEWS; mint is the
   // distinct deliberate step. A fresh cast leads with mint (name commits).
   const addFirst = existingDraft && !upgrade;
+  const packageComplete = !upgrade && hasCompleteMintPackage(tiers);
+  const actionTier = mintTierForPlan(tiers, tier);
   const selectedGenerates = (tiers?.[tier]?.cost ?? 0) > 0;
 
   useEffect(() => {
@@ -139,13 +153,13 @@ export function CastModelModal({
 
   const handleConfirm = useCallback(() => {
     if (!confirmable) return;
-    onConfirm(effectiveName, tier);
-  }, [confirmable, effectiveName, onConfirm, tier]);
+    onConfirm(effectiveName, actionTier);
+  }, [actionTier, confirmable, effectiveName, onConfirm]);
 
   // §14 (R8): the selected tier's failing integrity checks, each with its
   // own copy — the mint door holds shut until they resolve. Adding views
   // stays open (it isn't the mint transition).
-  const tierIntegrity = integrity?.[tier];
+  const tierIntegrity = integrity?.[actionTier];
   const integrityMessages = tierIntegrity && !tierIntegrity.ok
     ? [
         ...(!tierIntegrity.anchor.ok && tierIntegrity.anchor.message ? [tierIntegrity.anchor.message] : []),
@@ -161,9 +175,9 @@ export function CastModelModal({
   const canMint = !!name.trim() && !isCasting && integrityOk;
   const canAddViews = selectedGenerates && !isCasting;
   const doMint = useCallback(() => {
-    const args = confirmArgsForDoor('mint', { addFirst, name, tier });
+    const args = confirmArgsForDoor('mint', { addFirst, name, tier: actionTier });
     if (args.characterName) onConfirm(args.characterName, args.tier, args.stayDraft);
-  }, [addFirst, name, onConfirm, tier]);
+  }, [actionTier, addFirst, name, onConfirm]);
   const doAddViews = useCallback(() => {
     if (!selectedGenerates) return;
     const args = confirmArgsForDoor('addViews', { addFirst, name, tier });
@@ -195,7 +209,7 @@ export function CastModelModal({
           <div className="flex items-center gap-2 mb-3">
             <Camera className="w-4 h-4 text-canvas-ink-soft" />
             <span className="text-canvas-lg font-medium text-canvas-ink">
-              {upgrade ? 'Complete the card' : addFirst ? 'Add views' : 'Cast this model'}
+              {upgrade ? 'Complete the card' : packageComplete ? 'Ready to mint' : addFirst ? 'Add views' : 'Cast this model'}
             </span>
           </div>
 
@@ -210,25 +224,25 @@ export function CastModelModal({
                draft's "Name & mint" door was permanently disabled with a
                tooltip pointing at a field that didn't exist. */
             <div className="mb-3.5">
-              {addFirst && (
+              {addFirst && !packageComplete && (
                 /* Existing draft: views are photographs, not a commitment
-                   (D-55). Honest doors: "Add views" keeps her a draft — a
+                   (D-55). Honest doors: "Add views" keeps the model a draft — a
                    typed name then rides along as an OPTIONAL draft label
                    (mintPackage stays-draft nickname); only "Name & mint"
                    locks identity. */
                 <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-2.5">
-                  Add reference views — she stays a draft, freely editable.
-                  Name &amp; mint locks her identity; until then, a typed
-                  name is just her draft label.
+                  Add reference views — this model stays a draft, freely editable.
+                  Name &amp; mint locks its identity; until then, a typed
+                  name is just its draft label.
                 </p>
               )}
               <label className="block text-canvas-xs font-medium text-canvas-ink-soft mb-1.5">
-                {addFirst
+                {addFirst && !packageComplete
                   ? 'Name — optional draft label until you mint'
-                  : 'Name — this mints her identity'}
+                  : 'Name — this mints its identity'}
               </label>
               <input
-                autoFocus={!addFirst}
+                autoFocus={!addFirst || packageComplete}
                 type="text"
                 value={name}
                 onChange={(e) => {
@@ -240,9 +254,11 @@ export function CastModelModal({
                   if (e.key === 'Enter') (addFirst ? doMint : handleConfirm)();
                 }}
                 placeholder={
-                  addFirst
-                    ? 'Name her — locked in only when you mint'
-                    : 'Enter name to mint, or add views below as a draft'
+                  packageComplete
+                    ? 'Enter a name to mint this model'
+                    : addFirst
+                      ? 'Name this model — locked in only when you mint'
+                      : 'Enter name to mint, or add views below as a draft'
                 }
                 disabled={isCasting}
                 className="w-full outline-none bg-transparent border-0 border-b border-canvas-border focus:border-canvas-ink text-canvas-ink placeholder:text-canvas-ink-faint disabled:opacity-50"
@@ -251,8 +267,14 @@ export function CastModelModal({
             </div>
           )}
 
-          {/* Tier picker (D-39) */}
-          <div className="mb-3.5">
+          {packageComplete && (
+            <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-3.5">
+              Ready to mint — all six views are complete. No new views to generate.
+            </p>
+          )}
+
+          {/* Tier picker (D-39). A complete package has no tier choice left. */}
+          {!packageComplete && <div className="mb-3.5">
             {(upgrade ? TIER_ORDER.filter((t) => t !== 'draft') : TIER_ORDER).map((t) => {
               const selected = tier === t;
               const plan = tiers?.[t];
@@ -297,14 +319,14 @@ export function CastModelModal({
                     </div>
                     <span className="block text-canvas-md text-canvas-ink-soft" style={{ lineHeight: 1.4 }}>
                       {addFirst && plan && plan.missing.length > 0
-                        ? `Adds ${plan.missing.length} view${plan.missing.length === 1 ? '' : 's'} — she stays a draft`
+                        ? `Adds ${plan.missing.length} view${plan.missing.length === 1 ? '' : 's'} — the model stays a draft`
                         : TIER_COPY[t].purpose}
                     </span>
                   </div>
                 </button>
               );
             })}
-          </div>
+          </div>}
 
           {/* §14 mint-integrity prediction — each failing check speaks its
               own copy; the mint door below is held shut until resolved */}
@@ -387,7 +409,7 @@ export function CastModelModal({
                   !integrityOk
                     ? integrityMessages[0] ?? 'Resolve the flagged views before minting'
                     : !name.trim()
-                      ? 'Enter a name to mint her identity'
+                      ? "Enter a name to mint this model's identity"
                       : undefined
                 }
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-canvas-md transition-colors text-canvas-lg font-medium disabled:opacity-40 ${
@@ -399,6 +421,16 @@ export function CastModelModal({
                 {isCasting && primary ? <><Loader2 className="w-3 h-3 animate-spin" />Minting…</> : <>Name &amp; mint{primary && <ChevronRight className="w-3 h-3" />}</>}
               </button>
             );
+            if (packageComplete) {
+              return (
+                <div className="flex justify-end items-center gap-2.5">
+                  <button onClick={onClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors mr-1">
+                    Keep editing
+                  </button>
+                  {mintBtn(true)}
+                </div>
+              );
+            }
             return (
               <div className="flex justify-end items-center gap-2.5">
                 <button onClick={onClose} className="text-canvas-lg font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors mr-1">
