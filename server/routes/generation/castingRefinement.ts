@@ -307,6 +307,7 @@ export const castingRefinementRouter = router({
             pointsCost: POINT_COSTS.iterate,
             masterPrompt: commit.masterPrompt,
             technicalSchema: commit.technicalSchema,
+            preferences: commit.preferences,
             assetId: commit.assetId,
             staledAngles: staledAnglesForAssetIds(assets, commit.staledAssetIds),
             staleMessage: REFUSAL_COPY.siblingsNeedRefresh,

@@ -12,6 +12,7 @@ import {
 import { buildCreationPreferences } from "@/features/casting/creationPayload";
 import { captureCastingSession } from '@/features/casting/castingSessionToken';
 import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
+import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import type { CastingBindings } from "./castingBindings";
 
@@ -44,6 +45,8 @@ export function useCastingGeneration({
     prefs,
     modelName,
     engineChoice,
+    setPrefs,
+    setEngineChoices,
     getReferenceImage,
     getSessionToken,
     setGenState,
@@ -412,8 +415,20 @@ export function useCastingGeneration({
         pushHistory(newAssets);
         
         const updatedPrompt = result.masterPrompt || currentMasterPrompt;
-        if (result.masterPrompt) {
+        if (
+          'preferences' in result
+          && result.preferences !== undefined
+          && result.masterPrompt !== undefined
+          && result.technicalSchema !== undefined
+        ) {
+          // W6-D: this discriminator exists only on the server's committed
+          // identity branch. Image-only edits structurally cannot enter it.
+          const restored = editablePreferencesFromStored(result.preferences);
           setCurrentMasterPrompt(result.masterPrompt);
+          setCurrentTechnicalSchema(result.technicalSchema);
+          setPrefs(restored.preferences);
+          setEngineChoices(restored.engineChoice);
+          void utils.models.get.invalidate({ modelId: currentModelId });
         }
         
         // Log amendment

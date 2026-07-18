@@ -396,6 +396,8 @@ describe("image-only results are asset-only (M17)", () => {
     expect(row.provenance.identityRevisionId).toBe("genesis");
     // The response carries no document payload — nothing changed
     expect((result as Record<string, unknown>).masterPrompt).toBeUndefined();
+    expect((result as Record<string, unknown>).technicalSchema).toBeUndefined();
+    expect((result as Record<string, unknown>).preferences).toBeUndefined();
   });
 
   it("image-only works identically on a MINTED model (drafts and minted alike, §5.3)", async () => {
@@ -435,6 +437,12 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
     expect(String(modelUpdate.masterPrompt)).toContain("broad angular jaw, squared");
     expect((modelUpdate.preferences as Record<string, unknown>).jawline).toBe("broad angular jaw, squared");
     expect(String(modelUpdate.identityRevisionId)).toMatch(/^rev-/);
+
+    // W6-D: an open client receives the exact three committed identity
+    // documents. This payload exists only on the identity branch above.
+    expect(result.masterPrompt).toBe(modelUpdate.masterPrompt);
+    expect(result.technicalSchema).toEqual(modelUpdate.technicalSchema);
+    expect(result.preferences).toEqual(modelUpdate.preferences);
 
     // New anchor asset with the SAME new revision + the typed edit list
     expect(tx.assetInserts).toHaveLength(1);

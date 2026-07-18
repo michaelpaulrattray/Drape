@@ -30,6 +30,7 @@ import { useCastingFormStore } from "../stores/useCastingFormStore";
 import { useCastingGenerationStore } from "../stores/useCastingGenerationStore";
 import { useCastingUIStore } from "../stores/useCastingUIStore";
 import { useStudioStore } from "@/features/studio/stores/useStudioStore";
+import type { EngineChoiceFlags } from "../engineChoicePersistence";
 
 export type FailedAction = {
   type: "NEW" | "ITERATE" | "BODY" | "SIDE";
@@ -46,6 +47,10 @@ export interface CastingBindings {
   /** Write prefs (fire-time resolutions, e.g. the Engine's-choice brand pick
    *  that must be recorded and shown before the paid call). */
   updatePrefs: (partial: Partial<ModelPreferences>) => void;
+  /** Replace form truth after a server-authoritative identity commit. */
+  setPrefs: (prefs: ModelPreferences) => void;
+  /** Replace the durable Open flags alongside their editable preferences. */
+  setEngineChoices: (flags: EngineChoiceFlags) => void;
   /** R3 (D-11): true inside a minted-edit session — the stage-lock never
    *  applies; every save routes through applyModelEdit → the identity dialog.
    *  Held in shared state so a /studio resume can never bypass the dialog. */
@@ -108,7 +113,7 @@ export interface CastingBindings {
  * /studio-scoped by decision D-24; no canvas code may call this.
  */
 export function useLegacyCastingBindings(): CastingBindings {
-  const { prefs, modelName, engineChoice, updatePrefs } = useCastingFormStore();
+  const { prefs, modelName, engineChoice, updatePrefs, setPrefs, setEngineChoices } = useCastingFormStore();
   const isMintedEditSession = useStudioStore((s) => s.mintedEditContext !== null);
   const {
     genState,
@@ -153,6 +158,8 @@ export function useLegacyCastingBindings(): CastingBindings {
     modelName,
     engineChoice: engineChoice as Record<string, boolean>,
     updatePrefs,
+    setPrefs,
+    setEngineChoices,
     isMintedEditSession,
     getReferenceImage: () => useCastingFormStore.getState().prefs.referenceImage,
     getSessionToken: () => useCastingGenerationStore.getState().sessionToken,
