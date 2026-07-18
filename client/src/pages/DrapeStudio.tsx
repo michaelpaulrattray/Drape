@@ -183,6 +183,7 @@ export default function DrapeStudio() {
         void Promise.all([
           utils.models.get.invalidate({ modelId: currentModelId }),
           utils.boardOps.listCastableModels.invalidate(),
+          utils.boards.getItems.invalidate(),
         ]).catch(() => undefined);
       })
       .catch(() => {

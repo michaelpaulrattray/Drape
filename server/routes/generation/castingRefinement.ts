@@ -20,8 +20,11 @@ import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptR
 import { authorizeEditRequest } from "../../casting/identity/editAuthority";
 import { commitIdentityEdit } from "../../casting/identity/identityCommit";
 import {
+  assetRevisionMembership,
   currentRevisionId,
   identityStampFor,
+  isRestoreCompatible,
+  selectDisplayedHeadshot,
   selectIdentityAnchor,
 } from "../../casting/identity/anchorSelector";
 import { protectedMarkLanguageIntact } from "../../casting/identity/marksVocabulary";
@@ -112,10 +115,19 @@ export const castingRefinementRouter = router({
       // image-model call, so every refusal class is free (R2, fail-closed).
       // The F4 minted-identity fork copy still flows from the same boundary.
       const anchor = selectIdentityAnchor(assets);
+      const displayedHeadshot = selectDisplayedHeadshot(assets);
+      const currentIdentityText = buildIdentityAnchor(
+        model.masterPrompt || "",
+        model.technicalSchema ?? undefined,
+      );
       const decision = await authorizeEditRequest({
         model,
         targetAsset: { id: targetAsset.id, viewType: targetAsset.viewType },
         anchorAssetId: anchor?.id ?? null,
+        displayedHeadshotAssetId: displayedHeadshot?.id ?? null,
+        targetBelongsToCurrentIdentity: isRestoreCompatible(
+          assetRevisionMembership(targetAsset, model, currentIdentityText),
+        ),
         feedback: input.feedback,
         referenceAttached: !!input.referenceImage,
         referenceImageBase64: input.referenceImage,
@@ -333,7 +345,7 @@ export const castingRefinementRouter = router({
             ...identityStampFor({
               role: "display",
               revisionId: currentRevisionId(model),
-              identityText: buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined),
+              identityText: currentIdentityText,
             }),
           },
         });

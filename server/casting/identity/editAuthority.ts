@@ -481,6 +481,13 @@ export interface EditAuthorityInput {
   /** The authoritative anchor's asset id (shared §7 selector) — null when the
    *  model has no anchor yet. */
   anchorAssetId: number | null;
+  /** The newest filled headshot shown to the user. A verified image-only edit
+   * is deliberately a display row, not an anchor, but remains a valid base
+   * for a later identity edit when it still belongs to the current identity
+   * revision. Both facts are derived server-side; clients cannot assert
+   * either one. */
+  displayedHeadshotAssetId?: number | null;
+  targetBelongsToCurrentIdentity?: boolean;
   feedback: string;
   referenceAttached: boolean;
   referenceImageBase64?: string;
@@ -599,7 +606,12 @@ export async function authorizeEditRequest(
   if (targetAsset.viewType !== "frontClose") {
     return refuse("non_anchor_view", REFUSAL_COPY.nonAnchorView);
   }
-  if (input.anchorAssetId === null || targetAsset.id !== input.anchorAssetId) {
+  const targetsAnchor = input.anchorAssetId !== null && targetAsset.id === input.anchorAssetId;
+  const targetsCurrentDisplay =
+    input.displayedHeadshotAssetId != null
+    && targetAsset.id === input.displayedHeadshotAssetId
+    && input.targetBelongsToCurrentIdentity === true;
+  if (!targetsAnchor && !targetsCurrentDisplay) {
     return refuse("non_anchor_view", REFUSAL_COPY.nonAuthoritativeHeadshot);
   }
 

@@ -421,6 +421,34 @@ describe("draft identity edit on the authoritative headshot — atomic commit", 
     llmScript.normalize = NORMALIZED_JAWLINE;
   });
 
+  it("accepts a newer image-only display headshot from the current identity revision", async () => {
+    const displayHeadshot = {
+      ...SIX_ASSETS[0],
+      id: 999,
+      storageUrl: `${R2_BASE}/models/7/frontClose-lighting-v2.png`,
+      provenance: {
+        identityRole: "display",
+        identityRevisionId: "genesis",
+        identityText: "master prompt",
+      },
+      createdAt: new Date(Date.now() + 1_000),
+    };
+    vi.mocked(getModelAssets).mockResolvedValue([displayHeadshot, ...SIX_ASSETS] as never);
+
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.generation.iterate({
+      modelId: 7,
+      feedback: "sharper jawline",
+      assetId: displayHeadshot.id,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.assetId).toBe(777);
+    expect(tx.assetInserts).toHaveLength(1);
+    expect((tx.assetInserts[0].provenance as Record<string, unknown>).identityRole).toBe("anchor");
+    expect(deductCredits).toHaveBeenCalledTimes(1);
+  });
+
   it("commits document + anchor role + new revision + stale flags (PINNED INCLUDED) atomically", async () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.generation.iterate({

@@ -238,6 +238,7 @@ describe("W6-C draft-name persistence", () => {
       expect(source).toContain("setModelName(nextName)");
       expect(source).toContain("utils.models.get.invalidate({ modelId: currentModelId })");
       expect(source).toContain("utils.boardOps.listCastableModels.invalidate()");
+      expect(source).toContain("utils.boards.getItems.invalidate()");
       expect(source).toContain("Couldn't save the name — it will not be remembered");
       expect(source).toContain("onClose={dismissCastModal}");
     }

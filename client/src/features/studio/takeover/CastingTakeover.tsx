@@ -337,6 +337,10 @@ export function CastingTakeover({
         void Promise.all([
           utils.models.get.invalidate({ modelId: currentModelId }),
           utils.boardOps.listCastableModels.invalidate(),
+          // Linked placements render the model's live sourceName unless the
+          // user gave that one node a custom label. Refresh every active board
+          // query so the saved draft label replaces the "Cast" placeholder.
+          utils.boards.getItems.invalidate(),
         ]).catch(() => undefined);
       })
       .catch(() => {

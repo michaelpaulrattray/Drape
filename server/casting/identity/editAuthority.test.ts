@@ -568,13 +568,46 @@ describe("pipeline — outage, refusal ordering, gates", () => {
     expect((d as EditRefusal).message).toBe(REFUSAL_COPY.nonAnchorView);
   });
 
-  it("a frontClose that is NOT the authoritative anchor refuses (display rows can't take identity edits)", async () => {
+  it("allows the newest display headshot to take an identity edit when it belongs to the current revision", async () => {
+    const displayedAsset = { id: 999, viewType: "frontClose" };
     const d = await authorizeEditRequest(
-      baseInput("sharper jawline", { targetAsset: { id: 999, viewType: "frontClose" } }),
+      baseInput("sharper jawline", {
+        targetAsset: displayedAsset,
+        displayedHeadshotAssetId: displayedAsset.id,
+        targetBelongsToCurrentIdentity: true,
+      }),
+      llm(
+        identityJson(["person.face.jawline"]),
+        '{"edits":[{"leaf":"person.face.jawline","value":"sharp, angular"}]}',
+      ),
+    );
+    expect(d.refused).toBe(false);
+  });
+
+  it("refuses a displayed headshot from an earlier or uncertain identity revision", async () => {
+    const displayedAsset = { id: 999, viewType: "frontClose" };
+    const d = await authorizeEditRequest(
+      baseInput("sharper jawline", {
+        targetAsset: displayedAsset,
+        displayedHeadshotAssetId: displayedAsset.id,
+        targetBelongsToCurrentIdentity: false,
+      }),
       llm(identityJson(["person.face.jawline"])),
     );
     expectRefusal(d, "non_anchor_view");
     expect((d as EditRefusal).message).toBe(REFUSAL_COPY.nonAuthoritativeHeadshot);
+  });
+
+  it("refuses an older display row even when it belongs to the current identity revision", async () => {
+    const d = await authorizeEditRequest(
+      baseInput("sharper jawline", {
+        targetAsset: { id: 998, viewType: "frontClose" },
+        displayedHeadshotAssetId: 999,
+        targetBelongsToCurrentIdentity: true,
+      }),
+      llm(identityJson(["person.face.jawline"])),
+    );
+    expectRefusal(d, "non_anchor_view");
   });
 
   it("the force hook still produces a watchable FREE refusal (M2)", async () => {
