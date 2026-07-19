@@ -8,6 +8,10 @@ export const GENERATION_OPERATION_KINDS = [
   "casting.mint",
   "casting.add_views",
   "casting.refresh",
+  "casting.restore",
+  "casting.pin",
+  "casting.compact",
+  "model.delete",
   "canvas.cast",
   "canvas.recast",
   "canvas.fork",
@@ -67,7 +71,10 @@ function canonicalize(value: unknown, seen: Set<object>): string {
       throw new TypeError("Operation payload must use plain JSON objects");
     }
     const record = value as Record<string, unknown>;
-    const keys = Object.keys(record).sort();
+    // Optional object fields arrive through superjson either absent or
+    // explicitly undefined. The server treats those forms identically, so
+    // the canonical claim must too. Undefined array entries remain invalid.
+    const keys = Object.keys(record).filter((key) => record[key] !== undefined).sort();
     return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalize(record[key], seen)}`).join(",")}}`;
   } finally {
     seen.delete(value);

@@ -31,12 +31,11 @@ import {
   createGeneration,
   updateGeneration,
   updateModel,
-  mintModel,
+  mintModelAtomically,
   deductPoints,
   addCredits,
 } from "../db";
 import { generateFullBody, generateRemainingViews, CREDIT_COSTS } from "./aiService";
-import { randomUUID } from "node:crypto";
 import { recordRefund } from "./atomicCredits";
 import { PublicError, publicErrorMessage } from "../lib/publicError";
 import type { SingleViewAngle } from "./geminiViews";
@@ -109,6 +108,10 @@ export interface MintPackageInput {
    *  headshot, never mint state) but the model STAYS A DRAFT. Minting is a
    *  separate deliberate act; identity iteration stays free until it. */
   mint?: boolean;
+  chargeReferenceId?: string;
+  expectedIdentityRevisionId?: string | null;
+  onCharged?: (amount: number) => void;
+  onRefunded?: (amount: number) => void;
 }
 
 /** What one slot generation needs — shared by mint (R3b) and refresh (R5). */
@@ -129,6 +132,8 @@ export interface SlotGenContext {
   reasonLabel: string;
   /** Present on mint; absent on refresh (stamped into generation metadata + provenance). */
   mintTier?: MintTier;
+  chargeReferenceId?: string;
+  onRefunded?: (amount: number) => void;
 }
 
 export type SlotGenResult =
@@ -264,10 +269,7 @@ async function failSlot(
     }
   }
   const refund = slotCost(angle);
-  const chargeKey =
-    generationId !== null
-      ? `slot-gen-${generationId}`
-      : `slot-${ctx.modelId}-${angle}-${randomUUID()}`; // no audit row to key on — collision-resistant one-shot
+  const chargeKey = `${ctx.chargeReferenceId ?? `legacy-package-${ctx.modelId}`}:slot:${angle}`;
   const outcome = await recordRefund(
     ctx.userId,
     refund,
@@ -275,6 +277,7 @@ async function failSlot(
     chargeKey,
   );
   const refunded = outcome.recorded ? refund : 0;
+  if (refunded > 0) ctx.onRefunded?.(refunded);
   // Persist the failure DURABLY (D-40): a storageUrl-less marker row
   // carrying status — so the failed slot survives the takeover close and
   // renders named + retryable on re-edit (getPackageState reads it). A
@@ -401,11 +404,12 @@ export async function executeMintPackage(input: MintPackageInput) {
   if (totalCost > 0) {
     const deduct = await deductPoints(
       input.userId, totalCost, "generation",
-      `Mint package (${input.tier}, pending)`, `mint-${input.modelId}-${randomUUID()}`,
+      `Mint package (${input.tier}, pending)`, input.chargeReferenceId ?? `legacy-mint-${input.modelId}`,
     );
     if (!deduct.success) {
       throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
     }
+    input.onCharged?.(totalCost);
   }
 
   // Parallel: the image queue caps concurrency; each slot settles on its own
@@ -416,6 +420,8 @@ export async function executeMintPackage(input: MintPackageInput) {
     headshotUrl: anchor.storageUrl!,
     reasonLabel: "Mint package",
     mintTier: input.tier,
+    chargeReferenceId: input.chargeReferenceId ?? `legacy-mint-${input.modelId}`,
+    onRefunded: input.onRefunded,
   };
   const results = await Promise.all(missing.map((angle) => generatePackageSlot(ctx, angle)));
   const generated = results
@@ -479,25 +485,21 @@ export async function executeMintPackage(input: MintPackageInput) {
     };
   }
 
-  // Name + mint (identity becomes real and immutable, D-43).
-  // Batch 0 (review fix 2): the name write is REQUIRED — if it fails, abort
-  // BEFORE mintModel so a mint can never succeed name-less. The generated
-  // slots persist on the draft; minting can be retried at no cost.
-  const named = await updateModel(input.modelId, { name: input.characterName.trim() });
-  if (!named.success) {
-    log.error({ modelId: input.modelId }, "[MintPackage] name write failed — mint aborted, model stays a draft");
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Couldn't save the name — nothing was minted. Your views are safe; try minting again.",
-    });
-  }
+  // Name + mint is one conditional transition: clean draft, expected
+  // identity revision, final name, agency id and mintedAt land together.
   let agencyId = model.agencyId;
   if (!agencyId) {
     const chars = "0123456789ABCDEF";
     let hash = "";
     for (let i = 0; i < 6; i++) hash += chars[Math.floor(Math.random() * 16)];
     agencyId = `MOD-${new Date().getFullYear().toString().slice(-2)}-${hash}`;
-    const minted = await mintModel(input.modelId, agencyId);
+    const minted = await mintModelAtomically({
+      modelId: input.modelId,
+      userId: input.userId,
+      agencyId,
+      name: input.characterName.trim(),
+      expectedIdentityRevisionId: input.expectedIdentityRevisionId ?? currentRevisionId(model),
+    });
     if (!minted.success) {
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: minted.error || "Failed to mint model" });
     }

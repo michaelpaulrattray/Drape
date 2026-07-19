@@ -489,7 +489,7 @@ describe("Canvas/Wardrobe isolation (M19) — no blanket grep, both sides explic
     const wardrobeDir = path.join(__dirname, "wardrobe");
     for (const file of fs.readdirSync(wardrobeDir).filter((f) => f.endsWith(".ts"))) {
       const src = fs.readFileSync(path.join(wardrobeDir, file), "utf8");
-      expect(src, `${file} must not write model identity`).not.toMatch(/\bupdateModel\b|\bmintModel\b|\bcommitIdentityEdit\b/);
+      expect(src, `${file} must not write model identity`).not.toMatch(/\bupdateModel\b|\bmintModel(?:Atomically)?\b|\bcommitIdentityEdit\b/);
     }
   });
 });

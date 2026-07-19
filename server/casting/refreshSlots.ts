@@ -20,7 +20,6 @@
  * Gated angles (back + walk) pass the identity gate with the same
  * retry-then-refund contract as mint.
  */
-import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { getModelById, getModelAssets, deductPoints } from "../db";
 import {
@@ -113,6 +112,9 @@ export async function executeRefreshSlots(input: {
   userId: number;
   modelId: number;
   angles: CanonicalViewAngle[];
+  chargeReferenceId?: string;
+  onCharged?: (amount: number) => void;
+  onRefunded?: (amount: number) => void;
 }): Promise<RefreshResult> {
   const { model, assets, slots } = await loadModelSlots(input);
 
@@ -164,11 +166,12 @@ export async function executeRefreshSlots(input: {
     totalCost,
     "generation",
     `Refresh views (pending)`,
-    `refresh-${input.modelId}-${randomUUID()}`, // collision-resistant (correction 7)
+    input.chargeReferenceId ?? `legacy-refresh-${input.modelId}`,
   );
   if (!deduct.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
   }
+  input.onCharged?.(totalCost);
 
   const ctx: SlotGenContext = {
     userId: input.userId,
@@ -176,6 +179,8 @@ export async function executeRefreshSlots(input: {
     model,
     headshotUrl: anchor.storageUrl,
     reasonLabel: "Refresh",
+    chargeReferenceId: input.chargeReferenceId ?? `legacy-refresh-${input.modelId}`,
+    onRefunded: input.onRefunded,
   };
   // Parallel: the image queue caps concurrency; per-slot failures refund named
   const results = await Promise.all(input.angles.map((angle) => generatePackageSlot(ctx, angle)));

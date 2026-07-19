@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   generationOperationLocks,
   generationOperations,
@@ -332,6 +332,103 @@ export async function markGenerationOperationRunning(input: {
   });
 
   return { operationId: input.operationId, chargeReferenceId };
+}
+
+/** Bind the model created by a model.create operation without allowing a
+ * running receipt to be rebound to a different row. */
+export async function bindGenerationOperationModel(input: {
+  userId: number;
+  operationId: string;
+  modelId: number;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertPositiveId(input.modelId, "modelId");
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const bound = await db
+    .update(generationOperations)
+    .set({ modelId: input.modelId })
+    .where(and(
+      eq(generationOperations.id, input.operationId),
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.status, "running"),
+      isNull(generationOperations.modelId),
+    ));
+  if (affectedRows(bound) === 1) return;
+  const operation = await getOperationForUser(input.userId, input.operationId);
+  if (operation?.status === "running" && operation.modelId === input.modelId) return;
+  throw new Error("Generation operation model binding lost its state race");
+}
+
+/** Structural/authorization truth may change after the resource lock is won.
+ * Seal that claimed operation as a free failure and release its lock together. */
+export async function finalizeClaimedGenerationOperationFailure(input: {
+  userId: number;
+  operationId: string;
+  errorCode: string;
+  publicMessage: string;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  if (!/^[A-Z_]{2,32}$/.test(input.errorCode)) throw new TypeError("Invalid public error code");
+  const publicMessage = input.publicMessage.trim();
+  if (!publicMessage) throw new TypeError("Public failure message is required");
+  await withTransaction(async (tx) => {
+    const finalized = await tx
+      .update(generationOperations)
+      .set({
+        status: "failed",
+        errorCode: input.errorCode,
+        publicMessage,
+        chargedCredits: 0,
+        refundedCredits: 0,
+        completedAt: new Date(),
+      })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.status, "claimed"),
+      ));
+    if (affectedRows(finalized) !== 1) {
+      throw new Error("Claimed operation failure finalization lost its state race");
+    }
+    await tx.delete(generationOperationLocks).where(eq(generationOperationLocks.operationId, input.operationId));
+  });
+}
+
+/** If even a free, pre-start refusal cannot be durably recorded, seal the
+ * claimed receipt and retain its lock for support review. Releasing the lock
+ * here would let a second writer run while the first outcome is unknown. */
+export async function markClaimedGenerationOperationRecoveryRequired(input: {
+  userId: number;
+  operationId: string;
+  publicMessage: string;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  const publicMessage = input.publicMessage.trim();
+  if (!publicMessage) throw new TypeError("Recovery message is required");
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const marked = await db
+    .update(generationOperations)
+    .set({
+      status: "recovery_required",
+      errorCode: "INTERNAL_SERVER_ERROR",
+      publicMessage,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    })
+    .where(and(
+      eq(generationOperations.id, input.operationId),
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.status, "claimed"),
+    ));
+  if (affectedRows(marked) !== 1) {
+    throw new Error("Claimed operation recovery mark lost its state race");
+  }
+  // Deliberately retain any operation lock: support must adjudicate this row.
 }
 
 async function loadRunningOperation(

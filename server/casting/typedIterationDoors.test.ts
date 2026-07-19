@@ -55,6 +55,7 @@ vi.mock("../db", async (importOriginal) => {
     markModelAssetsStale: vi.fn().mockResolvedValue({ success: true }),
     deductCredits: vi.fn().mockResolvedValue({ success: true }),
     addCredits: vi.fn().mockResolvedValue({ success: true }),
+    markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
   };
 });
 vi.mock("../db/connection", async (importOriginal) => {
@@ -142,6 +143,16 @@ vi.mock("../wardrobe/utils", async (importOriginal) => {
     }),
   };
 });
+vi.mock("./directOperation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./directOperation")>();
+  return {
+    ...actual,
+    beginDirectOperation: vi.fn().mockResolvedValue({ type: "execute", operationId: "11111111-1111-4111-8111-111111111111" }),
+    completeDirectOperationSuccess: vi.fn().mockResolvedValue(undefined),
+    completeDirectOperationFailure: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+    failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+  };
+});
 
 import {
   getModelById,
@@ -157,7 +168,21 @@ import { iterateModel, iterateModelRaw } from "./aiService";
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { ITERATION_CROP_BY_VIEW } from "./iterationFraming";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
-import { appRouter } from "../routers";
+import { appRouter as productionRouter } from "../routers";
+
+const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+const appRouter = {
+  createCaller(ctx: TrpcContext) {
+    const caller = productionRouter.createCaller(ctx);
+    return {
+      ...caller,
+      generation: {
+        ...caller.generation,
+        iterate: (input: any) => caller.generation.iterate({ clientRequestId: REQUEST_ID, ...input }),
+      },
+    };
+  },
+};
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -291,7 +316,7 @@ describe("non-canonical stored viewType fails closed", () => {
 // ─── Every refusal class is FREE (M1/M2/M16/M20) ────────────────────────────
 
 describe("shared-authority refusals: zero charge, no rows, no writes, no calls", () => {
-  it("masked submission still refuses before touching the model (M3, Batch 0 closure)", async () => {
+  it("masked submission refuses after ownership/receipt claim and before money (M3, Batch 0 closure)", async () => {
     const caller = appRouter.createCaller(authCtx());
     await expect(
       caller.generation.iterate({
@@ -301,7 +326,7 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
         maskBase64: "data:image/png;base64,AAAA",
       }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(getModelById).not.toHaveBeenCalled();
+    expect(getModelById).toHaveBeenCalledTimes(1);
     expectNothingCharged();
   });
 

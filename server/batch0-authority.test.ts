@@ -28,7 +28,8 @@ vi.mock("./db", async (importOriginal) => {
     getBoardItems: vi.fn(),
     getModelStatusesIn: vi.fn().mockResolvedValue(new Map()),
     updateModel: vi.fn().mockResolvedValue({ success: true }),
-    mintModel: vi.fn().mockResolvedValue({ success: true }),
+    mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
+    markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
     deleteModel: vi.fn().mockResolvedValue({ success: true }),
     deductPoints: vi.fn().mockResolvedValue({ success: true }),
     createGeneration: vi.fn().mockResolvedValue({ success: true, generationId: 1 }),
@@ -50,6 +51,16 @@ vi.mock("./casting/aiService", async (importOriginal) => {
     generateCastingImage: vi.fn().mockResolvedValue({ imageUrl: "" }),
   };
 });
+vi.mock("./casting/directOperation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/directOperation")>();
+  return {
+    ...actual,
+    beginDirectOperation: vi.fn().mockResolvedValue({ type: "execute", operationId: "11111111-1111-4111-8111-111111111111" }),
+    completeDirectOperationSuccess: vi.fn().mockResolvedValue(undefined),
+    completeDirectOperationFailure: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+    failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+  };
+});
 
 import {
   getModelById,
@@ -60,14 +71,45 @@ import {
   getBoardItems,
   getModelStatusesIn,
   updateModel,
-  mintModel,
+  mintModelAtomically,
   deleteModel,
   deductPoints,
   createModelAsset,
 } from "./db";
 import { CREDIT_COSTS, generateCastingImage } from "./casting/aiService";
+import { beginDirectOperation } from "./casting/directOperation";
 import { buildIdentityAnchor } from "./casting/geminiClient";
-import { appRouter } from "./routers";
+import { appRouter as productionRouter } from "./routers";
+
+const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+const appRouter = {
+  createCaller(ctx: TrpcContext) {
+    const caller = productionRouter.createCaller(ctx);
+    const generation = new Proxy(caller.generation, {
+      get(target, property) {
+        if (property === "castingImage") return (input: any) => target.castingImage({ clientRequestId: REQUEST_ID, ...input });
+        if (property === "iterate") return (input: any) => target.iterate({ clientRequestId: REQUEST_ID, ...input });
+        if (property === "compactPrompt") return (input: any) => target.compactPrompt({ clientRequestId: REQUEST_ID, ...input });
+        if (property === "mintPackage") return (input: any) => target.mintPackage({ clientRequestId: REQUEST_ID, ...input });
+        if (property === "refreshSlots") return (input: any) => target.refreshSlots({ clientRequestId: REQUEST_ID, ...input });
+        return Reflect.get(target, property);
+      },
+    });
+    const models = new Proxy(caller.models, {
+      get(target, property) {
+        if (property === "delete") return (input: any) => target.delete({ clientRequestId: REQUEST_ID, ...input });
+        return Reflect.get(target, property);
+      },
+    });
+    return new Proxy(caller, {
+      get(target, property) {
+        if (property === "generation") return generation;
+        if (property === "models") return models;
+        return Reflect.get(target, property);
+      },
+    });
+  },
+};
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -139,11 +181,15 @@ beforeEach(() => {
   vi.mocked(getBoardItems).mockReset();
   vi.mocked(getModelStatusesIn).mockReset().mockResolvedValue(new Map());
   vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true });
-  vi.mocked(mintModel).mockClear().mockResolvedValue({ success: true });
+  vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true });
   vi.mocked(deleteModel).mockClear().mockResolvedValue({ success: true });
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true });
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 99 } as never);
   vi.mocked(generateCastingImage).mockClear();
+  vi.mocked(beginDirectOperation).mockReset().mockResolvedValue({
+    type: "execute",
+    operationId: REQUEST_ID,
+  });
 });
 
 // ─── E7: legacy mint route is gone ─────────────────────────────────────────
@@ -158,6 +204,28 @@ describe("legacy generation.mint (B0.2 bypass)", () => {
 // ─── Review fix 1: castingImage — authorization before money ───────────────
 
 describe("generation.castingImage authorization order (review fix 1)", () => {
+  it("replays a durable headshot receipt without a second charge, provider call, or asset", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model() as never);
+    vi.mocked(getModelAssets).mockResolvedValue([
+      asset({ id: 99, viewType: "frontClose", storageUrl: `${R2_BASE}/models/7/replayed-head.png` }),
+    ] as never);
+    vi.mocked(beginDirectOperation).mockResolvedValue({
+      type: "replay",
+      operationId: REQUEST_ID,
+      result: { assetId: 99 },
+    });
+
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.generation.castingImage({ modelId: 7 })).resolves.toMatchObject({
+      success: true,
+      assetId: 99,
+      imageUrl: `${R2_BASE}/models/7/replayed-head.png`,
+    });
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateCastingImage).not.toHaveBeenCalled();
+    expect(createModelAsset).not.toHaveBeenCalled();
+  });
+
   it("foreign model: FORBIDDEN, no deduction, no Gemini call, no asset", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ userId: 2 }) as never);
     const caller = appRouter.createCaller(authCtx(1));
@@ -195,6 +263,40 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
       code: "PRECONDITION_FAILED",
     });
     expect(deductPoints).not.toHaveBeenCalled();
+  });
+});
+
+describe("R7 direct Casting receipt replay", () => {
+  it("replays mint and refresh results without a second deduction or mint transition", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model() as never);
+    vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never);
+    const caller = appRouter.createCaller(authCtx());
+
+    vi.mocked(beginDirectOperation).mockResolvedValueOnce({
+      type: "replay",
+      operationId: REQUEST_ID,
+      result: { agencyId: "MOD-27-ABC123", minted: true, tier: "production", generated: [], failedAngles: [] },
+    });
+    await expect(caller.generation.mintPackage({
+      modelId: 7,
+      tier: "production",
+      characterName: "Replay",
+    })).resolves.toMatchObject({ minted: true, agencyId: "MOD-27-ABC123" });
+
+    vi.mocked(beginDirectOperation).mockResolvedValueOnce({
+      type: "replay",
+      operationId: REQUEST_ID,
+      result: { refreshed: [], failedAngles: [] },
+    });
+    await expect(caller.generation.refreshSlots({
+      modelId: 7,
+      angles: ["sideClose"],
+    })).resolves.toEqual({ refreshed: [], failed: [] });
+
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
+    expect(generateCastingImage).not.toHaveBeenCalled();
+    expect(createModelAsset).not.toHaveBeenCalled();
   });
 });
 
@@ -390,7 +492,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductPoints).not.toHaveBeenCalled();
     expect(updateModel).not.toHaveBeenCalled();
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
   it("mint request on a legacy LOCKED model fails closed the same way", async () => {
@@ -403,7 +505,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductPoints).not.toHaveBeenCalled();
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
   it("a draft carrying a stray agencyId is INCONSISTENT — fails closed, never returns minted:true", async () => {
@@ -415,7 +517,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     expect(getModelAssets).not.toHaveBeenCalled();
     expect(deductPoints).not.toHaveBeenCalled();
     expect(updateModel).not.toHaveBeenCalled();
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
   it("a draft carrying a stray mintedAt fails closed the same way", async () => {
@@ -425,7 +527,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
       executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(deductPoints).not.toHaveBeenCalled();
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
   it("UPGRADE (mint:false) on a minted model adds views WITHOUT rename or mintModel and reports minted honestly", async () => {
@@ -437,7 +539,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "", mint: false });
     expect(res.minted).toBe(true); // honest: the model IS minted
     expect(updateModel).not.toHaveBeenCalled();
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
   it("mint:false nickname on a MINTED model never renames (nicknames are a draft affordance)", async () => {
@@ -559,7 +661,8 @@ describe("generation.reconcile — DISABLED (Batch C, R7 ratified: keep off; M4)
 // ─── E10: masked submissions refused before money moves ────────────────────
 
 describe("masked-edit closure (Batch 0.1 / E10)", () => {
-  it("iterate refuses any request carrying maskBase64, before touching the model", async () => {
+  it("iterate refuses any request carrying maskBase64 after ownership and receipt claim, before money", async () => {
+    vi.mocked(getModelById).mockResolvedValue(model() as never);
     const caller = appRouter.createCaller(authCtx());
     await expect(
       caller.generation.iterate({
@@ -569,7 +672,7 @@ describe("masked-edit closure (Batch 0.1 / E10)", () => {
         maskBase64: "data:image/png;base64,AAAA",
       }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(getModelById).not.toHaveBeenCalled();
+    expect(getModelById).toHaveBeenCalledTimes(1);
     expect(deductPoints).not.toHaveBeenCalled();
   });
 
@@ -600,26 +703,26 @@ describe("executeMintPackage name guard + name persistence (review fix 2)", () =
     expect(getModelById).toHaveBeenCalled();
   });
 
-  it("if the required name write fails, the mint ABORTS and mintModel is never called", async () => {
+  it("if the atomic mint write fails, name and mint abort together", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
     vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never); // full package → zero generation cost
-    vi.mocked(updateModel).mockResolvedValue({ success: false, error: "db down" });
+    vi.mocked(mintModelAtomically).mockResolvedValue({ success: false, error: "db down" });
     const { executeMintPackage } = await import("./casting/mintPackage");
     await expect(
       executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "  Vera  " }),
     ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
-    expect(updateModel).toHaveBeenCalledWith(7, { name: "Vera" }); // trimmed at the boundary
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(updateModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).toHaveBeenCalledWith(expect.objectContaining({ modelId: 7, name: "Vera" }));
   });
 
-  it("happy path: trimmed name persists, then mintModel runs", async () => {
+  it("happy path: trimmed name and mint state persist atomically", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
     vi.mocked(getModelAssets).mockResolvedValue(ALL_SIX as never);
     const { executeMintPackage } = await import("./casting/mintPackage");
     const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: " Vera " });
     expect(res.minted).toBe(true);
-    expect(updateModel).toHaveBeenCalledWith(7, { name: "Vera" });
-    expect(mintModel).toHaveBeenCalledTimes(1);
+    expect(updateModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).toHaveBeenCalledWith(expect.objectContaining({ modelId: 7, name: "Vera" }));
   });
 });
 

@@ -34,7 +34,7 @@ vi.mock("./db", async (importOriginal) => {
     addBoardItemVersion: vi.fn().mockResolvedValue(undefined),
     getLatestVersionNumber: vi.fn().mockResolvedValue(0),
     updateModel: vi.fn().mockResolvedValue({ success: true }),
-    mintModel: vi.fn().mockResolvedValue({ success: true }),
+    mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
     deductPoints: vi.fn().mockResolvedValue({ success: true }),
   };
 });

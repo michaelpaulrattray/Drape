@@ -105,7 +105,7 @@ describe("model lifecycle literal guard (Batch B)", () => {
 
   it("agencyId never rides a minted derivation — every minted+agencyId line carries the status predicate", () => {
     // Pinned exceptions: the mint ceremony's own post-transition result
-    // (`minted: true` immediately after mintModel succeeds) and telemetry
+    // (`minted: true` immediately after mintModelAtomically succeeds) and telemetry
     // fields (hasAgencyId) are not read models.
     for (const rel of SCOPE) {
       const src = read(rel);
@@ -115,7 +115,7 @@ describe("model lifecycle literal guard (Batch B)", () => {
           /isModelMintedStatus/.test(line) || // status truth drives, ID is detail
           /hasAgencyId/.test(line) || // telemetry
           /cleanDraft/.test(line) || // the mint ceremony's pinned TRANSITION guard (mutation allowlist)
-          /await mintModel\(/.test(line) || // the transition CALL itself, not a read
+          /await mintModelAtomically\(/.test(line) || // the transition CALL itself, not a read
           /minted: true\b/.test(line) || // post-transition result — count-pinned separately below
           /^\s*(\/\/|\*)/.test(line) || // commentary
           /^\s*\}?,?\s*\[.*\]\s*\)?;?\s*$/.test(line); // React dependency arrays
@@ -133,7 +133,7 @@ describe("model lifecycle literal guard (Batch B)", () => {
   });
 
   it("literal minted:true exists only where proven — the mint ceremony's result and verify's guarded branch", () => {
-    // mintPackage: the post-transition return (mintModel just succeeded).
+    // mintPackage: the post-transition return (mintModelAtomically just succeeded).
     // registry: verify's minted branch is only reachable AFTER the
     // !isModelMintedStatus guard returned the public-absence shape.
     const pins: Record<string, number> = {
@@ -222,7 +222,8 @@ describe("model lifecycle literal guard (Batch B)", () => {
     // Pinned survivors: the drafts-source filter, Batch 0's archived helper,
     // and getUserModels' archived exclusion. W2 removed the superseded
     // archived-id reader; board availability now comes from one status map.
-    expect(count(src, /eq\(models\.status,\s*["']draft["']\)/g)).toBe(1);
+    // One read filter plus the atomic mint transition's conditional draft CAS.
+    expect(count(src, /eq\(models\.status,\s*["']draft["']\)/g)).toBe(2);
     expect(count(src, /eq\(models\.status,\s*["']archived["']\)/g)).toBe(0);
     expect(count(src, /ne\(models\.status,\s*["']archived["']\)/g)).toBe(1);
   });

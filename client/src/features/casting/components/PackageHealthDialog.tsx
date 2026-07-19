@@ -6,6 +6,7 @@ import { useCastingGenerationStore } from '@/features/casting/stores/useCastingG
 import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
 import { slotFailureMessage } from '@shared/refundCopy';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
+import { createClientRequestId } from '@shared/clientRequestId';
 
 const OPEN_PACKAGE_HEALTH = 'casting-open-package-health';
 const EMPTY_REFRESHING_ANGLES: CanonicalViewAngle[] = [];
@@ -252,11 +253,11 @@ export function PackageHealthDialog() {
 
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {needsAction && plan?.refusal === 'pinned' ? (
-                      <button type="button" onClick={() => modelId && pinMutation.mutate({ modelId, angle: slot.angle, pinned: false })} disabled={pinMutation.isPending} className="text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink disabled:opacity-40">
+                      <button type="button" onClick={() => modelId && pinMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle: slot.angle, pinned: false })} disabled={pinMutation.isPending} className="text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink disabled:opacity-40">
                         Unpin
                       </button>
                     ) : canRefresh ? (
-                      <button type="button" onClick={() => modelId && refreshMutation.mutate({ modelId, angles: [slot.angle] })} disabled={busy || refreshMutation.isPending} className="px-3 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-sm font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
+                      <button type="button" onClick={() => modelId && refreshMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angles: [slot.angle] })} disabled={busy || refreshMutation.isPending} className="px-3 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-sm font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
                         {busy ? 'Refreshing…' : `${slot.failed ? 'Retry' : 'Refresh'} · ${(plan?.cost ?? 0).toLocaleString()} credits`}
                       </button>
                     ) : null}
@@ -278,7 +279,7 @@ export function PackageHealthDialog() {
                         <button
                           type="button"
                           disabled={!version.revisionCompatible || restoreMutation.isPending}
-                          onClick={() => modelId && restoreMutation.mutate({ modelId, angle: slot.angle, assetId: version.assetId })}
+                          onClick={() => modelId && restoreMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle: slot.angle, assetId: version.assetId })}
                           className="mt-1 w-full text-canvas-xs font-medium text-canvas-ink-soft hover:text-canvas-ink disabled:text-canvas-ink-faint disabled:cursor-not-allowed"
                           title={version.revisionCompatible ? 'Use this version' : 'This belongs to an earlier identity'}
                         >
@@ -306,7 +307,7 @@ export function PackageHealthDialog() {
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setOpen(false)} className="text-canvas-md font-medium text-canvas-ink-soft hover:text-canvas-ink">Done</button>
             {!loadError && actionable.length > 1 && (
-              <button type="button" onClick={() => modelId && refreshMutation.mutate({ modelId, angles: actionable.map((slot) => slot.angle) })} disabled={refreshMutation.isPending} className="px-4 py-2 rounded-canvas-md bg-canvas-ink text-canvas-md font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
+              <button type="button" onClick={() => modelId && refreshMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angles: actionable.map((slot) => slot.angle) })} disabled={refreshMutation.isPending} className="px-4 py-2 rounded-canvas-md bg-canvas-ink text-canvas-md font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
                 Refresh all · {actionableCost.toLocaleString()} credits
               </button>
             )}

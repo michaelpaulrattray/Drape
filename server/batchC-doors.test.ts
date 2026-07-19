@@ -39,7 +39,9 @@ vi.mock("./db", async (importOriginal) => {
     createGeneration: vi.fn().mockResolvedValue({ success: true, generationId: 11 }),
     updateGeneration: vi.fn().mockResolvedValue({ success: true }),
     updateModel: vi.fn().mockResolvedValue({ success: true }),
-    mintModel: vi.fn().mockResolvedValue({ success: true }),
+    mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
+    bindGenerationOperationModel: vi.fn().mockResolvedValue(undefined),
+    markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
     createModelAsset: vi.fn().mockResolvedValue({ success: true, assetId: 501 }),
     markModelAssetsStale: vi.fn().mockResolvedValue({ success: true }),
     deductPoints: vi.fn().mockResolvedValue({ success: true }),
@@ -94,6 +96,17 @@ vi.mock("./casting/backViewGate", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/backViewGate")>();
   return { ...actual, verifyViewIdentity: vi.fn().mockResolvedValue({ ok: true }) };
 });
+vi.mock("./casting/directOperation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/directOperation")>();
+  return {
+    ...actual,
+    beginDirectOperation: vi.fn().mockResolvedValue({ type: "execute", operationId: "11111111-1111-4111-8111-111111111111" }),
+    completeDirectOperationSuccess: vi.fn().mockResolvedValue(undefined),
+    completeDirectOperationFailure: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+    failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+    requireDirectOperationRecovery: vi.fn(async ({ cause }: { cause: unknown }) => { throw cause; }),
+  };
+});
 
 import {
   getModelById,
@@ -101,7 +114,7 @@ import {
   createModel,
   createModelAsset,
   updateModel,
-  mintModel,
+  mintModelAtomically,
   deductPoints,
   deductCredits,
   addCredits,
@@ -117,7 +130,26 @@ import { buildIdentityAnchor } from "./casting/geminiClient";
 import { executeMintPackage, executeRestoreSlotVersion } from "./casting/mintPackage";
 import { executeRefreshSlots } from "./casting/refreshSlots";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
-import { appRouter } from "./routers";
+import { appRouter as productionRouter } from "./routers";
+
+const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+const appRouter = {
+  createCaller(ctx: TrpcContext) {
+    const caller = productionRouter.createCaller(ctx);
+    return {
+      ...caller,
+      models: {
+        ...caller.models,
+        create: (input: any) => caller.models.create({ clientRequestId: REQUEST_ID, ...input }),
+      },
+      generation: {
+        ...caller.generation,
+        castingImage: (input: any) => caller.generation.castingImage({ clientRequestId: REQUEST_ID, ...input }),
+        compactPrompt: (input: any) => caller.generation.compactPrompt({ clientRequestId: REQUEST_ID, ...input }),
+      },
+    };
+  },
+};
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 function authCtx(userId = 1): TrpcContext {
@@ -149,7 +181,7 @@ beforeEach(() => {
   vi.mocked(createModel).mockClear().mockResolvedValue({ success: true, modelId: 77 } as never);
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 501 } as never);
   vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true } as never);
-  vi.mocked(mintModel).mockClear().mockResolvedValue({ success: true } as never);
+  vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(addCredits).mockClear().mockResolvedValue({ success: true } as never);
@@ -309,7 +341,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
       executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "Vera" }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.mintAnchorInvalid });
     expect(deductPoints).not.toHaveBeenCalled();
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
   it("M7 case 1+2: a same-revision display headshot over an older anchor PASSES, and slot generation consumes the ANCHOR", async () => {
@@ -370,7 +402,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     expect(res.minted).toBe(false);
     expect((res as Record<string, unknown>).mintAborted).toBe(true);
     expect(res.failed.length).toBeGreaterThan(0);
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
     expect(updateModel).not.toHaveBeenCalled(); // no name write on an aborted transition
     // Each failed slot refunded exactly once, named
     expect(addCredits).toHaveBeenCalledTimes(res.failed.length);
@@ -384,7 +416,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera" });
     expect(res.minted).toBe(true);
     expect(deductPoints).not.toHaveBeenCalled(); // zero missing ⇒ zero deduction
-    expect(mintModel).toHaveBeenCalledTimes(1);
+    expect(mintModelAtomically).toHaveBeenCalledTimes(1);
   });
 });
 

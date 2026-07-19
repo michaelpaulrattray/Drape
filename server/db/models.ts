@@ -2,7 +2,7 @@
  * Models Domain — model CRUD, minting, and model asset management.
  */
 
-import { eq, ne, desc, and, inArray } from "drizzle-orm";
+import { eq, ne, desc, and, inArray, isNull, sql } from "drizzle-orm";
 import {
   models,
   modelAssets,
@@ -126,9 +126,14 @@ export async function updateModel(
  * Mint a model on export — assigns agencyId and locks the identity.
  * Called when a user exports their model for the first time.
  */
-export async function mintModel(
-  modelId: number,
-  agencyId: string
+export async function mintModelAtomically(
+  input: {
+    modelId: number;
+    userId: number;
+    agencyId: string;
+    name: string;
+    expectedIdentityRevisionId: string | null;
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const db = await getDb();
   if (!db) {
@@ -136,30 +141,32 @@ export async function mintModel(
   }
 
   try {
-    const existing = await db
-      .select()
-      .from(models)
-      .where(eq(models.id, modelId))
-      .limit(1);
-    if (existing.length === 0) {
-      return { success: false, error: "Model not found" };
-    }
-    if (existing[0].agencyId) {
-      return { success: false, error: "Model already minted" };
-    }
-
-    await db
+    const updated = await db
       .update(models)
       .set({
-        agencyId,
+        name: input.name,
+        agencyId: input.agencyId,
         status: "active",
         mintedAt: new Date(),
       })
-      .where(eq(models.id, modelId));
+      .where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        eq(models.status, "draft"),
+        isNull(models.agencyId),
+        isNull(models.mintedAt),
+        sql`${models.identityRevisionId} <=> ${input.expectedIdentityRevisionId}`,
+      ));
+    const affected = Array.isArray(updated)
+      ? (updated[0] as { affectedRows?: number } | undefined)?.affectedRows
+      : (updated as { affectedRows?: number }).affectedRows;
+    if (affected !== 1) {
+      return { success: false, error: "The Cast changed before minting could finish. Review it and try again." };
+    }
 
     return { success: true };
   } catch (error) {
-    log.error({ err: error }, "[Database] Failed to mint model:");
+    log.error({ err: error }, "[Database] Failed to atomically mint model:");
     return { success: false, error: "Failed to mint model" };
   }
 }

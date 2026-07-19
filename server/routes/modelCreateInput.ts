@@ -81,6 +81,7 @@ export const modelCreatePreferencesSchema = z.object({
 }).strict();
 
 export const modelCreateInputSchema = z.object({
+  clientRequestId: z.string().uuid(),
   preferences: modelCreatePreferencesSchema,
   name: z.string().optional(),
-});
+}).strict();

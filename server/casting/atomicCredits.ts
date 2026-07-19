@@ -43,6 +43,9 @@ interface AtomicCreditOptions {
   referenceId?: string;
   /** Engine used for the operation (for analytics) */
   engineUsed?: string;
+  /** Receipt accounting hooks. These observe committed ledger truth only. */
+  onCharged?: (amount: number, chargeReferenceId: string) => void;
+  onRefunded?: (outcome: RefundOutcome) => void;
 }
 
 interface AtomicCreditResult<T> {
@@ -118,7 +121,7 @@ export async function withAtomicCredits<T>(
   options: AtomicCreditOptions,
   operation: () => Promise<T>
 ): Promise<T> {
-  const { userId, amount, description, referenceId, engineUsed } = options;
+  const { userId, amount, description, referenceId, engineUsed, onCharged, onRefunded } = options;
 
   // Step 0: Check if account is frozen (blocks all generation)
   const db = await getDb();
@@ -158,6 +161,7 @@ export async function withAtomicCredits<T>(
       message: deductResult.error || `Insufficient credits. Need ${amount} credits.`,
     });
   }
+  onCharged?.(amount, chargeReferenceId);
 
   try {
     // Step 2: Execute the expensive operation
@@ -175,6 +179,7 @@ export async function withAtomicCredits<T>(
     // charged" when the refund didn't record.
     log.error({ err: error, userId, amount, chargeReferenceId }, `[AtomicCredits] Operation failed, refunding ${amount} credits`);
     const outcome = await recordRefund(userId, amount, `Refund: ${description} failed`, chargeReferenceId);
+    onRefunded?.(outcome);
 
     // Sanitized outward message (final corrections): deliberately written
     // TRPCError/PublicError wording passes through; raw internal error text

@@ -15,6 +15,7 @@ import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
 import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import type { CastingBindings } from "./castingBindings";
+import { createClientRequestId } from "@shared/clientRequestId";
 
 interface UseCastingGenerationParams {
   isAuthenticated: boolean;
@@ -172,6 +173,7 @@ export function useCastingGeneration({
     const session = captureCastingSession(getSessionToken);
     try {
       const result = await compactPromptMutation.mutateAsync({
+        clientRequestId: createClientRequestId(),
         modelId: currentModelId,
       });
       if (session.isCurrent() && result.masterPrompt) {
@@ -249,11 +251,12 @@ export function useCastingGeneration({
       // can never carry `referenceImage` — the strict server schema rejects
       // the key, and superjson would otherwise round-trip even undefined.
       const backendPrefs = buildCreationPreferences(prefs, resolvedBrand, engineChoice);
-
-      console.log('[CastingStudio] Sending preferences to backend:', JSON.stringify(backendPrefs, null, 2));
+      const createRequestId = createClientRequestId();
+      const headshotRequestId = createClientRequestId();
 
       setGenState((prev) => ({ ...prev, currentStep: "Generating casting specification...", progress: 20 }));
       const modelResult = await createModelMutation.mutateAsync({
+        clientRequestId: createRequestId,
         preferences: backendPrefs,
         name: modelName || undefined,
       });
@@ -267,7 +270,7 @@ export function useCastingGeneration({
       if (session.isCurrent()) {
         setCurrentModelId(modelResult.modelId ?? null);
         setCurrentMasterPrompt(modelResult.masterPrompt || "");
-        setCurrentTechnicalSchema(modelResult.technicalSchema || null);
+        setCurrentTechnicalSchema((modelResult.technicalSchema || null) as Record<string, unknown> | null);
         setGenState((prev) => ({ ...prev, currentStep: "Casting Headshot...", progress: 50 }));
       }
 
@@ -275,6 +278,7 @@ export function useCastingGeneration({
       // brief alone — the server schema-rejects creation references.
       // References join after the first headshot, through the refine bar.
       const imageResult = await generateCastingMutation.mutateAsync({
+        clientRequestId: headshotRequestId,
         modelId: modelResult.modelId!,
       });
 
@@ -360,6 +364,7 @@ export function useCastingGeneration({
     setGenState({ isGenerating: true, currentStep: maskBase64 ? "Applying surgical edit..." : "Iterating...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 8000 });
 
     try {
+      const clientRequestId = createClientRequestId();
       const currentAsset = currentAssets.find(a => a.viewType === activeView);
       if (!currentAsset) {
         throw new Error('No asset found for current view');
@@ -369,6 +374,7 @@ export function useCastingGeneration({
       const freshRefImage = getReferenceImage();
       
       const result = await iterateMutation.mutateAsync({
+        clientRequestId,
         modelId: currentModelId,
         feedback: prompt,
         assetId: currentAsset.id,
@@ -425,7 +431,7 @@ export function useCastingGeneration({
           // identity branch. Image-only edits structurally cannot enter it.
           const restored = editablePreferencesFromStored(result.preferences);
           setCurrentMasterPrompt(result.masterPrompt);
-          setCurrentTechnicalSchema(result.technicalSchema);
+          setCurrentTechnicalSchema(result.technicalSchema as Record<string, unknown> | null);
           setPrefs(restored.preferences);
           setEngineChoices(restored.engineChoice);
           void utils.models.get.invalidate({ modelId: currentModelId });

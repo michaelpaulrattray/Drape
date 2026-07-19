@@ -53,7 +53,8 @@ vi.mock("./db", async (importOriginal) => {
     createGeneration: vi.fn(),
     updateGeneration: vi.fn(),
     updateModel: vi.fn(),
-    mintModel: vi.fn(),
+    mintModelAtomically: vi.fn(),
+    markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
     createModelAsset: vi.fn(),
     markModelAssetsStale: vi.fn(),
     updateBoardItem: vi.fn(),
@@ -175,6 +176,16 @@ vi.mock("./wardrobe/utils", async (importOriginal) => {
     }),
   };
 });
+vi.mock("./casting/directOperation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/directOperation")>();
+  return {
+    ...actual,
+    beginDirectOperation: vi.fn().mockResolvedValue({ type: "execute", operationId: "11111111-1111-4111-8111-111111111111" }),
+    completeDirectOperationSuccess: vi.fn().mockResolvedValue(undefined),
+    completeDirectOperationFailure: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+    failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+  };
+});
 
 import {
   getBoardById,
@@ -185,7 +196,7 @@ import {
   createGeneration,
   updateGeneration,
   updateModel,
-  mintModel,
+  mintModelAtomically,
   createModelAsset,
   updateBoardItem,
   addBoardItemVersion,
@@ -205,8 +216,23 @@ import { refundReferenceFor } from "./casting/atomicCredits";
 import { PublicError } from "./lib/publicError";
 import { executeMintPackage } from "./casting/mintPackage";
 import { executeApplyModelEdit, executeRunGeneration, executeRunVariations } from "./lib/boardOps";
-import { appRouter } from "./routers";
+import { appRouter as productionRouter } from "./routers";
 import { storageDelete } from "./storage";
+
+const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+const appRouter = {
+  createCaller(ctx: TrpcContext) {
+    const caller = productionRouter.createCaller(ctx);
+    return {
+      ...caller,
+      generation: {
+        ...caller.generation,
+        iterate: (input: any) => caller.generation.iterate({ clientRequestId: REQUEST_ID, ...input }),
+        castingImage: (input: any) => caller.generation.castingImage({ clientRequestId: REQUEST_ID, ...input }),
+      },
+    };
+  },
+};
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 function authCtx(userId = 1): TrpcContext {
@@ -245,7 +271,7 @@ beforeEach(() => {
   vi.mocked(createGeneration).mockReset().mockResolvedValue({ success: true, generationId: 11 } as never);
   vi.mocked(updateGeneration).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(updateModel).mockReset().mockResolvedValue({ success: true } as never);
-  vi.mocked(mintModel).mockReset().mockResolvedValue({ success: true } as never);
+  vi.mocked(mintModelAtomically).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(createModelAsset).mockReset().mockResolvedValue({ success: true, assetId: 501 } as never);
   vi.mocked(updateBoardItem).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(addBoardItemVersion).mockReset().mockResolvedValue({ success: true } as never);
@@ -296,14 +322,14 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
 
     expect(res.minted).toBe(false);
     expect((res as Record<string, unknown>).mintAborted).toBe(true);
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
     expect(updateModel).not.toHaveBeenCalled(); // no name write on an aborted transition
     expect(res.failed).toHaveLength(1);
     expect(res.failed[0].reason).toContain("couldn't be saved");
     expect(res.failed[0].refunded).toBeGreaterThan(0);
     // Refund recorded exactly once, under the slot's deterministic id
     expect(addCredits).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("slot-gen-11"));
+    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("legacy-mint-7:slot:threeQuarter"));
     // The durable marker reflects the recorded refund
     const markerCall = vi.mocked(createModelAsset).mock.calls[1][0] as { status: { refunded: number } };
     expect(markerCall.status.refunded).toBe(res.failed[0].refunded);
@@ -329,7 +355,7 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
     expect(res.minted).toBe(false);
     expect(res.failed).toHaveLength(1);
     expect(res.failed[0].markerPersisted).toBe(false); // the truth reaches the response
-    expect(res.failed[0].refundReference).toContain("refund:slot-gen-11");
+    expect(res.failed[0].refundReference).toBe(refundReferenceFor("legacy-mint-7:slot:threeQuarter"));
   });
 
   it("a failed createGeneration fails the slot BEFORE any image call", async () => {
@@ -339,7 +365,7 @@ describe("mint slot — createModelAsset returns { success:false }", () => {
     expect(res.minted).toBe(false);
     expect(res.failed).toHaveLength(1);
     expect(generateRemainingViews).not.toHaveBeenCalled();
-    expect(mintModel).not.toHaveBeenCalled();
+    expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 });
 
@@ -355,7 +381,7 @@ describe("generation.iterate boundaries", () => {
     expect(iterateModel).toHaveBeenCalledTimes(1);
     expect(deductCredits).toHaveBeenCalledTimes(1);
     expect(addCredits).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("gen-11"));
+    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("op:11111111-1111-4111-8111-111111111111:charge"));
     expect(verifyIdentityEdit).not.toHaveBeenCalled();
   });
 
@@ -399,7 +425,7 @@ describe("generation.iterate boundaries", () => {
     expect(uploadRawCandidate).not.toHaveBeenCalled();
     expect(tx.inserts.some((row) => "provenance" in row)).toBe(false);
     expect(addCredits).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("gen-11"));
+    expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("op:11111111-1111-4111-8111-111111111111:charge"));
     expect(updateGeneration).toHaveBeenCalledWith(11, expect.objectContaining({
       status: "failed",
       metadata: expect.objectContaining({
@@ -440,7 +466,7 @@ describe("generation.castingImage boundaries", () => {
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(addCredits).toHaveBeenCalledTimes(1);
     const refundRef = vi.mocked(addCredits).mock.calls[0][4] as string;
-    expect(refundRef.startsWith("refund:casting-image-7-")).toBe(true);
+    expect(refundRef).toBe(refundReferenceFor("op:11111111-1111-4111-8111-111111111111:charge"));
   });
 
   it("initial-cast asset write failure refunds once with honest copy", async () => {

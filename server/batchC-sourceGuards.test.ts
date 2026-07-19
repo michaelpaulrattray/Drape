@@ -119,17 +119,24 @@ describe("no raw newest-headshot selector bypasses the shared anchor selector (M
 });
 
 describe("masked editing stays closed (M3)", () => {
-  it("the server mask refusal remains the FIRST check in iterate", () => {
+  it("the server mask refusal remains before admission, charging, and generation", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");
     const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("// Proxy endpoint"));
-    const maskRefusal = iterateBlock.indexOf("maskBase64");
+    const maskRefusal = iterateBlock.indexOf("if (input.maskBase64)");
     const rateLimit = iterateBlock.indexOf("checkRateLimit");
-    const modelLoad = iterateBlock.indexOf("getModelById");
+    const creditBoundary = iterateBlock.indexOf("withAtomicCredits");
+    const generationCall = iterateBlock.indexOf("iterateModelRaw");
     expect(maskRefusal).toBeGreaterThan(-1);
     expect(maskRefusal).toBeLessThan(rateLimit);
-    expect(maskRefusal).toBeLessThan(modelLoad);
-    // The mask is never forwarded to generation anymore
-    expect(iterateBlock).not.toMatch(/maskBase64:\s*input\.maskBase64/);
+    expect(maskRefusal).toBeLessThan(creditBoundary);
+    expect(maskRefusal).toBeLessThan(generationCall);
+    // The receipt records the refused input, but no mask reaches either
+    // image-generation call.
+    const generationInputs = iterateBlock.slice(
+      iterateBlock.indexOf("const commonOptions"),
+      iterateBlock.indexOf("if (!iterResult.imageUrl)"),
+    );
+    expect(generationInputs).not.toContain("maskBase64");
   });
   it("the board masked-edit surface stays deleted (Batch 0 regression)", () => {
     expect(fs.existsSync(path.join(__dirname, "..", "client", "src", "features", "boards", "components", "ModelEditorOverlay.tsx"))).toBe(false);

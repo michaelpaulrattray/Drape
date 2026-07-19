@@ -17,6 +17,7 @@ import { isActionableStale } from "@shared/refreshPolicy";
 import type { CastNodeData } from "./CastNode";
 import type { SheetTile } from "../CharacterSheetImageArea";
 import { useCastingRefreshStore } from "@/features/casting/stores/useCastingRefreshStore";
+import { createClientRequestId } from "@shared/clientRequestId";
 
 const EMPTY_REFRESHING_ANGLES: CanonicalViewAngle[] = [];
 
@@ -233,16 +234,16 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
       .filter((s) => s.stale && s.refusal === null)
       .map((s) => ({ angle: s.angle, label: s.label, cost: s.cost })),
     refreshSlot: (angle: CanonicalViewAngle) => {
-      if (modelId) refreshMutation.mutate({ modelId, angles: [angle] });
+      if (modelId) refreshMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angles: [angle] });
     },
     refreshSlots: (angles: CanonicalViewAngle[]) => {
-      if (modelId && angles.length > 0) refreshMutation.mutate({ modelId, angles });
+      if (modelId && angles.length > 0) refreshMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angles });
     },
     setPinned: (angle: CanonicalViewAngle, pinned: boolean) => {
-      if (modelId) pinMutation.mutate({ modelId, angle, pinned });
+      if (modelId) pinMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle, pinned });
     },
     restoreVersion: (angle: CanonicalViewAngle, assetId: number) => {
-      if (modelId) restoreMutation.mutate({ modelId, angle, assetId });
+      if (modelId) restoreMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle, assetId });
     },
     restoring: restoreMutation.isPending,
     popOut: (angle: CanonicalViewAngle) => {

@@ -28,6 +28,9 @@ describe("R7-1C operation contract", () => {
   it("canonicalizes plain JSON independent of object insertion order", () => {
     expect(stableCanonicalJson({ z: 1, a: { y: 2, x: [true, null] } }))
       .toBe(stableCanonicalJson({ a: { x: [true, null], y: 2 }, z: 1 }));
+    expect(stableCanonicalJson({ selected: "pink", omitted: undefined }))
+      .toBe(stableCanonicalJson({ selected: "pink" }));
+    expect(() => stableCanonicalJson([undefined])).toThrow("only JSON values");
     expect(() => stableCanonicalJson({ value: Number.NaN })).toThrow("non-finite");
     expect(() => stableCanonicalJson({ when: new Date() })).toThrow("plain JSON objects");
     const cyclic: Record<string, unknown> = {};
@@ -57,6 +60,8 @@ describe("R7-1C operation contract", () => {
 
   it("uses the closed operation-kind and resource-lock vocabularies", () => {
     expect(() => assertGenerationOperationKind("casting.iterate")).not.toThrow();
+    expect(() => assertGenerationOperationKind("casting.restore")).not.toThrow();
+    expect(() => assertGenerationOperationKind("model.delete")).not.toThrow();
     expect(() => assertGenerationOperationKind("casting.unknown")).toThrow("Unknown");
     expect(modelOperationLockKey(12)).toBe("model:12");
     expect(boardItemOperationLockKey(8)).toBe("board-item:8");

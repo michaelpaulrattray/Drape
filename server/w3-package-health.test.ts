@@ -22,7 +22,8 @@ describe('W3 stale response truth', () => {
 
   it('the identity response carries angles plus the ratified sibling copy; image-only returns none', () => {
     const source = read('server/routes/generation/castingRefinement.ts');
-    expect(source).toContain('staledAngles: staledAnglesForAssetIds(assets, commit.staledAssetIds)');
+    expect(source).toContain('const staledAngles = staledAnglesForAssetIds(assets, commit.staledAssetIds)');
+    expect(source).toContain('result: { assetId: commit.assetId, identityChanged: true, staledAngles }');
     expect(source).toContain('staleMessage: REFUSAL_COPY.siblingsNeedRefresh');
     expect(source).toContain('staledAngles: []');
   });

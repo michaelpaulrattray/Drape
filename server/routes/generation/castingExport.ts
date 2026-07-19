@@ -1,6 +1,7 @@
 import { publicProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
-  getModelById, getUserGenerations, getUserById,
+  getModelById, getUserGenerations, getUserById, getModelAssets,
+  markGenerationOperationRunning,
 } from "../../db";
 import { CREDIT_COSTS, POINT_COSTS } from "../../casting/aiService";
 import {
@@ -23,6 +24,14 @@ import { buildExportPlan } from "../../../shared/exportPlan";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../../logging/logger";
+import { currentRevisionId } from "../../casting/identity/anchorSelector";
+import { modelOperationLockKey } from "../../casting/operationContract";
+import {
+  beginDirectOperation,
+  completeDirectOperationFailure,
+  completeDirectOperationSuccess,
+  failClaimedDirectOperation,
+} from "../../casting/directOperation";
 const log = createModuleLogger("routes/generation");
 
 export const castingExportRouter = router({
@@ -144,6 +153,7 @@ export const castingExportRouter = router({
    *  views pass the identity gate, retry-then-refund), names + mints. */
   mintPackage: protectedProcedure
     .input(z.object({
+      clientRequestId: z.string().uuid(),
       modelId: z.number().int().positive(),
       tier: z.enum(["draft", "core", "production"]),
       // Optional when staying a draft (trap ruling (a)) — the name belongs
@@ -152,21 +162,129 @@ export const castingExportRouter = router({
       mint: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (input.mint !== false && !input.characterName) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "A name is required to mint" });
-      }
-      const rate = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
-      if (!rate.allowed) {
-        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
-      }
-      await enforceDailyQuota(ctx.user.id);
-      return executeMintPackage({
+      const initialModel = await getModelById(input.modelId);
+      if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (initialModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      assertNotArchived(initialModel);
+
+      const kind = input.mint === false ? "casting.add_views" : "casting.mint";
+      const lockKey = modelOperationLockKey(input.modelId);
+      const gate = await beginDirectOperation({
         userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        kind,
         modelId: input.modelId,
-        tier: input.tier,
-        characterName: input.characterName ?? "",
-        mint: input.mint,
+        payload: {
+          modelId: input.modelId,
+          tier: input.tier,
+          characterName: input.characterName?.trim() || null,
+          mint: input.mint !== false,
+        },
+        lockKey,
       });
+      if (gate.type === "replay") {
+        const saved = gate.result as {
+          agencyId?: unknown;
+          minted?: unknown;
+          tier?: unknown;
+          generated?: unknown;
+          failedAngles?: unknown;
+          mintAborted?: unknown;
+        } | null;
+        const assets = await getModelAssets(input.modelId);
+        const generatedRows = Array.isArray(saved?.generated) ? saved.generated : [];
+        const generated = generatedRows.flatMap((row) => {
+          const item = row as { angle?: unknown; assetId?: unknown };
+          const asset = assets.find((candidate) => candidate.id === item.assetId);
+          return asset && typeof item.angle === "string"
+            ? [{ angle: item.angle as (typeof CANONICAL_VIEW_ANGLES)[number], imageUrl: asset.storageUrl, assetId: asset.id }]
+            : [];
+        });
+        const state = await getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+        const failedAngles = Array.isArray(saved?.failedAngles) ? saved.failedAngles : [];
+        const failed = state.slots.flatMap((slot) =>
+          failedAngles.includes(slot.angle) && slot.failed
+            ? [{ angle: slot.angle, label: slot.label, ...slot.failed, markerPersisted: true }]
+            : []);
+        return {
+          agencyId: typeof saved?.agencyId === "string" ? saved.agencyId : null,
+          minted: saved?.minted === true,
+          tier: input.tier,
+          generated,
+          failed,
+          ...(saved?.mintAborted === true ? { mintAborted: true as const, message: "Minting paused — retry the failed view first." } : {}),
+        };
+      }
+
+      let lockedModel;
+      let plan;
+      try {
+        if (input.mint !== false && !input.characterName) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "A name is required to mint" });
+        }
+        const rate = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+        if (!rate.allowed) {
+          throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
+        }
+        await enforceDailyQuota(ctx.user.id);
+        lockedModel = await getModelById(input.modelId);
+        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        assertNotArchived(lockedModel);
+        plan = await planMintPackage({ userId: ctx.user.id, modelId: input.modelId });
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
+      const plannedCredits = plan.tiers[input.tier].cost;
+      const started = await markGenerationOperationRunning({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        modelId: input.modelId,
+        expectedIdentityRevisionId: currentRevisionId(lockedModel),
+        plannedCredits,
+        requiredLockKey: lockKey,
+      });
+      let chargedCredits = 0;
+      let refundedCredits = 0;
+      let durableResult = false;
+      try {
+        const result = await executeMintPackage({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          tier: input.tier,
+          characterName: input.characterName ?? "",
+          mint: input.mint,
+          chargeReferenceId: started.chargeReferenceId,
+          expectedIdentityRevisionId: currentRevisionId(lockedModel),
+          onCharged: (amount) => { chargedCredits = amount; },
+          onRefunded: (amount) => { refundedCredits += amount; },
+        });
+        durableResult = true;
+        await completeDirectOperationSuccess({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          result: {
+            agencyId: result.agencyId,
+            minted: result.minted,
+            tier: result.tier,
+            generated: result.generated.map(({ angle, assetId }) => ({ angle, assetId })),
+            failedAngles: result.failed.map(({ angle }) => angle),
+            ...("mintAborted" in result && result.mintAborted ? { mintAborted: true } : {}),
+          },
+          chargedCredits,
+          refundedCredits,
+        });
+        return result;
+      } catch (error) {
+        if (durableResult) throw error;
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error,
+          chargedCredits,
+          refundedCredits,
+        });
+      }
     }),
 
   /** Package completeness (D-39c) — R5's comp card + future picker read this. */
@@ -180,12 +298,50 @@ export const castingExportRouter = router({
    *  exempt from staleness pressure and bulk refresh. Free — no rate gate. */
   setSlotPinned: protectedProcedure
     .input(z.object({
+      clientRequestId: z.string().uuid(),
       modelId: z.number().int().positive(),
       angle: z.enum(CANONICAL_VIEW_ANGLES),
       pinned: z.boolean(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return executeSetSlotPinned({ userId: ctx.user.id, ...input });
+      const model = await getModelById(input.modelId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (model.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      assertNotArchived(model);
+      const lockKey = modelOperationLockKey(input.modelId);
+      const gate = await beginDirectOperation({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        kind: "casting.pin",
+        modelId: input.modelId,
+        payload: { modelId: input.modelId, angle: input.angle, pinned: input.pinned },
+        lockKey,
+      });
+      if (gate.type === "replay") return { modelId: input.modelId, angle: input.angle, pinned: input.pinned };
+      await markGenerationOperationRunning({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        modelId: input.modelId,
+        expectedIdentityRevisionId: currentRevisionId(model),
+        plannedCredits: 0,
+        requiredLockKey: lockKey,
+      });
+      let durableResult = false;
+      try {
+        const result = await executeSetSlotPinned({ userId: ctx.user.id, modelId: input.modelId, angle: input.angle, pinned: input.pinned });
+        durableResult = true;
+        await completeDirectOperationSuccess({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          result: { modelId: result.modelId, angle: result.angle, pinned: result.pinned },
+          chargedCredits: 0,
+          refundedCredits: 0,
+        });
+        return result;
+      } catch (error) {
+        if (durableResult) throw error;
+        return completeDirectOperationFailure({ userId: ctx.user.id, operationId: gate.operationId, error, chargedCredits: 0, refundedCredits: 0 });
+      }
     }),
 
   /** D-53: filled rows for one angle, newest first — the tile thumb-strip. */
@@ -204,12 +360,62 @@ export const castingExportRouter = router({
    *  keeps its own name + 3f routing). Free — no rate gate. */
   restoreSlotVersion: protectedProcedure
     .input(z.object({
+      clientRequestId: z.string().uuid(),
       modelId: z.number().int().positive(),
       angle: z.enum(CANONICAL_VIEW_ANGLES),
       assetId: z.number().int().positive(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return executeRestoreSlotVersion({ userId: ctx.user.id, ...input });
+      const model = await getModelById(input.modelId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (model.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      assertNotArchived(model);
+      const lockKey = modelOperationLockKey(input.modelId);
+      const gate = await beginDirectOperation({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        kind: "casting.restore",
+        modelId: input.modelId,
+        payload: { modelId: input.modelId, angle: input.angle, assetId: input.assetId },
+        lockKey,
+      });
+      if (gate.type === "replay") {
+        const assetId = (gate.result as { assetId?: unknown } | null)?.assetId;
+        const assets = await getModelAssets(input.modelId);
+        const asset = assets.find((candidate) => candidate.id === assetId);
+        if (!asset) throw new TRPCError({ code: "PRECONDITION_FAILED", message: `The saved restore result is unavailable. Operation ${gate.operationId}.` });
+        return {
+          modelId: input.modelId,
+          angle: input.angle,
+          assetId: asset.id,
+          url: asset.storageUrl,
+          version: assets.filter((candidate) => candidate.viewType === input.angle && candidate.storageUrl).length,
+        };
+      }
+      await markGenerationOperationRunning({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        modelId: input.modelId,
+        expectedIdentityRevisionId: currentRevisionId(model),
+        plannedCredits: 0,
+        requiredLockKey: lockKey,
+      });
+      let durableResult = false;
+      try {
+        const result = await executeRestoreSlotVersion({ userId: ctx.user.id, modelId: input.modelId, angle: input.angle, assetId: input.assetId });
+        durableResult = true;
+        await completeDirectOperationSuccess({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          result: { assetId: result.assetId },
+          chargedCredits: 0,
+          refundedCredits: 0,
+        });
+        return result;
+      } catch (error) {
+        if (durableResult) throw error;
+        return completeDirectOperationFailure({ userId: ctx.user.id, operationId: gate.operationId, error, chargedCredits: 0, refundedCredits: 0 });
+      }
     }),
 
   /** R5 per-tile refresh plan: slot costs + structural refusals (D-15/D-43).
@@ -217,7 +423,11 @@ export const castingExportRouter = router({
   refreshSlotsPlan: protectedProcedure
     .input(z.object({
       modelId: z.number().int().positive(),
-      angles: z.array(z.enum(CANONICAL_VIEW_ANGLES)).min(1).max(6).optional(),
+      angles: z.array(z.enum(CANONICAL_VIEW_ANGLES)).min(1).max(6)
+        .refine((angles) => new Set(angles).size === angles.length, {
+          message: "Each view can only be refreshed once per request",
+        })
+        .optional(),
     }))
     .query(async ({ ctx, input }) => {
       return planRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
@@ -228,16 +438,106 @@ export const castingExportRouter = router({
    *  Refuses the headshot, pinned, and never-attempted slots structurally. */
   refreshSlots: protectedProcedure
     .input(z.object({
+      clientRequestId: z.string().uuid(),
       modelId: z.number().int().positive(),
-      angles: z.array(z.enum(CANONICAL_VIEW_ANGLES)).min(1).max(6),
+      angles: z.array(z.enum(CANONICAL_VIEW_ANGLES)).min(1).max(6)
+        .refine((angles) => new Set(angles).size === angles.length, {
+          message: "Each view can only be refreshed once per request",
+        }),
     }))
     .mutation(async ({ ctx, input }) => {
-      const rate = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
-      if (!rate.allowed) {
-        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
+      const initialModel = await getModelById(input.modelId);
+      if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+      if (initialModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      assertNotArchived(initialModel);
+
+      const lockKey = modelOperationLockKey(input.modelId);
+      const gate = await beginDirectOperation({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        kind: "casting.refresh",
+        modelId: input.modelId,
+        payload: { modelId: input.modelId, angles: [...input.angles].sort() },
+        lockKey,
+      });
+      if (gate.type === "replay") {
+        const saved = gate.result as { refreshed?: unknown; failedAngles?: unknown } | null;
+        const assets = await getModelAssets(input.modelId);
+        const refreshedRows = Array.isArray(saved?.refreshed) ? saved.refreshed : [];
+        const refreshed = refreshedRows.flatMap((row) => {
+          const item = row as { angle?: unknown; assetId?: unknown };
+          const asset = assets.find((candidate) => candidate.id === item.assetId);
+          return asset && typeof item.angle === "string"
+            ? [{ angle: item.angle as (typeof CANONICAL_VIEW_ANGLES)[number], imageUrl: asset.storageUrl, assetId: asset.id }]
+            : [];
+        });
+        const state = await getPackageState({ userId: ctx.user.id, modelId: input.modelId });
+        const failedAngles = Array.isArray(saved?.failedAngles) ? saved.failedAngles : [];
+        const failed = state.slots.flatMap((slot) =>
+          failedAngles.includes(slot.angle) && slot.failed
+            ? [{ angle: slot.angle, label: slot.label, ...slot.failed, markerPersisted: true }]
+            : []);
+        return { refreshed, failed };
       }
-      await enforceDailyQuota(ctx.user.id);
-      return executeRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
+
+      let lockedModel;
+      let plan;
+      try {
+        const rate = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+        if (!rate.allowed) {
+          throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });
+        }
+        await enforceDailyQuota(ctx.user.id);
+        lockedModel = await getModelById(input.modelId);
+        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        assertNotArchived(lockedModel);
+        plan = await planRefreshSlots({ userId: ctx.user.id, modelId: input.modelId, angles: input.angles });
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
+      const started = await markGenerationOperationRunning({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        modelId: input.modelId,
+        expectedIdentityRevisionId: currentRevisionId(lockedModel),
+        plannedCredits: plan.totalCost,
+        requiredLockKey: lockKey,
+      });
+      let chargedCredits = 0;
+      let refundedCredits = 0;
+      let durableResult = false;
+      try {
+        const result = await executeRefreshSlots({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          angles: input.angles,
+          chargeReferenceId: started.chargeReferenceId,
+          onCharged: (amount) => { chargedCredits = amount; },
+          onRefunded: (amount) => { refundedCredits += amount; },
+        });
+        durableResult = true;
+        await completeDirectOperationSuccess({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          result: {
+            refreshed: result.refreshed.map(({ angle, assetId }) => ({ angle, assetId })),
+            failedAngles: result.failed.map(({ angle }) => angle),
+          },
+          chargedCredits,
+          refundedCredits,
+        });
+        return result;
+      } catch (error) {
+        if (durableResult) throw error;
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error,
+          chargedCredits,
+          refundedCredits,
+        });
+      }
     }),
 
   // NOTE (Batch 0, R6 execution plan / FR-2): the legacy `mint` procedure

@@ -19,7 +19,7 @@ const db = vi.hoisted(() => ({
   createGeneration: vi.fn(),
   updateGeneration: vi.fn(),
   updateModel: vi.fn(),
-  mintModel: vi.fn(),
+  mintModelAtomically: vi.fn(),
   deductPoints: vi.fn(),
   addCredits: vi.fn(),
 }));

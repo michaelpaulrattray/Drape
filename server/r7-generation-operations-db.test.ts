@@ -10,6 +10,7 @@ describeWithDatabase("R7-1C generation-operation foundation (disposable DB)", ()
   let connection: Connection;
   let userId: number;
   let operations: typeof import("./db/generationOperations");
+  let modelDb: typeof import("./db/models");
 
   beforeAll(async () => {
     process.env.DATABASE_URL = testDatabaseUrl!;
@@ -24,6 +25,7 @@ describeWithDatabase("R7-1C generation-operation foundation (disposable DB)", ()
     );
     userId = inserted.insertId;
     operations = await import("./db/generationOperations");
+    modelDb = await import("./db/models");
   });
 
   beforeEach(async () => {
@@ -304,6 +306,66 @@ describeWithDatabase("R7-1C generation-operation foundation (disposable DB)", ()
       [recovery.operationId],
     );
     expect(Number(lockCount.n)).toBe(1);
+  }, 30_000);
+
+  it("seals a claimed operation for recovery without releasing its lock", async () => {
+    const recovery = await claim(randomUUID());
+    if (recovery.type !== "claimed") throw new Error("claim failed");
+    await operations.acquireGenerationOperationLock({
+      userId,
+      operationId: recovery.operationId,
+      kind: "casting.iterate",
+      lockKey: "model:44",
+    });
+    await operations.markClaimedGenerationOperationRecoveryRequired({
+      userId,
+      operationId: recovery.operationId,
+      publicMessage: "The refusal receipt needs support review.",
+    });
+
+    await expect(operations.getGenerationOperationOutcome(userId, recovery.operationId)).resolves.toEqual({
+      type: "recovery_required",
+      operationId: recovery.operationId,
+      publicMessage: "The refusal receipt needs support review.",
+    });
+    const [[lockCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM generation_operation_locks WHERE operationId = ?",
+      [recovery.operationId],
+    );
+    expect(Number(lockCount.n)).toBe(1);
+  });
+
+  it("atomically mints one clean draft exactly once under concurrent transition attempts", async () => {
+    const revisionId = randomUUID();
+    const [inserted] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO models (userId, name, masterPrompt, technicalSchema, preferences, status, identityRevisionId) VALUES (?, 'Draft', '{}', JSON_OBJECT(), JSON_OBJECT(), 'draft', ?)",
+      [userId, revisionId],
+    );
+    const modelId = inserted.insertId;
+    try {
+      const outcomes = await Promise.all(Array.from({ length: 20 }, (_, index) =>
+        modelDb.mintModelAtomically({
+          modelId,
+          userId,
+          agencyId: `MOD-R7-${String(index).padStart(2, "0")}`,
+          name: `Mint winner ${index}`,
+          expectedIdentityRevisionId: revisionId,
+        })));
+      expect(outcomes.filter((outcome) => outcome.success)).toHaveLength(1);
+      expect(outcomes.filter((outcome) => !outcome.success)).toHaveLength(19);
+
+      const [[stored]] = await connection.query<RowDataPacket[]>(
+        "SELECT name, agencyId, status, mintedAt, identityRevisionId FROM models WHERE id = ?",
+        [modelId],
+      );
+      expect(stored.status).toBe("active");
+      expect(stored.mintedAt).not.toBeNull();
+      expect(stored.identityRevisionId).toBe(revisionId);
+      expect(String(stored.name)).toMatch(/^Mint winner \d+$/);
+      expect(String(stored.agencyId)).toMatch(/^MOD-R7-\d{2}$/);
+    } finally {
+      await connection.execute("DELETE FROM models WHERE id = ?", [modelId]);
+    }
   }, 30_000);
 
   it("allows only one concurrent terminal state transition", async () => {

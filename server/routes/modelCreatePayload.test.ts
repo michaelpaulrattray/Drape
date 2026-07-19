@@ -21,6 +21,8 @@ import { sanitizeParsed, mergeParsedPreferences } from "../casting/promptParser"
 import { validateCreationIntent } from "../casting/identity/creationIntake";
 import { REFUSAL_COPY } from "../casting/identity/refusalCopy";
 
+const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+
 /** What the tRPC link actually does to the input on the wire. */
 function overTheWire<T>(payload: T): unknown {
   return superjson.deserialize(JSON.parse(JSON.stringify(superjson.serialize(payload))));
@@ -43,6 +45,7 @@ describe("models.create payload never carries referenceImage (§10.3)", () => {
     // resolved at fire time — exactly what handleGenerate sends
     const payload = buildCreationPreferences(DEFAULT_PREFERENCES, "Gucci");
     expect(Object.prototype.hasOwnProperty.call(payload, "referenceImage")).toBe(false);
+    expect(Object.values(payload)).not.toContain(undefined);
     expect(modelCreatePreferencesSchema.safeParse(overTheWire(payload)).success).toBe(true);
   });
 
@@ -88,6 +91,7 @@ describe("the guarded post-headshot iteration path keeps its reference (§10.3)"
   it("iterate accepts a payload with a reference image", () => {
     // Shape performIteration sends after the first headshot exists
     const result = iterateInputSchema.safeParse(overTheWire({
+      clientRequestId: REQUEST_ID,
       modelId: 1,
       feedback: "use the hairstyle from the reference",
       assetId: 42,
@@ -100,6 +104,7 @@ describe("the guarded post-headshot iteration path keeps its reference (§10.3)"
 
   it("iterate accepts a payload without a reference image", () => {
     const result = iterateInputSchema.safeParse(overTheWire({
+      clientRequestId: REQUEST_ID,
       modelId: 1,
       feedback: "soften the jawline slightly",
       assetId: 42,

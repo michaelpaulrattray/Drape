@@ -1,7 +1,7 @@
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, createModelAsset, getModelAssets,
-  createGeneration, updateGeneration, updateModel,
+  createGeneration, updateGeneration, updateModel, markGenerationOperationRunning,
 } from "../../db";
 import {
   iterateModel, iterateModelRaw, uploadRawCandidate, enhanceUserPrompt,
@@ -39,6 +39,13 @@ import type { IdentityGateVerdict } from "../../casting/identity/editGate";
 import { storageDelete } from "../../storage";
 import { dependentFieldsForPatch } from "../../casting/identity/identityDependencies";
 import { requireIdentityPatch } from "../../casting/identity/identityAuthorizationGuard";
+import { modelOperationLockKey } from "../../casting/operationContract";
+import {
+  beginDirectOperation,
+  completeDirectOperationFailure,
+  completeDirectOperationSuccess,
+  failClaimedDirectOperation,
+} from "../../casting/directOperation";
 const log = createModuleLogger("routes/generation");
 
 export const castingRefinementRouter = router({
@@ -55,26 +62,6 @@ export const castingRefinementRouter = router({
       // ungated-write class D-43 sealed. Refused before any money moves, on
       // every view and every status. Re-enablement is gated on the unified
       // classifier/identity-writer boundary (IDENTITY_EDIT_INTERIM_POLICY).
-      if (input.maskBase64) {
-        log.warn({ userId: ctx.user.id, modelId: input.modelId }, "[iterate] masked submission refused (Batch 0 closure)");
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Masked edits are temporarily unavailable — describe the change in words instead.",
-        });
-      }
-
-      // Rate limit by user to prevent API abuse
-      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
-      if (!rateCheck.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: rateLimitError(rateCheck.resetIn),
-        });
-      }
-
-      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
-      await enforceDailyQuota(ctx.user.id);
-
       // Validate model ownership first (cheap operation)
       const model = await getModelById(input.modelId);
       if (!model) {
@@ -86,11 +73,100 @@ export const castingRefinementRouter = router({
 
       assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
 
+      const lockKey = modelOperationLockKey(input.modelId);
+      const gate = await beginDirectOperation({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        kind: "casting.iterate",
+        modelId: input.modelId,
+        payload: {
+          modelId: input.modelId,
+          feedback: input.feedback,
+          assetId: input.assetId,
+          maskBase64: input.maskBase64 ?? null,
+          referenceImage: input.referenceImage ?? null,
+        },
+        lockKey,
+      });
+      if (gate.type === "replay") {
+        const saved = gate.result as {
+          assetId?: unknown;
+          identityChanged?: unknown;
+          staledAngles?: unknown;
+        } | null;
+        const replayAssets = await getModelAssets(input.modelId);
+        const asset = replayAssets.find((candidate) => candidate.id === saved?.assetId);
+        if (!asset) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `The saved edit result is no longer available. Operation ${gate.operationId}.`,
+          });
+        }
+        const identityChanged = saved?.identityChanged === true;
+        const staledAngles = Array.isArray(saved?.staledAngles)
+          ? saved.staledAngles.filter((angle): angle is string => typeof angle === "string")
+          : [];
+        const replayModel = identityChanged ? await getModelById(input.modelId) : null;
+        return {
+          success: true,
+          imageUrl: asset.storageUrl,
+          pointsCost: POINT_COSTS.iterate,
+          ...(identityChanged && replayModel ? {
+            masterPrompt: replayModel.masterPrompt,
+            technicalSchema: replayModel.technicalSchema,
+            preferences: replayModel.preferences,
+          } : {}),
+          assetId: asset.id,
+          staledAngles,
+          staleMessage: identityChanged ? REFUSAL_COPY.siblingsNeedRefresh : null,
+        };
+      }
+
+      // Re-read authority after winning the model lock. Structural or policy
+      // refusals below remain free and seal the claimed receipt.
+      if (input.maskBase64) {
+        log.warn({ userId: ctx.user.id, modelId: input.modelId }, "[iterate] masked submission refused (Batch 0 closure)");
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error: new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Masked edits are temporarily unavailable — describe the change in words instead.",
+          }),
+        });
+      }
+      const lockedModel = await getModelById(input.modelId).catch((error) =>
+        failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error }));
+      if (!lockedModel || lockedModel.userId !== ctx.user.id || lockedModel.status === "archived") {
+        const error = !lockedModel
+          ? new TRPCError({ code: "NOT_FOUND", message: "Model not found" })
+          : lockedModel.userId !== ctx.user.id
+            ? new TRPCError({ code: "FORBIDDEN", message: "Access denied" })
+            : new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
+      try {
+        const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+        if (!rateCheck.allowed) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: rateLimitError(rateCheck.resetIn),
+          });
+        }
+        await enforceDailyQuota(ctx.user.id);
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
+
       // Get the asset being iterated
       const assets = await getModelAssets(input.modelId);
       const targetAsset = assets.find(a => a.id === input.assetId);
       if (!targetAsset) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Asset not found" });
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error: new TRPCError({ code: "NOT_FOUND", message: "Asset not found" }),
+        });
       }
 
       // V1+V14 (Batch A-coupled): per-view framing from the exhaustive
@@ -104,7 +180,12 @@ export const castingRefinementRouter = router({
       // selected-image generation against this view's own image
       // (un-composed until canon — no anchor references, no sibling
       // propagation).
-      const framing = iterationFramingForView(targetAsset.viewType);
+      let framing;
+      try {
+        framing = iterationFramingForView(targetAsset.viewType);
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
 
       // THE SHARED IDENTITY-AUTHORITY BOUNDARY (Batch C, policy §6/§13.1):
       // one server-owned decision for every free-text and reference-assisted
@@ -116,27 +197,35 @@ export const castingRefinementRouter = router({
       const anchor = selectIdentityAnchor(assets);
       const displayedHeadshot = selectDisplayedHeadshot(assets);
       const currentIdentityText = buildIdentityAnchor(
-        model.masterPrompt || "",
-        model.technicalSchema ?? undefined,
+        lockedModel.masterPrompt || "",
+        lockedModel.technicalSchema ?? undefined,
       );
       const decision = await authorizeEditRequest({
-        model,
+        model: lockedModel,
         targetAsset: { id: targetAsset.id, viewType: targetAsset.viewType },
         anchorAssetId: anchor?.id ?? null,
         displayedHeadshotAssetId: displayedHeadshot?.id ?? null,
         targetBelongsToCurrentIdentity: isRestoreCompatible(
-          assetRevisionMembership(targetAsset, model, currentIdentityText),
+          assetRevisionMembership(targetAsset, lockedModel, currentIdentityText),
         ),
         feedback: input.feedback,
         referenceAttached: !!input.referenceImage,
         referenceImageBase64: input.referenceImage,
-      });
+      }).catch((error) => failClaimedDirectOperation({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        error,
+      }));
       if (decision.refused) {
         log.warn(
           { userId: ctx.user.id, modelId: input.modelId, code: decision.code, retryable: decision.retryable },
           "[iterate] refused by the shared identity authority (free, before money)",
         );
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: decision.message });
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error: new TRPCError({ code: "PRECONDITION_FAILED", message: decision.message }),
+        });
       }
       const authorization = decision.authorization;
       const identityPatch = requireIdentityPatch(authorization);
@@ -163,9 +252,24 @@ export const castingRefinementRouter = router({
       // never dereference an undefined generation id.
       if (!genResult.success || !genResult.generationId) {
         log.error({ modelId: input.modelId }, "[iterate] createGeneration failed — refused before deduction");
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the edit — you weren't charged. Try again." });
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error: new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the edit — you weren't charged. Try again." }),
+        });
       }
-      const chargeReferenceId = `gen-${genResult.generationId}`;
+      const started = await markGenerationOperationRunning({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        modelId: input.modelId,
+        expectedIdentityRevisionId: currentRevisionId(lockedModel),
+        plannedCredits: POINT_COSTS.iterate,
+        requiredLockKey: lockKey,
+      });
+      const chargeReferenceId = started.chargeReferenceId;
+      let chargedCredits = 0;
+      let refundedCredits = 0;
+      let durableSaved = false;
       const identityGateAudit: Array<{ attempt: 1 | 2; verdict: IdentityGateVerdict }> = [];
 
       try {
@@ -175,6 +279,10 @@ export const castingRefinementRouter = router({
             amount: POINT_COSTS.iterate,
             description: "Model iteration",
             referenceId: chargeReferenceId,
+            onCharged: (amount) => { chargedCredits = amount; },
+            onRefunded: (outcome) => {
+              if (outcome.recorded) refundedCredits = outcome.amount;
+            },
           },
           async () => {
             // The generation prompt reads the CURRENT document. Freeze-and-
@@ -182,12 +290,12 @@ export const castingRefinementRouter = router({
             // only through the §8.6 atomic commit below, built from the
             // handler-normalized patch — never by appending the raw sentence,
             // and never by an LLM schema rewrite on the paid path.
-            const prefs = (model.preferences || {}) as any;
+            const prefs = (lockedModel.preferences || {}) as any;
             const ethnicityHint = buildEthnicityHint(prefs);
-            const reinforcedPrompt = buildReinforcedPrompt(model.masterPrompt || "", prefs);
+            const reinforcedPrompt = buildReinforcedPrompt(lockedModel.masterPrompt || "", prefs);
 
             const commonOptions = {
-              castingBrand: (model.technicalSchema as any)?.context?.casting_for,
+              castingBrand: (lockedModel.technicalSchema as any)?.context?.casting_for,
               frame: framing.crop,
               viewAngle: framing.viewAngle,
               additionalReference: input.referenceImage,
@@ -195,7 +303,7 @@ export const castingRefinementRouter = router({
               ethnicityHint,
               userId: String(ctx.user.id),
               modelId: input.modelId,
-              technicalSchema: model.technicalSchema ?? undefined,
+              technicalSchema: lockedModel.technicalSchema ?? undefined,
             } as const;
 
             const iterResult = authorization.class === "identity"
@@ -203,7 +311,7 @@ export const castingRefinementRouter = router({
                   sourceImage: targetAsset.storageUrl,
                   patch: identityPatch!,
                   frame: framing.crop,
-                  modelName: model.name,
+                  modelName: lockedModel.name,
                   generate: (attempt) => iterateModelRaw(
                     reinforcedPrompt,
                     targetAsset.storageUrl,
@@ -247,7 +355,7 @@ export const castingRefinementRouter = router({
           let commit;
           try {
             commit = await commitIdentityEdit({
-              model,
+              model: lockedModel,
               patch: identityPatch!,
               newAnchor: {
                 storageUrl: result.imageUrl,
@@ -279,6 +387,7 @@ export const castingRefinementRouter = router({
               "Identity edit failed to commit (refund)",
               chargeReferenceId,
             );
+            if (outcome.recorded) refundedCredits = outcome.amount;
             log.error(
               { modelId: input.modelId, err: commitError instanceof Error ? commitError.message : String(commitError) },
               "[iterate] identity commit failed — rolled back",
@@ -312,6 +421,16 @@ export const castingRefinementRouter = router({
             );
           }
 
+          const staledAngles = staledAnglesForAssetIds(assets, commit.staledAssetIds);
+          durableSaved = true;
+          await completeDirectOperationSuccess({
+            userId: ctx.user.id,
+            operationId: gate.operationId,
+            result: { assetId: commit.assetId, identityChanged: true, staledAngles },
+            chargedCredits,
+            refundedCredits,
+          });
+
           return {
             success: true,
             imageUrl: result.imageUrl,
@@ -320,7 +439,7 @@ export const castingRefinementRouter = router({
             technicalSchema: commit.technicalSchema,
             preferences: commit.preferences,
             assetId: commit.assetId,
-            staledAngles: staledAnglesForAssetIds(assets, commit.staledAssetIds),
+            staledAngles,
             staleMessage: REFUSAL_COPY.siblingsNeedRefresh,
           };
         }
@@ -343,7 +462,7 @@ export const castingRefinementRouter = router({
             imageOnlyCategories: authorization.imageOnlyCategories ?? [],
             ...identityStampFor({
               role: "display",
-              revisionId: currentRevisionId(model),
+              revisionId: currentRevisionId(lockedModel),
               identityText: currentIdentityText,
             }),
           },
@@ -359,6 +478,7 @@ export const castingRefinementRouter = router({
             "Model iteration failed to save (refund)",
             chargeReferenceId,
           );
+          if (outcome.recorded) refundedCredits = outcome.amount;
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: `The edit generated but couldn't be saved. ${refundTruth(outcome)} Try again.`,
@@ -377,6 +497,15 @@ export const castingRefinementRouter = router({
           );
         }
 
+        durableSaved = true;
+        await completeDirectOperationSuccess({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          result: { assetId: assetResult.assetId, identityChanged: false, staledAngles: [] },
+          chargedCredits,
+          refundedCredits,
+        });
+
         return {
           success: true,
           imageUrl: result.imageUrl,
@@ -386,6 +515,7 @@ export const castingRefinementRouter = router({
           staleMessage: null,
         };
       } catch (error) {
+        if (durableSaved) throw error;
         const auditFailed = await updateGeneration(genResult.generationId, {
           status: "failed",
           errorMessage: error instanceof Error ? error.message : "Unknown error",
@@ -407,7 +537,13 @@ export const castingRefinementRouter = router({
             "[iterate] audit-row failure write failed — audit gap",
           );
         }
-        throw error;
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error,
+          chargedCredits,
+          refundedCredits,
+        });
       }
     }),
 
@@ -577,17 +713,10 @@ export const castingRefinementRouter = router({
   // No credits charged — this is prompt maintenance
   compactPrompt: protectedProcedure
     .input(z.object({
+      clientRequestId: z.string().uuid(),
       modelId: z.number(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      // Rate limit free Gemini calls to protect API quota
-      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
-      if (!rateCheck.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: rateLimitError(rateCheck.resetIn),
-        });
-      }
       const model = await getModelById(input.modelId);
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
@@ -596,18 +725,51 @@ export const castingRefinementRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
-      // Batch 0 (B0.3): compaction is an LLM rewrite of the identity
-      // document — sealed after mint (D-43), same boundary as reconcile
-      if (model.status !== "draft") {
-        log.warn({ modelId: input.modelId }, "[CompactPrompt] refused — model is not a draft");
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Prompt compaction applies to drafts — a minted identity document is sealed.",
+      const lockKey = modelOperationLockKey(input.modelId);
+      const gate = await beginDirectOperation({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        kind: "casting.compact",
+        modelId: input.modelId,
+        payload: { modelId: input.modelId },
+        lockKey,
+      });
+      if (gate.type === "replay") {
+        const replayModel = await getModelById(input.modelId);
+        if (!replayModel || replayModel.userId !== ctx.user.id || replayModel.status === "archived") {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: `The saved compaction result is unavailable. Operation ${gate.operationId}.` });
+        }
+        return { success: true, masterPrompt: replayModel.masterPrompt };
+      }
+      const lockedModel = await getModelById(input.modelId);
+      if (!lockedModel || lockedModel.userId !== ctx.user.id || lockedModel.status !== "draft") {
+        const error = !lockedModel || lockedModel.status === "archived"
+          ? new TRPCError({ code: "NOT_FOUND", message: "Model not found" })
+          : lockedModel.userId !== ctx.user.id
+            ? new TRPCError({ code: "FORBIDDEN", message: "Access denied" })
+            : new TRPCError({ code: "PRECONDITION_FAILED", message: "Prompt compaction applies to drafts — a minted identity document is sealed." });
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
+      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
+      if (!rateCheck.allowed) {
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error: new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rateCheck.resetIn) }),
         });
       }
+      await markGenerationOperationRunning({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        modelId: input.modelId,
+        expectedIdentityRevisionId: currentRevisionId(lockedModel),
+        plannedCredits: 0,
+        requiredLockKey: lockKey,
+      });
 
-      const currentPrompt = model.masterPrompt || "";
-      const currentSchema = model.technicalSchema || {};
+      const currentPrompt = lockedModel.masterPrompt || "";
+      const currentSchema = lockedModel.technicalSchema || {};
+      let durableResult = false;
 
       try {
         const compacted = await compactMasterPrompt(currentPrompt, currentSchema);
@@ -622,11 +784,14 @@ export const castingRefinementRouter = router({
             { modelId: input.modelId },
             "[CompactPrompt] rejected — compaction dropped protected mark language; raw text kept",
           );
-          return {
+          const result = {
             success: true,
             masterPrompt: currentPrompt,
             protectedLanguageKept: true,
           };
+          durableResult = true;
+          await completeDirectOperationSuccess({ userId: ctx.user.id, operationId: gate.operationId, result: { unchanged: true }, chargedCredits: 0, refundedCredits: 0 });
+          return result;
         }
 
         const written = await updateModel(input.modelId, {
@@ -636,15 +801,25 @@ export const castingRefinementRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save compacted prompt" });
         }
 
-        return {
+        const result = {
           success: true,
           masterPrompt: compacted,
         };
+        durableResult = true;
+        await completeDirectOperationSuccess({ userId: ctx.user.id, operationId: gate.operationId, result: { unchanged: false }, chargedCredits: 0, refundedCredits: 0 });
+        return result;
       } catch (error) {
+        if (durableResult) throw error;
         log.error({ err: error }, "[CompactPrompt] Error:");
-        throw new TRPCError({
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          chargedCredits: 0,
+          refundedCredits: 0,
+          error: new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to compact prompt",
+          }),
         });
       }
     }),

@@ -1,8 +1,7 @@
-import { randomUUID } from "node:crypto";
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getModelAssets, createModelAsset,
-  createGeneration, updateGeneration,
+  createGeneration, updateGeneration, markGenerationOperationRunning,
 } from "../../db";
 import { deductPoints } from "../../db";
 import {
@@ -21,6 +20,13 @@ import { buildIdentityAnchor } from "../../casting/geminiClient";
 import { currentRevisionId, identityStampFor } from "../../casting/identity/anchorSelector";
 import { commitAnchorReRoll } from "../../casting/identity/identityCommit";
 import { createModuleLogger } from "../../logging/logger";
+import { modelOperationLockKey } from "../../casting/operationContract";
+import {
+  beginDirectOperation,
+  completeDirectOperationFailure,
+  completeDirectOperationSuccess,
+  failClaimedDirectOperation,
+} from "../../casting/directOperation";
 const log = createModuleLogger("routes/generation");
 
 export const castingImagingRouter = router({
@@ -32,18 +38,10 @@ export const castingImagingRouter = router({
   // headshot, through the guarded iteration path.
   castingImage: protectedProcedure
     .input(z.object({
+      clientRequestId: z.string().uuid(),
       modelId: z.number(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
-      // Rate limit by user to prevent API abuse
-      const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
-      if (!rateCheck.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: rateLimitError(rateCheck.resetIn),
-        });
-      }
-
       // Batch 0 (R6 execution plan, review fix 1): authorization BEFORE money.
       // The old order deducted credits first and threw NOT_FOUND/FORBIDDEN
       // outside the refund path — a rejected request silently kept the
@@ -59,22 +57,75 @@ export const castingImagingRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       assertNotArchived(model); // FR-4: archived reads as deleted
-      if (model.status !== "draft") {
-        log.warn({ modelId: input.modelId, status: model.status }, "[castingImage] refused — model is not a draft");
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: `${model.name || "This model"} is minted — their headshot is their identity. Fork to explore a new face.`,
-        });
+      const lockKey = modelOperationLockKey(input.modelId);
+      const gate = await beginDirectOperation({
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        kind: "casting.headshot",
+        modelId: input.modelId,
+        payload: { modelId: input.modelId },
+        lockKey,
+      });
+      if (gate.type === "replay") {
+        const assetId = (gate.result as { assetId?: unknown } | null)?.assetId;
+        const assets = await getModelAssets(input.modelId);
+        const asset = assets.find((candidate) => candidate.id === assetId);
+        if (!asset) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `The saved headshot result is no longer available. Operation ${gate.operationId}.`,
+          });
+        }
+        return {
+          success: true,
+          imageUrl: asset.storageUrl,
+          pointsCost: POINT_COSTS.castingImage,
+          assetId: asset.id,
+        };
       }
 
-      // Daily quota enforcement — prevent one user from exhausting Gemini RPD
-      await enforceDailyQuota(ctx.user.id);
+      let lockedModel;
+      let priorAssets;
+      try {
+        // Replays bypass admission controls: the work was already admitted
+        // and must return its receipt without consuming another rate slot.
+        const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.generation);
+        if (!rateCheck.allowed) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: rateLimitError(rateCheck.resetIn),
+          });
+        }
+        lockedModel = await getModelById(input.modelId);
+        if (!lockedModel) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        if (lockedModel.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        assertNotArchived(lockedModel);
+        if (lockedModel.status !== "draft") {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `${lockedModel.name || "This model"} is minted — their headshot is their identity. Fork to explore a new face.`,
+          });
+        }
+        // Daily quota enforcement — prevent one user from exhausting Gemini RPD
+        await enforceDailyQuota(ctx.user.id);
+        priorAssets = await getModelAssets(input.modelId);
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
 
       // R4 (ratified): a headshot RE-ROLL is an identity-changing anchor
       // operation — resolved BEFORE money so the post-generation writes are
       // deterministic. An empty draft (initial cast) flags nothing.
-      const priorAssets = await getModelAssets(input.modelId);
       const isReRoll = priorAssets.some((a) => a.viewType === "frontClose" && a.storageUrl);
+
+      const started = await markGenerationOperationRunning({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        modelId: input.modelId,
+        expectedIdentityRevisionId: currentRevisionId(lockedModel),
+        plannedCredits: POINT_COSTS.castingImage,
+        requiredLockKey: lockKey,
+      });
 
       // ATOMIC credit deduction BEFORE generation to prevent race conditions
       // Credits are deducted first, then refunded if generation fails. The
@@ -82,7 +133,9 @@ export const castingImagingRouter = router({
       // from it (review finding 1 — a refund must never reuse the charge id,
       // which the ledger would dedupe against the deduction row and skip).
       // Collision-resistant (correction 7): Date.now() can collide in parallel.
-      const chargeReferenceId = `casting-image-${input.modelId}-${randomUUID()}`;
+      const chargeReferenceId = started.chargeReferenceId;
+      let chargedCredits = 0;
+      let refundedCredits = 0;
       const deductResult = await deductPoints(
         ctx.user.id,
         POINT_COSTS.castingImage,
@@ -92,11 +145,18 @@ export const castingImagingRouter = router({
       );
 
       if (!deductResult.success) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: deductResult.error || `Insufficient credits. Need ${POINT_COSTS.castingImage} credits.`,
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          chargedCredits,
+          refundedCredits,
+          error: new TRPCError({
+            code: "BAD_REQUEST",
+            message: deductResult.error || `Insufficient credits. Need ${POINT_COSTS.castingImage} credits.`,
+          }),
         });
       }
+      chargedCredits = POINT_COSTS.castingImage;
 
       // Create generation record — a failed audit-row insert is detected and
       // refunded, never dereferenced as an undefined id (review finding 2).
@@ -111,17 +171,25 @@ export const castingImagingRouter = router({
       if (!genResult.success || !genResult.generationId) {
         log.error({ modelId: input.modelId }, "[castingImage] createGeneration failed — refunding before generation");
         const outcome = await recordRefund(ctx.user.id, POINT_COSTS.castingImage, "Refund: casting image couldn't start", chargeReferenceId);
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Couldn't start the cast. ${refundTruth(outcome)} Try again.` });
+        if (outcome.recorded) refundedCredits = POINT_COSTS.castingImage;
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          chargedCredits,
+          refundedCredits,
+          error: new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Couldn't start the cast. ${refundTruth(outcome)} Try again.` }),
+        });
       }
       const generationId = genResult.generationId;
+      let durableSaved = false;
 
       try {
         // Generate image
-        const castingBrand = (model.technicalSchema as any)?.context?.casting_for || 'Generic';
-        const prefs = (model.preferences || {}) as any;
+        const castingBrand = (lockedModel.technicalSchema as any)?.context?.casting_for || 'Generic';
+        const prefs = (lockedModel.preferences || {}) as any;
         const ethnicityHint = buildEthnicityHint(prefs);
-        const reinforcedPrompt = buildReinforcedPrompt(model.masterPrompt, prefs);
-        log.info({ castingBrand, modelId: input.modelId, ethnicityHint, hasOverrides: reinforcedPrompt !== model.masterPrompt }, '[castingImage] Generating with brand');
+        const reinforcedPrompt = buildReinforcedPrompt(lockedModel.masterPrompt, prefs);
+        log.info({ castingBrand, modelId: input.modelId, ethnicityHint, hasOverrides: reinforcedPrompt !== lockedModel.masterPrompt }, '[castingImage] Generating with brand');
 
         const result = await generateCastingImage(
           reinforcedPrompt,
@@ -131,7 +199,7 @@ export const castingImagingRouter = router({
             ethnicityHint,
             userId: String(ctx.user.id),
             modelId: input.modelId,
-            technicalSchema: model.technicalSchema ?? undefined,
+            technicalSchema: lockedModel.technicalSchema ?? undefined,
           }
         );
 
@@ -153,7 +221,7 @@ export const castingImagingRouter = router({
         //  - RE-ROLL (R4 ratified) ⇒ an identity-changing anchor operation:
         //    role `anchor`, a NEW identityRevisionId on the model row, and
         //    stale flags on every filled sibling view, PINNED INCLUDED.
-        const identityText = buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined);
+        const identityText = buildIdentityAnchor(lockedModel.masterPrompt || "", lockedModel.technicalSchema ?? undefined);
         const anchorValues = {
           modelId: input.modelId,
           viewType: "frontClose" as const,
@@ -163,7 +231,7 @@ export const castingImagingRouter = router({
           provenance: {
             engine: result.engineUsed,
             // Initial cast: anchor under the model's current (genesis) revision
-            ...identityStampFor({ role: "anchor", revisionId: currentRevisionId(model), identityText }),
+            ...identityStampFor({ role: "anchor", revisionId: currentRevisionId(lockedModel), identityText }),
           },
         };
 
@@ -192,6 +260,7 @@ export const castingImagingRouter = router({
             });
           }
         }
+        durableSaved = true;
 
         // The durable result is saved. An audit-row failure past this point
         // is an audit gap, never a refund (review finding 3, invariant 2).
@@ -207,6 +276,14 @@ export const castingImagingRouter = router({
           );
         }
 
+        await completeDirectOperationSuccess({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          result: { assetId: assetResult.assetId! },
+          chargedCredits,
+          refundedCredits,
+        });
+
         // Model stays as 'draft' until explicit export/mint
         // (previously auto-set to 'active' here, causing drafts to appear in MY MODELS)
 
@@ -217,11 +294,15 @@ export const castingImagingRouter = router({
           assetId: assetResult.assetId,
         };
       } catch (error) {
+        // The asset row is the durable paid result. Receipt finalization owns
+        // recovery after this boundary; never refund a result that was saved.
+        if (durableSaved) throw error;
         // Refund credits on failure — everything inside the try precedes or
         // IS the durable-result write, so a refund here is always correct.
         // The outgoing message carries the refund TRUTH (final correction 1).
         log.error({ err: error, modelId: input.modelId, generationId }, "[castingImage] failed before the durable boundary");
         const outcome = await recordRefund(ctx.user.id, POINT_COSTS.castingImage, "Refund: failed casting image generation", chargeReferenceId);
+        if (outcome.recorded) refundedCredits = POINT_COSTS.castingImage;
 
         // Raw internal text stays in the audit row + logs (staff surfaces);
         // the client message is sanitized (final corrections).
@@ -234,9 +315,15 @@ export const castingImagingRouter = router({
           log.error({ modelId: input.modelId, generationId }, "[castingImage] audit-row failure write failed — audit gap");
         }
         const baseMessage = publicErrorMessage(error, "Casting failed.");
-        throw new TRPCError({
-          code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
-          message: `${baseMessage} ${refundTruth(outcome)}`,
+        return completeDirectOperationFailure({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          chargedCredits,
+          refundedCredits,
+          error: new TRPCError({
+            code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
+            message: `${baseMessage} ${refundTruth(outcome)}`,
+          }),
         });
       }
     }),

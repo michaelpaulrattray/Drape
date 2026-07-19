@@ -18,6 +18,7 @@ import { captureCastingSession } from '@/features/casting/castingSessionToken';
 import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
 import type { GeneratedAsset } from '@/features/casting/constants';
 import type { CanonicalViewAngle, MintTier } from '@shared/boardTypes';
+import { createClientRequestId } from '@shared/clientRequestId';
 
 interface UseCastGateParams {
   currentModelId: number | null;
@@ -95,6 +96,7 @@ export function useCastGate({
         // mint transition, and the server fails anything else closed.
         const nickname = stayDraft ? characterName.trim() : '';
         const result = await mintPackageMutation.mutateAsync({
+          clientRequestId: createClientRequestId(),
           modelId: currentModelId,
           tier,
           ...(stayDraft

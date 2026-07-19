@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { createClientRequestId } from '@shared/clientRequestId';
 import { RecentWorkCard } from './RecentWorkCard';
 import type { RecentWorkItem } from './types';
 
@@ -93,7 +94,7 @@ export function RecentWorkSection({
         deleteSessionMutation.mutate({ sessionId: item.sessionId });
         break;
       case 'casting':
-        deleteDraftMutation.mutate({ modelId: item.modelId });
+        deleteDraftMutation.mutate({ clientRequestId: createClientRequestId(), modelId: item.modelId });
         break;
     }
   };

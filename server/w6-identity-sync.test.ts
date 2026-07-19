@@ -30,7 +30,7 @@ describe('W6-D post-identity-edit client synchronization', () => {
     expect(branch).toContain('result.technicalSchema !== undefined');
     expect(branch).toContain('editablePreferencesFromStored(result.preferences)');
     expect(branch).toContain('setCurrentMasterPrompt(result.masterPrompt)');
-    expect(branch).toContain('setCurrentTechnicalSchema(result.technicalSchema)');
+    expect(branch).toContain('setCurrentTechnicalSchema(result.technicalSchema as Record<string, unknown> | null)');
     expect(branch).toContain('setPrefs(restored.preferences)');
     expect(branch).toContain('setEngineChoices(restored.engineChoice)');
     expect(branch).toContain('utils.models.get.invalidate({ modelId: currentModelId })');

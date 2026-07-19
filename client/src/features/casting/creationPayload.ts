@@ -20,7 +20,7 @@ export function buildCreationPreferences(
   engineChoice: EngineChoiceFlags = {},
 ) {
   const durableEngineChoice = sanitizeEngineChoice(engineChoice);
-  return {
+  const values = {
     gender: prefs.gender,
     age: prefs.age,
     ethnicity: prefs.ethnicity,
@@ -58,4 +58,10 @@ export function buildCreationPreferences(
       ? { engineChoice: durableEngineChoice }
       : {}),
   };
+  // Superjson preserves explicit undefined keys. Keep the creation wire
+  // payload structurally JSON-clean so schema parsing and operation hashing
+  // agree that an unselected optional field is absent.
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== undefined),
+  ) as typeof values;
 }
