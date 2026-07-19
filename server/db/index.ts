@@ -67,6 +67,19 @@ export {
 } from "./models";
 export { getUserDraftModelsWithThumbnail } from "./models";
 
+// Durable generation-operation receipts and exclusive resource locks
+export {
+  claimGenerationOperation,
+  acquireGenerationOperationLock,
+  markGenerationOperationRunning,
+  finalizeGenerationOperationSuccess,
+  finalizeGenerationOperationFailure,
+  markGenerationOperationRecoveryRequired,
+  getGenerationOperationOutcome,
+  type ClaimGenerationOperationInput,
+  type AcquireGenerationOperationLockResult,
+} from "./generationOperations";
+
 // Generations
 export {
   createGeneration,

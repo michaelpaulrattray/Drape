@@ -255,6 +255,59 @@ export const generations = mysqlTable("generations", {
 export type Generation = typeof generations.$inferSelect;
 export type InsertGeneration = typeof generations.$inferInsert;
 
+/**
+ * R7 parent operation receipt. One row represents one user intent rather than
+ * one provider attempt. Raw prompts, references, masks and image payloads are
+ * never stored here; payloadHash is the only persisted request material.
+ */
+export const generationOperations = mysqlTable("generation_operations", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("userId").notNull(),
+  clientRequestId: varchar("clientRequestId", { length: 36 }).notNull(),
+  kind: varchar("kind", { length: 48 }).notNull(),
+  modelId: int("modelId"),
+  originBoardId: int("originBoardId"),
+  originItemId: int("originItemId"),
+  payloadHash: varchar("payloadHash", { length: 64 }).notNull(),
+  status: varchar("status", { length: 24 }).default("claimed").notNull(),
+  expectedIdentityRevisionId: varchar("expectedIdentityRevisionId", { length: 64 }),
+  plannedCredits: int("plannedCredits").default(0).notNull(),
+  chargedCredits: int("chargedCredits").default(0).notNull(),
+  refundedCredits: int("refundedCredits").default(0).notNull(),
+  chargeReferenceId: varchar("chargeReferenceId", { length: 64 }),
+  result: json("result"),
+  errorCode: varchar("errorCode", { length: 32 }),
+  publicMessage: text("publicMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  completedAt: timestamp("completedAt"),
+}, (table) => ([
+  uniqueIndex("uq_generation_ops_user_request").on(table.userId, table.clientRequestId),
+  index("idx_generation_ops_model_status_created").on(table.modelId, table.status, table.createdAt),
+  index("idx_generation_ops_user_created").on(table.userId, table.createdAt),
+  uniqueIndex("uq_generation_ops_charge_ref").on(table.chargeReferenceId),
+]));
+
+export type GenerationOperation = typeof generationOperations.$inferSelect;
+export type InsertGenerationOperation = typeof generationOperations.$inferInsert;
+
+/**
+ * Exclusive operation lease. R7-1 never steals an expired row; expiry is
+ * support/recovery evidence until R7-2 introduces heartbeat and adjudication.
+ */
+export const generationOperationLocks = mysqlTable("generation_operation_locks", {
+  lockKey: varchar("lockKey", { length: 96 }).primaryKey(),
+  operationId: varchar("operationId", { length: 36 }).notNull(),
+  kind: varchar("kind", { length: 48 }).notNull(),
+  acquiredAt: timestamp("acquiredAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+}, (table) => ([
+  uniqueIndex("uq_generation_operation_locks_operation").on(table.operationId),
+]));
+
+export type GenerationOperationLock = typeof generationOperationLocks.$inferSelect;
+export type InsertGenerationOperationLock = typeof generationOperationLocks.$inferInsert;
+
 
 /**
  * Audit logs table for tracking security-sensitive operations.
