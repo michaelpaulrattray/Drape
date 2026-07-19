@@ -348,6 +348,9 @@ export const billingRouter = router({
   changePlan: protectedProcedure
     .input(z.object({
       newPlan: z.enum(["starter", "pro", "studio", "studio_plus", "business", "business_plus", "scale", "scale_plus", "enterprise", "enterprise_plus", "ultimate"]),
+      // Additive for deploy skew: current clients send one id per deliberate
+      // click; an older bundle may omit it until the new client is live.
+      clientRequestId: z.string().uuid().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Check if account is frozen
@@ -406,12 +409,19 @@ export const billingRouter = router({
 
       if (creditAdjustment > 0) {
         // Add prorated credits for upgrade
-        await addCredits(
+        const creditResult = await addCredits(
           ctx.user.id,
           creditAdjustment,
           "bonus",
-          `Prorated credits for upgrade to ${input.newPlan}`
+          `Prorated credits for upgrade to ${input.newPlan}`,
+          input.clientRequestId ? `plan-change:${input.clientRequestId}` : undefined,
         );
+        if (!creditResult.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
+          });
+        }
       }
 
       // Update local subscription record

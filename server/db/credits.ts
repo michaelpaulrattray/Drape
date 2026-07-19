@@ -5,6 +5,7 @@
  * to prevent data inconsistency on partial failures.
  */
 
+import { createHash } from "node:crypto";
 import { eq, and, desc, sql } from "drizzle-orm";
 import {
   credits,
@@ -17,11 +18,159 @@ import {
   InsertPoints,
   InsertPointTransaction,
 } from "../../drizzle/schema";
-import { getDb, withTransaction } from "./connection";
+import { getDb, withTransaction, type DbInstance } from "./connection";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/credits");
 
 const INITIAL_CREDITS = 5000; // Free tier starting credits (50x display multiplier)
+const CREDIT_REFERENCE_MAX_LENGTH = 64;
+
+/** Preserve readable references that fit varchar(64); hash longer child ids. */
+export function normalizeCreditReferenceId(referenceId: string): string {
+  if (referenceId.length <= CREDIT_REFERENCE_MAX_LENGTH) return referenceId;
+  const digest = createHash("sha256").update(referenceId).digest("hex");
+  return `sha256:${digest.slice(0, CREDIT_REFERENCE_MAX_LENGTH - "sha256:".length)}`;
+}
+
+export type CreditTransactionType =
+  | "generation"
+  | "purchase"
+  | "bonus"
+  | "refund"
+  | "signup"
+  | "topup"
+  | "subscription";
+
+export interface CreditWriteResult {
+  success: boolean;
+  newBalance?: number;
+  error?: string;
+  /** The unique ledger reference already exists. */
+  duplicate?: boolean;
+  /** The existing row disagrees with the requested type or signed amount. */
+  collision?: boolean;
+}
+
+interface CreditReferenceSemantics {
+  type: string;
+  amount: number;
+}
+
+interface ExistingCreditReference extends CreditReferenceSemantics {
+  id: number;
+}
+
+/** MySQL/Drizzle can wrap driver errors, so inspect the short cause chain. */
+export function isDuplicateCreditReferenceError(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && current && typeof current === "object"; depth += 1) {
+    const candidate = current as { code?: unknown; errno?: unknown; cause?: unknown };
+    if (candidate.code === "ER_DUP_ENTRY" || candidate.errno === 1062) return true;
+    current = candidate.cause;
+  }
+  return false;
+}
+
+export function creditReferenceSemanticsMatch(
+  existing: CreditReferenceSemantics,
+  expected: CreditReferenceSemantics,
+): boolean {
+  return existing.type === expected.type && existing.amount === expected.amount;
+}
+
+async function loadReferenceAndBalance(
+  db: DbInstance,
+  userId: number,
+  referenceId: string,
+) {
+  const [existing] = await db
+    .select({
+      id: creditTransactions.id,
+      type: creditTransactions.type,
+      amount: creditTransactions.amount,
+    })
+    .from(creditTransactions)
+    .where(
+      and(
+        eq(creditTransactions.userId, userId),
+        eq(creditTransactions.referenceId, referenceId),
+      ),
+    )
+    .limit(1);
+  const [balanceRow] = await db
+    .select({ balance: credits.balance })
+    .from(credits)
+    .where(eq(credits.userId, userId))
+    .limit(1);
+  return { existing, balance: balanceRow?.balance };
+}
+
+async function resolveDuplicateCreditReference(
+  db: DbInstance,
+  mode: "add" | "deduct",
+  userId: number,
+  referenceId: string,
+  expected: CreditReferenceSemantics,
+): Promise<CreditWriteResult> {
+  const { existing, balance } = await loadReferenceAndBalance(db, userId, referenceId);
+  if (!existing) {
+    log.error(
+      { userId, referenceId, mode },
+      "[Database] Unique credit-reference violation had no readable winning row",
+    );
+    return { success: false, error: "Failed to reconcile duplicate credit reference" };
+  }
+
+  return classifyExistingCreditReference(mode, userId, referenceId, existing, expected, balance);
+}
+
+function classifyExistingCreditReference(
+  mode: "add" | "deduct",
+  userId: number,
+  referenceId: string,
+  existing: ExistingCreditReference,
+  expected: CreditReferenceSemantics,
+  balance?: number,
+): CreditWriteResult {
+  if (!creditReferenceSemanticsMatch(existing, expected)) {
+    log.fatal(
+      {
+        userId,
+        referenceId,
+        mode,
+        existing: { id: existing.id, type: existing.type, amount: existing.amount },
+        requested: expected,
+      },
+      "[Database] CRITICAL credit-reference collision — refusing mismatched ledger write",
+    );
+    return {
+      success: false,
+      error: "Credit reference collision",
+      duplicate: true,
+      collision: true,
+    };
+  }
+
+  if (mode === "deduct") {
+    log.warn({ userId, referenceId }, "[Database] Duplicate credit deduction refused");
+    return {
+      success: false,
+      error: "Credit charge already recorded",
+      duplicate: true,
+    };
+  }
+
+  if (balance === undefined) {
+    log.error(
+      { userId, referenceId },
+      "[Database] Duplicate credit addition matched but current balance was unavailable",
+    );
+    return { success: false, error: "User credits not found", duplicate: true };
+  }
+
+  log.warn({ userId, referenceId }, "[Database] Duplicate credit addition confirmed; returning current balance");
+  return { success: true, newBalance: balance, duplicate: true };
+}
 
 export async function initializeUserCredits(userId: number): Promise<void> {
   const db = await getDb();
@@ -115,13 +264,14 @@ export async function getCreditTransactionByRef(
     return null;
   }
 
+  const ledgerReferenceId = normalizeCreditReferenceId(referenceId);
   const result = await db
     .select()
     .from(creditTransactions)
     .where(
       and(
         eq(creditTransactions.userId, userId),
-        eq(creditTransactions.referenceId, referenceId)
+        eq(creditTransactions.referenceId, ledgerReferenceId)
       )
     )
     .limit(1);
@@ -132,22 +282,18 @@ export async function getCreditTransactionByRef(
 export async function deductCredits(
   userId: number,
   amount: number,
-  type:
-    | "generation"
-    | "purchase"
-    | "bonus"
-    | "refund"
-    | "signup"
-    | "topup"
-    | "subscription",
+  type: CreditTransactionType,
   description: string,
   referenceId?: string,
   engineUsed?: string
-): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
     return { success: false, error: "Database not available" };
   }
+  const ledgerReferenceId = referenceId
+    ? normalizeCreditReferenceId(referenceId)
+    : undefined;
 
   try {
     return await withTransaction(async (tx) => {
@@ -165,6 +311,36 @@ export async function deductCredits(
         0;
 
       if (affectedRows === 0) {
+        // A replay can arrive after the winning charge reduced the balance
+        // below this amount. Classify the existing reference before reporting
+        // insufficient credits so every repeated charge remains a typed
+        // duplicate refusal even when it cannot reach the unique insert.
+        if (ledgerReferenceId) {
+          const [existing] = await tx
+            .select({
+              id: creditTransactions.id,
+              type: creditTransactions.type,
+              amount: creditTransactions.amount,
+            })
+            .from(creditTransactions)
+            .where(
+              and(
+                eq(creditTransactions.userId, userId),
+                eq(creditTransactions.referenceId, ledgerReferenceId),
+              ),
+            )
+            .limit(1);
+          if (existing) {
+            return classifyExistingCreditReference(
+              "deduct",
+              userId,
+              ledgerReferenceId,
+              existing,
+              { type, amount: -amount },
+            );
+          }
+        }
+
         // Read inside transaction to determine failure reason
         const userCreditsResult = await tx
           .select()
@@ -190,7 +366,7 @@ export async function deductCredits(
         amount: -amount,
         type,
         description,
-        referenceId,
+        referenceId: ledgerReferenceId,
         balanceAfter: newBalance,
         engineUsed: engineUsed || null,
       });
@@ -198,6 +374,17 @@ export async function deductCredits(
       return { success: true, newBalance };
     });
   } catch (error) {
+    // A duplicate ledger insert rolls the preceding balance update back.
+    // Classify the already-committed row only after that rollback completes.
+    if (ledgerReferenceId && isDuplicateCreditReferenceError(error)) {
+      return resolveDuplicateCreditReference(
+        db,
+        "deduct",
+        userId,
+        ledgerReferenceId,
+        { type, amount: -amount },
+      );
+    }
     log.error({ err: error }, "[Database] Failed to deduct credits:");
     return { success: false, error: "Failed to deduct credits" };
   }
@@ -209,61 +396,24 @@ export const deductPoints = deductCredits;
 export async function addCredits(
   userId: number,
   amount: number,
-  type:
-    | "generation"
-    | "purchase"
-    | "bonus"
-    | "refund"
-    | "signup"
-    | "topup"
-    | "subscription",
+  type: CreditTransactionType,
   description: string,
   referenceId?: string
-): Promise<{
-  success: boolean;
-  newBalance?: number;
-  error?: string;
-  duplicate?: boolean;
-}> {
+): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
     return { success: false, error: "Database not available" };
   }
+  const ledgerReferenceId = referenceId
+    ? normalizeCreditReferenceId(referenceId)
+    : undefined;
 
   try {
     return await withTransaction(async (tx) => {
-      // IDEMPOTENCY CHECK: If referenceId is provided, check for duplicate transaction
-      if (referenceId) {
-        const existing = await tx
-          .select({ id: creditTransactions.id })
-          .from(creditTransactions)
-          .where(
-            and(
-              eq(creditTransactions.referenceId, referenceId),
-              eq(creditTransactions.userId, userId)
-            )
-          )
-          .limit(1);
-
-        if (existing.length > 0) {
-          log.warn(
-            `[Database] Duplicate transaction detected: referenceId=${referenceId}, userId=${userId}. Skipping.`
-          );
-          const userCreditsResult = await tx
-            .select({ balance: credits.balance })
-            .from(credits)
-            .where(eq(credits.userId, userId))
-            .limit(1);
-          return {
-            success: true,
-            newBalance: userCreditsResult[0]?.balance ?? 0,
-            duplicate: true,
-          };
-        }
-      }
-
-      // ATOMIC ADDITION: Use SQL balance + amount to prevent race conditions
-      // (same pattern as deductCredits — never read-then-write)
+      // ATOMIC ADDITION: Use SQL balance + amount to prevent race conditions.
+      // The unique ledger index, not a prior SELECT, arbitrates concurrent
+      // references. If the insert loses, this update rolls back before the
+      // catch below classifies the already-committed row.
       const isPurchase =
         type === "purchase" || type === "topup" || type === "subscription";
 
@@ -300,13 +450,22 @@ export async function addCredits(
         amount,
         type,
         description,
-        referenceId,
+        referenceId: ledgerReferenceId,
         balanceAfter: newBalance,
       });
 
       return { success: true, newBalance };
     });
   } catch (error) {
+    if (ledgerReferenceId && isDuplicateCreditReferenceError(error)) {
+      return resolveDuplicateCreditReference(
+        db,
+        "add",
+        userId,
+        ledgerReferenceId,
+        { type, amount },
+      );
+    }
     log.error({ err: error }, "[Database] Failed to add credits:");
     return { success: false, error: "Failed to add credits" };
   }

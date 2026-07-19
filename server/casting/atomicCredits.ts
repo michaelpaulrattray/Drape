@@ -23,7 +23,7 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { deductCredits, addCredits } from "../db";
+import { deductCredits, addCredits, normalizeCreditReferenceId } from "../db";
 import { TRPCError } from "@trpc/server";
 import { publicErrorMessage } from "../lib/publicError";
 import { getDb } from "../db/connection";
@@ -65,16 +65,14 @@ interface AtomicCreditResult<T> {
  */
 /**
  * Deterministic refund reference for a charge reference. The charge writes a
- * `creditTransactions` row under its own referenceId, and `addCredits` treats
- * ANY existing (userId, referenceId) row as an already-recorded transaction —
- * so a refund reusing the charge's id is silently SKIPPED while the user
- * stays charged (Batch C review finding 1). Charge and refund therefore use
- * distinct, deterministic ids: retrying the same refund stays idempotent
- * (the refund's own row dedupes it), and it can never collide with the
- * deduction row.
+ * `creditTransactions` row under its own referenceId. Charge and refund use
+ * distinct deterministic ids so they remain different semantic transactions.
+ * R7-1B's unique ledger index makes concurrent refund retries idempotent; an
+ * accidental charge/refund reference reuse is now a typed collision instead
+ * of a silently accepted duplicate.
  */
 export function refundReferenceFor(chargeReferenceId: string): string {
-  return `refund:${chargeReferenceId}`;
+  return normalizeCreditReferenceId(`refund:${chargeReferenceId}`);
 }
 
 /** What actually happened to a refund — the truth every user-facing surface
@@ -89,12 +87,9 @@ export interface RefundOutcome {
 }
 
 /** Record a refund under the charge's derived reference, CHECK the result,
- *  and return the truthful outcome. Sequential-retry idempotent (the refund's
- *  own ledger row dedupes a re-attempt). NOTE: the ledger's duplicate check
- *  is read-before-write with no DB uniqueness constraint — two truly
- *  concurrent writers of the same reference can race. That concurrency
- *  hardening is the R7 pre-launch ledger item; nothing here claims
- *  concurrent-writer safety. */
+ *  and return the truthful outcome. The R7-1B database unique index is the
+ *  final arbiter: exact concurrent retries return the winning current balance,
+ *  while a mismatched amount/type is a critical collision failure. */
 export async function recordRefund(
   userId: number,
   amount: number,
@@ -216,12 +211,11 @@ export async function withAtomicCredits<T>(
  * 5. Requests 3-5 fail: balance 0 < 5 ✗
  * 6. User gets exactly 2 generations as expected
  *
- * HONEST LIMIT (R7 pre-launch ledger-hardening item): the BALANCE update is
- * atomic (conditional UPDATE), but the ledger's referenceId duplicate check
- * in addCredits is read-before-write with no database uniqueness constraint.
- * Refund idempotency therefore holds for SEQUENTIAL retries only — two truly
- * concurrent writers of the same refund reference can race and double-write.
- * Do not describe this module as concurrency-safe for refund recording.
+ * R7-1B LEDGER BOUNDARY: the balance update and ledger insert share one
+ * transaction, and a unique (userId, referenceId) index arbitrates every
+ * non-null reference. A losing transaction rolls its balance change back
+ * before the existing row is classified. Exact refund retries are safe;
+ * duplicate charges refuse and never authorize another provider call.
  * 
  * HOW TO USE:
  * -----------

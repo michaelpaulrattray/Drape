@@ -285,7 +285,13 @@ export async function executeChangeRequestAction(
 
       if (creditsToDeduct > 0) {
         const { adjustUserCredits } = await import("../../db");
-        const deductResult = await adjustUserCredits(userId, -creditsToDeduct, `Stripe refund via CR #${changeRequestId}`, ctx.user.id);
+        const deductResult = await adjustUserCredits(
+          userId,
+          -creditsToDeduct,
+          `Stripe refund via CR #${changeRequestId}`,
+          ctx.user.id,
+          `cr-stripe-refund:${changeRequestId}`,
+        );
         if (!deductResult.success) {
           log.error(`[Refund] Credit deduction failed after Stripe refund ${refundResult.refundId}: ${deductResult.error}`);
         }

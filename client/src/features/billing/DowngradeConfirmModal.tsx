@@ -68,7 +68,7 @@ export function DowngradeConfirmModal({
         interval: "monthly",
       });
     } else {
-      changePlan.mutate({ newPlan: bestValuePlan.id as any });
+      changePlan.mutate({ newPlan: bestValuePlan.id as any, clientRequestId: crypto.randomUUID() });
     }
   };
 

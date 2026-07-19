@@ -158,6 +158,14 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
     expect(refund.referenceId).toBe(refundReferenceFor(charge.referenceId!));
   });
 
+  it("bounds long refund child references to the ledger's varchar(64)", () => {
+    const longCharge = `casting-image-${"9".repeat(20)}-${"a".repeat(36)}`;
+    const reference = refundReferenceFor(longCharge);
+    expect(reference).toHaveLength(64);
+    expect(reference).toMatch(/^sha256:[a-f0-9]{57}$/);
+    expect(refundReferenceFor(longCharge)).toBe(reference);
+  });
+
   it("FROZEN CLOCK, PARALLEL calls: fallback charge references never collide (final correction 7)", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-16T12:00:00Z"));

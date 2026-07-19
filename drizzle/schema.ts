@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, index } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, index, uniqueIndex } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -127,7 +127,7 @@ export const creditTransactions = mysqlTable("point_transactions", {
   engineUsed: varchar("engineUsed", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ([
-  index("idx_credit_txn_user_ref").on(table.userId, table.referenceId),
+  uniqueIndex("uq_point_txn_user_ref").on(table.userId, table.referenceId),
   index("idx_credit_txn_user_created").on(table.userId, table.createdAt),
 ]));
 

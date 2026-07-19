@@ -10,7 +10,15 @@ import {
   PlanTier,
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
-import { getUserCredits, addCredits } from "./credits";
+import {
+  addCredits,
+  creditReferenceSemanticsMatch,
+  getCreditTransactionByRef,
+  getUserCredits,
+  isDuplicateCreditReferenceError,
+  normalizeCreditReferenceId,
+  type CreditWriteResult,
+} from "./credits";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/billing");
 
@@ -72,12 +80,14 @@ export async function getUserByStripeCustomerId(
 export async function refreshMonthlyCredits(
   userId: number,
   monthlyCredits: number,
-  rolloverCredits: number
-): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+  rolloverCredits: number,
+  referenceId: string,
+): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
     return { success: false, error: "Database not available" };
   }
+  const ledgerReferenceId = normalizeCreditReferenceId(referenceId);
 
   try {
     const userCredits = await getUserCredits(userId);
@@ -102,12 +112,39 @@ export async function refreshMonthlyCredits(
         amount: monthlyCredits,
         type: "subscription",
         description: `Monthly credit refresh (${monthlyCredits} credits + ${rolloverCredits} rollover)`,
+        referenceId: ledgerReferenceId,
         balanceAfter: newBalance,
       });
 
       return { success: true, newBalance };
     });
   } catch (error) {
+    if (isDuplicateCreditReferenceError(error)) {
+      const existing = await getCreditTransactionByRef(userId, ledgerReferenceId);
+      if (!existing || !creditReferenceSemanticsMatch(
+        existing,
+        { type: "subscription", amount: monthlyCredits },
+      )) {
+        log.fatal(
+          {
+            userId,
+            referenceId: ledgerReferenceId,
+            existing: existing && { id: existing.id, type: existing.type, amount: existing.amount },
+            requested: { type: "subscription", amount: monthlyCredits },
+          },
+          "[Database] CRITICAL monthly-refresh reference collision",
+        );
+        return {
+          success: false,
+          error: "Credit reference collision",
+          duplicate: true,
+          collision: true,
+        };
+      }
+      const current = await getUserCredits(userId);
+      if (!current) return { success: false, error: "User credits not found", duplicate: true };
+      return { success: true, newBalance: current.balance, duplicate: true };
+    }
     log.error({ err: error }, "[Database] Failed to refresh monthly credits:");
     return { success: false, error: "Failed to refresh credits" };
   }

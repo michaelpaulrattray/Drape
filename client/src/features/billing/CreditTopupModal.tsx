@@ -139,7 +139,7 @@ export function CreditTopupModal({ isOpen, onClose, currentBalance = 0 }: Credit
     if (isFreeUser) {
       createCheckout.mutate({ plan: planKey, interval: isAnnual ? "annual" : "monthly" });
     } else {
-      changePlan.mutate({ newPlan: planKey });
+      changePlan.mutate({ newPlan: planKey, clientRequestId: crypto.randomUUID() });
     }
   };
 

@@ -39,6 +39,7 @@ export {
   getCreditTransactions,
   getPointTransactions,
   getCreditTransactionByRef,
+  normalizeCreditReferenceId,
   deductCredits,
   deductPoints,
   addCredits,

@@ -278,7 +278,12 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   const monthlyCredits = getMonthlyCredits(planTier as PlanTier);
 
   // Refresh credits
-  const result = await refreshMonthlyCredits(userId, monthlyCredits, rolloverCredits);
+  const result = await refreshMonthlyCredits(
+    userId,
+    monthlyCredits,
+    rolloverCredits,
+    `stripe-invoice:${invoice.id}`,
+  );
   
   if (!result.success) {
     return { success: false, message: "Failed to refresh credits", error: result.error };

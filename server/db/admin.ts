@@ -25,6 +25,14 @@ import {
   generations,
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
+import {
+  creditReferenceSemanticsMatch,
+  getCreditTransactionByRef,
+  getUserCredits,
+  isDuplicateCreditReferenceError,
+  normalizeCreditReferenceId,
+  type CreditWriteResult,
+} from "./credits";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/admin");
 
@@ -269,10 +277,15 @@ export async function adjustUserCredits(
   userId: number,
   amount: number,
   reason: string,
-  adminId: number
-): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+  adminId: number,
+  referenceId?: string,
+): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) return { success: false, error: "Database not available" };
+  const ledgerReferenceId = referenceId
+    ? normalizeCreditReferenceId(referenceId)
+    : undefined;
+  const transactionType = amount > 0 ? "admin_add" : "admin_deduct";
 
   try {
     return await withTransaction(async (tx) => {
@@ -309,14 +322,41 @@ export async function adjustUserCredits(
       await tx.insert(creditTransactions).values({
         userId,
         amount,
-        type: amount > 0 ? "admin_add" : "admin_deduct",
+        type: transactionType,
         description: `Admin adjustment by admin ${adminId}: ${reason}`,
+        referenceId: ledgerReferenceId,
         balanceAfter: newBalance,
       });
 
       return { success: true, newBalance };
     });
   } catch (error) {
+    if (ledgerReferenceId && isDuplicateCreditReferenceError(error)) {
+      const existing = await getCreditTransactionByRef(userId, ledgerReferenceId);
+      if (!existing || !creditReferenceSemanticsMatch(
+        existing,
+        { type: transactionType, amount },
+      )) {
+        log.fatal(
+          {
+            userId,
+            referenceId: ledgerReferenceId,
+            existing: existing && { id: existing.id, type: existing.type, amount: existing.amount },
+            requested: { type: transactionType, amount },
+          },
+          "[Database] CRITICAL admin-adjustment reference collision",
+        );
+        return {
+          success: false,
+          error: "Credit reference collision",
+          duplicate: true,
+          collision: true,
+        };
+      }
+      const current = await getUserCredits(userId);
+      if (!current) return { success: false, error: "User credits not found", duplicate: true };
+      return { success: true, newBalance: current.balance, duplicate: true };
+    }
     log.error({ err: error }, "[Database] Failed to adjust credits:");
     return { success: false, error: "Failed to adjust credits" };
   }

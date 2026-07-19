@@ -159,7 +159,7 @@ export function BillingModal({ isOpen, onClose, onOpenTopup }: BillingModalProps
 
   const handleConfirmPlanChange = () => {
     if (!confirmingPlan) return;
-    changePlan.mutate({ newPlan: confirmingPlan as any });
+    changePlan.mutate({ newPlan: confirmingPlan as any, clientRequestId: crypto.randomUUID() });
   };
 
   const handleCancelPlanChange = () => {

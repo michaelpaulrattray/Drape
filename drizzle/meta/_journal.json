@@ -43,6 +43,13 @@
       "when": 1784163143927,
       "tag": "0005_crazy_killmonger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1784418087904,
+      "tag": "0006_sticky_eternals",
+      "breakpoints": true
     }
   ]
 }
