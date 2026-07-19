@@ -33,6 +33,9 @@ describe("R7-1D direct Casting execute schemas", () => {
       () => caller.generation.setSlotPinned({ clientRequestId: "retry", modelId: 7, angle: "sideClose", pinned: true } as never),
       () => caller.generation.restoreSlotVersion({ clientRequestId: "retry", modelId: 7, angle: "sideClose", assetId: 1 } as never),
       () => caller.generation.compactPrompt({ clientRequestId: "retry", modelId: 7 } as never),
+      () => caller.boardOps.runGeneration.execute({ clientRequestId: "retry", boardId: 2, itemId: 3 } as never),
+      () => caller.boardOps.applyModelEdit.execute({ clientRequestId: "retry", boardId: 2, itemId: 3, decision: "update", changes: {} } as never),
+      () => caller.boardOps.runVariations.execute({ clientRequestId: "retry", boardId: 2, itemId: 3, count: 2 } as never),
     ];
 
     for (const call of invalidCalls) {

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useGenerationJobs } from "../stores/useGenerationJobs";
 import { useOptimisticFills } from "../stores/useOptimisticFills";
+import { createClientRequestId } from "@shared/clientRequestId";
 
 export function useCastActions(options: { boardId: number; itemId: number }) {
   const { boardId, itemId } = options;
@@ -53,6 +54,7 @@ export function useCastActions(options: { boardId: number; itemId: number }) {
       if (generating || itemId < 0) return;
       startJob({ itemId, operation: "runGeneration", estimatedDurationMs: 20_000 });
       runMutation.mutate({
+        clientRequestId: createClientRequestId(),
         boardId,
         itemId,
         userPrompt: (userPrompt ?? "").trim() || undefined,

@@ -8,19 +8,105 @@
 import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { getBoardById } from "../db";
+import {
+  bindGenerationOperationModel,
+  getBoardById,
+  markGenerationOperationRunning,
+} from "../db";
 import { getBoardEdges } from "../db/boardEdges";
 import * as boardOps from "../lib/boardOps";
 import { getSnapshot } from "../lib/boardState";
 import { BOARD_ITEM_KINDS, BOARD_EDGE_RELATIONS } from "../../drizzle/schema";
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import type { Provenance, NodeStatus } from "../../shared/boardTypes";
+import { CREDIT_COSTS } from "../casting/aiService";
+import { currentRevisionId } from "../casting/identity/anchorSelector";
+import {
+  boardItemOperationLockKey,
+  modelOperationLockKey,
+  type GenerationOperationKind,
+  type PublicOperationResult,
+} from "../casting/operationContract";
+import {
+  beginDirectOperation,
+  completeDirectOperationFailure,
+  completeDirectOperationSuccess,
+} from "../casting/directOperation";
 
 async function requireBoardOwnership(boardId: number, userId: number) {
   const board = await getBoardById(boardId);
   if (!board) throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
   if (board.userId !== userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   return board;
+}
+
+async function executeCanvasOperation<Result extends PublicOperationResult>(input: {
+  userId: number;
+  clientRequestId: string;
+  kind: GenerationOperationKind;
+  modelId?: number | null;
+  originBoardId: number;
+  originItemId: number;
+  payload: unknown;
+  lockKey: string;
+  expectedIdentityRevisionId?: string | null;
+  plannedCredits: number;
+  execute: (context: {
+    operationId: string;
+    chargeReferenceId: string;
+    onCharged: (amount: number) => void;
+    onRefunded: (amount: number) => void;
+  }) => Promise<Result>;
+}): Promise<Result> {
+  const gate = await beginDirectOperation({
+    userId: input.userId,
+    clientRequestId: input.clientRequestId,
+    kind: input.kind,
+    modelId: input.modelId,
+    originBoardId: input.originBoardId,
+    originItemId: input.originItemId,
+    payload: input.payload,
+    lockKey: input.lockKey,
+  });
+  if (gate.type === "replay") return gate.result as Result;
+
+  const started = await markGenerationOperationRunning({
+    userId: input.userId,
+    operationId: gate.operationId,
+    modelId: input.modelId,
+    expectedIdentityRevisionId: input.expectedIdentityRevisionId,
+    plannedCredits: input.plannedCredits,
+    requiredLockKey: input.lockKey,
+  });
+  let chargedCredits = 0;
+  let refundedCredits = 0;
+  let durableResult = false;
+  try {
+    const result = await input.execute({
+      operationId: gate.operationId,
+      chargeReferenceId: started.chargeReferenceId,
+      onCharged: (amount) => { chargedCredits += amount; },
+      onRefunded: (amount) => { refundedCredits += amount; },
+    });
+    durableResult = true;
+    await completeDirectOperationSuccess({
+      userId: input.userId,
+      operationId: gate.operationId,
+      result,
+      chargedCredits,
+      refundedCredits,
+    });
+    return result;
+  } catch (error) {
+    if (durableResult) throw error;
+    return completeDirectOperationFailure({
+      userId: input.userId,
+      operationId: gate.operationId,
+      error,
+      chargedCredits,
+      refundedCredits,
+    });
+  }
 }
 
 const kindSchema = z.enum(BOARD_ITEM_KINDS);
@@ -302,21 +388,45 @@ export const boardOpsRouter = router({
       }),
     execute: protectedProcedure
       .input(z.object({
+        clientRequestId: z.string().uuid(),
         boardId: z.number().int().positive(),
         itemId: z.number().int().positive(),
         decision: z.enum(["update", "fork"]),
         changes: modelEditChangesSchema,
         intent: z.enum(["edit", "rerun"]).optional(),
-      }))
+      }).strict())
       .mutation(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
-        return boardOps.executeApplyModelEdit({
+        const { model } = await boardOps.resolveModelBackedBoardOperation({ userId: ctx.user.id, itemId: input.itemId });
+        const kind = input.decision === "fork" ? "canvas.fork" : "canvas.recast";
+        return executeCanvasOperation({
           userId: ctx.user.id,
-          itemId: input.itemId,
-          decision: input.decision,
-          changes: input.changes,
-          intent: input.intent,
+          clientRequestId: input.clientRequestId,
+          kind,
+          modelId: model.id,
+          originBoardId: input.boardId,
+          originItemId: input.itemId,
+          payload: {
+            boardId: input.boardId,
+            itemId: input.itemId,
+            decision: input.decision,
+            changes: input.changes,
+            intent: input.intent ?? "edit",
+          },
+          lockKey: modelOperationLockKey(model.id),
+          expectedIdentityRevisionId: currentRevisionId(model),
+          plannedCredits: CREDIT_COSTS.castingImage,
+          execute: ({ chargeReferenceId, onCharged, onRefunded }) => boardOps.executeApplyModelEdit({
+            userId: ctx.user.id,
+            itemId: input.itemId,
+            decision: input.decision,
+            changes: input.changes,
+            intent: input.intent,
+            chargeReferenceId,
+            onCharged,
+            onRefunded,
+          }),
         });
       }),
   }),
@@ -336,17 +446,34 @@ export const boardOpsRouter = router({
       }),
     execute: protectedProcedure
       .input(z.object({
+        clientRequestId: z.string().uuid(),
         boardId: z.number().int().positive(),
         itemId: z.number().int().positive(),
         count: z.number().int().min(1).max(boardOps.MAX_VARIATIONS),
-      }))
+      }).strict())
       .mutation(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
-        return boardOps.executeRunVariations({
+        const { model } = await boardOps.resolveModelBackedBoardOperation({ userId: ctx.user.id, itemId: input.itemId });
+        return executeCanvasOperation({
           userId: ctx.user.id,
-          itemId: input.itemId,
-          count: input.count,
+          clientRequestId: input.clientRequestId,
+          kind: "canvas.variations",
+          modelId: model.id,
+          originBoardId: input.boardId,
+          originItemId: input.itemId,
+          payload: { boardId: input.boardId, itemId: input.itemId, count: input.count },
+          lockKey: modelOperationLockKey(model.id),
+          expectedIdentityRevisionId: currentRevisionId(model),
+          plannedCredits: input.count * CREDIT_COSTS.castingImage,
+          execute: ({ chargeReferenceId, onCharged, onRefunded }) => boardOps.executeRunVariations({
+            userId: ctx.user.id,
+            itemId: input.itemId,
+            count: input.count,
+            chargeReferenceId,
+            onCharged,
+            onRefunded,
+          }),
         });
       }),
   }),
@@ -432,21 +559,42 @@ export const boardOpsRouter = router({
       }),
     execute: protectedProcedure
       .input(z.object({
+        clientRequestId: z.string().uuid(),
         boardId: z.number().int().positive(),
         itemId: z.number().int().positive(),
         userPrompt: z.string().max(4000).optional(),
         attributes: creationAttributesSchema.optional(),
         modelName: z.string().max(128).optional(),
-      }))
+      }).strict())
       .mutation(async ({ ctx, input }) => {
         await requireBoardOwnership(input.boardId, ctx.user.id);
         await boardOps.requireItemInBoard(input.itemId, input.boardId);
-        return boardOps.executeRunGeneration({
+        return executeCanvasOperation({
           userId: ctx.user.id,
-          itemId: input.itemId,
-          userPrompt: input.userPrompt,
-          attributes: input.attributes,
-          modelName: input.modelName,
+          clientRequestId: input.clientRequestId,
+          kind: "canvas.cast",
+          originBoardId: input.boardId,
+          originItemId: input.itemId,
+          payload: {
+            boardId: input.boardId,
+            itemId: input.itemId,
+            userPrompt: input.userPrompt ?? null,
+            attributes: input.attributes ?? null,
+            modelName: input.modelName?.trim() || null,
+          },
+          lockKey: boardItemOperationLockKey(input.itemId),
+          plannedCredits: CREDIT_COSTS.castingImage,
+          execute: ({ operationId, chargeReferenceId, onCharged, onRefunded }) => boardOps.executeRunGeneration({
+            userId: ctx.user.id,
+            itemId: input.itemId,
+            userPrompt: input.userPrompt,
+            attributes: input.attributes,
+            modelName: input.modelName,
+            chargeReferenceId,
+            onCharged,
+            onRefunded,
+            onModelCreated: (modelId) => bindGenerationOperationModel({ userId: ctx.user.id, operationId, modelId }),
+          }),
         });
       }),
   }),

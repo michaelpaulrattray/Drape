@@ -36,6 +36,8 @@ export async function beginDirectOperation(input: {
   clientRequestId: string;
   kind: GenerationOperationKind;
   modelId?: number | null;
+  originBoardId?: number | null;
+  originItemId?: number | null;
   payload: unknown;
   lockKey?: string;
 }): Promise<DirectOperationGate> {

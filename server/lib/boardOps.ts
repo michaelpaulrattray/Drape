@@ -8,7 +8,6 @@
  * an empty cast_root, composing the existing casting engine). Later milestones
  * add generateViews, fork/recast, refreshStaleViews, refinement, etc. here.
  */
-import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import {
   addBoardItem,
@@ -303,6 +302,10 @@ export interface RunGenerationInput {
   /** Explicit attribute values (chips/rows) — hard constraints over parser output. */
   attributes?: Record<string, unknown>;
   modelName?: string;
+  chargeReferenceId: string;
+  onCharged: (amount: number) => void;
+  onRefunded: (amount: number) => void;
+  onModelCreated: (modelId: number) => Promise<void> | void;
 }
 
 export async function executeRunGeneration(input: RunGenerationInput) {
@@ -345,10 +348,8 @@ export async function executeRunGeneration(input: RunGenerationInput) {
   }
 
   const cost = CREDIT_COSTS.castingImage;
-  // Collision-resistant charge reference (final correction 7)
-  const chargeReferenceId = `board-item-${input.itemId}-${randomUUID()}`;
   const deduct = await deductPoints(
-    input.userId, cost, "generation", "Canvas cast generation (pending)", chargeReferenceId,
+    input.userId, cost, "generation", "Canvas cast generation (pending)", input.chargeReferenceId,
   );
   if (!deduct.success) {
     throw new TRPCError({
@@ -356,14 +357,15 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       message: deduct.error || `Insufficient credits. Need ${cost} credits.`,
     });
   }
+  input.onCharged(cost);
 
   // ── The PAID DURABLE-EFFECT boundary (review finding 3): everything inside
   // this try either precedes or IS the durable paid result (model row +
   // generation record + headshot asset). Failure here means no usable paid
   // result survives, so the deterministic refund below is always correct.
   let modelId: number;
-  let masterPromptText: string;
   let imageUrl: string;
+  let assetId: number;
   let engineUsed: string | undefined;
   try {
     const masterPrompt = await generateMasterPrompt(prefs);
@@ -379,7 +381,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: modelResult.error || "Failed to create model" });
     }
     modelId = modelResult.modelId;
-    masterPromptText = masterPrompt.naturalDescription;
+    await input.onModelCreated(modelId);
 
     // Review finding 2: a failed audit-row insert is detected, never
     // dereferenced as an undefined generation id
@@ -436,6 +438,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     if (!asset.success || !asset.assetId) {
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The cast generated but couldn't be saved." });
     }
+    assetId = asset.assetId;
 
     const auditDone = await updateGeneration(genRecord.generationId, { status: "completed", resultUrl: result.imageUrl, completedAt: new Date() });
     if (!auditDone.success) {
@@ -446,7 +449,8 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     // the refund TRUTH into both the node status and the outgoing error
     // (final correction 1): never claim "not charged" for an unrecorded refund.
     log.error({ err: error, itemId: input.itemId }, "runGeneration failed before the durable boundary");
-    const outcome = await recordRefund(input.userId, cost, "Canvas cast generation failed (refund)", chargeReferenceId);
+    const outcome = await recordRefund(input.userId, cost, "Canvas cast generation failed (refund)", input.chargeReferenceId);
+    if (outcome.recorded) input.onRefunded(outcome.amount);
     // Sanitized (final corrections): authored TRPCError/PublicError wording
     // passes; raw internal error text never reaches the node card or toast.
     const baseMessage = publicErrorMessage(error, "Generation failed.");
@@ -468,6 +472,8 @@ export async function executeRunGeneration(input: RunGenerationInput) {
   // never a refund, never a retryable "generation failed" that could
   // duplicate the paid work (review finding 3, invariant 2). The return
   // payload still carries the result so the client can render it.
+  let placed = true;
+  let placementMessage: string | undefined;
   try {
     const provenance: Provenance = {
       type: "cast_root",
@@ -504,6 +510,9 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       },
     });
   } catch (syncError) {
+    placed = false;
+    placementMessage =
+      "Your cast was created and charged — find the draft in your model library. Placing it on the board failed; it was not charged twice.";
     log.error(
       { itemId: input.itemId, modelId, err: syncError instanceof Error ? syncError.message : String(syncError) },
       "runGeneration: board stamp failed AFTER the paid cast landed (rolled back whole) — the draft lives in the library; no refund, no retryable failure",
@@ -515,9 +524,11 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     success: true as const,
     itemId: input.itemId,
     modelId,
+    assetId,
     imageUrl,
-    masterPrompt: masterPromptText,
     creditCost: cost,
+    placed,
+    ...(placementMessage ? { placementMessage } : {}),
   };
 }
 
@@ -705,6 +716,27 @@ export interface ApplyModelEditInput {
   /** 'rerun' = the R4 fork/recast gesture (same engine path, version rows
    *  stamp `tool:'rerun'`); 'edit' = an environment save (default). */
   intent?: "edit" | "rerun";
+  chargeReferenceId: string;
+  onCharged: (amount: number) => void;
+  onRefunded: (amount: number) => void;
+}
+
+/** Resolve the server-owned model behind a Canvas placement before claiming
+ * its model-wide operation lock. Execute paths call this again after the lock
+ * so ownership/lifecycle truth cannot change between the claim and the paid
+ * work. */
+export async function resolveModelBackedBoardOperation(input: { userId: number; itemId: number }) {
+  const item = await getBoardItemById(input.itemId);
+  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  const provenance = readMeta(item).provenance;
+  if (!provenance || !("modelId" in provenance)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "This node has no cast identity" });
+  }
+  const model = await getModelById(provenance.modelId);
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+  assertNotArchived(model);
+  return { item, model, provenance };
 }
 
 /**
@@ -802,17 +834,10 @@ async function generateCastCandidate(opts: { userId: number; prefs: ModelPrefere
 }
 
 export async function executeApplyModelEdit(input: ApplyModelEditInput) {
-  const item = await getBoardItemById(input.itemId);
-  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  const resolved = await resolveModelBackedBoardOperation(input);
+  const { item, model } = resolved;
   const meta = readMeta(item);
-  const prov = meta.provenance;
-  if (!prov || !("modelId" in prov)) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "This node has no cast identity to edit" });
-  }
-  const model = await getModelById(prov.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
+  const prov = resolved.provenance;
 
   // D-43 (founder-ratified 2026-07-11): minted identities are IMMUTABLE —
   // fork is the sole identity operation on any non-draft model. Keyed off
@@ -875,14 +900,14 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       releasedIdentityDependents = computed.releasedDependents;
     }
 
-    const chargeReferenceId = `apply-edit-${input.itemId}-${randomUUID()}`;
     const deduct = await deductPoints(
       input.userId, cost, "generation",
-      `Model recast (pending)`, chargeReferenceId,
+      `Model recast (pending)`, input.chargeReferenceId,
     );
     if (!deduct.success) {
       throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
     }
+    input.onCharged(cost);
 
     // ── The PAID DURABLE-EFFECT boundary (review finding 3 + FINAL
     // correction 3): generation, then ONE transaction carrying the atomic
@@ -1064,7 +1089,8 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
           log.error({ itemId: input.itemId, modelId: model.id, generationId: auditGenerationId }, "applyModelEdit: audit-row failure write failed — audit gap");
         }
       }
-      const outcome = await recordRefund(input.userId, cost, `Model recast failed (refund)`, chargeReferenceId);
+      const outcome = await recordRefund(input.userId, cost, `Model recast failed (refund)`, input.chargeReferenceId);
+      if (outcome.recorded) input.onRefunded(outcome.amount);
       const baseMessage = publicErrorMessage(error, "The recast failed.");
       throw new TRPCError({
         code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
@@ -1095,14 +1121,14 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
   }
 
-  const forkChargeReferenceId = `apply-edit-${input.itemId}-${randomUUID()}`;
   const deduct = await deductPoints(
     input.userId, cost, "generation",
-    `Identity fork (pending)`, forkChargeReferenceId,
+    `Identity fork (pending)`, input.chargeReferenceId,
   );
   if (!deduct.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${cost} credits.` });
   }
+  input.onCharged(cost);
 
   // ── The PAID DURABLE-EFFECT boundary (review finding 3): the candidate
   // (model row + headshot asset) is the paid result. Failure inside means
@@ -1112,7 +1138,8 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     candidate = await generateCastCandidate({ userId: input.userId, prefs: merged, cost });
   } catch (error) {
     log.error({ err: error, itemId: input.itemId }, "applyModelEdit fork failed inside the durable boundary");
-    const outcome = await recordRefund(input.userId, cost, `Identity fork failed (refund)`, forkChargeReferenceId);
+    const outcome = await recordRefund(input.userId, cost, `Identity fork failed (refund)`, input.chargeReferenceId);
+    if (outcome.recorded) input.onRefunded(outcome.amount);
     const baseMessage = publicErrorMessage(error, "The fork failed.");
     throw new TRPCError({
       code: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
@@ -1228,21 +1255,19 @@ export async function planRunVariations(input: { itemId: number; count: number }
   return buildVariationsPlan(input.itemId, item, input.count);
 }
 
-export async function executeRunVariations(input: { userId: number; itemId: number; count: number }) {
-  const item = await getBoardItemById(input.itemId);
-  if (!item || item.deletedAt) throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
-  const meta = readMeta(item);
-  const prov = meta.provenance;
-  if (!prov || !("modelId" in prov)) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "This node has no cast identity to vary" });
-  }
+export async function executeRunVariations(input: {
+  userId: number;
+  itemId: number;
+  count: number;
+  chargeReferenceId: string;
+  onCharged: (amount: number) => void;
+  onRefunded: (amount: number) => void;
+}) {
+  const resolved = await resolveModelBackedBoardOperation(input);
+  const { item, model, provenance: prov } = resolved;
   if (prov.type === "cast_view") {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Variations spawn from the cast, not a view" });
   }
-  const model = await getModelById(prov.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
 
   const rate = checkRateLimit(`user:${input.userId}`, RATE_LIMITS.generation);
   if (!rate.allowed) {
@@ -1266,14 +1291,14 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
   }
 
-  const variationsChargeReferenceId = `variations-${input.itemId}-${randomUUID()}`;
   const deduct = await deductPoints(
     input.userId, totalCost, "generation",
-    `${count} cast variation${count === 1 ? "" : "s"} (pending)`, variationsChargeReferenceId,
+    `${count} cast variation${count === 1 ? "" : "s"} (pending)`, input.chargeReferenceId,
   );
   if (!deduct.success) {
     throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${totalCost} credits.` });
   }
+  input.onCharged(totalCost);
   const positions = variationPositions(item, count);
 
   // Parallel candidates; failures are named-and-refunded PER candidate (the
@@ -1287,10 +1312,11 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
   );
 
   const variations: Array<{ index: number; itemId: number; modelId: number; imageUrl: string; position: { x: number; y: number } }> = [];
+  let unplacedPaidCandidates = 0;
   // Every failure entry carries its own complete truth (final correction 1):
   // generation failures state the recorded refund outcome; placement
   // failures state that the charged draft exists in the library.
-  const failures: Array<{ index: number; message: string; refunded: number; refundReference?: string }> = [];
+  const failures: Array<{ index: number; message: string; refunded: number }> = [];
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
     if (outcome.status === "rejected") {
@@ -1301,13 +1327,13 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
       const refundOutcome = await recordRefund(
         input.userId, unitCost,
         `Cast variation ${i + 1} failed (refund)`,
-        `${variationsChargeReferenceId}-${i}`,
+        `${input.chargeReferenceId}:candidate:${i}`,
       );
+      if (refundOutcome.recorded) input.onRefunded(refundOutcome.amount);
       failures.push({
         index: i,
         message: `${message} ${refundTruth(refundOutcome)}`,
         refunded: refundOutcome.recorded ? unitCost : 0,
-        refundReference: refundOutcome.reference,
       });
       log.warn({ err: outcome.reason, itemId: input.itemId, index: i, message, refunded: refundOutcome.recorded }, "Variation candidate failed");
       continue;
@@ -1341,6 +1367,7 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
       });
       variations.push({ index: i, itemId: newItemId, modelId: outcome.value.modelId, imageUrl: outcome.value.imageUrl, position: positions[i] });
     } catch (placementError) {
+      unplacedPaidCandidates += 1;
       log.error(
         { itemId: input.itemId, index: i, modelId: outcome.value.modelId, err: placementError instanceof Error ? placementError.message : String(placementError) },
         "runVariations: atomic placement failed AFTER the paid candidate landed (nothing half-written) — no refund, the draft lives in the library",
@@ -1356,11 +1383,15 @@ export async function executeRunVariations(input: { userId: number; itemId: numb
   if (variations.length === 0) {
     // Every failure entry carries its own honest copy — generation failures
     // were refunded per candidate; placement failures name the charged draft
+    if (unplacedPaidCandidates > 0) {
+      return { itemId: input.itemId, variations, failures, creditCost: totalCost };
+    }
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: failures[0]?.message || "All variations failed." });
   }
 
   log.info({ itemId: input.itemId, requested: count, landed: variations.length }, "Variations cast");
-  return { itemId: input.itemId, variations, failures, creditCost: variations.length * unitCost };
+  const refundedCredits = failures.reduce((sum, failure) => sum + failure.refunded, 0);
+  return { itemId: input.itemId, variations, failures, creditCost: totalCost - refundedCredits };
 }
 
 // ── popOutView / collapseView (R5 — the comp card's board placements) ──────

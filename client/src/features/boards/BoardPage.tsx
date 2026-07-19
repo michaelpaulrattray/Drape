@@ -33,6 +33,7 @@ import { NodeContextMenu, type NodeContextAction } from './components/NodeContex
 import { NodeInfoPanel } from './components/NodeInfoPanel';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { isLineageEdge, type CanonicalViewAngle } from '@shared/boardTypes';
+import { createClientRequestId } from '@shared/clientRequestId';
 import { SpawnMenu } from './canvas/SpawnMenu';
 import { GroupContextMenu } from './canvas/GroupContextMenu';
 import JSZip from 'jszip';
@@ -1180,7 +1181,7 @@ function BoardPageImpl() {
       if (decision === 'update') {
         startJob({ itemId: ctx.itemId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
       }
-      await applyModelEditMutation.mutateAsync({ boardId, itemId: ctx.itemId, decision, changes });
+      await applyModelEditMutation.mutateAsync({ clientRequestId: createClientRequestId(), boardId, itemId: ctx.itemId, decision, changes });
       setCastEditContext(null);
     },
     [boardId, castEditContext, applyModelEditMutation, startJob],
@@ -1195,13 +1196,13 @@ function BoardPageImpl() {
     const onFork = (e: Event) => {
       const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
       if (typeof itemId !== 'number' || itemId <= 0) return;
-      applyModelEditMutation.mutate({ boardId, itemId, decision: 'fork', changes: {}, intent: 'rerun' });
+      applyModelEditMutation.mutate({ clientRequestId: createClientRequestId(), boardId, itemId, decision: 'fork', changes: {}, intent: 'rerun' });
     };
     const onRecast = (e: Event) => {
       const itemId = (e as CustomEvent<{ itemId: number }>).detail?.itemId;
       if (typeof itemId !== 'number' || itemId <= 0) return;
       startJob({ itemId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
-      applyModelEditMutation.mutate({ boardId, itemId, decision: 'update', changes: {}, intent: 'rerun' });
+      applyModelEditMutation.mutate({ clientRequestId: createClientRequestId(), boardId, itemId, decision: 'update', changes: {}, intent: 'rerun' });
     };
     window.addEventListener('board-fork-cast', onFork);
     window.addEventListener('board-recast-cast', onRecast);
@@ -1322,7 +1323,7 @@ function BoardPageImpl() {
           })),
         ]),
       );
-      runVariationsMutation.mutate({ boardId, itemId: detail.itemId, count: detail.count });
+      runVariationsMutation.mutate({ clientRequestId: createClientRequestId(), boardId, itemId: detail.itemId, count: detail.count });
     };
     window.addEventListener('board-run-variations', onRunVariations);
     return () => window.removeEventListener('board-run-variations', onRunVariations);

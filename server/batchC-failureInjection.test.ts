@@ -215,11 +215,27 @@ import { verifyIdentityEdit } from "./casting/identity/editGate";
 import { refundReferenceFor } from "./casting/atomicCredits";
 import { PublicError } from "./lib/publicError";
 import { executeMintPackage } from "./casting/mintPackage";
-import { executeApplyModelEdit, executeRunGeneration, executeRunVariations } from "./lib/boardOps";
+import {
+  executeApplyModelEdit as executeApplyModelEditRaw,
+  executeRunGeneration as executeRunGenerationRaw,
+  executeRunVariations as executeRunVariationsRaw,
+} from "./lib/boardOps";
 import { appRouter as productionRouter } from "./routers";
 import { storageDelete } from "./storage";
+import { assertPublicOperationResult } from "./casting/operationContract";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+const accounting = (reference: string) => ({
+  chargeReferenceId: reference,
+  onCharged: () => undefined,
+  onRefunded: () => undefined,
+});
+const executeApplyModelEdit = (input: Omit<Parameters<typeof executeApplyModelEditRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded">) =>
+  executeApplyModelEditRaw({ ...input, ...accounting(`apply-edit-${input.itemId}-test`) });
+const executeRunGeneration = (input: Omit<Parameters<typeof executeRunGenerationRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded" | "onModelCreated">) =>
+  executeRunGenerationRaw({ ...input, ...accounting(`board-item-${input.itemId}-test`), onModelCreated: () => undefined });
+const executeRunVariations = (input: Omit<Parameters<typeof executeRunVariationsRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded">) =>
+  executeRunVariationsRaw({ ...input, ...accounting(`variations-${input.itemId}-test`) });
 const appRouter = {
   createCaller(ctx: TrpcContext) {
     const caller = productionRouter.createCaller(ctx);
@@ -704,8 +720,17 @@ describe("canvas creation boundaries", () => {
 
   it("variations: candidate success + placement failure ⇒ NO refund, failure entry names the library", async () => {
     tx.failBoardItemInsert = true;
-    await expect(executeRunVariations({ userId: 1, itemId: 3, count: 1 })).rejects.toMatchObject({
-      message: expect.stringContaining("model library"),
+    const result = await executeRunVariations({ userId: 1, itemId: 3, count: 1 });
+    expect(result).toMatchObject({
+      variations: [],
+      creditCost: 350,
+      failures: [
+        {
+          index: 0,
+          message: expect.stringContaining("model library"),
+          refunded: 0,
+        },
+      ],
     });
     expect(addCredits).not.toHaveBeenCalled();
     // atomic placement: no unlinked node or dangling edge escaped
@@ -720,6 +745,25 @@ describe("canvas creation boundaries", () => {
     const refs = vi.mocked(addCredits).mock.calls.map((c) => c[4] as string);
     expect(new Set(refs).size).toBe(2); // distinct per candidate
     for (const r of refs) expect(r.startsWith("refund:variations-3-")).toBe(true);
+  });
+
+  it("variations: an unrecorded refund stays a terminal failure, not a false library partial-success", async () => {
+    vi.mocked(createModelAsset).mockResolvedValue({ success: false } as never);
+    vi.mocked(addCredits).mockResolvedValue({ success: false, error: "ledger unavailable" } as never);
+    await expect(executeRunVariations({ userId: 1, itemId: 3, count: 1 })).rejects.toMatchObject({
+      message: expect.stringContaining("support"),
+    });
+    expect(addCredits).toHaveBeenCalledTimes(1);
+  });
+
+  it("variations: a mixed success/failure result is safe to persist as the parent operation receipt", async () => {
+    vi.mocked(createModelAsset)
+      .mockResolvedValueOnce({ success: false } as never)
+      .mockResolvedValue({ success: true, assetId: 888 } as never);
+    const result = await executeRunVariations({ userId: 1, itemId: 3, count: 2 });
+    expect(result.variations).toHaveLength(1);
+    expect(result.failures).toHaveLength(1);
+    expect(() => assertPublicOperationResult(result)).not.toThrow();
   });
 });
 

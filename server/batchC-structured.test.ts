@@ -23,6 +23,21 @@ const tx = vi.hoisted(() => ({
   },
 }));
 
+const operation = vi.hoisted(() => ({
+  outcome: {
+    type: "claimed" as const,
+    operationId: "11111111-1111-4111-8111-111111111111",
+    payloadHash: "a".repeat(64),
+  } as Record<string, unknown>,
+  reset() {
+    this.outcome = {
+      type: "claimed",
+      operationId: "11111111-1111-4111-8111-111111111111",
+      payloadHash: "a".repeat(64),
+    };
+  },
+}));
+
 vi.mock("./db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db")>();
   return {
@@ -42,6 +57,24 @@ vi.mock("./db", async (importOriginal) => {
     addBoardItem: vi.fn().mockResolvedValue({ success: true, itemId: 55 }),
     deductPoints: vi.fn().mockResolvedValue({ success: true }),
     addCredits: vi.fn().mockResolvedValue({ success: true }),
+    claimGenerationOperation: vi.fn().mockImplementation(async () => operation.outcome),
+    acquireGenerationOperationLock: vi.fn().mockResolvedValue({
+      type: "acquired",
+      operationId: "11111111-1111-4111-8111-111111111111",
+      lockKey: "board-item:3",
+      expiresAt: new Date(Date.now() + 60_000),
+    }),
+    markGenerationOperationRunning: vi.fn().mockResolvedValue({
+      operationId: "11111111-1111-4111-8111-111111111111",
+      chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge",
+    }),
+    bindGenerationOperationModel: vi.fn().mockResolvedValue(undefined),
+    finalizeGenerationOperationSuccess: vi.fn().mockResolvedValue(undefined),
+    finalizeGenerationOperationFailure: vi.fn().mockResolvedValue(undefined),
+    finalizeClaimedGenerationOperationFailure: vi.fn().mockResolvedValue(undefined),
+    markGenerationOperationRecoveryRequired: vi.fn().mockResolvedValue(undefined),
+    markClaimedGenerationOperationRecoveryRequired: vi.fn().mockResolvedValue(undefined),
+    getGenerationOperationOutcome: vi.fn().mockResolvedValue(null),
   };
 });
 vi.mock("./db/boardEdges", async (importOriginal) => {
@@ -108,15 +141,34 @@ import {
   createModelAsset,
   updateModel,
   deductPoints,
+  claimGenerationOperation,
+  acquireGenerationOperationLock,
+  markGenerationOperationRunning,
+  bindGenerationOperationModel,
+  finalizeGenerationOperationSuccess,
 } from "./db";
 import { generateMasterPrompt, generateCastingImage, generateCastingImageRaw } from "./casting/aiService";
 import {
-  executeApplyModelEdit,
-  executeRunGeneration,
-  executeRunVariations,
+  executeApplyModelEdit as executeApplyModelEditRaw,
+  executeRunGeneration as executeRunGenerationRaw,
+  executeRunVariations as executeRunVariationsRaw,
 } from "./lib/boardOps";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
 import { appRouter } from "./routers";
+
+const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
+
+const accounting = (reference: string) => ({
+  chargeReferenceId: reference,
+  onCharged: () => undefined,
+  onRefunded: () => undefined,
+});
+const executeApplyModelEdit = (input: Omit<Parameters<typeof executeApplyModelEditRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded">) =>
+  executeApplyModelEditRaw({ ...input, ...accounting(`apply-edit-${input.itemId}-test`) });
+const executeRunGeneration = (input: Omit<Parameters<typeof executeRunGenerationRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded" | "onModelCreated">) =>
+  executeRunGenerationRaw({ ...input, ...accounting(`board-item-${input.itemId}-test`), onModelCreated: () => undefined });
+const executeRunVariations = (input: Omit<Parameters<typeof executeRunVariationsRaw>[0], "chargeReferenceId" | "onCharged" | "onRefunded">) =>
+  executeRunVariationsRaw({ ...input, ...accounting(`variations-${input.itemId}-test`) });
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 function authCtx(userId = 1): TrpcContext {
@@ -165,6 +217,12 @@ beforeEach(() => {
   vi.mocked(generateMasterPrompt).mockClear();
   vi.mocked(generateCastingImage).mockClear();
   vi.mocked(generateCastingImageRaw).mockClear();
+  vi.mocked(claimGenerationOperation).mockClear();
+  vi.mocked(acquireGenerationOperationLock).mockClear();
+  vi.mocked(markGenerationOperationRunning).mockClear();
+  vi.mocked(bindGenerationOperationModel).mockClear();
+  vi.mocked(finalizeGenerationOperationSuccess).mockClear();
+  operation.reset();
   tx.reset();
 });
 
@@ -175,6 +233,7 @@ describe("applyModelEdit wire schema (M6)", () => {
     const caller = appRouter.createCaller(authCtx());
     await expect(
       caller.boardOps.applyModelEdit.execute({
+        clientRequestId: REQUEST_ID,
         boardId: 2, itemId: 3, decision: "update",
         changes: { totallyUnknownField: "x" },
       }),
@@ -187,6 +246,7 @@ describe("applyModelEdit wire schema (M6)", () => {
     for (const key of ["referenceImage", "previousMasterPrompt"]) {
       await expect(
         caller.boardOps.applyModelEdit.execute({
+          clientRequestId: REQUEST_ID,
           boardId: 2, itemId: 3, decision: "fork",
           changes: { [key]: "data:image/png;base64,AAAA" },
         }),
@@ -209,6 +269,7 @@ describe("runGeneration attributes wire schema (final correction 3)", () => {
     const caller = appRouter.createCaller(authCtx());
     await expect(
       caller.boardOps.runGeneration.execute({
+        clientRequestId: REQUEST_ID,
         boardId: 2, itemId: 3, attributes: attributes as never,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
@@ -220,6 +281,7 @@ describe("runGeneration attributes wire schema (final correction 3)", () => {
   it("well-typed attributes pass the wire and cast normally", async () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.boardOps.runGeneration.execute({
+      clientRequestId: REQUEST_ID,
       boardId: 2, itemId: 3,
       attributes: { gender: "Female", age: 24, castingVibe: { editorial: 1, commercial: 0, runway: 0 } },
       userPrompt: "sharp editorial Nordic face",
@@ -229,6 +291,161 @@ describe("runGeneration attributes wire schema (final correction 3)", () => {
 });
 
 // ─── M6: the update branch is a structured §8.6 commit ──────────────────────
+
+describe("R7-1E Canvas operation receipts", () => {
+  it("casts under the board-item lock, binds the created model, and replays without a second paid worker call", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    const input = {
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      userPrompt: "sharp editorial Nordic face",
+    };
+
+    const first = await caller.boardOps.runGeneration.execute(input);
+    expect(claimGenerationOperation).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "canvas.cast",
+      originBoardId: 2,
+      originItemId: 3,
+      modelId: undefined,
+    }));
+    expect(acquireGenerationOperationLock).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "canvas.cast",
+      lockKey: "board-item:3",
+    }));
+    expect(markGenerationOperationRunning).toHaveBeenCalledWith(expect.objectContaining({
+      plannedCredits: 350,
+      requiredLockKey: "board-item:3",
+    }));
+    expect(bindGenerationOperationModel).toHaveBeenCalledWith(expect.objectContaining({ modelId: 88 }));
+    expect(finalizeGenerationOperationSuccess).toHaveBeenCalledWith(expect.objectContaining({
+      result: first,
+      chargedCredits: 350,
+      refundedCredits: 0,
+    }));
+
+    operation.outcome = { type: "replay_success", operationId: REQUEST_ID, result: first };
+    const paidCalls = vi.mocked(generateCastingImage).mock.calls.length;
+    const runningCalls = vi.mocked(markGenerationOperationRunning).mock.calls.length;
+    const replay = await caller.boardOps.runGeneration.execute(input);
+    expect(replay).toEqual(first);
+    expect(generateCastingImage).toHaveBeenCalledTimes(paidCalls);
+    expect(markGenerationOperationRunning).toHaveBeenCalledTimes(runningCalls);
+  });
+
+  it("recasts under the source-model lock and records the actual single charge", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    const input = {
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      decision: "update" as const,
+      changes: { jawline: "Sharp / Chiseled" },
+    };
+    const result = await caller.boardOps.applyModelEdit.execute(input);
+
+    expect(claimGenerationOperation).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "canvas.recast",
+      modelId: 7,
+      originBoardId: 2,
+      originItemId: 3,
+    }));
+    expect(acquireGenerationOperationLock).toHaveBeenCalledWith(expect.objectContaining({
+      lockKey: "model:7",
+    }));
+    expect(finalizeGenerationOperationSuccess).toHaveBeenCalledWith(expect.objectContaining({
+      result,
+      chargedCredits: 350,
+      refundedCredits: 0,
+    }));
+
+    operation.outcome = { type: "replay_success", operationId: REQUEST_ID, result };
+    const paidCalls = vi.mocked(generateCastingImageRaw).mock.calls.length;
+    const replay = await caller.boardOps.applyModelEdit.execute(input);
+    expect(replay).toEqual(result);
+    expect(generateCastingImageRaw).toHaveBeenCalledTimes(paidCalls);
+  });
+
+  it("forks under the source-model lock while preserving the new draft as the paid result", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.boardOps.applyModelEdit.execute({
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      decision: "fork",
+      changes: {},
+      intent: "rerun",
+    });
+
+    expect(claimGenerationOperation).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "canvas.fork",
+      modelId: 7,
+      originBoardId: 2,
+      originItemId: 3,
+    }));
+    expect(acquireGenerationOperationLock).toHaveBeenCalledWith(expect.objectContaining({
+      lockKey: "model:7",
+    }));
+    expect(result).toMatchObject({ decision: "fork", modelId: 88, placed: true });
+    expect(finalizeGenerationOperationSuccess).toHaveBeenCalledWith(expect.objectContaining({
+      result,
+      chargedCredits: 350,
+      refundedCredits: 0,
+    }));
+  });
+
+  it("variations share one parent receipt with model ownership and the full planned total", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    const input = {
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+      count: 1,
+    };
+    const result = await caller.boardOps.runVariations.execute(input);
+
+    expect(claimGenerationOperation).toHaveBeenCalledWith(expect.objectContaining({
+      kind: "canvas.variations",
+      modelId: 7,
+      originBoardId: 2,
+      originItemId: 3,
+    }));
+    expect(markGenerationOperationRunning).toHaveBeenCalledWith(expect.objectContaining({
+      modelId: 7,
+      plannedCredits: 350,
+      requiredLockKey: "model:7",
+    }));
+    expect(finalizeGenerationOperationSuccess).toHaveBeenCalledWith(expect.objectContaining({
+      result,
+      chargedCredits: 350,
+      refundedCredits: 0,
+    }));
+
+    operation.outcome = { type: "replay_success", operationId: REQUEST_ID, result };
+    const candidateCalls = vi.mocked(generateMasterPrompt).mock.calls.length;
+    const replay = await caller.boardOps.runVariations.execute(input);
+    expect(replay).toEqual(result);
+    expect(generateMasterPrompt).toHaveBeenCalledTimes(candidateCalls);
+  });
+
+  it("a busy Canvas receipt refuses before marking running, charging, or generating", async () => {
+    operation.outcome = {
+      type: "resource_busy",
+      operationId: REQUEST_ID,
+      lockKey: "board-item:3",
+      ownerOperationId: "22222222-2222-4222-8222-222222222222",
+    };
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.boardOps.runGeneration.execute({
+      clientRequestId: REQUEST_ID,
+      boardId: 2,
+      itemId: 3,
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(generateCastingImage).not.toHaveBeenCalled();
+  });
+});
 
 describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () => {
   it("a valid recast commits document + new anchor/revision + stale flags (pinned included), FREE validation first", async () => {
