@@ -12,6 +12,8 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
   let operations: typeof import("./db/generationOperations");
   let modelDb: typeof import("./db/models");
   let generationDb: typeof import("./db/generations");
+  let creditDb: typeof import("./db/credits");
+  let recovery: typeof import("./casting/operationRecovery");
 
   beforeAll(async () => {
     process.env.DATABASE_URL = testDatabaseUrl!;
@@ -25,13 +27,18 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       [`r7-operation-${randomUUID()}`],
     );
     userId = inserted.insertId;
+    await connection.execute("INSERT INTO points (userId, balance) VALUES (?, 5000)", [userId]);
     operations = await import("./db/generationOperations");
     modelDb = await import("./db/models");
     generationDb = await import("./db/generations");
+    creditDb = await import("./db/credits");
+    recovery = await import("./casting/operationRecovery");
   });
 
   beforeEach(async () => {
     await connection.execute("DELETE FROM generations WHERE userId = ?", [userId]);
+    await connection.execute("DELETE FROM point_transactions WHERE userId = ?", [userId]);
+    await connection.execute("UPDATE points SET balance = 5000, creditsUsed = 0 WHERE userId = ?", [userId]);
     await connection.execute(
       "DELETE l FROM generation_operation_locks l JOIN generation_operations o ON o.id = l.operationId WHERE o.userId = ?",
       [userId],
@@ -47,6 +54,8 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       [userId],
     );
     await connection.execute("DELETE FROM generation_operations WHERE userId = ?", [userId]);
+    await connection.execute("DELETE FROM point_transactions WHERE userId = ?", [userId]);
+    await connection.execute("DELETE FROM points WHERE userId = ?", [userId]);
     await connection.execute("DELETE FROM users WHERE id = ?", [userId]);
     await connection.end();
     delete process.env.DATABASE_URL;
@@ -143,6 +152,250 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       lockKey: "board-item:44",
     })).rejects.toThrow("does not match a resource in the trusted claim");
   });
+
+  it("heartbeats only the owned running receipt and renews its lock", async () => {
+    const claimed = await claim(randomUUID());
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    await operations.acquireGenerationOperationLock({
+      userId,
+      operationId: claimed.operationId,
+      kind: "casting.iterate",
+      lockKey: "model:44",
+    });
+    const startedAt = new Date("2026-07-19T01:00:00.000Z");
+    await operations.markGenerationOperationRunning({
+      userId,
+      operationId: claimed.operationId,
+      modelId: 44,
+      plannedCredits: 300,
+      requiredLockKey: "model:44",
+      phase: "generating",
+      now: startedAt,
+      leaseMs: 60_000,
+    });
+    const heartbeatAt = new Date(startedAt.getTime() + 30_000);
+    await operations.heartbeatGenerationOperation({
+      userId,
+      operationId: claimed.operationId,
+      now: heartbeatAt,
+      leaseMs: 120_000,
+    });
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT heartbeatAt, leaseExpiresAt, TIMESTAMPDIFF(SECOND, heartbeatAt, leaseExpiresAt) AS leaseSeconds FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    const [[lock]] = await connection.query<RowDataPacket[]>(
+      "SELECT expiresAt FROM generation_operation_locks WHERE operationId = ?",
+      [claimed.operationId],
+    );
+    // Railway's proxy/session timezone may render JS Date values with a
+    // fixed offset; compare database-owned lease truth instead of host time.
+    expect(Number(receipt.leaseSeconds)).toBe(120);
+    expect(new Date(receipt.leaseExpiresAt).getTime()).toBe(new Date(lock.expiresAt).getTime());
+
+    await operations.finalizeGenerationOperationSuccess({
+      userId,
+      operationId: claimed.operationId,
+      result: { assetId: 1 },
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    await expect(operations.heartbeatGenerationOperation({ userId, operationId: claimed.operationId }))
+      .rejects.toThrow("running operation");
+  }, 30_000);
+
+  it("derives monotonic parent progress from linked child attempts", async () => {
+    const claimed = await claim(randomUUID());
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    await operations.markGenerationOperationRunning({
+      userId,
+      operationId: claimed.operationId,
+      modelId: 44,
+      plannedCredits: 600,
+      phase: "refreshing",
+    });
+    const first = await generationDb.createGeneration({
+      userId, modelId: 44, operationId: claimed.operationId,
+      stepKey: "view:sideClose", viewAngle: "sideClose",
+      type: "multiView", status: "processing", pointsCost: 300,
+    });
+    const second = await generationDb.createGeneration({
+      userId, modelId: 44, operationId: claimed.operationId,
+      stepKey: "view:backFull", viewAngle: "backFull",
+      type: "multiView", status: "processing", pointsCost: 300,
+    });
+    if (!first.generationId || !second.generationId) throw new Error("child insert failed");
+    await Promise.all([
+      generationDb.updateGeneration(first.generationId, { status: "completed", resultUrl: "https://example.com/a.png", completedAt: new Date() }),
+      generationDb.updateGeneration(second.generationId, { status: "failed", errorMessage: "failed", completedAt: new Date() }),
+    ]);
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT progress FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    const progress = typeof receipt.progress === "string" ? JSON.parse(receipt.progress) : receipt.progress;
+    expect(progress).toMatchObject({ total: 2, completed: 1, failed: 1 });
+  }, 30_000);
+
+  it("sweeps an untouched stale claim to a free terminal failure and releases its lock", async () => {
+    const claimed = await claim(randomUUID());
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    await operations.acquireGenerationOperationLock({
+      userId, operationId: claimed.operationId, kind: "casting.iterate", lockKey: "model:44",
+    });
+    await connection.execute(
+      "UPDATE generation_operations SET updatedAt = '2020-01-01 00:00:00' WHERE id = ?",
+      [claimed.operationId],
+    );
+    const result = await recovery.sweepStaleGenerationOperations({ limit: 5 });
+    expect(result).toMatchObject({ inspected: 1, resolved: 1, recoveryRequired: 0 });
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, chargedCredits, refundedCredits FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    const [[lock]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM generation_operation_locks WHERE operationId = ?",
+      [claimed.operationId],
+    );
+    expect(receipt).toMatchObject({ status: "failed", chargedCredits: 0, refundedCredits: 0 });
+    expect(Number(lock.n)).toBe(0);
+  }, 30_000);
+
+  it("refunds one proven paid failure exactly once under concurrent adjudicators", async () => {
+    const claimed = await claim(randomUUID());
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    await operations.acquireGenerationOperationLock({
+      userId, operationId: claimed.operationId, kind: "casting.iterate", lockKey: "model:44",
+    });
+    const started = await operations.markGenerationOperationRunning({
+      userId, operationId: claimed.operationId, modelId: 44, plannedCredits: 300,
+      requiredLockKey: "model:44", phase: "generating",
+    });
+    const charged = await creditDb.deductCredits(
+      userId, 300, "generation", "Recovery test charge", started.chargeReferenceId,
+    );
+    expect(charged.success).toBe(true);
+    await generationDb.createGeneration({
+      userId, modelId: 44, operationId: claimed.operationId,
+      stepKey: "iterate", viewAngle: "frontClose", type: "iteration",
+      status: "failed", pointsCost: 300, errorMessage: "provider failed", completedAt: new Date(),
+    });
+    await connection.execute(
+      "UPDATE generation_operations SET leaseExpiresAt = '2020-01-01 00:00:00' WHERE id = ?",
+      [claimed.operationId],
+    );
+    await Promise.all([
+      recovery.sweepStaleGenerationOperations({ limit: 5 }),
+      recovery.sweepStaleGenerationOperations({ limit: 5 }),
+    ]);
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, chargedCredits, refundedCredits FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    const [[ledger]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n, SUM(amount) AS net FROM point_transactions WHERE userId = ?",
+      [userId],
+    );
+    const [[balance]] = await connection.query<RowDataPacket[]>("SELECT balance FROM points WHERE userId = ?", [userId]);
+    expect(receipt).toMatchObject({ status: "failed", chargedCredits: 300, refundedCredits: 300 });
+    expect(Number(ledger.n)).toBe(2);
+    expect(Number(ledger.net)).toBe(0);
+    expect(Number(balance.balance)).toBe(5000);
+  }, 60_000);
+
+  it("finalizes a proven durable paid result without refunding it", async () => {
+    const createdModel = await modelDb.createModel({
+      userId,
+      name: "Recovery Result",
+      masterPrompt: "A recovery-test cast",
+      technicalSchema: {},
+      preferences: {},
+      status: "draft",
+    });
+    if (!createdModel.modelId) throw new Error("model insert failed");
+    const claimed = await operations.claimGenerationOperation({
+      userId,
+      clientRequestId: randomUUID(),
+      kind: "casting.headshot",
+      modelId: createdModel.modelId,
+      payload: { modelId: createdModel.modelId },
+    });
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    const lockKey = `model:${createdModel.modelId}`;
+    await operations.acquireGenerationOperationLock({
+      userId, operationId: claimed.operationId, kind: "casting.headshot", lockKey,
+    });
+    const started = await operations.markGenerationOperationRunning({
+      userId, operationId: claimed.operationId, modelId: createdModel.modelId,
+      plannedCredits: 300, requiredLockKey: lockKey, phase: "generating",
+    });
+    const charged = await creditDb.deductCredits(
+      userId, 300, "generation", "Durable recovery test charge", started.chargeReferenceId,
+    );
+    expect(charged.success).toBe(true);
+    const resultUrl = `https://example.com/recovered-${randomUUID()}.png`;
+    const asset = await modelDb.createModelAsset({
+      modelId: createdModel.modelId,
+      viewType: "frontClose",
+      resolution: "1K",
+      storageUrl: resultUrl,
+      pointsCost: 300,
+    });
+    if (!asset.assetId) throw new Error("asset insert failed");
+    await generationDb.createGeneration({
+      userId, modelId: createdModel.modelId, operationId: claimed.operationId,
+      stepKey: "headshot", viewAngle: "frontClose", type: "castingImage",
+      status: "completed", pointsCost: 300, resultUrl, completedAt: new Date(),
+    });
+    await connection.execute(
+      "UPDATE generation_operations SET leaseExpiresAt = '2020-01-01 00:00:00' WHERE id = ?",
+      [claimed.operationId],
+    );
+    const result = await recovery.sweepStaleGenerationOperations({ limit: 5 });
+    expect(result).toMatchObject({ inspected: 1, resolved: 1, recoveryRequired: 0 });
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, result, chargedCredits, refundedCredits FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    const storedResult = typeof receipt.result === "string" ? JSON.parse(receipt.result) : receipt.result;
+    const [[balance]] = await connection.query<RowDataPacket[]>("SELECT balance FROM points WHERE userId = ?", [userId]);
+    expect(receipt).toMatchObject({ status: "succeeded", chargedCredits: 300, refundedCredits: 0 });
+    expect(storedResult).toEqual({ assetId: asset.assetId });
+    expect(Number(balance.balance)).toBe(4700);
+  }, 60_000);
+
+  it("keeps ambiguous processing work recovery-required and locked", async () => {
+    const claimed = await claim(randomUUID());
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    await operations.acquireGenerationOperationLock({
+      userId, operationId: claimed.operationId, kind: "casting.iterate", lockKey: "model:44",
+    });
+    await operations.markGenerationOperationRunning({
+      userId, operationId: claimed.operationId, modelId: 44, plannedCredits: 300,
+      requiredLockKey: "model:44", phase: "generating",
+    });
+    await generationDb.createGeneration({
+      userId, modelId: 44, operationId: claimed.operationId,
+      stepKey: "iterate", viewAngle: "frontClose", type: "iteration",
+      status: "processing", pointsCost: 300,
+    });
+    await connection.execute(
+      "UPDATE generation_operations SET leaseExpiresAt = '2020-01-01 00:00:00' WHERE id = ?",
+      [claimed.operationId],
+    );
+    const result = await recovery.sweepStaleGenerationOperations({ limit: 5 });
+    expect(result).toMatchObject({ inspected: 1, recoveryRequired: 1 });
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT status FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    const [[lock]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM generation_operation_locks WHERE operationId = ?",
+      [claimed.operationId],
+    );
+    expect(receipt.status).toBe("recovery_required");
+    expect(Number(lock.n)).toBe(1);
+  }, 30_000);
 
   it("does not strand a lock when the same operation asks for a different resource", async () => {
     const claimed = await operations.claimGenerationOperation({

@@ -77,6 +77,8 @@ async function executeCanvasOperation<Result extends PublicOperationResult>(inpu
     expectedIdentityRevisionId: input.expectedIdentityRevisionId,
     plannedCredits: input.plannedCredits,
     requiredLockKey: input.lockKey,
+    phase: "generating",
+    heartbeat: true,
   });
   let chargedCredits = 0;
   let refundedCredits = 0;
@@ -417,13 +419,14 @@ export const boardOpsRouter = router({
           lockKey: modelOperationLockKey(model.id),
           expectedIdentityRevisionId: currentRevisionId(model),
           plannedCredits: CREDIT_COSTS.castingImage,
-          execute: ({ chargeReferenceId, onCharged, onRefunded }) => boardOps.executeApplyModelEdit({
+          execute: ({ operationId, chargeReferenceId, onCharged, onRefunded }) => boardOps.executeApplyModelEdit({
             userId: ctx.user.id,
             itemId: input.itemId,
             decision: input.decision,
             changes: input.changes,
             intent: input.intent,
             chargeReferenceId,
+            operationId,
             onCharged,
             onRefunded,
           }),
@@ -466,11 +469,12 @@ export const boardOpsRouter = router({
           lockKey: modelOperationLockKey(model.id),
           expectedIdentityRevisionId: currentRevisionId(model),
           plannedCredits: input.count * CREDIT_COSTS.castingImage,
-          execute: ({ chargeReferenceId, onCharged, onRefunded }) => boardOps.executeRunVariations({
+          execute: ({ operationId, chargeReferenceId, onCharged, onRefunded }) => boardOps.executeRunVariations({
             userId: ctx.user.id,
             itemId: input.itemId,
             count: input.count,
             chargeReferenceId,
+            operationId,
             onCharged,
             onRefunded,
           }),
@@ -591,6 +595,7 @@ export const boardOpsRouter = router({
             attributes: input.attributes,
             modelName: input.modelName,
             chargeReferenceId,
+            operationId,
             onCharged,
             onRefunded,
             onModelCreated: (modelId) => bindGenerationOperationModel({ userId: ctx.user.id, operationId, modelId }),

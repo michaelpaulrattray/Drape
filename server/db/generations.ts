@@ -7,6 +7,7 @@ import { generations, InsertGeneration } from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { createModuleLogger } from "../logging/logger";
 import { assertClientRequestId } from "../../shared/clientRequestId";
+import { syncGenerationOperationProgress } from "./generationOperations";
 const log = createModuleLogger("db/generations");
 
 export function assertGenerationAttemptLink(data: Pick<
@@ -65,6 +66,11 @@ export async function createGeneration(
       }).catch(() => {});
     }
 
+    if (data.operationId) {
+      await syncGenerationOperationProgress(data.operationId).catch((error) => {
+        log.error({ err: error, operationId: data.operationId }, "[Database] Failed to sync operation progress after child insert");
+      });
+    }
     return { success: true, generationId: inserted.id };
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to create generation:");
@@ -91,6 +97,19 @@ export async function updateGeneration(
       .update(generations)
       .set(data)
       .where(eq(generations.id, generationId));
+    const [generation] = await db
+      .select({ operationId: generations.operationId })
+      .from(generations)
+      .where(eq(generations.id, generationId))
+      .limit(1);
+    if (generation?.operationId) {
+      await syncGenerationOperationProgress(generation.operationId).catch((error) => {
+        log.error(
+          { err: error, operationId: generation.operationId, generationId },
+          "[Database] Failed to sync operation progress after child settlement",
+        );
+      });
+    }
     return { success: true };
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to update generation:");

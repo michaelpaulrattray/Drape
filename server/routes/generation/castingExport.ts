@@ -243,6 +243,8 @@ export const castingExportRouter = router({
         expectedIdentityRevisionId: currentRevisionId(lockedModel),
         plannedCredits,
         requiredLockKey: lockKey,
+        phase: "minting",
+        heartbeat: true,
       });
       let chargedCredits = 0;
       let refundedCredits = 0;
@@ -258,6 +260,7 @@ export const castingExportRouter = router({
           expectedIdentityRevisionId: currentRevisionId(lockedModel),
           onCharged: (amount) => { chargedCredits = amount; },
           onRefunded: (amount) => { refundedCredits += amount; },
+          operationId: gate.operationId,
         });
         durableResult = true;
         await completeDirectOperationSuccess({
@@ -325,6 +328,8 @@ export const castingExportRouter = router({
         expectedIdentityRevisionId: currentRevisionId(model),
         plannedCredits: 0,
         requiredLockKey: lockKey,
+        phase: "finalizing",
+        heartbeat: true,
       });
       let durableResult = false;
       try {
@@ -399,6 +404,8 @@ export const castingExportRouter = router({
         expectedIdentityRevisionId: currentRevisionId(model),
         plannedCredits: 0,
         requiredLockKey: lockKey,
+        phase: "finalizing",
+        heartbeat: true,
       });
       let durableResult = false;
       try {
@@ -503,6 +510,8 @@ export const castingExportRouter = router({
         expectedIdentityRevisionId: currentRevisionId(lockedModel),
         plannedCredits: plan.totalCost,
         requiredLockKey: lockKey,
+        phase: "refreshing",
+        heartbeat: true,
       });
       let chargedCredits = 0;
       let refundedCredits = 0;
@@ -515,6 +524,7 @@ export const castingExportRouter = router({
           chargeReferenceId: started.chargeReferenceId,
           onCharged: (amount) => { chargedCredits = amount; },
           onRefunded: (amount) => { refundedCredits += amount; },
+          operationId: gate.operationId,
         });
         durableResult = true;
         await completeDirectOperationSuccess({

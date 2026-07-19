@@ -115,6 +115,7 @@ export async function executeRefreshSlots(input: {
   chargeReferenceId?: string;
   onCharged?: (amount: number) => void;
   onRefunded?: (amount: number) => void;
+  operationId?: string;
 }): Promise<RefreshResult> {
   const { model, assets, slots } = await loadModelSlots(input);
 
@@ -181,6 +182,7 @@ export async function executeRefreshSlots(input: {
     reasonLabel: "Refresh",
     chargeReferenceId: input.chargeReferenceId ?? `legacy-refresh-${input.modelId}`,
     onRefunded: input.onRefunded,
+    operationId: input.operationId,
   };
   // Parallel: the image queue caps concurrency; per-slot failures refund named
   const results = await Promise.all(input.angles.map((angle) => generatePackageSlot(ctx, angle)));

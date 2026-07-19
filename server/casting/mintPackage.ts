@@ -110,6 +110,7 @@ export interface MintPackageInput {
   mint?: boolean;
   chargeReferenceId?: string;
   expectedIdentityRevisionId?: string | null;
+  operationId?: string;
   onCharged?: (amount: number) => void;
   onRefunded?: (amount: number) => void;
 }
@@ -134,6 +135,7 @@ export interface SlotGenContext {
   mintTier?: MintTier;
   chargeReferenceId?: string;
   onRefunded?: (amount: number) => void;
+  operationId?: string;
 }
 
 export type SlotGenResult =
@@ -168,6 +170,9 @@ export async function generatePackageSlot(ctx: SlotGenContext, angle: CanonicalV
   const genRecord = await createGeneration({
     userId: ctx.userId,
     modelId: ctx.modelId,
+    operationId: ctx.operationId,
+    stepKey: ctx.operationId ? `view:${angle}` : undefined,
+    viewAngle: ctx.operationId ? angle : undefined,
     type: "multiView",
     status: "processing",
     pointsCost: slotCost(angle),
@@ -422,6 +427,7 @@ export async function executeMintPackage(input: MintPackageInput) {
     mintTier: input.tier,
     chargeReferenceId: input.chargeReferenceId ?? `legacy-mint-${input.modelId}`,
     onRefunded: input.onRefunded,
+    operationId: input.operationId,
   };
   const results = await Promise.all(missing.map((angle) => generatePackageSlot(ctx, angle)));
   const generated = results

@@ -242,6 +242,9 @@ export const castingRefinementRouter = router({
       const genResult = await createGeneration({
         userId: ctx.user.id,
         modelId: input.modelId,
+        operationId: gate.operationId,
+        stepKey: "iterate",
+        viewAngle: targetAsset.viewType,
         type: "iteration",
         status: "processing",
         pointsCost: POINT_COSTS.iterate,
@@ -265,6 +268,8 @@ export const castingRefinementRouter = router({
         expectedIdentityRevisionId: currentRevisionId(lockedModel),
         plannedCredits: POINT_COSTS.iterate,
         requiredLockKey: lockKey,
+        phase: "generating",
+        heartbeat: true,
       });
       const chargeReferenceId = started.chargeReferenceId;
       let chargedCredits = 0;
@@ -765,6 +770,8 @@ export const castingRefinementRouter = router({
         expectedIdentityRevisionId: currentRevisionId(lockedModel),
         plannedCredits: 0,
         requiredLockKey: lockKey,
+        phase: "reconciling",
+        heartbeat: true,
       });
 
       const currentPrompt = lockedModel.masterPrompt || "";

@@ -303,6 +303,7 @@ export interface RunGenerationInput {
   attributes?: Record<string, unknown>;
   modelName?: string;
   chargeReferenceId: string;
+  operationId: string;
   onCharged: (amount: number) => void;
   onRefunded: (amount: number) => void;
   onModelCreated: (modelId: number) => Promise<void> | void;
@@ -388,6 +389,9 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     const genRecord = await createGeneration({
       userId: input.userId,
       modelId,
+      operationId: input.operationId,
+      stepKey: "headshot",
+      viewAngle: "frontClose",
       type: "castingImage",
       status: "processing",
       pointsCost: cost,
@@ -717,6 +721,7 @@ export interface ApplyModelEditInput {
    *  stamp `tool:'rerun'`); 'edit' = an environment save (default). */
   intent?: "edit" | "rerun";
   chargeReferenceId: string;
+  operationId: string;
   onCharged: (amount: number) => void;
   onRefunded: (amount: number) => void;
 }
@@ -745,7 +750,13 @@ export async function resolveModelBackedBoardOperation(input: { userId: number; 
  * path behind fork (applyModelEdit), recast-as-fork, and runVariations.
  * Throws on failure — the CALLER owns deduction and refunds.
  */
-async function generateCastCandidate(opts: { userId: number; prefs: ModelPreferences; cost: number }) {
+async function generateCastCandidate(opts: {
+  userId: number;
+  prefs: ModelPreferences;
+  cost: number;
+  operationId: string;
+  stepKey: string;
+}) {
   // §10.3 (Batch C): creation references are cleared from every fork/recast/
   // variation preference set — a persisted legacy referenceImage (or the
   // fork's merge) must never ride into a new cast. The INHERITED brief is
@@ -780,7 +791,9 @@ async function generateCastCandidate(opts: { userId: number; prefs: ModelPrefere
   // Review finding 2: a failed audit-row insert is detected before the image
   // call — the caller's catch refunds; no undefined generation id survives
   const genRecord = await createGeneration({
-    userId: opts.userId, modelId: model.modelId, type: "castingImage", status: "processing", pointsCost: opts.cost,
+    userId: opts.userId, modelId: model.modelId,
+    operationId: opts.operationId, stepKey: opts.stepKey, viewAngle: "frontClose",
+    type: "castingImage", status: "processing", pointsCost: opts.cost,
   });
   if (!genRecord.success || !genRecord.generationId) {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Couldn't start the cast" });
@@ -923,7 +936,9 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
     let auditGenerationId: number | undefined;
     try {
       const genRecord = await createGeneration({
-        userId: input.userId, modelId: model.id, type: "castingImage", status: "processing", pointsCost: cost,
+        userId: input.userId, modelId: model.id,
+        operationId: input.operationId, stepKey: "recast", viewAngle: "frontClose",
+        type: "castingImage", status: "processing", pointsCost: cost,
       });
       // Review finding 2: a failed audit-row insert is detected, never
       // dereferenced as an undefined id
@@ -1135,7 +1150,10 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
   // nothing usable survived — refund once, checked, truth carried out.
   let candidate: Awaited<ReturnType<typeof generateCastCandidate>>;
   try {
-    candidate = await generateCastCandidate({ userId: input.userId, prefs: merged, cost });
+    candidate = await generateCastCandidate({
+      userId: input.userId, prefs: merged, cost,
+      operationId: input.operationId, stepKey: "fork",
+    });
   } catch (error) {
     log.error({ err: error, itemId: input.itemId }, "applyModelEdit fork failed inside the durable boundary");
     const outcome = await recordRefund(input.userId, cost, `Identity fork failed (refund)`, input.chargeReferenceId);
@@ -1260,6 +1278,7 @@ export async function executeRunVariations(input: {
   itemId: number;
   count: number;
   chargeReferenceId: string;
+  operationId: string;
   onCharged: (amount: number) => void;
   onRefunded: (amount: number) => void;
 }) {
@@ -1304,10 +1323,13 @@ export async function executeRunVariations(input: {
   // Parallel candidates; failures are named-and-refunded PER candidate (the
   // mintPackage contract) — one bad roll never takes the batch down.
   const settled = await Promise.allSettled(
-    positions.map(() =>
+    positions.map((_, index) =>
       // Each candidate re-resolves engine choices — an open brand rolls fresh
       // per candidate (D-41 records the pick in the model's preferences)
-      generateCastCandidate({ userId: input.userId, prefs: { ...base } as ModelPreferences, cost: unitCost }),
+      generateCastCandidate({
+        userId: input.userId, prefs: { ...base } as ModelPreferences, cost: unitCost,
+        operationId: input.operationId, stepKey: `variation:${index}`,
+      }),
     ),
   );
 

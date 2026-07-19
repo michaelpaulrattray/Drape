@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 import {
+  generations,
   generationOperationLocks,
   generationOperations,
   type Generation,
@@ -19,6 +20,8 @@ import {
   type GenerationOperationChildStatus,
   type GenerationOperationKind,
   type GenerationOperationOutcome,
+  type GenerationOperationPhase,
+  type GenerationOperationProgress,
   type PublicGenerationOperation,
   hashGenerationOperationClaim,
   modelOperationLockKey,
@@ -28,7 +31,42 @@ import { createModuleLogger } from "../logging/logger";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 
 const log = createModuleLogger("db/generationOperations");
-const DEFAULT_LEASE_MS = 15 * 60 * 1000;
+export const DEFAULT_GENERATION_OPERATION_LEASE_MS = 15 * 60 * 1000;
+const DEFAULT_GENERATION_OPERATION_HEARTBEAT_MS = 30 * 1000;
+
+type ActiveHeartbeat = {
+  timer: ReturnType<typeof setInterval>;
+  failure: unknown | null;
+  inFlight: Promise<void> | null;
+};
+
+const activeHeartbeats = new Map<string, ActiveHeartbeat>();
+
+async function stopOperationHeartbeat(operationId: string): Promise<unknown | null> {
+  const active = activeHeartbeats.get(operationId);
+  if (!active) return null;
+  clearInterval(active.timer);
+  activeHeartbeats.delete(operationId);
+  await active.inFlight?.catch(() => undefined);
+  return active.failure;
+}
+
+function startOperationHeartbeat(userId: number, operationId: string): void {
+  if (activeHeartbeats.has(operationId)) return;
+  const active: ActiveHeartbeat = { timer: undefined as never, failure: null, inFlight: null };
+  active.timer = setInterval(() => {
+    if (active.failure || active.inFlight) return;
+    active.inFlight = heartbeatGenerationOperation({ userId, operationId })
+      .then(() => undefined)
+      .catch((error) => {
+        active.failure = error;
+        log.error({ err: error, operationId }, "[GenerationOperations] operation heartbeat failed");
+      })
+      .finally(() => { active.inFlight = null; });
+  }, DEFAULT_GENERATION_OPERATION_HEARTBEAT_MS);
+  active.timer.unref?.();
+  activeHeartbeats.set(operationId, active);
+}
 
 export interface ClaimGenerationOperationInput {
   userId: number;
@@ -245,7 +283,7 @@ export async function acquireGenerationOperationLock(input: {
   assertOperationIdentity(input.operationId);
   assertGenerationOperationKind(input.kind);
   assertOperationLockKey(input.lockKey);
-  const leaseMs = input.leaseMs ?? DEFAULT_LEASE_MS;
+  const leaseMs = input.leaseMs ?? DEFAULT_GENERATION_OPERATION_LEASE_MS;
   if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0) throw new TypeError("leaseMs must be positive");
   const now = input.now ?? new Date();
   const expiresAt = new Date(now.getTime() + leaseMs);
@@ -342,6 +380,12 @@ export async function markGenerationOperationRunning(input: {
   expectedIdentityRevisionId?: string | null;
   plannedCredits: number;
   requiredLockKey?: string;
+  phase?: GenerationOperationPhase;
+  now?: Date;
+  leaseMs?: number;
+  /** Production executors opt in; low-level migration/tests can exercise the
+   * receipt transition without leaving a process timer behind. */
+  heartbeat?: boolean;
 }): Promise<{ operationId: string; chargeReferenceId: string }> {
   assertPositiveId(input.userId, "userId");
   assertOperationIdentity(input.operationId);
@@ -350,9 +394,16 @@ export async function markGenerationOperationRunning(input: {
     throw new TypeError("plannedCredits must be a non-negative integer");
   }
   if (input.requiredLockKey) assertOperationLockKey(input.requiredLockKey);
+  const phase = input.phase ?? "planning";
+  assertGenerationOperationPhase(phase);
+  const now = input.now ?? new Date();
+  const leaseMs = input.leaseMs ?? DEFAULT_GENERATION_OPERATION_LEASE_MS;
+  if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0) throw new TypeError("leaseMs must be positive");
+  const leaseExpiresAt = new Date(now.getTime() + leaseMs);
   const chargeReferenceId = operationChargeReference(input.operationId);
 
-  await withTransaction(async (tx) => {
+  try {
+    await withTransaction(async (tx) => {
     const operation = await getOperationForUser(input.userId, input.operationId, tx);
     if (!operation) throw new Error("Generation operation not found");
     if (operation.status === "running") {
@@ -381,6 +432,7 @@ export async function markGenerationOperationRunning(input: {
           throw new Error("Running operation no longer owns the required lock");
         }
       }
+      if (operation.phase !== phase) throw new Error("Running operation cannot change its phase during start replay");
       return;
     }
     if (operation.status !== "claimed") throw new Error("Only a claimed operation can start");
@@ -402,6 +454,9 @@ export async function markGenerationOperationRunning(input: {
         expectedIdentityRevisionId: input.expectedIdentityRevisionId ?? null,
         plannedCredits: input.plannedCredits,
         chargeReferenceId,
+        phase,
+        heartbeatAt: now,
+        leaseExpiresAt,
       })
       .where(and(
         eq(generationOperations.id, input.operationId),
@@ -409,9 +464,198 @@ export async function markGenerationOperationRunning(input: {
         eq(generationOperations.status, "claimed"),
       ));
     if (affectedRows(started) !== 1) throw new Error("Generation operation start lost its state race");
-  });
+    if (input.requiredLockKey) {
+      const renewed = await tx
+        .update(generationOperationLocks)
+        .set({ expiresAt: leaseExpiresAt })
+        .where(and(
+          eq(generationOperationLocks.lockKey, input.requiredLockKey),
+          eq(generationOperationLocks.operationId, input.operationId),
+        ));
+      if (affectedRows(renewed) !== 1) throw new Error("Generation operation start could not renew its lock");
+    }
+    });
+  } catch (error) {
+    // The start transaction may have committed even when the caller lost its
+    // response. Read the receipt before deciding: a matching running row is
+    // an idempotent success; a still-claimed row is sealed free; anything
+    // ambiguous remains locked for the stale adjudicator/support.
+    const operation = await getOperationForUser(input.userId, input.operationId).catch(() => null);
+    if (
+      operation?.status === "running" &&
+      operation.chargeReferenceId === chargeReferenceId &&
+      operation.plannedCredits === input.plannedCredits &&
+      operation.phase === phase
+    ) {
+      if (input.heartbeat) startOperationHeartbeat(input.userId, input.operationId);
+      return { operationId: input.operationId, chargeReferenceId };
+    }
+    if (operation?.status === "claimed") {
+      const publicMessage = "The operation could not start. Nothing was charged.";
+      try {
+        await finalizeClaimedGenerationOperationFailure({
+          userId: input.userId,
+          operationId: input.operationId,
+          errorCode: "INTERNAL_SERVER_ERROR",
+          publicMessage,
+        });
+      } catch (sealError) {
+        await markClaimedGenerationOperationRecoveryRequired({
+          userId: input.userId,
+          operationId: input.operationId,
+          publicMessage: `The start state needs support review. Operation ${input.operationId}.`,
+        }).catch((recoveryError) => {
+          log.fatal({ err: recoveryError, sealError, operationId: input.operationId }, "[GenerationOperations] start could not be sealed");
+        });
+      }
+    }
+    throw error;
+  }
 
+  if (input.heartbeat) startOperationHeartbeat(input.userId, input.operationId);
   return { operationId: input.operationId, chargeReferenceId };
+}
+
+export async function heartbeatGenerationOperation(input: {
+  userId: number;
+  operationId: string;
+  now?: Date;
+  leaseMs?: number;
+}): Promise<{ heartbeatAt: Date; leaseExpiresAt: Date }> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  const heartbeatAt = input.now ?? new Date();
+  const leaseMs = input.leaseMs ?? DEFAULT_GENERATION_OPERATION_LEASE_MS;
+  if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0) throw new TypeError("leaseMs must be positive");
+  const leaseExpiresAt = new Date(heartbeatAt.getTime() + leaseMs);
+
+  await withTransaction(async (tx) => {
+    const renewedOperation = await tx
+      .update(generationOperations)
+      .set({ heartbeatAt, leaseExpiresAt })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.status, "running"),
+      ));
+    if (affectedRows(renewedOperation) !== 1) {
+      throw new Error("Only the owned running operation can heartbeat");
+    }
+    const [lock] = await tx
+      .select({ lockKey: generationOperationLocks.lockKey })
+      .from(generationOperationLocks)
+      .where(eq(generationOperationLocks.operationId, input.operationId))
+      .limit(1);
+    if (!lock) return;
+    const renewedLock = await tx
+      .update(generationOperationLocks)
+      .set({ expiresAt: leaseExpiresAt })
+      .where(and(
+        eq(generationOperationLocks.operationId, input.operationId),
+        eq(generationOperationLocks.lockKey, lock.lockKey),
+      ));
+    if (affectedRows(renewedLock) !== 1) throw new Error("Operation heartbeat lost its resource lock");
+  });
+  return { heartbeatAt, leaseExpiresAt };
+}
+
+export async function updateGenerationOperationProgress(input: {
+  userId: number;
+  operationId: string;
+  phase: GenerationOperationPhase;
+  progress: GenerationOperationProgress;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertGenerationOperationPhase(input.phase);
+  assertGenerationOperationProgress(input.progress);
+  await withTransaction(async (tx) => {
+    const [operation] = await tx
+      .select()
+      .from(generationOperations)
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+      ))
+      .limit(1)
+      .for("update");
+    if (!operation || operation.status !== "running") {
+      throw new Error("Only the owned running operation can update progress");
+    }
+    const previous = operation.progress;
+    if (previous) {
+      assertGenerationOperationProgress(previous);
+      if (
+        input.progress.total < previous.total ||
+        input.progress.completed < previous.completed ||
+        input.progress.failed < previous.failed
+      ) {
+        throw new Error("Operation progress cannot move backwards");
+      }
+      const previousSteps = new Map(previous.steps.map((step) => [step.stepKey, step.status]));
+      for (const step of input.progress.steps) {
+        const prior = previousSteps.get(step.stepKey);
+        if ((prior === "completed" || prior === "failed") && step.status !== prior) {
+          throw new Error("A terminal operation step cannot change state");
+        }
+      }
+    }
+    await tx
+      .update(generationOperations)
+      .set({ phase: input.phase, progress: input.progress })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.status, "running"),
+      ));
+  });
+}
+
+/** Rebuild the bounded parent summary from durable child rows. The parent row
+ * is locked while children are read, so parallel slot settlement cannot make
+ * the public summary regress or lose a sibling's terminal state. */
+export async function syncGenerationOperationProgress(operationId: string): Promise<void> {
+  assertOperationIdentity(operationId);
+  await withTransaction(async (tx) => {
+    const [operation] = await tx
+      .select()
+      .from(generationOperations)
+      .where(eq(generationOperations.id, operationId))
+      .limit(1)
+      .for("update");
+    if (!operation || operation.status !== "running") return;
+    const children = await tx
+      .select()
+      .from(generations)
+      .where(eq(generations.operationId, operationId));
+    const newestByStep = new Map<string, Generation>();
+    for (const child of children) {
+      if (!child.stepKey) continue;
+      const current = newestByStep.get(child.stepKey);
+      if (!current || child.id > current.id) newestByStep.set(child.stepKey, child);
+    }
+    const steps = Array.from(newestByStep.values())
+      .sort((a, b) => a.id - b.id)
+      .map((child) => ({
+        stepKey: child.stepKey!,
+        viewAngle: child.viewAngle,
+        status: child.status as GenerationOperationChildStatus,
+      }));
+    const progress: GenerationOperationProgress = {
+      total: steps.length,
+      completed: steps.filter((step) => step.status === "completed").length,
+      failed: steps.filter((step) => step.status === "failed").length,
+      steps,
+    };
+    assertGenerationOperationProgress(progress);
+    await tx
+      .update(generationOperations)
+      .set({ progress })
+      .where(and(
+        eq(generationOperations.id, operationId),
+        eq(generationOperations.status, "running"),
+      ));
+  });
 }
 
 /** Bind the model created by a model.create operation without allowing a
@@ -454,6 +698,7 @@ export async function finalizeClaimedGenerationOperationFailure(input: {
   if (!/^[A-Z_]{2,32}$/.test(input.errorCode)) throw new TypeError("Invalid public error code");
   const publicMessage = input.publicMessage.trim();
   if (!publicMessage) throw new TypeError("Public failure message is required");
+  await stopOperationHeartbeat(input.operationId);
   await withTransaction(async (tx) => {
     const finalized = await tx
       .update(generationOperations)
@@ -489,6 +734,7 @@ export async function markClaimedGenerationOperationRecoveryRequired(input: {
   assertOperationIdentity(input.operationId);
   const publicMessage = input.publicMessage.trim();
   if (!publicMessage) throw new TypeError("Recovery message is required");
+  await stopOperationHeartbeat(input.operationId);
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const marked = await db
@@ -541,6 +787,11 @@ export async function finalizeGenerationOperationSuccess(input: {
   assertPublicOperationResult(input.result);
   assertCreditConservation(input.chargedCredits, input.refundedCredits);
   const terminalStatus = input.terminalStatus ?? "succeeded";
+  if (terminalStatus !== "partial" && terminalStatus !== "succeeded") {
+    throw new TypeError("Invalid successful terminal operation status");
+  }
+  const heartbeatFailure = await stopOperationHeartbeat(input.operationId);
+  if (heartbeatFailure) throw new Error("Operation heartbeat failed before success finalization", { cause: heartbeatFailure });
 
   await withTransaction(async (tx) => {
     const operation = await loadRunningOperation(tx, input.userId, input.operationId);
@@ -581,6 +832,8 @@ export async function finalizeGenerationOperationFailure(input: {
   if (!/^[A-Z_]{2,32}$/.test(input.errorCode)) throw new TypeError("Invalid public error code");
   const publicMessage = input.publicMessage.trim();
   if (!publicMessage) throw new TypeError("Public failure message is required");
+  const heartbeatFailure = await stopOperationHeartbeat(input.operationId);
+  if (heartbeatFailure) throw new Error("Operation heartbeat failed before failure finalization", { cause: heartbeatFailure });
 
   await withTransaction(async (tx) => {
     const operation = await loadRunningOperation(tx, input.userId, input.operationId);
@@ -624,6 +877,7 @@ export async function markGenerationOperationRecoveryRequired(input: {
   assertCreditConservation(input.chargedCredits, input.refundedCredits);
   const publicMessage = input.publicMessage.trim();
   if (!publicMessage) throw new TypeError("Recovery message is required");
+  await stopOperationHeartbeat(input.operationId);
 
   await withTransaction(async (tx) => {
     const operation = await loadRunningOperation(tx, input.userId, input.operationId);

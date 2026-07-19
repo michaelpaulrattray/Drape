@@ -87,6 +87,8 @@ export const modelsRouter = router({
         userId: ctx.user.id,
         operationId: gate.operationId,
         plannedCredits: 0,
+        phase: "planning",
+        heartbeat: true,
       });
 
       let durableResult = false;
@@ -264,6 +266,8 @@ export const modelsRouter = router({
         expectedIdentityRevisionId: lockedModel.identityRevisionId,
         plannedCredits: 0,
         requiredLockKey: lockKey,
+        phase: "finalizing",
+        heartbeat: true,
       });
 
       let durableResult = false;

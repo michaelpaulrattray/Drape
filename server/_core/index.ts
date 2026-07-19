@@ -274,6 +274,13 @@ async function startServer() {
     }).catch(err => {
       log.error({ err }, "Scheduler: failed to start health monitor");
     });
+
+    // R7-2: expired leases trigger evidence-based adjudication, never retry.
+    import("../casting/operationRecovery").then(({ startGenerationOperationRecoverySweep }) => {
+      startGenerationOperationRecoverySweep();
+    }).catch(err => {
+      log.error({ err }, "Scheduler: failed to start generation-operation recovery sweep");
+    });
   });
 
   // Register shutdown handlers after server is listening

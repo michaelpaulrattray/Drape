@@ -125,6 +125,8 @@ export const castingImagingRouter = router({
         expectedIdentityRevisionId: currentRevisionId(lockedModel),
         plannedCredits: POINT_COSTS.castingImage,
         requiredLockKey: lockKey,
+        phase: "generating",
+        heartbeat: true,
       });
 
       // ATOMIC credit deduction BEFORE generation to prevent race conditions
@@ -164,6 +166,9 @@ export const castingImagingRouter = router({
       const genResult = await createGeneration({
         userId: ctx.user.id,
         modelId: input.modelId,
+        operationId: gate.operationId,
+        stepKey: "headshot",
+        viewAngle: "frontClose",
         type: "castingImage",
         status: "processing",
         pointsCost: POINT_COSTS.castingImage,
