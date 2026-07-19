@@ -15,6 +15,7 @@ import { castingRefinementRouter } from "./castingRefinement";
 import { castingExportRouter } from "./castingExport";
 import { castingParseRouter } from "./castingParse";
 import { queueStatusRouter } from "./queueStatus";
+import { generationOperationsRouter } from "./generationOperations";
 
 export const generationRouter = router({
   ...castingImagingRouter._def.procedures,
@@ -22,4 +23,5 @@ export const generationRouter = router({
   ...castingExportRouter._def.procedures,
   ...castingParseRouter._def.procedures,
   ...queueStatusRouter._def.procedures,
+  ...generationOperationsRouter._def.procedures,
 });

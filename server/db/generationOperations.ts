@@ -1,9 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
 import {
+  boardItems,
+  boardItemVersions,
+  boards,
   generations,
   generationOperationLocks,
   generationOperations,
+  modelAssets,
+  models,
   type Generation,
   type GenerationOperation,
 } from "../../drizzle/schema";
@@ -26,9 +31,13 @@ import {
   hashGenerationOperationClaim,
   modelOperationLockKey,
   operationChargeReference,
+  type GenerationOperationLandingStatus,
 } from "../casting/operationContract";
 import { createModuleLogger } from "../logging/logger";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import { fillEmptyCastNodeWithVersionIn } from "./boards";
+import { isModelAvailableStatus, isModelDraftStatus } from "../../shared/modelLifecycle";
+import type { BoardItemCanvasMetadata, Provenance } from "../../shared/boardTypes";
 
 const log = createModuleLogger("db/generationOperations");
 export const DEFAULT_GENERATION_OPERATION_LEASE_MS = 15 * 60 * 1000;
@@ -41,6 +50,8 @@ type ActiveHeartbeat = {
 };
 
 const activeHeartbeats = new Map<string, ActiveHeartbeat>();
+const RECENT_OPERATION_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DRAFT_AUTO_NAME = "Draft Model";
 
 async function stopOperationHeartbeat(operationId: string): Promise<unknown | null> {
   const active = activeHeartbeats.get(operationId);
@@ -206,6 +217,351 @@ export function toPublicGenerationOperation(
     landingAcknowledgedAt: iso(operation.landingAcknowledgedAt),
     children: publicChildren,
   };
+}
+
+async function loadOperationChildren(
+  operationIds: string[],
+  tx?: TransactionHandle,
+): Promise<Map<string, Generation[]>> {
+  const grouped = new Map<string, Generation[]>();
+  if (operationIds.length === 0) return grouped;
+  const db = tx ?? await getDb();
+  if (!db) return grouped;
+  const rows = await db
+    .select()
+    .from(generations)
+    .where(inArray(generations.operationId, operationIds))
+    .orderBy(generations.id);
+  for (const row of rows) {
+    if (!row.operationId) continue;
+    const children = grouped.get(row.operationId) ?? [];
+    children.push(row);
+    grouped.set(row.operationId, children);
+  }
+  return grouped;
+}
+
+export async function getPublicGenerationOperation(
+  userId: number,
+  operationId: string,
+): Promise<PublicGenerationOperation | null> {
+  assertPositiveId(userId, "userId");
+  assertOperationIdentity(operationId);
+  const operation = await getOperationForUser(userId, operationId);
+  if (!operation) return null;
+  const children = await loadOperationChildren([operation.id]);
+  return toPublicGenerationOperation(operation, children.get(operation.id) ?? []);
+}
+
+export async function getRecentPublicGenerationOperation(input: {
+  userId: number;
+  clientRequestId: string;
+}): Promise<PublicGenerationOperation | null> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.clientRequestId);
+  const db = await getDb();
+  if (!db) return null;
+  const [operation] = await db
+    .select()
+    .from(generationOperations)
+    .where(and(
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.clientRequestId, input.clientRequestId),
+    ))
+    .limit(1);
+  if (!operation) return null;
+  const children = await loadOperationChildren([operation.id]);
+  return toPublicGenerationOperation(operation, children.get(operation.id) ?? []);
+}
+
+export async function listActivePublicGenerationOperations(input: {
+  userId: number;
+  boardId?: number;
+  modelId?: number;
+  now?: Date;
+  limit?: number;
+}): Promise<PublicGenerationOperation[]> {
+  assertPositiveId(input.userId, "userId");
+  assertOptionalPositiveId(input.boardId, "boardId");
+  assertOptionalPositiveId(input.modelId, "modelId");
+  const limit = Math.max(1, Math.min(input.limit ?? 50, 100));
+  const recentSince = new Date((input.now ?? new Date()).getTime() - RECENT_OPERATION_WINDOW_MS);
+  const db = await getDb();
+  if (!db) return [];
+  const filters = [
+    eq(generationOperations.userId, input.userId),
+    or(
+      inArray(generationOperations.status, ["claimed", "running", "recovery_required"]),
+      and(
+        inArray(generationOperations.status, ["partial", "succeeded", "failed"]),
+        isNull(generationOperations.landingAcknowledgedAt),
+        gte(generationOperations.completedAt, recentSince),
+      ),
+    )!,
+  ];
+  if (input.boardId !== undefined) filters.push(eq(generationOperations.originBoardId, input.boardId));
+  if (input.modelId !== undefined) filters.push(eq(generationOperations.modelId, input.modelId));
+  const operations = await db
+    .select()
+    .from(generationOperations)
+    .where(and(...filters))
+    .orderBy(
+      sql`CASE WHEN ${generationOperations.status} IN ('claimed', 'running', 'recovery_required') THEN 0 ELSE 1 END`,
+      desc(generationOperations.createdAt),
+    )
+    .limit(limit);
+  const children = await loadOperationChildren(operations.map((operation) => operation.id));
+  return operations.map((operation) =>
+    toPublicGenerationOperation(operation, children.get(operation.id) ?? [])
+  );
+}
+
+export type AcknowledgeGenerationOperationResult =
+  | { type: "acknowledged"; operation: PublicGenerationOperation }
+  | { type: "not_found" }
+  | { type: "not_terminal" }
+  | { type: "landing_required" };
+
+export async function acknowledgeGenerationOperation(input: {
+  userId: number;
+  operationId: string;
+  now?: Date;
+}): Promise<AcknowledgeGenerationOperationResult> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  const outcome = await withTransaction(async (tx) => {
+    const [operation] = await tx
+      .select()
+      .from(generationOperations)
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+      ))
+      .limit(1)
+      .for("update");
+    if (!operation) return "not_found" as const;
+    if (operation.status === "claimed" || operation.status === "running" || operation.status === "recovery_required") {
+      return "not_terminal" as const;
+    }
+    if (operation.landingStatus === "pending" || operation.landingStatus === "relink_required") {
+      return "landing_required" as const;
+    }
+    if (!operation.landingAcknowledgedAt) {
+      await tx
+        .update(generationOperations)
+        .set({ landingAcknowledgedAt: input.now ?? new Date() })
+        .where(and(
+          eq(generationOperations.id, operation.id),
+          eq(generationOperations.userId, input.userId),
+          isNull(generationOperations.landingAcknowledgedAt),
+        ));
+    }
+    return "acknowledged" as const;
+  });
+  if (outcome !== "acknowledged") return { type: outcome };
+  const operation = await getPublicGenerationOperation(input.userId, input.operationId);
+  if (!operation) return { type: "not_found" };
+  return { type: "acknowledged", operation };
+}
+
+function operationResultIdentity(result: unknown): {
+  modelId: number;
+  assetId: number | null;
+  imageUrl: string | null;
+} | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  const record = result as Record<string, unknown>;
+  const modelId = record.modelId;
+  if (!Number.isSafeInteger(modelId) || (modelId as number) <= 0) return null;
+  const assetId = Number.isSafeInteger(record.assetId) && (record.assetId as number) > 0
+    ? record.assetId as number
+    : null;
+  const imageUrl = typeof record.imageUrl === "string" && record.imageUrl.trim()
+    ? record.imageUrl
+    : null;
+  if (!assetId && !imageUrl) return null;
+  return { modelId: modelId as number, assetId, imageUrl };
+}
+
+function boardMetadata(value: unknown): BoardItemCanvasMetadata {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as BoardItemCanvasMetadata
+    : {};
+}
+
+export type LandGenerationOperationResult =
+  | { type: "landed"; operation: PublicGenerationOperation }
+  | { type: "relink_required"; operation: PublicGenerationOperation }
+  | { type: "not_found" }
+  | { type: "not_terminal" }
+  | { type: "landing_not_required" }
+  | { type: "invalid_result" };
+
+/** Free exactly-once operation landing. Both the receipt and target node are
+ * locked before validation, and the node stamp/version/acknowledgement commit
+ * together. No credit or provider module is reachable from this helper. */
+export async function landGenerationOperationResult(input: {
+  userId: number;
+  operationId: string;
+  boardId: number;
+  itemId: number;
+  now?: Date;
+}): Promise<LandGenerationOperationResult> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertPositiveId(input.boardId, "boardId");
+  assertPositiveId(input.itemId, "itemId");
+  const now = input.now ?? new Date();
+  const transactionResult = await withTransaction(async (tx) => {
+    const [operation] = await tx
+      .select()
+      .from(generationOperations)
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+      ))
+      .limit(1)
+      .for("update");
+    if (!operation) return "not_found" as const;
+    if (operation.status !== "partial" && operation.status !== "succeeded") {
+      return "not_terminal" as const;
+    }
+    if (operation.landingStatus === "landed") return "landed" as const;
+    if (operation.landingStatus !== "pending" && operation.landingStatus !== "relink_required") {
+      return "landing_not_required" as const;
+    }
+
+    const identity = operationResultIdentity(operation.result);
+    if (!identity) return "invalid_result" as const;
+    const { modelId } = identity;
+    const [model] = await tx
+      .select()
+      .from(models)
+      .where(and(eq(models.id, modelId), eq(models.userId, input.userId)))
+      .limit(1)
+      .for("update");
+    if (!model || !isModelAvailableStatus(model.status)) return "invalid_result" as const;
+    const assetFilters = [
+      eq(modelAssets.modelId, modelId),
+      eq(modelAssets.viewType, "frontClose"),
+      identity.assetId
+        ? eq(modelAssets.id, identity.assetId)
+        : eq(modelAssets.storageUrl, identity.imageUrl!),
+    ];
+    const [asset] = await tx
+      .select()
+      .from(modelAssets)
+      .where(and(...assetFilters))
+      .orderBy(desc(modelAssets.id))
+      .limit(1)
+      .for("update");
+    if (!asset?.storageUrl) return "invalid_result" as const;
+
+    const isAutomaticOrigin =
+      operation.originBoardId === input.boardId && operation.originItemId === input.itemId;
+    const [board] = await tx
+      .select({ id: boards.id })
+      .from(boards)
+      .where(and(
+        eq(boards.id, input.boardId),
+        eq(boards.userId, input.userId),
+        eq(boards.status, "active"),
+      ))
+      .limit(1);
+    if (!board) return "not_found" as const;
+    const draft = isModelDraftStatus(model.status);
+    const honestName = draft && model.name === DRAFT_AUTO_NAME ? null : model.name;
+    const fill = await fillEmptyCastNodeWithVersionIn(tx, {
+      boardId: input.boardId,
+      itemId: input.itemId,
+      build: (item) => {
+        const provenance: Provenance = {
+          type: "library_cast",
+          modelId,
+          viewAngle: "frontClose",
+          ...(draft ? { draft: true } : {}),
+        };
+        const metadata: BoardItemCanvasMetadata = {
+          ...boardMetadata(item.metadata),
+          provenance,
+          status: null,
+          isGenerating: false,
+          version: 1,
+        };
+        return {
+          update: {
+            imageUrl: asset.storageUrl,
+            label: honestName || item.label || null,
+            metadata,
+            sourceModelId: modelId,
+          },
+          version: { imageUrl: asset.storageUrl, tool: "initial" },
+        };
+      },
+    });
+    let exactOriginAlreadyLanded = false;
+    if (fill === "not_empty" && isAutomaticOrigin) {
+      const [existingItem] = await tx
+        .select()
+        .from(boardItems)
+        .where(and(eq(boardItems.id, input.itemId), eq(boardItems.boardId, input.boardId)))
+        .limit(1);
+      const provenance = boardMetadata(existingItem?.metadata).provenance;
+      const [matchingVersion] = existingItem
+        ? await tx
+          .select({ id: boardItemVersions.id })
+          .from(boardItemVersions)
+          .where(and(
+            eq(boardItemVersions.itemId, existingItem.id),
+            eq(boardItemVersions.imageUrl, asset.storageUrl),
+          ))
+          .limit(1)
+        : [];
+      exactOriginAlreadyLanded = !!existingItem &&
+        existingItem.deletedAt === null &&
+        existingItem.sourceModelId === modelId &&
+        existingItem.imageUrl === asset.storageUrl &&
+        !!provenance &&
+        "modelId" in provenance &&
+        provenance.modelId === modelId &&
+        !!matchingVersion;
+    }
+    if (fill !== "filled" && !exactOriginAlreadyLanded) {
+      if (fill === "not_found" && !isAutomaticOrigin) return "not_found" as const;
+      await tx
+        .update(generationOperations)
+        .set({ landingStatus: "relink_required", landedItemId: null })
+        .where(and(
+          eq(generationOperations.id, operation.id),
+          eq(generationOperations.userId, input.userId),
+        ));
+      return "relink_required" as const;
+    }
+    const landed = await tx
+      .update(generationOperations)
+      .set({
+        landingStatus: "landed",
+        landedItemId: input.itemId,
+        landingAcknowledgedAt: now,
+      })
+      .where(and(
+        eq(generationOperations.id, operation.id),
+        eq(generationOperations.userId, input.userId),
+        inArray(generationOperations.landingStatus, ["pending", "relink_required"]),
+      ));
+    if (affectedRows(landed) !== 1) throw new Error("Operation landing lost its receipt race");
+    return "landed" as const;
+  });
+
+  if (
+    transactionResult === "not_found" ||
+    transactionResult === "not_terminal" ||
+    transactionResult === "landing_not_required" ||
+    transactionResult === "invalid_result"
+  ) return { type: transactionResult };
+  const operation = await getPublicGenerationOperation(input.userId, input.operationId);
+  if (!operation) return { type: "not_found" };
+  return { type: transactionResult, operation };
 }
 
 async function getOperationForUser(
@@ -781,6 +1137,11 @@ export async function finalizeGenerationOperationSuccess(input: {
   chargedCredits: number;
   refundedCredits: number;
   terminalStatus?: "partial" | "succeeded";
+  landing?: {
+    status: GenerationOperationLandingStatus;
+    landedItemId?: number | null;
+    acknowledgedAt?: Date | null;
+  };
 }): Promise<Extract<GenerationOperationOutcome, { type: "replay_success" }>> {
   assertPositiveId(input.userId, "userId");
   assertOperationIdentity(input.operationId);
@@ -789,6 +1150,16 @@ export async function finalizeGenerationOperationSuccess(input: {
   const terminalStatus = input.terminalStatus ?? "succeeded";
   if (terminalStatus !== "partial" && terminalStatus !== "succeeded") {
     throw new TypeError("Invalid successful terminal operation status");
+  }
+  if (input.landing) {
+    assertGenerationOperationLandingStatus(input.landing.status);
+    assertOptionalPositiveId(input.landing.landedItemId, "landedItemId");
+    if (input.landing.status === "landed" && !input.landing.landedItemId) {
+      throw new TypeError("A landed operation requires its board item id");
+    }
+    if (input.landing.status !== "landed" && input.landing.landedItemId) {
+      throw new TypeError("Only a landed operation can record a board item id");
+    }
   }
   const heartbeatFailure = await stopOperationHeartbeat(input.operationId);
   if (heartbeatFailure) throw new Error("Operation heartbeat failed before success finalization", { cause: heartbeatFailure });
@@ -806,6 +1177,11 @@ export async function finalizeGenerationOperationSuccess(input: {
         chargedCredits: input.chargedCredits,
         refundedCredits: input.refundedCredits,
         completedAt: new Date(),
+        ...(input.landing ? {
+          landingStatus: input.landing.status,
+          landedItemId: input.landing.landedItemId ?? null,
+          landingAcknowledgedAt: input.landing.acknowledgedAt ?? null,
+        } : {}),
       })
       .where(and(
         eq(generationOperations.id, input.operationId),

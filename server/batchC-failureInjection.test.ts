@@ -27,6 +27,7 @@ const tx = vi.hoisted(() => ({
   /** Fail metadata-only updates — the downstream STALE status writes
    *  (final correction 3: never silently swallowed). */
   failStaleStatusUpdate: false,
+  fillResult: "filled" as "filled" | "not_found" | "not_empty",
   reset() {
     this.inserts = [];
     this.updates = [];
@@ -34,6 +35,7 @@ const tx = vi.hoisted(() => ({
     this.failVersionInsert = false;
     this.failStampUpdate = false;
     this.failStaleStatusUpdate = false;
+    this.fillResult = "filled";
   },
 }));
 const llmScript = vi.hoisted(() => ({
@@ -61,6 +63,14 @@ vi.mock("./db", async (importOriginal) => {
     addBoardItemVersion: vi.fn(),
     getLatestVersionNumber: vi.fn(),
     addBoardItem: vi.fn(),
+    fillEmptyCastNodeWithVersionIn: vi.fn(async () => {
+      if (tx.failStampUpdate) throw new Error("board stamp update failed");
+      if (tx.failVersionInsert) throw new Error("version insert failed");
+      if (tx.fillResult !== "filled") return tx.fillResult;
+      tx.updates.push({ imageUrl: "https://pub-test.r2.dev/x.png", metadata: {} });
+      tx.inserts.push({ itemId: 3, version: 1 });
+      return "filled" as const;
+    }),
     deductPoints: vi.fn(),
     deductCredits: vi.fn(),
     addCredits: vi.fn(),
@@ -706,6 +716,16 @@ describe("canvas creation boundaries", () => {
     expect(addCredits).not.toHaveBeenCalled();
     // the failed stamp landed no version row (one transaction, all-or-nothing)
     expect(tx.inserts.some((i) => "version" in i && "itemId" in i)).toBe(false);
+  });
+
+  it("runGeneration: a node filled while Gemini ran is never overwritten or refunded", async () => {
+    tx.fillResult = "not_empty";
+    const result = await executeRunGeneration({ userId: 1, itemId: 3, userPrompt: "sharp editorial Nordic face" });
+    expect(result).toMatchObject({ success: true, placed: false });
+    expect(result.placementMessage).toContain("model library");
+    expect(addCredits).not.toHaveBeenCalled();
+    expect(tx.updates.some((values) => "imageUrl" in values)).toBe(false);
+    expect(tx.inserts.some((values) => "version" in values && "itemId" in values)).toBe(false);
   });
 
   it("runGeneration: asset write failure ⇒ refund once, honest error", async () => {

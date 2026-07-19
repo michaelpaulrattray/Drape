@@ -21,8 +21,10 @@ import {
   getLatestVersionNumber,
   stampBoardItemWithVersion,
   stampBoardItemWithVersionIn,
+  fillEmptyCastNodeWithVersionIn,
   updateBoardItemIn,
   placeLinkedBoardItem,
+  withTransaction,
   createModel,
   getModelById,
   updateModel,
@@ -486,33 +488,34 @@ export async function executeRunGeneration(input: RunGenerationInput) {
       attributes: { ...prefs } as Record<string, unknown>,
       engine: engineUsed || "gemini",
     };
-    const meta = readMeta(item);
-    const version = (await getLatestVersionNumber(input.itemId)) + 1;
     // Final correction 4: the node stamp and its version row are one domain
     // record — they commit together or not at all (no half-versioned node).
-    await stampBoardItemWithVersion({
+    const fill = await withTransaction((tx) => fillEmptyCastNodeWithVersionIn(tx, {
+      boardId: item.boardId,
       itemId: input.itemId,
-      update: {
-        imageUrl,
-        label: input.modelName || item.label || "Cast",
-        metadata: {
-          ...meta,
-          provenance,
-          attributes: { ...prefs } as Record<string, unknown>,
-          userPrompt: input.userPrompt ?? "",
-          status: null,
-          isGenerating: false,
-          version,
-        } satisfies BoardItemCanvasMetadata,
-      },
-      version: {
-        itemId: input.itemId,
-        version,
-        imageUrl,
-        prompt: input.userPrompt || null,
-        tool: version === 1 ? "initial" : "rerun",
-      },
-    });
+      build: (lockedItem) => ({
+        update: {
+          imageUrl,
+          label: input.modelName || lockedItem.label || "Cast",
+          metadata: {
+            ...readMeta(lockedItem),
+            provenance,
+            attributes: { ...prefs } as Record<string, unknown>,
+            userPrompt: input.userPrompt ?? "",
+            status: null,
+            isGenerating: false,
+            version: 1,
+          } satisfies BoardItemCanvasMetadata,
+          sourceModelId: modelId,
+        },
+        version: {
+          imageUrl,
+          prompt: input.userPrompt || null,
+          tool: "initial",
+        },
+      }),
+    }));
+    if (fill !== "filled") throw new Error("The origin Cast node is no longer empty");
   } catch (syncError) {
     placed = false;
     placementMessage =
@@ -584,24 +587,27 @@ export async function executeFillFromLibrary(input: {
     ...(draft ? { draft: true } : {}),
   };
 
-  const meta = readMeta(item);
   // Unnamed drafts render as unnamed (D-42) — never the fake auto-name
   const honestName = draft && model.name === DRAFT_AUTO_NAME ? null : model.name;
-  const version = (await getLatestVersionNumber(input.itemId)) + 1;
-  await updateBoardItem(input.itemId, {
-    imageUrl: headshot.storageUrl,
-    label: honestName || item.label || null,
-    metadata: { ...meta, provenance, status: null, isGenerating: false, version },
-    // Keep the legacy FK in sync — the node was created empty, so createNode
-    // couldn't stamp it (legacy surfaces + analytics read this column)
-    sourceModelId: input.modelId,
-  });
-  await addBoardItemVersion({
+  const fill = await withTransaction((tx) => fillEmptyCastNodeWithVersionIn(tx, {
+    boardId: item.boardId,
     itemId: input.itemId,
-    version,
-    imageUrl: headshot.storageUrl,
-    tool: "initial",
-  });
+    build: (lockedItem) => ({
+      update: {
+        imageUrl: headshot.storageUrl,
+        label: honestName || lockedItem.label || null,
+        metadata: { ...readMeta(lockedItem), provenance, status: null, isGenerating: false, version: 1 },
+        // Keep the legacy FK in sync — the node was created empty, so
+        // createNode couldn't stamp it (legacy surfaces + analytics read it).
+        sourceModelId: input.modelId,
+      },
+      version: { imageUrl: headshot.storageUrl, tool: "initial" },
+    }),
+  }));
+  if (fill === "not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
+  if (fill === "not_empty") {
+    throw new TRPCError({ code: "CONFLICT", message: "This Cast node is no longer empty." });
+  }
   return { itemId: input.itemId, modelId: input.modelId, imageUrl: headshot.storageUrl, label: honestName, draft };
 }
 

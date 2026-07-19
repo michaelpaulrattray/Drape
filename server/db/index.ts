@@ -79,8 +79,15 @@ export {
   finalizeGenerationOperationFailure,
   markGenerationOperationRecoveryRequired,
   getGenerationOperationOutcome,
+  getPublicGenerationOperation,
+  getRecentPublicGenerationOperation,
+  listActivePublicGenerationOperations,
+  acknowledgeGenerationOperation,
+  landGenerationOperationResult,
   type ClaimGenerationOperationInput,
   type AcquireGenerationOperationLockResult,
+  type AcknowledgeGenerationOperationResult,
+  type LandGenerationOperationResult,
 } from "./generationOperations";
 
 // Generations
@@ -246,6 +253,8 @@ export {
   // Atomic landing records (Batch C final corrections 3+4)
   stampBoardItemWithVersion,
   stampBoardItemWithVersionIn,
+  fillEmptyCastNodeWithVersionIn,
   updateBoardItemIn,
   placeLinkedBoardItem,
+  type FillEmptyCastNodeResult,
 } from "./boards";

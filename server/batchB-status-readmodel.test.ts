@@ -33,6 +33,8 @@ vi.mock("./db", async (importOriginal) => {
     updateBoardItem: vi.fn().mockResolvedValue(undefined),
     addBoardItemVersion: vi.fn().mockResolvedValue(undefined),
     getLatestVersionNumber: vi.fn().mockResolvedValue(0),
+    withTransaction: vi.fn(async (callback: (tx: unknown) => unknown) => callback({})),
+    fillEmptyCastNodeWithVersionIn: vi.fn().mockResolvedValue("filled"),
     updateModel: vi.fn().mockResolvedValue({ success: true }),
     mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
     deductPoints: vi.fn().mockResolvedValue({ success: true }),

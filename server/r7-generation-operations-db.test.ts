@@ -37,6 +37,20 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
 
   beforeEach(async () => {
     await connection.execute("DELETE FROM generations WHERE userId = ?", [userId]);
+    await connection.execute(
+      "DELETE v FROM board_item_versions v JOIN board_items i ON i.id = v.itemId JOIN boards b ON b.id = i.boardId WHERE b.userId = ?",
+      [userId],
+    );
+    await connection.execute(
+      "DELETE i FROM board_items i JOIN boards b ON b.id = i.boardId WHERE b.userId = ?",
+      [userId],
+    );
+    await connection.execute("DELETE FROM boards WHERE userId = ?", [userId]);
+    await connection.execute(
+      "DELETE a FROM model_assets a JOIN models m ON m.id = a.modelId WHERE m.userId = ?",
+      [userId],
+    );
+    await connection.execute("DELETE FROM models WHERE userId = ?", [userId]);
     await connection.execute("DELETE FROM point_transactions WHERE userId = ?", [userId]);
     await connection.execute("UPDATE points SET balance = 5000, creditsUsed = 0 WHERE userId = ?", [userId]);
     await connection.execute(
@@ -49,6 +63,20 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
   afterAll(async () => {
     if (!connection) return;
     await connection.execute("DELETE FROM generations WHERE userId = ?", [userId]);
+    await connection.execute(
+      "DELETE v FROM board_item_versions v JOIN board_items i ON i.id = v.itemId JOIN boards b ON b.id = i.boardId WHERE b.userId = ?",
+      [userId],
+    );
+    await connection.execute(
+      "DELETE i FROM board_items i JOIN boards b ON b.id = i.boardId WHERE b.userId = ?",
+      [userId],
+    );
+    await connection.execute("DELETE FROM boards WHERE userId = ?", [userId]);
+    await connection.execute(
+      "DELETE a FROM model_assets a JOIN models m ON m.id = a.modelId WHERE m.userId = ?",
+      [userId],
+    );
+    await connection.execute("DELETE FROM models WHERE userId = ?", [userId]);
     await connection.execute(
       "DELETE l FROM generation_operation_locks l JOIN generation_operations o ON o.id = l.operationId WHERE o.userId = ?",
       [userId],
@@ -69,6 +97,88 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       modelId: 44,
       payload,
     });
+
+  async function createEmptyCastTarget(existingBoardId?: number) {
+    let boardId = existingBoardId;
+    if (!boardId) {
+      const [board] = await connection.execute<ResultSetHeader>(
+        "INSERT INTO boards (userId, name, startedWith, status) VALUES (?, 'R7 Landing Board', 'casting', 'active')",
+        [userId],
+      );
+      boardId = board.insertId;
+    }
+    const [item] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO board_items (boardId, type, kind, label, positionX, positionY, width, height, metadata) VALUES (?, 'model', 'cast_config', 'Cast', 0, 0, 280, 420, JSON_OBJECT())",
+      [boardId],
+    );
+    return { boardId, itemId: item.insertId };
+  }
+
+  async function createPendingLanding(input: {
+    boardId: number;
+    itemId: number;
+    label: string;
+  }) {
+    const model = await modelDb.createModel({
+      userId,
+      name: input.label,
+      masterPrompt: `${input.label} master prompt`,
+      technicalSchema: {},
+      preferences: {},
+      status: "draft",
+    });
+    if (!model.modelId) throw new Error("landing model insert failed");
+    const imageUrl = `https://example.com/${input.label.toLowerCase()}-${randomUUID()}.png`;
+    const asset = await modelDb.createModelAsset({
+      modelId: model.modelId,
+      viewType: "frontClose",
+      resolution: "1K",
+      storageUrl: imageUrl,
+      pointsCost: 0,
+    });
+    if (!asset.assetId) throw new Error("landing asset insert failed");
+    const requestId = randomUUID();
+    const claimed = await operations.claimGenerationOperation({
+      userId,
+      clientRequestId: requestId,
+      kind: "canvas.cast",
+      modelId: model.modelId,
+      originBoardId: input.boardId,
+      originItemId: input.itemId,
+      payload: { boardId: input.boardId, itemId: input.itemId, label: input.label },
+    });
+    if (claimed.type !== "claimed") throw new Error("landing claim failed");
+    await operations.markGenerationOperationRunning({
+      userId,
+      operationId: claimed.operationId,
+      modelId: model.modelId,
+      plannedCredits: 0,
+      phase: "landing",
+    });
+    await operations.finalizeGenerationOperationSuccess({
+      userId,
+      operationId: claimed.operationId,
+      result: {
+        success: true,
+        itemId: input.itemId,
+        modelId: model.modelId,
+        assetId: asset.assetId,
+        imageUrl,
+        creditCost: 0,
+        placed: false,
+      },
+      chargedCredits: 0,
+      refundedCredits: 0,
+      landing: { status: "pending" },
+    });
+    return {
+      operationId: claimed.operationId,
+      clientRequestId: requestId,
+      modelId: model.modelId,
+      assetId: asset.assetId,
+      imageUrl,
+    };
+  }
 
   it("creates one receipt for twenty concurrent identical claims", async () => {
     const clientRequestId = randomUUID();
@@ -362,6 +472,166 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     expect(receipt).toMatchObject({ status: "succeeded", chargedCredits: 300, refundedCredits: 0 });
     expect(storedResult).toEqual({ assetId: asset.assetId });
     expect(Number(balance.balance)).toBe(4700);
+  }, 60_000);
+
+  it("scopes public operation reads and refuses acknowledgement before landing", async () => {
+    const target = await createEmptyCastTarget();
+    const pending = await createPendingLanding({ ...target, label: "Owned Landing" });
+
+    await expect(operations.getPublicGenerationOperation(userId, pending.operationId))
+      .resolves.toMatchObject({ operationId: pending.operationId, landingStatus: "pending" });
+    await expect(operations.getPublicGenerationOperation(userId + 999_999, pending.operationId))
+      .resolves.toBeNull();
+    await expect(operations.getRecentPublicGenerationOperation({
+      userId,
+      clientRequestId: pending.clientRequestId,
+    })).resolves.toMatchObject({ operationId: pending.operationId });
+    await expect(operations.getRecentPublicGenerationOperation({
+      userId: userId + 999_999,
+      clientRequestId: pending.clientRequestId,
+    })).resolves.toBeNull();
+    await expect(operations.listActivePublicGenerationOperations({ userId, boardId: target.boardId }))
+      .resolves.toEqual([expect.objectContaining({ operationId: pending.operationId })]);
+    await expect(operations.acknowledgeGenerationOperation({ userId, operationId: pending.operationId }))
+      .resolves.toEqual({ type: "landing_required" });
+    await expect(operations.landGenerationOperationResult({
+      userId: userId + 999_999,
+      operationId: pending.operationId,
+      boardId: target.boardId,
+      itemId: target.itemId,
+    })).resolves.toEqual({ type: "not_found" });
+    const [[item]] = await connection.query<RowDataPacket[]>(
+      "SELECT imageUrl, sourceModelId FROM board_items WHERE id = ?",
+      [target.itemId],
+    );
+    expect(item).toMatchObject({ imageUrl: null, sourceModelId: null });
+  }, 60_000);
+
+  it("lands one operation exactly once across parallel callers", async () => {
+    const target = await createEmptyCastTarget();
+    const pending = await createPendingLanding({ ...target, label: "Parallel Landing" });
+    await modelDb.createModelAsset({
+      modelId: pending.modelId,
+      viewType: "frontClose",
+      resolution: "1K",
+      storageUrl: `https://example.com/newer-${randomUUID()}.png`,
+      pointsCost: 0,
+    });
+    const outcomes = await Promise.all(Array.from({ length: 12 }, () =>
+      operations.landGenerationOperationResult({
+        userId,
+        operationId: pending.operationId,
+        boardId: target.boardId,
+        itemId: target.itemId,
+      })));
+    expect(outcomes.every((outcome) => outcome.type === "landed")).toBe(true);
+    const [[item]] = await connection.query<RowDataPacket[]>(
+      "SELECT imageUrl, sourceModelId, metadata FROM board_items WHERE id = ?",
+      [target.itemId],
+    );
+    const [[versions]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n, MAX(version) AS maxVersion FROM board_item_versions WHERE itemId = ?",
+      [target.itemId],
+    );
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT landingStatus, landedItemId, landingAcknowledgedAt FROM generation_operations WHERE id = ?",
+      [pending.operationId],
+    );
+    expect(item).toMatchObject({ imageUrl: pending.imageUrl, sourceModelId: pending.modelId });
+    expect(Number(versions.n)).toBe(1);
+    expect(Number(versions.maxVersion)).toBe(1);
+    expect(receipt.landingStatus).toBe("landed");
+    expect(Number(receipt.landedItemId)).toBe(target.itemId);
+    expect(receipt.landingAcknowledgedAt).not.toBeNull();
+    await expect(operations.listActivePublicGenerationOperations({ userId, boardId: target.boardId }))
+      .resolves.toEqual([]);
+    await expect(operations.acknowledgeGenerationOperation({ userId, operationId: pending.operationId }))
+      .resolves.toMatchObject({ type: "acknowledged", operation: { landingStatus: "landed" } });
+  }, 90_000);
+
+  it("recognizes an exact origin stamp committed before its terminal receipt", async () => {
+    const target = await createEmptyCastTarget();
+    const pending = await createPendingLanding({ ...target, label: "Committed Origin" });
+    const metadata = JSON.stringify({
+      provenance: { type: "library_cast", modelId: pending.modelId, viewAngle: "frontClose", draft: true },
+      version: 1,
+      status: null,
+      isGenerating: false,
+    });
+    await connection.execute(
+      "UPDATE board_items SET imageUrl = ?, sourceModelId = ?, metadata = ? WHERE id = ?",
+      [pending.imageUrl, pending.modelId, metadata, target.itemId],
+    );
+    await connection.execute(
+      "INSERT INTO board_item_versions (itemId, version, imageUrl, tool) VALUES (?, 1, ?, 'initial')",
+      [target.itemId, pending.imageUrl],
+    );
+
+    await expect(operations.landGenerationOperationResult({
+      userId,
+      operationId: pending.operationId,
+      ...target,
+    })).resolves.toMatchObject({
+      type: "landed",
+      operation: { landingStatus: "landed", landedItemId: target.itemId },
+    });
+    const [[versions]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM board_item_versions WHERE itemId = ?",
+      [target.itemId],
+    );
+    expect(Number(versions.n)).toBe(1);
+  }, 60_000);
+
+  it("lets only one of two operations fill the same empty node", async () => {
+    const target = await createEmptyCastTarget();
+    const first = await createPendingLanding({ ...target, label: "First Winner" });
+    const second = await createPendingLanding({ ...target, label: "Second Winner" });
+    const outcomes = await Promise.all([
+      operations.landGenerationOperationResult({ userId, operationId: first.operationId, ...target }),
+      operations.landGenerationOperationResult({ userId, operationId: second.operationId, ...target }),
+    ]);
+    expect(outcomes.map((outcome) => outcome.type).sort()).toEqual(["landed", "relink_required"]);
+    const [[versions]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM board_item_versions WHERE itemId = ?",
+      [target.itemId],
+    );
+    const [receipts] = await connection.query<RowDataPacket[]>(
+      "SELECT landingStatus, landedItemId, landingAcknowledgedAt FROM generation_operations WHERE id IN (?, ?) ORDER BY landingStatus",
+      [first.operationId, second.operationId],
+    );
+    expect(Number(versions.n)).toBe(1);
+    expect(receipts.map((row) => row.landingStatus).sort()).toEqual(["landed", "relink_required"]);
+    const loser = receipts.find((row) => row.landingStatus === "relink_required")!;
+    expect(loser.landedItemId).toBeNull();
+    expect(loser.landingAcknowledgedAt).toBeNull();
+  }, 60_000);
+
+  it("marks a vanished origin for relink and deliberately lands on another owned empty Cast node", async () => {
+    const origin = await createEmptyCastTarget();
+    const pending = await createPendingLanding({ ...origin, label: "Relink Result" });
+    await connection.execute("DELETE FROM board_items WHERE id = ?", [origin.itemId]);
+    await expect(operations.landGenerationOperationResult({
+      userId,
+      operationId: pending.operationId,
+      boardId: origin.boardId,
+      itemId: origin.itemId,
+    })).resolves.toMatchObject({ type: "relink_required", operation: { landingStatus: "relink_required" } });
+
+    const replacement = await createEmptyCastTarget(origin.boardId);
+    await expect(operations.landGenerationOperationResult({
+      userId,
+      operationId: pending.operationId,
+      boardId: replacement.boardId,
+      itemId: replacement.itemId,
+    })).resolves.toMatchObject({
+      type: "landed",
+      operation: { landingStatus: "landed", landedItemId: replacement.itemId },
+    });
+    const [[version]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM board_item_versions WHERE itemId = ?",
+      [replacement.itemId],
+    );
+    expect(Number(version.n)).toBe(1);
   }, 60_000);
 
   it("keeps ambiguous processing work recovery-required and locked", async () => {

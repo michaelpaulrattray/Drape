@@ -6,6 +6,7 @@ import { getDb } from "./connection";
 import {
   boards,
   boardItems,
+  type BoardItem,
   type InsertBoard,
   type InsertBoardItem,
 } from "../../drizzle/schema";
@@ -227,6 +228,64 @@ export async function stampBoardItemWithVersion(input: StampBoardItemWithVersion
   await withTransaction(async (tx) => {
     await stampBoardItemWithVersionIn(tx, input);
   });
+}
+
+export type FillEmptyCastNodeResult = "filled" | "not_found" | "not_empty";
+
+/** Shared exactly-once fill primitive for the library picker and durable
+ * operation landing. The row lock plus conditional write prevents either
+ * path from overwriting a node another tab filled while it was waiting. */
+export async function fillEmptyCastNodeWithVersionIn(
+  tx: TransactionHandle,
+  input: {
+    boardId: number;
+    itemId: number;
+    build: (item: BoardItem) => {
+      update: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">>;
+      version: Omit<InsertBoardItemVersion, "itemId" | "version">;
+    };
+  },
+): Promise<FillEmptyCastNodeResult> {
+  const [item] = await tx
+    .select()
+    .from(boardItems)
+    .where(and(eq(boardItems.id, input.itemId), eq(boardItems.boardId, input.boardId)))
+    .limit(1)
+    .for("update");
+  if (!item) return "not_found";
+  const [existingVersion] = await tx
+    .select({ id: boardItemVersions.id })
+    .from(boardItemVersions)
+    .where(eq(boardItemVersions.itemId, item.id))
+    .limit(1);
+  if (
+    item.deletedAt !== null ||
+    item.kind !== "cast_config" ||
+    item.imageUrl !== null ||
+    item.sourceModelId !== null ||
+    existingVersion
+  ) return "not_empty";
+
+  const built = input.build(item);
+  const result = await tx
+    .update(boardItems)
+    .set(built.update)
+    .where(and(
+      eq(boardItems.id, item.id),
+      eq(boardItems.boardId, input.boardId),
+      isNull(boardItems.deletedAt),
+      isNull(boardItems.imageUrl),
+      isNull(boardItems.sourceModelId),
+    ));
+  const header = result as { affectedRows?: number } | [{ affectedRows?: number }];
+  const changed = Array.isArray(header) ? header[0]?.affectedRows : header.affectedRows;
+  if (changed !== 1) throw new Error("Empty Cast node fill lost its state race");
+  await tx.insert(boardItemVersions).values({
+    ...built.version,
+    itemId: item.id,
+    version: 1,
+  });
+  return "filled";
 }
 
 /** A single board-item update on an EXISTING transaction (same landing use). */

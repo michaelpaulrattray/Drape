@@ -55,6 +55,7 @@ vi.mock("./db", async (importOriginal) => {
     addBoardItemVersion: vi.fn().mockResolvedValue({ success: true }),
     getLatestVersionNumber: vi.fn().mockResolvedValue(1),
     addBoardItem: vi.fn().mockResolvedValue({ success: true, itemId: 55 }),
+    fillEmptyCastNodeWithVersionIn: vi.fn().mockResolvedValue("filled"),
     deductPoints: vi.fn().mockResolvedValue({ success: true }),
     addCredits: vi.fn().mockResolvedValue({ success: true }),
     claimGenerationOperation: vi.fn().mockImplementation(async () => operation.outcome),

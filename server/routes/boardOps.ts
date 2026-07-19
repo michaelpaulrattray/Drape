@@ -25,6 +25,7 @@ import {
   boardItemOperationLockKey,
   modelOperationLockKey,
   type GenerationOperationKind,
+  type GenerationOperationLandingStatus,
   type PublicOperationResult,
 } from "../casting/operationContract";
 import {
@@ -38,6 +39,35 @@ async function requireBoardOwnership(boardId: number, userId: number) {
   if (!board) throw new TRPCError({ code: "NOT_FOUND", message: "Board not found" });
   if (board.userId !== userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   return board;
+}
+
+function completedCanvasLanding(
+  kind: GenerationOperationKind,
+  result: PublicOperationResult,
+  originItemId: number,
+): {
+  status: GenerationOperationLandingStatus;
+  landedItemId?: number | null;
+  acknowledgedAt?: Date | null;
+} {
+  const record = result && typeof result === "object" && !Array.isArray(result)
+    ? result as Record<string, unknown>
+    : {};
+  if (kind === "canvas.cast") {
+    return record.placed === false
+      ? { status: "pending" }
+      : { status: "landed", landedItemId: originItemId, acknowledgedAt: new Date() };
+  }
+  if (kind === "canvas.fork") {
+    const newItemId = record.newItemId;
+    return record.placed === true && Number.isSafeInteger(newItemId) && (newItemId as number) > 0
+      ? { status: "landed", landedItemId: newItemId as number, acknowledgedAt: new Date() }
+      : { status: "relink_required" };
+  }
+  if (kind === "canvas.recast") {
+    return { status: "landed", landedItemId: originItemId, acknowledgedAt: new Date() };
+  }
+  return { status: "not_applicable", acknowledgedAt: new Date() };
 }
 
 async function executeCanvasOperation<Result extends PublicOperationResult>(input: {
@@ -97,6 +127,7 @@ async function executeCanvasOperation<Result extends PublicOperationResult>(inpu
       result,
       chargedCredits,
       refundedCredits,
+      landing: completedCanvasLanding(input.kind, result, input.originItemId),
     });
     return result;
   } catch (error) {

@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { classifyStaleOperation, type StaleOperationEvidence } from "./casting/operationRecovery";
+import {
+  classifyStaleOperation,
+  recoveredLandingState,
+  type StaleOperationEvidence,
+} from "./casting/operationRecovery";
 
 const base: StaleOperationEvidence = {
   status: "running",
@@ -51,5 +55,11 @@ describe("R7-2B conservative operation recovery", () => {
     expect(canvas).toContain('stepKey: "recast"');
     expect(canvas).toContain('stepKey: "fork"');
     expect(canvas).toContain('stepKey: `variation:${index}`');
+  });
+
+  it("keeps recovered Canvas results landable without inventing placement", () => {
+    expect(recoveredLandingState("canvas.cast")).toEqual({ landing: { status: "pending" } });
+    expect(recoveredLandingState("canvas.fork")).toEqual({ landing: { status: "relink_required" } });
+    expect(recoveredLandingState("casting.headshot")).toEqual({});
   });
 });

@@ -43,6 +43,14 @@ export interface StaleOperationEvidence {
   ledgerDisagrees: boolean;
 }
 
+export function recoveredLandingState(kind: GenerationOperation["kind"]):
+  | { landing: { status: "pending" | "relink_required" } }
+  | Record<string, never> {
+  if (kind === "canvas.cast") return { landing: { status: "pending" } };
+  if (kind === "canvas.fork") return { landing: { status: "relink_required" } };
+  return {};
+}
+
 /** Pure, deliberately conservative policy used by both the sweeper and tests. */
 export function classifyStaleOperation(evidence: StaleOperationEvidence): StaleOperationDecision {
   if (evidence.ledgerDisagrees || evidence.processingChildren > 0) return "recovery_required";
@@ -315,6 +323,7 @@ export async function adjudicateStaleGenerationOperation(
         chargedCredits,
         refundedCredits,
         terminalStatus: failed ? "partial" : "succeeded",
+        ...recoveredLandingState(operation.kind),
       });
       return decision;
     }

@@ -9,7 +9,11 @@ import {
   markClaimedGenerationOperationRecoveryRequired,
   markGenerationOperationRecoveryRequired,
 } from "../db";
-import type { GenerationOperationKind, PublicOperationResult } from "./operationContract";
+import type {
+  GenerationOperationKind,
+  GenerationOperationLandingStatus,
+  PublicOperationResult,
+} from "./operationContract";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("casting/directOperation");
@@ -163,6 +167,11 @@ export async function completeDirectOperationSuccess(input: {
   result: PublicOperationResult;
   chargedCredits: number;
   refundedCredits: number;
+  landing?: {
+    status: GenerationOperationLandingStatus;
+    landedItemId?: number | null;
+    acknowledgedAt?: Date | null;
+  };
 }): Promise<void> {
   try {
     await finalizeGenerationOperationSuccess(input);
