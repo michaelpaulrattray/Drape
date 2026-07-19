@@ -1,4 +1,4 @@
-/** Disposable-DB proof for migration 0007 and the operation/lock protocol. */
+/** Disposable-DB proof for migrations 0007/0008 and the durable operation contract. */
 import { randomUUID } from "node:crypto";
 import mysql, { type Connection, type ResultSetHeader, type RowDataPacket } from "mysql2/promise";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -6,19 +6,20 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = testDatabaseUrl ? describe : describe.skip;
 
-describeWithDatabase("R7-1C generation-operation foundation (disposable DB)", () => {
+describeWithDatabase("R7 durable generation-operation foundation (disposable DB)", () => {
   let connection: Connection;
   let userId: number;
   let operations: typeof import("./db/generationOperations");
   let modelDb: typeof import("./db/models");
+  let generationDb: typeof import("./db/generations");
 
   beforeAll(async () => {
     process.env.DATABASE_URL = testDatabaseUrl!;
     connection = await mysql.createConnection(testDatabaseUrl!);
-    const [tables] = await connection.query<RowDataPacket[]>(
-      "SHOW TABLES LIKE 'generation_operations'",
+    const [columns] = await connection.query<RowDataPacket[]>(
+      "SHOW COLUMNS FROM generation_operations LIKE 'leaseExpiresAt'",
     );
-    if (tables.length !== 1) throw new Error("Disposable database must have migration 0007 applied");
+    if (columns.length !== 1) throw new Error("Disposable database must have migration 0008 applied");
     const [inserted] = await connection.execute<ResultSetHeader>(
       "INSERT INTO users (openId, name, approved, emailVerified) VALUES (?, 'R7 Operation Test', 1, 1)",
       [`r7-operation-${randomUUID()}`],
@@ -26,9 +27,11 @@ describeWithDatabase("R7-1C generation-operation foundation (disposable DB)", ()
     userId = inserted.insertId;
     operations = await import("./db/generationOperations");
     modelDb = await import("./db/models");
+    generationDb = await import("./db/generations");
   });
 
   beforeEach(async () => {
+    await connection.execute("DELETE FROM generations WHERE userId = ?", [userId]);
     await connection.execute(
       "DELETE l FROM generation_operation_locks l JOIN generation_operations o ON o.id = l.operationId WHERE o.userId = ?",
       [userId],
@@ -38,6 +41,7 @@ describeWithDatabase("R7-1C generation-operation foundation (disposable DB)", ()
 
   afterAll(async () => {
     if (!connection) return;
+    await connection.execute("DELETE FROM generations WHERE userId = ?", [userId]);
     await connection.execute(
       "DELETE l FROM generation_operation_locks l JOIN generation_operations o ON o.id = l.operationId WHERE o.userId = ?",
       [userId],
@@ -254,6 +258,70 @@ describeWithDatabase("R7-1C generation-operation foundation (disposable DB)", ()
     expect(Number(lockCount.n)).toBe(0);
   }, 30_000);
 
+  it("stores partial as a first-class terminal state and replays its exact result", async () => {
+    const clientRequestId = randomUUID();
+    const claimed = await claim(clientRequestId, { angles: ["sideClose", "backFull"] });
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    await operations.markGenerationOperationRunning({
+      userId,
+      operationId: claimed.operationId,
+      modelId: 44,
+      plannedCredits: 600,
+    });
+    const result = { refreshedAngles: ["sideClose"], failedAngles: ["backFull"] };
+    await operations.finalizeGenerationOperationSuccess({
+      userId,
+      operationId: claimed.operationId,
+      result,
+      chargedCredits: 600,
+      refundedCredits: 300,
+      terminalStatus: "partial",
+    });
+    await expect(claim(clientRequestId, { angles: ["sideClose", "backFull"] })).resolves.toEqual({
+      type: "replay_success",
+      operationId: claimed.operationId,
+      result,
+    });
+    const [[stored]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, chargedCredits, refundedCredits, result FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    expect(stored).toMatchObject({ status: "partial", chargedCredits: 600, refundedCredits: 300 });
+    expect(stored.result).toEqual(result);
+  });
+
+  it("links child attempts to their parent while keeping legacy rows nullable", async () => {
+    const claimed = await claim(randomUUID());
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    const linked = await generationDb.createGeneration({
+      userId,
+      modelId: 44,
+      operationId: claimed.operationId,
+      stepKey: "view:sideClose",
+      viewAngle: "sideClose",
+      type: "multiView",
+      status: "processing",
+      pointsCost: 300,
+    });
+    const legacy = await generationDb.createGeneration({
+      userId,
+      modelId: 44,
+      type: "iteration",
+      status: "processing",
+      pointsCost: 350,
+    });
+    expect(linked.success).toBe(true);
+    expect(legacy.success).toBe(true);
+    const [rows] = await connection.query<RowDataPacket[]>(
+      "SELECT operationId, stepKey, viewAngle FROM generations WHERE id IN (?, ?) ORDER BY id",
+      [linked.generationId, legacy.generationId],
+    );
+    expect(rows).toEqual([
+      { operationId: claimed.operationId, stepKey: "view:sideClose", viewAngle: "sideClose" },
+      { operationId: null, stepKey: null, viewAngle: null },
+    ]);
+  });
+
   it("replays terminal failures and keeps recovery-required locks sealed", async () => {
     const failedRequestId = randomUUID();
     const failed = await claim(failedRequestId);
@@ -464,7 +532,7 @@ describeWithDatabase("R7-1C generation-operation foundation (disposable DB)", ()
       .resolves.toMatchObject({ type: "in_progress", status: "running" });
   });
 
-  it("leaves pre-0007 model creation compatible with the additive schema", async () => {
+  it("leaves the pre-0008 runtime insert shape compatible with the additive schema", async () => {
     const [inserted] = await connection.execute<ResultSetHeader>(
       "INSERT INTO models (userId, name, masterPrompt, technicalSchema, preferences, status) VALUES (?, 'Legacy runtime model', '{}', JSON_OBJECT(), JSON_OBJECT(), 'draft')",
       [userId],

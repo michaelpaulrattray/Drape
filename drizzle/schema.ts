@@ -228,6 +228,11 @@ export const generations = mysqlTable("generations", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   modelId: int("modelId"), // Nullable - may be a new model creation
+  // R7-2 durable parent linkage. Nullable keeps historical rows and Wardrobe
+  // attempts compatible until those products adopt the operation contract.
+  operationId: varchar("operationId", { length: 36 }),
+  stepKey: varchar("stepKey", { length: 64 }),
+  viewAngle: varchar("viewAngle", { length: 32 }),
   type: mysqlEnum("type", [
     "masterPrompt",
     "castingImage",
@@ -250,6 +255,8 @@ export const generations = mysqlTable("generations", {
 }, (table) => ([
   index("idx_generations_user").on(table.userId, table.createdAt),
   index("idx_generations_status").on(table.status, table.createdAt),
+  index("idx_generations_operation_created").on(table.operationId, table.createdAt),
+  index("idx_generations_operation_step").on(table.operationId, table.stepKey),
 ]));
 
 export type Generation = typeof generations.$inferSelect;
@@ -278,6 +285,14 @@ export const generationOperations = mysqlTable("generation_operations", {
   result: json("result"),
   errorCode: varchar("errorCode", { length: 32 }),
   publicMessage: text("publicMessage"),
+  phase: varchar("phase", { length: 48 }),
+  progress: json("progress"),
+  heartbeatAt: timestamp("heartbeatAt"),
+  leaseExpiresAt: timestamp("leaseExpiresAt"),
+  landingStatus: varchar("landingStatus", { length: 24 }).default("not_applicable").notNull(),
+  landedItemId: int("landedItemId"),
+  landingAcknowledgedAt: timestamp("landingAcknowledgedAt"),
+  recoveryAttemptedAt: timestamp("recoveryAttemptedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   completedAt: timestamp("completedAt"),
@@ -285,6 +300,7 @@ export const generationOperations = mysqlTable("generation_operations", {
   uniqueIndex("uq_generation_ops_user_request").on(table.userId, table.clientRequestId),
   index("idx_generation_ops_model_status_created").on(table.modelId, table.status, table.createdAt),
   index("idx_generation_ops_user_created").on(table.userId, table.createdAt),
+  index("idx_generation_ops_status_lease").on(table.status, table.leaseExpiresAt),
   uniqueIndex("uq_generation_ops_charge_ref").on(table.chargeReferenceId),
 ]));
 

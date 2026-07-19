@@ -57,6 +57,13 @@
       "when": 1784426167041,
       "tag": "0007_true_freak",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1784447737625,
+      "tag": "0008_gray_hex",
+      "breakpoints": true
     }
   ]
 }

@@ -3,16 +3,23 @@ import { and, eq, isNull } from "drizzle-orm";
 import {
   generationOperationLocks,
   generationOperations,
+  type Generation,
   type GenerationOperation,
 } from "../../drizzle/schema";
 import {
   assertCreditConservation,
   assertGenerationOperationKind,
+  assertGenerationOperationLandingStatus,
+  assertGenerationOperationPhase,
+  assertGenerationOperationProgress,
+  assertGenerationOperationStatus,
   assertOperationLockKey,
   assertPublicOperationResult,
   boardItemOperationLockKey,
+  type GenerationOperationChildStatus,
   type GenerationOperationKind,
   type GenerationOperationOutcome,
+  type PublicGenerationOperation,
   hashGenerationOperationClaim,
   modelOperationLockKey,
   operationChargeReference,
@@ -70,6 +77,7 @@ function outcomeFromExisting(operation: GenerationOperation): GenerationOperatio
     case "claimed":
     case "running":
       return { type: "in_progress", operationId: operation.id, status: operation.status };
+    case "partial":
     case "succeeded":
       return { type: "replay_success", operationId: operation.id, result: operation.result };
     case "failed":
@@ -88,6 +96,78 @@ function outcomeFromExisting(operation: GenerationOperation): GenerationOperatio
           `Operation ${operation.id} needs support review before it can be retried.`,
       };
   }
+}
+
+function iso(value: Date | null): string | null {
+  return value ? value.toISOString() : null;
+}
+
+/**
+ * Fail-closed projection for the future authenticated operation read surface.
+ * It deliberately omits payload hashes, ledger references, lock ownership,
+ * internal child errors and child result URLs.
+ */
+export function toPublicGenerationOperation(
+  operation: GenerationOperation,
+  children: Generation[] = [],
+): PublicGenerationOperation {
+  assertGenerationOperationKind(operation.kind);
+  assertGenerationOperationStatus(operation.status);
+  if (operation.phase !== null) assertGenerationOperationPhase(operation.phase);
+  assertGenerationOperationLandingStatus(operation.landingStatus);
+  if (operation.progress !== null) assertGenerationOperationProgress(operation.progress);
+  if (operation.result !== null) assertPublicOperationResult(operation.result);
+  assertCreditConservation(operation.chargedCredits, operation.refundedCredits);
+
+  const publicChildren = children.map((child) => {
+    if (child.operationId !== operation.id || child.userId !== operation.userId) {
+      throw new TypeError("Generation child belongs to a different operation");
+    }
+    const status = child.status as GenerationOperationChildStatus;
+    if (!["pending", "processing", "completed", "failed"].includes(status)) {
+      throw new TypeError("Generation child has an invalid status");
+    }
+    if (!Number.isSafeInteger(child.pointsCost) || child.pointsCost < 0) {
+      throw new TypeError("Generation child has an invalid points cost");
+    }
+    return {
+      id: child.id,
+      stepKey: child.stepKey,
+      viewAngle: child.viewAngle,
+      status,
+      pointsCost: child.pointsCost,
+      createdAt: child.createdAt.toISOString(),
+      completedAt: iso(child.completedAt),
+    };
+  });
+
+  return {
+    operationId: operation.id,
+    clientRequestId: operation.clientRequestId,
+    kind: operation.kind,
+    modelId: operation.modelId,
+    originBoardId: operation.originBoardId,
+    originItemId: operation.originItemId,
+    status: operation.status,
+    phase: operation.phase,
+    progress: operation.progress,
+    plannedCredits: operation.plannedCredits,
+    chargedCredits: operation.chargedCredits,
+    refundedCredits: operation.refundedCredits,
+    netCredits: operation.chargedCredits - operation.refundedCredits,
+    result: operation.result,
+    publicMessage: operation.publicMessage,
+    createdAt: operation.createdAt.toISOString(),
+    updatedAt: operation.updatedAt.toISOString(),
+    completedAt: iso(operation.completedAt),
+    heartbeatAt: iso(operation.heartbeatAt),
+    leaseExpiresAt: iso(operation.leaseExpiresAt),
+    cancellable: false,
+    landingStatus: operation.landingStatus,
+    landedItemId: operation.landedItemId,
+    landingAcknowledgedAt: iso(operation.landingAcknowledgedAt),
+    children: publicChildren,
+  };
 }
 
 async function getOperationForUser(
@@ -454,11 +534,13 @@ export async function finalizeGenerationOperationSuccess(input: {
   result: unknown;
   chargedCredits: number;
   refundedCredits: number;
+  terminalStatus?: "partial" | "succeeded";
 }): Promise<Extract<GenerationOperationOutcome, { type: "replay_success" }>> {
   assertPositiveId(input.userId, "userId");
   assertOperationIdentity(input.operationId);
   assertPublicOperationResult(input.result);
   assertCreditConservation(input.chargedCredits, input.refundedCredits);
+  const terminalStatus = input.terminalStatus ?? "succeeded";
 
   await withTransaction(async (tx) => {
     const operation = await loadRunningOperation(tx, input.userId, input.operationId);
@@ -466,7 +548,7 @@ export async function finalizeGenerationOperationSuccess(input: {
     const finalized = await tx
       .update(generationOperations)
       .set({
-        status: "succeeded",
+        status: terminalStatus,
         result: input.result,
         errorCode: null,
         publicMessage: null,

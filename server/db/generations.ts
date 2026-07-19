@@ -6,11 +6,38 @@ import { eq, desc } from "drizzle-orm";
 import { generations, InsertGeneration } from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { createModuleLogger } from "../logging/logger";
+import { assertClientRequestId } from "../../shared/clientRequestId";
 const log = createModuleLogger("db/generations");
+
+export function assertGenerationAttemptLink(data: Pick<
+  InsertGeneration,
+  "operationId" | "stepKey" | "viewAngle"
+>): void {
+  const operationId = data.operationId ?? null;
+  const stepKey = data.stepKey ?? null;
+  const viewAngle = data.viewAngle ?? null;
+  if (operationId === null) {
+    if (stepKey !== null || viewAngle !== null) {
+      throw new TypeError("Generation attempt metadata requires an operation id");
+    }
+    return;
+  }
+  assertClientRequestId(operationId);
+  if (typeof stepKey !== "string" || !/^[a-z0-9][a-z0-9:_-]{0,63}$/i.test(stepKey)) {
+    throw new TypeError("Generation attempt requires a valid step key");
+  }
+  if (
+    viewAngle !== null &&
+    (typeof viewAngle !== "string" || !/^[a-z][a-zA-Z0-9_-]{0,31}$/.test(viewAngle))
+  ) {
+    throw new TypeError("Generation attempt has an invalid view angle");
+  }
+}
 
 export async function createGeneration(
   data: InsertGeneration
 ): Promise<{ success: boolean; generationId?: number; error?: string }> {
+  assertGenerationAttemptLink(data);
   const db = await getDb();
   if (!db) {
     return { success: false, error: "Database not available" };
