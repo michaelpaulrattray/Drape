@@ -1,6 +1,10 @@
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
 import type { GenerationJob, GenerationJobStatus } from "../boards/stores/useGenerationJobs";
+import {
+  CANONICAL_VIEW_ANGLES,
+  type CanonicalViewAngle,
+} from "@shared/boardTypes";
 
 export type GenerationOperationDto =
   inferRouterOutputs<AppRouter>["generation"]["activeOperations"][number];
@@ -100,4 +104,78 @@ export function projectServerJobs(
       return job ? [[itemId, job]] : [];
     }),
   );
+}
+
+const CANONICAL_ANGLE_SET = new Set<string>(CANONICAL_VIEW_ANGLES);
+
+function canonicalAngle(value: string | null | undefined): CanonicalViewAngle | null {
+  return value && CANONICAL_ANGLE_SET.has(value)
+    ? value as CanonicalViewAngle
+    : null;
+}
+
+/** Server-owned per-view busy truth. Completed/failed children stop spinning
+ * independently while their sibling attempts continue. */
+export function projectRefreshingByModel(
+  operations: readonly GenerationOperationDto[],
+): Record<number, CanonicalViewAngle[]> {
+  const projected = new Map<number, Set<CanonicalViewAngle>>();
+  for (const operation of operations) {
+    if (!isOperationActive(operation) || operation.modelId === null) continue;
+    const modelAngles = projected.get(operation.modelId) ?? new Set<CanonicalViewAngle>();
+    const childRows = operation.children.length > 0
+      ? operation.children
+      : operation.progress?.steps ?? [];
+    for (const child of childRows) {
+      if (child.status !== "pending" && child.status !== "processing") continue;
+      const angle = canonicalAngle(child.viewAngle);
+      if (angle) modelAngles.add(angle);
+    }
+    if (modelAngles.size > 0) projected.set(operation.modelId, modelAngles);
+  }
+  return Object.fromEntries(
+    Array.from(projected.entries()).map(([modelId, angles]) => [modelId, Array.from(angles)]),
+  );
+}
+
+function studioOperationRank(operation: GenerationOperationDto): number {
+  if (operation.status === "recovery_required") return 5;
+  if (operation.status === "running") return 4;
+  if (operation.status === "claimed") return 3;
+  return 0;
+}
+
+const STUDIO_HEADLINE_KINDS = new Set([
+  "model.create",
+  "casting.headshot",
+  "casting.iterate",
+  "casting.mint",
+]);
+
+/** One durable operation owns Studio's headline state for a model. Recovery
+ * truth outranks an active spinner; otherwise the newest equally-ranked row
+ * wins. Terminal success/failure is handled by query invalidation and the
+ * saved model/package read models, not a client settlement payload. */
+export function selectStudioOperation(
+  operations: readonly GenerationOperationDto[],
+  modelId: number | null,
+): GenerationOperationDto | null {
+  if (modelId === null) return null;
+  let chosen: GenerationOperationDto | null = null;
+  for (const operation of operations) {
+    if (
+      operation.modelId !== modelId
+      || !STUDIO_HEADLINE_KINDS.has(operation.kind)
+      || studioOperationRank(operation) === 0
+    ) continue;
+    if (
+      !chosen ||
+      studioOperationRank(operation) > studioOperationRank(chosen) ||
+      (studioOperationRank(operation) === studioOperationRank(chosen)
+        && operation.updatedAt > chosen.updatedAt)
+    ) {
+      chosen = operation;
+    }
+  }
+  return chosen;
 }

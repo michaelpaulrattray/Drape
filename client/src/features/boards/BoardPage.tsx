@@ -291,24 +291,8 @@ function BoardPageImpl() {
       return;
     }
 
-    if (event.phase !== 'settle') return;
-
-    if (event.operation.kind === 'newCast' && event.outcome.status === 'success') {
-      const headshot = event.outcome.assets.find((asset) => asset.angle === 'frontClose');
-      if (event.outcome.background && headshot) {
-        useOptimisticFills.getState().setFill(origin.itemId, {
-          imageUrl: headshot.url,
-          label: event.outcome.name,
-          modelId: event.outcome.modelId,
-          draft: true,
-        });
-      }
-    }
-
-    if (event.operation.modelId !== null) {
-      void owner.utils.generation.packageState.invalidate({ modelId: event.operation.modelId });
-    }
-    void owner.utils.credits.getBalance.invalidate();
+    // Settlement, landing and cache invalidation belong to the app-level
+    // durable bridge. This listener is only an immediate same-tab adapter.
   }), [boardId]);
 
   // R4: client-side cascade knowledge for the delete trust net (which nodes
@@ -886,21 +870,6 @@ function BoardPageImpl() {
     },
     [boardId, castTakeoverItemId, castEditContext, landMintedCastMutation, utils],
   );
-
-  const handleBackgroundDraftReady = useCallback((modelId: number, itemId: number, landed: boolean) => {
-    const active = activeCastSessionRef.current;
-    if (active.takeoverItemId !== null || active.editContext !== null) {
-      toast.info('Finish the open Casting session before opening this draft');
-      return;
-    }
-    setCastEditContext({
-      boardId,
-      itemId,
-      modelId,
-      draft: true,
-      originNeedsLanding: !landed,
-    });
-  }, [boardId]);
 
   // R3: the identity-event landing (D-11). Update regenerates THIS node
   // (job-driven progress on the card); fork lands a new draft node beside
@@ -2421,9 +2390,6 @@ function BoardPageImpl() {
           editContext={castEditContext}
           onMinted={handleTakeoverMinted}
           onDraftLanded={handleDraftLanded}
-          onBackgroundDraftReady={(modelId, landed) =>
-            handleBackgroundDraftReady(modelId, castEditContext?.itemId ?? castTakeoverItemId!, landed)
-          }
           onIdentityCommit={handleIdentityCommit}
           onClose={() => {
             activeCastSessionRef.current = { takeoverItemId: null, editContext: null };

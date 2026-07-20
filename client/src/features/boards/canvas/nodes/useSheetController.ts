@@ -18,6 +18,7 @@ import type { CastNodeData } from "./CastNode";
 import type { SheetTile } from "../CharacterSheetImageArea";
 import { useCastingRefreshStore } from "@/features/casting/stores/useCastingRefreshStore";
 import { createClientRequestId } from "@shared/clientRequestId";
+import { beginCastingOperation } from "@/features/casting/pendingCastRegistry";
 
 const EMPTY_REFRESHING_ANGLES: CanonicalViewAngle[] = [];
 
@@ -94,12 +95,9 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
     return map;
   }, [boardEdges, items, data.itemId]);
 
-  const refreshingList = useCastingRefreshStore((s) =>
+  const serverRefreshingList = useCastingRefreshStore((s) =>
     modelId ? s.refreshingByModel[modelId] : undefined,
   ) ?? EMPTY_REFRESHING_ANGLES;
-  const refreshingAngles = useMemo(() => new Set(refreshingList), [refreshingList]);
-  const beginRefresh = useCastingRefreshStore((s) => s.begin);
-  const endRefresh = useCastingRefreshStore((s) => s.end);
   const [popoverAngle, setPopoverAngle] = useState<CanonicalViewAngle | null>(null);
   const [bulkRefreshOpen, setBulkRefreshOpen] = useState(false);
 
@@ -112,11 +110,6 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
    *  Single-headshot models keep the plain image card. The verb (§5.17) still
    *  reads "Build comp card" on a draft vs "Complete card" on a minted gap. */
   const isSheet = enabled && filledCount >= 2;
-
-  const tiles = useMemo(
-    () => buildSheetTiles(slots, new Set(poppedByAngle.keys()), refreshingAngles),
-    [slots, poppedByAngle, refreshingAngles],
-  );
 
   // V8 count honesty: count ONLY what the refresh dialog can actually
   // refresh — the shared predicate the server's plan rows use. The stale
@@ -141,17 +134,43 @@ export function useSheetController(data: CastNodeData, opts: { enabled: boolean 
   }, [modelId, utils]);
 
   const refreshMutation = trpc.generation.refreshSlots.useMutation({
-    onMutate: ({ modelId: targetModelId, angles }) => {
-      beginRefresh(targetModelId, angles);
+    onMutate: ({ clientRequestId, modelId: targetModelId, angles }) => {
+      const operation = beginCastingOperation({
+        kind: "refresh",
+        modelId: targetModelId,
+        angles,
+        clientRequestIds: [clientRequestId],
+      });
+      void utils.generation.activeOperations.invalidate();
+      return { operation };
     },
-    onError: (err) => toast.error(err.message),
-    onSettled: (_data, _err, { modelId: targetModelId, angles }) => {
-      endRefresh(targetModelId, angles);
+    onSuccess: (_result, variables, context) => {
+      context?.operation.succeed({ modelId: variables.modelId, background: false });
+    },
+    onError: (err, _variables, context) => {
+      context?.operation.fail({ message: err.message, background: false });
+      toast.error(err.message);
+    },
+    onSettled: (_data, _err, { modelId: targetModelId }) => {
       void utils.generation.packageState.invalidate({ modelId: targetModelId });
       void utils.generation.refreshSlotsPlan.invalidate({ modelId: targetModelId });
+      void utils.generation.activeOperations.invalidate();
       void utils.credits.getBalance.invalidate();
     },
   });
+
+  const localRefreshingList = refreshMutation.isPending
+    && refreshMutation.variables?.modelId === modelId
+    ? refreshMutation.variables.angles
+    : EMPTY_REFRESHING_ANGLES;
+  const refreshingAngles = useMemo(
+    () => new Set([...serverRefreshingList, ...localRefreshingList]),
+    [localRefreshingList, serverRefreshingList],
+  );
+  const tiles = useMemo(
+    () => buildSheetTiles(slots, new Set(poppedByAngle.keys()), refreshingAngles),
+    [slots, poppedByAngle, refreshingAngles],
+  );
 
   const pinMutation = trpc.generation.setSlotPinned.useMutation({
     // Optimistic flip (D-38) — the glyph changing IS the feedback (D-40)

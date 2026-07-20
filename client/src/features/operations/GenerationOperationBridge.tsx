@@ -7,6 +7,7 @@ import {
   subscribeCastingOperations,
 } from "@/features/casting/pendingCastRegistry";
 import { useGenerationJobs } from "@/features/boards/stores/useGenerationJobs";
+import { useCastingRefreshStore } from "@/features/casting/stores/useCastingRefreshStore";
 import {
   isOperationActive,
   operationDedupeKey,
@@ -14,6 +15,12 @@ import {
 } from "./generationOperationProjection";
 
 const VISIBLE_POLL_MS = 2_500;
+
+interface LocalRequestState {
+  status: "active" | "success" | "failure";
+  background?: boolean;
+  notifyFailure?: boolean;
+}
 
 /** The single client owner of durable generation receipts. Zustand remains a
  * render cache; server rows decide progress, settlement and landing. */
@@ -27,6 +34,7 @@ export function GenerationOperationBridge() {
   const previousRef = useRef(new Map<string, GenerationOperationDto>());
   const processingRef = useRef(new Set<string>());
   const handledRef = useRef(new Set<string>());
+  const localRequestsRef = useRef(new Map<string, LocalRequestState>());
   const retryTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const operationsQuery = trpc.generation.activeOperations.useQuery(undefined, {
@@ -63,6 +71,10 @@ export function GenerationOperationBridge() {
     if (operation.modelId) {
       work.push(utils.models.get.invalidate({ modelId: operation.modelId }));
       work.push(utils.generation.packageState.invalidate({ modelId: operation.modelId }));
+      // Model-backed receipts do not all carry a board origin (for example a
+      // package-complete mint). Refresh every warm placement query so live
+      // model status/name truth reaches linked Cast nodes after detachment.
+      if (!operation.originBoardId) work.push(utils.boards.getItems.invalidate());
     }
     await Promise.allSettled(work);
   };
@@ -83,6 +95,22 @@ export function GenerationOperationBridge() {
 
   useEffect(() => subscribeCastingOperations((event) => {
     setLocalActiveCount(getActiveCastingOperations().length);
+    for (const clientRequestId of event.operation.clientRequestIds) {
+      if (event.phase !== "settle") {
+        localRequestsRef.current.set(clientRequestId, { status: "active" });
+      } else if (event.outcome.status === "success") {
+        localRequestsRef.current.set(clientRequestId, {
+          status: "success",
+          background: event.outcome.background,
+        });
+      } else {
+        localRequestsRef.current.set(clientRequestId, {
+          status: "failure",
+          background: event.outcome.background,
+          notifyFailure: event.outcome.notifyFailure,
+        });
+      }
+    }
     if (event.phase === "settle" && event.operation.origin) {
       const jobs = useGenerationJobs.getState();
       const job = jobs.jobs[event.operation.origin.itemId];
@@ -100,11 +128,14 @@ export function GenerationOperationBridge() {
     if (!isAuthenticated) {
       previousRef.current.clear();
       handledRef.current.clear();
+      localRequestsRef.current.clear();
       useGenerationJobs.getState().syncServerOperations([]);
+      useCastingRefreshStore.getState().syncServerOperations([]);
       return;
     }
     const operations = operationsQuery.data ?? [];
     useGenerationJobs.getState().syncServerOperations(operations);
+    useCastingRefreshStore.getState().syncServerOperations(operations);
 
     const currentIds = new Set(operations.map((operation) => operation.operationId));
     for (const previous of Array.from(previousRef.current.values())) {
@@ -120,12 +151,17 @@ export function GenerationOperationBridge() {
     for (const operation of operationsQuery.data ?? []) {
       if (isOperationActive(operation) || operation.status === "recovery_required") continue;
       if (operation.landingStatus === "relink_required") continue;
+      // The local promise may settle a fraction after the server receipt.
+      // Let it publish foreground/background notification ownership first;
+      // reloads have no adapter and therefore never wait here.
+      if (localRequestsRef.current.get(operation.clientRequestId)?.status === "active") continue;
       const dedupeKey = operationDedupeKey(operation);
       if (handledRef.current.has(dedupeKey) || processingRef.current.has(dedupeKey)) continue;
       processingRef.current.add(dedupeKey);
 
       void (async () => {
         try {
+          const localRequest = localRequestsRef.current.get(operation.clientRequestId);
           if (
             operation.landingStatus === "pending" &&
             operation.originBoardId &&
@@ -138,18 +174,27 @@ export function GenerationOperationBridge() {
             });
             if (settled.landedNow) {
               await invalidateResultRef.current(settled.operation);
-              toast.success("Draft generated and placed on your canvas");
+              if (localRequest?.status !== "success" || localRequest.background) {
+                toast.success("Draft generated and placed on your canvas");
+              }
             }
           } else if (operation.landingStatus !== "pending" && !operation.landingAcknowledgedAt) {
             const settled = await acknowledgeRef.current({ operationId: operation.operationId });
             if (settled.acknowledgedNow) {
               await invalidateResultRef.current(settled.operation);
-              if (settled.operation.status === "failed" && settled.operation.publicMessage) {
+              const locallyNotifiedFailure = localRequest?.status === "failure"
+                && (!localRequest.background || localRequest.notifyFailure === false);
+              if (
+                settled.operation.status === "failed"
+                && settled.operation.publicMessage
+                && !locallyNotifiedFailure
+              ) {
                 toast.error(settled.operation.publicMessage);
               }
             }
           }
           handledRef.current.add(dedupeKey);
+          localRequestsRef.current.delete(operation.clientRequestId);
         } catch {
           // Server truth remains visible. Retry after a bounded delay rather
           // than dropping the durable result or spinning an invalidation loop.

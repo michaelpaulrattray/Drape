@@ -7,6 +7,7 @@ import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefr
 import { slotFailureMessage } from '@shared/refundCopy';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { createClientRequestId } from '@shared/clientRequestId';
+import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
 
 const OPEN_PACKAGE_HEALTH = 'casting-open-package-health';
 const EMPTY_REFRESHING_ANGLES: CanonicalViewAngle[] = [];
@@ -76,12 +77,9 @@ export function PackageHealthDialog() {
     { enabled: open && !!modelId && versionAngle !== null, staleTime: 0 },
   );
 
-  const refreshing = useCastingRefreshStore((s) =>
+  const serverRefreshing = useCastingRefreshStore((s) =>
     modelId ? s.refreshingByModel[modelId] : undefined,
   ) ?? EMPTY_REFRESHING_ANGLES;
-  const beginRefresh = useCastingRefreshStore((s) => s.begin);
-  const endRefresh = useCastingRefreshStore((s) => s.end);
-  const refreshingSet = useMemo(() => new Set(refreshing), [refreshing]);
 
   const invalidate = async (targetModelId: number) => {
     await Promise.all([
@@ -93,8 +91,18 @@ export function PackageHealthDialog() {
   };
 
   const refreshMutation = trpc.generation.refreshSlots.useMutation({
-    onMutate: ({ modelId: targetModelId, angles }) => beginRefresh(targetModelId, angles),
-    onSuccess: (result, variables) => {
+    onMutate: ({ clientRequestId, modelId: targetModelId, angles }) => {
+      const operation = beginCastingOperation({
+        kind: 'refresh',
+        modelId: targetModelId,
+        angles,
+        clientRequestIds: [clientRequestId],
+      });
+      void utils.generation.activeOperations.invalidate();
+      return { operation };
+    },
+    onSuccess: (result, variables, context) => {
+      context?.operation.succeed({ modelId: variables.modelId, background: false });
       const castingState = useCastingGenerationStore.getState();
       const refreshedByAngle = new Map(result.refreshed.map((row) => [row.angle, row]));
       if (castingState.currentModelId === variables.modelId && refreshedByAngle.size > 0) {
@@ -111,10 +119,13 @@ export function PackageHealthDialog() {
         toast.error(slotFailureMessage(failure), { duration: 9000 });
       }
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error, _variables, context) => {
+      context?.operation.fail({ message: error.message, background: false });
+      toast.error(error.message);
+    },
     onSettled: async (_data, _error, variables) => {
-      endRefresh(variables.modelId, variables.angles);
       await invalidate(variables.modelId);
+      await utils.generation.activeOperations.invalidate();
       try {
         const freshPackage = await utils.generation.packageState.fetch({ modelId: variables.modelId });
         const remaining = useCastingRefreshStore.getState().refreshingByModel[variables.modelId] ?? [];
@@ -131,6 +142,16 @@ export function PackageHealthDialog() {
       }
     },
   });
+
+  const localRefreshing = refreshMutation.isPending
+    && refreshMutation.variables?.modelId === modelId
+    ? refreshMutation.variables.angles
+    : EMPTY_REFRESHING_ANGLES;
+  const refreshing = useMemo(
+    () => Array.from(new Set([...serverRefreshing, ...localRefreshing])),
+    [localRefreshing, serverRefreshing],
+  );
+  const refreshingSet = useMemo(() => new Set(refreshing), [refreshing]);
 
   const pinMutation = trpc.generation.setSlotPinned.useMutation({
     onSuccess: (_result, variables) => { void invalidate(variables.modelId); },

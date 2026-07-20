@@ -91,9 +91,11 @@ describe('W4 close and landing truth', () => {
     const bridge = read('client/src/features/operations/GenerationOperationBridge.tsx');
     expect(bridge).toContain('settled.landedNow');
     expect(bridge).toContain('Draft generated and placed on your canvas');
+    expect(bridge).toContain('boardId: operation.originBoardId');
+    expect(bridge).toContain('itemId: operation.originItemId');
     const board = read('client/src/features/boards/BoardPage.tsx');
-    expect(board).toContain('originNeedsLanding: !landed');
-    expect(board).toContain('handleBackgroundDraftReady');
+    expect(board).not.toContain('handleBackgroundDraftReady');
+    expect(board).not.toContain('originNeedsLanding: !landed');
     expect(board).toContain('activeCastSessionRef.current = { takeoverItemId: null, editContext: null }');
   });
 });

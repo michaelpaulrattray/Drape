@@ -79,7 +79,6 @@ export interface CastingTakeoverProps {
    *  close that dropped the work on the floor. */
   onDraftLanded?: (modelId: number, info: { name: string | null; headshotUrl: string | null }) => void;
   /** Headshot completed after exit; the host can reopen the saved draft. */
-  onBackgroundDraftReady?: (modelId: number, landed: boolean) => void;
 }
 
 /** Fields compared for identity changes (everything the form can set). */
@@ -126,7 +125,6 @@ export function CastingTakeover({
   onClose,
   onSessionSlots,
   onDraftLanded,
-  onBackgroundDraftReady,
 }: CastingTakeoverProps) {
   const [confirmingLeave, setConfirmingLeave] = useState(false);
   // D-55: once a stays-draft confirm lands the draft on the board, closing
@@ -377,15 +375,14 @@ export function CastingTakeover({
       || (currentModelId !== null && !draftLanded);
 
   const attemptClose = useCallback(() => {
-    // A true mint still owns a synchronous landing ceremony. Add Views and
-    // upgrades are background-safe and must honor the continuation copy.
-    if (isCasting && castingOperation === 'mint') return;
+    // R7-2E: every paid operation is durable. Closing detaches this surface;
+    // the app bridge keeps progress, settlement and linked-node truth alive.
     if (workInProgress) {
       setConfirmingLeave(true);
       return;
     }
     startClose();
-  }, [isCasting, castingOperation, workInProgress, startClose]);
+  }, [workInProgress, startClose]);
 
   const handleSaveChanges = useCallback(() => {
     const diff = unsavedDiff();
@@ -592,7 +589,6 @@ export function CastingTakeover({
           isAuthenticated={isAuthenticated}
           isReadOnly={false}
           onNewModel={resetCastingSession}
-          onBackgroundDraftReady={onBackgroundDraftReady}
         />
         {/* Cold-mount loader (P1): edit sessions hydrate the model first —
             never flash the default studio */}

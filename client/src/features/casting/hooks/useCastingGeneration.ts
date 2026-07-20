@@ -23,8 +23,6 @@ interface UseCastingGenerationParams {
   isMasking: boolean;
   getGuideOverlayDataUrl: () => Promise<string | undefined>;
   clearMask: () => void;
-  /** Optional board host action for a headshot that finishes after exit. */
-  onBackgroundDraftReady?: (modelId: number, landed: boolean) => void;
   /**
    * Where casting state lives — supplied by the caller (audit A1). /studio
    * passes useLegacyCastingBindings(); the canvas controller (M4) passes
@@ -39,7 +37,6 @@ export function useCastingGeneration({
   isMasking,
   getGuideOverlayDataUrl,
   clearMask,
-  onBackgroundDraftReady,
   bindings,
 }: UseCastingGenerationParams) {
   const {
@@ -232,10 +229,12 @@ export function useCastingGeneration({
     }
 
     const session = captureCastingSession(getSessionToken);
+    const createRequestId = createClientRequestId();
+    const headshotRequestId = createClientRequestId();
     const castingOperation = beginCastingOperation({
       kind: 'newCast',
       angles: ['frontClose'],
-      openDraft: onBackgroundDraftReady,
+      clientRequestIds: [createRequestId, headshotRequestId],
     });
     setGenState({ isGenerating: true, currentStep: "Writing Casting Spec...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 15000 });
 
@@ -251,9 +250,6 @@ export function useCastingGeneration({
       // can never carry `referenceImage` — the strict server schema rejects
       // the key, and superjson would otherwise round-trip even undefined.
       const backendPrefs = buildCreationPreferences(prefs, resolvedBrand, engineChoice);
-      const createRequestId = createClientRequestId();
-      const headshotRequestId = createClientRequestId();
-
       setGenState((prev) => ({ ...prev, currentStep: "Generating casting specification...", progress: 20 }));
       const modelResult = await createModelMutation.mutateAsync({
         clientRequestId: createRequestId,
@@ -302,12 +298,6 @@ export function useCastingGeneration({
         if (!session.isCurrent()) {
           castingOperation.succeed({
             modelId: modelResult.modelId!,
-            assets: [{
-              angle: 'frontClose',
-              assetId: imageResult.assetId || Date.now(),
-              url: imageResult.imageUrl,
-            }],
-            name: modelName.trim() || null,
             background: true,
           });
           return;
@@ -338,8 +328,6 @@ export function useCastingGeneration({
         // leaves landing to the takeover's normal close ceremony.
         castingOperation.succeed({
           modelId: modelResult.modelId!,
-          assets: [{ angle: 'frontClose', assetId: newAsset.id, url: newAsset.storageUrl }],
-          name: modelName.trim() || null,
           background: false,
         });
       }
@@ -355,7 +343,7 @@ export function useCastingGeneration({
       setFailedAction({ type: 'NEW' });
       toast.error(message);
     }
-  }, [isFormValid, creditsData, prefs, modelName, engineChoice, getSessionToken, onBackgroundDraftReady]);
+  }, [isFormValid, creditsData, prefs, modelName, engineChoice, getSessionToken]);
 
   // Handle iteration/refinement
   const performIteration = useCallback(async (prompt: string, maskBase64?: string) => {
@@ -368,15 +356,16 @@ export function useCastingGeneration({
     }
 
     const session = captureCastingSession(getSessionToken);
+    const clientRequestId = createClientRequestId();
     const castingOperation = beginCastingOperation({
       kind: 'iterate',
       modelId: currentModelId,
       angles: [activeView as CanonicalViewAngle],
+      clientRequestIds: [clientRequestId],
     });
     setGenState({ isGenerating: true, currentStep: maskBase64 ? "Applying surgical edit..." : "Iterating...", error: null, progress: 0, startTime: Date.now(), estimatedDuration: 8000 });
 
     try {
-      const clientRequestId = createClientRequestId();
       const currentAsset = currentAssets.find(a => a.viewType === activeView);
       if (!currentAsset) {
         throw new Error('No asset found for current view');
@@ -401,16 +390,11 @@ export function useCastingGeneration({
       if (!session.isCurrent()) {
         castingOperation.succeed({
           modelId: currentModelId,
-          assets: [{
-            angle: activeView as CanonicalViewAngle,
-            assetId: result.assetId || Date.now(),
-            url: result.imageUrl,
-          }],
           background: true,
         });
         // Cache truth must advance even though the closed session stays
-        // immutable. Board and reopened Studio consumers receive the plain
-        // result through the operation registry.
+        // immutable. Board and reopened Studio consumers rehydrate the saved
+        // model/package rows after the durable receipt settles.
         void utils.generation.packageState.invalidate({ modelId: currentModelId });
         void utils.credits.getBalance.invalidate();
         return;
@@ -487,11 +471,6 @@ export function useCastingGeneration({
 
         castingOperation.succeed({
           modelId: currentModelId,
-          assets: [{
-            angle: activeView as CanonicalViewAngle,
-            assetId: newAsset.id,
-            url: newAsset.storageUrl,
-          }],
           background: false,
         });
         

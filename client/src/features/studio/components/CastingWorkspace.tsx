@@ -9,7 +9,7 @@
  * belong to the hosts — the studio triggers the gate from its sidebar, the
  * takeover from its top bar.
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { CANONICAL_VIEW_ANGLES } from '@shared/boardTypes';
@@ -29,18 +29,28 @@ import { useCastingGeneration } from '@/features/casting/hooks/useCastingGenerat
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { PackageHealthDialog } from '@/features/casting/components/PackageHealthDialog';
 import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
+import { useGenerationJobs } from '@/features/boards/stores/useGenerationJobs';
 import {
-  getActiveCastingOperations,
-  subscribeCastingOperations,
-} from '@/features/casting/pendingCastRegistry';
+  isOperationActive,
+  operationDedupeKey,
+  operationPhaseLabel,
+  selectStudioOperation,
+} from '@/features/operations/generationOperationProjection';
+
+interface LoadedCastingModel {
+  id: number;
+  name: string | null;
+  masterPrompt: string | null;
+  technicalSchema?: unknown;
+  preferences?: unknown;
+  assets?: Array<{ id: number; viewType: string; storageUrl: string }>;
+}
 
 export interface CastingWorkspaceProps {
   user: { role?: string } | null;
   isAuthenticated: boolean;
   isReadOnly: boolean;
   onNewModel: () => void;
-  /** Opens a draft whose headshot finished after this workspace closed. */
-  onBackgroundDraftReady?: (modelId: number, landed: boolean) => void;
   /** Studio's entrance choreography; hosts without it default to visible. */
   leftReady?: boolean;
   rightReady?: boolean;
@@ -51,7 +61,6 @@ export function CastingWorkspace({
   isAuthenticated,
   isReadOnly,
   onNewModel,
-  onBackgroundDraftReady,
   leftReady = true,
   rightReady = true,
 }: CastingWorkspaceProps) {
@@ -64,6 +73,8 @@ export function CastingWorkspace({
   const { prefs, modelName, engineChoice } = useCastingFormStore();
   const { genState, setGenState, currentModelId, currentAssets } = useCastingGenerationStore();
   const { activeView, activeTool: castingActiveTool } = useCastingUIStore();
+  const durableOperations = useGenerationJobs((state) => state.operations);
+  const utils = trpc.useUtils();
 
   // Eagerly preload casting images into browser cache (warm S3 URLs)
   const castingAssetUrls = useMemo(
@@ -125,67 +136,117 @@ export function CastingWorkspace({
     isMasking,
     getGuideOverlayDataUrl,
     clearMask,
-    onBackgroundDraftReady,
     bindings: castingBindings,
   });
 
-  // W6-A: a reopened Casting surface reads the same-tab operation handoff
-  // instead of pretending the model is idle. Settlement applies plain asset
-  // data only when this is still the matching live model; the W4 session
-  // token remains the authority for every originating continuation.
+  const applyModelTruth = useCallback((model: LoadedCastingModel) => {
+    const genStore = useCastingGenerationStore.getState();
+    const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(model.assets ?? []);
+
+    genStore.setCurrentModelId(model.id);
+    if (rebuilt.length > 0) {
+      genStore.setCurrentAssets(rebuilt);
+      genStore.setHistory(history);
+      genStore.setHistoryIndex(historyIndex);
+      useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
+    }
+    genStore.setCurrentMasterPrompt(model.masterPrompt ?? '');
+    genStore.setCurrentTechnicalSchema(
+      (model.technicalSchema as Record<string, unknown> | null | undefined) ?? null,
+    );
+
+    if (model.preferences) {
+      const formStore = useCastingFormStore.getState();
+      const restored = editablePreferencesFromStored(model.preferences);
+      formStore.setPrefs(restored.preferences);
+      formStore.setEngineChoices(restored.engineChoice);
+      formStore.setModelName(model.name || '');
+    }
+
+    const studio = useStudioStore.getState();
+    if (studio.mintedEditContext?.modelId === model.id) {
+      const restored = editablePreferencesFromStored(model.preferences ?? {});
+      studio.setMintedEditContext({
+        ...studio.mintedEditContext,
+        baselinePrefs: JSON.parse(JSON.stringify(restored.preferences)),
+      });
+    }
+  }, []);
+
+  // R7-2E: the app bridge is the sole query owner. Studio consumes its
+  // durable projection and reloads model truth after a matching operation
+  // settles (including when another tab acknowledges it first). No local
+  // settlement payload is allowed to rewrite this session.
+  const previousActiveIdsRef = useRef(new Set<string>());
+  const seenTerminalKeysRef = useRef(new Set<string>());
+  const durableDisplayRef = useRef<string | null>(null);
+  const modelSyncInFlightRef = useRef(new Set<string>());
   useEffect(() => {
-    const showRejoinedOperation = (modelId: number) => {
-      if (getActiveCastingOperations(modelId).length === 0) return;
-      const store = useCastingGenerationStore.getState();
-      if (!store.genState.isGenerating) {
-        store.setGenState({
-          isGenerating: true,
-          currentStep: 'An earlier edit is still finishing…',
-          error: null,
-        });
-      }
-    };
-
-    if (currentModelId !== null) showRejoinedOperation(currentModelId);
-
-    return subscribeCastingOperations((event) => {
-      const liveModelId = useCastingGenerationStore.getState().currentModelId;
-      if (event.operation.modelId === null || event.operation.modelId !== liveModelId) return;
-
-      if (event.phase !== 'settle') {
-        showRejoinedOperation(event.operation.modelId);
-        return;
-      }
-
-      const store = useCastingGenerationStore.getState();
-      if (event.outcome.status === 'success' && event.outcome.assets.length > 0) {
-        const changed = event.outcome.assets.some((incoming) => {
-          const current = store.currentAssets.find((asset) => asset.viewType === incoming.angle);
-          return !current || current.id !== incoming.assetId || current.storageUrl !== incoming.url;
-        });
-        if (changed) {
-          const changedAngles = new Set<string>(event.outcome.assets.map((asset) => asset.angle));
-          const nextAssets = [
-            ...store.currentAssets.filter((asset) => !changedAngles.has(asset.viewType)),
-            ...event.outcome.assets.map((asset) => ({
-              id: asset.assetId,
-              viewType: asset.angle,
-              storageUrl: asset.url,
-            })),
-          ];
-          store.setCurrentAssets(nextAssets);
-          store.pushHistory(nextAssets);
-        }
-      }
-
-      if (
-        getActiveCastingOperations(liveModelId).length === 0
-        && store.genState.currentStep === 'An earlier edit is still finishing…'
-      ) {
-        store.setGenState({ isGenerating: false, currentStep: '', error: null });
-      }
-    });
+    previousActiveIdsRef.current.clear();
+    seenTerminalKeysRef.current.clear();
+    durableDisplayRef.current = null;
+    modelSyncInFlightRef.current.clear();
   }, [currentModelId]);
+
+  useEffect(() => {
+    if (currentModelId === null) return;
+    const matching = durableOperations.filter((operation) => operation.modelId === currentModelId);
+    const activeIds = new Set(
+      matching.filter(isOperationActive).map((operation) => operation.operationId),
+    );
+    const operation = selectStudioOperation(matching, currentModelId);
+    const settledKeys = matching
+      .filter((candidate) =>
+        candidate.status === 'partial'
+        || candidate.status === 'succeeded'
+        || candidate.status === 'failed'
+      )
+      .map(operationDedupeKey);
+    const activeDisappeared = Array.from(previousActiveIdsRef.current)
+      .some((operationId) => !activeIds.has(operationId));
+    const unseenTerminal = settledKeys.find((key) => !seenTerminalKeysRef.current.has(key));
+    const syncKey = unseenTerminal ?? (activeDisappeared
+      ? `settled-after-ack:${currentModelId}:${Array.from(previousActiveIdsRef.current).join(',')}`
+      : null);
+
+    if (syncKey && !modelSyncInFlightRef.current.has(syncKey)) {
+      modelSyncInFlightRef.current.add(syncKey);
+      void utils.models.get.fetch({ modelId: currentModelId })
+        .then((model) => {
+          if (model && useCastingGenerationStore.getState().currentModelId === currentModelId) {
+            applyModelTruth(model as LoadedCastingModel);
+          }
+        })
+        .catch((error) => console.error('[CastingWorkspace] durable model sync failed', error))
+        .finally(() => modelSyncInFlightRef.current.delete(syncKey));
+    }
+    settledKeys.forEach((key) => seenTerminalKeysRef.current.add(key));
+    previousActiveIdsRef.current = activeIds;
+
+    const store = useCastingGenerationStore.getState();
+    if (operation?.status === 'recovery_required') {
+      durableDisplayRef.current = operation.operationId;
+      store.setGenState({
+        isGenerating: false,
+        currentStep: '',
+        error: operation.publicMessage || 'This generation needs support review.',
+      });
+      return;
+    }
+    if (operation && isOperationActive(operation)) {
+      durableDisplayRef.current = operation.operationId;
+      store.setGenState({
+        isGenerating: true,
+        currentStep: operationPhaseLabel(operation),
+        error: null,
+      });
+      return;
+    }
+    if (durableDisplayRef.current) {
+      durableDisplayRef.current = null;
+      store.setGenState({ isGenerating: false, currentStep: '', error: null });
+    }
+  }, [applyModelTruth, currentModelId, durableOperations, utils.models.get]);
 
   // Hydrate casting store for gallery/edit-loaded models (assets in DB, not
   // Zustand). IMPERATIVE fetch, not useQuery: a hook would serve the STALE
@@ -193,7 +254,6 @@ export function CastingWorkspace({
   // fresh data — the exact post-update stale-baseline bug (VC-R3 bug 2b).
   // utils.fetch() refetches whenever the entry is stale, so every hydration
   // starts from server truth; the takeover's loader covers the round trip.
-  const utils = trpc.useUtils();
   // VC-R6b bug 3 (durable fix for the hydration-race family): the old
   // boolean in-flight gate could be HELD by a stale first fire — child
   // effects run before the parent takeover's reset-then-set, so the
@@ -215,45 +275,7 @@ export function CastingWorkspace({
       .then((model) => {
         if (cancelled || !model) return;
         if (useCastingGenerationStore.getState().currentAssets.length > 0) return; // already hydrated
-
-        const assets = (model.assets || []) as Array<{ id: number; viewType: string; storageUrl: string }>;
-        const genStore = useCastingGenerationStore.getState();
-        const { history, historyIndex, currentAssets: rebuilt } = buildHistoryFromAssets(assets);
-
-        if (rebuilt.length > 0) {
-          genStore.setCurrentModelId(model.id);
-          genStore.setCurrentAssets(rebuilt);
-          genStore.setHistory(history);
-          genStore.setHistoryIndex(historyIndex);
-          useCastingGenerationStore.setState({ historyAmendments: history.map(() => []) });
-          if (model.masterPrompt) {
-            genStore.setCurrentMasterPrompt(model.masterPrompt);
-          }
-          // Spec tab's JSON view reads this — hydration missed it (VC-R4
-          // fix 3; the other hydration paths already set it)
-          genStore.setCurrentTechnicalSchema(
-            ((model as any).technicalSchema as Record<string, unknown> | null) ?? null,
-          );
-        }
-        // Restore form preferences so ControlPanel shows actual model identity
-        if ((model as any).preferences) {
-          const formStore = useCastingFormStore.getState();
-          const restored = editablePreferencesFromStored((model as any).preferences);
-          formStore.setPrefs(restored.preferences);
-          formStore.setEngineChoices(restored.engineChoice);
-          formStore.setModelName(model.name || '');
-        }
-        // Minted edit: the D-11 diff baseline is THIS payload — the same
-        // data the form was just filled from, recorded here rather than
-        // re-read from the store later (timing-free by construction)
-        const studio = useStudioStore.getState();
-        if (studio.mintedEditContext?.modelId === model.id) {
-          const restored = editablePreferencesFromStored((model as any).preferences ?? {});
-          studio.setMintedEditContext({
-            ...studio.mintedEditContext,
-            baselinePrefs: JSON.parse(JSON.stringify(restored.preferences)),
-          });
-        }
+        applyModelTruth(model as LoadedCastingModel);
       })
       .catch((err) => {
         // Never silent: a failed hydration must be visible and retryable
@@ -269,8 +291,7 @@ export function CastingWorkspace({
       // never block its successor (the bug-3 race)
       if (hydrationKeyRef.current === modelId) hydrationKeyRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvas.castModelId, currentAssets.length]);
+  }, [applyModelTruth, canvas.castModelId, currentAssets.length, utils.models.get]);
 
   // Form completion progress (12 fields)
   const formProgress = useMemo(() => {

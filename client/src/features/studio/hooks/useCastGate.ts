@@ -68,19 +68,20 @@ export function useCastGate({
       setCastingOperation(operationMode);
       const missingAngles = (planQuery.data?.tiers[tier]?.missing ?? []) as CanonicalViewAngle[];
       const missingCount = missingAngles.length;
+      const clientRequestId = createClientRequestId();
       const session = captureCastingSession(
         () => useCastingGenerationStore.getState().sessionToken,
       );
-      // Every missing-view run uses the registry as the one per-angle truth.
-      // `operationMode` separately keeps a true mint's close/landing ceremony
-      // blocked; stays-draft and upgrade work may outlive this hook.
-      const backgroundOperation = missingAngles.length > 0
-        ? beginCastingOperation({
-            kind: 'addViews',
-            modelId: currentModelId,
-            angles: missingAngles,
-          })
-        : null;
+      // Optional immediate adapter only: the durable receipt and child rows
+      // become authoritative as soon as the app bridge observes them. Start
+      // it even for a package-complete mint so local notices correlate with
+      // the server receipt while the surface is free to detach.
+      const backgroundOperation = beginCastingOperation({
+        kind: stayDraft || upgrade ? 'addViews' : 'mint',
+        modelId: currentModelId,
+        angles: missingAngles,
+        clientRequestIds: [clientRequestId],
+      });
       setViewsGenerating(missingAngles.length > 0);
       setCastingMessage(
         missingCount > 0
@@ -96,7 +97,7 @@ export function useCastGate({
         // mint transition, and the server fails anything else closed.
         const nickname = stayDraft ? characterName.trim() : '';
         const result = await mintPackageMutation.mutateAsync({
-          clientRequestId: createClientRequestId(),
+          clientRequestId,
           modelId: currentModelId,
           tier,
           ...(stayDraft
@@ -130,12 +131,6 @@ export function useCastGate({
 
         backgroundOperation?.succeed({
           modelId: currentModelId,
-          assets: result.generated.map((row) => ({
-            angle: row.angle,
-            assetId: row.assetId ?? Date.now(),
-            url: row.imageUrl,
-          })),
-          name: characterName.trim() || null,
           background: !session.isCurrent(),
         });
 

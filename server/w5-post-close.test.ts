@@ -10,24 +10,22 @@ import {
   subscribeCastingOperations,
   type CastingOperationEvent,
 } from '../client/src/features/casting/pendingCastRegistry';
-import { useCastingRefreshStore } from '../client/src/features/casting/stores/useCastingRefreshStore';
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
 
-describe('W6-A casting-operation registry', () => {
+describe('W6-A casting-operation adapter', () => {
   beforeEach(resetPendingCastRegistryForTests);
   afterEach(resetPendingCastRegistryForTests);
 
   it('captures and remaps the origin, binds the model, mirrors angles, and settles exactly once', () => {
     const events: CastingOperationEvent[] = [];
-    let opened: { modelId: number; landed: boolean } | null = null;
     registerCastingOperationOriginProvider(() => ({ boardId: 7, itemId: -4 }));
     subscribeCastingOperations((event) => events.push(event));
 
     const operation = beginCastingOperation({
       kind: 'newCast',
       angles: ['frontClose'],
-      openDraft: (modelId, landed) => { opened = { modelId, landed }; },
+      clientRequestIds: ['00000000-0000-4000-8000-000000000001'],
     });
     expect(events[0]).toMatchObject({
       phase: 'begin',
@@ -39,13 +37,11 @@ describe('W6-A casting-operation registry', () => {
     expect(getActiveCastingOperations(42)[0]).toMatchObject({
       origin: { boardId: 7, itemId: 14 },
       angles: ['frontClose'],
+      clientRequestIds: ['00000000-0000-4000-8000-000000000001'],
     });
-    expect(useCastingRefreshStore.getState().refreshingByModel[42]).toEqual(['frontClose']);
 
     operation.succeed({
       modelId: 42,
-      assets: [{ angle: 'frontClose', assetId: 9, url: 'https://example.com/head.png' }],
-      name: 'Haniel',
       background: true,
     });
     operation.succeed({ modelId: 42, background: true });
@@ -58,11 +54,6 @@ describe('W6-A casting-operation registry', () => {
       operation: { origin: { boardId: 7, itemId: 14 } },
       outcome: { status: 'success', modelId: 42, background: true },
     });
-    if (settlement?.phase === 'settle' && settlement.outcome.status === 'success') {
-      settlement.outcome.openDraft?.(true);
-    }
-    expect(opened).toEqual({ modelId: 42, landed: true });
-    expect(useCastingRefreshStore.getState().refreshingByModel[42]).toBeUndefined();
     expect(getActiveCastingOperations()).toEqual([]);
   });
 
@@ -73,6 +64,7 @@ describe('W6-A casting-operation registry', () => {
       kind: 'iterate',
       modelId: 9,
       angles: ['sideClose'],
+      clientRequestIds: ['00000000-0000-4000-8000-000000000002'],
     });
 
     operation.fail({ message: 'Refund recorded; the edit failed', background: true });
@@ -89,13 +81,16 @@ describe('W6-A casting-operation registry', () => {
         },
       }),
     ]);
-    expect(useCastingRefreshStore.getState().refreshingByModel[9]).toBeUndefined();
   });
 
   it('still publishes foreground settlement so the originating node job cannot stick', () => {
     const events: CastingOperationEvent[] = [];
     subscribeCastingOperations((event) => events.push(event));
-    const operation = beginCastingOperation({ kind: 'newCast', angles: ['frontClose'] });
+    const operation = beginCastingOperation({
+      kind: 'newCast',
+      angles: ['frontClose'],
+      clientRequestIds: ['00000000-0000-4000-8000-000000000003'],
+    });
     operation.setModelId(3);
     operation.succeed({ modelId: 3, background: false });
 
@@ -135,25 +130,26 @@ describe('W6-A wiring contracts', () => {
   it('keeps session guards while moving per-angle progress into the registry', () => {
     const source = read('client/src/features/studio/hooks/useCastGate.ts');
     expect(source).toContain('captureCastingSession');
-    expect(source).toContain("kind: 'addViews'");
-    expect(source).toContain('Every missing-view run uses the registry');
+    expect(source).toContain("kind: stayDraft || upgrade ? 'addViews' : 'mint'");
+    expect(source).toContain('durable receipt and child rows');
     expect(source).not.toContain('useCastingRefreshStore.getState().begin');
     expect(source).not.toContain('useCastingRefreshStore.getState().end');
     expect(source).toContain('notifyFailure: false');
   });
 
-  it('blocks a true mint only and gives Add Views an honest leave branch', () => {
+  it('allows durable mint and Add Views work to detach with honest leave copy', () => {
     const takeover = read('client/src/features/studio/takeover/CastingTakeover.tsx');
-    expect(takeover).toContain("isCasting && castingOperation === 'mint'");
-    expect(takeover).toContain("isCasting && castingOperation !== 'mint'");
+    expect(takeover).not.toContain("isCasting && castingOperation === 'mint'");
     expect(takeover).toContain('Your new views will keep generating and appear on this card');
+    expect(takeover).toContain('Closing detaches this surface');
   });
 
-  it('rejoins a matching model without weakening the W4 session token', () => {
+  it('rejoins a matching model through durable server truth without weakening the W4 session token', () => {
     const workspace = read('client/src/features/studio/components/CastingWorkspace.tsx');
-    expect(workspace).toContain('getActiveCastingOperations');
-    expect(workspace).toContain('subscribeCastingOperations');
-    expect(workspace).toContain('event.operation.modelId !== liveModelId');
-    expect(workspace).toContain('An earlier edit is still finishing');
+    expect(workspace).toContain('selectStudioOperation(matching, currentModelId)');
+    expect(workspace).toContain('utils.models.get.fetch({ modelId: currentModelId })');
+    expect(workspace).toContain('currentModelId === currentModelId');
+    expect(workspace).not.toContain('event.outcome.assets');
+    expect(workspace).not.toContain('subscribeCastingOperations');
   });
 });

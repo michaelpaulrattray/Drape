@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { staledAnglesForAssetIds } from './casting/identity/staleResponse';
 import { useCastingRefreshStore } from '../client/src/features/casting/stores/useCastingRefreshStore';
+import type { GenerationOperationDto } from '../client/src/features/operations/generationOperationProjection';
 import { shouldClearIdentityWarning } from '../client/src/features/casting/components/PackageHealthDialog';
 import { SINGLE_VIEW_PROMPTS } from './casting/geminiViews';
 
@@ -29,20 +30,80 @@ describe('W3 stale response truth', () => {
   });
 });
 
-describe('W3 shared in-flight registry', () => {
+const OPERATION_NOW = '2026-07-20T00:00:00.000Z';
+
+function refreshOperation(
+  overrides: Partial<GenerationOperationDto> = {},
+): GenerationOperationDto {
+  return {
+    operationId: '6fa459ea-ee8a-4ca4-894e-db77e160355e',
+    clientRequestId: '7fa459ea-ee8a-4ca4-894e-db77e160355f',
+    kind: 'casting.refresh',
+    modelId: 7,
+    originBoardId: null,
+    originItemId: null,
+    status: 'running',
+    phase: 'refreshing',
+    progress: null,
+    plannedCredits: 1_500,
+    chargedCredits: 600,
+    refundedCredits: 0,
+    netCredits: 600,
+    result: null,
+    publicMessage: null,
+    createdAt: OPERATION_NOW,
+    updatedAt: OPERATION_NOW,
+    completedAt: null,
+    heartbeatAt: OPERATION_NOW,
+    leaseExpiresAt: OPERATION_NOW,
+    cancellable: false,
+    landingStatus: 'not_applicable',
+    landedItemId: null,
+    landingAcknowledgedAt: null,
+    children: [],
+    ...overrides,
+  };
+}
+
+describe('W3 durable in-flight projection', () => {
   beforeEach(() => useCastingRefreshStore.setState({ refreshingByModel: {}, packageHealthOpen: false }));
 
-  it('reference-counts overlapping angles per model without touching another model', () => {
-    const store = useCastingRefreshStore.getState();
-    store.begin(7, ['sideClose', 'threeQuarter']);
-    store.begin(7, ['sideClose', 'backFull']);
-    store.begin(8, ['sideFull']);
-    expect(useCastingRefreshStore.getState().refreshingByModel[7]).toEqual(['sideClose', 'threeQuarter', 'sideClose', 'backFull']);
-    useCastingRefreshStore.getState().end(7, ['sideClose', 'backFull']);
-    expect(useCastingRefreshStore.getState().refreshingByModel[7]).toEqual(['threeQuarter', 'sideClose']);
-    useCastingRefreshStore.getState().end(7, ['sideClose']);
-    expect(useCastingRefreshStore.getState().refreshingByModel[7]).toEqual(['threeQuarter']);
-    expect(useCastingRefreshStore.getState().refreshingByModel[8]).toEqual(['sideFull']);
+  it('hydrates pending per-angle truth from durable children and drops settled work', () => {
+    const child = (id: number, viewAngle: string, status: 'pending' | 'processing' | 'completed' | 'failed') => ({
+      id,
+      stepKey: `slot:${viewAngle}`,
+      viewAngle,
+      status,
+      pointsCost: 300,
+      createdAt: OPERATION_NOW,
+      completedAt: status === 'completed' || status === 'failed' ? OPERATION_NOW : null,
+    });
+    const running = refreshOperation({
+      children: [
+        child(1, 'frontClose', 'completed'),
+        child(2, 'threeQuarter', 'processing'),
+        child(3, 'sideClose', 'pending'),
+        child(4, 'frontFull', 'failed'),
+        child(5, 'sideFull', 'completed'),
+        child(6, 'backFull', 'processing'),
+      ],
+    });
+    const terminal = refreshOperation({
+      operationId: '8fa459ea-ee8a-4ca4-894e-db77e160356a',
+      clientRequestId: '9fa459ea-ee8a-4ca4-894e-db77e160356b',
+      modelId: 8,
+      status: 'partial',
+      completedAt: OPERATION_NOW,
+      children: [child(7, 'sideFull', 'pending')],
+    });
+
+    useCastingRefreshStore.getState().syncServerOperations([running, terminal]);
+    expect(useCastingRefreshStore.getState().refreshingByModel).toEqual({
+      7: ['threeQuarter', 'sideClose', 'backFull'],
+    });
+
+    useCastingRefreshStore.getState().syncServerOperations([]);
+    expect(useCastingRefreshStore.getState().refreshingByModel).toEqual({});
   });
 });
 
@@ -61,12 +122,15 @@ describe('W3 package-health wiring', () => {
     expect(read('client/src/pages/DrapeStudio.tsx')).toContain('onResolvePackage={() => openPackageHealth()}');
   });
 
-  it('uses one shared refresh registry in Canvas and Studio', () => {
+  it('uses one server-backed refresh projection in Canvas and Studio', () => {
     const canvas = read('client/src/features/boards/canvas/nodes/useSheetController.ts');
     const studio = read('client/src/features/casting/components/PackageHealthDialog.tsx');
+    const bridge = read('client/src/features/operations/GenerationOperationBridge.tsx');
     expect(canvas).toContain('useCastingRefreshStore');
-    expect(canvas).toContain('endRefresh(targetModelId, angles)');
     expect(studio).toContain('useCastingRefreshStore');
+    expect(bridge).toContain('syncServerOperations(operations)');
+    expect(canvas).not.toContain('.begin(targetModelId');
+    expect(canvas).not.toContain('.end(targetModelId');
     expect(studio).toContain('castingState.currentModelId === variables.modelId');
     expect(studio).toContain('castingState.currentModelId === result.modelId');
   });
