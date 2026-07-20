@@ -42,7 +42,7 @@ export const REFUSAL_COPY = {
 
   /** W5 identity-output gate: the image engine changed protected traits. */
   identityDrift: (name: string | null) =>
-    `The edited image didn't preserve ${name || "this model"}'s identity — only the requested change may differ. Nothing was saved.`,
+    `That change is allowed, but the generated result also changed ${name || "this model"}'s protected identity. Nothing was saved. Try again or describe the change more precisely.`,
 
   /** W5 identity-output gate: the verifier itself could not return a safe verdict. */
   identityVerificationUnavailable:

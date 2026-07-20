@@ -7,6 +7,14 @@
  */
 
 import { createModuleLogger } from "../logging/logger";
+import {
+  dependentFieldsForPatch,
+  explicitFieldsForPatch,
+} from "./identity/identityDependencies";
+import type {
+  AuthorizableIdentityField,
+  AuthorizedIdentityPatch,
+} from "./identity/identityTypes";
 const log = createModuleLogger("casting/promptReinforcement");
 
 export interface EthnicityBlendEntry {
@@ -19,6 +27,32 @@ export interface ModelPreferencesForReinforcement {
   ethnicityBlend?: EthnicityBlendEntry[];
   eyeColor?: string;
   hairColor?: string;
+  hairColorOverride?: string;
+  hairStyle?: string;
+  hairStyleOverride?: string;
+  hairLength?: string;
+  hairTexture?: string;
+  hairFringe?: string;
+  hairParting?: string;
+  facialHair?: string;
+  facialHairOverride?: string;
+}
+
+export interface ReinforcementOptions {
+  /**
+   * Identity iteration uses the model's pre-edit preferences as its source
+   * document. Never reinforce an old value for a field the server has just
+   * authorized (or a reviewed physical dependent of that field).
+   */
+  suppressedFields?: ReadonlySet<AuthorizableIdentityField>;
+}
+
+function deliberateValue(value: string | undefined): string | null {
+  const normalized = value?.trim();
+  if (!normalized || ["open", "auto"].includes(normalized.toLowerCase())) {
+    return null;
+  }
+  return normalized;
 }
 
 /**
@@ -50,18 +84,67 @@ export function buildEthnicityHint(
  */
 export function buildReinforcedPrompt(
   masterPrompt: string,
-  prefs: ModelPreferencesForReinforcement
+  prefs: ModelPreferencesForReinforcement,
+  options: ReinforcementOptions = {},
 ): string {
   const overrides: string[] = [];
+  const suppressed = options.suppressedFields;
 
   const eyeDefault = ["Dark", "Black", "Brown", ""];
-  if (prefs.eyeColor && !eyeDefault.includes(prefs.eyeColor)) {
+  if (
+    !suppressed?.has("person.face.eyeColor") &&
+    prefs.eyeColor &&
+    !eyeDefault.includes(prefs.eyeColor)
+  ) {
     overrides.push(`EYE COLOR: ${prefs.eyeColor}`);
   }
 
   const hairDefault = ["Natural", "Off Black", "Black", "Dark Brown", ""];
-  if (prefs.hairColor && !hairDefault.includes(prefs.hairColor)) {
-    overrides.push(`HAIR COLOR: ${prefs.hairColor}`);
+  const hairColor = prefs.hairColorOverride || prefs.hairColor;
+  if (
+    !suppressed?.has("person.hair.color") &&
+    hairColor &&
+    !hairDefault.includes(hairColor)
+  ) {
+    overrides.push(`HAIR COLOR: ${hairColor}`);
+  }
+
+  const hairDesignCandidates: Array<[
+    string,
+    AuthorizableIdentityField,
+    string | null,
+  ]> = [
+    [
+      "style",
+      "person.hair.style",
+      deliberateValue(prefs.hairStyleOverride || prefs.hairStyle),
+    ],
+    ["length", "person.hair.length", deliberateValue(prefs.hairLength)],
+    ["texture", "person.hair.texture", deliberateValue(prefs.hairTexture)],
+    ["fringe", "person.hair.fringe", deliberateValue(prefs.hairFringe)],
+    ["parting", "person.hair.parting", deliberateValue(prefs.hairParting)],
+  ];
+  const hairDesign = hairDesignCandidates
+    .filter(
+      (entry): entry is [string, AuthorizableIdentityField, string] =>
+        !suppressed?.has(entry[1]) && entry[2] !== null,
+    )
+    .map(([label, , value]) => [label, value] as [string, string]);
+  if (hairDesign.length > 0) {
+    overrides.push(
+      `HAIR DESIGN: ${hairDesign.map(([label, value]) => `${label}=${value}`).join(", ")} — every named property is a deliberate casting choice. Match it literally; never shorten it, simplify it, or substitute a buzz cut`,
+    );
+  }
+
+  const facialHair = suppressed?.has("person.face.facialHair")
+    ? null
+    : deliberateValue(prefs.facialHairOverride || prefs.facialHair);
+  if (facialHair) {
+    overrides.push(
+      facialHair.toLowerCase() === "none"
+        ? "FACIAL HAIR: None — this is a deliberate casting choice. Keep the face clean-shaven"
+        : `FACIAL HAIR: ${facialHair} — this is a deliberate casting choice. Do not remove it or substitute a clean-shaven face`,
+    );
   }
 
   if (overrides.length > 0) {
@@ -70,4 +153,22 @@ export function buildReinforcedPrompt(
   }
 
   return masterPrompt;
+}
+
+/**
+ * Build the pre-commit identity anchor for an authorized identity edit.
+ * Explicitly changed fields and their reviewed physical dependents are
+ * omitted from old-value reinforcement; unrelated identity traits stay
+ * strongly protected.
+ */
+export function buildIdentityEditReinforcedPrompt(
+  masterPrompt: string,
+  prefs: ModelPreferencesForReinforcement,
+  patch: AuthorizedIdentityPatch,
+): string {
+  const suppressedFields = new Set<AuthorizableIdentityField>([
+    ...explicitFieldsForPatch(patch),
+    ...dependentFieldsForPatch(patch),
+  ]);
+  return buildReinforcedPrompt(masterPrompt, prefs, { suppressedFields });
 }

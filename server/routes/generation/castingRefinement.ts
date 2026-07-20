@@ -16,7 +16,11 @@ import { TRPCError } from "@trpc/server";
 import { iterateInputSchema } from "./iterateInput";
 import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
-import { buildEthnicityHint, buildReinforcedPrompt } from "../../casting/promptReinforcement";
+import {
+  buildEthnicityHint,
+  buildIdentityEditReinforcedPrompt,
+  buildReinforcedPrompt,
+} from "../../casting/promptReinforcement";
 import { authorizeEditRequest } from "../../casting/identity/editAuthority";
 import { commitIdentityEdit } from "../../casting/identity/identityCommit";
 import {
@@ -34,7 +38,7 @@ import { iterationFramingForView } from "../../casting/iterationFraming";
 import { assertNotArchived } from "../../casting/modelGuards";
 import { createModuleLogger } from "../../logging/logger";
 import { staledAnglesForAssetIds } from "../../casting/identity/staleResponse";
-import { runGatedIdentityGeneration } from "../../casting/identity/editGateFlow";
+import { identityRetryDirective, runGatedIdentityGeneration } from "../../casting/identity/editGateFlow";
 import type { IdentityGateVerdict } from "../../casting/identity/editGate";
 import { storageDelete } from "../../storage";
 import { dependentFieldsForPatch } from "../../casting/identity/identityDependencies";
@@ -297,7 +301,13 @@ export const castingRefinementRouter = router({
             // and never by an LLM schema rewrite on the paid path.
             const prefs = (lockedModel.preferences || {}) as any;
             const ethnicityHint = buildEthnicityHint(prefs);
-            const reinforcedPrompt = buildReinforcedPrompt(lockedModel.masterPrompt || "", prefs);
+            const reinforcedPrompt = identityPatch
+              ? buildIdentityEditReinforcedPrompt(
+                  lockedModel.masterPrompt || "",
+                  prefs,
+                  identityPatch,
+                )
+              : buildReinforcedPrompt(lockedModel.masterPrompt || "", prefs);
 
             const commonOptions = {
               castingBrand: (lockedModel.technicalSchema as any)?.context?.casting_for,
@@ -317,12 +327,25 @@ export const castingRefinementRouter = router({
                   patch: identityPatch!,
                   frame: framing.crop,
                   modelName: lockedModel.name,
-                  generate: (attempt) => iterateModelRaw(
-                    reinforcedPrompt,
-                    targetAsset.storageUrl,
-                    input.feedback,
-                    { ...commonOptions, forceFreshSession: attempt === 2 },
-                  ),
+                  generate: (attempt) => {
+                    const firstVerdict = identityGateAudit[0]?.verdict;
+                    const retryDirectives = attempt === 2 && firstVerdict
+                      ? [identityRetryDirective(firstVerdict)]
+                      : [];
+                    return iterateModelRaw(
+                      reinforcedPrompt,
+                      targetAsset.storageUrl,
+                      input.feedback,
+                      {
+                        ...commonOptions,
+                        policyDirectives: [
+                          ...authorization.promptDirectives,
+                          ...retryDirectives,
+                        ],
+                        forceFreshSession: attempt === 2,
+                      },
+                    );
+                  },
                   resetRejectedSession: () => clearCastingSession(String(ctx.user.id), input.modelId),
                   upload: (candidate) => uploadRawCandidate(candidate.imageBase64, "iterate"),
                   onVerdict: (attempt, verdict) => identityGateAudit.push({ attempt, verdict }),

@@ -10,7 +10,7 @@ import {
   violationsForStatuses,
   type IdentityGateVerdict,
 } from "./casting/identity/editGate";
-import { runGatedIdentityGeneration } from "./casting/identity/editGateFlow";
+import { identityRetryDirective, runGatedIdentityGeneration } from "./casting/identity/editGateFlow";
 import {
   buildIterationImagePrompt,
   castingSessionKey,
@@ -116,6 +116,18 @@ describe("W5 identity gate — exact authorization boundary", () => {
     expect(protectedSet.has("person.hair.color")).toBe(true);
     expect(protectedSet.has("person.hair.hairline")).toBe(true);
     expect(protectedSet.has(OVERALL_IDENTITY_DIMENSION)).toBe(true);
+  });
+
+  it("turns the first failed gate verdict into a precise fresh-retry correction", () => {
+    const directive = identityRetryDirective({
+      ok: false,
+      checked: true,
+      violations: [OVERALL_IDENTITY_DIMENSION, "person.skinTone"],
+    });
+    expect(directive).toContain("previous candidate was rejected");
+    expect(directive).toContain(OVERALL_IDENTITY_DIMENSION);
+    expect(directive).toContain("person.skinTone");
+    expect(directive).toContain("Start again from the original source image");
   });
 
   it("jawline does not exempt face shape or cheekbones", () => {

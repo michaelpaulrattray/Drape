@@ -1,11 +1,24 @@
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
+import { ZodError } from "zod";
 import type { TrpcContext } from "./context";
 import { validateAdminAccess, logUnauthorizedAdminAccess } from "../security/adminSecurity";
+import { APP_UPDATE_REQUIRED_MESSAGE } from "@shared/clientRequestId";
+
+export function appUpdateRequiredMessage(cause: unknown): string | null {
+  if (!(cause instanceof ZodError)) return null;
+  return cause.issues.some((issue) => issue.message === APP_UPDATE_REQUIRED_MESSAGE)
+    ? APP_UPDATE_REQUIRED_MESSAGE
+    : null;
+}
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    const updateMessage = appUpdateRequiredMessage(error.cause);
+    return updateMessage ? { ...shape, message: updateMessage } : shape;
+  },
 });
 
 export const router = t.router;

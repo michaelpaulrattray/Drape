@@ -127,7 +127,7 @@ export const FIELD_LABELS: Record<AuthorizableIdentityField, string> = {
 function unlockDirective(field: AuthorizableIdentityField, rendered: string): string[] {
   return [
     `AUTHORIZED IDENTITY CHANGE — ${FIELD_LABELS[field]} only: ${rendered}.`,
-    `Preserve every unrequested feature exactly: face shape, bone structure, jawline, cheekbones, chin, eyes, nose, lips, brows, skin tone, skin texture, hair, permanent marks, and everything else not named above stays identical to the source person.`,
+    `LOCKED CONTEXT — preserve every trait outside the authorized ${FIELD_LABELS[field]} change exactly. Every other facial feature, hair trait, skin trait, body trait, demographic trait, and permanent mark must stay identical to the source person.`,
   ];
 }
 

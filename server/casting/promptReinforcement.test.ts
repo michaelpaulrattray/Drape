@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { buildEthnicityHint, buildReinforcedPrompt } from "./promptReinforcement";
+import {
+  buildEthnicityHint,
+  buildIdentityEditReinforcedPrompt,
+  buildReinforcedPrompt,
+} from "./promptReinforcement";
+import type { AuthorizedIdentityPatch } from "./identity/identityTypes";
 
 describe("buildEthnicityHint", () => {
   it("returns undefined when no ethnicity data", () => {
@@ -117,5 +122,120 @@ describe("buildReinforcedPrompt", () => {
     expect(buildReinforcedPrompt(base, { eyeColor: "", hairColor: "" })).toBe(
       base
     );
+  });
+
+  it("makes selected long locs and facial hair literal image-generation constraints", () => {
+    const result = buildReinforcedPrompt(base, {
+      hairStyle: "Braids / Locs",
+      hairLength: "Very Long",
+      hairTexture: "Coily",
+      facialHair: "Full Beard",
+    });
+    expect(result).toContain("style=Braids / Locs");
+    expect(result).toContain("length=Very Long");
+    expect(result).toContain("texture=Coily");
+    expect(result).toContain("never shorten it, simplify it, or substitute a buzz cut");
+    expect(result).toContain("FACIAL HAIR: Full Beard");
+  });
+
+  it("does not turn Open/Auto hair fields into false requirements", () => {
+    expect(buildReinforcedPrompt(base, {
+      hairStyle: "Open",
+      hairLength: "Auto",
+    })).toBe(base);
+  });
+
+  it("treats explicit no-fringe and clean-shaven choices as literal requirements", () => {
+    const result = buildReinforcedPrompt(base, {
+      hairFringe: "None",
+      facialHair: "None",
+    });
+    expect(result).toContain("fringe=None");
+    expect(result).toContain("FACIAL HAIR: None");
+    expect(result).toContain("Keep the face clean-shaven");
+  });
+});
+
+describe("buildIdentityEditReinforcedPrompt", () => {
+  const base = "BASE IDENTITY";
+  const stored = {
+    eyeColor: "Green",
+    hairColor: "Platinum",
+    hairStyle: "Braids / Locs",
+    hairLength: "Very Long",
+    hairTexture: "Coily",
+    hairFringe: "None",
+    hairParting: "Center",
+    facialHair: "Full Beard",
+  };
+
+  it.each(["text", "reference", "structured"] as const)(
+    "does not re-lock an authorized hairstyle or its physical dependents for a %s edit",
+    (source) => {
+      const patch = {
+        edits: [{
+          kind: "leaf",
+          leaf: "person.hair.style",
+          operation: "modify",
+          value: { base: "Long Layers", override: "80s metal-head hairstyle" },
+        }],
+        source,
+      } satisfies AuthorizedIdentityPatch;
+
+      const result = buildIdentityEditReinforcedPrompt(base, stored, patch);
+
+      expect(result).not.toContain("style=Braids / Locs");
+      expect(result).not.toContain("length=Very Long");
+      expect(result).not.toContain("fringe=None");
+      expect(result).not.toContain("parting=Center");
+      expect(result).toContain("texture=Coily");
+      expect(result).toContain("HAIR COLOR: Platinum");
+      expect(result).toContain("FACIAL HAIR: Full Beard");
+    },
+  );
+
+  it("does not re-lock an authorized facial-hair change", () => {
+    const patch = {
+      edits: [{
+        kind: "leaf",
+        leaf: "person.face.facialHair",
+        operation: "modify",
+        value: { base: "None", override: "" },
+      }],
+      source: "text",
+    } satisfies AuthorizedIdentityPatch;
+
+    const result = buildIdentityEditReinforcedPrompt(base, stored, patch);
+
+    expect(result).not.toContain("FACIAL HAIR: Full Beard");
+    expect(result).toContain("style=Braids / Locs");
+    expect(result).toContain("HAIR COLOR: Platinum");
+  });
+
+  it("suppresses every explicitly authorized field in a multi-leaf edit", () => {
+    const patch = {
+      edits: [
+        {
+          kind: "leaf",
+          leaf: "person.hair.color",
+          operation: "modify",
+          value: { base: "Auburn", override: "" },
+        },
+        {
+          kind: "leaf",
+          leaf: "person.face.eyeColor",
+          operation: "modify",
+          value: { base: "Hazel", override: "" },
+        },
+      ],
+      source: "structured",
+    } satisfies AuthorizedIdentityPatch;
+
+    const result = buildIdentityEditReinforcedPrompt(base, stored, patch);
+
+    expect(result).not.toContain("HAIR COLOR: Platinum");
+    expect(result).not.toContain("EYE COLOR: Green");
+    expect(result).toContain("style=Braids / Locs");
+    expect(result).toContain("FACIAL HAIR: Full Beard");
   });
 });

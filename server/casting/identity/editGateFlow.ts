@@ -22,6 +22,13 @@ export interface GatedIdentityGenerationResult extends UploadedGenerationResult 
   verdicts: IdentityGateVerdict[];
 }
 
+export function identityRetryDirective(verdict: IdentityGateVerdict): string {
+  const drifted = verdict.violations.length > 0
+    ? verdict.violations.join(", ")
+    : "one or more protected identity traits";
+  return `RETRY CORRECTION — the previous candidate was rejected because ${drifted} drifted. Start again from the original source image. Apply only the authorized change and preserve the face, bone structure, skin, and every other protected trait exactly.`;
+}
+
 async function checkedVerdict(
   verify: typeof verifyIdentityEdit,
   input: Pick<GatedIdentityGenerationInput, "sourceImage" | "patch" | "frame">,

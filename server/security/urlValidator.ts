@@ -33,10 +33,6 @@ function getR2PublicHost(): string | null {
   }
 }
 
-const ALLOWED_HOSTNAMES = [getR2PublicHost()].filter(
-  (host): host is string => host !== null
-);
-
 /**
  * RFC 1918 / RFC 5735 private and reserved IP ranges.
  * These must never be fetched by the proxy to prevent SSRF.
@@ -109,8 +105,9 @@ export function validateProxyUrl(urlString: string): UrlValidationResult {
   }
 
   // Check against allowed domain list
+  const r2PublicHost = getR2PublicHost();
   const isAllowed =
-    ALLOWED_HOSTNAMES.includes(hostname) ||
+    hostname === r2PublicHost ||
     ALLOWED_DOMAINS.some(domain => hostname.endsWith(domain));
 
   if (!isAllowed) {

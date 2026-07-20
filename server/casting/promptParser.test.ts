@@ -233,6 +233,22 @@ describe("buildNewPromptContent — honest engine-choice directives (D-41)", () 
     expect(out).toContain("Age: 41");
     expect(out).not.toContain("ENGINE'S CHOICE — cast whoever");
   });
+
+  it("preserves the original archetype alongside exact structured attributes", () => {
+    const out = buildNewPromptContent({
+      userPrompt: "heavy metal bogan male 24 with long hair",
+      gender: "Male",
+      age: "24",
+      hairLength: "Long",
+    }, "skin");
+    expect(out).toContain("ORIGINAL CREATIVE BRIEF — PRIMARY ARCHETYPE");
+    expect(out).toContain("heavy metal bogan male 24 with long hair");
+    expect(out).toContain("Preserve the brief's recognizable subculture");
+    expect(out).toContain("without sanitizing it into a generic luxury-fashion face");
+    expect(out).toContain("Gender: Male");
+    expect(out).toContain("Age: 24");
+    expect(out).toContain("Length: Long");
+  });
 });
 
 describe("buildNewPromptContent — override-preferring reads (PARSER_PROMPT_V2 §4)", () => {

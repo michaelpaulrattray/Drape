@@ -225,6 +225,13 @@ describe("W6-C draft-name persistence", () => {
     expect(draftNameToPersist("   ", "Haniel")).toBeNull();
   });
 
+  it("keeps the mint door visible when a draft is opened directly from the lobby", () => {
+    expect(studioSource).toContain("primaryAction={");
+    expect(studioSource).toContain("activeTool === 'casting' && currentModelId !== null && !canvas.isMinted && hasHeadshot");
+    expect(studioSource).toContain("onClick: () => setShowCastModal(true)");
+    expect(studioSource).toContain("disabled: isCasting || genState.isGenerating");
+  });
+
   it("carries the typed label through Keep editing, scrim, and Escape dismissals", () => {
     expect(modalSource).toContain("onClose: (typedName: string) => void");
     expect(modalSource.match(/onClick=\{requestClose\}/g)).toHaveLength(3);

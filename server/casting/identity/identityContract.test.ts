@@ -224,6 +224,33 @@ describe("§8.4 prompt directives — single-leaf unlock, everything else locked
     const directives = handlerFor("person.face.jawline").promptDirectives("broad angular jaw, squared");
     expect(directives.join(" ")).toContain("jawline only");
     expect(directives.join(" ")).toContain("broad angular jaw, squared");
-    expect(directives.join(" ")).toMatch(/Preserve every unrequested feature/i);
+    expect(directives.join(" ")).toContain("outside the authorized jawline change");
+    expect(directives.join(" ")).toContain("Every other facial feature");
+  });
+
+  it("does not contradict an authorized hairstyle edit by broadly locking all hair", () => {
+    const directives = handlerFor("person.hair.style").promptDirectives({
+      base: "",
+      override: "voluminous 1980s metal hairstyle",
+    });
+    expect(directives.join(" ")).toContain("hairstyle only");
+    expect(directives.join(" ")).toContain("outside the authorized hairstyle change");
+    expect(directives.join(" ")).not.toContain("skin texture, hair, permanent marks");
+  });
+
+  it("does not contradict an authorized skin-tone edit with an exact skin-tone lock", () => {
+    const directives = handlerFor("person.skinTone").promptDirectives("Deep");
+    expect(directives[0]).toContain("skin tone only: Deep");
+    expect(directives[1]).toContain("outside the authorized skin tone change");
+    expect(directives[1]).not.toContain("preserve skin tone exactly");
+  });
+
+  it("uses the same single-field boundary for face geometry and eye colour", () => {
+    const face = handlerFor("person.face.faceShape").promptDirectives("Heart").join(" ");
+    const eyes = handlerFor("person.face.eyeColor").promptDirectives({ base: "Hazel", override: "" }).join(" ");
+    expect(face).toContain("outside the authorized face shape change");
+    expect(eyes).toContain("outside the authorized eye color change");
+    expect(face).toContain("Every other facial feature");
+    expect(eyes).toContain("Every other facial feature");
   });
 });

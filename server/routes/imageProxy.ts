@@ -8,6 +8,7 @@
  */
 import { Router, type Request, type Response } from "express";
 import { createModuleLogger } from "../logging/logger";
+import { validateProxyUrl } from "../security/urlValidator";
 
 const log = createModuleLogger("imageProxy");
 const router = Router();
@@ -17,19 +18,11 @@ const router = Router();
  * Matched as exact hostname or dot-boundary suffix — never substring, which
  * would let e.g. "s3.amazonaws.com.attacker.com" through.
  */
-const ALLOWED_HOST_SUFFIXES = ["amazonaws.com", "r2.cloudflarestorage.com"];
-
 export function isAllowedUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:") return false;
-    const hostname = parsed.hostname.toLowerCase();
-    return ALLOWED_HOST_SUFFIXES.some(
-      (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`)
-    );
-  } catch {
-    return false;
-  }
+  // Keep every server-side image fetch behind the same exact-host SSRF
+  // authority. Production assets use the configured public R2 host
+  // (*.r2.dev), which the old route-local suffix list rejected.
+  return validateProxyUrl(url).valid;
 }
 
 router.get("/api/image-proxy", async (req: Request, res: Response) => {

@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { isAllowedUrl } from "./imageProxy";
+
+const originalR2PublicUrl = process.env.R2_PUBLIC_URL;
+
+afterEach(() => {
+  if (originalR2PublicUrl === undefined) delete process.env.R2_PUBLIC_URL;
+  else process.env.R2_PUBLIC_URL = originalR2PublicUrl;
+});
 
 describe("imageProxy isAllowedUrl", () => {
   it("allows S3 bucket URLs", () => {
@@ -9,10 +16,11 @@ describe("imageProxy isAllowedUrl", () => {
     expect(isAllowedUrl("https://s3.amazonaws.com/bucket/img.png")).toBe(true);
   });
 
-  it("allows R2 URLs", () => {
-    expect(
-      isAllowedUrl("https://account.r2.cloudflarestorage.com/bucket/img.png")
-    ).toBe(true);
+  it("allows only the configured public R2 bucket host", () => {
+    process.env.R2_PUBLIC_URL = "https://pub-owned-bucket.r2.dev";
+    expect(isAllowedUrl("https://pub-owned-bucket.r2.dev/casting/img.png")).toBe(true);
+    expect(isAllowedUrl("https://pub-someone-else.r2.dev/casting/img.png")).toBe(false);
+    expect(isAllowedUrl("https://account.r2.cloudflarestorage.com/bucket/img.png")).toBe(false);
   });
 
   it("blocks suffix-spoofing hostnames (the .includes() bypass)", () => {

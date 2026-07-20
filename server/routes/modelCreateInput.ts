@@ -5,6 +5,7 @@
  * schema (models.ts uses it directly), not a copy.
  */
 import { z } from "zod";
+import { APP_UPDATE_REQUIRED_MESSAGE } from "@shared/clientRequestId";
 
 // Schema matches geminiService.ts ModelPreferences interface exactly
 export const modelCreatePreferencesSchema = z.object({
@@ -81,7 +82,9 @@ export const modelCreatePreferencesSchema = z.object({
 }).strict();
 
 export const modelCreateInputSchema = z.object({
-  clientRequestId: z.string().uuid(),
+  clientRequestId: z.string({
+    error: (issue) => issue.input === undefined ? APP_UPDATE_REQUIRED_MESSAGE : undefined,
+  }).uuid(),
   preferences: modelCreatePreferencesSchema,
   name: z.string().optional(),
   originBoardId: z.number().int().positive().optional(),

@@ -83,7 +83,7 @@ export default function DrapeStudio() {
   // Casting stores — only what the studio shell itself needs; the casting
   // surface's own wiring lives in CastingWorkspace (shared with the D-35
   // board takeover)
-  const { currentModelId, currentAssets } = useCastingGenerationStore();
+  const { currentModelId, currentAssets, genState } = useCastingGenerationStore();
   const { isTopupOpen, setIsTopupOpen } = useCastingUIStore();
   const utils = trpc.useUtils();
   const persistedModel = trpc.models.get.useQuery(
@@ -91,6 +91,9 @@ export default function DrapeStudio() {
     { enabled: currentModelId != null, staleTime: 0 },
   );
   const updateDraftName = trpc.models.update.useMutation();
+  const hasHeadshot = currentAssets.some(
+    (asset) => asset.viewType === 'frontClose' && Boolean(asset.storageUrl),
+  );
 
   // Credits for the sidebar / top-up / cast gate (same query key as the
   // workspace's internal query — TanStack dedupes)
@@ -244,6 +247,15 @@ export default function DrapeStudio() {
           onOpenBilling={() => setIsBillingOpen(true)}
           onOpenReferral={() => setIsReferralOpen(true)}
           onLogout={logout}
+          primaryAction={
+            activeTool === 'casting' && currentModelId !== null && !canvas.isMinted && hasHeadshot
+              ? {
+                  label: isCasting ? 'Casting...' : 'Cast this model',
+                  disabled: isCasting || genState.isGenerating,
+                  onClick: () => setShowCastModal(true),
+                }
+              : undefined
+          }
         />
 
         {/* Tool Content Area */}

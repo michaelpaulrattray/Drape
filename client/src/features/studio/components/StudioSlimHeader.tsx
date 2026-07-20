@@ -25,6 +25,11 @@ export interface StudioSlimHeaderProps {
   onOpenBilling: () => void;
   onOpenReferral: () => void;
   onLogout: () => void;
+  primaryAction?: {
+    label: string;
+    disabled?: boolean;
+    onClick: () => void;
+  };
 }
 
 export function StudioSlimHeader({
@@ -37,6 +42,7 @@ export function StudioSlimHeader({
   onOpenBilling,
   onOpenReferral,
   onLogout,
+  primaryAction,
 }: StudioSlimHeaderProps) {
   const [, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -100,6 +106,21 @@ export function StudioSlimHeader({
           {creditsBalance.toLocaleString()} credits
         </button>
         <span aria-hidden className="w-px h-4 bg-canvas-border" />
+
+        {primaryAction && (
+          <>
+            <button
+              type="button"
+              disabled={primaryAction.disabled}
+              onClick={primaryAction.onClick}
+              className="px-4 py-1.5 rounded-canvas-pill transition-opacity duration-200 disabled:opacity-40 text-canvas-md font-medium bg-canvas-ink hover:opacity-90"
+              style={{ color: 'var(--color-canvas-surface)' }}
+            >
+              {primaryAction.label}
+            </button>
+            <span aria-hidden className="w-px h-4 bg-canvas-border" />
+          </>
+        )}
 
         {/* Profile popover — the sidebar UserCard's relocated actions */}
         <div className="relative" ref={menuRef}>
