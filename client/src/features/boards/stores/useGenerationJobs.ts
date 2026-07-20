@@ -9,6 +9,10 @@
  */
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import {
+  projectServerJobs,
+  type GenerationOperationDto,
+} from "../../operations/generationOperationProjection";
 
 export type GenerationJobStatus = "queued" | "running" | "failed" | "done";
 
@@ -21,15 +25,19 @@ export interface GenerationJob {
   startedAt: number; // Date.now()
   estimatedDurationMs: number;
   error?: string;
+  operationId?: string;
+  source?: "local" | "server";
 }
 
 interface GenerationJobsState {
   jobs: Record<number, GenerationJob>;
+  operations: GenerationOperationDto[];
   startJob: (job: Omit<GenerationJob, "status" | "startedAt"> & { startedAt?: number }) => void;
   setPhase: (itemId: number, phaseLabel: string) => void;
   completeJob: (itemId: number) => void;
   failJob: (itemId: number, error: string) => void;
   clearJob: (itemId: number) => void;
+  syncServerOperations: (operations: GenerationOperationDto[]) => void;
   isGenerating: (itemId: number) => boolean;
 }
 
@@ -37,6 +45,7 @@ export const useGenerationJobs = create<GenerationJobsState>()(
   devtools(
     (set, get) => ({
       jobs: {},
+      operations: [],
 
       startJob: (job) =>
         set(
@@ -45,6 +54,7 @@ export const useGenerationJobs = create<GenerationJobsState>()(
               ...s.jobs,
               [job.itemId]: {
                 ...job,
+                source: job.source ?? "local",
                 status: "running",
                 startedAt: job.startedAt ?? Date.now(),
               },
@@ -95,6 +105,21 @@ export const useGenerationJobs = create<GenerationJobsState>()(
           },
           false,
           "clearJob",
+        ),
+
+      syncServerOperations: (operations) =>
+        set(
+          (s) => {
+            const localJobs = Object.fromEntries(
+              Object.entries(s.jobs).filter(([, job]) => job.source !== "server"),
+            ) as Record<number, GenerationJob>;
+            return {
+              operations: [...operations],
+              jobs: { ...localJobs, ...projectServerJobs(operations) },
+            };
+          },
+          false,
+          "syncServerOperations",
         ),
 
       isGenerating: (itemId) => get().jobs[itemId]?.status === "running",

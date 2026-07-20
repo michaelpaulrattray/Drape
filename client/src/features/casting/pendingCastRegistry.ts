@@ -61,6 +61,7 @@ interface CastingOperationEntry {
 
 export interface CastingOperationHandle {
   id: number;
+  origin: CastingOperationOrigin | null;
   setModelId: (modelId: number) => void;
   succeed: (input: {
     modelId: number;
@@ -156,6 +157,7 @@ export function beginCastingOperation(input: {
 
   return {
     id,
+    origin: entry.operation.origin ? { ...entry.operation.origin } : null,
     setModelId: (modelId) => {
       const current = active.get(id);
       if (!current || current.operation.modelId === modelId) return;

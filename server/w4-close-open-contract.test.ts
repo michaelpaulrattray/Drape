@@ -82,13 +82,15 @@ describe('W4 close and landing truth', () => {
     expect(takeover).toContain('Your draft is already saved. The in-flight change will keep saving to it.');
   });
 
-  it('reports background completion honestly and offers the board host an Open Draft action', () => {
+  it('reports background completion through the durable bridge and preserves board landing intent', () => {
     const generation = read('client/src/features/casting/hooks/useCastingGeneration.ts');
     expect(generation).toContain("kind: 'newCast'");
     expect(generation).toContain('castingOperation.succeed');
     const app = read('client/src/App.tsx');
-    expect(app).toContain("toast.success('Draft generated and saved to Drafts'");
-    expect(app).toContain("{ label: 'Open Draft'");
+    expect(app).toContain('<GenerationOperationBridge />');
+    const bridge = read('client/src/features/operations/GenerationOperationBridge.tsx');
+    expect(bridge).toContain('settled.landedNow');
+    expect(bridge).toContain('Draft generated and placed on your canvas');
     const board = read('client/src/features/boards/BoardPage.tsx');
     expect(board).toContain('originNeedsLanding: !landed');
     expect(board).toContain('handleBackgroundDraftReady');

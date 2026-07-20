@@ -41,6 +41,8 @@ export const modelsRouter = router({
         userId: ctx.user.id,
         clientRequestId: input.clientRequestId,
         kind: "model.create",
+        originBoardId: input.originBoardId,
+        originItemId: input.originItemId,
         payload: {
           preferences: input.preferences,
           name: input.name?.trim() || null,

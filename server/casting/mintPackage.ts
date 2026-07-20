@@ -504,7 +504,13 @@ export async function executeMintPackage(input: MintPackageInput) {
       userId: input.userId,
       agencyId,
       name: input.characterName.trim(),
-      expectedIdentityRevisionId: input.expectedIdentityRevisionId ?? currentRevisionId(model),
+      // The operation receipt uses the semantic "genesis" revision, but the
+      // model row stores genesis as SQL NULL. This CAS must compare the raw
+      // persisted value or every never-edited draft falsely reads "changed".
+      expectedIdentityRevisionId:
+        input.expectedIdentityRevisionId === undefined
+          ? model.identityRevisionId ?? null
+          : input.expectedIdentityRevisionId,
     });
     if (!minted.success) {
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: minted.error || "Failed to mint model" });

@@ -46,11 +46,24 @@ async function main() {
   serverUrl.pathname = "/";
   const testUrl = new URL(sourceUrl);
   testUrl.pathname = `/${databaseName}`;
-  const admin = await mysql.createConnection(serverUrl.toString());
+  const admin = await mysql.createConnection({
+    uri: serverUrl.toString(),
+    connectTimeout: 15_000,
+  });
   try {
+    const [databaseRows] = await admin.query("SHOW DATABASES");
+    const staleDisposableNames = (databaseRows as Array<Record<string, string>>)
+      .flatMap((row) => Object.values(row))
+      .filter((name) => name.startsWith(PREFIX));
+    if (staleDisposableNames.length > 0) {
+      throw new Error(`Refusing: stale disposable databases require review (${staleDisposableNames.join(", ")})`);
+    }
     await admin.query(`CREATE DATABASE \`${databaseName}\``);
     console.log(`[disposable] created ${databaseName} on ${sourceUrl.host}`);
-    const testConnection = await mysql.createConnection(testUrl.toString());
+    const testConnection = await mysql.createConnection({
+      uri: testUrl.toString(),
+      connectTimeout: 15_000,
+    });
     try {
       await applyMigrationRange(testConnection, 0, 7);
       await applyMigrationRange(testConnection, 8, 8);

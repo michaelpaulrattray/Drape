@@ -603,6 +603,32 @@ export async function executeFillFromLibrary(input: {
       },
       version: { imageUrl: headshot.storageUrl, tool: "initial" },
     }),
+    reconcileExact: {
+      sourceModelId: input.modelId,
+      imageUrl: headshot.storageUrl,
+      buildUpdate: (lockedItem) => {
+        const metadata = readMeta(lockedItem);
+        if (
+          metadata.provenance?.type !== "library_cast" ||
+          metadata.provenance.modelId !== input.modelId
+        ) return null;
+        return {
+          // A custom Canvas label belongs to the placement. Otherwise keep the
+          // linked node in sync with the model's honest draft/minted name.
+          label: metadata.customLabel === true
+            ? lockedItem.label
+            : honestName || lockedItem.label || null,
+          metadata: {
+            ...metadata,
+            provenance,
+            status: null,
+            isGenerating: false,
+          },
+          sourceModelId: input.modelId,
+          imageUrl: headshot.storageUrl,
+        };
+      },
+    },
   }));
   if (fill === "not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Node not found" });
   if (fill === "not_empty") {

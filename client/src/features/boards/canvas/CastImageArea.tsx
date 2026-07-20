@@ -17,6 +17,8 @@ export interface CastImageAreaProps {
   progressSeconds?: number;
   /** 0–1, time-based against the job's estimatedDurationMs. */
   progressFraction?: number;
+  /** Durable server phase copy when available. */
+  progressLabel?: string;
   /** True when node status is "stale" — image recedes to 70% opacity. */
   dimmed?: boolean;
   error?: boolean;
@@ -28,6 +30,7 @@ export function CastImageArea({
   promptState,
   progressSeconds,
   progressFraction = 0,
+  progressLabel,
   dimmed,
   error,
   onRetry,
@@ -67,7 +70,9 @@ export function CastImageArea({
               }}
             />
           </div>
-          <span className="text-canvas-xs mt-2">Generating · {progressSeconds ?? 0}s</span>
+          <span className="text-canvas-xs mt-2">
+            {progressLabel || 'Generating…'} · {progressSeconds ?? 0}s
+          </span>
         </>
       ) : imageUrl ? (
         <SafeImage

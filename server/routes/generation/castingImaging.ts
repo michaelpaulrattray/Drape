@@ -40,7 +40,17 @@ export const castingImagingRouter = router({
     .input(z.object({
       clientRequestId: z.string().uuid(),
       modelId: z.number(),
-    }).strict())
+      originBoardId: z.number().int().positive().optional(),
+      originItemId: z.number().int().positive().optional(),
+    }).strict().superRefine((input, ctx) => {
+      if ((input.originBoardId === undefined) !== (input.originItemId === undefined)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Canvas origin requires both board and item ids",
+          path: [input.originBoardId === undefined ? "originBoardId" : "originItemId"],
+        });
+      }
+    }))
     .mutation(async ({ ctx, input }) => {
       // Batch 0 (R6 execution plan, review fix 1): authorization BEFORE money.
       // The old order deducted credits first and threw NOT_FOUND/FORBIDDEN
@@ -63,6 +73,8 @@ export const castingImagingRouter = router({
         clientRequestId: input.clientRequestId,
         kind: "casting.headshot",
         modelId: input.modelId,
+        originBoardId: input.originBoardId,
+        originItemId: input.originItemId,
         payload: { modelId: input.modelId },
         lockKey,
       });
@@ -284,9 +296,16 @@ export const castingImagingRouter = router({
         await completeDirectOperationSuccess({
           userId: ctx.user.id,
           operationId: gate.operationId,
-          result: { assetId: assetResult.assetId! },
+          result: {
+            modelId: input.modelId,
+            assetId: assetResult.assetId!,
+            imageUrl: result.imageUrl,
+          },
           chargedCredits,
           refundedCredits,
+          ...(!isReRoll && input.originBoardId && input.originItemId
+            ? { landing: { status: "pending" as const } }
+            : {}),
         });
 
         // Model stays as 'draft' until explicit export/mint

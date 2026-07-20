@@ -14,6 +14,8 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
   let generationDb: typeof import("./db/generations");
   let creditDb: typeof import("./db/credits");
   let recovery: typeof import("./casting/operationRecovery");
+  let boardOps: typeof import("./lib/boardOps");
+  let mintPackage: typeof import("./casting/mintPackage");
 
   beforeAll(async () => {
     process.env.DATABASE_URL = testDatabaseUrl!;
@@ -33,6 +35,8 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     generationDb = await import("./db/generations");
     creditDb = await import("./db/credits");
     recovery = await import("./casting/operationRecovery");
+    boardOps = await import("./lib/boardOps");
+    mintPackage = await import("./casting/mintPackage");
   });
 
   beforeEach(async () => {
@@ -525,6 +529,7 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
         itemId: target.itemId,
       })));
     expect(outcomes.every((outcome) => outcome.type === "landed")).toBe(true);
+    expect(outcomes.filter((outcome) => outcome.type === "landed" && outcome.landedNow)).toHaveLength(1);
     const [[item]] = await connection.query<RowDataPacket[]>(
       "SELECT imageUrl, sourceModelId, metadata FROM board_items WHERE id = ?",
       [target.itemId],
@@ -546,8 +551,98 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     await expect(operations.listActivePublicGenerationOperations({ userId, boardId: target.boardId }))
       .resolves.toEqual([]);
     await expect(operations.acknowledgeGenerationOperation({ userId, operationId: pending.operationId }))
-      .resolves.toMatchObject({ type: "acknowledged", operation: { landingStatus: "landed" } });
+      .resolves.toMatchObject({
+        type: "acknowledged",
+        acknowledgedNow: false,
+        operation: { landingStatus: "landed" },
+      });
   }, 90_000);
+
+  it("lets foreground close and mint reconcile an exact bridge landing without a false conflict", async () => {
+    const target = await createEmptyCastTarget();
+    const pending = await createPendingLanding({ ...target, label: "Foreground Race Draft" });
+
+    await expect(operations.landGenerationOperationResult({
+      userId,
+      operationId: pending.operationId,
+      ...target,
+    })).resolves.toMatchObject({ type: "landed", landedNow: true });
+
+    // The takeover is still open when the bridge wins. Closing it repeats the
+    // same library fill and must be an idempotent reconciliation, not CONFLICT.
+    await expect(boardOps.executeFillFromLibrary({
+      userId,
+      itemId: target.itemId,
+      modelId: pending.modelId,
+    })).resolves.toMatchObject({ draft: true, modelId: pending.modelId });
+    let [[versionCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM board_item_versions WHERE itemId = ?",
+      [target.itemId],
+    );
+    expect(Number(versionCount.n)).toBe(1);
+
+    // Minting in the still-open takeover repeats the fill again. It must
+    // remove draft provenance and sync the model name without appending a
+    // pretend image version.
+    await expect(mintPackage.executeMintPackage({
+      userId,
+      modelId: pending.modelId,
+      tier: "draft",
+      characterName: "Foreground Minted",
+    })).resolves.toMatchObject({ minted: true, generated: [], failed: [] });
+    await expect(boardOps.executeFillFromLibrary({
+      userId,
+      itemId: target.itemId,
+      modelId: pending.modelId,
+    })).resolves.toMatchObject({ draft: false, label: "Foreground Minted" });
+
+    const [[item]] = await connection.query<RowDataPacket[]>(
+      "SELECT label, imageUrl, sourceModelId, metadata FROM board_items WHERE id = ?",
+      [target.itemId],
+    );
+    [[versionCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM board_item_versions WHERE itemId = ?",
+      [target.itemId],
+    );
+    const metadata = typeof item.metadata === "string" ? JSON.parse(item.metadata) : item.metadata;
+    expect(item).toMatchObject({
+      label: "Foreground Minted",
+      imageUrl: pending.imageUrl,
+      sourceModelId: pending.modelId,
+    });
+    expect(metadata.provenance).toMatchObject({
+      type: "library_cast",
+      modelId: pending.modelId,
+      viewAngle: "frontClose",
+    });
+    expect(metadata.provenance).not.toHaveProperty("draft");
+    expect(Number(versionCount.n)).toBe(1);
+  }, 90_000);
+
+  it("gives one tab the acknowledgement ceremony for a terminal non-landing operation", async () => {
+    const claimed = await claim(randomUUID(), { free: true });
+    if (claimed.type !== "claimed") throw new Error("acknowledgement claim failed");
+    await operations.markGenerationOperationRunning({
+      userId,
+      operationId: claimed.operationId,
+      modelId: 44,
+      plannedCredits: 0,
+      phase: "finalizing",
+    });
+    await operations.finalizeGenerationOperationSuccess({
+      userId,
+      operationId: claimed.operationId,
+      result: { success: true },
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+
+    const outcomes = await Promise.all(Array.from({ length: 10 }, () =>
+      operations.acknowledgeGenerationOperation({ userId, operationId: claimed.operationId })));
+    expect(outcomes.every((outcome) => outcome.type === "acknowledged")).toBe(true);
+    expect(outcomes.filter((outcome) => outcome.type === "acknowledged" && outcome.acknowledgedNow)).toHaveLength(1);
+    await expect(operations.listActivePublicGenerationOperations({ userId })).resolves.toEqual([]);
+  }, 60_000);
 
   it("recognizes an exact origin stamp committed before its terminal receipt", async () => {
     const target = await createEmptyCastTarget();
@@ -632,6 +727,30 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       [replacement.itemId],
     );
     expect(Number(version.n)).toBe(1);
+  }, 60_000);
+
+  it("lets one tab dismiss an unplaced result while preserving the saved model", async () => {
+    const origin = await createEmptyCastTarget();
+    const pending = await createPendingLanding({ ...origin, label: "Keep In Models" });
+    await connection.execute("DELETE FROM board_items WHERE id = ?", [origin.itemId]);
+    await operations.landGenerationOperationResult({
+      userId,
+      operationId: pending.operationId,
+      boardId: origin.boardId,
+      itemId: origin.itemId,
+    });
+
+    const outcomes = await Promise.all(Array.from({ length: 8 }, () =>
+      operations.dismissGenerationOperationLanding({ userId, operationId: pending.operationId })));
+    expect(outcomes.every((outcome) => outcome.type === "dismissed")).toBe(true);
+    expect(outcomes.filter((outcome) => outcome.type === "dismissed" && outcome.dismissedNow)).toHaveLength(1);
+    const [[model]] = await connection.query<RowDataPacket[]>(
+      "SELECT id, status FROM models WHERE id = ?",
+      [pending.modelId],
+    );
+    expect(model).toMatchObject({ id: pending.modelId, status: "draft" });
+    await expect(operations.listActivePublicGenerationOperations({ userId, boardId: origin.boardId }))
+      .resolves.toEqual([]);
   }, 60_000);
 
   it("keeps ambiguous processing work recovery-required and locked", async () => {

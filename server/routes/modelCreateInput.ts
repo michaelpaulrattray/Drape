@@ -84,4 +84,14 @@ export const modelCreateInputSchema = z.object({
   clientRequestId: z.string().uuid(),
   preferences: modelCreatePreferencesSchema,
   name: z.string().optional(),
-}).strict();
+  originBoardId: z.number().int().positive().optional(),
+  originItemId: z.number().int().positive().optional(),
+}).strict().superRefine((input, ctx) => {
+  if ((input.originBoardId === undefined) !== (input.originItemId === undefined)) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Canvas origin requires both board and item ids",
+      path: [input.originBoardId === undefined ? "originBoardId" : "originItemId"],
+    });
+  }
+});

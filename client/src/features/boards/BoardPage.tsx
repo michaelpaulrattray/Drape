@@ -110,6 +110,20 @@ function BoardPageImpl() {
   const [castTakeoverItemId, setCastTakeoverItemId] = useState<number | null>(null);
   // R3: Edit session on a placed cast (minted → D-11 routing; draft → promotion)
   const [castEditContext, setCastEditContext] = useState<CastEditContext | null>(null);
+  const durableOperations = useGenerationJobs((state) => state.operations);
+  const relinkOperations = useMemo(
+    () => durableOperations.filter((operation) =>
+      operation.originBoardId === boardId && operation.landingStatus === 'relink_required'
+    ),
+    [boardId, durableOperations],
+  );
+  const relinkOperation = relinkOperations[0] ?? null;
+  const [relinkOperationId, setRelinkOperationId] = useState<string | null>(null);
+  useEffect(() => {
+    if (relinkOperationId && !relinkOperations.some((operation) => operation.operationId === relinkOperationId)) {
+      setRelinkOperationId(null);
+    }
+  }, [relinkOperationId, relinkOperations]);
   const activeCastSessionRef = useRef({
     takeoverItemId: castTakeoverItemId,
     editContext: castEditContext,
@@ -196,6 +210,29 @@ function BoardPageImpl() {
   const [placementMode, setPlacementMode] = useState<'note' | null>(null);
 
   const utils = trpc.useUtils();
+  const landOperationMutation = trpc.generation.landOperationResult.useMutation({
+    onSuccess: (settled) => {
+      if (settled.operation.landingStatus === 'landed' && settled.landedNow) {
+        setRelinkOperationId(null);
+        toast.success('Saved cast placed on this node');
+      } else if (settled.operation.landingStatus !== 'landed') {
+        toast.error('That Cast node is no longer empty. Choose another empty Cast node.');
+      }
+      void Promise.all([
+        utils.generation.activeOperations.invalidate(),
+        utils.boards.getItems.invalidate({ boardId }),
+      ]);
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const dismissOperationMutation = trpc.generation.dismissOperationResult.useMutation({
+    onSuccess: (settled) => {
+      setRelinkOperationId(null);
+      if (settled.dismissedNow) toast.success('Saved in Models');
+      void utils.generation.activeOperations.invalidate();
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   // ── Queries ────────────────────────────────────────────────
   const {
@@ -689,7 +726,15 @@ function BoardPageImpl() {
 
   const handleNodeSelect = useCallback((itemId: number | null) => {
     setSelectedItemId(itemId);
-  }, []);
+    if (!relinkOperationId || itemId === null || landOperationMutation.isPending) return;
+    const target = items?.find((candidate) => candidate.id === itemId);
+    const emptyCast = target?.kind === 'cast_config' && !target.imageUrl && !target.sourceModelId;
+    if (!emptyCast) {
+      toast.info('Choose an empty Cast node. Existing work will never be overwritten.');
+      return;
+    }
+    landOperationMutation.mutate({ operationId: relinkOperationId, boardId, itemId });
+  }, [boardId, items, landOperationMutation, relinkOperationId]);
 
   const handleNodeDoubleClick = useCallback((itemId: number) => {
     // Any image-bearing node opens the view-only viewer (VC-R5 R3); comp-card
@@ -2180,6 +2225,53 @@ function BoardPageImpl() {
             />
             <CanvasChatToggle />
           </BoardCanvas>
+
+          {relinkOperation && (
+            <div
+              className="absolute left-1/2 top-4 z-30 flex -translate-x-1/2 items-center gap-4 rounded-canvas-md border-hairline border-canvas-border-strong bg-canvas-surface px-4 py-3 shadow-sm"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="min-w-0">
+                <p className="text-canvas-md font-medium text-canvas-ink">
+                  {relinkOperationId ? 'Choose an empty Cast node' : 'Your cast finished'}
+                </p>
+                <p className="text-canvas-sm text-canvas-ink-faint">
+                  {relinkOperationId
+                    ? 'Select where to place it. Existing work will not be replaced.'
+                    : 'It is safe in Models because its original node changed.'}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {relinkOperationId ? (
+                  <button
+                    type="button"
+                    onClick={() => setRelinkOperationId(null)}
+                    className="text-canvas-sm font-medium text-canvas-ink-faint transition-colors hover:text-canvas-ink"
+                  >
+                    Cancel
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => dismissOperationMutation.mutate({ operationId: relinkOperation.operationId })}
+                    disabled={dismissOperationMutation.isPending}
+                    className="text-canvas-sm font-medium text-canvas-ink-faint transition-colors hover:text-canvas-ink disabled:opacity-50"
+                  >
+                    Keep in Models
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setRelinkOperationId(relinkOperation.operationId)}
+                  disabled={!!relinkOperationId || landOperationMutation.isPending}
+                  className="rounded-canvas-sm bg-canvas-ink px-3 py-1.5 text-canvas-sm font-medium text-canvas-surface transition-opacity hover:opacity-80 disabled:opacity-40"
+                >
+                  Place result
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Empty state (VC-R5 follow-up ruling A): QUIET — dotted grid + one
               tertiary line. No floating affordance, no modal; the pill carries

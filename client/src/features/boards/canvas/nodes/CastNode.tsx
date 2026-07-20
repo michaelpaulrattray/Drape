@@ -587,6 +587,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
               promptState={controller.isEmpty && !errored ? "empty" : controller.promptState}
               progressFraction={controller.progressFraction}
               progressSeconds={controller.progressSeconds}
+              progressLabel={controller.progressLabel}
               dimmed={data.status?.type === "stale" && !data.pinned}
               error={errored}
               onRetry={controller.retry}

@@ -230,7 +230,7 @@ export async function stampBoardItemWithVersion(input: StampBoardItemWithVersion
   });
 }
 
-export type FillEmptyCastNodeResult = "filled" | "not_found" | "not_empty";
+export type FillEmptyCastNodeResult = "filled" | "reconciled" | "not_found" | "not_empty";
 
 /** Shared exactly-once fill primitive for the library picker and durable
  * operation landing. The row lock plus conditional write prevents either
@@ -243,6 +243,16 @@ export async function fillEmptyCastNodeWithVersionIn(
     build: (item: BoardItem) => {
       update: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">>;
       version: Omit<InsertBoardItemVersion, "itemId" | "version">;
+    };
+    /** A foreground close/mint can arrive after the durable-operation bridge
+     *  filled the same origin node. Reconcile only that exact landing; this is
+     *  deliberately not a general "overwrite occupied node" escape hatch. */
+    reconcileExact?: {
+      sourceModelId: number;
+      imageUrl: string;
+      buildUpdate: (item: BoardItem) => Partial<
+        Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">
+      > | null;
     };
   },
 ): Promise<FillEmptyCastNodeResult> {
@@ -258,13 +268,47 @@ export async function fillEmptyCastNodeWithVersionIn(
     .from(boardItemVersions)
     .where(eq(boardItemVersions.itemId, item.id))
     .limit(1);
-  if (
-    item.deletedAt !== null ||
-    item.kind !== "cast_config" ||
-    item.imageUrl !== null ||
-    item.sourceModelId !== null ||
-    existingVersion
-  ) return "not_empty";
+  const isEmpty =
+    item.deletedAt === null &&
+    item.kind === "cast_config" &&
+    item.imageUrl === null &&
+    item.sourceModelId === null &&
+    !existingVersion;
+  if (!isEmpty) {
+    const reconcile = input.reconcileExact;
+    if (
+      !reconcile ||
+      item.deletedAt !== null ||
+      item.kind !== "cast_config" ||
+      item.sourceModelId !== reconcile.sourceModelId ||
+      item.imageUrl !== reconcile.imageUrl
+    ) return "not_empty";
+    const [matchingVersion] = await tx
+      .select({ id: boardItemVersions.id })
+      .from(boardItemVersions)
+      .where(and(
+        eq(boardItemVersions.itemId, item.id),
+        eq(boardItemVersions.imageUrl, reconcile.imageUrl),
+      ))
+      .limit(1);
+    if (!matchingVersion) return "not_empty";
+    const reconciliationUpdate = reconcile.buildUpdate(item);
+    if (!reconciliationUpdate) return "not_empty";
+    const result = await tx
+      .update(boardItems)
+      .set(reconciliationUpdate)
+      .where(and(
+        eq(boardItems.id, item.id),
+        eq(boardItems.boardId, input.boardId),
+        isNull(boardItems.deletedAt),
+        eq(boardItems.sourceModelId, reconcile.sourceModelId),
+        eq(boardItems.imageUrl, reconcile.imageUrl),
+      ));
+    const header = result as { affectedRows?: number } | [{ affectedRows?: number }];
+    const changed = Array.isArray(header) ? header[0]?.affectedRows : header.affectedRows;
+    if (changed !== 1) throw new Error("Exact Cast node reconciliation lost its state race");
+    return "reconciled";
+  }
 
   const built = input.build(item);
   const result = await tx

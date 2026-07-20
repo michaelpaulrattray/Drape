@@ -49,5 +49,6 @@ export function useCastNodeController(data: CastNodeData) {
     retry,
     progressFraction: jobProgressFraction(job),
     progressSeconds: jobElapsedSeconds(job),
+    progressLabel: job?.phaseLabel,
   };
 }

@@ -259,6 +259,12 @@ export function useCastingGeneration({
         clientRequestId: createRequestId,
         preferences: backendPrefs,
         name: modelName || undefined,
+        ...(castingOperation.origin
+          ? {
+              originBoardId: castingOperation.origin.boardId,
+              originItemId: castingOperation.origin.itemId,
+            }
+          : {}),
       });
 
       // The op begins before models.create so the originating node responds
@@ -280,6 +286,12 @@ export function useCastingGeneration({
       const imageResult = await generateCastingMutation.mutateAsync({
         clientRequestId: headshotRequestId,
         modelId: modelResult.modelId!,
+        ...(castingOperation.origin
+          ? {
+              originBoardId: castingOperation.origin.boardId,
+              originItemId: castingOperation.origin.itemId,
+            }
+          : {}),
       });
 
       if (!imageResult.success || !imageResult.imageUrl) {

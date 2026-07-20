@@ -317,7 +317,7 @@ export async function listActivePublicGenerationOperations(input: {
 }
 
 export type AcknowledgeGenerationOperationResult =
-  | { type: "acknowledged"; operation: PublicGenerationOperation }
+  | { type: "acknowledged"; operation: PublicGenerationOperation; acknowledgedNow: boolean }
   | { type: "not_found" }
   | { type: "not_terminal" }
   | { type: "landing_required" };
@@ -347,7 +347,7 @@ export async function acknowledgeGenerationOperation(input: {
       return "landing_required" as const;
     }
     if (!operation.landingAcknowledgedAt) {
-      await tx
+      const acknowledged = await tx
         .update(generationOperations)
         .set({ landingAcknowledgedAt: input.now ?? new Date() })
         .where(and(
@@ -355,13 +355,16 @@ export async function acknowledgeGenerationOperation(input: {
           eq(generationOperations.userId, input.userId),
           isNull(generationOperations.landingAcknowledgedAt),
         ));
+      return affectedRows(acknowledged) === 1 ? "acknowledged_now" as const : "already_acknowledged" as const;
     }
-    return "acknowledged" as const;
+    return "already_acknowledged" as const;
   });
-  if (outcome !== "acknowledged") return { type: outcome };
+  if (outcome === "not_found" || outcome === "not_terminal" || outcome === "landing_required") {
+    return { type: outcome };
+  }
   const operation = await getPublicGenerationOperation(input.userId, input.operationId);
   if (!operation) return { type: "not_found" };
-  return { type: "acknowledged", operation };
+  return { type: "acknowledged", operation, acknowledgedNow: outcome === "acknowledged_now" };
 }
 
 function operationResultIdentity(result: unknown): {
@@ -390,12 +393,69 @@ function boardMetadata(value: unknown): BoardItemCanvasMetadata {
 }
 
 export type LandGenerationOperationResult =
-  | { type: "landed"; operation: PublicGenerationOperation }
+  | { type: "landed"; operation: PublicGenerationOperation; landedNow: boolean }
   | { type: "relink_required"; operation: PublicGenerationOperation }
   | { type: "not_found" }
   | { type: "not_terminal" }
   | { type: "landing_not_required" }
   | { type: "invalid_result" };
+
+export type DismissGenerationOperationLandingResult =
+  | { type: "dismissed"; operation: PublicGenerationOperation; dismissedNow: boolean }
+  | { type: "not_found" }
+  | { type: "not_terminal" }
+  | { type: "landing_not_required" };
+
+/** Deliberately keep a completed result in Models without placing it. This is
+ * an acknowledgement, not deletion: the model/assets and operation receipt
+ * remain durable and no credit/provider path is reachable. */
+export async function dismissGenerationOperationLanding(input: {
+  userId: number;
+  operationId: string;
+  now?: Date;
+}): Promise<DismissGenerationOperationLandingResult> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  const outcome = await withTransaction(async (tx) => {
+    const [operation] = await tx
+      .select()
+      .from(generationOperations)
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+      ))
+      .limit(1)
+      .for("update");
+    if (!operation) return "not_found" as const;
+    if (operation.status !== "partial" && operation.status !== "succeeded") {
+      return "not_terminal" as const;
+    }
+    if (operation.landingStatus === "dismissed") return "already_dismissed" as const;
+    if (operation.landingStatus !== "pending" && operation.landingStatus !== "relink_required") {
+      return "landing_not_required" as const;
+    }
+    const dismissed = await tx
+      .update(generationOperations)
+      .set({
+        landingStatus: "dismissed",
+        landedItemId: null,
+        landingAcknowledgedAt: input.now ?? new Date(),
+      })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        inArray(generationOperations.landingStatus, ["pending", "relink_required"]),
+      ));
+    if (affectedRows(dismissed) !== 1) throw new Error("Operation dismissal lost its receipt race");
+    return "dismissed_now" as const;
+  });
+  if (outcome === "not_found" || outcome === "not_terminal" || outcome === "landing_not_required") {
+    return { type: outcome };
+  }
+  const operation = await getPublicGenerationOperation(input.userId, input.operationId);
+  if (!operation) return { type: "not_found" };
+  return { type: "dismissed", operation, dismissedNow: outcome === "dismissed_now" };
+}
 
 /** Free exactly-once operation landing. Both the receipt and target node are
  * locked before validation, and the node stamp/version/acknowledgement commit
@@ -426,7 +486,7 @@ export async function landGenerationOperationResult(input: {
     if (operation.status !== "partial" && operation.status !== "succeeded") {
       return "not_terminal" as const;
     }
-    if (operation.landingStatus === "landed") return "landed" as const;
+    if (operation.landingStatus === "landed") return { type: "landed" as const, landedNow: false };
     if (operation.landingStatus !== "pending" && operation.landingStatus !== "relink_required") {
       return "landing_not_required" as const;
     }
@@ -535,7 +595,7 @@ export async function landGenerationOperationResult(input: {
           eq(generationOperations.id, operation.id),
           eq(generationOperations.userId, input.userId),
         ));
-      return "relink_required" as const;
+      return { type: "relink_required" as const };
     }
     const landed = await tx
       .update(generationOperations)
@@ -550,18 +610,17 @@ export async function landGenerationOperationResult(input: {
         inArray(generationOperations.landingStatus, ["pending", "relink_required"]),
       ));
     if (affectedRows(landed) !== 1) throw new Error("Operation landing lost its receipt race");
-    return "landed" as const;
+    return { type: "landed" as const, landedNow: true };
   });
 
   if (
-    transactionResult === "not_found" ||
-    transactionResult === "not_terminal" ||
-    transactionResult === "landing_not_required" ||
-    transactionResult === "invalid_result"
+    typeof transactionResult === "string"
   ) return { type: transactionResult };
   const operation = await getPublicGenerationOperation(input.userId, input.operationId);
   if (!operation) return { type: "not_found" };
-  return { type: transactionResult, operation };
+  return transactionResult.type === "landed"
+    ? { type: "landed", operation, landedNow: transactionResult.landedNow }
+    : { type: "relink_required", operation };
 }
 
 async function getOperationForUser(

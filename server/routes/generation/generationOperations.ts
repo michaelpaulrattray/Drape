@@ -3,6 +3,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
   acknowledgeGenerationOperation,
+  dismissGenerationOperationLanding,
   getPublicGenerationOperation,
   getRecentPublicGenerationOperation,
   landGenerationOperationResult,
@@ -64,7 +65,24 @@ export const generationOperationsRouter = router({
           message: "Place or dismiss the saved result before acknowledging this operation.",
         });
       }
-      return result.operation;
+      return { operation: result.operation, acknowledgedNow: result.acknowledgedNow };
+    }),
+
+  dismissOperationResult: protectedProcedure
+    .input(operationIdInput)
+    .mutation(async ({ ctx, input }) => {
+      const result = await dismissGenerationOperationLanding({
+        userId: ctx.user.id,
+        operationId: input.operationId,
+      });
+      if (result.type === "not_found") return notFound();
+      if (result.type === "not_terminal") {
+        throw new TRPCError({ code: "CONFLICT", message: "This operation is still in progress." });
+      }
+      if (result.type === "landing_not_required") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This operation has no result to dismiss." });
+      }
+      return { operation: result.operation, dismissedNow: result.dismissedNow };
     }),
 
   landOperationResult: protectedProcedure
@@ -93,6 +111,9 @@ export const generationOperationsRouter = router({
           message: `The saved result needs support review before it can be placed. Operation ${input.operationId}.`,
         });
       }
-      return result.operation;
+      return {
+        operation: result.operation,
+        landedNow: result.type === "landed" ? result.landedNow : false,
+      };
     }),
 });

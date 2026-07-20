@@ -83,10 +83,12 @@ export {
   getRecentPublicGenerationOperation,
   listActivePublicGenerationOperations,
   acknowledgeGenerationOperation,
+  dismissGenerationOperationLanding,
   landGenerationOperationResult,
   type ClaimGenerationOperationInput,
   type AcquireGenerationOperationLockResult,
   type AcknowledgeGenerationOperationResult,
+  type DismissGenerationOperationLandingResult,
   type LandGenerationOperationResult,
 } from "./generationOperations";
 

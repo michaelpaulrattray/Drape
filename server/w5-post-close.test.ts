@@ -117,17 +117,16 @@ describe('W6-A wiring contracts', () => {
     expect(source).toContain('castingOperation.fail');
   });
 
-  it('the always-mounted app lands only an empty origin and owns the one background notice', () => {
+  it('the always-mounted app delegates durable progress and landing to the server bridge', () => {
     const source = read('client/src/App.tsx');
-    expect(source).toContain('subscribeCastingOperations');
-    expect(source).toContain('!item.imageUrl && !item.sourceModelId');
-    expect(source).toContain('await fillFromLibraryRef.current');
-    expect(source).toContain('This owner must never have a subscription gap');
-    expect(source).toContain('The node job is module-scoped and can outlive BoardPage');
-    expect(source).toContain('useGenerationJobs.getState()');
-    expect(source).toContain('}), []);');
-    expect(source).toContain("label: 'Open Draft'");
-    expect(source).toContain('<CastingOperationOwner />');
+    expect(source).toContain('<GenerationOperationBridge />');
+    expect(source).not.toContain('function CastingOperationOwner');
+    expect(source).not.toContain('fillFromLibrary');
+    const bridge = read('client/src/features/operations/GenerationOperationBridge.tsx');
+    expect(bridge).toContain('syncServerOperations(operations)');
+    expect(bridge).toContain('settled.landedNow');
+    expect(bridge).toContain('settled.acknowledgedNow');
+    expect(bridge).toContain('operationDedupeKey(operation)');
     const board = read('client/src/features/boards/BoardPage.tsx');
     expect(board).not.toContain('owner.completeJob(origin.itemId)');
     expect(board).not.toContain('clearJob(origin.itemId)');

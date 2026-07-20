@@ -7,6 +7,7 @@ const db = vi.hoisted(() => ({
   getRecentPublicGenerationOperation: vi.fn(),
   listActivePublicGenerationOperations: vi.fn(),
   acknowledgeGenerationOperation: vi.fn(),
+  dismissGenerationOperationLanding: vi.fn(),
   landGenerationOperationResult: vi.fn(),
 }));
 
@@ -62,8 +63,13 @@ beforeEach(() => {
   db.getPublicGenerationOperation.mockResolvedValue(operation);
   db.getRecentPublicGenerationOperation.mockResolvedValue(operation);
   db.listActivePublicGenerationOperations.mockResolvedValue([operation]);
-  db.acknowledgeGenerationOperation.mockResolvedValue({ type: "acknowledged", operation });
-  db.landGenerationOperationResult.mockResolvedValue({ type: "landed", operation });
+  db.acknowledgeGenerationOperation.mockResolvedValue({ type: "acknowledged", operation, acknowledgedNow: true });
+  db.dismissGenerationOperationLanding.mockResolvedValue({
+    type: "dismissed",
+    operation: { ...operation, landingStatus: "dismissed" },
+    dismissedNow: true,
+  });
+  db.landGenerationOperationResult.mockResolvedValue({ type: "landed", operation, landedNow: true });
 });
 
 describe("R7-2C authenticated generation-operation router", () => {
@@ -95,7 +101,8 @@ describe("R7-2C authenticated generation-operation router", () => {
 
   it("lands through the free server authority and returns relink truth without hiding it", async () => {
     const caller = generationOperationsRouter.createCaller(authCtx());
-    await caller.landOperationResult({ operationId: OPERATION_ID, boardId: 8, itemId: 9 });
+    await expect(caller.landOperationResult({ operationId: OPERATION_ID, boardId: 8, itemId: 9 }))
+      .resolves.toMatchObject({ landedNow: true });
     expect(db.landGenerationOperationResult).toHaveBeenCalledWith({
       userId: 12,
       operationId: OPERATION_ID,
@@ -107,7 +114,7 @@ describe("R7-2C authenticated generation-operation router", () => {
       operation: { ...operation, landingStatus: "relink_required" },
     });
     await expect(caller.landOperationResult({ operationId: OPERATION_ID, boardId: 8, itemId: 10 }))
-      .resolves.toMatchObject({ landingStatus: "relink_required" });
+      .resolves.toMatchObject({ operation: { landingStatus: "relink_required" }, landedNow: false });
   });
 
   it("uses strict UUID and landing envelopes", async () => {
@@ -119,5 +126,15 @@ describe("R7-2C authenticated generation-operation router", () => {
       itemId: 9,
       clientRequestId: REQUEST_ID,
     } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("dismisses an unplaced result into Models through authenticated server authority", async () => {
+    const caller = generationOperationsRouter.createCaller(authCtx(12));
+    await expect(caller.dismissOperationResult({ operationId: OPERATION_ID }))
+      .resolves.toMatchObject({ dismissedNow: true, operation: { landingStatus: "dismissed" } });
+    expect(db.dismissGenerationOperationLanding).toHaveBeenCalledWith({
+      userId: 12,
+      operationId: OPERATION_ID,
+    });
   });
 });

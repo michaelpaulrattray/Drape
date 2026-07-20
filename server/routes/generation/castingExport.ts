@@ -257,7 +257,9 @@ export const castingExportRouter = router({
           characterName: input.characterName ?? "",
           mint: input.mint,
           chargeReferenceId: started.chargeReferenceId,
-          expectedIdentityRevisionId: currentRevisionId(lockedModel),
+          // mintModelAtomically CASes the raw database column. Genesis is
+          // stored as NULL even though operation receipts expose "genesis".
+          expectedIdentityRevisionId: lockedModel.identityRevisionId,
           onCharged: (amount) => { chargedCredits = amount; },
           onRefunded: (amount) => { refundedCredits += amount; },
           operationId: gate.operationId,
