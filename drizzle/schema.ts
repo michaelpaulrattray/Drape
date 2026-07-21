@@ -180,6 +180,9 @@ export const models = mysqlTable("models", {
   // atomic identity commit and the server-side anchor re-roll.
   identityRevisionId: varchar("identityRevisionId", { length: 64 }),
   mintedAt: timestamp("mintedAt"), // When the model was exported/minted
+  // R7-5 permanent-deletion tombstone marker. Nullable is required for the
+  // mixed-version migration window; non-null rows are unavailable forever.
+  deletedAt: timestamp("deletedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ([
@@ -293,6 +296,9 @@ export const generationOperations = mysqlTable("generation_operations", {
   landedItemId: int("landedItemId"),
   landingAcknowledgedAt: timestamp("landingAcknowledgedAt"),
   recoveryAttemptedAt: timestamp("recoveryAttemptedAt"),
+  // R7-5 replay fence. Once set, old receipts may retain accounting/idempotency
+  // truth but must not expose a saved subject result or invoke an executor.
+  subjectDeletedAt: timestamp("subjectDeletedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   completedAt: timestamp("completedAt"),
@@ -323,6 +329,80 @@ export const generationOperationLocks = mysqlTable("generation_operation_locks",
 
 export type GenerationOperationLock = typeof generationOperationLocks.$inferSelect;
 export type InsertGenerationOperationLock = typeof generationOperationLocks.$inferInsert;
+
+// ============================================================================
+// OWNED STORAGE CLEANUP (R7-5)
+// ============================================================================
+
+export const STORAGE_CLEANUP_BATCH_KINDS = ["model_delete", "account_delete"] as const;
+export type StorageCleanupBatchKind = typeof STORAGE_CLEANUP_BATCH_KINDS[number];
+
+export const STORAGE_CLEANUP_BATCH_STATUSES = [
+  "pending",
+  "processing",
+  "succeeded",
+  "partial",
+  "failed",
+] as const;
+export type StorageCleanupBatchStatus = typeof STORAGE_CLEANUP_BATCH_STATUSES[number];
+
+export const STORAGE_CLEANUP_ITEM_STATUSES = [
+  "pending",
+  "processing",
+  "succeeded",
+  "failed",
+] as const;
+export type StorageCleanupItemStatus = typeof STORAGE_CLEANUP_ITEM_STATUSES[number];
+
+/**
+ * One durable cleanup intent. The source transaction creates this manifest
+ * before scrubbing its source rows; the later worker owns only these keys.
+ */
+export const storageCleanupBatches = mysqlTable("storage_cleanup_batches", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("userId").notNull(),
+  operationId: varchar("operationId", { length: 36 }).notNull(),
+  kind: mysqlEnum("kind", STORAGE_CLEANUP_BATCH_KINDS).notNull(),
+  status: mysqlEnum("status", STORAGE_CLEANUP_BATCH_STATUSES)
+    .default("pending")
+    .notNull(),
+  expectedCount: int("expectedCount").default(0).notNull(),
+  deletedCount: int("deletedCount").default(0).notNull(),
+  failedCount: int("failedCount").default(0).notNull(),
+  leaseToken: varchar("leaseToken", { length: 64 }),
+  leaseExpiresAt: timestamp("leaseExpiresAt"),
+  heartbeatAt: timestamp("heartbeatAt"),
+  attemptedAt: timestamp("attemptedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_storage_cleanup_batches_operation").on(table.operationId),
+  index("idx_storage_cleanup_batches_status_lease").on(table.status, table.leaseExpiresAt),
+]));
+
+export type StorageCleanupBatch = typeof storageCleanupBatches.$inferSelect;
+export type InsertStorageCleanupBatch = typeof storageCleanupBatches.$inferInsert;
+
+/** Transient exact-owned keys. Succeeded items are removed/scrubbed in R7-5D. */
+export const storageCleanupItems = mysqlTable("storage_cleanup_items", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: varchar("batchId", { length: 36 }).notNull(),
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  status: mysqlEnum("status", STORAGE_CLEANUP_ITEM_STATUSES)
+    .default("pending")
+    .notNull(),
+  attempts: int("attempts").default(0).notNull(),
+  nextAttemptAt: timestamp("nextAttemptAt"),
+  lastErrorCode: varchar("lastErrorCode", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_storage_cleanup_items_batch_key").on(table.batchId, table.storageKey),
+  index("idx_storage_cleanup_items_status_next").on(table.status, table.nextAttemptAt),
+]));
+
+export type StorageCleanupItem = typeof storageCleanupItems.$inferSelect;
+export type InsertStorageCleanupItem = typeof storageCleanupItems.$inferInsert;
 
 
 /**
@@ -879,6 +959,7 @@ export const boardItems = mysqlTable("board_items", {
 }, (table) => ([
   index("idx_board_items_board").on(table.boardId, table.type),
   index("idx_board_items_kind").on(table.kind),
+  index("idx_board_items_source_model").on(table.sourceModelId),
 ]));
 
 export type BoardItem = typeof boardItems.$inferSelect;
