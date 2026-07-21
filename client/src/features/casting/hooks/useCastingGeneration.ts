@@ -16,6 +16,9 @@ import { editablePreferencesFromStored } from '@/features/casting/engineChoicePe
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import type { CastingBindings } from "./castingBindings";
 import { createClientRequestId } from "@shared/clientRequestId";
+import { parseCastingClarification } from "@shared/castingClarification";
+
+type IterationOutcome = "completed" | "clarification" | "failed";
 
 interface UseCastingGenerationParams {
   isAuthenticated: boolean;
@@ -346,14 +349,8 @@ export function useCastingGeneration({
   }, [isFormValid, creditsData, prefs, modelName, engineChoice, getSessionToken]);
 
   // Handle iteration/refinement
-  const performIteration = useCallback(async (prompt: string, maskBase64?: string) => {
-    if (!currentModelId) return;
-
-    if (!creditsData || creditsData.balance < CREDIT_COSTS.iteration) {
-      toast.error(`Insufficient credits. Need ${CREDIT_COSTS.iteration} credits.`);
-      setIsTopupOpen(true);
-      return;
-    }
+  const performIteration = useCallback(async (prompt: string, maskBase64?: string): Promise<IterationOutcome> => {
+    if (!currentModelId) return "failed";
 
     const session = captureCastingSession(getSessionToken);
     const clientRequestId = createClientRequestId();
@@ -383,6 +380,22 @@ export function useCastingGeneration({
         referenceImage: freshRefImage || undefined,
       });
 
+      const clarification = "clarification" in result
+        ? parseCastingClarification(result.clarification)
+        : null;
+      if (clarification) {
+        castingOperation.succeed({ modelId: currentModelId, background: !session.isCurrent() });
+        if (session.isCurrent()) {
+          setGenState({
+            isGenerating: false,
+            currentStep: "",
+            error: null,
+            clarification,
+          });
+        }
+        return "clarification";
+      }
+
       if (!result.success || !result.imageUrl) {
         throw new Error('The edit did not produce an image');
       }
@@ -397,7 +410,7 @@ export function useCastingGeneration({
         // model/package rows after the durable receipt settles.
         void utils.generation.packageState.invalidate({ modelId: currentModelId });
         void utils.credits.getBalance.invalidate();
-        return;
+        return "completed";
       }
 
       if (result.success && result.imageUrl) {
@@ -483,10 +496,11 @@ export function useCastingGeneration({
       }
 
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
+      return "completed";
     } catch (error) {
       const message = error instanceof Error ? error.message : "Iteration failed";
       castingOperation.fail({ message, background: !session.isCurrent() });
-      if (!session.isCurrent()) return;
+      if (!session.isCurrent()) return "failed";
       // A1 stage 2: the identity seal's refusal is TAUGHT, not toasted —
       // the designed fork-guidance surface renders where the edit happened
       // (D-40), with a working Fork door. No failed-action retry: retrying
@@ -498,13 +512,17 @@ export function useCastingGeneration({
           error: null,
           identityRefusal: { message, editText: prompt },
         });
-        return;
+        return "failed";
+      }
+      if (/insufficient credits/i.test(message)) {
+        setIsTopupOpen(true);
       }
       setGenState({ isGenerating: false, currentStep: "", error: message });
       setFailedAction({ type: 'ITERATE', args: { text: prompt, view: activeView, mask: maskBase64 } });
       toast.error(message);
+      return "failed";
     }
-  }, [currentModelId, creditsData, currentAssets, activeView, getSessionToken]);
+  }, [currentModelId, currentAssets, activeView, getSessionToken, setIsTopupOpen]);
 
   const handleRefineSubmit = useCallback(async () => {
     if (!currentModelId || !currentImageUrl) return;
@@ -520,10 +538,12 @@ export function useCastingGeneration({
         return;
       }
       const prompt = "FIX ARTIFACT: Remove the content in the masked area. Inpaint with surrounding skin texture, lighting, and noise. Restore the background if needed. Do not add new objects.";
-      await performIteration(prompt, maskBase64);
+      const outcome = await performIteration(prompt, maskBase64);
       if (!session.isCurrent()) return;
-      setActiveTool('none');
-      clearMask();
+      if (outcome === "completed") {
+        setActiveTool('none');
+        clearMask();
+      }
       return;
     }
 
@@ -536,20 +556,24 @@ export function useCastingGeneration({
         toast.error('Failed to generate mask overlay. Please try again.');
         return;
       }
-      await performIteration(refineInput, maskBase64);
+      const outcome = await performIteration(refineInput, maskBase64);
       if (!session.isCurrent()) return;
-      setRefineInput("");
-      setActiveTool('none');
-      clearMask();
+      if (outcome === "completed") {
+        setRefineInput("");
+        setActiveTool('none');
+        clearMask();
+      }
       return;
     }
 
     if (refineInput.trim()) {
-      await performIteration(refineInput, maskBase64);
+      const outcome = await performIteration(refineInput, maskBase64);
       if (!session.isCurrent()) return;
-      setRefineInput("");
-      setActiveTool('none');
-      clearMask();
+      if (outcome === "completed") {
+        setRefineInput("");
+        setActiveTool('none');
+        clearMask();
+      }
     }
   }, [currentModelId, currentImageUrl, isMasking, activeTool, refineInput, performIteration, getGuideOverlayDataUrl, clearMask, getSessionToken]);
 

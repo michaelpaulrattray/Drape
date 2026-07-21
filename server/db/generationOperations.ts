@@ -1100,6 +1100,42 @@ export async function bindGenerationOperationModel(input: {
   throw new Error("Generation operation model binding lost its state race");
 }
 
+/** A free pre-start request may be fulfilled without generation (for example,
+ * a typed clarification question). Persist the public result so a transport
+ * retry replays the same answer instead of re-running classification. */
+export async function finalizeClaimedGenerationOperationSuccess(input: {
+  userId: number;
+  operationId: string;
+  result: unknown;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertOperationIdentity(input.operationId);
+  assertPublicOperationResult(input.result);
+  await stopOperationHeartbeat(input.operationId);
+  await withTransaction(async (tx) => {
+    const finalized = await tx
+      .update(generationOperations)
+      .set({
+        status: "succeeded",
+        result: input.result,
+        errorCode: null,
+        publicMessage: null,
+        chargedCredits: 0,
+        refundedCredits: 0,
+        completedAt: new Date(),
+      })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.status, "claimed"),
+      ));
+    if (affectedRows(finalized) !== 1) {
+      throw new Error("Claimed operation success finalization lost its state race");
+    }
+    await tx.delete(generationOperationLocks).where(eq(generationOperationLocks.operationId, input.operationId));
+  });
+}
+
 /** Structural/authorization truth may change after the resource lock is won.
  * Seal that claimed operation as a free failure and release its lock together. */
 export async function finalizeClaimedGenerationOperationFailure(input: {

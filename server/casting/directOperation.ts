@@ -2,6 +2,7 @@ import { TRPCError, type TRPC_ERROR_CODE_KEY } from "@trpc/server";
 import {
   acquireGenerationOperationLock,
   claimGenerationOperation,
+  finalizeClaimedGenerationOperationSuccess,
   finalizeClaimedGenerationOperationFailure,
   finalizeGenerationOperationFailure,
   finalizeGenerationOperationSuccess,
@@ -120,6 +121,36 @@ export async function failClaimedDirectOperation(input: {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
   }
   throw error;
+}
+
+/** Persist a free pre-start answer (such as a clarification question) as a
+ * successful receipt. This keeps classification replay-safe without claiming
+ * that an image was generated or any credits moved. */
+export async function completeClaimedDirectOperationSuccess(input: {
+  userId: number;
+  operationId: string;
+  result: PublicOperationResult;
+}): Promise<void> {
+  try {
+    await finalizeClaimedGenerationOperationSuccess(input);
+  } catch (receiptError) {
+    const existing = await terminalOutcomeAfterWriteError(input.userId, input.operationId);
+    if (existing?.type === "replay_success") return;
+    const publicMessage = `The result needs support review before this action can be retried. Operation ${input.operationId}.`;
+    try {
+      await markClaimedGenerationOperationRecoveryRequired({
+        userId: input.userId,
+        operationId: input.operationId,
+        publicMessage,
+      });
+    } catch (recoveryError) {
+      log.fatal(
+        { operationId: input.operationId, receiptError, err: recoveryError },
+        "[DirectOperation] claimed success receipt and recovery mark both failed",
+      );
+    }
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
+  }
 }
 
 async function markRecoveryAfterReceiptFailure(input: {

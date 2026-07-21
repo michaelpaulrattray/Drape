@@ -9,6 +9,7 @@
 
 import { ASSETS_BASE_URL } from "@shared/const";
 import { CORE_FACE_SHAPES } from "@shared/castingOptions";
+import type { CastingClarification } from "@shared/castingClarification";
 
 // Canonical value lists live in shared/castingOptions.ts (R2 dedupe — the
 // server parser + randomizer read the same source). This file adds the
@@ -180,6 +181,9 @@ export interface GenerationState {
    *  minted model — rendered as the designed fork-guidance surface (F4 copy
    *  + a working Fork door), never the generic error banner or a toast. */
   identityRefusal?: { message: string; editText: string } | null;
+  /** Free server follow-up for an ambiguous closed attribute. Selecting a
+   * choice only prepares a precise instruction; Apply remains the paid door. */
+  clarification?: CastingClarification | null;
 }
 
 export type EditTool = 'none' | 'surgical' | 'eraser';

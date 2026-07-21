@@ -32,6 +32,7 @@ interface RefinePanelProps {
   handleEnhance: () => void;
   handleRefineSubmit: () => void;
   referenceImage?: string;
+  onInputChanged?: () => void;
 }
 
 // The floating bar shell — flat surface, hairline border, no shadow (D-40 language)
@@ -60,6 +61,7 @@ export function RefinePanel({
   handleEnhance,
   handleRefineSubmit,
   referenceImage,
+  onInputChanged,
 }: RefinePanelProps) {
   const {
     activeTool,
@@ -192,7 +194,10 @@ export function RefinePanel({
           ref={textAreaRef}
           data-refine-input
           value={refineInput}
-          onChange={(e) => setRefineInput(e.target.value)}
+          onChange={(e) => {
+            setRefineInput(e.target.value);
+            onInputChanged?.();
+          }}
           disabled={isGenerating}
           placeholder={getPlaceholder()}
           rows={1}

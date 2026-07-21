@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 const db = vi.hoisted(() => ({
   claimGenerationOperation: vi.fn(),
   acquireGenerationOperationLock: vi.fn(),
+  finalizeClaimedGenerationOperationSuccess: vi.fn(),
   finalizeClaimedGenerationOperationFailure: vi.fn(),
   finalizeGenerationOperationFailure: vi.fn(),
   finalizeGenerationOperationSuccess: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock("./db", () => db);
 
 import {
   beginDirectOperation,
+  completeClaimedDirectOperationSuccess,
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
 } from "./casting/directOperation";
@@ -70,6 +72,23 @@ describe("R7-1D direct operation adapter", () => {
       userId: 1,
       operationId: OPERATION_ID,
     }));
+  });
+
+  it("accepts a free claimed result that committed when its response was lost", async () => {
+    const result = { clarification: { kind: "hair_length" } };
+    db.finalizeClaimedGenerationOperationSuccess.mockRejectedValue(new Error("connection reset"));
+    db.getGenerationOperationOutcome.mockResolvedValue({
+      type: "replay_success",
+      operationId: OPERATION_ID,
+      result,
+    });
+
+    await expect(completeClaimedDirectOperationSuccess({
+      userId: 1,
+      operationId: OPERATION_ID,
+      result,
+    })).resolves.toBeUndefined();
+    expect(db.markClaimedGenerationOperationRecoveryRequired).not.toHaveBeenCalled();
   });
 
   it("accepts a success receipt that committed even when its response was lost", async () => {

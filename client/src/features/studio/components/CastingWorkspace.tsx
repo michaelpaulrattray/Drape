@@ -291,7 +291,16 @@ export function CastingWorkspace({
     }
     if (durableDisplayRef.current) {
       durableDisplayRef.current = null;
-      store.setGenState({ isGenerating: false, currentStep: '', error: null });
+      // A free classifier result may settle as a durable success and then
+      // render an in-context clarification. Clearing the server spinner must
+      // not erase that answer if the terminal query arrives after the local
+      // response. New active work still replaces it in the branch above.
+      store.setGenState({
+        isGenerating: false,
+        currentStep: '',
+        error: null,
+        clarification: store.genState.clarification ?? null,
+      });
     }
   }, [applyModelTruth, currentModelId, durableOperations, utils.models.get]);
 

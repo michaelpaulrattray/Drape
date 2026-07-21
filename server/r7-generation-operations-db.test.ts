@@ -199,6 +199,48 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     expect(Number(row.hashLength)).toBe(64);
   }, 60_000);
 
+  it("persists a free claimed clarification and releases its resource lock", async () => {
+    const clientRequestId = randomUUID();
+    const claimed = await claim(clientRequestId, { feedback: "make the hair a bit longer" });
+    if (claimed.type !== "claimed") throw new Error("clarification claim failed");
+    await expect(operations.acquireGenerationOperationLock({
+      userId,
+      operationId: claimed.operationId,
+      kind: "casting.iterate",
+      lockKey: "model:44",
+    })).resolves.toMatchObject({ type: "acquired" });
+
+    const result = {
+      clarification: {
+        kind: "hair_length",
+        question: "How long should the hair be?",
+      },
+    };
+    await operations.finalizeClaimedGenerationOperationSuccess({
+      userId,
+      operationId: claimed.operationId,
+      result,
+    });
+
+    await expect(claim(clientRequestId, { feedback: "make the hair a bit longer" })).resolves.toEqual({
+      type: "replay_success",
+      operationId: claimed.operationId,
+      result,
+    });
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      "SELECT status, chargedCredits, refundedCredits FROM generation_operations WHERE id = ?",
+      [claimed.operationId],
+    );
+    const [[lockCount]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM generation_operation_locks WHERE operationId = ?",
+      [claimed.operationId],
+    );
+    expect(receipt.status).toBe("succeeded");
+    expect(Number(receipt.chargedCredits)).toBe(0);
+    expect(Number(receipt.refundedCredits)).toBe(0);
+    expect(Number(lockCount.n)).toBe(0);
+  });
+
   it("refuses same request id with a different trusted envelope", async () => {
     const clientRequestId = randomUUID();
     const first = await claim(clientRequestId, { feedback: "pink hair" });

@@ -45,7 +45,12 @@ import { dependentFieldsForPatch } from "../../casting/identity/identityDependen
 import { requireIdentityPatch } from "../../casting/identity/identityAuthorizationGuard";
 import { modelOperationLockKey } from "../../casting/operationContract";
 import {
+  clarificationForCastingRefusal,
+  parseCastingClarification,
+} from "../../../shared/castingClarification";
+import {
   beginDirectOperation,
+  completeClaimedDirectOperationSuccess,
   completeDirectOperationFailure,
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
@@ -97,7 +102,18 @@ export const castingRefinementRouter = router({
           assetId?: unknown;
           identityChanged?: unknown;
           staledAngles?: unknown;
+          clarification?: unknown;
         } | null;
+        const clarification = parseCastingClarification(saved?.clarification);
+        if (clarification) {
+          return {
+            success: false as const,
+            clarification,
+            pointsCost: 0,
+            staledAngles: [],
+            staleMessage: null,
+          };
+        }
         const replayAssets = await getModelAssets(input.modelId);
         const asset = replayAssets.find((candidate) => candidate.id === saved?.assetId);
         if (!asset) {
@@ -225,6 +241,21 @@ export const castingRefinementRouter = router({
           { userId: ctx.user.id, modelId: input.modelId, code: decision.code, retryable: decision.retryable },
           "[iterate] refused by the shared identity authority (free, before money)",
         );
+        const clarification = clarificationForCastingRefusal(decision.code);
+        if (clarification) {
+          await completeClaimedDirectOperationSuccess({
+            userId: ctx.user.id,
+            operationId: gate.operationId,
+            result: { clarification },
+          });
+          return {
+            success: false as const,
+            clarification,
+            pointsCost: 0,
+            staledAngles: [],
+            staleMessage: null,
+          };
+        }
         return failClaimedDirectOperation({
           userId: ctx.user.id,
           operationId: gate.operationId,

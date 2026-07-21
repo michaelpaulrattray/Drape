@@ -66,7 +66,7 @@ export const HAIR_FAMILIES_MALE = [
   "Curly Top", "Man Bun", "Braids / Locs",
 ];
 
-export const HAIR_LENGTHS = ["Very Short", "Short", "Medium", "Long", "Very Long"];
+export const HAIR_LENGTHS = ["Very Short", "Short", "Medium", "Long", "Very Long"] as const;
 export const HAIR_TEXTURES = ["Straight", "Slight Wave", "Wavy", "Curly", "Coily / Afro"];
 export const HAIR_FRINGES = ["None", "Curtain Bangs", "Wispy Bangs", "Blunt Bangs", "Side-Swept", "Micro Fringe"];
 export const HAIR_PARTINGS = ["Center", "Slight Off-Center", "Side", "Deep Side", "No Part / Slicked"];

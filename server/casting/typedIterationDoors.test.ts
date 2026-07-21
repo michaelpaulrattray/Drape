@@ -53,6 +53,7 @@ vi.mock("../db", async (importOriginal) => {
     updateModel: vi.fn().mockResolvedValue({ success: true }),
     createModelAsset: vi.fn().mockResolvedValue({ success: true, assetId: 501 }),
     markModelAssetsStale: vi.fn().mockResolvedValue({ success: true }),
+    finalizeClaimedGenerationOperationSuccess: vi.fn().mockResolvedValue(undefined),
     deductCredits: vi.fn().mockResolvedValue({ success: true }),
     addCredits: vi.fn().mockResolvedValue({ success: true }),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
@@ -148,6 +149,7 @@ vi.mock("./directOperation", async (importOriginal) => {
   return {
     ...actual,
     beginDirectOperation: vi.fn().mockResolvedValue({ type: "execute", operationId: "11111111-1111-4111-8111-111111111111" }),
+    completeClaimedDirectOperationSuccess: vi.fn().mockResolvedValue(undefined),
     completeDirectOperationSuccess: vi.fn().mockResolvedValue(undefined),
     completeDirectOperationFailure: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
     failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
@@ -168,6 +170,8 @@ import { iterateModel, iterateModelRaw } from "./aiService";
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { ITERATION_CROP_BY_VIEW } from "./iterationFraming";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
+import { beginDirectOperation, completeClaimedDirectOperationSuccess } from "./directOperation";
+import { clarificationForCastingRefusal } from "../../shared/castingClarification";
 import { appRouter as productionRouter } from "../routers";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -240,6 +244,11 @@ const IDENTITY_HAIR_LENGTH = '{"kind":"identity","categories":["person.hair.leng
 const NORMALIZED_HAIR_LENGTH = '{"edits":[{"leaf":"person.hair.length","value":"Very Long"}]}';
 
 beforeEach(() => {
+  vi.mocked(beginDirectOperation).mockReset().mockResolvedValue({
+    type: "execute",
+    operationId: "11111111-1111-4111-8111-111111111111",
+  });
+  vi.mocked(completeClaimedDirectOperationSuccess).mockClear();
   vi.mocked(getModelById).mockReset().mockResolvedValue(model() as never);
   vi.mocked(getModelAssets).mockReset().mockResolvedValue(SIX_ASSETS as never);
   vi.mocked(createGeneration).mockClear().mockResolvedValue({ success: true, generationId: 11 } as never);
@@ -342,6 +351,56 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
     await expect(
       caller.generation.iterate({ modelId: 7, feedback, assetId: assetIdFor("frontClose") }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expectNothingCharged();
+  });
+
+  it("returns a durable hair-length clarification before generation or credits", async () => {
+    llmScript.classify = IDENTITY_HAIR_LENGTH;
+    llmScript.normalize = NORMALIZED_HAIR_LENGTH;
+    const caller = appRouter.createCaller(authCtx());
+
+    const result = await caller.generation.iterate({
+      modelId: 7,
+      feedback: "make the hair a bit longer",
+      assetId: assetIdFor("frontClose"),
+    });
+
+    expect(result).toEqual({
+      success: false,
+      clarification: clarificationForCastingRefusal("hair_length_vague"),
+      pointsCost: 0,
+      staledAngles: [],
+      staleMessage: null,
+    });
+    expect(completeClaimedDirectOperationSuccess).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 1,
+      result: { clarification: clarificationForCastingRefusal("hair_length_vague") },
+    }));
+    expectNothingCharged();
+  });
+
+  it("replays the same clarification without reclassifying or generating", async () => {
+    const clarification = clarificationForCastingRefusal("hair_length_vague");
+    vi.mocked(beginDirectOperation).mockResolvedValueOnce({
+      type: "replay",
+      operationId: "11111111-1111-4111-8111-111111111111",
+      result: { clarification },
+    });
+    llmScript.fail = true;
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.generation.iterate({
+      modelId: 7,
+      feedback: "make the hair a bit longer",
+      assetId: assetIdFor("frontClose"),
+    })).resolves.toEqual({
+      success: false,
+      clarification,
+      pointsCost: 0,
+      staledAngles: [],
+      staleMessage: null,
+    });
+    expect(completeClaimedDirectOperationSuccess).not.toHaveBeenCalled();
     expectNothingCharged();
   });
 

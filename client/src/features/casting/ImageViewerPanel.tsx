@@ -1,5 +1,11 @@
 import { useRef, useState, useEffect, useMemo, useCallback, RefObject } from "react";
-import { ViewTabs, RefinePanel, WarmEmptyState, RotatingSuggestions } from "./components/ImageViewer";
+import {
+  ViewTabs,
+  RefinePanel,
+  RefinementClarification,
+  WarmEmptyState,
+  RotatingSuggestions,
+} from "./components/ImageViewer";
 import { MaskCanvas } from "./components/ImageViewer/MaskCanvas";
 import { useCastingFormStore } from "@/features/casting/stores/useCastingFormStore";
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
@@ -360,8 +366,23 @@ export function ImageViewerPanel({
           </div>
         )}
 
+        {genState.clarification && !genState.isGenerating && activeTool === 'none' && (
+          <RefinementClarification
+            clarification={genState.clarification}
+            onChoose={(instruction) => {
+              setRefineInput(instruction);
+              setGenState((previous) => ({ ...previous, clarification: null }));
+              window.requestAnimationFrame(() => textAreaRef.current?.focus());
+            }}
+            onDescribe={() => {
+              setGenState((previous) => ({ ...previous, clarification: null }));
+              window.requestAnimationFrame(() => textAreaRef.current?.focus());
+            }}
+          />
+        )}
+
         {/* Quick Ideas stay secondary and collapse when no ideas exist. */}
-        {!genState.isGenerating && activeTool === 'none' && (isLoadingSuggestions || (suggestions && suggestions.length > 0)) && (
+        {!genState.clarification && !genState.isGenerating && activeTool === 'none' && (isLoadingSuggestions || (suggestions && suggestions.length > 0)) && (
           <div className="mb-2 flex justify-center">
             {isLoadingSuggestions ? (
               <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-canvas-pill mx-auto w-fit bg-canvas-surface border-hairline border-canvas-border">
@@ -386,6 +407,9 @@ export function ImageViewerPanel({
           handleEnhance={handleEnhance}
           handleRefineSubmit={handleRefineSubmit}
           referenceImage={prefs.referenceImage}
+          onInputChanged={genState.clarification
+            ? () => setGenState((previous) => ({ ...previous, clarification: null }))
+            : undefined}
         />
     </div>
   ) : undefined;
