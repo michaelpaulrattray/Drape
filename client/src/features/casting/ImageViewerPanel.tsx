@@ -395,7 +395,7 @@ export function ImageViewerPanel({
       loadingMessage={genState.currentStep || 'Processing...'}
       isFirstGeneration={!hasAssets}
       showToolbar={hasAssets}
-      emptyState={<WarmEmptyState canGenerate={isFormReady} onGenerate={handleGenerate} />}
+      emptyState={<WarmEmptyState canGenerate={isFormReady} />}
       topOverlay={topOverlay}
       floatingOverlay={floatingOverlay}
       imageOverlay={imageOverlayNode}

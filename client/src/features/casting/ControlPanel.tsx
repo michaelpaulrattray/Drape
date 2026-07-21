@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
@@ -96,6 +96,9 @@ interface ControlPanelProps {
   /** R3: minted-edit session — saves go through the host's identity dialog;
    *  the panel's own generate button hides (it would bypass D-11). */
   mintedEdit?: boolean;
+  /** Parsed by the centered Act-1 brief before this detail sheet mounted. */
+  initialParseResult?: ParsePromptResult | null;
+  onInitialParseConsumed?: () => void;
 }
 
 // ── Progress Ring ────────────────────────────
@@ -135,6 +138,7 @@ function CastingProgressRing({ completions }: { completions: Record<string, numb
 export function ControlPanel({
   user, isFormValid, genState, currentAssets, handleGenerate,
   isReadOnly, onNewModel, modelName, mintedEdit,
+  initialParseResult, onInitialParseConsumed,
 }: ControlPanelProps) {
   const displayModelName = honestModelName(modelName);
   // Use store's functional updaters — no stale closure risk
@@ -159,6 +163,7 @@ export function ControlPanel({
 
   // ── Parse choreography (D-41): the sentence is SEEN becoming the form ──
   const [parseSummary, setParseSummary] = useState<ParseSummary | null>(null);
+  const [translatedBrief, setTranslatedBrief] = useState<string | null>(null);
 
   const jumpToField = useCallback((sweep: string) => {
     const el = document.querySelector(`[data-sweep-field="${sweep}"]`);
@@ -217,6 +222,7 @@ export function ControlPanel({
         chips,
         engineFields: engineFields.map((f) => REQUIRED_FIELD_LABELS[f] ?? f),
       });
+      if (result.sourcePrompt) setTranslatedBrief(result.sourcePrompt);
       requestAnimationFrame(() => runSweep(sweeps));
 
       // 5. Two keystrokes: the armed Cast button takes focus — Enter fires it
@@ -226,6 +232,16 @@ export function ControlPanel({
     },
     [prefs, runSweep, updatePrefs],
   );
+
+  // A brief translated on the centered first-run surface is applied here so
+  // there remains exactly one parser-to-form authority and one sweep path.
+  const consumedInitialParseRef = useRef<ParsePromptResult | null>(null);
+  useEffect(() => {
+    if (!initialParseResult || consumedInitialParseRef.current === initialParseResult) return;
+    consumedInitialParseRef.current = initialParseResult;
+    handleParsed(initialParseResult);
+    onInitialParseConsumed?.();
+  }, [handleParsed, initialParseResult, onInitialParseConsumed]);
 
   const ethnicityBlend = prefs.ethnicityBlend || [];
   const setEthnicityBlend = (blend: { name: string; pct: number }[]) => {
@@ -320,6 +336,14 @@ export function ControlPanel({
       {!isReadOnly && <FromPromptField onParsed={handleParsed} />}
 
       {/* What was heard, where the action happened (D-40) */}
+      {!isReadOnly && parseSummary && translatedBrief && (
+        <div className="mx-4 mb-2 rounded-canvas-md border-hairline border-canvas-border bg-canvas-surface-inset px-3 py-2.5">
+          <p className="text-canvas-sm font-medium text-canvas-ink-faint">Brief translated</p>
+          <p className="mt-1 line-clamp-2 text-canvas-md leading-normal text-canvas-ink-soft">
+            “{translatedBrief}”
+          </p>
+        </div>
+      )}
       {!isReadOnly && parseSummary && (
         <ParseSummaryStrip
           summary={parseSummary}

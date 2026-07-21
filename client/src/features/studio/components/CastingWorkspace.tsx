@@ -9,7 +9,7 @@
  * belong to the hosts — the studio triggers the gate from its sidebar, the
  * takeover from its top bar.
  */
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { CANONICAL_VIEW_ANGLES } from '@shared/boardTypes';
@@ -29,6 +29,12 @@ import { useCastingGeneration } from '@/features/casting/hooks/useCastingGenerat
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { PackageHealthDialog } from '@/features/casting/components/PackageHealthDialog';
 import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
+import { generateRandomPreferences } from '@/features/casting/castingHelpers';
+import { FromPromptField, type ParsePromptResult } from '@/features/casting/components/FromPromptField';
+import {
+  CastingDescribeStart,
+  shouldShowCastingDescribeStart,
+} from '@/features/casting/components/CastingDescribeStart';
 import { useGenerationJobs } from '@/features/boards/stores/useGenerationJobs';
 import {
   isOperationActive,
@@ -70,11 +76,13 @@ export function CastingWorkspace({
   const mintedEdit = useStudioStore((s) => s.mintedEditContext !== null);
 
   // Casting stores
-  const { prefs, modelName, engineChoice } = useCastingFormStore();
+  const { prefs, modelName, engineChoice, updatePrefs } = useCastingFormStore();
   const { genState, setGenState, currentModelId, currentAssets } = useCastingGenerationStore();
   const { activeView, activeTool: castingActiveTool } = useCastingUIStore();
   const durableOperations = useGenerationJobs((state) => state.operations);
   const utils = trpc.useUtils();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [pendingParseResult, setPendingParseResult] = useState<ParsePromptResult | null>(null);
 
   // Eagerly preload casting images into browser cache (warm S3 URLs)
   const castingAssetUrls = useMemo(
@@ -313,6 +321,42 @@ export function CastingWorkspace({
     return Math.round((c.filter(Boolean).length / 12) * 100);
   }, [prefs, engineChoice]);
 
+  const hasAssets = currentAssets.length > 0;
+  const hasExistingModel = currentModelId !== null || canvas.castModelId !== null;
+  const showDescribeStart = shouldShowCastingDescribeStart({
+    hasAssets,
+    hasExistingModel,
+    isReadOnly,
+    mintedEdit,
+    detailsOpen,
+  });
+
+  const handleStartParsed = useCallback((result: ParsePromptResult) => {
+    setPendingParseResult(result);
+    setDetailsOpen(true);
+  }, []);
+
+  const handleSurprise = useCallback(() => {
+    updatePrefs(generateRandomPreferences());
+    setDetailsOpen(true);
+  }, [updatePrefs]);
+
+  const handleNewModel = useCallback(() => {
+    setPendingParseResult(null);
+    setDetailsOpen(false);
+    onNewModel();
+  }, [onNewModel]);
+
+  if (showDescribeStart) {
+    return (
+      <CastingDescribeStart
+        briefField={<FromPromptField variant="hero" onParsed={handleStartParsed} />}
+        onSurprise={handleSurprise}
+        onOpenDetails={() => setDetailsOpen(true)}
+      />
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative w-full">
       <PackageHealthDialog />
@@ -333,9 +377,11 @@ export function CastingWorkspace({
             currentAssets={currentAssets}
             handleGenerate={handleGenerate}
             isReadOnly={isReadOnly}
-            onNewModel={onNewModel}
+            onNewModel={handleNewModel}
             modelName={modelName}
             mintedEdit={mintedEdit}
+            initialParseResult={pendingParseResult}
+            onInitialParseConsumed={() => setPendingParseResult(null)}
           />
         </StudioSidePanel>
       </AnimatedPanel>
@@ -363,17 +409,19 @@ export function CastingWorkspace({
       </div>
 
       {/* Right Panel — Master Prompt (slides from right) */}
-      <AnimatedPanel
-        ready={rightReady}
-        from="right"
-        offset={60}
-        duration={500}
-        className="hidden lg:block flex-shrink-0"
-      >
-        <StudioSidePanel side="right" width={320}>
-          <MasterPromptPanel />
-        </StudioSidePanel>
-      </AnimatedPanel>
+      {hasAssets && (
+        <AnimatedPanel
+          ready={rightReady}
+          from="right"
+          offset={60}
+          duration={500}
+          className="hidden lg:block flex-shrink-0"
+        >
+          <StudioSidePanel side="right" width={320}>
+            <MasterPromptPanel />
+          </StudioSidePanel>
+        </AnimatedPanel>
+      )}
     </div>
   );
 }

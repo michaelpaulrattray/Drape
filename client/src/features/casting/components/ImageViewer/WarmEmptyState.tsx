@@ -1,6 +1,5 @@
 interface WarmEmptyStateProps {
   canGenerate: boolean;
-  onGenerate: () => void;
 }
 
 /**
@@ -9,16 +8,15 @@ interface WarmEmptyStateProps {
  * The old Identity·Views·Export footer strip narrated the retired linear
  * pipeline and was removed as belt-plumbing (Group 6i framing note).
  */
-export function WarmEmptyState({ canGenerate, onGenerate }: WarmEmptyStateProps) {
+export function WarmEmptyState({ canGenerate }: WarmEmptyStateProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8">
       <div
-        onClick={() => canGenerate && onGenerate()}
-        className={`flex flex-col items-center justify-center ${canGenerate ? 'cursor-pointer group' : ''}`}
+        className="flex flex-col items-center justify-center"
         style={{ width: 340, maxWidth: '100%' }}
       >
         <div
-          className="w-full flex flex-col items-center justify-center transition-colors duration-300 bg-canvas-surface/50 group-hover:bg-canvas-surface rounded-canvas-lg relative overflow-hidden"
+          className="w-full flex flex-col items-center justify-center bg-canvas-surface/50 rounded-canvas-lg relative overflow-hidden"
           style={{
             aspectRatio: '3 / 4',
             border: '1px dashed var(--color-canvas-border-strong)',
@@ -43,15 +41,15 @@ export function WarmEmptyState({ canGenerate, onGenerate }: WarmEmptyStateProps)
               </svg>
             </div>
             <div className="mt-4 font-medium text-canvas-ink-soft" style={{ fontSize: 16 }}>
-              {canGenerate ? 'Ready to cast' : 'New model'}
+              {canGenerate ? 'Ready for your headshot' : 'Your headshot appears here'}
             </div>
             <div
               className="mt-1 text-center text-canvas-ink-faint"
               style={{ fontSize: 13, maxWidth: 200, lineHeight: 1.4 }}
             >
               {canGenerate
-                ? 'Tap to generate your first casting'
-                : 'Configure parameters in the sidebar to begin'}
+                ? 'Use Cast model when the details look right.'
+                : 'Describe your model or set the details.'}
             </div>
           </div>
         </div>
