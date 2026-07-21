@@ -1186,7 +1186,7 @@ function BoardPageImpl() {
   // changes intact and the D-11 dialog shows the server's message in
   // context, instead of dumping the user onto the board with a toast.
   const handleIdentityCommit = useCallback(
-    async (decision: 'update' | 'fork', changes: Record<string, unknown>) => {
+    async (decision: 'update' | 'fork', changes: Record<string, unknown>, intent?: 'rerun') => {
       const ctx = castEditContext;
       if (!ctx || ctx.itemId <= 0) {
         setCastEditContext(null);
@@ -1195,7 +1195,14 @@ function BoardPageImpl() {
       if (decision === 'update') {
         startJob({ itemId: ctx.itemId, operation: 'applyModelEdit', estimatedDurationMs: 25_000 });
       }
-      await applyModelEditMutation.mutateAsync({ clientRequestId: createClientRequestId(), boardId, itemId: ctx.itemId, decision, changes });
+      await applyModelEditMutation.mutateAsync({
+        clientRequestId: createClientRequestId(),
+        boardId,
+        itemId: ctx.itemId,
+        decision,
+        changes,
+        ...(intent ? { intent } : {}),
+      });
       setCastEditContext(null);
     },
     [boardId, castEditContext, applyModelEditMutation, startJob],

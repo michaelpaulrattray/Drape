@@ -66,7 +66,11 @@ export interface CastingTakeoverProps {
    *  Batch C (review finding 7): resolves when the server ACCEPTED the
    *  commit; rejects on a (free) refusal — the takeover then stays open with
    *  the user's changes intact and the dialog shows the server's message. */
-  onIdentityCommit: (decision: 'update' | 'fork', changes: Record<string, unknown>) => Promise<void> | void;
+  onIdentityCommit: (
+    decision: 'update' | 'fork',
+    changes: Record<string, unknown>,
+    intent?: 'rerun',
+  ) => Promise<void> | void;
   /** User backed out (Esc / back / close), after the leave-confirm if work exists. */
   onClose: () => void;
   /** D-38: fired just before close on minted-edit sessions with the CLIENT-
@@ -135,6 +139,7 @@ export function CastingTakeover({
   const [identityDialog, setIdentityDialog] = useState<{
     changes: Record<string, unknown>;
     labels: string[];
+    intent?: 'rerun';
   } | null>(null);
   // Finding 7: the D-11 dialog owns the fork round-trip — pending holds the
   // dialog (and the takeover) open; a free refusal renders in the dialog.
@@ -384,14 +389,10 @@ export function CastingTakeover({
     startClose();
   }, [workInProgress, startClose]);
 
-  const handleSaveChanges = useCallback(() => {
-    const diff = unsavedDiff();
-    if (!diff) {
-      toast.info('No identity changes yet');
-      return;
-    }
-    setIdentityDialog(diff);
-  }, [unsavedDiff]);
+  const handleForkProfile = useCallback(() => {
+    setIdentityCommitError(null);
+    setIdentityDialog({ changes: {}, labels: [], intent: 'rerun' });
+  }, []);
 
   // Ghost slots in the view strip (D-46, one view system): a minted model's
   // ghost opens the UPGRADE dialog; a draft's ghost opens the MINT gate — the
@@ -556,10 +557,10 @@ export function CastingTakeover({
             <button
               type="button"
               disabled={!hydrated || genState.isGenerating}
-              onClick={handleSaveChanges}
+              onClick={handleForkProfile}
               className="px-4 py-1.5 rounded-canvas-pill transition-colors duration-200 disabled:opacity-40 text-canvas-md font-medium text-canvas-ink-soft bg-canvas-surface border-hairline border-canvas-border-strong hover:text-canvas-ink hover:border-canvas-ink"
             >
-              Fork changes
+              Fork model
             </button>
           ) : (
             <button
@@ -590,6 +591,7 @@ export function CastingTakeover({
           isAuthenticated={isAuthenticated}
           isReadOnly={false}
           onNewModel={resetCastingSession}
+          onForkMinted={isMintedEdit ? handleForkProfile : undefined}
         />
         {/* Cold-mount loader (P1): edit sessions hydrate the model first —
             never flash the default studio */}
@@ -661,6 +663,7 @@ export function CastingTakeover({
           boardId={editContext.boardId}
           itemId={editContext.itemId}
           changedLabels={identityDialog.labels}
+          rerun={identityDialog.intent === 'rerun'}
           contextOnly={Object.keys(identityDialog.changes).every((k) =>
             k === 'castingBrand' || k === 'castingVibe',
           )}
@@ -675,7 +678,7 @@ export function CastingTakeover({
             const changes = identityDialog.changes;
             setIdentityCommitPending(true);
             setIdentityCommitError(null);
-            Promise.resolve(onIdentityCommit(decision, changes))
+            Promise.resolve(onIdentityCommit(decision, changes, identityDialog.intent))
               .then(() => {
                 setIdentityDialog(null);
               })

@@ -81,8 +81,8 @@ export function ModelCardChooser({ model, onClose }: { model: ChooserModel | nul
     },
     {
       icon: Pencil,
-      verb: 'Open in casting',
-      desc: 'Refine views, complete the card, or fork the identity.',
+      verb: 'View cast profile',
+      desc: 'Review the identity, complete its card, or follow the fork path.',
       onPick: () => navigate(`/studio?tool=casting&modelId=${model.id}`),
     },
     {

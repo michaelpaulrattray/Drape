@@ -36,6 +36,10 @@ interface ImageViewerPanelProps {
   isReadOnly?: boolean;
   /** Post-headshot identity generation is armed only by the explicit recast door. */
   allowIdentityGeneration: boolean;
+  /** Minted Profile posture: no composer, one explicit fork door. */
+  profileLocked?: boolean;
+  profileName?: string;
+  onForkProfile?: () => void;
 }
 
 // ============ Main Component ============
@@ -58,6 +62,9 @@ export function ImageViewerPanel({
   handleRefineSubmit,
   isReadOnly,
   allowIdentityGeneration,
+  profileLocked = false,
+  profileName,
+  onForkProfile,
 }: ImageViewerPanelProps) {
   const { prefs, updatePref } = useCastingFormStore();
   const {
@@ -319,7 +326,21 @@ export function ImageViewerPanel({
 
   // The primary refinement action is permanently docked below the portrait.
   // It must never depend on hover: touch and first-time users need the same door.
-  const bottomDock = hasAssets && !isReadOnly ? (
+  const bottomDock = hasAssets && profileLocked ? (
+    <div className="w-full max-w-2xl mx-auto rounded-canvas-lg border-hairline border-canvas-border bg-canvas-surface px-4 py-3 flex items-center justify-between gap-4" data-cast-profile-lock>
+      <div className="min-w-0">
+        <div className="text-canvas-md font-medium text-canvas-ink">Identity locked</div>
+        <div className="mt-0.5 truncate text-canvas-sm text-canvas-ink-soft">
+          Fork to explore a different version of {profileName || 'this cast'}.
+        </div>
+      </div>
+      {onForkProfile && (
+        <button type="button" onClick={onForkProfile} className="flex-shrink-0 rounded-canvas-pill border-hairline border-canvas-border-strong px-3 py-1.5 text-canvas-sm font-medium text-canvas-ink hover:bg-canvas-surface-inset">
+          Fork model
+        </button>
+      )}
+    </div>
+  ) : hasAssets && !isReadOnly ? (
     <div className="w-full max-w-2xl mx-auto" onClick={e => e.stopPropagation()}>
         {/* Inline Masking Helper */}
         {isMasking && (

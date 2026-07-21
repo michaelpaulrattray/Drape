@@ -202,11 +202,12 @@ export function ViewTabs() {
   // ("adding views is a Core mint away"); a minted model's ghost opens the
   // UPGRADE dialog (add to the existing package). The old head→lock→body
   // ladder and its StageLockModal are retired.
-  const mintedModelId = useStudioStore((s) => s.mintedEditContext?.modelId ?? null);
-  const isMintedEdit = mintedModelId !== null;
+  const isMintedProfile = useStudioStore((s) =>
+    s.mintedEditContext?.modelId != null || s.canvas.isMinted,
+  );
   const openPackage = () =>
     window.dispatchEvent(
-      new CustomEvent(isMintedEdit ? 'casting-open-package-upgrade' : 'casting-open-mint'),
+      new CustomEvent(isMintedProfile ? 'casting-open-package-upgrade' : 'casting-open-mint'),
     );
   // F5: read the package state for the CURRENT model — draft OR minted (the
   // old query only ran on minted edits, so a draft's stale marks and failed

@@ -40,6 +40,7 @@ export default function DrapeStudio() {
   // Studio store
   const { activeTool, canvas, setCanvas, wardrobeStart } = useStudioStore();
   const modelName = useCastingFormStore((s) => s.modelName);
+  const [upgradeMode, setUpgradeMode] = useState(false);
 
   // Sidebar: profile, billing, referral modals
   const [showSettings, setShowSettings] = useState(false);
@@ -205,10 +206,27 @@ export default function DrapeStudio() {
   // A view-strip ghost opens the mint gate (D-46 one view system — in /studio
   // every model is a draft until cast, so "add a view" is a mint away)
   useEffect(() => {
-    const onMint = () => setShowCastModal(true);
+    const onMint = () => {
+      if (canvas.isMinted) return;
+      setUpgradeMode(false);
+      setShowCastModal(true);
+    };
+    const onUpgrade = () => {
+      if (!canvas.isMinted) return;
+      setUpgradeMode(true);
+      setShowCastModal(true);
+    };
     window.addEventListener('casting-open-mint', onMint);
-    return () => window.removeEventListener('casting-open-mint', onMint);
-  }, [setShowCastModal]);
+    window.addEventListener('casting-open-package-upgrade', onUpgrade);
+    return () => {
+      window.removeEventListener('casting-open-mint', onMint);
+      window.removeEventListener('casting-open-package-upgrade', onUpgrade);
+    };
+  }, [canvas.isMinted, setShowCastModal]);
+
+  useEffect(() => {
+    if (!showCastModal) setUpgradeMode(false);
+  }, [showCastModal]);
 
   // Full-body URL for wardrobe (uploaded > gallery > casting asset)
   const fullBodyUrl = useMemo(() => {
@@ -336,14 +354,16 @@ export default function DrapeStudio() {
       <CastModelModal
         isOpen={showCastModal}
         onClose={dismissCastModal}
-        onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, false, stayDraft)}
+        onConfirm={(name, tier, stayDraft) => handleCastAndContinue(name, tier, upgradeMode, stayDraft)}
         tiers={tierPlan}
         integrity={mintIntegrity}
         isCasting={isCasting}
         viewsGenerating={viewsGenerating}
         castingMessage={castingMessage}
         previewImage={currentAssets.find((a) => a.viewType === 'frontClose')?.storageUrl}
-        initialName={honestModelName(modelName)}
+        mode={upgradeMode ? 'upgrade' : 'mint'}
+        fixedName={upgradeMode ? honestModelName(modelName, persistedModel.data?.name) : undefined}
+        initialName={!upgradeMode ? honestModelName(modelName) : undefined}
         onResolvePackage={() => openPackageHealth()}
       />
 

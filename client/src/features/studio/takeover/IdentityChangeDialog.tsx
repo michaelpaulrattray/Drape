@@ -21,6 +21,7 @@ export function IdentityChangeDialog({
   itemId,
   changedLabels,
   contextOnly,
+  rerun,
   pending,
   errorMessage,
   onCommit,
@@ -32,6 +33,8 @@ export function IdentityChangeDialog({
   /** True when ONLY casting context changed (brand/vibe) — the copy then
    *  explains context honestly instead of calling it a new person. */
   contextOnly: boolean;
+  /** Profile fork: create a fresh draft without pretending fields were edited. */
+  rerun?: boolean;
   /** The fork mutation is in flight — buttons hold, the dialog stays. */
   pending: boolean;
   /** A free server refusal, rendered in context (the session stays intact). */
@@ -64,9 +67,13 @@ export function IdentityChangeDialog({
       />
       <div className="relative w-[420px] max-w-[92vw] bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-md p-5">
         <p className="text-canvas-md font-medium text-canvas-ink mb-1.5">
-          {contextOnly ? "This casts someone new" : "This is a new person"}
+          {rerun ? "Fork this cast?" : contextOnly ? "This casts someone new" : "This is a new person"}
         </p>
-        {contextOnly ? (
+        {rerun ? (
+          <p className="text-canvas-sm text-canvas-ink-soft leading-relaxed">
+            The minted identity stays locked. Forking casts a separate draft from the same starting point.
+          </p>
+        ) : contextOnly ? (
           <p className="text-canvas-sm text-canvas-ink-soft leading-relaxed">
             Brand and vibe are casting context, not a change to who this person is — and a
             minted cast keeps its context. A fork carries your new {changedLabels.join(", ")} into a new draft.
@@ -94,7 +101,7 @@ export function IdentityChangeDialog({
             disabled={pending}
             className="px-3 py-1.5 rounded-canvas-pill text-canvas-xs text-canvas-ink-soft hover:text-canvas-ink transition-colors disabled:opacity-40"
           >
-            Keep editing
+            {rerun ? "Keep cast" : "Keep editing"}
           </button>
           <button
             type="button"

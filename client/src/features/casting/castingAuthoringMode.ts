@@ -16,7 +16,17 @@ export function shouldShowCastingControlPanel({
   mintedEdit,
   identityChangeOpen,
 }: CastingAuthoringModeInput) {
-  return !hasAssets || isReadOnly || mintedEdit || identityChangeOpen;
+  if (isReadOnly || mintedEdit) return false;
+  return !hasAssets || identityChangeOpen;
+}
+
+/** Minted identities use the dedicated Profile posture in either host. */
+export function shouldShowCastProfile({
+  hasAssets,
+  isReadOnly,
+  mintedEdit,
+}: Pick<CastingAuthoringModeInput, 'hasAssets' | 'isReadOnly' | 'mintedEdit'>) {
+  return hasAssets && (isReadOnly || mintedEdit);
 }
 
 /** A draft with a headshot may only recast from the deliberate identity door. */

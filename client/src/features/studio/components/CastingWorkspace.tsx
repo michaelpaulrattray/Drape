@@ -24,6 +24,7 @@ import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { ControlPanel } from '@/features/casting/ControlPanel';
 import { ImageViewerPanel } from '@/features/casting/ImageViewerPanel';
 import { MasterPromptPanel } from '@/features/casting/MasterPromptPanel';
+import { CastProfilePanel } from '@/features/casting/components/CastProfilePanel';
 import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
@@ -42,6 +43,7 @@ import {
 import {
   canInvokeIdentityGeneration,
   shouldOfferDraftIdentityDoor,
+  shouldShowCastProfile,
   shouldShowCastingControlPanel,
 } from '@/features/casting/castingAuthoringMode';
 import { useGenerationJobs } from '@/features/boards/stores/useGenerationJobs';
@@ -66,6 +68,8 @@ export interface CastingWorkspaceProps {
   isAuthenticated: boolean;
   isReadOnly: boolean;
   onNewModel: () => void;
+  /** Canvas-hosted minted Profiles can fork directly beside their placement. */
+  onForkMinted?: () => void;
   /** Studio's entrance choreography; hosts without it default to visible. */
   leftReady?: boolean;
   rightReady?: boolean;
@@ -76,6 +80,7 @@ export function CastingWorkspace({
   isAuthenticated,
   isReadOnly,
   onNewModel,
+  onForkMinted,
   leftReady = true,
   rightReady = true,
 }: CastingWorkspaceProps) {
@@ -366,6 +371,7 @@ export function CastingWorkspace({
   const showControlPanel = shouldShowCastingControlPanel(authoringMode);
   const offerIdentityDoor = shouldOfferDraftIdentityDoor(authoringMode);
   const allowIdentityGeneration = canInvokeIdentityGeneration(authoringMode);
+  const showCastProfile = shouldShowCastProfile(authoringMode);
   const showDescribeStart = shouldShowCastingDescribeStart({
     hasAssets,
     hasExistingModel,
@@ -388,6 +394,10 @@ export function CastingWorkspace({
     updatePrefs(generateRandomPreferences());
     setDetailsOpen(true);
   }, [updatePrefs]);
+
+  const openPackageUpgrade = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('casting-open-package-upgrade'));
+  }, []);
 
   const openIdentityChange = useCallback(() => {
     const generation = useCastingGenerationStore.getState();
@@ -508,8 +518,11 @@ export function CastingWorkspace({
           handleGenerate={handleGenerate}
           handleEnhance={handleEnhance}
           handleRefineSubmit={handleRefineSubmit}
-          isReadOnly={isReadOnly}
+          isReadOnly={isReadOnly || mintedEdit}
           allowIdentityGeneration={allowIdentityGeneration}
+          profileLocked={showCastProfile}
+          profileName={modelName}
+          onForkProfile={onForkMinted}
         />
       </div>
 
@@ -523,7 +536,11 @@ export function CastingWorkspace({
           className="hidden lg:block flex-shrink-0"
         >
           <StudioSidePanel side="right" width={320}>
-            <MasterPromptPanel onChangeIdentity={offerIdentityDoor ? openIdentityChange : undefined} />
+            {showCastProfile ? (
+              <CastProfilePanel onFork={onForkMinted} onCompleteCard={openPackageUpgrade} />
+            ) : (
+              <MasterPromptPanel onChangeIdentity={offerIdentityDoor ? openIdentityChange : undefined} />
+            )}
           </StudioSidePanel>
         </AnimatedPanel>
       )}
@@ -532,11 +549,20 @@ export function CastingWorkspace({
           a headshot; selecting Change identity swaps it for the full form. */}
       {hasAssets && !identityChangeOpen && showMobilePanel && (
         <div className="fixed inset-0 z-50 pt-11 lg:hidden">
-          <MasterPromptPanel
-            mobileSheet
-            onClose={() => setShowMobilePanel(false)}
-            onChangeIdentity={offerIdentityDoor ? openIdentityChange : undefined}
-          />
+          {showCastProfile ? (
+            <CastProfilePanel
+              mobileSheet
+              onClose={() => setShowMobilePanel(false)}
+              onFork={onForkMinted}
+              onCompleteCard={openPackageUpgrade}
+            />
+          ) : (
+            <MasterPromptPanel
+              mobileSheet
+              onClose={() => setShowMobilePanel(false)}
+              onChangeIdentity={offerIdentityDoor ? openIdentityChange : undefined}
+            />
+          )}
         </div>
       )}
     </div>

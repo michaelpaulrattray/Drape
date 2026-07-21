@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   canInvokeIdentityGeneration,
   shouldOfferDraftIdentityDoor,
+  shouldShowCastProfile,
   shouldShowCastingControlPanel,
 } from "../client/src/features/casting/castingAuthoringMode";
 import { ChangeIdentityDoor } from "../client/src/features/casting/components/ChangeIdentityDoor";
@@ -40,6 +41,11 @@ describe("R7-3 draft authoring modes", () => {
 
     expect(canInvokeIdentityGeneration({ ...draft, isReadOnly: true })).toBe(false);
     expect(canInvokeIdentityGeneration({ ...draft, mintedEdit: true })).toBe(false);
+    expect(shouldShowCastingControlPanel({ ...draft, isReadOnly: true })).toBe(false);
+    expect(shouldShowCastingControlPanel({ ...draft, mintedEdit: true })).toBe(false);
+    expect(shouldShowCastProfile({ ...draft, isReadOnly: true })).toBe(true);
+    expect(shouldShowCastProfile({ ...draft, mintedEdit: true })).toBe(true);
+    expect(shouldShowCastProfile(draft)).toBe(false);
   });
 
   it("states the destructive distinction on the identity door itself", () => {
