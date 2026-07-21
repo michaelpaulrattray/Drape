@@ -48,6 +48,8 @@ export async function beginDirectOperation(input: {
 }): Promise<DirectOperationGate> {
   const claim = await claimGenerationOperation(input);
   switch (claim.type) {
+    case "deleted_subject":
+      throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
     case "replay_success":
       return { type: "replay", operationId: claim.operationId, result: claim.result };
     case "replay_failure":

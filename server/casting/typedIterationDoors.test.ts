@@ -73,7 +73,7 @@ vi.mock("../db/connection", async (importOriginal) => {
           } else {
             tx.modelUpdates.push(values);
           }
-          return Promise.resolve();
+          return Promise.resolve({ affectedRows: 1 });
         },
       }),
     }),

@@ -2,7 +2,7 @@
  * Wardrobe DB Helpers — CRUD operations for garments, outfits, and sessions.
  */
 import { eq, and, desc, isNotNull, sql } from "drizzle-orm";
-import { getDb } from "./connection";
+import { getDb, withTransaction } from "./connection";
 import {
   wardrobeGarments,
   wardrobeOutfits,
@@ -14,6 +14,7 @@ import {
   type InsertWardrobeSession,
   type InsertWardrobeLook,
 } from "../../drizzle/schema";
+import { assertOwnedAvailableModelIn } from "./modelReferenceFence";
 
 // ── Garments ───────────────────────────────────────────────────────────────
 
@@ -132,9 +133,13 @@ export async function deleteOutfit(outfitId: number, userId: number) {
 // ── Sessions ───────────────────────────────────────────────────────────────
 
 export async function createSession(data: InsertWardrobeSession) {
-  const db = (await getDb())!;
-  const [result] = await db.insert(wardrobeSessions).values(data).$returningId();
-  return result.id;
+  return withTransaction(async (tx) => {
+    if (data.modelId != null) {
+      await assertOwnedAvailableModelIn(tx, { modelId: data.modelId, userId: data.userId });
+    }
+    const [result] = await tx.insert(wardrobeSessions).values(data).$returningId();
+    return result.id;
+  });
 }
 
 export async function getSessionById(sessionId: number) {
@@ -309,9 +314,24 @@ function formatSession() {
 // ── Looks (curated VTO results) ───────────────────────────────────────
 
 export async function saveLook(data: InsertWardrobeLook) {
-  const db = (await getDb())!;
-  const [result] = await db.insert(wardrobeLooks).values(data).$returningId();
-  return result.id;
+  return withTransaction(async (tx) => {
+    await assertOwnedAvailableModelIn(tx, { modelId: data.modelId, userId: data.userId });
+    if (data.sessionId != null) {
+      const [session] = await tx
+        .select({ id: wardrobeSessions.id })
+        .from(wardrobeSessions)
+        .where(and(
+          eq(wardrobeSessions.id, data.sessionId),
+          eq(wardrobeSessions.userId, data.userId),
+          eq(wardrobeSessions.modelId, data.modelId),
+        ))
+        .limit(1)
+        .for("update");
+      if (!session) throw new Error("Wardrobe session does not belong to this model");
+    }
+    const [result] = await tx.insert(wardrobeLooks).values(data).$returningId();
+    return result.id;
+  });
 }
 
 export async function getUserLooksByModel(userId: number, modelId: number) {

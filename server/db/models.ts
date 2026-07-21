@@ -6,12 +6,10 @@ import { eq, ne, desc, and, inArray, isNull, sql } from "drizzle-orm";
 import {
   models,
   modelAssets,
-  wardrobeSessions,
-  wardrobeLooks,
   InsertModel,
   InsertModelAsset,
 } from "../../drizzle/schema";
-import { getDb, withTransaction } from "./connection";
+import { getDb } from "./connection";
 import { MODEL_MINTED_STATUSES } from "../../shared/modelLifecycle";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/models");
@@ -51,7 +49,7 @@ export async function getModelById(modelId: number) {
   const result = await db
     .select()
     .from(models)
-    .where(eq(models.id, modelId))
+    .where(and(eq(models.id, modelId), isNull(models.deletedAt), ne(models.status, "archived")))
     .limit(1);
   return result.length > 0 ? result[0] : null;
 }
@@ -77,16 +75,16 @@ export async function getUserModels(userId: number, limit: number = 50) {
   return await db
     .select()
     .from(models)
-    .where(and(eq(models.userId, userId), ne(models.status, "archived")))
+    .where(and(eq(models.userId, userId), ne(models.status, "archived"), isNull(models.deletedAt)))
     .orderBy(desc(models.createdAt))
     .limit(limit);
 }
 
 export type ModelPlacementTruth = { status: string; name: string | null };
 
-/** One-query lifecycle + name truth for model-linked board placements. Missing ids are
- * deliberately absent from the map so callers can distinguish a hard-deleted
- * source from an unlinked board item. */
+/** One-query lifecycle + name truth for model-linked board placements. Deleted
+ * subjects are deliberately absent; R7-5C removes their linked placements in
+ * the same transaction instead of rendering a Source unavailable card. */
 export async function getModelStatusesIn(
   modelIds: number[],
   userId: number,
@@ -98,7 +96,12 @@ export async function getModelStatusesIn(
   const rows = await db
     .select({ id: models.id, status: models.status, name: models.name })
     .from(models)
-    .where(and(inArray(models.id, modelIds), eq(models.userId, userId)));
+    .where(and(
+      inArray(models.id, modelIds),
+      eq(models.userId, userId),
+      isNull(models.deletedAt),
+      ne(models.status, "archived"),
+    ));
   return new Map(rows.map((row) => [row.id, { status: row.status, name: row.name }]));
 }
 
@@ -114,7 +117,21 @@ export async function updateModel(
   }
 
   try {
-    await db.update(models).set(data).where(eq(models.id, modelId));
+    const updated = await db
+      .update(models)
+      .set(data)
+      .where(and(eq(models.id, modelId), isNull(models.deletedAt), ne(models.status, "archived")));
+    const affected = Array.isArray(updated)
+      ? (updated[0] as { affectedRows?: number } | undefined)?.affectedRows ?? 0
+      : (updated as { affectedRows?: number }).affectedRows ?? 0;
+    if (affected === 0) {
+      const [available] = await db
+        .select({ id: models.id })
+        .from(models)
+        .where(and(eq(models.id, modelId), isNull(models.deletedAt), ne(models.status, "archived")))
+        .limit(1);
+      if (!available) return { success: false, error: "Model not found" };
+    }
     return { success: true };
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to update model:");
@@ -153,6 +170,7 @@ export async function mintModelAtomically(
         eq(models.id, input.modelId),
         eq(models.userId, input.userId),
         eq(models.status, "draft"),
+        isNull(models.deletedAt),
         isNull(models.agencyId),
         isNull(models.mintedAt),
         sql`${models.identityRevisionId} <=> ${input.expectedIdentityRevisionId}`,
@@ -168,28 +186,6 @@ export async function mintModelAtomically(
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to atomically mint model:");
     return { success: false, error: "Failed to mint model" };
-  }
-}
-
-export async function deleteModel(
-  modelId: number
-): Promise<{ success: boolean; error?: string }> {
-  const db = await getDb();
-  if (!db) {
-    return { success: false, error: "Database not available" };
-  }
-
-  try {
-    await withTransaction(async (tx) => {
-      await tx.delete(wardrobeLooks).where(eq(wardrobeLooks.modelId, modelId));
-      await tx.delete(wardrobeSessions).where(eq(wardrobeSessions.modelId, modelId));
-      await tx.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
-      await tx.delete(models).where(eq(models.id, modelId));
-    });
-    return { success: true };
-  } catch (error) {
-    log.error({ err: error }, "[Database] Failed to delete model:");
-    return { success: false, error: "Failed to delete model" };
   }
 }
 
@@ -222,7 +218,11 @@ export async function getUserMintedModelsWithThumbnail(
       updatedAt: models.updatedAt,
     })
     .from(models)
-    .where(and(eq(models.userId, userId), inArray(models.status, [...MODEL_MINTED_STATUSES])))
+    .where(and(
+      eq(models.userId, userId),
+      inArray(models.status, [...MODEL_MINTED_STATUSES]),
+      isNull(models.deletedAt),
+    ))
     .orderBy(desc(models.mintedAt))
     .limit(limit);
 
@@ -292,7 +292,7 @@ export async function getUserDraftModelsWithThumbnail(
       updatedAt: models.updatedAt,
     })
     .from(models)
-    .where(and(eq(models.userId, userId), eq(models.status, "draft")))
+    .where(and(eq(models.userId, userId), eq(models.status, "draft"), isNull(models.deletedAt)))
     .orderBy(desc(models.createdAt))
     .limit(limit);
 
@@ -441,49 +441,4 @@ export async function getModelAssetByView(modelId: number, viewType: string) {
 
   const filtered = result.filter((a) => a.viewType === viewType);
   return filtered.length > 0 ? filtered[0] : null;
-}
-
-// ============ Asset Cleanup ============
-
-export async function getModelAssetsForCleanup(
-  modelId: number
-): Promise<{ storageKey: string | null }[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db
-    .select({ storageKey: modelAssets.storageKey })
-    .from(modelAssets)
-    .where(eq(modelAssets.modelId, modelId));
-}
-
-export async function deleteModelWithAssetKeys(modelId: number): Promise<{
-  success: boolean;
-  assetKeys: string[];
-  error?: string;
-}> {
-  const db = await getDb();
-  if (!db) {
-    return { success: false, assetKeys: [], error: "Database not available" };
-  }
-
-  try {
-    // Get all asset keys before deletion (read outside transaction is fine)
-    const assets = await getModelAssetsForCleanup(modelId);
-    const assetKeys = assets
-      .map((a) => a.storageKey)
-      .filter((k): k is string => k !== null);
-
-    await withTransaction(async (tx) => {
-      await tx.delete(wardrobeLooks).where(eq(wardrobeLooks.modelId, modelId));
-      await tx.delete(wardrobeSessions).where(eq(wardrobeSessions.modelId, modelId));
-      await tx.delete(modelAssets).where(eq(modelAssets.modelId, modelId));
-      await tx.delete(models).where(eq(models.id, modelId));
-    });
-
-    return { success: true, assetKeys };
-  } catch (error) {
-    log.error({ err: error }, "[Database] Failed to delete model with assets:");
-    return { success: false, assetKeys: [], error: "Failed to delete model" };
-  }
 }

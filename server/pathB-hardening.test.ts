@@ -176,16 +176,12 @@ describe("Transaction-wrapped DB functions", () => {
     expect(typeof mod.adjustUserCredits).toBe("function");
   });
 
-  it("models module exports deleteModel", async () => {
+  it("retires the two non-atomic model deletion helpers", async () => {
     const mod = await import("./db/models");
-    expect(mod.deleteModel).toBeDefined();
-    expect(typeof mod.deleteModel).toBe("function");
-  });
-
-  it("models module exports deleteModelWithAssetKeys", async () => {
-    const mod = await import("./db/models");
-    expect(mod.deleteModelWithAssetKeys).toBeDefined();
-    expect(typeof mod.deleteModelWithAssetKeys).toBe("function");
+    expect(mod).not.toHaveProperty("deleteModel");
+    expect(mod).not.toHaveProperty("deleteModelWithAssetKeys");
+    const deletion = await import("./casting/finalCastDeletion");
+    expect(typeof deletion.executeFinalCastDeletion).toBe("function");
   });
 
   it("inviteCodes module exports redeemInviteCode", async () => {

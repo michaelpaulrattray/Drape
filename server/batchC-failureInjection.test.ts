@@ -71,6 +71,36 @@ vi.mock("./db", async (importOriginal) => {
       tx.inserts.push({ itemId: 3, version: 1 });
       return "filled" as const;
     }),
+    stampBoardItemWithVersionIn: vi.fn(async (_transaction: unknown, input: {
+      itemId: number;
+      update: Record<string, unknown>;
+      version: Record<string, unknown>;
+    }) => {
+      if (tx.failStampUpdate) throw new Error("board stamp update failed");
+      tx.updates.push(input.update);
+      if (tx.failVersionInsert) throw new Error("version insert failed");
+      tx.inserts.push({ ...input.version, itemId: input.itemId });
+    }),
+    placeLinkedBoardItem: vi.fn(async (input: {
+      item: Record<string, unknown>;
+      edge: Record<string, unknown>;
+      initialVersion?: Record<string, unknown>;
+    }) => {
+      if (tx.failBoardItemInsert) throw new Error("board item insert failed");
+      const itemId = 888;
+      tx.inserts.push(input.item);
+      if (input.initialVersion) {
+        if (tx.failVersionInsert) throw new Error("version insert failed");
+        tx.inserts.push({ ...input.initialVersion, itemId, version: 1 });
+      }
+      tx.inserts.push({ ...input.edge, targetItemId: itemId });
+      return itemId;
+    }),
+    updateBoardItemIn: vi.fn(async (_transaction: unknown, _itemId: number, values: Record<string, unknown>) => {
+      if (tx.failStaleStatusUpdate) throw new Error("downstream stale write failed");
+      tx.updates.push(values);
+      return { success: true };
+    }),
     deductPoints: vi.fn(),
     deductCredits: vi.fn(),
     addCredits: vi.fn(),
@@ -98,7 +128,7 @@ vi.mock("./db/connection", async (importOriginal) => {
             return Promise.reject(new Error("downstream stale write failed"));
           }
           tx.updates.push(values);
-          return Promise.resolve();
+          return Promise.resolve({ affectedRows: 1 });
         },
       }),
     }),

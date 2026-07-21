@@ -57,7 +57,7 @@ vi.mock("./db/connection", async (importOriginal) => {
         where: () => {
           if ((values.status as { state?: string } | undefined)?.state === "stale") tx.staleUpdates.push(values);
           else tx.modelUpdates.push(values);
-          return Promise.resolve();
+          return Promise.resolve({ affectedRows: 1 });
         },
       }),
     }),

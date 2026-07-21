@@ -89,12 +89,23 @@ vi.mock("./db/boardEdges", async (importOriginal) => {
 vi.mock("./db/connection", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./db/connection")>();
   const makeTx = () => ({
+    select: (_shape?: unknown) => ({
+      from: (_table: unknown) => ({
+        where: (_condition: unknown) => ({
+          limit: (_limit: number) => ({
+            for: async (_mode: string) => [{ id: 7, userId: 1 }],
+            then: (resolve: (rows: Array<{ id: number; userId: number }>) => unknown) =>
+              Promise.resolve([{ id: 7, userId: 1 }]).then(resolve),
+          }),
+        }),
+      }),
+    }),
     update: (_t: unknown) => ({
       set: (values: Record<string, unknown>) => ({
         where: () => {
           if ((values.status as { state?: string } | undefined)?.state === "stale") tx.staleUpdates.push(values);
           else tx.modelUpdates.push(values);
-          return Promise.resolve();
+          return Promise.resolve({ affectedRows: 1 });
         },
       }),
     }),

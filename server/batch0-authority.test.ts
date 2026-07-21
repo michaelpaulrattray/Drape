@@ -61,6 +61,13 @@ vi.mock("./casting/directOperation", async (importOriginal) => {
     failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
   };
 });
+vi.mock("./casting/finalCastDeletion", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/finalCastDeletion")>();
+  return {
+    ...actual,
+    executeFinalCastDeletion: vi.fn().mockResolvedValue({ deleted: true, counts: {} }),
+  };
+});
 
 import {
   getModelById,
@@ -72,10 +79,10 @@ import {
   getModelStatusesIn,
   updateModel,
   mintModelAtomically,
-  deleteModel,
   deductPoints,
   createModelAsset,
 } from "./db";
+import { executeFinalCastDeletion } from "./casting/finalCastDeletion";
 import { CREDIT_COSTS, generateCastingImage } from "./casting/aiService";
 import { beginDirectOperation } from "./casting/directOperation";
 import { buildIdentityAnchor } from "./casting/geminiClient";
@@ -182,7 +189,7 @@ beforeEach(() => {
   vi.mocked(getModelStatusesIn).mockReset().mockResolvedValue(new Map());
   vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true });
   vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true });
-  vi.mocked(deleteModel).mockClear().mockResolvedValue({ success: true });
+  vi.mocked(executeFinalCastDeletion).mockReset().mockResolvedValue({ deleted: true, counts: {} } as never);
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true });
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 99 } as never);
   vi.mocked(generateCastingImage).mockClear();
@@ -561,7 +568,7 @@ describe("models.delete drafts-only (founder ruling, review item 9)", () => {
     const caller = appRouter.createCaller(authCtx());
     const res = await caller.models.delete({ modelId: 7 });
     expect(res.success).toBe(true);
-    expect(deleteModel).toHaveBeenCalledWith(7);
+    expect(executeFinalCastDeletion).toHaveBeenCalledWith(expect.objectContaining({ userId: 1, modelId: 7 }));
   });
 
   it("a minted model refuses deletion", async () => {
@@ -572,7 +579,7 @@ describe("models.delete drafts-only (founder ruling, review item 9)", () => {
     await expect(caller.models.delete({ modelId: 7 })).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
     });
-    expect(deleteModel).not.toHaveBeenCalled();
+    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
   });
 
   it("a legacy locked model refuses deletion", async () => {
@@ -581,26 +588,26 @@ describe("models.delete drafts-only (founder ruling, review item 9)", () => {
     await expect(caller.models.delete({ modelId: 7 })).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
     });
-    expect(deleteModel).not.toHaveBeenCalled();
+    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
   });
 
   it("an archived model reads as deleted (NOT_FOUND)", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "archived" }) as never);
     const caller = appRouter.createCaller(authCtx());
     await expect(caller.models.delete({ modelId: 7 })).rejects.toMatchObject({ code: "NOT_FOUND" });
-    expect(deleteModel).not.toHaveBeenCalled();
+    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
   });
 
   it("foreign ownership refuses deletion", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ userId: 2 }) as never);
     const caller = appRouter.createCaller(authCtx(1));
     await expect(caller.models.delete({ modelId: 7 })).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(deleteModel).not.toHaveBeenCalled();
+    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
   });
 
   it("a database delete failure is an error, never success", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
-    vi.mocked(deleteModel).mockResolvedValue({ success: false, error: "db down" });
+    vi.mocked(executeFinalCastDeletion).mockRejectedValue(new Error("db down"));
     const caller = appRouter.createCaller(authCtx());
     await expect(caller.models.delete({ modelId: 7 })).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",

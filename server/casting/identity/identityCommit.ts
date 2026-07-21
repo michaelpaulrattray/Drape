@@ -17,7 +17,7 @@
  * If anything fails, the transaction rolls back — no partial identity state
  * survives (§8.6 step 9). Credit consequences belong to the caller (M20).
  */
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { models, modelAssets } from "../../../drizzle/schema";
 import { withTransaction, type TransactionHandle } from "../../db/connection";
 import { buildIdentityAnchor } from "../geminiClient";
@@ -28,6 +28,11 @@ import {
   type AuthorizedIdentityPatch,
   type TechnicalSchema,
 } from "./identityTypes";
+
+function affectedRows(result: unknown): number {
+  const header = result as { affectedRows?: number } | [{ affectedRows?: number }];
+  return Array.isArray(header) ? header[0]?.affectedRows ?? 0 : header.affectedRows ?? 0;
+}
 import { handlerFor } from "./identityFieldHandlers";
 import {
   identityStampFor,
@@ -274,7 +279,11 @@ export async function commitAnchorReRoll(input: {
       })
       .$returningId();
     if (!inserted?.id) throw new Error("Failed to persist the new headshot");
-    await tx.update(models).set({ identityRevisionId: revisionId }).where(eq(models.id, input.modelId));
+    const updated = await tx
+      .update(models)
+      .set({ identityRevisionId: revisionId })
+      .where(and(eq(models.id, input.modelId), isNull(models.deletedAt), ne(models.status, "archived")));
+    if (affectedRows(updated) !== 1) throw new Error("Model is no longer available");
     if (staleIds.length > 0) {
       await tx
         .update(modelAssets)
@@ -301,7 +310,7 @@ export async function commitIdentityEdit(input: IdentityCommitInput): Promise<Id
   const staleIds = selectStaleSiblingHeads(input.assets, "frontClose");
 
   const assetId = await withTransaction(async (tx) => {
-    await tx
+    const updated = await tx
       .update(models)
       .set({
         masterPrompt: computed.masterPrompt,
@@ -309,7 +318,8 @@ export async function commitIdentityEdit(input: IdentityCommitInput): Promise<Id
         preferences: computed.preferences,
         identityRevisionId: revisionId,
       })
-      .where(eq(models.id, input.model.id));
+      .where(and(eq(models.id, input.model.id), isNull(models.deletedAt), ne(models.status, "archived")));
+    if (affectedRows(updated) !== 1) throw new Error("Model is no longer available");
 
     const [inserted] = await tx
       .insert(modelAssets)

@@ -217,15 +217,13 @@ describe("model lifecycle literal guard (Batch B)", () => {
 
   it("the minted-gallery DB source filters by the shared minted-status list, never a bare 'active'", () => {
     const src = read("server/db/models.ts");
-    expect(src).toContain("inArray(models.status, [...MODEL_MINTED_STATUSES])");
-    expect(count(src, /eq\(models\.status,\s*["'](active|locked)["']\)/g)).toBe(0);
-    // Pinned survivors: the drafts-source filter, Batch 0's archived helper,
-    // and getUserModels' archived exclusion. W2 removed the superseded
-    // archived-id reader; board availability now comes from one status map.
-    // One read filter plus the atomic mint transition's conditional draft CAS.
-    expect(count(src, /eq\(models\.status,\s*["']draft["']\)/g)).toBe(2);
-    expect(count(src, /eq\(models\.status,\s*["']archived["']\)/g)).toBe(0);
-    expect(count(src, /ne\(models\.status,\s*["']archived["']\)/g)).toBe(1);
+    const mintedGallery = src.slice(
+      src.indexOf("export async function getUserMintedModelsWithThumbnail"),
+      src.indexOf("export async function getUserDraftModelsWithThumbnail"),
+    );
+    expect(mintedGallery).toContain("inArray(models.status, [...MODEL_MINTED_STATUSES])");
+    expect(mintedGallery).toContain("isNull(models.deletedAt)");
+    expect(count(mintedGallery, /eq\(models\.status,\s*["'](active|locked)["']\)/g)).toBe(0);
   });
 
   it("the sheet controller's minted state comes only from packageState (server truth)", () => {

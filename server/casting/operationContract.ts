@@ -124,6 +124,7 @@ export type PublicOperationResult = Record<string, unknown> | unknown[] | string
 
 export type GenerationOperationOutcome =
   | { type: "claimed"; operationId: string; payloadHash: string }
+  | { type: "deleted_subject"; operationId: string }
   | { type: "in_progress"; operationId: string; status: "claimed" | "running" }
   | { type: "replay_success"; operationId: string; result: unknown }
   | { type: "replay_failure"; operationId: string; errorCode: string; publicMessage: string }

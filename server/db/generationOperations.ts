@@ -36,6 +36,7 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { fillEmptyCastNodeWithVersionIn } from "./boards";
+import { assertOwnedAvailableModelIn } from "./modelReferenceFence";
 import { isModelAvailableStatus, isModelDraftStatus } from "../../shared/modelLifecycle";
 import type { BoardItemCanvasMetadata, Provenance } from "../../shared/boardTypes";
 
@@ -122,6 +123,9 @@ function assertOperationIdentity(operationId: string): void {
 }
 
 function outcomeFromExisting(operation: GenerationOperation): GenerationOperationOutcome {
+  if (operation.subjectDeletedAt) {
+    return { type: "deleted_subject", operationId: operation.id };
+  }
   switch (operation.status) {
     case "claimed":
     case "running":
@@ -248,7 +252,7 @@ export async function getPublicGenerationOperation(
   assertPositiveId(userId, "userId");
   assertOperationIdentity(operationId);
   const operation = await getOperationForUser(userId, operationId);
-  if (!operation) return null;
+  if (!operation || operation.subjectDeletedAt) return null;
   const children = await loadOperationChildren([operation.id]);
   return toPublicGenerationOperation(operation, children.get(operation.id) ?? []);
 }
@@ -269,7 +273,7 @@ export async function getRecentPublicGenerationOperation(input: {
       eq(generationOperations.clientRequestId, input.clientRequestId),
     ))
     .limit(1);
-  if (!operation) return null;
+  if (!operation || operation.subjectDeletedAt) return null;
   const children = await loadOperationChildren([operation.id]);
   return toPublicGenerationOperation(operation, children.get(operation.id) ?? []);
 }
@@ -290,6 +294,7 @@ export async function listActivePublicGenerationOperations(input: {
   if (!db) return [];
   const filters = [
     eq(generationOperations.userId, input.userId),
+    isNull(generationOperations.subjectDeletedAt),
     or(
       inArray(generationOperations.status, ["claimed", "running", "recovery_required"]),
       and(
@@ -534,6 +539,7 @@ export async function landGenerationOperationResult(input: {
     const fill = await fillEmptyCastNodeWithVersionIn(tx, {
       boardId: input.boardId,
       itemId: input.itemId,
+      modelId,
       build: (item) => {
         const provenance: Provenance = {
           type: "library_cast",
@@ -651,8 +657,26 @@ export async function claimGenerationOperation(
 
   const payloadHash = hashGenerationOperationClaim(input);
   const operationId = randomUUID();
+  // A pre-deletion request id keeps its durable receipt, but deletion marks it
+  // subjectDeletedAt. Classify that receipt before consulting the model row so
+  // replay can refuse without exposing the old saved result.
+  const [preexisting] = await db
+    .select()
+    .from(generationOperations)
+    .where(and(
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.clientRequestId, input.clientRequestId),
+    ))
+    .limit(1);
+  if (preexisting) {
+    if (preexisting.subjectDeletedAt) return outcomeFromExisting(preexisting);
+    if (preexisting.kind !== input.kind || preexisting.payloadHash !== payloadHash) {
+      return { type: "payload_conflict", operationId: preexisting.id };
+    }
+    return outcomeFromExisting(preexisting);
+  }
   try {
-    await db.insert(generationOperations).values({
+    const values = {
       id: operationId,
       userId: input.userId,
       clientRequestId: input.clientRequestId,
@@ -661,8 +685,16 @@ export async function claimGenerationOperation(
       originBoardId: input.originBoardId ?? null,
       originItemId: input.originItemId ?? null,
       payloadHash,
-      status: "claimed",
-    });
+      status: "claimed" as const,
+    };
+    if (input.modelId != null) {
+      await withTransaction(async (tx) => {
+        await assertOwnedAvailableModelIn(tx, { modelId: input.modelId!, userId: input.userId });
+        await tx.insert(generationOperations).values(values);
+      });
+    } else {
+      await db.insert(generationOperations).values(values);
+    }
     return { type: "claimed", operationId, payloadHash };
   } catch (error) {
     if (!isMysqlDuplicateKeyError(error)) throw error;
@@ -1083,21 +1115,25 @@ export async function bindGenerationOperationModel(input: {
   assertPositiveId(input.userId, "userId");
   assertOperationIdentity(input.operationId);
   assertPositiveId(input.modelId, "modelId");
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const bound = await db
-    .update(generationOperations)
-    .set({ modelId: input.modelId })
-    .where(and(
-      eq(generationOperations.id, input.operationId),
-      eq(generationOperations.userId, input.userId),
-      eq(generationOperations.status, "running"),
-      isNull(generationOperations.modelId),
-    ));
-  if (affectedRows(bound) === 1) return;
-  const operation = await getOperationForUser(input.userId, input.operationId);
-  if (operation?.status === "running" && operation.modelId === input.modelId) return;
-  throw new Error("Generation operation model binding lost its state race");
+  await withTransaction(async (tx) => {
+    // A newly-created model can become visible before this receipt is bound.
+    // Lock/fence it here so deletion either sees the bound running operation
+    // and refuses, or commits first and makes this binding fail NOT_FOUND.
+    await assertOwnedAvailableModelIn(tx, { modelId: input.modelId, userId: input.userId });
+    const bound = await tx
+      .update(generationOperations)
+      .set({ modelId: input.modelId })
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        eq(generationOperations.status, "running"),
+        isNull(generationOperations.modelId),
+      ));
+    if (affectedRows(bound) === 1) return;
+    const operation = await getOperationForUser(input.userId, input.operationId, tx);
+    if (operation?.status === "running" && operation.modelId === input.modelId) return;
+    throw new Error("Generation operation model binding lost its state race");
+  });
 }
 
 /** A free pre-start request may be fulfilled without generation (for example,

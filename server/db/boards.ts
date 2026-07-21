@@ -2,14 +2,21 @@
  * Board DB Helpers — CRUD operations for boards and board items.
  */
 import { eq, and, desc, asc, inArray, sql, isNull } from "drizzle-orm";
-import { getDb } from "./connection";
+import { TRPCError } from "@trpc/server";
+import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import {
   boards,
   boardItems,
+  boardItemVersions,
+  boardEdges,
   type BoardItem,
   type InsertBoard,
   type InsertBoardItem,
+  type InsertBoardItemVersion,
+  type InsertBoardEdge,
 } from "../../drizzle/schema";
+import { CAST_PROVENANCE_TYPES, parseJsonValue, readCastProvenance } from "../casting/deletionAudit";
+import { assertOwnedAvailableModelIn } from "./modelReferenceFence";
 
 // ── Boards ────────────────────────────────────────────────────────────────
 
@@ -93,16 +100,28 @@ export async function getUserBoardCount(userId: number) {
 // ── Board Items ───────────────────────────────────────────────────────────
 
 export async function addBoardItem(data: InsertBoardItem) {
-  const db = (await getDb())!;
-  const [result] = await db.insert(boardItems).values(data).$returningId();
-  return result.id;
+  return withTransaction(async (tx) => {
+    await fenceBoardModelReferencesIn(tx, data.boardId, data);
+    const [result] = await tx.insert(boardItems).values(data).$returningId();
+    return result.id;
+  });
 }
 
 export async function addBoardItems(items: InsertBoardItem[]) {
   if (items.length === 0) return [];
-  const db = (await getDb())!;
-  const results = await db.insert(boardItems).values(items).$returningId();
-  return results.map((r) => r.id);
+  return withTransaction(async (tx) => {
+    const boardIds = Array.from(new Set(items.map((item) => item.boardId))).sort((a, b) => a - b);
+    for (const boardId of boardIds) {
+      const modelIds = Array.from(new Set(
+        items.filter((item) => item.boardId === boardId).flatMap(referencedModelIds),
+      )).sort((a, b) => a - b);
+      if (modelIds.length === 0) continue;
+      const userId = await boardOwnerIn(tx, boardId);
+      for (const modelId of modelIds) await assertOwnedAvailableModelIn(tx, { modelId, userId });
+    }
+    const results = await tx.insert(boardItems).values(items).$returningId();
+    return results.map((r) => r.id);
+  });
 }
 
 export async function getBoardItems(boardId: number) {
@@ -150,8 +169,21 @@ export async function updateBoardItem(
   itemId: number,
   data: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "positionX" | "positionY" | "width" | "height" | "zIndex" | "metadata" | "sourceModelId">>
 ) {
-  const db = (await getDb())!;
-  await db.update(boardItems).set(data).where(eq(boardItems.id, itemId));
+  await withTransaction(async (tx) => {
+    const [item] = await tx
+      .select({ boardId: boardItems.boardId, sourceModelId: boardItems.sourceModelId, metadata: boardItems.metadata })
+      .from(boardItems)
+      .where(eq(boardItems.id, itemId))
+      .limit(1);
+    if (!item) throw new Error("Board item not found");
+    if (data.sourceModelId !== undefined || data.metadata !== undefined) {
+      await fenceBoardModelReferencesIn(tx, item.boardId, {
+        sourceModelId: data.sourceModelId !== undefined ? data.sourceModelId : item.sourceModelId,
+        metadata: data.metadata !== undefined ? data.metadata : item.metadata,
+      });
+    }
+    await tx.update(boardItems).set(data).where(eq(boardItems.id, itemId));
+  });
 }
 
 export async function batchUpdateBoardItemPositions(
@@ -182,10 +214,45 @@ export async function deleteBoardItems(itemIds: number[]) {
 
 // ── Board Item Versions ──────────────────────────────────────────────────
 
-import {
-  boardItemVersions,
-  type InsertBoardItemVersion,
-} from "../../drizzle/schema";
+function referencedModelIds(data: Pick<InsertBoardItem, "sourceModelId" | "metadata">): number[] {
+  const direct = data.sourceModelId ?? null;
+  const parsed = parseJsonValue(data.metadata);
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const record = parsed as Record<string, unknown>;
+    const raw = record.provenance && typeof record.provenance === "object" && !Array.isArray(record.provenance)
+      ? record.provenance as Record<string, unknown>
+      : record;
+    if (CAST_PROVENANCE_TYPES.includes(raw.type as (typeof CAST_PROVENANCE_TYPES)[number]) && !readCastProvenance(parsed)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast provenance is invalid" });
+    }
+  }
+  const provenance = readCastProvenance(data.metadata);
+  if (direct && provenance && direct !== provenance.modelId) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast provenance disagrees with its model link" });
+  }
+  return Array.from(new Set([direct, provenance?.modelId ?? null].filter((id): id is number => id !== null)));
+}
+
+async function boardOwnerIn(tx: TransactionHandle, boardId: number): Promise<number> {
+  const [board] = await tx
+    .select({ userId: boards.userId })
+    .from(boards)
+    .where(eq(boards.id, boardId))
+    .limit(1);
+  if (!board) throw new Error("Board not found");
+  return board.userId;
+}
+
+async function fenceBoardModelReferencesIn(
+  tx: TransactionHandle,
+  boardId: number,
+  data: Pick<InsertBoardItem, "sourceModelId" | "metadata">,
+): Promise<void> {
+  const modelIds = referencedModelIds(data).sort((a, b) => a - b);
+  if (modelIds.length === 0) return;
+  const userId = await boardOwnerIn(tx, boardId);
+  for (const modelId of modelIds) await assertOwnedAvailableModelIn(tx, { modelId, userId });
+}
 
 export async function addBoardItemVersion(data: InsertBoardItemVersion) {
   const db = (await getDb())!;
@@ -200,9 +267,6 @@ export async function addBoardItemVersion(data: InsertBoardItemVersion) {
 // edge) is half-versioned board state that no log line recovers. Each
 // grouped write commits together or not at all. No external image call ever
 // runs inside these transactions — callers finish generation first.
-
-import { withTransaction, type TransactionHandle } from "./connection";
-import { boardEdges, type InsertBoardEdge } from "../../drizzle/schema";
 
 export interface StampBoardItemWithVersionInput {
   itemId: number;
@@ -219,6 +283,18 @@ export async function stampBoardItemWithVersionIn(
   tx: TransactionHandle,
   input: StampBoardItemWithVersionInput,
 ): Promise<void> {
+  const [item] = await tx
+    .select({ boardId: boardItems.boardId, sourceModelId: boardItems.sourceModelId, metadata: boardItems.metadata })
+    .from(boardItems)
+    .where(eq(boardItems.id, input.itemId))
+    .limit(1);
+  if (!item) throw new Error("Board item not found");
+  if (input.update.sourceModelId !== undefined || input.update.metadata !== undefined) {
+    await fenceBoardModelReferencesIn(tx, item.boardId, {
+      sourceModelId: input.update.sourceModelId !== undefined ? input.update.sourceModelId : item.sourceModelId,
+      metadata: input.update.metadata !== undefined ? input.update.metadata : item.metadata,
+    });
+  }
   await tx.update(boardItems).set(input.update).where(eq(boardItems.id, input.itemId));
   await tx.insert(boardItemVersions).values(input.version);
 }
@@ -240,6 +316,9 @@ export async function fillEmptyCastNodeWithVersionIn(
   input: {
     boardId: number;
     itemId: number;
+    /** Lock this model before the board item so deletion and landing share a
+     * single lock order (model -> Canvas row) and cannot deadlock. */
+    modelId: number;
     build: (item: BoardItem) => {
       update: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">>;
       version: Omit<InsertBoardItemVersion, "itemId" | "version">;
@@ -256,6 +335,8 @@ export async function fillEmptyCastNodeWithVersionIn(
     };
   },
 ): Promise<FillEmptyCastNodeResult> {
+  const boardUserId = await boardOwnerIn(tx, input.boardId);
+  await assertOwnedAvailableModelIn(tx, { modelId: input.modelId, userId: boardUserId });
   const [item] = await tx
     .select()
     .from(boardItems)
@@ -294,6 +375,15 @@ export async function fillEmptyCastNodeWithVersionIn(
     if (!matchingVersion) return "not_empty";
     const reconciliationUpdate = reconcile.buildUpdate(item);
     if (!reconciliationUpdate) return "not_empty";
+    const reconciliationModelIds = referencedModelIds({
+      sourceModelId: reconciliationUpdate.sourceModelId !== undefined
+        ? reconciliationUpdate.sourceModelId
+        : item.sourceModelId,
+      metadata: reconciliationUpdate.metadata !== undefined ? reconciliationUpdate.metadata : item.metadata,
+    });
+    if (reconciliationModelIds.some((modelId) => modelId !== input.modelId)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast landing changed its model identity" });
+    }
     const result = await tx
       .update(boardItems)
       .set(reconciliationUpdate)
@@ -311,6 +401,13 @@ export async function fillEmptyCastNodeWithVersionIn(
   }
 
   const built = input.build(item);
+  const builtModelIds = referencedModelIds({
+    sourceModelId: built.update.sourceModelId !== undefined ? built.update.sourceModelId : item.sourceModelId,
+    metadata: built.update.metadata !== undefined ? built.update.metadata : item.metadata,
+  });
+  if (builtModelIds.some((modelId) => modelId !== input.modelId)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Canvas Cast landing changed its model identity" });
+  }
   const result = await tx
     .update(boardItems)
     .set(built.update)
@@ -338,6 +435,18 @@ export async function updateBoardItemIn(
   itemId: number,
   data: Partial<Pick<InsertBoardItem, "label" | "imageUrl" | "imageKey" | "metadata" | "sourceModelId">>,
 ): Promise<void> {
+  const [item] = await tx
+    .select({ boardId: boardItems.boardId, sourceModelId: boardItems.sourceModelId, metadata: boardItems.metadata })
+    .from(boardItems)
+    .where(eq(boardItems.id, itemId))
+    .limit(1);
+  if (!item) throw new Error("Board item not found");
+  if (data.sourceModelId !== undefined || data.metadata !== undefined) {
+    await fenceBoardModelReferencesIn(tx, item.boardId, {
+      sourceModelId: data.sourceModelId !== undefined ? data.sourceModelId : item.sourceModelId,
+      metadata: data.metadata !== undefined ? data.metadata : item.metadata,
+    });
+  }
   await tx.update(boardItems).set(data).where(eq(boardItems.id, itemId));
 }
 
@@ -352,6 +461,7 @@ export async function placeLinkedBoardItem(input: {
   initialVersion?: { imageUrl: string; prompt?: string | null };
 }): Promise<number> {
   return withTransaction(async (tx) => {
+    await fenceBoardModelReferencesIn(tx, input.item.boardId, input.item);
     const [row] = await tx.insert(boardItems).values(input.item).$returningId();
     if (!row?.id) throw new Error("Failed to create the board item");
     if (input.initialVersion) {

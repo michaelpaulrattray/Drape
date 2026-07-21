@@ -1,12 +1,11 @@
 import { protectedProcedure, router } from "../_core/trpc";
 import {
-  createModel, getModelById, getUserModels, updateModel, deleteModel,
+  createModel, getModelById, getUserModels, updateModel,
   getModelAssets, bindGenerationOperationModel, markGenerationOperationRunning,
 } from "../db";
 import { generateMasterPrompt, ModelPreferences } from "../casting/aiService";
 import { modelCreateInputSchema } from "./modelCreateInput";
 import { validateCreationIntent } from "../casting/identity/creationIntake";
-import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
@@ -19,6 +18,7 @@ import {
   requireDirectOperationRecovery,
 } from "../casting/directOperation";
 import { modelOperationLockKey } from "../casting/operationContract";
+import { executeFinalCastDeletion } from "../casting/finalCastDeletion";
 const log = createModuleLogger("routes/models");
 
 export const modelsRouter = router({
@@ -218,30 +218,20 @@ export const modelsRouter = router({
 
       const renamed = await updateModel(input.modelId, { name: input.name });
       if (!renamed.success) {
+        if (renamed.error === "Model not found") {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save the name" });
       }
       return { success: true };
     }),
 
-  // Delete a model — DRAFTS ONLY (founder ruling, Batch 0 review item 9).
-  // This is a HARD delete with no cascade design: board placements, D-12
-  // snapshots, and generations keep dangling references and R2 objects
-  // orphan. A minted identity must not be hard-deletable until the R7
-  // deletion/cascade design lands (archive, placement handling, R2 cleanup).
+  // R7-5C keeps the public door drafts-only while the same atomic deletion
+  // service is proven for draft, active and legacy locked Casts. R7-5E will
+  // expose minted deletion after the cleanup worker and product drive land.
   delete: protectedProcedure
     .input(z.object({ clientRequestId: z.string().uuid(), modelId: z.number() }).strict())
     .mutation(async ({ ctx, input }) => {
-      const model = await getModelById(input.modelId);
-      if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-      }
-      if (model.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-      }
-      // FR-4: archived reads as deleted already
-      if (model.status === "archived") {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-      }
       const lockKey = modelOperationLockKey(input.modelId);
       const gate = await beginDirectOperation({
         userId: ctx.user.id,
@@ -269,35 +259,21 @@ export const modelsRouter = router({
         plannedCredits: 0,
         requiredLockKey: lockKey,
         phase: "finalizing",
-        heartbeat: true,
+        heartbeat: false,
       });
 
-      let durableResult = false;
       try {
-        const deleted = await deleteModel(input.modelId);
-        if (!deleted.success) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: deleted.error || "Failed to delete model" });
-        }
-        durableResult = true;
-
-        // Audit failure is secondary after the deletion's durable boundary.
-        await logAuditEvent({
+        await executeFinalCastDeletion({
           userId: ctx.user.id,
-          action: AUDIT_ACTIONS.MODEL_DELETED,
-          resourceType: "model",
-          resourceId: input.modelId.toString(),
-          metadata: {
-            modelName: lockedModel.name,
-            agencyId: lockedModel.agencyId,
-            status: lockedModel.status,
+          modelId: input.modelId,
+          operationId: gate.operationId,
+          audit: {
+            ipAddress: ctx.req.ip ?? null,
+            userAgent: ctx.req.headers["user-agent"] ?? null,
           },
-          req: ctx.req,
-        }).catch((error) => log.error({ err: error, modelId: input.modelId }, "[models.delete] audit write failed after deletion"));
-
-        await completeDirectOperationSuccess({ userId: ctx.user.id, operationId: gate.operationId, result: { deleted: true }, chargedCredits: 0, refundedCredits: 0 });
+        });
         return { success: true };
       } catch (error) {
-        if (durableResult) throw error;
         return completeDirectOperationFailure({ userId: ctx.user.id, operationId: gate.operationId, error, chargedCredits: 0, refundedCredits: 0 });
       }
     }),

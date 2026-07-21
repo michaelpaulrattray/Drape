@@ -55,15 +55,12 @@ export {
   getModelStatusesIn,
   updateModel,
   mintModelAtomically,
-  deleteModel,
   createModelAsset,
   setModelAssetPinned,
   markModelAssetsStale,
   getModelAssets,
   getHeadshotsForModels,
   getModelAssetByView,
-  getModelAssetsForCleanup,
-  deleteModelWithAssetKeys,
 } from "./models";
 export { getUserDraftModelsWithThumbnail } from "./models";
 

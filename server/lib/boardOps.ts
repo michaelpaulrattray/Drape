@@ -493,6 +493,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     const fill = await withTransaction((tx) => fillEmptyCastNodeWithVersionIn(tx, {
       boardId: item.boardId,
       itemId: input.itemId,
+      modelId,
       build: (lockedItem) => ({
         update: {
           imageUrl,
@@ -592,6 +593,7 @@ export async function executeFillFromLibrary(input: {
   const fill = await withTransaction((tx) => fillEmptyCastNodeWithVersionIn(tx, {
     boardId: item.boardId,
     itemId: input.itemId,
+    modelId: input.modelId,
     build: (lockedItem) => ({
       update: {
         imageUrl: headshot.storageUrl,
