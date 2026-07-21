@@ -1,27 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
-import { slotFailureMessage } from '@shared/refundCopy';
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { createClientRequestId } from '@shared/clientRequestId';
-import { beginCastingOperation } from '@/features/casting/pendingCastRegistry';
+import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
 
 const OPEN_PACKAGE_HEALTH = 'casting-open-package-health';
-const EMPTY_REFRESHING_ANGLES: CanonicalViewAngle[] = [];
 
 export function openPackageHealth(angle?: CanonicalViewAngle) {
   window.dispatchEvent(new CustomEvent(OPEN_PACKAGE_HEALTH, { detail: { angle } }));
-}
-
-export function shouldClearIdentityWarning(
-  slots: Array<{ stale: boolean; failed: unknown }>,
-  refreshingAngles: readonly CanonicalViewAngle[],
-): boolean {
-  return refreshingAngles.length === 0
-    && slots.every((slot) => !slot.stale && !slot.failed);
 }
 
 export function PackageHealthDialog() {
@@ -31,6 +21,12 @@ export function PackageHealthDialog() {
   const open = useCastingRefreshStore((s) => s.packageHealthOpen);
   const setOpen = useCastingRefreshStore((s) => s.setPackageHealthOpen);
   const utils = trpc.useUtils();
+  const {
+    invalidate,
+    isPending: refreshPending,
+    refreshingSet,
+    refreshAngles,
+  } = useCastingPackageRefresh(modelId);
 
   useEffect(() => {
     const onOpen = (event: Event) => {
@@ -76,82 +72,6 @@ export function PackageHealthDialog() {
     { modelId: modelId ?? 0, angle: versionAngle ?? 'frontClose' },
     { enabled: open && !!modelId && versionAngle !== null, staleTime: 0 },
   );
-
-  const serverRefreshing = useCastingRefreshStore((s) =>
-    modelId ? s.refreshingByModel[modelId] : undefined,
-  ) ?? EMPTY_REFRESHING_ANGLES;
-
-  const invalidate = async (targetModelId: number) => {
-    await Promise.all([
-      utils.generation.packageState.invalidate({ modelId: targetModelId }),
-      utils.generation.refreshSlotsPlan.invalidate({ modelId: targetModelId }),
-      utils.generation.mintPackagePlan.invalidate({ modelId: targetModelId }),
-      utils.credits.getBalance.invalidate(),
-    ]);
-  };
-
-  const refreshMutation = trpc.generation.refreshSlots.useMutation({
-    onMutate: ({ clientRequestId, modelId: targetModelId, angles }) => {
-      const operation = beginCastingOperation({
-        kind: 'refresh',
-        modelId: targetModelId,
-        angles,
-        clientRequestIds: [clientRequestId],
-      });
-      void utils.generation.activeOperations.invalidate();
-      return { operation };
-    },
-    onSuccess: (result, variables, context) => {
-      context?.operation.succeed({ modelId: variables.modelId, background: false });
-      const castingState = useCastingGenerationStore.getState();
-      const refreshedByAngle = new Map(result.refreshed.map((row) => [row.angle, row]));
-      if (castingState.currentModelId === variables.modelId && refreshedByAngle.size > 0) {
-        setCurrentAssets([
-          ...castingState.currentAssets.filter((asset) => !refreshedByAngle.has(asset.viewType as CanonicalViewAngle)),
-          ...result.refreshed.map((row) => ({
-            id: row.assetId,
-            viewType: row.angle,
-            storageUrl: row.imageUrl,
-          })),
-        ]);
-      }
-      for (const failure of result.failed) {
-        toast.error(slotFailureMessage(failure), { duration: 9000 });
-      }
-    },
-    onError: (error, _variables, context) => {
-      context?.operation.fail({ message: error.message, background: false });
-      toast.error(error.message);
-    },
-    onSettled: async (_data, _error, variables) => {
-      await invalidate(variables.modelId);
-      await utils.generation.activeOperations.invalidate();
-      try {
-        const freshPackage = await utils.generation.packageState.fetch({ modelId: variables.modelId });
-        const remaining = useCastingRefreshStore.getState().refreshingByModel[variables.modelId] ?? [];
-        const castingState = useCastingGenerationStore.getState();
-        if (
-          castingState.currentModelId === variables.modelId
-          && shouldClearIdentityWarning(freshPackage.slots, remaining)
-        ) {
-          castingState.setIdentityWarning(null);
-        }
-      } catch {
-        // Server truth could not be confirmed. Leave the warning standing;
-        // clearing optimistically would make the strip and banner disagree.
-      }
-    },
-  });
-
-  const localRefreshing = refreshMutation.isPending
-    && refreshMutation.variables?.modelId === modelId
-    ? refreshMutation.variables.angles
-    : EMPTY_REFRESHING_ANGLES;
-  const refreshing = useMemo(
-    () => Array.from(new Set([...serverRefreshing, ...localRefreshing])),
-    [localRefreshing, serverRefreshing],
-  );
-  const refreshingSet = useMemo(() => new Set(refreshing), [refreshing]);
 
   const pinMutation = trpc.generation.setSlotPinned.useMutation({
     onSuccess: (_result, variables) => { void invalidate(variables.modelId); },
@@ -278,7 +198,7 @@ export function PackageHealthDialog() {
                         Unpin
                       </button>
                     ) : canRefresh ? (
-                      <button type="button" onClick={() => modelId && refreshMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angles: [slot.angle] })} disabled={busy || refreshMutation.isPending} className="px-3 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-sm font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
+                      <button type="button" onClick={() => refreshAngles([slot.angle])} disabled={busy || refreshPending} className="px-3 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-sm font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
                         {busy ? 'Refreshing…' : `${slot.failed ? 'Retry' : 'Refresh'} · ${(plan?.cost ?? 0).toLocaleString()} credits`}
                       </button>
                     ) : null}
@@ -328,7 +248,7 @@ export function PackageHealthDialog() {
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setOpen(false)} className="text-canvas-md font-medium text-canvas-ink-soft hover:text-canvas-ink">Done</button>
             {!loadError && actionable.length > 1 && (
-              <button type="button" onClick={() => modelId && refreshMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angles: actionable.map((slot) => slot.angle) })} disabled={refreshMutation.isPending} className="px-4 py-2 rounded-canvas-md bg-canvas-ink text-canvas-md font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
+              <button type="button" onClick={() => refreshAngles(actionable.map((slot) => slot.angle))} disabled={refreshPending} className="px-4 py-2 rounded-canvas-md bg-canvas-ink text-canvas-md font-medium disabled:opacity-40" style={{ color: 'var(--color-canvas-surface)' }}>
                 Refresh all · {actionableCost.toLocaleString()} credits
               </button>
             )}

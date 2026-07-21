@@ -98,6 +98,9 @@ export interface CastModelModalProps {
   fixedName?: string;
   /** Existing draft nickname. Prefills the mint door but remains editable. */
   initialName?: string;
+  /** View-strip entry intent. Missing production views must not silently open
+   * the cheaper Core tier when that would omit the selected view. */
+  initialTier?: MintTier;
   /** Opens the shared Package health surface for stale/failed mint blockers. */
   onResolvePackage?: () => void;
   /** VC-R6 final r2 / defect 4: this subject is an EXISTING placed draft
@@ -121,12 +124,13 @@ export function CastModelModal({
   mode = 'mint',
   fixedName,
   initialName,
+  initialTier = 'core',
   onResolvePackage,
   existingDraft = false,
 }: CastModelModalProps) {
   const [name, setName] = useState(() => initialMintName(initialName));
   const nameEditedRef = useRef(false);
-  const [tier, setTier] = useState<MintTier>('core');
+  const [tier, setTier] = useState<MintTier>(initialTier);
   const upgrade = mode === 'upgrade';
   // Defect 4: an existing draft's dialog leads with ADDING VIEWS; mint is the
   // distinct deliberate step. A fresh cast leads with mint (name commits).
@@ -143,6 +147,10 @@ export function CastModelModal({
     if (upgrade || nameEditedRef.current) return;
     setName(initialMintName(initialName));
   }, [initialName, isOpen, upgrade]);
+
+  useEffect(() => {
+    if (isOpen) setTier(initialTier);
+  }, [initialTier, isOpen]);
 
   // Upgrade: land on the first tier that still has something to add
   useEffect(() => {

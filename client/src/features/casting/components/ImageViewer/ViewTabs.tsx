@@ -1,16 +1,21 @@
 import { useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { refundOutcomeText } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
 import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
-import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
+import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
+import {
+  MINT_TIER_SLOTS,
+  type CanonicalViewAngle,
+  type MintTier,
+} from '@shared/boardTypes';
 
 // ============ Types ============
 
-export type ViewType = 'frontClose' | 'threeQuarter' | 'frontFull' | 'sideClose' | 'sideFull' | 'backFull';
+export type ViewType = CanonicalViewAngle;
 
 export interface GeneratedAsset {
   id: number;
@@ -24,33 +29,30 @@ function ViewThumbnail({
   src,
   label,
   isActive,
-  onClick,
+  onSelect,
   isHovered,
   isStale,
   isRefreshing,
+  refreshCost,
+  onRefresh,
 }: {
   src: string;
   label: string;
   isActive: boolean;
-  onClick: () => void;
+  onSelect: () => void;
   isHovered: boolean;
-  /** F5: the same stale treatment the board mosaic uses (D-37 dot + dim) —
-   *  the strip is where the divergent edit is MADE, so the consequence must
-   *  be visible here first (D-40). */
-  isStale?: boolean;
-  isRefreshing?: boolean;
+  isStale: boolean;
+  isRefreshing: boolean;
+  refreshCost?: number;
+  onRefresh?: () => void;
 }) {
   const stateLabel = isRefreshing
     ? `${label} is refreshing against the current identity`
     : isStale
-      ? `${label} is out of sync — open Package health to refresh it`
+      ? `${label} is out of sync with the current identity`
       : label;
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      aria-label={stateLabel}
-      aria-busy={isRefreshing || undefined}
-      title={stateLabel}
+    <div
       className="relative overflow-hidden transition-all duration-200 rounded-canvas-md bg-canvas-surface"
       style={{
         width: 72,
@@ -60,28 +62,29 @@ function ViewThumbnail({
           : '0.5px solid var(--color-canvas-border)',
         opacity: isHovered || isActive ? 1 : 0.75,
       }}
-      onMouseEnter={(e) => {
-        if (!isActive) e.currentTarget.style.borderColor = 'var(--color-canvas-border-strong)';
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) e.currentTarget.style.borderColor = 'var(--color-canvas-border)';
-      }}
     >
-      <img
-        src={src}
-        alt={label}
-        className="w-full h-full object-cover transition-opacity duration-200"
-        style={{ opacity: isRefreshing ? 0.42 : isStale ? 0.6 : 1 }}
-      />
-      {/* Stale dot — ink, top-right, screen-legible (matches the mosaic tile) */}
-      {isStale && !isRefreshing && (
-        <span
-          className="absolute top-1 right-1 rounded-full bg-canvas-ink"
-          style={{ width: 6, height: 6, boxShadow: '0 0 0 1.5px var(--color-canvas-surface)' }}
-          title="Out of sync — open Package health to refresh"
+      <button
+        type="button"
+        onClick={(event) => { event.stopPropagation(); onSelect(); }}
+        aria-label={stateLabel}
+        aria-busy={isRefreshing || undefined}
+        title={stateLabel}
+        className="absolute inset-0 block h-full w-full"
+      >
+        <img
+          src={src}
+          alt=""
+          className="h-full w-full object-cover transition-opacity duration-200"
+          style={{ opacity: isRefreshing ? 0.42 : isStale ? 0.58 : 1 }}
         />
-      )}
-      {isRefreshing && (
+        <span
+          className="absolute inset-x-0 bottom-0 px-1 py-0.5 text-center text-canvas-xs font-medium"
+          style={{ background: 'rgba(10,10,10,0.55)', color: 'var(--color-canvas-surface)' }}
+        >
+          {label}
+        </span>
+      </button>
+      {isRefreshing ? (
         <span
           className="absolute top-1 right-1 flex items-center justify-center rounded-full bg-canvas-surface text-canvas-ink"
           style={{ width: 17, height: 17, boxShadow: '0 0 0 1px var(--color-canvas-border-strong)' }}
@@ -89,16 +92,19 @@ function ViewThumbnail({
         >
           <Loader2 className="w-2.5 h-2.5 animate-spin" />
         </span>
-      )}
-      <div
-        className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-center"
-        style={{ background: 'rgba(10,10,10,0.55)' }}
-      >
-        <span className="text-canvas-xs font-medium" style={{ color: 'var(--color-canvas-surface)' }}>
-          {label}
-        </span>
-      </div>
-    </button>
+      ) : onRefresh && refreshCost !== undefined ? (
+        <button
+          type="button"
+          onClick={(event) => { event.stopPropagation(); onRefresh(); }}
+          aria-label={`Refresh ${label} for ${refreshCost.toLocaleString()} credits`}
+          title={`Refresh ${label} · ${refreshCost.toLocaleString()} credits`}
+          className="absolute right-1 top-1 flex items-center gap-0.5 rounded-full bg-canvas-surface px-1.5 py-1 text-canvas-ink shadow-sm transition-colors hover:bg-canvas-surface-inset"
+        >
+          <RefreshCw className="h-2.5 w-2.5" />
+          <span className="text-[9px] font-medium leading-none">{refreshCost.toLocaleString()}</span>
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -122,12 +128,12 @@ function RefreshingSlot({ label }: { label: string }) {
 // An empty package slot on a minted model — the upgrade affordance.
 // Clicking any ghost opens the tier dialog (upgrade-anytime-same-cost).
 
-function GhostSlot({ label, onClick }: { label: string; onClick: () => void }) {
+function GhostSlot({ label, cost, onClick }: { label: string; cost?: number; onClick: () => void }) {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className="flex flex-col items-center justify-center gap-1 transition-colors duration-200 rounded-canvas-md text-canvas-ink-soft bg-canvas-surface/60 hover:bg-canvas-surface"
-      title="Add this view — complete the comp card"
+      title={`Add views${cost === undefined ? '' : ` · ${cost.toLocaleString()} credits`}`}
       style={{
         width: 72,
         height: 90,
@@ -136,10 +142,11 @@ function GhostSlot({ label, onClick }: { label: string; onClick: () => void }) {
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-canvas-ink-faint)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-canvas-border-strong)'; }}
     >
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <Plus className="h-3 w-3" />
       <span className="text-canvas-xs font-medium">{label}</span>
+      <span className="text-[9px] leading-none text-canvas-ink-faint">
+        {cost === undefined ? 'Add views' : `Add · ${cost.toLocaleString()}`}
+      </span>
     </button>
   );
 }
@@ -153,28 +160,36 @@ function GhostSlot({ label, onClick }: { label: string; onClick: () => void }) {
 function FailedSlot({
   label,
   failure,
+  cost,
   onRetry,
 }: {
   label: string;
   failure: { reason: string; refunded: number; refundReference?: string };
-  onRetry: () => void;
+  cost?: number;
+  onRetry?: () => void;
 }) {
+  const retryLabel = `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}${
+    cost === undefined ? '' : ` Retry for ${cost.toLocaleString()} credits.`
+  }`;
   return (
     <button
-      onClick={(e) => { e.stopPropagation(); onRetry(); }}
-      className="flex flex-col items-center justify-center gap-1 transition-colors duration-200 rounded-canvas-md bg-canvas-surface-inset hover:bg-canvas-surface text-canvas-ink-soft"
-      title={`${label} didn't pass the identity check — ${failure.reason}. ${refundOutcomeText(failure)} Click to try again.`}
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onRetry?.(); }}
+      disabled={!onRetry}
+      className="flex flex-col items-center justify-center gap-1 transition-colors duration-200 rounded-canvas-md bg-canvas-surface-inset hover:bg-canvas-surface text-canvas-ink-soft disabled:cursor-default disabled:opacity-60"
+      aria-label={retryLabel}
+      title={retryLabel}
       style={{
         width: 72,
         height: 90,
         border: '0.5px solid var(--color-canvas-border-strong)',
       }}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-canvas-destructive)" strokeWidth="2" strokeLinecap="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="m15 9-6 6M9 9l6 6" />
-      </svg>
-      <span className="text-canvas-xs font-medium">{label} · Retry</span>
+      <RefreshCw className="h-3 w-3" />
+      <span className="text-canvas-xs font-medium">{label}</span>
+      <span className="text-[9px] leading-none text-canvas-ink-faint">
+        {cost === undefined ? 'Retry' : `Retry · ${cost.toLocaleString()}`}
+      </span>
     </button>
   );
 }
@@ -190,7 +205,13 @@ const PACKAGE_SLOTS: Array<{ vt: ViewType; label: string }> = [
   { vt: 'sideFull', label: 'Walk' },
   { vt: 'backFull', label: 'Back' },
 ];
-const EMPTY_REFRESHING_ANGLES: ViewType[] = [];
+
+/** Missing views use the existing tier ceremony. We do not invent a second
+ * generation path just to make a tile appear independent. */
+export function addTierForAngle(angle: CanonicalViewAngle): MintTier {
+  if (angle === 'frontClose') return 'draft';
+  return MINT_TIER_SLOTS.core.includes(angle) ? 'core' : 'production';
+}
 
 export function ViewTabs() {
   const currentAssets = useCastingGenerationStore((s) => s.currentAssets);
@@ -205,10 +226,14 @@ export function ViewTabs() {
   const isMintedProfile = useStudioStore((s) =>
     s.mintedEditContext?.modelId != null || s.canvas.isMinted,
   );
-  const openPackage = () =>
-    window.dispatchEvent(
-      new CustomEvent(isMintedProfile ? 'casting-open-package-upgrade' : 'casting-open-mint'),
-    );
+  const hasMissingView = PACKAGE_SLOTS.some(
+    ({ vt }) => !currentAssets.some((asset) => asset.viewType === vt),
+  );
+  const openPackage = (tier: MintTier) =>
+    window.dispatchEvent(new CustomEvent(
+      isMintedProfile ? 'casting-open-package-upgrade' : 'casting-open-mint',
+      { detail: { tier } },
+    ));
   // F5: read the package state for the CURRENT model — draft OR minted (the
   // old query only ran on minted edits, so a draft's stale marks and failed
   // slots never reached the strip, the very surface where the edit is made).
@@ -220,28 +245,38 @@ export function ViewTabs() {
     { modelId: currentModelId ?? 0 },
     { enabled: currentModelId != null, staleTime: 15_000 },
   );
-  const failedByAngle = new Map(
-    (packageQuery.data?.slots ?? [])
-      .filter((s) => s.failed)
-      .map((s) => [s.angle as ViewType, s.failed!]),
+  const refreshPlanQuery = trpc.generation.refreshSlotsPlan.useQuery(
+    { modelId: currentModelId ?? 0 },
+    { enabled: currentModelId != null, staleTime: 15_000 },
   );
-  // F5: stale = a sibling out of sync with a recent divergent edit (F6 writer),
-  // not pinned. Same rule the board mosaic uses.
-  const staleAngles = new Set(
-    (packageQuery.data?.slots ?? [])
-      .filter((s) => s.stale && !s.pinned && s.filled)
-      .map((s) => s.angle as ViewType),
+  const mintPlanQuery = trpc.generation.mintPackagePlan.useQuery(
+    { modelId: currentModelId ?? 0 },
+    { enabled: currentModelId != null && hasMissingView, staleTime: 15_000 },
   );
-  const issueCount = (packageQuery.data?.slots ?? []).filter((slot) => slot.stale || !!slot.failed).length;
-  const refreshing = useCastingRefreshStore((s) =>
-    currentModelId ? s.refreshingByModel[currentModelId] : undefined,
-  ) ?? EMPTY_REFRESHING_ANGLES;
-  const refreshingSet = useMemo(() => new Set(refreshing), [refreshing]);
-  const refreshingCount = refreshingSet.size;
+  const { isPending, refreshingSet, refreshAngles } = useCastingPackageRefresh(currentModelId);
+  const packageSlots = packageQuery.data?.slots ?? [];
+  const packageByAngle = useMemo(
+    () => new Map(packageSlots.map((slot) => [slot.angle, slot])),
+    [packageSlots],
+  );
+  const planByAngle = useMemo(
+    () => new Map((refreshPlanQuery.data?.slots ?? []).map((slot) => [slot.angle, slot])),
+    [refreshPlanQuery.data?.slots],
+  );
+  const actionable = packageSlots.filter((slot) => {
+    const plan = planByAngle.get(slot.angle);
+    return (slot.stale || !!slot.failed)
+      && plan?.refusal === null
+      && !refreshingSet.has(slot.angle);
+  });
+  const actionableCost = actionable.reduce(
+    (total, slot) => total + (planByAngle.get(slot.angle)?.cost ?? 0),
+    0,
+  );
+  const hasDetails = packageSlots.some((slot) => slot.version > 1 || (slot.stale && slot.pinned));
   const [hovered, setHovered] = useState(false);
 
   const getAsset = (vt: ViewType) => currentAssets.find((a) => a.viewType === vt);
-  const hasAsset = (vt: ViewType) => currentAssets.some((a) => a.viewType === vt);
 
   if (currentAssets.length === 0) return null;
 
@@ -253,40 +288,74 @@ export function ViewTabs() {
       style={{ opacity: hovered ? 1 : 0.75 }}
     >
       <div className="contents pointer-events-auto">
-        {PACKAGE_SLOTS.map(({ vt, label }) =>
-          refreshingSet.has(vt) && !hasAsset(vt) ? (
-            <RefreshingSlot key={vt} label={label} />
-          ) : hasAsset(vt) ? (
-            <ViewThumbnail
-              key={vt}
-              src={getAsset(vt)!.storageUrl}
-              label={label}
-              isActive={activeView === vt}
-              onClick={() => setActiveView(vt)}
-              isHovered={hovered}
-              // Audit V15: no active-view suppression — the ledger already
-              // guarantees a just-edited view isn't stale (the writer marks
-              // siblings only); a stale view you SWITCH to must say so.
-              isStale={staleAngles.has(vt)}
-              isRefreshing={refreshingSet.has(vt)}
-            />
-          ) : failedByAngle.has(vt) ? (
-            <FailedSlot key={vt} label={label} failure={failedByAngle.get(vt)!} onRetry={() => openPackageHealth(vt)} />
-          ) : (
-            <GhostSlot key={vt} label={label} onClick={openPackage} />
-          ),
+        {PACKAGE_SLOTS.map(({ vt, label }) => {
+          const asset = getAsset(vt);
+          const slot = packageByAngle.get(vt);
+          const plan = planByAngle.get(vt);
+          const refreshing = refreshingSet.has(vt);
+
+          if (refreshing && !asset) return <RefreshingSlot key={vt} label={label} />;
+          if (asset) {
+            const canRefresh = !!slot?.stale && plan?.refusal === null && !refreshing;
+            return (
+              <ViewThumbnail
+                key={vt}
+                src={asset.storageUrl}
+                label={label}
+                isActive={activeView === vt}
+                onSelect={() => setActiveView(vt)}
+                isHovered={hovered}
+                isStale={!!slot?.stale}
+                isRefreshing={refreshing}
+                refreshCost={canRefresh ? plan.cost : undefined}
+                onRefresh={canRefresh ? () => refreshAngles([vt]) : undefined}
+              />
+            );
+          }
+          if (slot?.failed) {
+            return (
+              <FailedSlot
+                key={vt}
+                label={label}
+                failure={slot.failed}
+                cost={plan?.refusal === null ? plan.cost : undefined}
+                onRetry={plan?.refusal === null ? () => refreshAngles([vt]) : undefined}
+              />
+            );
+          }
+
+          const tier = addTierForAngle(vt);
+          const cost = mintPlanQuery.data?.tiers[tier].cost;
+          return <GhostSlot key={vt} label={label} cost={cost} onClick={() => openPackage(tier)} />;
+        })}
+        {(actionable.length > 1 || hasDetails) && (
+          <div className="flex w-[72px] flex-col gap-1">
+            {actionable.length > 1 && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  refreshAngles(actionable.map((slot) => slot.angle));
+                }}
+                disabled={isPending}
+                className="rounded-canvas-md bg-canvas-ink px-1.5 py-1.5 text-center text-[9px] font-medium leading-tight disabled:opacity-40"
+                style={{ color: 'var(--color-canvas-surface)' }}
+                aria-label={`Refresh all ${actionable.length} views for ${actionableCost.toLocaleString()} credits`}
+              >
+                Refresh all<br />{actionableCost.toLocaleString()} credits
+              </button>
+            )}
+            {hasDetails && (
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); openPackageHealth(); }}
+                className="flex items-center justify-center gap-1 px-1 py-1 text-canvas-xs font-medium text-canvas-ink-faint transition-colors hover:text-canvas-ink"
+              >
+                <MoreHorizontal className="h-3 w-3" /> Details
+              </button>
+            )}
+          </div>
         )}
-        <button
-          type="button"
-          onClick={(event) => { event.stopPropagation(); openPackageHealth(); }}
-          className="w-[72px] px-1 py-1.5 text-center text-canvas-xs font-medium text-canvas-ink-soft hover:text-canvas-ink transition-colors"
-        >
-          {refreshingCount > 0
-            ? `${refreshingCount} refreshing`
-            : issueCount > 0
-              ? `${issueCount} to review`
-              : 'Package health'}
-        </button>
       </div>
     </div>
   );

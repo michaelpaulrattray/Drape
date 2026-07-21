@@ -35,6 +35,7 @@ import { IdentityChangeDialog } from './IdentityChangeDialog';
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
 import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
 import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
+import type { MintTier } from '@shared/boardTypes';
 
 export interface CastEditContext {
   boardId: number;
@@ -317,6 +318,7 @@ export function CastingTakeover({
       });
     },
   });
+  const [requestedTier, setRequestedTier] = useState<MintTier>('core');
 
   const dismissCastModal = useCallback((typedName: string) => {
     setShowCastModal(false);
@@ -398,13 +400,19 @@ export function CastingTakeover({
   // ghost opens the UPGRADE dialog; a draft's ghost opens the MINT gate — the
   // draft's "add views is a Core mint away". Both are CastModelModal.
   useEffect(() => {
-    const onUpgrade = () => {
+    const tierFromEvent = (event: Event): MintTier => {
+      const tier = (event as CustomEvent<{ tier?: MintTier }>).detail?.tier;
+      return tier === 'production' || tier === 'draft' ? tier : 'core';
+    };
+    const onUpgrade = (event: Event) => {
       if (!isMintedEdit) return;
+      setRequestedTier(tierFromEvent(event));
       setUpgradeMode(true);
       setShowCastModal(true);
     };
-    const onMint = () => {
+    const onMint = (event: Event) => {
       if (isMintedEdit) return; // a minted model can't re-mint; upgrade only
+      setRequestedTier(tierFromEvent(event));
       setUpgradeMode(false);
       setShowCastModal(true);
     };
@@ -432,7 +440,10 @@ export function CastingTakeover({
     return () => window.removeEventListener('casting-fork-from-refusal', onForkFromRefusal);
   }, [isMintedEdit]);
   useEffect(() => {
-    if (!showCastModal) setUpgradeMode(false);
+    if (!showCastModal) {
+      setUpgradeMode(false);
+      setRequestedTier('core');
+    }
   }, [showCastModal]);
 
   // R5/D-51 upgrade intent: the board's "Build comp card"/"Complete card"
@@ -707,6 +718,7 @@ export function CastingTakeover({
         mode={upgradeMode ? 'upgrade' : 'mint'}
         fixedName={upgradeMode ? modelNameInStore : undefined}
         initialName={!upgradeMode ? displayModelName : undefined}
+        initialTier={requestedTier}
         onResolvePackage={() => openPackageHealth()}
         // Defect 4: an existing placed draft's tier dialog leads with adding
         // views; a fresh cast leads with mint. Every door says where it leads.

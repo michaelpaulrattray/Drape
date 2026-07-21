@@ -4,7 +4,8 @@ import path from 'node:path';
 import { staledAnglesForAssetIds } from './casting/identity/staleResponse';
 import { useCastingRefreshStore } from '../client/src/features/casting/stores/useCastingRefreshStore';
 import type { GenerationOperationDto } from '../client/src/features/operations/generationOperationProjection';
-import { shouldClearIdentityWarning } from '../client/src/features/casting/components/PackageHealthDialog';
+import { shouldClearIdentityWarning } from '../client/src/features/casting/hooks/useCastingPackageRefresh';
+import { addTierForAngle } from '../client/src/features/casting/components/ImageViewer/ViewTabs';
 import { SINGLE_VIEW_PROMPTS } from './casting/geminiViews';
 
 const root = path.join(__dirname, '..');
@@ -110,9 +111,12 @@ describe('W3 durable in-flight projection', () => {
 describe('W3 package-health wiring', () => {
   it('reuses server plan/refresh/restore/pin truth and preserves real refresh asset ids', () => {
     const dialog = read('client/src/features/casting/components/PackageHealthDialog.tsx');
-    for (const contract of ['refreshSlotsPlan', 'refreshSlots.useMutation', 'restoreSlotVersion', 'setSlotPinned']) {
+    const refresh = read('client/src/features/casting/hooks/useCastingPackageRefresh.ts');
+    for (const contract of ['refreshSlotsPlan', 'restoreSlotVersion', 'setSlotPinned']) {
       expect(dialog).toContain(contract);
     }
+    expect(dialog).toContain('useCastingPackageRefresh');
+    expect(refresh).toContain('refreshSlots.useMutation');
     expect(read('server/casting/refreshSlots.ts')).toContain('assetId: r.assetId!');
   });
 
@@ -124,7 +128,8 @@ describe('W3 package-health wiring', () => {
 
   it('uses one server-backed refresh projection in Canvas and Studio', () => {
     const canvas = read('client/src/features/boards/canvas/nodes/useSheetController.ts');
-    const studio = read('client/src/features/casting/components/PackageHealthDialog.tsx');
+    const studio = read('client/src/features/casting/hooks/useCastingPackageRefresh.ts');
+    const dialog = read('client/src/features/casting/components/PackageHealthDialog.tsx');
     const bridge = read('client/src/features/operations/GenerationOperationBridge.tsx');
     expect(canvas).toContain('useCastingRefreshStore');
     expect(studio).toContain('useCastingRefreshStore');
@@ -132,7 +137,7 @@ describe('W3 package-health wiring', () => {
     expect(canvas).not.toContain('.begin(targetModelId');
     expect(canvas).not.toContain('.end(targetModelId');
     expect(studio).toContain('castingState.currentModelId === variables.modelId');
-    expect(studio).toContain('castingState.currentModelId === result.modelId');
+    expect(dialog).toContain('castingState.currentModelId === result.modelId');
   });
 
   it('lets Package health own Escape without closing the surrounding takeover', () => {
@@ -184,21 +189,33 @@ describe('W5-B strip and warning truth', () => {
   });
 
   it('refetches server package truth before clearing the client warning', () => {
-    const dialog = read('client/src/features/casting/components/PackageHealthDialog.tsx');
-    expect(dialog).toContain('packageState.fetch({ modelId: variables.modelId })');
-    expect(dialog).toContain('shouldClearIdentityWarning(freshPackage.slots, remaining)');
-    expect(dialog).toContain('castingState.setIdentityWarning(null)');
+    const refresh = read('client/src/features/casting/hooks/useCastingPackageRefresh.ts');
+    expect(refresh).toContain('packageState.fetch({ modelId: variables.modelId })');
+    expect(refresh).toContain('shouldClearIdentityWarning(freshPackage.slots, remaining)');
+    expect(refresh).toContain('castingState.setIdentityWarning(null)');
   });
 
-  it('renders current, stale, refreshing, failed, and missing as distinct strip states without a refresh mutation', () => {
+  it('makes the strip the primary package-care surface with direct, priced actions', () => {
     const strip = read('client/src/features/casting/components/ImageViewer/ViewTabs.tsx');
     for (const contract of ['ViewThumbnail', 'isStale', 'isRefreshing', 'FailedSlot', 'GhostSlot', 'RefreshingSlot']) {
       expect(strip).toContain(contract);
     }
     expect(strip).toContain('aria-busy={isRefreshing || undefined}');
-    expect(strip).toContain('refreshingSet.has(vt) && !hasAsset(vt)');
-    expect(strip).toContain('Out of sync — open Package health to refresh');
-    expect(strip).not.toContain('refresh from the comp card');
+    expect(strip).toContain('refreshAngles([vt])');
+    expect(strip).toContain('Refresh all');
+    expect(strip).toContain('credits');
+    expect(strip).not.toContain('Stale dot');
+    expect(strip).not.toContain("'Package health'");
     expect(strip).not.toContain('refreshSlots.useMutation');
+  });
+
+  it('routes a missing slot to the smallest existing tier that actually contains it', () => {
+    expect(addTierForAngle('frontClose')).toBe('draft');
+    for (const angle of ['sideClose', 'threeQuarter', 'frontFull'] as const) {
+      expect(addTierForAngle(angle)).toBe('core');
+    }
+    for (const angle of ['sideFull', 'backFull'] as const) {
+      expect(addTierForAngle(angle)).toBe('production');
+    }
   });
 });

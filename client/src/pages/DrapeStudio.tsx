@@ -32,6 +32,7 @@ import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
 import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
+import type { MintTier } from '@shared/boardTypes';
 
 export default function DrapeStudio() {
   const [, navigate] = useLocation();
@@ -41,6 +42,7 @@ export default function DrapeStudio() {
   const { activeTool, canvas, setCanvas, wardrobeStart } = useStudioStore();
   const modelName = useCastingFormStore((s) => s.modelName);
   const [upgradeMode, setUpgradeMode] = useState(false);
+  const [requestedTier, setRequestedTier] = useState<MintTier>('core');
 
   // Sidebar: profile, billing, referral modals
   const [showSettings, setShowSettings] = useState(false);
@@ -206,13 +208,19 @@ export default function DrapeStudio() {
   // A view-strip ghost opens the mint gate (D-46 one view system — in /studio
   // every model is a draft until cast, so "add a view" is a mint away)
   useEffect(() => {
-    const onMint = () => {
+    const tierFromEvent = (event: Event): MintTier => {
+      const tier = (event as CustomEvent<{ tier?: MintTier }>).detail?.tier;
+      return tier === 'production' || tier === 'draft' ? tier : 'core';
+    };
+    const onMint = (event: Event) => {
       if (canvas.isMinted) return;
+      setRequestedTier(tierFromEvent(event));
       setUpgradeMode(false);
       setShowCastModal(true);
     };
-    const onUpgrade = () => {
+    const onUpgrade = (event: Event) => {
       if (!canvas.isMinted) return;
+      setRequestedTier(tierFromEvent(event));
       setUpgradeMode(true);
       setShowCastModal(true);
     };
@@ -225,7 +233,10 @@ export default function DrapeStudio() {
   }, [canvas.isMinted, setShowCastModal]);
 
   useEffect(() => {
-    if (!showCastModal) setUpgradeMode(false);
+    if (!showCastModal) {
+      setUpgradeMode(false);
+      setRequestedTier('core');
+    }
   }, [showCastModal]);
 
   // Full-body URL for wardrobe (uploaded > gallery > casting asset)
@@ -364,6 +375,7 @@ export default function DrapeStudio() {
         mode={upgradeMode ? 'upgrade' : 'mint'}
         fixedName={upgradeMode ? honestModelName(modelName, persistedModel.data?.name) : undefined}
         initialName={!upgradeMode ? honestModelName(modelName) : undefined}
+        initialTier={requestedTier}
         onResolvePackage={() => openPackageHealth()}
       />
 
