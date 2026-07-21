@@ -31,6 +31,8 @@ function renderPanel() {
     createElement(RefinePanel, {
       maskPathsCount: 0,
       isMasking: false,
+      iterationCost: 350,
+      isGenerating: false,
       textAreaRef: { current: null },
       handleGenerate: () => {},
       handleEnhance: () => {},

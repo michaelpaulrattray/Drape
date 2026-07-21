@@ -5,7 +5,7 @@ import { useCastingFormStore } from "@/features/casting/stores/useCastingFormSto
 import { useCastingGenerationStore } from "@/features/casting/stores/useCastingGenerationStore";
 import { useCastingUIStore } from "@/features/casting/stores/useCastingUIStore";
 import { trpc } from "@/lib/trpc";
-import { type GeneratedAsset, type GenerationState } from "@/features/casting/constants";
+import { CREDIT_COSTS, type GeneratedAsset, type GenerationState } from "@/features/casting/constants";
 import { StudioCanvas } from "@/features/studio/components/StudioCanvas";
 import { ImageActionBar } from "@/features/studio/components/ImageActionBar";
 
@@ -35,8 +35,6 @@ interface ImageViewerPanelProps {
   handleRefineSubmit: () => void;
   isReadOnly?: boolean;
 }
-
-const CASTING_TIP_DISMISSED_KEY = 'drape_casting_tip_dismissed';
 
 // ============ Main Component ============
 
@@ -76,6 +74,8 @@ export function ImageViewerPanel({
     { modelId: currentModelId ?? 0 },
     { enabled: !!currentModelId, staleTime: 15_000 },
   );
+  const costsQuery = trpc.credits.getCosts.useQuery(undefined, { staleTime: Infinity });
+  const iterationCost = costsQuery.data?.iterate ?? CREDIT_COSTS.iteration;
   const {
     activeView,
     activeTool,
@@ -84,18 +84,6 @@ export function ImageViewerPanel({
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const [imageAreaHovered, setImageAreaHovered] = useState(false);
-
-  // Contextual tip: auto-dismiss after first refinement, persist in localStorage
-  const [tipDismissed, setTipDismissed] = useState(() => {
-    try { return localStorage.getItem(CASTING_TIP_DISMISSED_KEY) === '1'; } catch { return false; }
-  });
-
-  useEffect(() => {
-    if (!tipDismissed && historyIndex > 0) {
-      setTipDismissed(true);
-      try { localStorage.setItem(CASTING_TIP_DISMISSED_KEY, '1'); } catch {}
-    }
-  }, [historyIndex, tipDismissed]);
 
   // Floating Reference State
   const [refVisible, setRefVisible] = useState(true);
@@ -326,21 +314,12 @@ export function ImageViewerPanel({
   // Tool status pill retired with the tools — activeTool can no longer arm.
   const statusOverlay = undefined;
 
-  // ── Bottom overlay: Contextual tip + Refine panel + Shortcuts + Suggestions ──
-  const bottomOverlay = hasAssets ? (
-    <>
-      {/* Bottom Controls */}
-      <div
-        className="absolute bottom-6 left-1/2 w-full max-w-lg z-30 transition-all duration-300 ease-out"
-        style={{
-          opacity: imageAreaHovered ? 1 : 0,
-          transform: imageAreaHovered ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(12px)',
-          pointerEvents: imageAreaHovered ? 'auto' : 'none',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Inline Masking Helper — hidden in read-only */}
-        {!isReadOnly && isMasking && (
+  // The primary refinement action is permanently docked below the portrait.
+  // It must never depend on hover: touch and first-time users need the same door.
+  const bottomDock = hasAssets && !isReadOnly ? (
+    <div className="w-full max-w-2xl mx-auto" onClick={e => e.stopPropagation()}>
+        {/* Inline Masking Helper */}
+        {isMasking && (
           <div className="mb-2 flex justify-center relative z-30">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-canvas-md bg-canvas-surface border-hairline border-canvas-border-strong">
               <span className="text-canvas-sm font-medium text-canvas-ink">
@@ -357,33 +336,9 @@ export function ImageViewerPanel({
           </div>
         )}
 
-        {/* Contextual Tip for New Model — sits just above refine panel, auto-dismissed after first refinement */}
-        {!isReadOnly && !tipDismissed && historyIndex <= 0 && !genState.isGenerating && (!suggestions || suggestions.length === 0) && !isLoadingSuggestions && (
-          <div className="flex justify-center mb-2 pointer-events-none transition-all duration-300 ease-out">
-            <div className="px-3 py-2 rounded-canvas-md bg-canvas-surface/80 text-canvas-md text-canvas-ink-soft text-center" style={{ maxWidth: 280 }}>
-              Type a change below, or use Quick ideas. Hold the image to compare with previous versions.
-            </div>
-          </div>
-        )}
-
-        {/* Refine panel — hidden in read-only */}
-        {!isReadOnly && (
-          <RefinePanel
-            maskPathsCount={maskPathsCount}
-            isMasking={isMasking}
-            textAreaRef={textAreaRef}
-            handleGenerate={handleGenerate}
-            handleEnhance={handleEnhance}
-            handleRefineSubmit={handleRefineSubmit}
-            referenceImage={prefs.referenceImage}
-          />
-        )}
-
-
-
-        {/* Quick Ideas — hidden in read-only */}
-        {!isReadOnly && !genState.isGenerating && activeTool === 'none' && (isLoadingSuggestions || (suggestions && suggestions.length > 0)) && (
-          <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20">
+        {/* Quick Ideas stay secondary and collapse when no ideas exist. */}
+        {!genState.isGenerating && activeTool === 'none' && (isLoadingSuggestions || (suggestions && suggestions.length > 0)) && (
+          <div className="mb-2 flex justify-center">
             {isLoadingSuggestions ? (
               <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-canvas-pill mx-auto w-fit bg-canvas-surface border-hairline border-canvas-border">
                 <div className="w-3 h-3 rounded-full border-2 border-canvas-border animate-spin" style={{ borderTopColor: 'var(--color-canvas-ink-faint)' }} />
@@ -397,8 +352,19 @@ export function ImageViewerPanel({
             )}
           </div>
         )}
-      </div>
-    </>
+
+        <RefinePanel
+          maskPathsCount={maskPathsCount}
+          isMasking={isMasking}
+          iterationCost={iterationCost}
+          isGenerating={genState.isGenerating}
+          textAreaRef={textAreaRef}
+          handleGenerate={handleGenerate}
+          handleEnhance={handleEnhance}
+          handleRefineSubmit={handleRefineSubmit}
+          referenceImage={prefs.referenceImage}
+        />
+    </div>
   ) : undefined;
 
   return (
@@ -435,7 +401,7 @@ export function ImageViewerPanel({
       imageOverlay={imageOverlayNode}
       sideOverlay={sideOverlay}
       statusOverlay={statusOverlay}
-      bottomOverlay={bottomOverlay}
+      bottomDock={bottomDock}
       actionBar={
         hasAssets && !genState.isGenerating ? (
           <ImageActionBar

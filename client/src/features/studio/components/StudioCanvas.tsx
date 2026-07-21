@@ -22,7 +22,8 @@
  * Tool-specific features are injected via overlay slots:
  *   - imageOverlay: GarmentOverlay (wardrobe), MaskCanvas (casting)
  *   - topOverlay: ViewTabs, identity warnings (casting)
- *   - bottomOverlay: RefinePanel, suggestions (casting)
+ *   - bottomOverlay: legacy in-field overlays
+ *   - bottomDock: persistent RefinePanel and suggestions (casting)
  *   - sideOverlay: Tool buttons, next stage CTA (casting)
  *   - statusOverlay: Locked source, active tool pills (casting)
  *   - floatingOverlay: Floating reference image (casting)
@@ -88,6 +89,8 @@ export interface StudioCanvasProps {
   topOverlay?: ReactNode;
   /** Rendered at the bottom of the canvas area (RefinePanel, shortcuts, suggestions) */
   bottomOverlay?: ReactNode;
+  /** Rendered below the image field, never over the image (persistent composer rail) */
+  bottomDock?: ReactNode;
   /** Rendered on the side of the canvas area (tool buttons, next stage CTA) */
   sideOverlay?: ReactNode;
   /** Rendered at top-left for status pills (locked source, active tool) */
@@ -145,6 +148,7 @@ export function StudioCanvas({
   imageOverlay,
   topOverlay,
   bottomOverlay,
+  bottomDock,
   sideOverlay,
   statusOverlay,
   floatingOverlay,
@@ -386,10 +390,10 @@ export function StudioCanvas({
                 ref={imageRef}
                 src={activeDisplayUrl}
                 alt={imageAlt}
-                className="block transition-all duration-300 select-none"
+                className={`block transition-all duration-300 select-none max-w-[calc(100vw-32px)] lg:max-w-[calc(100vw-620px)] ${
+                  bottomDock ? "max-h-[calc(100vh-230px)]" : "max-h-[calc(100vh-140px)]"
+                }`}
                 style={{
-                  maxWidth: "calc(100vw - 620px)",
-                  maxHeight: "calc(100vh - 140px)",
                   borderRadius: "var(--radius-canvas-lg)",
                   border: "0.5px solid var(--color-canvas-border)",
                   opacity: isGenerating ? 0.5 : 1,
@@ -464,6 +468,15 @@ export function StudioCanvas({
           )}
         </div>
       </div>
+
+      {/* Persistent dock slot — outside the camera transform and image hover
+          boundary, so primary actions stay reachable on mouse, keyboard, and
+          touch without obscuring the work. */}
+      {bottomDock && (
+        <div className="relative z-40 flex-shrink-0 px-4 pb-4 pt-2 pointer-events-none">
+          <div className="pointer-events-auto">{bottomDock}</div>
+        </div>
+      )}
     </div>
   );
 }

@@ -26,6 +26,8 @@ const EXAMPLE_INTERVAL_MS = 4500;
 interface RefinePanelProps {
   maskPathsCount: number;
   isMasking: boolean;
+  iterationCost: number;
+  isGenerating: boolean;
   textAreaRef: RefObject<HTMLTextAreaElement | null>;
   handleGenerate: () => void;
   handleEnhance: () => void;
@@ -37,11 +39,24 @@ interface RefinePanelProps {
 const barShellClass =
   'rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border-strong';
 
+export function refineActionState(input: string, isGenerating: boolean, iterationCost: number) {
+  const canSubmit = input.trim().length > 0 && !isGenerating;
+  return {
+    canSubmit,
+    ariaLabel: isGenerating
+      ? 'Applying refinement'
+      : `Apply refinement for ${iterationCost} credits`,
+    label: isGenerating ? 'Applying…' : `Apply · ${iterationCost} credits`,
+  };
+}
+
 // ============ Main Component ============
 
 export function RefinePanel({
   maskPathsCount,
   isMasking,
+  iterationCost,
+  isGenerating,
   textAreaRef,
   handleGenerate,
   handleEnhance,
@@ -94,7 +109,7 @@ export function RefinePanel({
   }, [refineInput, isEnhancing]);
 
   const handleSubmit = () => {
-    if (refineInput.trim() || activeTool === 'eraser') {
+    if (!isGenerating && (refineInput.trim() || activeTool === 'eraser')) {
       handleRefineSubmit();
     }
   };
@@ -109,7 +124,7 @@ export function RefinePanel({
   // ── Eraser mode ──
   if (activeTool === 'eraser') {
     return (
-      <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
+      <div className="w-full max-w-2xl mx-auto">
         <div className={`flex items-center justify-center gap-2 p-2 ${barShellClass}`}>
           <span className="text-canvas-lg font-medium text-canvas-ink-soft">
             {hasMask ? 'Ready to erase' : 'Paint an area to erase'}
@@ -117,6 +132,7 @@ export function RefinePanel({
           {hasMask && (
             <button
               onClick={handleSubmit}
+              disabled={isGenerating}
               className="px-4 py-1.5 rounded-canvas-md bg-canvas-ink text-canvas-surface text-canvas-md font-medium transition-colors"
             >
               Erase
@@ -133,15 +149,21 @@ export function RefinePanel({
     if (referenceImage) return "e.g. 'use the hairstyle from the reference'";
     return `Describe a change — "${ROTATING_EXAMPLES[exampleIndex]}"`;
   };
+  const refineAction = refineActionState(refineInput, isGenerating, iterationCost);
 
   return (
-    <div style={{ width: 420, maxWidth: 'calc(100% - 40px)', margin: '0 auto' }}>
+    <div className="w-full max-w-2xl mx-auto">
+      <div className="min-w-0 px-1 pb-2">
+        <p className="text-canvas-md font-medium text-canvas-ink">Refine this person</p>
+        <p className="text-canvas-sm text-canvas-ink-faint">Keeps their identity</p>
+      </div>
+
       <div className={`flex items-end gap-2 p-1.5 ${barShellClass}`}>
         {/* Enhance */}
         {glowActive && <style>{glowKeyframes}</style>}
         <button
           onClick={handleEnhance}
-          disabled={!refineInput.trim() || isEnhancing}
+          disabled={!refineInput.trim() || isEnhancing || isGenerating}
           className={`flex-shrink-0 w-8 h-8 rounded-canvas-md flex items-center justify-center ${glowActive ? 'text-canvas-ink' : 'text-canvas-ink-faint'}`}
           style={{
             animation: glowActive ? 'enhanceFloat 1.4s ease-in-out infinite' : 'none',
@@ -173,6 +195,7 @@ export function RefinePanel({
           data-refine-input
           value={refineInput}
           onChange={(e) => setRefineInput(e.target.value)}
+          disabled={isGenerating}
           placeholder={getPlaceholder()}
           rows={1}
           className="flex-1 outline-none resize-none bg-transparent border-none text-canvas-ink placeholder:text-canvas-ink-faint"
@@ -188,15 +211,16 @@ export function RefinePanel({
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={!refineInput.trim()}
-          className={`flex-shrink-0 px-4 py-2 rounded-canvas-md transition-colors mb-0.5 flex items-center gap-1.5 text-canvas-md font-medium ${
-            refineInput.trim()
+          disabled={!refineAction.canSubmit}
+          aria-label={refineAction.ariaLabel}
+          className={`flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-canvas-md transition-colors mb-0.5 flex items-center gap-1.5 text-canvas-md font-medium ${
+            refineAction.canSubmit
               ? 'bg-canvas-ink text-canvas-surface'
               : 'bg-canvas-border text-canvas-ink-faint'
           }`}
         >
           <SendHorizontal size={12} strokeWidth={2} style={{ marginRight: -2 }} />
-          <span>Apply</span>
+          <span>{refineAction.label}</span>
         </button>
       </div>
     </div>
