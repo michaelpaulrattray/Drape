@@ -28,13 +28,22 @@ import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
 import { PackageHealthDialog } from '@/features/casting/components/PackageHealthDialog';
-import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
+import {
+  editablePreferencesFromStored,
+  type EngineChoiceFlags,
+} from '@/features/casting/engineChoicePersistence';
+import type { ModelPreferences } from '@/features/casting/constants';
 import { generateRandomPreferences } from '@/features/casting/castingHelpers';
 import { FromPromptField, type ParsePromptResult } from '@/features/casting/components/FromPromptField';
 import {
   CastingDescribeStart,
   shouldShowCastingDescribeStart,
 } from '@/features/casting/components/CastingDescribeStart';
+import {
+  canInvokeIdentityGeneration,
+  shouldOfferDraftIdentityDoor,
+  shouldShowCastingControlPanel,
+} from '@/features/casting/castingAuthoringMode';
 import { useGenerationJobs } from '@/features/boards/stores/useGenerationJobs';
 import {
   isOperationActive,
@@ -76,13 +85,38 @@ export function CastingWorkspace({
   const mintedEdit = useStudioStore((s) => s.mintedEditContext !== null);
 
   // Casting stores
-  const { prefs, modelName, engineChoice, updatePrefs } = useCastingFormStore();
+  const {
+    prefs,
+    modelName,
+    engineChoice,
+    updatePrefs,
+    setPrefs,
+    setEngineChoices,
+  } = useCastingFormStore();
   const { genState, setGenState, currentModelId, currentAssets } = useCastingGenerationStore();
-  const { activeView, activeTool: castingActiveTool } = useCastingUIStore();
+  const {
+    activeView,
+    activeTool: castingActiveTool,
+    showMobilePanel,
+    setShowMobilePanel,
+    identityChangeOpen,
+    setIdentityChangeOpen,
+  } = useCastingUIStore();
   const durableOperations = useGenerationJobs((state) => state.operations);
   const utils = trpc.useUtils();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [pendingParseResult, setPendingParseResult] = useState<ParsePromptResult | null>(null);
+  const previousHasAssetsRef = useRef(false);
+  const identityChangeSnapshotRef = useRef<{
+    prefs: ModelPreferences;
+    engineChoice: EngineChoiceFlags;
+    modelId: number | null;
+    headshotAssetId: number | null;
+    masterPrompt: string;
+    technicalSchema: Record<string, unknown> | null;
+  } | null>(null);
+
+  useEffect(() => () => setIdentityChangeOpen(false), [setIdentityChangeOpen]);
 
   // Eagerly preload casting images into browser cache (warm S3 URLs)
   const castingAssetUrls = useMemo(
@@ -323,6 +357,15 @@ export function CastingWorkspace({
 
   const hasAssets = currentAssets.length > 0;
   const hasExistingModel = currentModelId !== null || canvas.castModelId !== null;
+  const authoringMode = {
+    hasAssets,
+    isReadOnly,
+    mintedEdit,
+    identityChangeOpen,
+  };
+  const showControlPanel = shouldShowCastingControlPanel(authoringMode);
+  const offerIdentityDoor = shouldOfferDraftIdentityDoor(authoringMode);
+  const allowIdentityGeneration = canInvokeIdentityGeneration(authoringMode);
   const showDescribeStart = shouldShowCastingDescribeStart({
     hasAssets,
     hasExistingModel,
@@ -330,6 +373,11 @@ export function CastingWorkspace({
     mintedEdit,
     detailsOpen,
   });
+
+  useEffect(() => {
+    if (!previousHasAssetsRef.current && hasAssets) setShowMobilePanel(false);
+    previousHasAssetsRef.current = hasAssets;
+  }, [hasAssets, setShowMobilePanel]);
 
   const handleStartParsed = useCallback((result: ParsePromptResult) => {
     setPendingParseResult(result);
@@ -341,9 +389,61 @@ export function CastingWorkspace({
     setDetailsOpen(true);
   }, [updatePrefs]);
 
+  const openIdentityChange = useCallback(() => {
+    const generation = useCastingGenerationStore.getState();
+    identityChangeSnapshotRef.current = {
+      prefs: structuredClone(prefs),
+      engineChoice: { ...engineChoice },
+      modelId: currentModelId,
+      headshotAssetId: currentAssets.find((asset) => asset.viewType === 'frontClose')?.id ?? null,
+      masterPrompt: generation.currentMasterPrompt,
+      technicalSchema: generation.currentTechnicalSchema,
+    };
+    setShowMobilePanel(false);
+    setIdentityChangeOpen(true);
+  }, [currentAssets, currentModelId, engineChoice, prefs, setShowMobilePanel]);
+
+  const closeIdentityChange = useCallback(() => {
+    const snapshot = identityChangeSnapshotRef.current;
+    if (snapshot) {
+      setPrefs(snapshot.prefs);
+      setEngineChoices(snapshot.engineChoice);
+      const generation = useCastingGenerationStore.getState();
+      generation.setCurrentModelId(snapshot.modelId);
+      generation.setCurrentMasterPrompt(snapshot.masterPrompt);
+      generation.setCurrentTechnicalSchema(snapshot.technicalSchema);
+      generation.setGenState({ isGenerating: false, currentStep: '', error: null });
+      generation.setFailedAction(null);
+      if (snapshot.modelId != null && snapshot.modelId !== currentModelId) {
+        void utils.models.get.fetch({ modelId: snapshot.modelId })
+          .then((model) => applyModelTruth(model as LoadedCastingModel))
+          .catch(() => undefined);
+      }
+    }
+    identityChangeSnapshotRef.current = null;
+    setIdentityChangeOpen(false);
+    setShowMobilePanel(false);
+  }, [applyModelTruth, currentModelId, setEngineChoices, setPrefs, setShowMobilePanel, utils.models.get]);
+
+  // A successful recast switches to the new draft model. Close the ceremony
+  // without restoring the old snapshot; a refusal/failure keeps it open for
+  // an explicit retry.
+  useEffect(() => {
+    if (!identityChangeOpen) return;
+    const snapshot = identityChangeSnapshotRef.current;
+    if (!snapshot || snapshot.modelId == null || currentModelId == null || currentModelId === snapshot.modelId) return;
+    const currentHeadshotAssetId = currentAssets.find((asset) => asset.viewType === 'frontClose')?.id ?? null;
+    if (currentHeadshotAssetId == null || currentHeadshotAssetId === snapshot.headshotAssetId) return;
+    identityChangeSnapshotRef.current = null;
+    setIdentityChangeOpen(false);
+    setShowMobilePanel(false);
+  }, [currentAssets, currentModelId, identityChangeOpen, setShowMobilePanel]);
+
   const handleNewModel = useCallback(() => {
     setPendingParseResult(null);
     setDetailsOpen(false);
+    setIdentityChangeOpen(false);
+    identityChangeSnapshotRef.current = null;
     onNewModel();
   }, [onNewModel]);
 
@@ -361,30 +461,34 @@ export function CastingWorkspace({
     <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative w-full">
       <PackageHealthDialog />
 
-      {/* Left Panel — Control (slides from left) */}
-      <AnimatedPanel
-        ready={leftReady}
-        from="left"
-        offset={60}
-        duration={500}
-        className="w-full lg:w-auto flex-shrink-0 relative z-10"
-      >
-        <StudioSidePanel side="left" width={320}>
-          <ControlPanel
-            user={user}
-            isFormValid={isFormValid}
-            genState={genState}
-            currentAssets={currentAssets}
-            handleGenerate={handleGenerate}
-            isReadOnly={isReadOnly}
-            onNewModel={handleNewModel}
-            modelName={modelName}
-            mintedEdit={mintedEdit}
-            initialParseResult={pendingParseResult}
-            onInitialParseConsumed={() => setPendingParseResult(null)}
-          />
-        </StudioSidePanel>
-      </AnimatedPanel>
+      {/* Identity form — creation, legacy minted paths, or an explicit recast. */}
+      {showControlPanel && (
+        <AnimatedPanel
+          ready={leftReady}
+          from="left"
+          offset={60}
+          duration={500}
+          className="w-full lg:w-auto flex-shrink-0 relative z-10"
+        >
+          <StudioSidePanel side="left" width={320}>
+            <ControlPanel
+              user={user}
+              isFormValid={isFormValid}
+              genState={genState}
+              currentAssets={currentAssets}
+              handleGenerate={handleGenerate}
+              isReadOnly={isReadOnly}
+              onNewModel={handleNewModel}
+              modelName={modelName}
+              mintedEdit={mintedEdit}
+              initialParseResult={pendingParseResult}
+              onInitialParseConsumed={() => setPendingParseResult(null)}
+              identityChangeMode={identityChangeOpen}
+              onCloseIdentityChange={closeIdentityChange}
+            />
+          </StudioSidePanel>
+        </AnimatedPanel>
+      )}
 
       {/* Center — Image Viewer */}
       <div className="flex-1 min-w-0 h-full relative">
@@ -405,11 +509,12 @@ export function CastingWorkspace({
           handleEnhance={handleEnhance}
           handleRefineSubmit={handleRefineSubmit}
           isReadOnly={isReadOnly}
+          allowIdentityGeneration={allowIdentityGeneration}
         />
       </div>
 
-      {/* Right Panel — Master Prompt (slides from right) */}
-      {hasAssets && (
+      {/* Desktop Identity sheet — the ordinary post-headshot draft surface. */}
+      {hasAssets && !identityChangeOpen && (
         <AnimatedPanel
           ready={rightReady}
           from="right"
@@ -418,9 +523,21 @@ export function CastingWorkspace({
           className="hidden lg:block flex-shrink-0"
         >
           <StudioSidePanel side="right" width={320}>
-            <MasterPromptPanel />
+            <MasterPromptPanel onChangeIdentity={offerIdentityDoor ? openIdentityChange : undefined} />
           </StudioSidePanel>
         </AnimatedPanel>
+      )}
+
+      {/* The existing mobile controls toggle becomes the Identity sheet after
+          a headshot; selecting Change identity swaps it for the full form. */}
+      {hasAssets && !identityChangeOpen && showMobilePanel && (
+        <div className="fixed inset-0 z-50 pt-11 lg:hidden">
+          <MasterPromptPanel
+            mobileSheet
+            onClose={() => setShowMobilePanel(false)}
+            onChangeIdentity={offerIdentityDoor ? openIdentityChange : undefined}
+          />
+        </div>
       )}
     </div>
   );

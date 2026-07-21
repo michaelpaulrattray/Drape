@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices, Lock, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Palette, Dumbbell, ScanFace, Droplets, Scissors, Sparkles, Dices, Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import TriBlendSelector from "./components/TriBlendSelector";
 import HairColorWheel from "./components/HairColorWheel";
@@ -99,6 +99,9 @@ interface ControlPanelProps {
   /** Parsed by the centered Act-1 brief before this detail sheet mounted. */
   initialParseResult?: ParsePromptResult | null;
   onInitialParseConsumed?: () => void;
+  /** Deliberate post-headshot recast ceremony. The current draft stays intact. */
+  identityChangeMode?: boolean;
+  onCloseIdentityChange?: () => void;
 }
 
 // ── Progress Ring ────────────────────────────
@@ -138,7 +141,7 @@ function CastingProgressRing({ completions }: { completions: Record<string, numb
 export function ControlPanel({
   user, isFormValid, genState, currentAssets, handleGenerate,
   isReadOnly, onNewModel, modelName, mintedEdit,
-  initialParseResult, onInitialParseConsumed,
+  initialParseResult, onInitialParseConsumed, identityChangeMode, onCloseIdentityChange,
 }: ControlPanelProps) {
   const displayModelName = honestModelName(modelName);
   // Use store's functional updaters — no stale closure risk
@@ -243,6 +246,17 @@ export function ControlPanel({
     onInitialParseConsumed?.();
   }, [handleParsed, initialParseResult, onInitialParseConsumed]);
 
+  useEffect(() => {
+    if (!identityChangeMode) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      if (!genState.isGenerating) onCloseIdentityChange?.();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [genState.isGenerating, identityChangeMode, onCloseIdentityChange]);
+
   const ethnicityBlend = prefs.ethnicityBlend || [];
   const setEthnicityBlend = (blend: { name: string; pct: number }[]) => {
     const legacyStr = blend.map(e => e.name).join(', ');
@@ -285,7 +299,7 @@ export function ControlPanel({
 
   return (
     <div className={`
-      ${showMobilePanel ? 'fixed inset-0 z-50 pt-11' : 'hidden'}
+      ${showMobilePanel || identityChangeMode ? 'fixed inset-0 z-50 pt-11' : 'hidden'}
       lg:relative lg:flex lg:flex-col lg:pt-0
       h-full flex flex-col bg-canvas-surface
     `}
@@ -295,7 +309,9 @@ export function ControlPanel({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-canvas-xl font-medium text-canvas-ink">
-              {isReadOnly || mintedEdit
+              {identityChangeMode
+                ? 'Cast a new person'
+                : isReadOnly || mintedEdit
                 ? (displayModelName || 'Cast model')
                 : currentAssets.length > 0 && displayModelName
                   ? `${displayModelName} — draft`
@@ -304,14 +320,26 @@ export function ControlPanel({
             <div className="text-canvas-md text-canvas-ink-soft">
               {/* Founder ruling (Batch C): a minted session never presents as
                   freeform editing — the identity is locked; changes fork */}
-              {isReadOnly
+              {identityChangeMode
+                ? 'The current draft stays unchanged'
+                : isReadOnly
                 ? 'Identity locked'
                 : mintedEdit
                   ? 'Identity locked — changes fork a new draft'
                   : 'Build your model from scratch'}
             </div>
           </div>
-          {isReadOnly ? (
+          {identityChangeMode ? (
+            <button
+              type="button"
+              onClick={onCloseIdentityChange}
+              disabled={genState.isGenerating}
+              className="flex items-center gap-1.5 rounded-canvas-sm px-2 py-1 text-canvas-sm font-medium text-canvas-ink-soft transition-colors hover:bg-canvas-surface-inset hover:text-canvas-ink disabled:opacity-30"
+            >
+              <ArrowLeft size={13} strokeWidth={1.8} />
+              Back
+            </button>
+          ) : isReadOnly ? (
             <div className="flex items-center justify-center" style={{ width: 40, height: 40 }}>
               <Lock size={16} strokeWidth={1.5} className="text-canvas-ink-soft" />
             </div>
@@ -361,6 +389,8 @@ export function ControlPanel({
             {resolvedOpenFields.map((item) => item.label).join(', ')} stay read-only in Profile.{' '}
             {mintedEdit
               ? 'Choosing a value here becomes part of a new fork.'
+              : identityChangeMode
+                ? 'Chosen values become part of the new draft.'
               : 'Choose a value here only to change this draft.'}
           </p>
         </div>
@@ -636,9 +666,9 @@ export function ControlPanel({
               </div>
             )}
 
-            {currentAssets.length > 0 && (
+            {identityChangeMode && currentAssets.length > 0 && (
               <p className="mb-3 px-1 text-canvas-sm text-canvas-ink-soft leading-normal text-center">
-                Recasting uses the panel settings to create a new draft identity. The person may look different.
+                This creates a separate draft identity. {displayModelName || 'The current cast'} stays unchanged.
               </p>
             )}
 
@@ -660,7 +690,7 @@ export function ControlPanel({
               ) : (
                 <>
                   <Sparkles size={14} strokeWidth={2} />
-                  <span>{isFormValid ? (currentAssets.length > 0 ? 'Recast model' : 'Cast model') : 'Fill required fields'}</span>
+                  <span>{isFormValid ? (identityChangeMode ? 'Cast a new person' : 'Cast model') : 'Fill required fields'}</span>
                   {isFormValid && (
                     // Cost visible on the armed button (D-15/D-41): the
                     // confirm-glance before the second keystroke

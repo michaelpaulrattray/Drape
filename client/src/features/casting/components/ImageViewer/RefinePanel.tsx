@@ -29,7 +29,6 @@ interface RefinePanelProps {
   iterationCost: number;
   isGenerating: boolean;
   textAreaRef: RefObject<HTMLTextAreaElement | null>;
-  handleGenerate: () => void;
   handleEnhance: () => void;
   handleRefineSubmit: () => void;
   referenceImage?: string;
@@ -58,7 +57,6 @@ export function RefinePanel({
   iterationCost,
   isGenerating,
   textAreaRef,
-  handleGenerate,
   handleEnhance,
   handleRefineSubmit,
   referenceImage,

@@ -34,6 +34,8 @@ interface ImageViewerPanelProps {
   handleEnhance: () => void;
   handleRefineSubmit: () => void;
   isReadOnly?: boolean;
+  /** Post-headshot identity generation is armed only by the explicit recast door. */
+  allowIdentityGeneration: boolean;
 }
 
 // ============ Main Component ============
@@ -55,6 +57,7 @@ export function ImageViewerPanel({
   handleEnhance,
   handleRefineSubmit,
   isReadOnly,
+  allowIdentityGeneration,
 }: ImageViewerPanelProps) {
   const { prefs, updatePref } = useCastingFormStore();
   const {
@@ -134,7 +137,7 @@ export function ImageViewerPanel({
     // Ctrl+G / ⌘G — trigger generation (works even with no assets yet)
     if (e.key === 'g' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      if (!isReadOnly && !genState.isGenerating) handleGenerate();
+      if (allowIdentityGeneration && !genState.isGenerating) handleGenerate();
       return true;
     }
     if (currentAssets.length === 0) return false;
@@ -151,7 +154,7 @@ export function ImageViewerPanel({
         break;
     }
     return false;
-  }, [currentAssets.length, prefs.referenceImage, isReadOnly, genState.isGenerating, handleGenerate]);
+  }, [allowIdentityGeneration, currentAssets.length, prefs.referenceImage, isReadOnly, genState.isGenerating, handleGenerate]);
 
   // ── Derive StudioCanvas props ──
   const viewName = (VIEW_ANGLE_LABELS as Record<string, string>)[activeView] || activeView;
@@ -359,7 +362,6 @@ export function ImageViewerPanel({
           iterationCost={iterationCost}
           isGenerating={genState.isGenerating}
           textAreaRef={textAreaRef}
-          handleGenerate={handleGenerate}
           handleEnhance={handleEnhance}
           handleRefineSubmit={handleRefineSubmit}
           referenceImage={prefs.referenceImage}

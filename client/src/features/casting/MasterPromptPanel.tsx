@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
@@ -9,12 +10,21 @@ import {
   type RequiredCastField,
 } from './engineChoicePersistence';
 import { captureCastingSession } from './castingSessionToken';
+import { ChangeIdentityDoor } from './components/ChangeIdentityDoor';
 
 // ============ Types ============
 
 interface ProfileSection {
   label: string;
   items: { key: string; value: string; note?: string }[];
+}
+
+interface MasterPromptPanelProps {
+  /** Draft-only door into the deliberately separate identity-casting form. */
+  onChangeIdentity?: () => void;
+  /** Present when the panel is hosted as the mobile Identity sheet. */
+  onClose?: () => void;
+  mobileSheet?: boolean;
 }
 
 // Section heading — sentence case, no letter-spacing (§13.9)
@@ -24,7 +34,7 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 
 // ============ Main Component ============
 
-export function MasterPromptPanel() {
+export function MasterPromptPanel({ onChangeIdentity, onClose, mobileSheet = false }: MasterPromptPanelProps) {
   const prefs = useCastingFormStore((s) => s.prefs);
   const engineChoice = useCastingFormStore((s) => s.engineChoice);
   const updatePref = useCastingFormStore((s) => s.updatePref);
@@ -211,7 +221,7 @@ export function MasterPromptPanel() {
           <div className="p-4 pb-0">
             <div className="flex items-center justify-between mb-3">
               <div className="text-canvas-lg font-medium text-canvas-ink">
-                {activeTab === 'profile' ? 'Profile' : 'Spec'}
+                {activeTab === 'profile' ? 'Identity' : 'Spec'}
               </div>
               <div className="flex items-center gap-2">
                 {activeTab === 'spec' && (
@@ -222,15 +232,26 @@ export function MasterPromptPanel() {
                     {isCopied ? 'Copied' : 'Copy'}
                   </button>
                 )}
-                <button
-                  onClick={() => setIsCollapsed(true)}
-                  title="Collapse panel"
-                  className="flex items-center p-0.5 text-canvas-ink-soft hover:text-canvas-ink transition-colors"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
+                {mobileSheet ? (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close Identity"
+                    className="flex items-center justify-center rounded-canvas-sm p-1 text-canvas-ink-soft transition-colors hover:bg-canvas-surface-inset hover:text-canvas-ink"
+                  >
+                    <X size={15} strokeWidth={1.8} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsCollapsed(true)}
+                    title="Collapse panel"
+                    className="flex items-center p-0.5 text-canvas-ink-soft hover:text-canvas-ink transition-colors"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -247,7 +268,7 @@ export function MasterPromptPanel() {
                       : 'text-canvas-ink-soft border-transparent hover:text-canvas-ink',
                   )}
                 >
-                  {tab === 'profile' ? 'Profile' : 'Spec'}
+                  {tab === 'profile' ? 'Identity' : 'Spec'}
                 </button>
               ))}
             </div>
@@ -444,6 +465,9 @@ export function MasterPromptPanel() {
                 </button>
               )}
             </div>
+            {onChangeIdentity && (
+              <ChangeIdentityDoor onClick={onChangeIdentity} />
+            )}
           </div>
         </>
       ) : (

@@ -24,6 +24,8 @@ interface CastingUIState {
   showMobilePanel: boolean;
   setShowMobilePanel: (show: boolean) => void;
   toggleMobilePanel: () => void;
+  identityChangeOpen: boolean;
+  setIdentityChangeOpen: (open: boolean) => void;
   
   // Refine input state
   refineInput: string;
@@ -59,6 +61,8 @@ export const useCastingUIStore = create<CastingUIState>()(
       showMobilePanel: false,
       setShowMobilePanel: (show) => set({ showMobilePanel: show }, false, 'setShowMobilePanel'),
       toggleMobilePanel: () => set((state) => ({ showMobilePanel: !state.showMobilePanel }), false, 'toggleMobilePanel'),
+      identityChangeOpen: false,
+      setIdentityChangeOpen: (open) => set({ identityChangeOpen: open }, false, 'setIdentityChangeOpen'),
       
       // Refine input state
       refineInput: '',
@@ -76,6 +80,7 @@ export const useCastingUIStore = create<CastingUIState>()(
         activeTool: 'none',
         resolution: ImageResolution.HIGH,
         showMobilePanel: false,
+        identityChangeOpen: false,
         refineInput: '',
         isEnhancing: false,
         isTopupOpen: false,

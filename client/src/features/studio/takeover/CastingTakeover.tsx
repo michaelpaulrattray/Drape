@@ -446,13 +446,14 @@ export function CastingTakeover({
   }, [editContext?.openUpgrade, hydrated, isMintedEdit, setShowCastModal]);
 
   const packageHealthOpen = useCastingRefreshStore((s) => s.packageHealthOpen);
+  const identityChangeOpen = useCastingUIStore((s) => s.identityChangeOpen);
 
   // Esc closes (capture so board-level handlers never see it while we're up)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
-      if (showCastModal || isTopupOpen || identityDialog || packageHealthOpen) return; // inner surfaces own their Esc
+      if (showCastModal || isTopupOpen || identityDialog || packageHealthOpen || identityChangeOpen) return; // inner surfaces own their Esc
       if (confirmingLeave) {
         setConfirmingLeave(false);
         return;
@@ -461,7 +462,7 @@ export function CastingTakeover({
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [attemptClose, confirmingLeave, showCastModal, isTopupOpen, identityDialog, packageHealthOpen]);
+  }, [attemptClose, confirmingLeave, showCastModal, isTopupOpen, identityDialog, packageHealthOpen, identityChangeOpen]);
 
   // Founder ruling (Batch C final corrections): a minted identity must never
   // present as editable-in-place. This session is honestly framed as the
