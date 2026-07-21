@@ -656,6 +656,16 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Exact model identity:** `createModel` returns the id produced by its own insert via `$returningId()`. It never discovers the result by selecting the user's newest model, so concurrent casts, forks, variations, and Canvas creation cannot receive a sibling operation's id.
 
+### D-64 — Cast deletion is permanent and removes its direct surfaces *(founder correction, 2026-07-21; supersedes D-62 ruling 8)*
+
+**Simple product contract:** Drape does not ship a user-facing Cast archive, 30-day recovery window, restore ceremony, or deletion undo. After explicit confirmation, drafts and minted Casts use the same permanent-delete contract. The Cast disappears immediately from the library and Studio. Its identity documents, package assets, version history, linked Wardrobe sessions/looks, and owned image evidence are scheduled for verified deletion.
+
+**Canvas behavior:** every direct representation of the deleted Cast is removed: Cast roots, library placements, and popped-out Cast views, together with their versions and incident edges. A deliberate deletion never leaves a `Source unavailable` placeholder. Affected board thumbnails are recalculated from surviving nodes or cleared. Independently generated image/video outputs remain; deletion does not recursively destroy separate creative work merely because it used the Cast as an input.
+
+**Internal safety is not recovery:** Drape may retain only a scrubbed, non-recoverable, non-image tombstone/receipt required to prevent replay or double charging and to satisfy security, accounting, or published legal obligations. It may contain identifiers, timestamps, kind, and monetary totals, but no display name, prompt, technical schema, preferences, image URL, storage key, or recoverable identity evidence. It is never exposed as an archive and cannot restore the Cast.
+
+**Deletion boundary:** database disappearance is atomic and immediate after the model operation lock is acquired. The lock covers Casting/Canvas paid work but is not the only fence: every Wardrobe/model writer that can persist a model id must re-prove an owned, available subject at its durable write, and ordinary model updates must include a live-row predicate so a racing rename or save cannot repopulate the tombstone. Owned-object deletion is durable, background, idempotent, and retryable so a transient R2 failure cannot resurrect database state or silently orphan content. Only storage keys proven to belong to Drape's configured bucket may be deleted. R7-5 requires a read-only dependency and writer-fence audit, disposable-data proof, Fable review, and separate production authorization before destructive runtime behavior is enabled.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

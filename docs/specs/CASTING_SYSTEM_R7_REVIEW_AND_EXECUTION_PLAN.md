@@ -4,7 +4,7 @@
 
 **Baseline:** `e66b8db` (`main`; deployed to production through `local-migration`)
 
-**Status:** FOUNDER-RATIFIED 2026-07-19 after Fable architecture approval and the three R7-0 amendments; no R7 product implementation has started
+**Status:** IN EXECUTION — R7-0 through R7-4B are locally complete as of 2026-07-21; R7-5 is at the destructive-data planning gate
 
 **Scope:** Casting, its Canvas placements, model lifecycle, generation operations, package/history UX, and the future identity-evidence composer.
 
@@ -131,9 +131,9 @@ That behavior is valid for **Use this version** inside one identity revision. It
 
 Its current selection is newest-filled rather than a future explicit snapshot selection. It is a useful pass-1 adapter, not the Batch D composer.
 
-### 4.9 Archive/deletion semantics remain incomplete
+### 4.9 Final deletion semantics remain incomplete
 
-Draft deletion hard-deletes the model, assets, wardrobe looks, and wardrobe sessions in SQL, but does not delete R2 objects or resolve every board/generation reference. Minted deletion is refused because no archive ceremony exists.
+Draft deletion hard-deletes the model, assets, wardrobe looks, and wardrobe sessions in SQL, but does not delete R2 objects or resolve every board/generation reference. Minted deletion is still refused. The founder subsequently rejected a user-facing archive/recovery product: deletion must instead be immediate, permanent, and simple, with linked Cast placements removed rather than degraded.
 
 There is an unused `deleteModelWithAssetKeys` helper, but storage deletion alone would not solve retention, historical placement, rollback, GDPR, or partial-failure semantics.
 
@@ -275,16 +275,18 @@ Every click re-plans server-side at fire time. Nothing refreshes or charges auto
 
 **Gate:** priced-action tests, no-auto-spend assertions, Canvas/Studio parity drive.
 
-### R7-5 — Model lifecycle, archive, storage, and historical references
+### R7-5 — Final model deletion, storage cleanup, and reference removal
 
-- Define draft discard versus minted archive.
-- Keep historical Canvas placements as snapshots with `Source unavailable` when appropriate.
-- Implement the founder-ratified archive recovery/retention window from §7.
-- Build owned-R2 cleanup as a recoverable background operation, never inside a fragile request transaction.
-- Cover every asset class that exists when this phase executes: model assets, exports, wardrobe looks/sessions, generations, board placements, and GDPR export/delete. Reference plates/crops do not exist until R7-7; their schema must join the same cleanup contract when introduced rather than being falsely claimed as R7-5 cleanup work.
-- Add orphan discovery and repair tooling before destructive cleanup runs.
+- There is no user-facing archive, recovery window, restore ceremony, or deletion undo. Deleting a Cast is an explicitly confirmed permanent action for drafts and minted Casts alike.
+- Remove every direct representation of the Cast from Canvas in the same durable deletion boundary: Cast roots, library placements, and popped-out Cast views. Remove their versions and incident edges. Independently generated image/video outputs remain; deletion does not recursively erase unrelated creative work.
+- Never leave `Source unavailable` placeholders for a deliberately deleted Cast. Recompute affected board thumbnails from surviving nodes, or clear them when none remain.
+- Delete the Cast's identity documents, model assets, version history, and linked Wardrobe sessions/looks. A minimal non-image, non-recoverable internal tombstone/receipt may remain only to preserve idempotency, credit/accounting integrity, security auditability, and the fact that the subject was deleted. It must not contain a name, prompt, schema, preferences, image URL, storage key, or recoverable identity evidence, and it is never presented as an archive.
+- Fence every model-linked writer at its durable write. The Casting/Canvas model lock does not cover Wardrobe session/look insertion or a rename already in flight; owned/alive predicates and conditional model updates must make every post-delete write affect zero rows.
+- Build owned-R2 cleanup as a durable retryable background operation. The UI disappearance is immediate after the database deletion boundary; object deletion is verified and retried. Never attempt deletion for an external/legacy URL that is not provably owned by the configured Drape bucket.
+- Cover every asset class that exists when this phase executes: model assets, generations/results, Wardrobe looks/sessions, board placements/versions, exports if any become persisted, operation-result payloads, and GDPR export/delete. Reference plates/crops do not exist until R7-7; their schema must join the same cleanup contract when introduced.
+- Add a read-only dependency/orphan audit before mutation code, and prove cleanup against disposable data before any production deletion is enabled.
 
-**Gate:** dry-run inventory against disposable data; archive/restore/delete matrix; no production cleanup without separate authorization.
+**Gate:** founder-approved dependency matrix; disposable-database delete drive; owned-storage cleanup simulation; no production migration, cleanup, or runtime enablement without separate authorization.
 
 ### R7-6 — Batch D design and calibration
 
@@ -354,13 +356,13 @@ The founder approved all eight recommendations below as binding R7 direction:
 5. **The first Cast Profile release is read-only for visual changes.** Presentation work routes to Canvas/Wardrobe; identity change routes to Fork. Name remains display metadata.
 6. **Generation quality is a persisted package default selected before generation.** Every paid confirmation shows resolution and cost; export never triggers surprise upscale.
 7. **Tattoo/ink is the first calibrated composer category.** Other mark families remain refused until separately calibrated and enabled.
-8. **Archive recovery lasts 30 days.** Archive hides immediately and becomes purge-eligible after the recovery window. A separately confirmed privacy-erasure request bypasses recovery and schedules verified owned-image deletion. Historical placements degrade to `Source unavailable` and never block erasure. Only the minimum non-image records required by the published privacy/accounting policy remain; those policy periods must be confirmed before public launch.
+8. **Deletion is final; archive recovery is retired.** A deliberate delete removes the Cast, every Cast view, its linked Cast placements, and owned image evidence without a recovery window. Deliberately deleted placements are removed rather than degraded to `Source unavailable`. Independent downstream creative outputs remain. Only a scrubbed, non-recoverable internal receipt required for idempotency, credit/accounting integrity, security, or the published legal policy may remain; it contains no identity documents or images and is not a user-facing archive.
 
 ## 8. Review and release discipline
 
 - R7-1 and R7-2 are security/billing/data-integrity work: never full-auto overnight.
 - R7-3 and R7-4 may be executed in bounded UI batches after contracts are fixed.
-- R7-5 destructive cleanup requires dry-run output and separate production authorization.
+- R7-5 destructive cleanup requires a read-only dependency inventory, disposable-data proof, and separate production migration/runtime authorization.
 - R7-6 is document/calibration work only.
 - R7-7 requires feature flags, per-category calibration, and a founder visual gate.
 - Every schema batch: generate migration → disposable DB → mixed-version compatibility check → Fable review → explicit production migration → deploy.
