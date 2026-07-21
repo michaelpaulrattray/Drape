@@ -100,9 +100,16 @@ export const profileRouter = router({
       // Delete old avatar from S3 if exists
       if (oldAvatarKey) {
         try {
-          await storageDelete(oldAvatarKey);
-          // Subtract old file size (estimate ~100KB for avatars)
-          await updateUserStorageUsed(ctx.user.id, -100 * 1024);
+          const deleted = await storageDelete(oldAvatarKey);
+          if (deleted.success) {
+            // Subtract old file size (estimate ~100KB for avatars)
+            await updateUserStorageUsed(ctx.user.id, -100 * 1024);
+          } else {
+            log.warn(
+              { errorCode: deleted.errorCode, retryable: deleted.retryable },
+              "Failed to delete old avatar",
+            );
+          }
         } catch (e) {
           log.warn({ err: e }, "Failed to delete old avatar:");
         }
@@ -154,9 +161,16 @@ export const profileRouter = router({
       // Delete old banner from S3 if exists
       if (oldBannerKey) {
         try {
-          await storageDelete(oldBannerKey);
-          // Subtract old file size (estimate ~500KB for banners)
-          await updateUserStorageUsed(ctx.user.id, -500 * 1024);
+          const deleted = await storageDelete(oldBannerKey);
+          if (deleted.success) {
+            // Subtract old file size (estimate ~500KB for banners)
+            await updateUserStorageUsed(ctx.user.id, -500 * 1024);
+          } else {
+            log.warn(
+              { errorCode: deleted.errorCode, retryable: deleted.retryable },
+              "Failed to delete old banner",
+            );
+          }
         } catch (e) {
           log.warn({ err: e }, "Failed to delete old banner:");
         }

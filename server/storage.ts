@@ -10,6 +10,7 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { ENV } from "./_core/env";
 import { createModuleLogger } from "./logging/logger";
@@ -101,7 +102,7 @@ export async function storageGet(
 
 export async function storageDelete(
   relKey: string
-): Promise<{ success: boolean }> {
+): Promise<{ success: true } | { success: false; errorCode: string; retryable: boolean }> {
   const config = getStorageConfig();
   const key = normalizeKey(relKey);
 
@@ -111,7 +112,44 @@ export async function storageDelete(
     );
     return { success: true };
   } catch (err: any) {
-    log.warn(`Storage delete failed for ${key}: ${err?.message ?? err}`);
-    return { success: false };
+    const status = Number(err?.$metadata?.httpStatusCode ?? err?.statusCode ?? 0);
+    const rawCode = typeof err?.name === "string"
+      ? err.name
+      : typeof err?.Code === "string"
+        ? err.Code
+        : "STORAGE_DELETE_FAILED";
+    const errorCode = rawCode.replace(/[^A-Za-z0-9_.-]/g, "_").slice(0, 64) || "STORAGE_DELETE_FAILED";
+    // Authentication, authorization and malformed-request failures will not
+    // heal with retries. Network errors, throttling and 5xx responses may.
+    const retryable = status === 0 || status === 408 || status === 429 || status >= 500;
+    // The exact key remains in the durable cleanup item for authorized support
+    // repair. Production logs carry classification only — never keys, URLs or
+    // raw provider text that may echo request details or credentials.
+    log.warn({ errorCode, retryable, httpStatus: status || undefined }, "Storage delete failed");
+    return { success: false, errorCode, retryable };
   }
+}
+
+
+/** Read-only bucket inventory for guarded orphan audits. Runtime product code
+ * does not use this surface, and it never deletes or returns object bodies. */
+export async function storageListKeys(): Promise<string[]> {
+  const config = getStorageConfig();
+  const keys: string[] = [];
+  let continuationToken: string | undefined;
+  do {
+    const page = await getClient(config).send(new ListObjectsV2Command({
+      Bucket: config.bucket,
+      ContinuationToken: continuationToken,
+      MaxKeys: 1_000,
+    }));
+    for (const object of page.Contents ?? []) {
+      if (object.Key) keys.push(object.Key);
+    }
+    continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+    if (page.IsTruncated && !continuationToken) {
+      throw new Error("Storage listing returned a truncated page without a continuation token");
+    }
+  } while (continuationToken);
+  return keys;
 }

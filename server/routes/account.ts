@@ -5,9 +5,8 @@
  * and all associated data. Requires confirmation via typed phrase.
  */
 import { protectedProcedure, router } from "../_core/trpc";
-import { deleteUserAccount } from "../db/accountDeletion";
+import { deleteUserData } from "../security/deleteUserData";
 import { exportUserData } from "../db/gdprExport";
-import { storageDelete } from "../storage";
 import { logAuditEvent } from "../auditLog";
 import { AUDIT_ACTIONS } from "../../drizzle/schema";
 import { checkRateLimit, RATE_LIMITS } from "../security/rateLimit";
@@ -65,8 +64,6 @@ export const accountRouter = router({
     )
     .mutation(async ({ ctx }) => {
       const userId = ctx.user.id;
-      const userName = ctx.user.name || ctx.user.displayName || "unknown";
-      const userEmail = ctx.user.email || "unknown";
 
       // Rate limit: 1 attempt per 5 minutes to prevent abuse
       checkRateLimit(`account-delete:${userId}`, {
@@ -80,14 +77,16 @@ export const accountRouter = router({
         userId,
         severity: "critical",
         metadata: {
-          userName,
-          userEmail,
           requestedAt: new Date().toISOString(),
         },
       });
 
       // Execute cascading deletion
-      const result = await deleteUserAccount(userId);
+      const result = await deleteUserData(
+        userId,
+        ctx.req.ip,
+        ctx.req.headers["user-agent"] as string | undefined,
+      );
 
       if (!result.success) {
         await logAuditEvent({
@@ -96,7 +95,6 @@ export const accountRouter = router({
           severity: "critical",
           metadata: {
             error: result.error,
-            deletedCounts: result.deletedCounts,
           },
         });
 
@@ -106,17 +104,6 @@ export const accountRouter = router({
         });
       }
 
-      // Clean up S3 storage (best-effort, don't block on failures)
-      const s3Errors: string[] = [];
-      for (const key of result.storageKeysToDelete) {
-        try {
-          await storageDelete(key);
-        } catch (error) {
-          s3Errors.push(key);
-          log.warn({ err: error }, `[AccountDeletion] Failed to delete S3 key: ${key}`);
-        }
-      }
-
       // Log completion (audit log was anonymized, so use null userId)
       await logAuditEvent({
         action: AUDIT_ACTIONS.ACCOUNT_DELETION_COMPLETED,
@@ -124,10 +111,8 @@ export const accountRouter = router({
         severity: "critical",
         metadata: {
           deletedUserId: userId,
-          deletedUserName: userName,
-          deletedCounts: result.deletedCounts,
-          s3KeysDeleted: result.storageKeysToDelete.length - s3Errors.length,
-          s3KeysFailed: s3Errors.length,
+          cleanupBatchId: result.summary?.cleanupBatchId ?? null,
+          cleanupObjects: result.summary?.storageFilesQueued ?? 0,
           completedAt: new Date().toISOString(),
         },
       });

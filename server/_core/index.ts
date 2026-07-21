@@ -281,6 +281,14 @@ async function startServer() {
     }).catch(err => {
       log.error({ err }, "Scheduler: failed to start generation-operation recovery sweep");
     });
+
+    // R7-5D: off by default. The durable worker may be enabled separately
+    // from the final-delete product door after migration 0009 and audit gates.
+    import("../casting/storageCleanupWorker").then(({ startStorageCleanupWorker }) => {
+      startStorageCleanupWorker();
+    }).catch(err => {
+      log.error({ err }, "Scheduler: failed to start storage-cleanup worker");
+    });
   });
 
   // Register shutdown handlers after server is listening

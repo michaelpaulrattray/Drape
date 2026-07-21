@@ -1,330 +1,133 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock db module
 vi.mock("../db", () => ({
-  getDb: vi.fn(),
   getUserById: vi.fn(),
   getUserCredits: vi.fn(),
 }));
-
-// Mock storage
-vi.mock("../storage", () => ({
-  storageDelete: vi.fn().mockResolvedValue({ success: true }),
+vi.mock("../db/accountDeletion", () => ({
+  deleteUserAccount: vi.fn(),
 }));
-
-// Mock stripe
 vi.mock("../stripe/stripeService", () => ({
-  stripe: {
-    subscriptions: {
-      cancel: vi.fn().mockResolvedValue({ id: "sub_123", status: "canceled" }),
-    },
-  },
+  stripe: { subscriptions: { cancel: vi.fn() } },
 }));
+vi.mock("../auditLog", () => ({ logAuditEvent: vi.fn() }));
 
-// Mock audit logging
-vi.mock("../auditLog", () => ({
-  logAuditEvent: vi.fn().mockResolvedValue(undefined),
-  AUDIT_ACTIONS: { ACCOUNT_DELETED: "account.deleted" },
-}));
-
-import { getUserById, getUserCredits, getDb } from "../db";
-import { storageDelete } from "../storage";
+import { getUserById, getUserCredits } from "../db";
+import { deleteUserAccount } from "../db/accountDeletion";
 import { stripe } from "../stripe/stripeService";
 import { logAuditEvent } from "../auditLog";
 import { deleteUserData } from "./deleteUserData";
 
-/**
- * Create a mock DB that supports Drizzle-style chaining:
- *   db.select({...}).from(table).where(condition).limit(n) → Promise<rows[]>
- *   db.select({...}).from(table).where(condition) → Promise<rows[]>
- *   db.update(table).set({...}).where(condition) → Promise<void>
- *   db.delete(table).where(condition) → Promise<void>
- *
- * Each call to .where() or .limit() resolves to the next value in the
- * `queryResults` queue, allowing tests to control what each query returns.
- */
-function createMockDb(queryResults: any[] = []) {
-  let resultIndex = 0;
+const getUser = vi.mocked(getUserById);
+const getCredits = vi.mocked(getUserCredits);
+const deleteAccount = vi.mocked(deleteUserAccount);
+const cancel = vi.mocked(stripe.subscriptions.cancel);
 
-  const getNextResult = () => {
-    const result = queryResults[resultIndex] ?? [];
-    resultIndex++;
-    return result;
-  };
-
-  const chainable = () => {
-    const chain: any = {};
-    chain.select = vi.fn().mockReturnValue(chain);
-    chain.from = vi.fn().mockReturnValue(chain);
-    chain.where = vi.fn().mockImplementation(() => {
-      // .where() can be terminal (returns array) or chainable (if .limit() follows)
-      const result = getNextResult();
-      // Return an object that is both iterable (array-like) and has .limit()
-      const arr = Array.isArray(result) ? result : [];
-      const proxy = Object.assign([...arr], {
-        limit: vi.fn().mockReturnValue(arr),
-        [Symbol.iterator]: arr[Symbol.iterator].bind(arr),
-      });
-      return proxy;
-    });
-    chain.update = vi.fn().mockReturnValue(chain);
-    chain.set = vi.fn().mockReturnValue(chain);
-    chain.delete = vi.fn().mockReturnValue(chain);
-    chain.limit = vi.fn().mockImplementation(() => getNextResult());
-    return chain;
-  };
-
-  return chainable();
-}
-
-describe("deleteUserData", () => {
+describe("deleteUserData account-erasure coordinator", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getUser.mockResolvedValue({ id: 7, role: "user" } as never);
+    getCredits.mockResolvedValue({ stripeSubscriptionId: null } as never);
+    deleteAccount.mockResolvedValue({
+      success: true,
+      cleanupBatchId: "11111111-1111-4111-8111-111111111111",
+      cleanupObjects: 4,
+      deletedCounts: {
+        changeRequestAttachments: 0,
+        changeRequests: 0,
+        referrals: 0,
+        boardEdges: 0,
+        boardItemVersions: 0,
+        boardItems: 0,
+        boards: 0,
+        wardrobeLooks: 0,
+        wardrobeSessions: 0,
+        wardrobeOutfits: 0,
+        wardrobeGarments: 0,
+        modelAssets: 6,
+        models: 2,
+        generations: 9,
+        creditTransactions: 1,
+        credits: 1,
+        auditLogsAnonymized: 3,
+        user: 1,
+      },
+    });
+    vi.mocked(logAuditEvent).mockResolvedValue(undefined);
   });
 
-  it("returns error when database is not available", async () => {
-    (getDb as any).mockResolvedValue(null);
-
-    const result = await deleteUserData(1);
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("Database not available");
+  it("refuses an unknown or admin account before external or database mutation", async () => {
+    getUser.mockResolvedValueOnce(undefined);
+    await expect(deleteUserData(7)).resolves.toEqual({ success: false, error: "User not found" });
+    getUser.mockResolvedValueOnce({ id: 7, role: "admin" } as never);
+    await expect(deleteUserData(7)).resolves.toMatchObject({ success: false });
+    expect(deleteAccount).not.toHaveBeenCalled();
+    expect(cancel).not.toHaveBeenCalled();
   });
 
-  it("returns error when user is not found", async () => {
-    const mockDb = createMockDb([]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue(null);
-
-    const result = await deleteUserData(999);
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("User not found");
+  it("stops before erasure when an active subscription cannot be cancelled", async () => {
+    getCredits.mockResolvedValue({ stripeSubscriptionId: "sub_live" } as never);
+    cancel.mockRejectedValue(new Error("Stripe unavailable"));
+    await expect(deleteUserData(7)).resolves.toMatchObject({ success: false });
+    expect(deleteAccount).not.toHaveBeenCalled();
   });
 
-  it("prevents admin self-deletion", async () => {
-    const mockDb = createMockDb([]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue({
-      id: 1,
-      openId: "admin-user",
-      name: "Admin",
-      email: "admin@test.com",
-      role: "admin",
-    });
-
-    const result = await deleteUserData(1);
-    expect(result.success).toBe(false);
-    expect(result.error).toContain("Admin accounts cannot be self-deleted");
+  it("treats an already-missing Stripe subscription as cancelled", async () => {
+    getCredits.mockResolvedValue({ stripeSubscriptionId: "sub_missing" } as never);
+    cancel.mockRejectedValue({ code: "resource_missing" });
+    await expect(deleteUserData(7)).resolves.toMatchObject({ success: true });
+    expect(deleteAccount).toHaveBeenCalledWith(7);
   });
 
-  it("successfully deletes a free user with no content", async () => {
-    // Query sequence:
-    // 1. collectUserS3Keys: select avatarKey/bannerKey from users where id=5 limit 1
-    // 2. collectUserS3Keys: select id from models where userId=5
-    // 3. deleteUserData: select id from models where userId=5 (for asset deletion loop)
-    // 4. deleteUserData: delete models where userId=5
-    // 5. deleteUserData: select id from generations where userId=5
-    // 6. deleteUserData: delete generations where userId=5
-    // 7. deleteUserData: update credits where userId=5
-    // 8. deleteUserData: update users where userId=5
-    const mockDb = createMockDb([
-      [{ avatarKey: null, bannerKey: null }], // 1. user S3 keys
-      [],                                      // 2. user models (none)
-      [],                                      // 3. models for asset deletion
-      [],                                      // 4. delete models
-      [],                                      // 5. generations
-      [],                                      // 6. delete generations
-      [],                                      // 7. update credits
-      [],                                      // 8. update users
-    ]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue({
-      id: 5,
-      openId: "free-user",
-      name: "Free User",
-      email: "free@test.com",
-      role: "user",
+  it("returns queued-storage truth without calling storage directly", async () => {
+    const result = await deleteUserData(7, "1.2.3.4", "TestBrowser");
+    expect(result).toEqual({
+      success: true,
+      summary: {
+        stripeSubscriptionCancelled: true,
+        storageFilesQueued: 4,
+        cleanupBatchId: "11111111-1111-4111-8111-111111111111",
+        modelsDeleted: 2,
+        generationsDeleted: 9,
+        creditsZeroed: true,
+        userAnonymized: true,
+      },
     });
-    (getUserCredits as any).mockResolvedValue({
-      balance: 50,
-      stripeSubscriptionId: null,
-    });
-
-    const result = await deleteUserData(5);
-    expect(result.success).toBe(true);
-    expect(result.summary?.stripeSubscriptionCancelled).toBe(true);
-    expect(result.summary?.creditsZeroed).toBe(true);
-    expect(result.summary?.userAnonymized).toBe(true);
-    expect(result.summary?.modelsDeleted).toBe(0);
-    expect(result.summary?.generationsDeleted).toBe(0);
-    expect(stripe.subscriptions.cancel).not.toHaveBeenCalled();
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({
+      userId: null,
+      ipAddress: "1.2.3.4",
+      userAgent: "TestBrowser",
+    }));
   });
 
-  it("cancels Stripe subscription immediately on deletion", async () => {
-    const mockDb = createMockDb([
-      [{ avatarKey: null, bannerKey: null }],
-      [], [], [], [], [], [], [],
-    ]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue({
-      id: 3,
-      openId: "sub-user",
-      name: "Subscriber",
-      email: "sub@test.com",
-      role: "user",
+  it("reports atomic database erasure failure without claiming queued cleanup", async () => {
+    deleteAccount.mockResolvedValueOnce({
+      success: false,
+      cleanupBatchId: null,
+      cleanupObjects: 0,
+      deletedCounts: {
+        changeRequestAttachments: 0,
+        changeRequests: 0,
+        referrals: 0,
+        boardEdges: 0,
+        boardItemVersions: 0,
+        boardItems: 0,
+        boards: 0,
+        wardrobeLooks: 0,
+        wardrobeSessions: 0,
+        wardrobeOutfits: 0,
+        wardrobeGarments: 0,
+        modelAssets: 0,
+        models: 0,
+        generations: 0,
+        creditTransactions: 0,
+        credits: 0,
+        auditLogsAnonymized: 0,
+        user: 0,
+      },
+      error: "rollback",
     });
-    (getUserCredits as any).mockResolvedValue({
-      balance: 500,
-      stripeSubscriptionId: "sub_test_123",
-    });
-
-    const result = await deleteUserData(3);
-    expect(result.success).toBe(true);
-    expect(stripe.subscriptions.cancel).toHaveBeenCalledWith("sub_test_123");
-    expect(result.summary?.stripeSubscriptionCancelled).toBe(true);
-  });
-
-  it("handles already-cancelled Stripe subscription gracefully", async () => {
-    const mockDb = createMockDb([
-      [{ avatarKey: null, bannerKey: null }],
-      [], [], [], [], [], [], [],
-    ]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue({
-      id: 4,
-      openId: "old-sub",
-      name: "Old Sub",
-      email: "old@test.com",
-      role: "user",
-    });
-    (getUserCredits as any).mockResolvedValue({
-      balance: 0,
-      stripeSubscriptionId: "sub_already_gone",
-    });
-
-    (stripe.subscriptions.cancel as any).mockRejectedValueOnce({
-      code: "resource_missing",
-      statusCode: 404,
-    });
-
-    const result = await deleteUserData(4);
-    expect(result.success).toBe(true);
-    expect(result.summary?.stripeSubscriptionCancelled).toBe(true);
-  });
-
-  it("deletes S3 files for avatar and banner", async () => {
-    const mockDb = createMockDb([
-      [{ avatarKey: "avatars/u6.jpg", bannerKey: "banners/u6.jpg" }],
-      [], [], [], [], [], [], [],
-    ]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue({
-      id: 6,
-      openId: "asset-user",
-      name: "Asset User",
-      email: "asset@test.com",
-      role: "user",
-    });
-    (getUserCredits as any).mockResolvedValue({
-      balance: 100,
-      stripeSubscriptionId: null,
-    });
-
-    const result = await deleteUserData(6);
-    expect(result.success).toBe(true);
-    expect(storageDelete).toHaveBeenCalledWith("avatars/u6.jpg");
-    expect(storageDelete).toHaveBeenCalledWith("banners/u6.jpg");
-    expect(result.summary?.s3FilesDeleted).toBe(2);
-  });
-
-  it("logs audit event on successful deletion", async () => {
-    const mockDb = createMockDb([
-      [{ avatarKey: null, bannerKey: null }],
-      [], [], [], [], [], [], [],
-    ]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue({
-      id: 7,
-      openId: "audit-user",
-      name: "Audit User",
-      email: "audit@test.com",
-      role: "user",
-    });
-    (getUserCredits as any).mockResolvedValue({
-      balance: 0,
-      stripeSubscriptionId: null,
-    });
-
-    const result = await deleteUserData(7, "1.2.3.4", "TestBrowser/1.0");
-    expect(result.success).toBe(true);
-    expect(logAuditEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 7,
-        action: "account.deleted",
-        resourceType: "user",
-        resourceId: "7",
-        severity: "warning",
-        ipAddress: "1.2.3.4",
-        userAgent: "TestBrowser/1.0",
-      })
-    );
-  });
-
-  it("handles S3 deletion failure gracefully (best-effort)", async () => {
-    const mockDb = createMockDb([
-      [{ avatarKey: "avatars/u9.jpg", bannerKey: null }],
-      [], [], [], [], [], [], [],
-    ]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue({
-      id: 9,
-      openId: "s3fail-user",
-      name: "S3 Fail",
-      email: "s3fail@test.com",
-      role: "user",
-    });
-    (getUserCredits as any).mockResolvedValue({
-      balance: 0,
-      stripeSubscriptionId: null,
-    });
-    (storageDelete as any).mockResolvedValueOnce({ success: false });
-
-    const result = await deleteUserData(9);
-    expect(result.success).toBe(true);
-    expect(result.summary?.s3FilesFailed).toBe(1);
-    expect(result.summary?.s3FilesDeleted).toBe(0);
-  });
-
-  it("allows moderator self-deletion", async () => {
-    const mockDb = createMockDb([
-      [{ avatarKey: null, bannerKey: null }],
-      [], [], [], [], [], [], [],
-    ]);
-    (getDb as any).mockResolvedValue(mockDb);
-    (getUserById as any).mockResolvedValue({
-      id: 2,
-      openId: "mod-user",
-      name: "Moderator",
-      email: "mod@test.com",
-      role: "moderator",
-    });
-    (getUserCredits as any).mockResolvedValue({
-      balance: 50,
-      stripeSubscriptionId: null,
-    });
-
-    const result = await deleteUserData(2);
-    expect(result.success).toBe(true);
-  });
-});
-
-describe("auth.deleteAccount input validation", () => {
-  it("requires exact DELETE confirmation literal", async () => {
-    const { z } = await import("zod");
-    const schema = z.object({ confirmation: z.literal("DELETE") });
-
-    expect(schema.safeParse({ confirmation: "DELETE" }).success).toBe(true);
-    expect(schema.safeParse({ confirmation: "delete" }).success).toBe(false);
-    expect(schema.safeParse({ confirmation: "" }).success).toBe(false);
-    expect(schema.safeParse({}).success).toBe(false);
+    await expect(deleteUserData(7)).resolves.toMatchObject({ success: false });
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({ severity: "critical" }));
   });
 });
