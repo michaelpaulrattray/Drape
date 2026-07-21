@@ -67,7 +67,11 @@ function refreshOperation(
 }
 
 describe('W3 durable in-flight projection', () => {
-  beforeEach(() => useCastingRefreshStore.setState({ refreshingByModel: {}, packageHealthOpen: false }));
+  beforeEach(() => useCastingRefreshStore.setState({
+    refreshingByModel: {},
+    localRefreshingByModel: {},
+    detailsOpen: false,
+  }));
 
   it('hydrates pending per-angle truth from durable children and drops settled work', () => {
     const child = (id: number, viewAngle: string, status: 'pending' | 'processing' | 'completed' | 'failed') => ({
@@ -106,30 +110,44 @@ describe('W3 durable in-flight projection', () => {
     useCastingRefreshStore.getState().syncServerOperations([]);
     expect(useCastingRefreshStore.getState().refreshingByModel).toEqual({});
   });
+
+  it('shares immediate local refresh truth without erasing another angle', () => {
+    const store = useCastingRefreshStore.getState();
+    store.beginLocalRefresh(7, ['sideClose']);
+    useCastingRefreshStore.getState().beginLocalRefresh(7, ['backFull', 'sideClose']);
+    expect(useCastingRefreshStore.getState().localRefreshingByModel[7]).toEqual(['sideClose', 'backFull']);
+
+    useCastingRefreshStore.getState().endLocalRefresh(7, ['sideClose']);
+    expect(useCastingRefreshStore.getState().localRefreshingByModel[7]).toEqual(['backFull']);
+    useCastingRefreshStore.getState().endLocalRefresh(7, ['backFull']);
+    expect(useCastingRefreshStore.getState().localRefreshingByModel).toEqual({});
+  });
 });
 
 describe('W3 package-health wiring', () => {
   it('reuses server plan/refresh/restore/pin truth and preserves real refresh asset ids', () => {
     const dialog = read('client/src/features/casting/components/PackageHealthDialog.tsx');
     const refresh = read('client/src/features/casting/hooks/useCastingPackageRefresh.ts');
-    for (const contract of ['refreshSlotsPlan', 'restoreSlotVersion', 'setSlotPinned']) {
+    const history = read('client/src/features/casting/components/SlotVersionHistory.tsx');
+    for (const contract of ['refreshSlotsPlan', 'setSlotPinned']) {
       expect(dialog).toContain(contract);
     }
+    expect(history).toContain('restoreSlotVersion');
     expect(dialog).toContain('useCastingPackageRefresh');
     expect(refresh).toContain('refreshSlots.useMutation');
     expect(read('server/casting/refreshSlots.ts')).toContain('assetId: r.assetId!');
   });
 
   it('is reachable from the Studio strip and both mint hosts', () => {
-    expect(read('client/src/features/casting/components/ImageViewer/ViewTabs.tsx')).toContain('openPackageHealth');
-    expect(read('client/src/features/studio/takeover/CastingTakeover.tsx')).toContain('onResolvePackage={() => openPackageHealth()}');
-    expect(read('client/src/pages/DrapeStudio.tsx')).toContain('onResolvePackage={() => openPackageHealth()}');
+    expect(read('client/src/features/casting/components/ImageViewer/ViewTabs.tsx')).toContain('openCastingDetails');
+    expect(read('client/src/features/studio/takeover/CastingTakeover.tsx')).toContain('onResolvePackage={() => openCastingDetails()}');
+    expect(read('client/src/pages/DrapeStudio.tsx')).toContain('onResolvePackage={() => openCastingDetails()}');
   });
 
   it('uses one server-backed refresh projection in Canvas and Studio', () => {
     const canvas = read('client/src/features/boards/canvas/nodes/useSheetController.ts');
     const studio = read('client/src/features/casting/hooks/useCastingPackageRefresh.ts');
-    const dialog = read('client/src/features/casting/components/PackageHealthDialog.tsx');
+    const history = read('client/src/features/casting/components/SlotVersionHistory.tsx');
     const bridge = read('client/src/features/operations/GenerationOperationBridge.tsx');
     expect(canvas).toContain('useCastingRefreshStore');
     expect(studio).toContain('useCastingRefreshStore');
@@ -137,21 +155,21 @@ describe('W3 package-health wiring', () => {
     expect(canvas).not.toContain('.begin(targetModelId');
     expect(canvas).not.toContain('.end(targetModelId');
     expect(studio).toContain('castingState.currentModelId === variables.modelId');
-    expect(dialog).toContain('castingState.currentModelId === result.modelId');
+    expect(history).toContain('castingState.currentModelId === result.modelId');
   });
 
-  it('lets Package health own Escape without closing the surrounding takeover', () => {
+  it('lets Versions & details own Escape without closing the surrounding takeover', () => {
     const dialog = read('client/src/features/casting/components/PackageHealthDialog.tsx');
     const takeover = read('client/src/features/studio/takeover/CastingTakeover.tsx');
-    expect(dialog).toContain('s.packageHealthOpen');
-    expect(dialog).toContain('s.setPackageHealthOpen');
-    expect(takeover).toContain('s.packageHealthOpen');
-    expect(takeover).toContain('identityDialog || packageHealthOpen');
+    expect(dialog).toContain('s.detailsOpen');
+    expect(dialog).toContain('s.setDetailsOpen');
+    expect(takeover).toContain('s.detailsOpen');
+    expect(takeover).toContain('identityDialog || detailsOpen');
 
-    useCastingRefreshStore.getState().setPackageHealthOpen(true);
-    expect(useCastingRefreshStore.getState().packageHealthOpen).toBe(true);
-    useCastingRefreshStore.getState().setPackageHealthOpen(false);
-    expect(useCastingRefreshStore.getState().packageHealthOpen).toBe(false);
+    useCastingRefreshStore.getState().setDetailsOpen(true);
+    expect(useCastingRefreshStore.getState().detailsOpen).toBe(true);
+    useCastingRefreshStore.getState().setDetailsOpen(false);
+    expect(useCastingRefreshStore.getState().detailsOpen).toBe(false);
   });
 });
 

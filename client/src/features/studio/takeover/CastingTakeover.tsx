@@ -33,7 +33,7 @@ import { useCastGate } from '../hooks/useCastGate';
 import { resetCastingSession } from '../hooks/castingSessionReset';
 import { IdentityChangeDialog } from './IdentityChangeDialog';
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
-import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
+import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefreshStore';
 import type { MintTier } from '@shared/boardTypes';
 
@@ -457,7 +457,7 @@ export function CastingTakeover({
     setShowCastModal(true);
   }, [editContext?.openUpgrade, hydrated, isMintedEdit, setShowCastModal]);
 
-  const packageHealthOpen = useCastingRefreshStore((s) => s.packageHealthOpen);
+  const detailsOpen = useCastingRefreshStore((s) => s.detailsOpen);
   const identityChangeOpen = useCastingUIStore((s) => s.identityChangeOpen);
 
   // Esc closes (capture so board-level handlers never see it while we're up)
@@ -465,7 +465,7 @@ export function CastingTakeover({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
-      if (showCastModal || isTopupOpen || identityDialog || packageHealthOpen || identityChangeOpen) return; // inner surfaces own their Esc
+      if (showCastModal || isTopupOpen || identityDialog || detailsOpen || identityChangeOpen) return; // inner surfaces own their Esc
       if (confirmingLeave) {
         setConfirmingLeave(false);
         return;
@@ -474,7 +474,7 @@ export function CastingTakeover({
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [attemptClose, confirmingLeave, showCastModal, isTopupOpen, identityDialog, packageHealthOpen, identityChangeOpen]);
+  }, [attemptClose, confirmingLeave, showCastModal, isTopupOpen, identityDialog, detailsOpen, identityChangeOpen]);
 
   // Founder ruling (Batch C final corrections): a minted identity must never
   // present as editable-in-place. This session is honestly framed as the
@@ -719,7 +719,7 @@ export function CastingTakeover({
         fixedName={upgradeMode ? modelNameInStore : undefined}
         initialName={!upgradeMode ? displayModelName : undefined}
         initialTier={requestedTier}
-        onResolvePackage={() => openPackageHealth()}
+        onResolvePackage={() => openCastingDetails()}
         // Defect 4: an existing placed draft's tier dialog leads with adding
         // views; a fresh cast leads with mint. Every door says where it leads.
         existingDraft={!!editContext?.draft}

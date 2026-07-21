@@ -81,13 +81,13 @@ describe('W6-E board thumbnail lifecycle', () => {
 
 describe('W6-F restore refusal visibility', () => {
   it('shows server refusals and re-syncs the version strip after every outcome', () => {
-    const source = read('client/src/features/boards/canvas/nodes/useSheetController.ts');
+    const source = read('client/src/features/casting/components/SlotVersionHistory.tsx');
     const start = source.indexOf('const restoreMutation');
     const end = source.indexOf('\n\n  return {', start);
     const mutation = source.slice(start, end);
 
     expect(start).toBeGreaterThan(-1);
-    expect(mutation).toContain('onError: (err) => toast.error(err.message)');
+    expect(mutation).toContain('onError: (error) => toast.error(error.message)');
     expect(mutation).toContain('onSettled:');
     expect(mutation).toContain('utils.generation.slotVersions.invalidate');
     expect(mutation).toContain('modelId: variables.modelId');

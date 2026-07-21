@@ -242,7 +242,7 @@ export function CastProfilePanel({
               <div className="mt-1 text-canvas-sm text-canvas-ink-faint">
                 {issueCount > 0 ? `${issueCount} view${issueCount === 1 ? '' : 's'} need attention` : missingCount > 0 ? `${missingCount} view${missingCount === 1 ? '' : 's'} not added` : 'Complete and in sync'}
               </div>
-              <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('casting-open-package-health'))} className="mt-2 text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink">
+              <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('casting-open-details'))} className="mt-2 text-canvas-sm font-medium text-canvas-ink-soft hover:text-canvas-ink">
                 Versions & package details
               </button>
             </section>

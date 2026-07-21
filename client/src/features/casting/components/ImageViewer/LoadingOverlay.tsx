@@ -61,7 +61,7 @@ const CONTEXTUAL_TIPS: Record<string, string[]> = {
 
 const FALLBACK_TIPS = [
   'Export packs include a full identity document',
-  'Each view keeps its own version history in Package health',
+  'Each view keeps its earlier versions under Details',
   'Hold compare to see the previous version side by side',
   'Your model\'s identity prompt is portable across studios',
   'The spec panel shows exactly what the AI was told to generate',

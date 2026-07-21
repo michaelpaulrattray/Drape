@@ -7,20 +7,19 @@ import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefr
 import type { CanonicalViewAngle } from '@shared/boardTypes';
 import { createClientRequestId } from '@shared/clientRequestId';
 import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
+import { SlotVersionHistory } from '@/features/casting/components/SlotVersionHistory';
 
-const OPEN_PACKAGE_HEALTH = 'casting-open-package-health';
+const OPEN_CASTING_DETAILS = 'casting-open-details';
 
-export function openPackageHealth(angle?: CanonicalViewAngle) {
-  window.dispatchEvent(new CustomEvent(OPEN_PACKAGE_HEALTH, { detail: { angle } }));
+export function openCastingDetails(angle?: CanonicalViewAngle) {
+  window.dispatchEvent(new CustomEvent(OPEN_CASTING_DETAILS, { detail: { angle } }));
 }
 
-export function PackageHealthDialog() {
+export function CastingDetailsDialog() {
   const modelId = useCastingGenerationStore((s) => s.currentModelId);
-  const setCurrentAssets = useCastingGenerationStore((s) => s.setCurrentAssets);
   const [versionAngle, setVersionAngle] = useState<CanonicalViewAngle | null>(null);
-  const open = useCastingRefreshStore((s) => s.packageHealthOpen);
-  const setOpen = useCastingRefreshStore((s) => s.setPackageHealthOpen);
-  const utils = trpc.useUtils();
+  const open = useCastingRefreshStore((s) => s.detailsOpen);
+  const setOpen = useCastingRefreshStore((s) => s.setDetailsOpen);
   const {
     invalidate,
     isPending: refreshPending,
@@ -34,8 +33,8 @@ export function PackageHealthDialog() {
       setVersionAngle(angle ?? null);
       setOpen(true);
     };
-    window.addEventListener(OPEN_PACKAGE_HEALTH, onOpen);
-    return () => window.removeEventListener(OPEN_PACKAGE_HEALTH, onOpen);
+    window.addEventListener(OPEN_CASTING_DETAILS, onOpen);
+    return () => window.removeEventListener(OPEN_CASTING_DETAILS, onOpen);
   }, []);
 
   useEffect(() => {
@@ -68,29 +67,8 @@ export function PackageHealthDialog() {
     { modelId: modelId ?? 0 },
     { enabled: open && !!modelId, staleTime: 0 },
   );
-  const versionsQuery = trpc.generation.slotVersions.useQuery(
-    { modelId: modelId ?? 0, angle: versionAngle ?? 'frontClose' },
-    { enabled: open && !!modelId && versionAngle !== null, staleTime: 0 },
-  );
-
   const pinMutation = trpc.generation.setSlotPinned.useMutation({
     onSuccess: (_result, variables) => { void invalidate(variables.modelId); },
-    onError: (error) => toast.error(error.message),
-  });
-
-  const restoreMutation = trpc.generation.restoreSlotVersion.useMutation({
-    onSuccess: (result) => {
-      const castingState = useCastingGenerationStore.getState();
-      if (castingState.currentModelId === result.modelId) {
-        setCurrentAssets([
-          ...castingState.currentAssets.filter((asset) => asset.viewType !== result.angle),
-          { id: result.assetId, viewType: result.angle, storageUrl: result.url },
-        ]);
-      }
-      setVersionAngle(null);
-      void invalidate(result.modelId);
-      void utils.generation.slotVersions.invalidate({ modelId: result.modelId, angle: result.angle });
-    },
     onError: (error) => toast.error(error.message),
   });
 
@@ -123,12 +101,12 @@ export function PackageHealthDialog() {
       <div className="w-full max-w-[520px] max-h-[82vh] overflow-hidden rounded-canvas-lg bg-canvas-surface border-hairline border-canvas-border-strong flex flex-col">
         <div className="px-5 py-4 border-b-hairline border-canvas-border flex items-start justify-between gap-4">
           <div>
-            <div className="text-canvas-lg font-medium text-canvas-ink">Package health</div>
+            <div className="text-canvas-lg font-medium text-canvas-ink">Versions &amp; details</div>
             <div className="text-canvas-md text-canvas-ink-soft mt-0.5">
-              Refresh only what is out of sync, or reuse a compatible earlier version.
+              Review the card, or reuse a compatible earlier version.
             </div>
           </div>
-          <button type="button" onClick={() => setOpen(false)} className="p-1 text-canvas-ink-faint hover:text-canvas-ink" aria-label="Close package health">
+          <button type="button" onClick={() => setOpen(false)} className="p-1 text-canvas-ink-faint hover:text-canvas-ink" aria-label="Close versions and details">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -136,11 +114,11 @@ export function PackageHealthDialog() {
         <div className="overflow-y-auto p-3 space-y-1.5">
           {packageQuery.isLoading || planQuery.isLoading || mintPlanQuery.isLoading ? (
             <div className="py-10 flex items-center justify-center gap-2 text-canvas-md text-canvas-ink-soft">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking the package…
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking views…
             </div>
           ) : loadError ? (
             <div className="py-8 text-center">
-              <div className="text-canvas-md text-canvas-ink-soft">Couldn't load package health — {loadError.message}</div>
+              <div className="text-canvas-md text-canvas-ink-soft">Couldn&apos;t load view details — {loadError.message}</div>
               <button
                 type="button"
                 onClick={() => {
@@ -211,23 +189,14 @@ export function PackageHealthDialog() {
                 </div>
 
                 {versionsOpen && (
-                  <div className="border-t-hairline border-canvas-border px-3 py-2.5 flex gap-2 overflow-x-auto">
-                    {versionsQuery.isLoading ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-canvas-ink-faint" />
-                    ) : (versionsQuery.data?.versions ?? []).filter((version) => !version.isHead).map((version) => (
-                      <div key={version.assetId} className="w-20 flex-shrink-0">
-                        <img src={version.url} alt="Earlier version" className="w-20 h-24 object-cover rounded-canvas-sm" />
-                        <button
-                          type="button"
-                          disabled={!version.revisionCompatible || restoreMutation.isPending}
-                          onClick={() => modelId && restoreMutation.mutate({ clientRequestId: createClientRequestId(), modelId, angle: slot.angle, assetId: version.assetId })}
-                          className="mt-1 w-full text-canvas-xs font-medium text-canvas-ink-soft hover:text-canvas-ink disabled:text-canvas-ink-faint disabled:cursor-not-allowed"
-                          title={version.revisionCompatible ? 'Use this version' : 'This belongs to an earlier identity'}
-                        >
-                          {version.revisionCompatible ? 'Use this version' : 'Earlier identity'}
-                        </button>
-                      </div>
-                    ))}
+                  <div className="border-t-hairline border-canvas-border px-3 py-2.5">
+                    {modelId && (
+                      <SlotVersionHistory
+                        modelId={modelId}
+                        angle={slot.angle}
+                        onUsed={() => setVersionAngle(null)}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -238,7 +207,7 @@ export function PackageHealthDialog() {
         <div className="px-5 py-3.5 border-t-hairline border-canvas-border flex items-center justify-between gap-4">
           <div className="text-canvas-sm text-canvas-ink-soft">
             {loadError
-              ? 'Package status unavailable'
+              ? 'View status unavailable'
               : actionable.length > 0
               ? `${actionable.length} view${actionable.length === 1 ? '' : 's'} · ${actionableCost.toLocaleString()} credits`
               : issueCount > 0

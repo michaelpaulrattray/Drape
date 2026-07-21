@@ -42,6 +42,7 @@ import { CostLabel } from "../CostLabel";
 import { useSheetController } from "./useSheetController";
 import type { Provenance, NodeStatus, CastAttributes } from "@shared/boardTypes";
 import { resolveCastPlacementLabel } from "../castNodeLabel";
+import { SlotVersionHistory } from "@/features/casting/components/SlotVersionHistory";
 
 export interface CastNodeData extends Record<string, unknown> {
   itemId: number;
@@ -175,15 +176,9 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   // D-53 thumb-strip: the vN chip opens the angle's ledger history — filled
   // rows newest-first, "Use this version" on non-head rows (copy-forward)
   const [versionsOpen, setVersionsOpen] = useState(false);
-  const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
   useEffect(() => {
     setVersionsOpen(false);
-    setSelectedVersionId(null);
   }, [sheet.popoverAngle]);
-  const slotVersionsQuery = trpc.generation.slotVersions.useQuery(
-    { modelId: sheet.modelId ?? 0, angle: sheet.popoverAngle ?? "frontClose" },
-    { enabled: versionsOpen && !!sheet.modelId && sheet.popoverAngle !== null },
-  );
   const showSheet = sheet.isSheet && controller.promptState === "complete" && !errored && !controller.isEmpty;
 
   // VC-R6 final fix 1(b): a fresh draft node teaches its own next step —
@@ -634,69 +629,8 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                       ) : (
                         <div className="text-canvas-sm font-medium text-canvas-ink">{slot.label}</div>
                       )}
-                      {versionsOpen && slot.version > 1 && (
-                        <div className="flex flex-col gap-1">
-                          {/* Two-step by hard lesson (VC-R6b drive 2): a bare
-                              thumb click COMMITTED a restore, so browsing the
-                              strip minted a new version per click (v8 ledgers
-                              of identical rows). Click = select; only the
-                              explicit action commits. */}
-                          <div className="flex gap-1 overflow-x-auto pb-0.5">
-                            {/* §7.4 (Batch C, M13): restore is offered ONLY
-                                where revision-compatible — a version from an
-                                earlier identity renders unselectable with the
-                                ruled copy, so the UI never advertises a
-                                restore the server refuses. */}
-                            {(slotVersionsQuery.data?.versions ?? []).map((v) => (
-                              <button
-                                key={v.assetId}
-                                type="button"
-                                disabled={sheet.restoring || (!v.isHead && !v.revisionCompatible)}
-                                title={
-                                  v.isHead
-                                    ? "Current version"
-                                    : v.revisionCompatible
-                                      ? "Select this version"
-                                      : "This version belongs to an earlier identity and can't replace the current cast. Fork or re-cast to use it."
-                                }
-                                className={cn(
-                                  "relative flex-shrink-0 w-9 rounded-canvas-sm overflow-hidden transition-opacity",
-                                  v.isHead
-                                    ? "border border-canvas-ink"
-                                    : selectedVersionId === v.assetId
-                                      ? "border border-canvas-ink-soft"
-                                      : "border-hairline border-canvas-border hover:border-canvas-border-strong",
-                                  (sheet.restoring || (!v.isHead && !v.revisionCompatible)) && "opacity-50",
-                                )}
-                                style={{ aspectRatio: "3 / 4" }}
-                                onClick={() => {
-                                  if (!v.isHead && !v.revisionCompatible) return;
-                                  setSelectedVersionId(v.isHead ? null : v.assetId);
-                                }}
-                              >
-                                <img src={v.url} alt="" className="w-full h-full object-cover" draggable={false} />
-                              </button>
-                            ))}
-                          </div>
-                          {sheet.restoring ? (
-                            <div className="text-canvas-xs text-canvas-ink-faint">Restoring…</div>
-                          ) : selectedVersionId !== null ? (
-                            <button
-                              type="button"
-                              className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
-                              onClick={() => {
-                                sheet.restoreVersion(slot.angle, selectedVersionId);
-                                setSelectedVersionId(null);
-                              }}
-                            >
-                              Use this version — free, lands as the newest
-                            </button>
-                          ) : (
-                            <div className="text-canvas-xs text-canvas-ink-faint">
-                              Select an earlier version to restore it
-                            </div>
-                          )}
-                        </div>
+                      {versionsOpen && slot.version > 1 && sheet.modelId && (
+                        <SlotVersionHistory modelId={sheet.modelId} angle={slot.angle} />
                       )}
                       {slot.pinned ? (
                         <div className="text-canvas-xs text-canvas-ink-soft">Pinned — kept as finished work</div>

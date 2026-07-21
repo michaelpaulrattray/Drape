@@ -132,7 +132,7 @@ describe("R7-3 draft authoring modes", () => {
 
     expect(control).toContain("if (!identityChangeMode) return");
     expect(control).toContain("onCloseIdentityChange?.()");
-    expect(takeover).toContain("packageHealthOpen || identityChangeOpen");
+    expect(takeover).toContain("detailsOpen || identityChangeOpen");
     expect(workspace).toContain("useEffect(() => () => setIdentityChangeOpen(false)");
     expect(uiStore).toContain("identityChangeOpen: false");
   });

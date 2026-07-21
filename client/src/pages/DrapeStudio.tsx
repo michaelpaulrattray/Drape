@@ -30,7 +30,7 @@ import { useDebugShortcuts } from '@/features/studio/hooks/useDebugShortcuts';
 import { CastModelModal, draftNameToPersist } from '@/features/studio/components/CastModelModal';
 import { useCastGate } from '@/features/studio/hooks/useCastGate';
 import { useSessionRestore, useSessionAutoSave, clearPersistedSession } from '@/features/studio/hooks/useSessionPersistence';
-import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
+import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { honestModelName } from '@/features/casting/modelDisplayTruth';
 import type { MintTier } from '@shared/boardTypes';
 
@@ -376,7 +376,7 @@ export default function DrapeStudio() {
         fixedName={upgradeMode ? honestModelName(modelName, persistedModel.data?.name) : undefined}
         initialName={!upgradeMode ? honestModelName(modelName) : undefined}
         initialTier={requestedTier}
-        onResolvePackage={() => openPackageHealth()}
+        onResolvePackage={() => openCastingDetails()}
       />
 
       <CreditTopupModal

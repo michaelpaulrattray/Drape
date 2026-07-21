@@ -28,7 +28,7 @@ import { CastProfilePanel } from '@/features/casting/components/CastProfilePanel
 import { useCastingCanvas } from '@/features/casting/hooks/useCastingCanvas';
 import { useCastingGeneration } from '@/features/casting/hooks/useCastingGeneration';
 import { useLegacyCastingBindings } from '@/features/casting/hooks/castingBindings';
-import { PackageHealthDialog } from '@/features/casting/components/PackageHealthDialog';
+import { CastingDetailsDialog } from '@/features/casting/components/PackageHealthDialog';
 import {
   editablePreferencesFromStored,
   type EngineChoiceFlags,
@@ -478,7 +478,7 @@ export function CastingWorkspace({
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative w-full">
-      <PackageHealthDialog />
+      <CastingDetailsDialog />
 
       {/* Identity form — creation, legacy minted paths, or an explicit recast. */}
       {showControlPanel && (

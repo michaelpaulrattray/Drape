@@ -5,7 +5,7 @@ import { refundOutcomeText } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingUIStore } from '@/features/casting/stores/useCastingUIStore';
 import { useStudioStore } from '@/features/studio/stores/useStudioStore';
-import { openPackageHealth } from '@/features/casting/components/PackageHealthDialog';
+import { openCastingDetails } from '@/features/casting/components/PackageHealthDialog';
 import { useCastingPackageRefresh } from '@/features/casting/hooks/useCastingPackageRefresh';
 import {
   MINT_TIER_SLOTS,
@@ -152,7 +152,8 @@ function GhostSlot({ label, cost, onClick }: { label: string; cost?: number; onC
 }
 
 // ============ FailedSlot (D-40; hue per R6 ruling R-1) ============
-// A slot whose generation failed the identity gate — named, retryable, and
+// A slot whose generation failed the identity gate — named, and retryable
+// only when the shared server plan permits another attempt. It stays
 // HONEST about the money (Batch C final correction 1): the refund line
 // derives from what the ledger actually recorded, never an unconditional
 // "you weren't charged". Failure wears the destructive-red glyph (§2.1.3).
@@ -168,8 +169,9 @@ function FailedSlot({
   cost?: number;
   onRetry?: () => void;
 }) {
+  const retryable = Boolean(onRetry);
   const retryLabel = `${label} failed — ${failure.reason}. ${refundOutcomeText(failure)}${
-    cost === undefined ? '' : ` Retry for ${cost.toLocaleString()} credits.`
+    retryable && cost !== undefined ? ` Retry for ${cost.toLocaleString()} credits.` : ''
   }`;
   return (
     <button
@@ -188,7 +190,7 @@ function FailedSlot({
       <RefreshCw className="h-3 w-3" />
       <span className="text-canvas-xs font-medium">{label}</span>
       <span className="text-[9px] leading-none text-canvas-ink-faint">
-        {cost === undefined ? 'Retry' : `Retry · ${cost.toLocaleString()}`}
+        {!retryable ? 'Needs attention' : cost === undefined ? 'Retry' : `Retry · ${cost.toLocaleString()}`}
       </span>
     </button>
   );
@@ -348,7 +350,7 @@ export function ViewTabs() {
             {hasDetails && (
               <button
                 type="button"
-                onClick={(event) => { event.stopPropagation(); openPackageHealth(); }}
+                onClick={(event) => { event.stopPropagation(); openCastingDetails(); }}
                 className="flex items-center justify-center gap-1 px-1 py-1 text-canvas-xs font-medium text-canvas-ink-faint transition-colors hover:text-canvas-ink"
               >
                 <MoreHorizontal className="h-3 w-3" /> Details

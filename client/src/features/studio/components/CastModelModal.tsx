@@ -101,7 +101,7 @@ export interface CastModelModalProps {
   /** View-strip entry intent. Missing production views must not silently open
    * the cheaper Core tier when that would omit the selected view. */
   initialTier?: MintTier;
-  /** Opens the shared Package health surface for stale/failed mint blockers. */
+  /** Opens shared view details for stale/failed mint blockers. */
   onResolvePackage?: () => void;
   /** VC-R6 final r2 / defect 4: this subject is an EXISTING placed draft
    *  (re-editing to add views), not a fresh first cast. The dialog then

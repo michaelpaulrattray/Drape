@@ -27,6 +27,9 @@ export function useCastingPackageRefresh(modelId: number | null) {
   const serverRefreshing = useCastingRefreshStore((state) =>
     modelId ? state.refreshingByModel[modelId] : undefined,
   ) ?? EMPTY_REFRESHING_ANGLES;
+  const localRefreshing = useCastingRefreshStore((state) =>
+    modelId ? state.localRefreshingByModel[modelId] : undefined,
+  ) ?? EMPTY_REFRESHING_ANGLES;
 
   const invalidate = useCallback(async (targetModelId: number) => {
     await Promise.all([
@@ -45,6 +48,7 @@ export function useCastingPackageRefresh(modelId: number | null) {
         angles,
         clientRequestIds: [clientRequestId],
       });
+      useCastingRefreshStore.getState().beginLocalRefresh(targetModelId, angles);
       void utils.generation.activeOperations.invalidate();
       return { operation };
     },
@@ -71,11 +75,21 @@ export function useCastingPackageRefresh(modelId: number | null) {
       toast.error(error.message);
     },
     onSettled: async (_data, _error, variables) => {
-      await invalidate(variables.modelId);
-      await utils.generation.activeOperations.invalidate();
+      let localCleared = false;
       try {
+        await Promise.all([
+          invalidate(variables.modelId),
+          utils.generation.activeOperations.invalidate(),
+        ]);
         const freshPackage = await utils.generation.packageState.fetch({ modelId: variables.modelId });
-        const remaining = useCastingRefreshStore.getState().refreshingByModel[variables.modelId] ?? [];
+        useCastingRefreshStore.getState().endLocalRefresh(variables.modelId, variables.angles);
+        localCleared = true;
+        const refreshState = useCastingRefreshStore.getState();
+        const settledAngles = new Set(variables.angles);
+        const remaining = Array.from(new Set([
+          ...(refreshState.refreshingByModel[variables.modelId] ?? []).filter((angle) => !settledAngles.has(angle)),
+          ...(refreshState.localRefreshingByModel[variables.modelId] ?? []),
+        ]));
         const castingState = useCastingGenerationStore.getState();
         if (
           castingState.currentModelId === variables.modelId
@@ -86,14 +100,14 @@ export function useCastingPackageRefresh(modelId: number | null) {
       } catch {
         // The warning remains until fresh server truth proves every view is
         // healthy. Optimistic clearing would let the strip and banner diverge.
+      } finally {
+        if (!localCleared) {
+          useCastingRefreshStore.getState().endLocalRefresh(variables.modelId, variables.angles);
+        }
       }
     },
   });
 
-  const localRefreshing = refreshMutation.isPending
-    && refreshMutation.variables?.modelId === modelId
-    ? refreshMutation.variables.angles
-    : EMPTY_REFRESHING_ANGLES;
   const refreshing = useMemo(
     () => Array.from(new Set([...serverRefreshing, ...localRefreshing])),
     [localRefreshing, serverRefreshing],
