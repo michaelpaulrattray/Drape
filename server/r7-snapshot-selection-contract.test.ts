@@ -102,6 +102,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     const allowedAuthority = new Set([
       "server/casting/snapshotBootstrap.ts",
       "server/casting/finalCastDeletion.ts",
+      "server/casting/snapshotTransitions.ts",
       "server/db/accountDeletion.ts",
       "server/db/generationOperations.ts",
     ]);
@@ -136,5 +137,16 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       .toBeLessThan(modelDeletion.indexOf("delete(modelIdentitySnapshots)"));
     expect(modelDeletion.indexOf("delete(modelIdentitySnapshots)"))
       .toBeLessThan(modelDeletion.indexOf("delete(modelAssets)"));
+  });
+
+  it("keeps the atomic transition service private until writer-adoption slices", async () => {
+    const files = (await runtimeSources("server"))
+      .filter((file) => !file.endsWith("snapshotTransitions.ts"));
+    const callers: string[] = [];
+    for (const file of files) {
+      const content = await readFile(file, "utf8");
+      if (content.includes("snapshotTransitions")) callers.push(file);
+    }
+    expect(callers).toEqual([]);
   });
 });

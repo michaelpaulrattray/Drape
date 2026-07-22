@@ -1,4 +1,4 @@
-/** Guarded disposable-MySQL gate for the private R7-7A2 bootstrap service. */
+/** Guarded disposable-MySQL gate for R7-7A bootstrap + atomic transitions. */
 import "dotenv/config";
 import { randomBytes } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
@@ -68,15 +68,17 @@ async function main() {
 
     run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
       "exec", "vitest", "run",
+      "--testTimeout=60000", "--hookTimeout=60000", "--fileParallelism=false",
       "server/casting/snapshotBootstrap.test.ts",
       "server/r7-snapshot-selection-contract.test.ts",
       "server/r7-snapshot-bootstrap-db.test.ts",
+      "server/r7-snapshot-transitions-db.test.ts",
     ], {
       ...process.env,
       DATABASE_URL: "",
       TEST_DATABASE_URL: testUrl.toString(),
     });
-    console.log("[disposable] R7-7A2 bootstrap, replay, convergence and race gates passed");
+    console.log("[disposable] R7-7A bootstrap, transition, rollback and race gates passed");
   } finally {
     if (created) {
       if (!safeName.test(databaseName)) throw new Error("Cleanup guard refused database name");
