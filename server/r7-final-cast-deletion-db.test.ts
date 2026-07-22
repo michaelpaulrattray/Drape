@@ -215,6 +215,14 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
       [historyOnly.insertId, headUrl, historyOnly.insertId, `${R2}/independent/current.png`],
     );
 
+    await expect(deletion.planFinalCastDeletion({ userId, modelId })).resolves.toEqual({
+      castViews: 2,
+      canvasPlacements: 1,
+      affectedBoards: 2,
+      wardrobeSessions: 1,
+      wardrobeLooks: 1,
+    });
+
     const deleteRequestId = randomUUID();
     const deletePayload = { modelId };
     const operationId = await createRunningDelete(userId, modelId, {

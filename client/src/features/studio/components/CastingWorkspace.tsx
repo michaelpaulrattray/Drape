@@ -53,6 +53,7 @@ import {
   operationPhaseLabel,
   selectStudioOperation,
 } from '@/features/operations/generationOperationProjection';
+import { subscribeCastDeleted } from '@/features/operations/castDeletionSync';
 
 interface LoadedCastingModel {
   id: number;
@@ -465,6 +466,13 @@ export function CastingWorkspace({
     identityChangeSnapshotRef.current = null;
     onNewModel();
   }, [onNewModel]);
+
+  useEffect(() => subscribeCastDeleted(({ modelId }) => {
+    const generation = useCastingGenerationStore.getState();
+    if (generation.currentModelId !== modelId && useStudioStore.getState().canvas.castModelId !== modelId) return;
+    toast('This Cast was deleted in another tab');
+    handleNewModel();
+  }), [handleNewModel]);
 
   if (showDescribeStart) {
     return (

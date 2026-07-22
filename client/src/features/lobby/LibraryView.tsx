@@ -10,11 +10,12 @@
  */
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Download, X } from 'lucide-react';
+import { Download, Trash2, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { SearchField } from './SearchField';
 import { NewItemTile } from './NewItemTile';
 import { ModelCardChooser, type ChooserModel } from './ModelCardChooser';
+import { DeleteCastDialog, type DeleteCastTarget } from './DeleteCastDialog';
 
 export type LibraryKind = 'models' | 'garments' | 'looks';
 
@@ -26,6 +27,7 @@ interface LibraryItem {
   onClick: () => void;
   /** Right-click parity with the chooser (A2(a) + close-out (b)). */
   onContextMenu?: () => void;
+  deleteTarget?: DeleteCastTarget;
 }
 
 interface LibrarySection {
@@ -70,6 +72,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
   // A2(a): a minted card opens the chooser (View comp card / Open in casting /
   // Dress in wardrobe / Export identity pack) — never a silent teleport
   const [chooser, setChooser] = useState<ChooserModel | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteCastTarget | null>(null);
 
   const { data: models, isLoading: modelsLoading } = trpc.wardrobe.model.listMinted.useQuery(
     undefined,
@@ -121,6 +124,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
       title: d.name ?? 'Untitled',
       tag: 'Draft',
       onClick: () => navigate(`/studio?tool=casting&modelId=${d.id}`),
+      deleteTarget: { modelId: d.id, name: d.name ?? 'Untitled Cast' },
     }));
     const mintedItems: LibraryItem[] = (models ?? []).map((m) => {
       const open = () =>
@@ -131,6 +135,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
         title: m.name ?? 'Untitled',
         onClick: open,
         onContextMenu: open,
+        deleteTarget: { modelId: m.id, name: m.name ?? 'Untitled Cast' },
       };
     });
     if (draftItems.length > 0) sections.push({ label: 'In progress', items: draftItems });
@@ -291,9 +296,18 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                   />
                 )}
                 {section.items.map((item) => (
-                  <button
+                  <div
                     key={item.key}
+                    role="button"
+                    tabIndex={0}
                     onClick={item.onClick}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        item.onClick();
+                      }
+                    }}
                     onContextMenu={
                       item.onContextMenu
                         ? (e) => {
@@ -333,6 +347,19 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                           {item.tag}
                         </span>
                       )}
+                      {item.deleteTarget && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDeleteTarget(item.deleteTarget!);
+                          }}
+                          className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-white/90 text-[#71716A] opacity-100 shadow-sm backdrop-blur-md transition-all hover:text-[#0A0A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/25 sm:opacity-0 sm:focus-visible:opacity-100 sm:group-hover/thumb:opacity-100"
+                          aria-label={`Delete ${item.deleteTarget.name}`}
+                        >
+                          <Trash2 className="size-3.5" strokeWidth={1.7} />
+                        </button>
+                      )}
                     </div>
                     <span
                       className="block mt-1.5"
@@ -346,7 +373,7 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
                     >
                       {item.title}
                     </span>
-                  </button>
+                  </div>
                 ))}
               </div>
             </section>
@@ -356,6 +383,14 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
 
       {/* A2(a) chooser — minted model cards */}
       <ModelCardChooser model={chooser} onClose={() => setChooser(null)} />
+
+      <DeleteCastDialog
+        target={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onDeleted={(modelId) => {
+          if (chooser?.id === modelId) setChooser(null);
+        }}
+      />
 
       {/* Preview overlay */}
       {preview && (

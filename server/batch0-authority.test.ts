@@ -65,7 +65,18 @@ vi.mock("./casting/finalCastDeletion", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./casting/finalCastDeletion")>();
   return {
     ...actual,
-    executeFinalCastDeletion: vi.fn().mockResolvedValue({ deleted: true, counts: {} }),
+    executeFinalCastDeletion: vi.fn().mockResolvedValue({
+      deleted: true,
+      counts: {
+        assets: 6, canvasItems: 2, canvasVersions: 4, affectedBoards: 1,
+        wardrobeSessions: 1, wardrobeLooks: 1, generationAttempts: 3,
+        priorOperations: 2, bugReportsScrubbed: 0, cleanupObjects: 8,
+      },
+    }),
+    planFinalCastDeletion: vi.fn().mockResolvedValue({
+      castViews: 6, canvasPlacements: 2, affectedBoards: 1,
+      wardrobeSessions: 1, wardrobeLooks: 1,
+    }),
   };
 });
 
@@ -82,7 +93,7 @@ import {
   deductPoints,
   createModelAsset,
 } from "./db";
-import { executeFinalCastDeletion } from "./casting/finalCastDeletion";
+import { executeFinalCastDeletion, planFinalCastDeletion } from "./casting/finalCastDeletion";
 import { CREDIT_COSTS, generateCastingImage } from "./casting/aiService";
 import { beginDirectOperation } from "./casting/directOperation";
 import { buildIdentityAnchor } from "./casting/geminiClient";
@@ -189,7 +200,18 @@ beforeEach(() => {
   vi.mocked(getModelStatusesIn).mockReset().mockResolvedValue(new Map());
   vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true });
   vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true });
-  vi.mocked(executeFinalCastDeletion).mockReset().mockResolvedValue({ deleted: true, counts: {} } as never);
+  vi.mocked(executeFinalCastDeletion).mockReset().mockResolvedValue({
+    deleted: true,
+    counts: {
+      assets: 6, canvasItems: 2, canvasVersions: 4, affectedBoards: 1,
+      wardrobeSessions: 1, wardrobeLooks: 1, generationAttempts: 3,
+      priorOperations: 2, bugReportsScrubbed: 0, cleanupObjects: 8,
+    },
+  });
+  vi.mocked(planFinalCastDeletion).mockReset().mockResolvedValue({
+    castViews: 6, canvasPlacements: 2, affectedBoards: 1,
+    wardrobeSessions: 1, wardrobeLooks: 1,
+  });
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true });
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 99 } as never);
   vi.mocked(generateCastingImage).mockClear();
@@ -562,33 +584,71 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
 
 // ─── Review item 3 / founder ruling: models.delete is drafts-only ──────────
 
-describe("models.delete drafts-only (founder ruling, review item 9)", () => {
+describe("models.delete final authority", () => {
+  it("returns a free server-owned advisory plan", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.models.deletePlan({ modelId: 7 })).resolves.toEqual({
+      castViews: 6,
+      canvasPlacements: 2,
+      affectedBoards: 1,
+      wardrobeSessions: 1,
+      wardrobeLooks: 1,
+    });
+    expect(planFinalCastDeletion).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
+    expect(beginDirectOperation).not.toHaveBeenCalled();
+    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
+  });
+
   it("a draft hard-deletes successfully", async () => {
     vi.mocked(getModelById).mockResolvedValue(model() as never);
     const caller = appRouter.createCaller(authCtx());
     const res = await caller.models.delete({ modelId: 7 });
-    expect(res.success).toBe(true);
+    expect(res).toMatchObject({ success: true, counts: { castViews: 6, canvasPlacements: 2 } });
     expect(executeFinalCastDeletion).toHaveBeenCalledWith(expect.objectContaining({ userId: 1, modelId: 7 }));
   });
 
-  it("a minted model refuses deletion", async () => {
+  it("an identical replay returns the stored authoritative counts without executing again", async () => {
+    vi.mocked(beginDirectOperation).mockResolvedValueOnce({
+      type: "replay",
+      operationId: REQUEST_ID,
+      result: {
+        deleted: true,
+        counts: {
+          assets: 6, canvasItems: 2, canvasVersions: 4, affectedBoards: 1,
+          wardrobeSessions: 1, wardrobeLooks: 1, generationAttempts: 3,
+          priorOperations: 2, bugReportsScrubbed: 0, cleanupObjects: 8,
+        },
+      },
+    });
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.models.delete({ modelId: 7 })).resolves.toEqual({
+      success: true,
+      counts: {
+        castViews: 6,
+        canvasPlacements: 2,
+        affectedBoards: 1,
+        wardrobeSessions: 1,
+        wardrobeLooks: 1,
+      },
+    });
+    expect(getModelById).not.toHaveBeenCalled();
+    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
+  });
+
+  it("a minted model uses the same atomic deletion service", async () => {
     vi.mocked(getModelById).mockResolvedValue(
       model({ status: "active", agencyId: "MOD-26-ABCDEF" }) as never,
     );
     const caller = appRouter.createCaller(authCtx());
-    await expect(caller.models.delete({ modelId: 7 })).rejects.toMatchObject({
-      code: "PRECONDITION_FAILED",
-    });
-    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
+    await expect(caller.models.delete({ modelId: 7 })).resolves.toMatchObject({ success: true });
+    expect(executeFinalCastDeletion).toHaveBeenCalledOnce();
   });
 
-  it("a legacy locked model refuses deletion", async () => {
+  it("a legacy locked model uses the same atomic deletion service", async () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "locked" }) as never);
     const caller = appRouter.createCaller(authCtx());
-    await expect(caller.models.delete({ modelId: 7 })).rejects.toMatchObject({
-      code: "PRECONDITION_FAILED",
-    });
-    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
+    await expect(caller.models.delete({ modelId: 7 })).resolves.toMatchObject({ success: true });
+    expect(executeFinalCastDeletion).toHaveBeenCalledOnce();
   });
 
   it("an archived model reads as deleted (NOT_FOUND)", async () => {

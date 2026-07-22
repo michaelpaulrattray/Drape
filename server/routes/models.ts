@@ -18,7 +18,11 @@ import {
   requireDirectOperationRecovery,
 } from "../casting/directOperation";
 import { modelOperationLockKey } from "../casting/operationContract";
-import { executeFinalCastDeletion } from "../casting/finalCastDeletion";
+import {
+  executeFinalCastDeletion,
+  planFinalCastDeletion,
+  summarizeFinalCastDeletion,
+} from "../casting/finalCastDeletion";
 const log = createModuleLogger("routes/models");
 
 export const modelsRouter = router({
@@ -226,11 +230,20 @@ export const modelsRouter = router({
       return { success: true };
     }),
 
-  // R7-5C keeps the public door drafts-only while the same atomic deletion
-  // service is proven for draft, active and legacy locked Casts. R7-5E will
-  // expose minted deletion after the cleanup worker and product drive land.
+  // Free advisory preview. The delete executor repeats this dependency walk
+  // under the model lock; the client never supplies or authorizes counts.
+  deletePlan: protectedProcedure
+    .input(z.object({ modelId: z.number().int().positive() }).strict())
+    .query(async ({ ctx, input }) => planFinalCastDeletion({
+      userId: ctx.user.id,
+      modelId: input.modelId,
+    })),
+
+  // R7-5E: one permanent-delete door for draft, minted and legacy locked
+  // Casts. Tombstones are already absent from getModelById, and the atomic
+  // executor is the final authority over dependencies and final counts.
   delete: protectedProcedure
-    .input(z.object({ clientRequestId: z.string().uuid(), modelId: z.number() }).strict())
+    .input(z.object({ clientRequestId: z.string().uuid(), modelId: z.number().int().positive() }).strict())
     .mutation(async ({ ctx, input }) => {
       const lockKey = modelOperationLockKey(input.modelId);
       const gate = await beginDirectOperation({
@@ -241,14 +254,21 @@ export const modelsRouter = router({
         payload: { modelId: input.modelId },
         lockKey,
       });
-      if (gate.type === "replay") return { success: true };
+      if (gate.type === "replay") {
+        const counts = summarizeFinalCastDeletion(gate.result);
+        if (!counts) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `The saved deletion result needs support review. Operation ${gate.operationId}.`,
+          });
+        }
+        return { success: true, counts };
+      }
       const lockedModel = await getModelById(input.modelId);
-      if (!lockedModel || lockedModel.userId !== ctx.user.id || lockedModel.status !== "draft") {
+      if (!lockedModel || lockedModel.userId !== ctx.user.id || lockedModel.status === "archived") {
         const error = !lockedModel || lockedModel.status === "archived"
           ? new TRPCError({ code: "NOT_FOUND", message: "Model not found" })
-          : lockedModel.userId !== ctx.user.id
-            ? new TRPCError({ code: "FORBIDDEN", message: "Access denied" })
-            : new TRPCError({ code: "PRECONDITION_FAILED", message: "Only draft Casts can be deleted right now." });
+          : new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }
       await markGenerationOperationRunning({
@@ -263,7 +283,7 @@ export const modelsRouter = router({
       });
 
       try {
-        await executeFinalCastDeletion({
+        const result = await executeFinalCastDeletion({
           userId: ctx.user.id,
           modelId: input.modelId,
           operationId: gate.operationId,
@@ -272,7 +292,9 @@ export const modelsRouter = router({
             userAgent: ctx.req.headers["user-agent"] ?? null,
           },
         });
-        return { success: true };
+        const counts = summarizeFinalCastDeletion(result);
+        if (!counts) throw new Error("Deletion completed without a valid public summary");
+        return { success: true, counts };
       } catch (error) {
         return completeDirectOperationFailure({ userId: ctx.user.id, operationId: gate.operationId, error, chargedCredits: 0, refundedCredits: 0 });
       }

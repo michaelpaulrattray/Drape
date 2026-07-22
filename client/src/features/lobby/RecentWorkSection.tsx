@@ -10,8 +10,8 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import { createClientRequestId } from '@shared/clientRequestId';
 import { RecentWorkCard } from './RecentWorkCard';
+import { DeleteCastDialog, type DeleteCastTarget } from './DeleteCastDialog';
 import type { RecentWorkItem } from './types';
 
 function itemKey(item: RecentWorkItem): string {
@@ -41,6 +41,7 @@ export function RecentWorkSection({
   const utils = trpc.useUtils();
   const [, navigate] = useLocation();
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [deleteCastTarget, setDeleteCastTarget] = useState<DeleteCastTarget | null>(null);
 
   const deleteSessionMutation = trpc.wardrobe.sessions.delete.useMutation({
     onMutate: async ({ sessionId }) => {
@@ -62,26 +63,6 @@ export function RecentWorkSection({
     },
   });
 
-  const deleteDraftMutation = trpc.models.delete.useMutation({
-    onMutate: async ({ modelId }) => {
-      await utils.lobby.recentWork.cancel();
-      const prev = utils.lobby.recentWork.getData();
-      utils.lobby.recentWork.setData(undefined, (old) =>
-        old ? old.filter((i) => !(i.tool === 'casting' && i.modelId === modelId)) : [],
-      );
-      return { prev };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) utils.lobby.recentWork.setData(undefined, ctx.prev);
-      toast.error('Failed to delete draft');
-    },
-    onSuccess: () => toast.success('Draft deleted'),
-    onSettled: () => {
-      utils.lobby.recentWork.invalidate();
-      utils.wardrobe.model.listDrafts.invalidate();
-    },
-  });
-
   if (items.length === 0) return null;
 
   const handleDelete = (item: RecentWorkItem) => {
@@ -94,7 +75,8 @@ export function RecentWorkSection({
         deleteSessionMutation.mutate({ sessionId: item.sessionId });
         break;
       case 'casting':
-        deleteDraftMutation.mutate({ clientRequestId: createClientRequestId(), modelId: item.modelId });
+        setDeletingKey(null);
+        setDeleteCastTarget({ modelId: item.modelId, name: item.name ?? 'Untitled Cast' });
         break;
     }
   };
@@ -130,6 +112,10 @@ export function RecentWorkSection({
           />
         ))}
       </div>
+      <DeleteCastDialog
+        target={deleteCastTarget}
+        onClose={() => setDeleteCastTarget(null)}
+      />
     </section>
   );
 }

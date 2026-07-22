@@ -46,6 +46,43 @@ export interface FinalCastDeletionResult {
   counts: FinalCastDeletionCounts;
 }
 
+/** The deliberately small, non-sensitive shape shown before and after a
+ * permanent Cast deletion. Storage keys, URLs, prompts and receipt internals
+ * never cross this boundary. */
+export interface FinalCastDeletionSummary {
+  castViews: number;
+  canvasPlacements: number;
+  affectedBoards: number;
+  wardrobeSessions: number;
+  wardrobeLooks: number;
+}
+
+function nonNegativeCount(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) >= 0;
+}
+
+export function summarizeFinalCastDeletion(value: unknown): FinalCastDeletionSummary | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const result = value as { deleted?: unknown; counts?: Record<string, unknown> };
+  const counts = result.counts;
+  if (result.deleted !== true || !counts) return null;
+  const fields = [
+    counts.assets,
+    counts.canvasItems,
+    counts.affectedBoards,
+    counts.wardrobeSessions,
+    counts.wardrobeLooks,
+  ];
+  if (!fields.every(nonNegativeCount)) return null;
+  return {
+    castViews: counts.assets as number,
+    canvasPlacements: counts.canvasItems as number,
+    affectedBoards: counts.affectedBoards as number,
+    wardrobeSessions: counts.wardrobeSessions as number,
+    wardrobeLooks: counts.wardrobeLooks as number,
+  };
+}
+
 export type FinalCastDeletionFailurePoint =
   | "after_manifest"
   | "after_canvas"
@@ -350,6 +387,172 @@ async function deleteCanvasDependenciesIn(input: {
     await recomputeBoardThumbnailIn(tx, boardId);
   }
   return { items: deleteItemIds.length, versions: removedVersions, boards: affectedBoards.size };
+}
+
+/** Read-only counterpart to deleteCanvasDependenciesIn. The preview is
+ * advisory because the executor re-runs the dependency walk under its model
+ * lock, but both paths apply the same node-versus-version deletion law. */
+async function planCanvasDependenciesIn(input: {
+  tx: TransactionHandle;
+  modelId: number;
+  userId: number;
+  assetUrls: string[];
+  wardrobeSessionIds: number[];
+  wardrobeLookIds: number[];
+}): Promise<{ items: number; boards: number }> {
+  const { tx, modelId, userId, assetUrls, wardrobeSessionIds, wardrobeLookIds } = input;
+  const urlSet = new Set(assetUrls);
+  const matchingVersions = assetUrls.length
+    ? await tx
+      .select({
+        id: boardItemVersions.id,
+        itemId: boardItemVersions.itemId,
+        boardId: boardItems.boardId,
+        boardUserId: boards.userId,
+      })
+      .from(boardItemVersions)
+      .innerJoin(boardItems, eq(boardItemVersions.itemId, boardItems.id))
+      .innerJoin(boards, eq(boardItems.boardId, boards.id))
+      .where(inArray(boardItemVersions.imageUrl, assetUrls))
+    : [];
+  if (matchingVersions.some((row) => row.boardUserId !== userId)) {
+    throw new Error("Cross-owner Canvas dependency detected");
+  }
+
+  const versionItemIds = matchingVersions.map((row) => row.itemId);
+  const candidates = await tx
+    .select({ item: boardItems, boardUserId: boards.userId })
+    .from(boardItems)
+    .innerJoin(boards, eq(boardItems.boardId, boards.id))
+    .where(or(
+      eq(boardItems.sourceModelId, modelId),
+      sql`CAST(JSON_UNQUOTE(JSON_EXTRACT(${boardItems.metadata}, '$.provenance.modelId')) AS UNSIGNED) = ${modelId}`,
+      sql`CAST(JSON_UNQUOTE(JSON_EXTRACT(${boardItems.metadata}, '$.modelId')) AS UNSIGNED) = ${modelId}`,
+      ...(assetUrls.length ? [inArray(boardItems.imageUrl, assetUrls)] : []),
+      ...(versionItemIds.length ? [inArray(boardItems.id, versionItemIds)] : []),
+    ));
+  if (candidates.some((row) => row.boardUserId !== userId)) {
+    throw new Error("Cross-owner Canvas dependency detected");
+  }
+
+  const matchedVersionIdsByItem = new Map<number, Set<number>>();
+  for (const version of matchingVersions) {
+    const ids = matchedVersionIdsByItem.get(version.itemId) ?? new Set<number>();
+    ids.add(version.id);
+    matchedVersionIdsByItem.set(version.itemId, ids);
+  }
+  const deleteItemIds = new Set<number>();
+  const affectedBoards = new Set<number>();
+
+  if (assetUrls.length) {
+    const thumbnailBoards = await tx
+      .select({ id: boards.id, userId: boards.userId })
+      .from(boards)
+      .where(inArray(boards.thumbnailUrl, assetUrls));
+    if (thumbnailBoards.some((board) => board.userId !== userId)) {
+      throw new Error("Cross-owner Canvas dependency detected");
+    }
+    for (const board of thumbnailBoards) affectedBoards.add(board.id);
+  }
+
+  for (const { item } of candidates) {
+    const provenance = readCastProvenance(item.metadata);
+    if (item.sourceModelId && provenance && item.sourceModelId !== provenance.modelId) {
+      throw new Error("Canvas Cast provenance disagrees with its direct model link");
+    }
+    const linked = item.sourceModelId === modelId || provenance?.modelId === modelId;
+    const currentUrlMatch = !!item.imageUrl && urlSet.has(item.imageUrl);
+    const matchedVersionIds = matchedVersionIdsByItem.get(item.id) ?? new Set<number>();
+    if (!linked && hasRawModelIdCandidate(item.metadata, modelId)) {
+      throw new Error("Unrecognized Canvas model-link candidate");
+    }
+    if (!linked && !currentUrlMatch && matchedVersionIds.size === 0) {
+      throw new Error("Unrecognized Canvas model-link candidate");
+    }
+    affectedBoards.add(item.boardId);
+    if (linked) {
+      deleteItemIds.add(item.id);
+      continue;
+    }
+    if (currentUrlMatch) {
+      const versions = await tx
+        .select({ id: boardItemVersions.id })
+        .from(boardItemVersions)
+        .where(eq(boardItemVersions.itemId, item.id));
+      if (!versions.some((version) => !matchedVersionIds.has(version.id))) {
+        deleteItemIds.add(item.id);
+      }
+    }
+  }
+
+  const wardrobeCondition = or(
+    ...(wardrobeSessionIds.length ? [inArray(boardItems.sourceSessionId, wardrobeSessionIds)] : []),
+    ...(wardrobeLookIds.length ? [inArray(boardItems.sourceLookId, wardrobeLookIds)] : []),
+  );
+  if (wardrobeCondition) {
+    const wardrobeLinked = await tx
+      .select({ boardId: boardItems.boardId, boardUserId: boards.userId })
+      .from(boardItems)
+      .innerJoin(boards, eq(boardItems.boardId, boards.id))
+      .where(wardrobeCondition);
+    if (wardrobeLinked.some((item) => item.boardUserId !== userId)) {
+      throw new Error("Cross-owner Canvas dependency detected");
+    }
+    for (const item of wardrobeLinked) affectedBoards.add(item.boardId);
+  }
+
+  return { items: deleteItemIds.size, boards: affectedBoards.size };
+}
+
+/** Free, read-only deletion preview. It is never authority: the atomic
+ * executor re-plans after acquiring the model operation lock. */
+export async function planFinalCastDeletion(input: {
+  userId: number;
+  modelId: number;
+}): Promise<FinalCastDeletionSummary> {
+  return withTransaction(async (tx) => {
+    const [model] = await tx
+      .select({ id: models.id })
+      .from(models)
+      .where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        isNull(models.deletedAt),
+        ne(models.status, "archived"),
+      ))
+      .limit(1);
+    if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+
+    // Keep reads sequential on the one transaction connection. The preview
+    // is small and this avoids relying on driver-specific query queuing.
+    const assets = await tx
+      .select({ storageUrl: modelAssets.storageUrl })
+      .from(modelAssets)
+      .where(eq(modelAssets.modelId, input.modelId));
+    const sessions = await tx
+      .select({ id: wardrobeSessions.id })
+      .from(wardrobeSessions)
+      .where(eq(wardrobeSessions.modelId, input.modelId));
+    const looks = await tx
+      .select({ id: wardrobeLooks.id })
+      .from(wardrobeLooks)
+      .where(eq(wardrobeLooks.modelId, input.modelId));
+    const canvas = await planCanvasDependenciesIn({
+      tx,
+      modelId: input.modelId,
+      userId: input.userId,
+      assetUrls: assets.map((asset) => asset.storageUrl),
+      wardrobeSessionIds: sessions.map((session) => session.id),
+      wardrobeLookIds: looks.map((look) => look.id),
+    });
+    return {
+      castViews: assets.length,
+      canvasPlacements: canvas.items,
+      affectedBoards: canvas.boards,
+      wardrobeSessions: sessions.length,
+      wardrobeLooks: looks.length,
+    };
+  });
 }
 
 /**

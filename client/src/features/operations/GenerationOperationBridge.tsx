@@ -13,6 +13,7 @@ import {
   operationDedupeKey,
   type GenerationOperationDto,
 } from "./generationOperationProjection";
+import { subscribeCastDeleted } from "./castDeletionSync";
 
 const VISIBLE_POLL_MS = 2_500;
 
@@ -118,6 +119,27 @@ export function GenerationOperationBridge() {
     }
     void invalidateOperationsRef.current();
   }), []);
+
+  // Permanent deletion is not a generation result and deliberately scrubs
+  // its model id from durable receipts. A tiny cross-tab lifecycle signal
+  // makes every open surface discard cached subject truth immediately; the
+  // server remains authoritative on each refetch.
+  useEffect(() => subscribeCastDeleted(({ modelId }) => {
+    void Promise.allSettled([
+      utils.models.list.invalidate(),
+      utils.models.get.invalidate({ modelId }),
+      utils.wardrobe.model.listMinted.invalidate(),
+      utils.wardrobe.model.listDrafts.invalidate(),
+      utils.lobby.recentWork.invalidate(),
+      utils.boardOps.listCastableModels.invalidate(),
+      utils.boards.getItems.invalidate(),
+      utils.boards.list.invalidate(),
+      utils.generation.packageState.invalidate({ modelId }),
+      utils.generation.activeOperations.invalidate(),
+      utils.wardrobe.sessions.getRecent.invalidate(),
+      utils.wardrobe.looks.listAll.invalidate(),
+    ]);
+  }), [utils]);
 
   useEffect(() => () => {
     for (const timer of Array.from(retryTimersRef.current.values())) clearTimeout(timer);

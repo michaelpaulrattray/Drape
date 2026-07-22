@@ -16,11 +16,14 @@ describe("R7-5C final Cast deletion source contracts", () => {
     expect(implementation).not.toMatch(/from ["']\.\.\/storage["']/);
   });
 
-  it("keeps the public product door draft-only while using the shared final service", () => {
+  it("exposes a free preview and one atomic final door for draft and minted Casts", () => {
     const route = source("server/routes/models.ts");
     const deletionDoor = route.slice(route.indexOf("delete: protectedProcedure"));
-    expect(deletionDoor).toContain('lockedModel.status !== "draft"');
+    expect(route).toContain("deletePlan: protectedProcedure");
+    expect(route).toContain("planFinalCastDeletion");
+    expect(deletionDoor).not.toContain('lockedModel.status !== "draft"');
     expect(deletionDoor).toContain("executeFinalCastDeletion");
+    expect(deletionDoor).toContain("summarizeFinalCastDeletion");
     expect(deletionDoor.indexOf("beginDirectOperation"))
       .toBeLessThan(deletionDoor.indexOf("getModelById"));
   });
