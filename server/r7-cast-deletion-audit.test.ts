@@ -174,6 +174,8 @@ describe("R7-5 Cast dependency and writer coverage", () => {
     const inventory = source("docs/specs/CASTING_MODEL_ID_WRITER_INVENTORY.md");
     for (const table of [
       "model_assets.modelId",
+      "model_identity_snapshots.modelId",
+      "model_package_snapshots.modelId",
       "generations.modelId",
       "generation_operations.modelId",
       "wardrobe_sessions.modelId",
@@ -184,7 +186,7 @@ describe("R7-5 Cast dependency and writer coverage", () => {
     ]) {
       expect(inventory, `missing inventory row for ${table}`).toContain(table);
     }
-    expect(schema.match(/modelId:\s*int\("modelId"\)/g)).toHaveLength(6);
+    expect(schema.match(/modelId:\s*int\("modelId"\)/g)).toHaveLength(8);
     expect(schema).toContain('sourceModelId: int("sourceModelId")');
   });
 

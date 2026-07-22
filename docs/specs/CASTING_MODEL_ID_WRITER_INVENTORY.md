@@ -42,6 +42,20 @@ These are implementation findings, not product-boundary changes. Uploaded Wardro
 | Direct asset insert in `commitAnchorReRoll` / `commitIdentityEdit` | Identity commits only | Same transaction and model lock as the model document update | Safe. Deletion cannot interleave. |
 | Asset pin/status updates | Package pin, refresh/stale bookkeeping, identity sibling staling | Package/Casting routes hold the model lock; identity staling is in the identity transaction | Safe. Asset id alone must never become a public unguarded writer. |
 
+## `model_identity_snapshots.modelId` *(R7-7A1 schema; runtime not yet adopted)*
+
+| Durable writer | Production entry points | Current authority | R7-5/R7-7 disposition |
+|---|---|---|---|
+| Future snapshot bootstrap/append service | None in R7-7A1; schema and disposable proof only | No production file writes this table before migration 0010 and the later dual-write gate | R7-7A2/A3 must insert only under the owned model lock with same-model anchor/parent proof. Final Cast and account deletion must delete all identity snapshots before any runtime writer enables. |
+
+## `model_package_snapshots.modelId` *(R7-7A1 schema; runtime not yet adopted)*
+
+| Durable writer | Production entry points | Current authority | R7-5/R7-7 disposition |
+|---|---|---|---|
+| Future package bootstrap/append service | None in R7-7A1; schema and disposable proof only | No production file writes this table before migration 0010 and the later dual-write gate | R7-7A2/A3 must pair every current identity head with a package snapshot, prove same-model identity/parent/slot ownership, and CAS the model head. Final Cast and account deletion must delete slots then package snapshots before identity snapshots. |
+
+`model_package_snapshot_slots` carries package and asset ids rather than a direct `modelId`. It is nevertheless a deletion dependency reached through `model_package_snapshots.modelId`; the same deletion transaction must remove it first. The new `models.currentPackageSnapshotId` / seal pointers and generation-operation expected snapshot ids are semantic snapshot references, not additional integer model attachment doors.
+
 ## `generations.modelId`
 
 | Durable writer | Production entry points | Current authority | R7-5 disposition |

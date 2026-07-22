@@ -160,6 +160,43 @@ export type InsertWaitlist = typeof waitlist.$inferInsert;
 /**
  * AI Models table for storing generated model specifications.
  */
+export const IDENTITY_SNAPSHOT_REASONS = [
+  "bootstrap",
+  "create",
+  "identity_edit",
+  "anchor_reroll",
+  "document_compact",
+  "evidence_accept",
+  "evidence_remove",
+  "restore",
+  "fork_bootstrap",
+] as const;
+
+export const PACKAGE_SNAPSHOT_REASONS = [
+  "bootstrap",
+  "create",
+  "identity_change",
+  "image_refine",
+  "slot_generate",
+  "slot_refresh",
+  "slot_restore",
+  "add_views",
+  "whole_restore",
+  "mint",
+  "late_view",
+] as const;
+
+export const PACKAGE_SLOT_COMPATIBILITY = ["current", "stale", "unverified"] as const;
+
+export const PACKAGE_SLOT_SELECTION_REASONS = [
+  "generated",
+  "carried",
+  "refreshed",
+  "restored",
+  "late_view",
+  "bootstrap",
+] as const;
+
 export const models = mysqlTable("models", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -179,6 +216,14 @@ export const models = mysqlTable("models", {
   // rows are never backfilled or promoted. Written only inside the §8.6
   // atomic identity commit and the server-side anchor re-roll.
   identityRevisionId: varchar("identityRevisionId", { length: 64 }),
+  // R7-7 explicit effective-state head. Nullable throughout mixed-version
+  // bootstrap; models without a filled headshot legitimately have no head.
+  currentPackageSnapshotId: varchar("currentPackageSnapshotId", { length: 36 }),
+  stateVersion: int("stateVersion").default(0).notNull(),
+  // Set by the mint transition during dual-write. Snapshot reads remain off
+  // until shadow parity and the separate R7-7B founder gate pass.
+  sealedIdentitySnapshotId: varchar("sealedIdentitySnapshotId", { length: 36 }),
+  sealedPackageSnapshotId: varchar("sealedPackageSnapshotId", { length: 36 }),
   mintedAt: timestamp("mintedAt"), // When the model was exported/minted
   // R7-5 permanent-deletion tombstone marker. Nullable is required for the
   // mixed-version migration window; non-null rows are unavailable forever.
@@ -187,6 +232,7 @@ export const models = mysqlTable("models", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ([
   index("idx_models_user").on(table.userId, table.status),
+  index("idx_models_current_package_snapshot").on(table.currentPackageSnapshotId),
 ]));
 
 export type Model = typeof models.$inferSelect;
@@ -223,6 +269,88 @@ export const modelAssets = mysqlTable("model_assets", {
 
 export type ModelAsset = typeof modelAssets.$inferSelect;
 export type InsertModelAsset = typeof modelAssets.$inferInsert;
+
+/**
+ * R7-7 immutable identity documents and anchor authority. These rows are
+ * append-only outside permanent model/account deletion.
+ */
+export const modelIdentitySnapshots = mysqlTable("model_identity_snapshots", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  modelId: int("modelId").notNull(),
+  sequence: int("sequence").notNull(),
+  parentSnapshotId: varchar("parentSnapshotId", { length: 36 }),
+  restoredFromSnapshotId: varchar("restoredFromSnapshotId", { length: 36 }),
+  reason: mysqlEnum("reason", IDENTITY_SNAPSHOT_REASONS).notNull(),
+  masterPrompt: text("masterPrompt").notNull(),
+  technicalSchema: json("technicalSchema").notNull(),
+  preferences: json("preferences").notNull(),
+  identityText: text("identityText").notNull(),
+  identityTextHash: varchar("identityTextHash", { length: 64 }).notNull(),
+  anchorAssetId: int("anchorAssetId").notNull(),
+  recipeVersion: varchar("recipeVersion", { length: 64 }).notNull(),
+  // Null is reserved for convergent bootstrap/backfill. Live user operations
+  // must carry their durable operation id through the snapshot service.
+  createdByOperationId: varchar("createdByOperationId", { length: 36 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_model_identity_snapshots_model_sequence").on(table.modelId, table.sequence),
+  index("idx_model_identity_snapshots_model_created").on(table.modelId, table.createdAt),
+  index("idx_model_identity_snapshots_anchor").on(table.anchorAssetId),
+]));
+
+export type ModelIdentitySnapshot = typeof modelIdentitySnapshots.$inferSelect;
+export type InsertModelIdentitySnapshot = typeof modelIdentitySnapshots.$inferInsert;
+
+/**
+ * R7-7 immutable package timeline. One package points at one identity
+ * snapshot; the model holds only the current package pointer.
+ */
+export const modelPackageSnapshots = mysqlTable("model_package_snapshots", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  modelId: int("modelId").notNull(),
+  identitySnapshotId: varchar("identitySnapshotId", { length: 36 }).notNull(),
+  sequence: int("sequence").notNull(),
+  parentPackageSnapshotId: varchar("parentPackageSnapshotId", { length: 36 }),
+  reason: mysqlEnum("reason", PACKAGE_SNAPSHOT_REASONS).notNull(),
+  createdByOperationId: varchar("createdByOperationId", { length: 36 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_model_package_snapshots_model_sequence").on(table.modelId, table.sequence),
+  index("idx_model_package_snapshots_identity").on(table.identitySnapshotId),
+  index("idx_model_package_snapshots_model_created").on(table.modelId, table.createdAt),
+]));
+
+export type ModelPackageSnapshot = typeof modelPackageSnapshots.$inferSelect;
+export type InsertModelPackageSnapshot = typeof modelPackageSnapshots.$inferInsert;
+
+/**
+ * Explicit selected assets for one package state. Missing rows mean missing
+ * slots. Failure markers and future unaccepted candidates are never selected.
+ */
+export const modelPackageSnapshotSlots = mysqlTable("model_package_snapshot_slots", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  packageSnapshotId: varchar("packageSnapshotId", { length: 36 }).notNull(),
+  viewAngle: mysqlEnum("viewAngle", [
+    "frontClose",
+    "threeQuarter",
+    "frontFull",
+    "sideClose",
+    "sideFull",
+    "backFull",
+  ]).notNull(),
+  selectedAssetId: int("selectedAssetId").notNull(),
+  compatibility: mysqlEnum("compatibility", PACKAGE_SLOT_COMPATIBILITY).notNull(),
+  selectionReason: mysqlEnum("selectionReason", PACKAGE_SLOT_SELECTION_REASONS).notNull(),
+  sourceSelectionId: varchar("sourceSelectionId", { length: 36 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_model_package_slots_snapshot_angle").on(table.packageSnapshotId, table.viewAngle),
+  uniqueIndex("uq_model_package_slots_snapshot_asset").on(table.packageSnapshotId, table.selectedAssetId),
+  index("idx_model_package_slots_asset").on(table.selectedAssetId),
+]));
+
+export type ModelPackageSnapshotSlot = typeof modelPackageSnapshotSlots.$inferSelect;
+export type InsertModelPackageSnapshotSlot = typeof modelPackageSnapshotSlots.$inferInsert;
 
 /**
  * Generations table for tracking all AI generation requests.
@@ -281,6 +409,11 @@ export const generationOperations = mysqlTable("generation_operations", {
   payloadHash: varchar("payloadHash", { length: 64 }).notNull(),
   status: varchar("status", { length: 24 }).default("claimed").notNull(),
   expectedIdentityRevisionId: varchar("expectedIdentityRevisionId", { length: 64 }),
+  // R7-7 effective-state expectations. Nullable keeps every pre-0010 receipt
+  // and the old runtime shape valid during migration-before-runtime rollout.
+  expectedStateVersion: int("expectedStateVersion"),
+  expectedIdentitySnapshotId: varchar("expectedIdentitySnapshotId", { length: 36 }),
+  expectedPackageSnapshotId: varchar("expectedPackageSnapshotId", { length: 36 }),
   plannedCredits: int("plannedCredits").default(0).notNull(),
   chargedCredits: int("chargedCredits").default(0).notNull(),
   refundedCredits: int("refundedCredits").default(0).notNull(),
