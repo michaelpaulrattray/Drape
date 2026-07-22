@@ -82,7 +82,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(after).toEqual(expected);
   });
 
-  it("keeps the additive objects unreachable from production runtime code", async () => {
+  it("allows snapshot authority only inside the private A2 bootstrap service", async () => {
     const files = (await Promise.all([
       runtimeSources("server"),
       runtimeSources("client/src"),
@@ -101,6 +101,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     ];
     const hits: string[] = [];
     for (const file of files) {
+      if (file.replaceAll("\\", "/") === "server/casting/snapshotBootstrap.ts") continue;
       const content = await readFile(file, "utf8");
       for (const token of forbidden) {
         if (content.includes(token)) hits.push(`${file}: ${token}`);
