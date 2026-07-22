@@ -149,6 +149,26 @@ describe("R7-5 Cast dependency and writer coverage", () => {
     expect(audit).toContain("ROLLBACK");
   });
 
+  it("compares legacy audit-log identifiers without assuming one database collation", () => {
+    const audit = source("scripts/audit-cast-deletion.ts");
+    expect(audit).toContain("CAST(resourceType AS BINARY)");
+    expect(audit).toContain("CAST(resourceId AS BINARY)");
+  });
+
+  it("reports the complete migration-0009 footprint and refuses a partial schema", () => {
+    const audit = source("scripts/audit-cast-deletion.ts");
+    for (const marker of [
+      "operationSubjectDeletedAt",
+      "cleanupBatches",
+      "cleanupItems",
+      "boardSourceModelIndex",
+    ]) {
+      expect(audit).toContain(marker);
+    }
+    expect(audit).toContain("Object.values(finalSchema).some(Boolean)");
+    expect(audit).toContain("!Object.values(finalSchema).every(Boolean)");
+  });
+
   it("classifies every schema model-link column and the direct Canvas link", () => {
     const schema = source("drizzle/schema.ts");
     const inventory = source("docs/specs/CASTING_MODEL_ID_WRITER_INVENTORY.md");

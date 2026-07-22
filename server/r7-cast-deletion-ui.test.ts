@@ -61,6 +61,18 @@ describe("R7-5E permanent Cast deletion product contract", () => {
     expect(card).not.toContain("Minted identities can't be deleted");
   });
 
+  it("keeps the public surface hidden and both server doors inert until R7-5F enables it", () => {
+    const route = source("server/routes/models.ts");
+    const library = source("client/src/features/lobby/LibraryView.tsx");
+    const recent = source("client/src/features/lobby/RecentWorkSection.tsx");
+    const card = source("client/src/features/lobby/RecentWorkCard.tsx");
+    expect(route).toContain('process.env.ENABLE_FINAL_MODEL_DELETE === "true"');
+    expect(route.match(/assertFinalModelDeleteEnabled\(\)/g)).toHaveLength(3);
+    expect(library).toContain("deleteAvailability?.enabled");
+    expect(recent).toContain("canDeleteCast={deleteAvailability?.enabled === true}");
+    expect(card).toContain("const hasMenuActions = item.tool !== 'casting' || canDeleteCast");
+  });
+
   it("propagates final truth to other tabs without auto-deleting anything", () => {
     const sync = source("client/src/features/operations/castDeletionSync.ts");
     const bridge = source("client/src/features/operations/GenerationOperationBridge.tsx");

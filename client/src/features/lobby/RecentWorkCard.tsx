@@ -69,6 +69,7 @@ interface RecentWorkCardProps {
   onRenameBoard: (boardId: number, name: string) => void;
   onArchiveBoard: (boardId: number) => void;
   isDeleting?: boolean;
+  canDeleteCast?: boolean;
 }
 
 export function RecentWorkCard({
@@ -77,12 +78,14 @@ export function RecentWorkCard({
   onRenameBoard,
   onArchiveBoard,
   isDeleting,
+  canDeleteCast = false,
 }: RecentWorkCardProps) {
   const [, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const title = itemTitle(item);
   const [editName, setEditName] = useState(title);
+  const hasMenuActions = item.tool !== 'casting' || canDeleteCast;
 
   const handleClick = useCallback(() => {
     if (isEditing || menuOpen || isDeleting) return;
@@ -159,7 +162,7 @@ export function RecentWorkCard({
         </div>
 
         {/* Menu button — hover reveal */}
-        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {hasMenuActions && <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -223,7 +226,7 @@ export function RecentWorkCard({
                     <div style={{ height: 1, background: 'rgba(0,0,0,0.06)', margin: '2px 0' }} />
                   </>
                 )}
-                <button
+                {(item.tool !== 'casting' || canDeleteCast) && <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setMenuOpen(false);
@@ -234,11 +237,11 @@ export function RecentWorkCard({
                 >
                   <Trash2 className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />
                   Delete
-                </button>
+                </button>}
               </div>
             </>
           )}
-        </div>
+        </div>}
       </div>
 
       {/* Info area */}

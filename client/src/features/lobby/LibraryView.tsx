@@ -82,6 +82,10 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
     { limit: 10 },
     { staleTime: 30_000, enabled: kind === 'models' },
   );
+  const { data: deleteAvailability } = trpc.models.deleteAvailability.useQuery(
+    undefined,
+    { staleTime: 60_000, enabled: kind === 'models' },
+  );
   const { data: garments, isLoading: garmentsLoading } = trpc.wardrobe.garments.list.useQuery(
     undefined,
     { staleTime: 30_000, enabled: kind === 'garments' },
@@ -124,7 +128,9 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
       title: d.name ?? 'Untitled',
       tag: 'Draft',
       onClick: () => navigate(`/studio?tool=casting&modelId=${d.id}`),
-      deleteTarget: { modelId: d.id, name: d.name ?? 'Untitled Cast' },
+      deleteTarget: deleteAvailability?.enabled
+        ? { modelId: d.id, name: d.name ?? 'Untitled Cast' }
+        : undefined,
     }));
     const mintedItems: LibraryItem[] = (models ?? []).map((m) => {
       const open = () =>
@@ -135,7 +141,9 @@ export function LibraryView({ kind }: { kind: LibraryKind }) {
         title: m.name ?? 'Untitled',
         onClick: open,
         onContextMenu: open,
-        deleteTarget: { modelId: m.id, name: m.name ?? 'Untitled Cast' },
+        deleteTarget: deleteAvailability?.enabled
+          ? { modelId: m.id, name: m.name ?? 'Untitled Cast' }
+          : undefined,
       };
     });
     if (draftItems.length > 0) sections.push({ label: 'In progress', items: draftItems });

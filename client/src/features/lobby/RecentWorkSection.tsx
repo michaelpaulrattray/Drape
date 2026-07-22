@@ -42,6 +42,9 @@ export function RecentWorkSection({
   const [, navigate] = useLocation();
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [deleteCastTarget, setDeleteCastTarget] = useState<DeleteCastTarget | null>(null);
+  const { data: deleteAvailability } = trpc.models.deleteAvailability.useQuery(undefined, {
+    staleTime: 60_000,
+  });
 
   const deleteSessionMutation = trpc.wardrobe.sessions.delete.useMutation({
     onMutate: async ({ sessionId }) => {
@@ -109,6 +112,7 @@ export function RecentWorkSection({
             onRenameBoard={onRenameBoard}
             onArchiveBoard={onArchiveBoard}
             isDeleting={deletingKey === itemKey(item)}
+            canDeleteCast={deleteAvailability?.enabled === true}
           />
         ))}
       </div>

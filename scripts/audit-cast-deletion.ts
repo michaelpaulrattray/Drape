@@ -64,8 +64,14 @@ async function rows<T extends AuditRow>(
   params: unknown[] = [],
 ): Promise<T[]> {
   assertReadOnlyAuditSql(statement);
-  const [result] = await connection.query<T[]>(statement, params);
-  return result;
+  try {
+    const [result] = await connection.query<T[]>(statement, params);
+    return result;
+  } catch (error) {
+    const queryShape = statement.replace(/\s+/g, " ").trim().slice(0, 180);
+    const reason = error instanceof Error ? error.message : "unknown database error";
+    throw new Error(`Read-only audit query failed: ${queryShape} — ${reason}`);
+  }
 }
 
 async function scalar(
@@ -215,7 +221,8 @@ async function auditModel(input: {
   const auditLogs = await rows<AuditRow>(connection, `
     SELECT id, userId, metadata
     FROM audit_logs
-    WHERE resourceType = 'model' AND resourceId = CAST(? AS CHAR)
+    WHERE CAST(resourceType AS BINARY) = CAST('model' AS BINARY)
+      AND CAST(resourceId AS BINARY) = CAST(CAST(? AS CHAR) AS BINARY)
     ORDER BY id
   `, [model.id]);
 
@@ -357,6 +364,29 @@ async function main() {
         AND TABLE_NAME = 'models'
         AND COLUMN_NAME = 'deletedAt'
     `) === 1;
+    const finalSchema = {
+      modelsDeletedAt: hasDeletedAt,
+      operationSubjectDeletedAt: await scalar(connection, `
+        SELECT COUNT(*) AS count FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'generation_operations'
+          AND COLUMN_NAME = 'subjectDeletedAt'
+      `) === 1,
+      cleanupBatches: await scalar(connection, `
+        SELECT COUNT(*) AS count FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storage_cleanup_batches'
+      `) === 1,
+      cleanupItems: await scalar(connection, `
+        SELECT COUNT(*) AS count FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storage_cleanup_items'
+      `) === 1,
+      boardSourceModelIndex: await scalar(connection, `
+        SELECT COUNT(*) AS count FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'board_items'
+          AND INDEX_NAME = 'idx_board_items_source_model'
+      `) > 0,
+    };
     const selectedDeletedAt = hasDeletedAt ? ", deletedAt" : "";
     const allModels = await rows<ModelRow>(connection, `
       SELECT id, userId, status, preferences${selectedDeletedAt}
@@ -384,6 +414,7 @@ async function main() {
 
     const summary = {
       auditedModels: reports.length,
+      finalSchema,
       statuses: Object.fromEntries(
         Array.from(new Set(reports.map((report) => report.lifecycle.status)))
           .sort()
@@ -405,7 +436,8 @@ async function main() {
       summary.directJsonMismatches > 0 ||
       summary.unrecognizedJsonCandidates > 0 ||
       summary.crossOwnerReferences > 0 ||
-      summary.auditLogsWithForbiddenIdentityMetadata > 0
+      summary.auditLogsWithForbiddenIdentityMetadata > 0 ||
+      (Object.values(finalSchema).some(Boolean) && !Object.values(finalSchema).every(Boolean))
     ) {
       console.error("ATTENTION: dependency discrepancies found. No rows were changed.");
       process.exitCode = 2;

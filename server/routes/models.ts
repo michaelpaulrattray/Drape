@@ -25,6 +25,19 @@ import {
 } from "../casting/finalCastDeletion";
 const log = createModuleLogger("routes/models");
 
+export function isFinalModelDeleteEnabled(): boolean {
+  return process.env.ENABLE_FINAL_MODEL_DELETE === "true";
+}
+
+function assertFinalModelDeleteEnabled(): void {
+  if (!isFinalModelDeleteEnabled()) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Permanent Cast deletion isn't available yet.",
+    });
+  }
+}
+
 export const modelsRouter = router({
   // Create a new AI model from preferences
   // Strict wire schema lives in modelCreateInput.ts (dependency-light so the
@@ -230,14 +243,22 @@ export const modelsRouter = router({
       return { success: true };
     }),
 
+  // R7-5F rollout authority. The client uses this only to hide the product
+  // surface; both server doors below independently enforce the same flag.
+  deleteAvailability: protectedProcedure
+    .query(() => ({ enabled: isFinalModelDeleteEnabled() })),
+
   // Free advisory preview. The delete executor repeats this dependency walk
   // under the model lock; the client never supplies or authorizes counts.
   deletePlan: protectedProcedure
     .input(z.object({ modelId: z.number().int().positive() }).strict())
-    .query(async ({ ctx, input }) => planFinalCastDeletion({
-      userId: ctx.user.id,
-      modelId: input.modelId,
-    })),
+    .query(async ({ ctx, input }) => {
+      assertFinalModelDeleteEnabled();
+      return planFinalCastDeletion({
+        userId: ctx.user.id,
+        modelId: input.modelId,
+      });
+    }),
 
   // R7-5E: one permanent-delete door for draft, minted and legacy locked
   // Casts. Tombstones are already absent from getModelById, and the atomic
@@ -245,6 +266,7 @@ export const modelsRouter = router({
   delete: protectedProcedure
     .input(z.object({ clientRequestId: z.string().uuid(), modelId: z.number().int().positive() }).strict())
     .mutation(async ({ ctx, input }) => {
+      assertFinalModelDeleteEnabled();
       const lockKey = modelOperationLockKey(input.modelId);
       const gate = await beginDirectOperation({
         userId: ctx.user.id,

@@ -12,7 +12,7 @@
  * executeMintPackage name-write abort (fix 2), generatePdf legal-minted gate
  * (fix 6), getItemModelInfo archived degradation (fix 7).
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterAll, describe, it, expect, vi, beforeEach } from "vitest";
 import { TRPCError } from "@trpc/server";
 import type { TrpcContext } from "./_core/context";
 
@@ -190,7 +190,10 @@ const ALL_SIX = ["frontClose", "threeQuarter", "sideClose", "frontFull", "sideFu
   }),
 );
 
+const originalFinalModelDeleteFlag = process.env.ENABLE_FINAL_MODEL_DELETE;
+
 beforeEach(() => {
+  process.env.ENABLE_FINAL_MODEL_DELETE = "true";
   vi.mocked(getModelById).mockReset();
   vi.mocked(getModelAssets).mockReset();
   vi.mocked(getUserById).mockReset();
@@ -219,6 +222,11 @@ beforeEach(() => {
     type: "execute",
     operationId: REQUEST_ID,
   });
+});
+
+afterAll(() => {
+  if (originalFinalModelDeleteFlag === undefined) delete process.env.ENABLE_FINAL_MODEL_DELETE;
+  else process.env.ENABLE_FINAL_MODEL_DELETE = originalFinalModelDeleteFlag;
 });
 
 // ─── E7: legacy mint route is gone ─────────────────────────────────────────
@@ -585,6 +593,21 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
 // ─── Review item 3 / founder ruling: models.delete is drafts-only ──────────
 
 describe("models.delete final authority", () => {
+  it("keeps both planning and execution inert while the rollout flag is off", async () => {
+    delete process.env.ENABLE_FINAL_MODEL_DELETE;
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.models.deleteAvailability()).resolves.toEqual({ enabled: false });
+    await expect(caller.models.deletePlan({ modelId: 7 })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+    });
+    await expect(caller.models.delete({ modelId: 7 })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+    });
+    expect(planFinalCastDeletion).not.toHaveBeenCalled();
+    expect(beginDirectOperation).not.toHaveBeenCalled();
+    expect(executeFinalCastDeletion).not.toHaveBeenCalled();
+  });
+
   it("returns a free server-owned advisory plan", async () => {
     const caller = appRouter.createCaller(authCtx());
     await expect(caller.models.deletePlan({ modelId: 7 })).resolves.toEqual({
