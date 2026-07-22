@@ -7,13 +7,14 @@
  *   3. referrals (referrerUserId)
  *   4. complete board tree (edges, versions, items, boards)
  *   5. Wardrobe looks, sessions, outfits and garments
- *   6. modelAssets (via models.userId)
- *   7. models (userId)
- *   8. generations (userId)
- *   9. creditTransactions (userId)
- *  10. credits (userId)
- *  11. auditLogs (userId) — anonymize, don't delete (compliance)
- *  12. users (id)
+ *   6. model snapshot slots, packages and identities (via models.userId)
+ *   7. modelAssets (via models.userId)
+ *   8. models (userId)
+ *   9. generations (userId)
+ *  10. creditTransactions (userId)
+ *  11. credits (userId)
+ *  12. auditLogs (userId) — anonymize, don't delete (compliance)
+ *  13. users (id)
  *
  * Owned-storage cleanup: persists an exact-key manifest in the same database
  * transaction; the leased R7-5D worker performs storage deletion later.
@@ -26,6 +27,9 @@ import {
   creditTransactions,
   models,
   modelAssets,
+  modelIdentitySnapshots,
+  modelPackageSnapshots,
+  modelPackageSnapshotSlots,
   generations,
   auditLogs,
   changeRequests,
@@ -63,6 +67,9 @@ export interface DeletionResult {
     wardrobeSessions: number;
     wardrobeOutfits: number;
     wardrobeGarments: number;
+    modelPackageSnapshotSlots: number;
+    modelPackageSnapshots: number;
+    modelIdentitySnapshots: number;
     modelAssets: number;
     models: number;
     generations: number;
@@ -186,6 +193,7 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         changeRequestAttachments: 0, changeRequests: 0, referrals: 0,
         boardEdges: 0, boardItemVersions: 0, boardItems: 0, boards: 0,
         wardrobeLooks: 0, wardrobeSessions: 0, wardrobeOutfits: 0, wardrobeGarments: 0,
+        modelPackageSnapshotSlots: 0, modelPackageSnapshots: 0, modelIdentitySnapshots: 0,
         modelAssets: 0, models: 0, generations: 0,
         creditTransactions: 0, credits: 0, auditLogsAnonymized: 0, user: 0,
       },
@@ -205,6 +213,9 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
     wardrobeSessions: 0,
     wardrobeOutfits: 0,
     wardrobeGarments: 0,
+    modelPackageSnapshotSlots: 0,
+    modelPackageSnapshots: 0,
+    modelIdentitySnapshots: 0,
     modelAssets: 0,
     models: 0,
     generations: 0,
@@ -308,7 +319,9 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
       const garmentResult = await tx.delete(wardrobeGarments).where(eq(wardrobeGarments.userId, userId));
       counts.wardrobeGarments = (garmentResult as any)[0]?.affectedRows ?? 0;
 
-      // Step 6: Delete model assets
+      // Step 6: Delete immutable snapshot selections before the assets and
+      // model rows they reference. These rows contain identity documents and
+      // must not survive account erasure.
       const userModels = await tx
         .select({ id: models.id })
         .from(models)
@@ -316,37 +329,57 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
 
       if (userModels.length > 0) {
         const modelIds = userModels.map((m: { id: number }) => m.id);
+        const packageRows = await tx
+          .select({ id: modelPackageSnapshots.id })
+          .from(modelPackageSnapshots)
+          .where(inArray(modelPackageSnapshots.modelId, modelIds));
+        if (packageRows.length > 0) {
+          const slotResult = await tx
+            .delete(modelPackageSnapshotSlots)
+            .where(inArray(modelPackageSnapshotSlots.packageSnapshotId, packageRows.map((row) => row.id)));
+          counts.modelPackageSnapshotSlots = (slotResult as any)[0]?.affectedRows ?? 0;
+        }
+        const packageResult = await tx
+          .delete(modelPackageSnapshots)
+          .where(inArray(modelPackageSnapshots.modelId, modelIds));
+        counts.modelPackageSnapshots = (packageResult as any)[0]?.affectedRows ?? 0;
+        const identityResult = await tx
+          .delete(modelIdentitySnapshots)
+          .where(inArray(modelIdentitySnapshots.modelId, modelIds));
+        counts.modelIdentitySnapshots = (identityResult as any)[0]?.affectedRows ?? 0;
+
+        // Step 7: Delete model assets.
         const assetResult = await tx
           .delete(modelAssets)
           .where(inArray(modelAssets.modelId, modelIds));
         counts.modelAssets = (assetResult as any)[0]?.affectedRows ?? 0;
       }
 
-      // Step 7: Delete models
+      // Step 8: Delete models
       const modelResult = await tx
         .delete(models)
         .where(eq(models.userId, userId));
       counts.models = (modelResult as any)[0]?.affectedRows ?? 0;
 
-      // Step 8: Delete generations
+      // Step 9: Delete generations
       const genResult = await tx
         .delete(generations)
         .where(eq(generations.userId, userId));
       counts.generations = (genResult as any)[0]?.affectedRows ?? 0;
 
-      // Step 9: Delete credit transactions
+      // Step 10: Delete credit transactions
       const txResult = await tx
         .delete(creditTransactions)
         .where(eq(creditTransactions.userId, userId));
       counts.creditTransactions = (txResult as any)[0]?.affectedRows ?? 0;
 
-      // Step 10: Delete credits
+      // Step 11: Delete credits
       const credResult = await tx
         .delete(credits)
         .where(eq(credits.userId, userId));
       counts.credits = (credResult as any)[0]?.affectedRows ?? 0;
 
-      // Step 11: Anonymize audit logs (compliance — don't delete)
+      // Step 12: Anonymize audit logs (compliance — don't delete)
       const auditResult = await tx
         .update(auditLogs)
         .set({
@@ -356,7 +389,7 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .where(eq(auditLogs.userId, userId));
       counts.auditLogsAnonymized = (auditResult as any)[0]?.affectedRows ?? 0;
 
-      // Step 12: Delete user
+      // Step 13: Delete user
       const userResult = await tx.delete(users).where(eq(users.id, userId));
       counts.user = (userResult as any)[0]?.affectedRows ?? 0;
     });

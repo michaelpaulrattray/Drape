@@ -51,6 +51,18 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     );
     await connection.execute("DELETE FROM boards WHERE userId = ?", [userId]);
     await connection.execute(
+      "DELETE s FROM model_package_snapshot_slots s JOIN model_package_snapshots p ON p.id = s.packageSnapshotId JOIN models m ON m.id = p.modelId WHERE m.userId = ?",
+      [userId],
+    );
+    await connection.execute(
+      "DELETE p FROM model_package_snapshots p JOIN models m ON m.id = p.modelId WHERE m.userId = ?",
+      [userId],
+    );
+    await connection.execute(
+      "DELETE i FROM model_identity_snapshots i JOIN models m ON m.id = i.modelId WHERE m.userId = ?",
+      [userId],
+    );
+    await connection.execute(
       "DELETE a FROM model_assets a JOIN models m ON m.id = a.modelId WHERE m.userId = ?",
       [userId],
     );
@@ -62,6 +74,17 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       [userId],
     );
     await connection.execute("DELETE FROM generation_operations WHERE userId = ?", [userId]);
+    // The operation-foundation cases intentionally use one stable model id
+    // so lock keys and replay envelopes stay easy to inspect. Keep the fixture
+    // real now that claimGenerationOperation durably fences model ownership.
+    await connection.execute(
+      `INSERT INTO models
+        (id, userId, name, masterPrompt, technicalSchema, preferences, status)
+       VALUES
+         (44, ?, 'Operation fixture', 'fixture identity', JSON_OBJECT(), JSON_OBJECT(), 'draft'),
+         (45, ?, 'Contender fixture', 'contender identity', JSON_OBJECT(), JSON_OBJECT(), 'draft')`,
+      [userId, userId],
+    );
   }, 30_000);
 
   afterAll(async () => {
@@ -76,6 +99,18 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
       [userId],
     );
     await connection.execute("DELETE FROM boards WHERE userId = ?", [userId]);
+    await connection.execute(
+      "DELETE s FROM model_package_snapshot_slots s JOIN model_package_snapshots p ON p.id = s.packageSnapshotId JOIN models m ON m.id = p.modelId WHERE m.userId = ?",
+      [userId],
+    );
+    await connection.execute(
+      "DELETE p FROM model_package_snapshots p JOIN models m ON m.id = p.modelId WHERE m.userId = ?",
+      [userId],
+    );
+    await connection.execute(
+      "DELETE i FROM model_identity_snapshots i JOIN models m ON m.id = i.modelId WHERE m.userId = ?",
+      [userId],
+    );
     await connection.execute(
       "DELETE a FROM model_assets a JOIN models m ON m.id = a.modelId WHERE m.userId = ?",
       [userId],
@@ -941,6 +976,178 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     expect(JSON.stringify(stored)).not.toContain("never persisted");
     expect(Number(lockCount.n)).toBe(0);
   }, 30_000);
+
+  it("captures server-owned snapshot expectations when a model operation starts", async () => {
+    const created = await modelDb.createModel({
+      userId,
+      name: "Snapshot receipt",
+      masterPrompt: "receipt identity",
+      technicalSchema: {},
+      preferences: {},
+      status: "draft",
+    });
+    if (!created.modelId) throw new Error("model insert failed");
+    const asset = await modelDb.createModelAsset({
+      modelId: created.modelId,
+      viewType: "frontClose",
+      resolution: "1K",
+      storageUrl: `https://assets.example/receipt-${randomUUID()}.png`,
+      pointsCost: 0,
+    });
+    if (!asset.assetId) throw new Error("asset insert failed");
+    const { bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap");
+    const bootstrapped = await bootstrapModelSnapshot({ userId, modelId: created.modelId });
+    if (bootstrapped.status === "headless") throw new Error("bootstrap unexpectedly headless");
+
+    const claimed = await operations.claimGenerationOperation({
+      userId,
+      clientRequestId: randomUUID(),
+      kind: "casting.iterate",
+      modelId: created.modelId,
+      payload: { modelId: created.modelId, feedback: "lighting only" },
+    });
+    if (claimed.type !== "claimed") throw new Error("claim failed");
+    const lockKey = `model:${created.modelId}`;
+    await operations.acquireGenerationOperationLock({
+      userId,
+      operationId: claimed.operationId,
+      kind: "casting.iterate",
+      lockKey,
+    });
+    await operations.markGenerationOperationRunning({
+      userId,
+      operationId: claimed.operationId,
+      modelId: created.modelId,
+      plannedCredits: 350,
+      requiredLockKey: lockKey,
+    });
+
+    const [[receipt]] = await connection.query<RowDataPacket[]>(
+      `SELECT expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId
+       FROM generation_operations WHERE id = ?`,
+      [claimed.operationId],
+    );
+    expect(receipt).toEqual({
+      expectedStateVersion: bootstrapped.stateVersion,
+      expectedIdentitySnapshotId: bootstrapped.identitySnapshotId,
+      expectedPackageSnapshotId: bootstrapped.packageSnapshotId,
+    });
+  }, 30_000);
+
+  it("refuses a claim-then-archive race and a cross-model snapshot head before running", async () => {
+    const archived = await modelDb.createModel({
+      userId,
+      name: "Archived after claim",
+      masterPrompt: "archive race identity",
+      technicalSchema: {},
+      preferences: {},
+      status: "draft",
+    });
+    if (!archived.modelId) throw new Error("archive-race model insert failed");
+    const archivedClaim = await operations.claimGenerationOperation({
+      userId,
+      clientRequestId: randomUUID(),
+      kind: "casting.iterate",
+      modelId: archived.modelId,
+      payload: { modelId: archived.modelId, feedback: "lighting only" },
+    });
+    if (archivedClaim.type !== "claimed") throw new Error("archive-race claim failed");
+    const archivedLock = `model:${archived.modelId}`;
+    await operations.acquireGenerationOperationLock({
+      userId,
+      operationId: archivedClaim.operationId,
+      kind: "casting.iterate",
+      lockKey: archivedLock,
+    });
+    await connection.execute("UPDATE models SET status = 'archived' WHERE id = ?", [archived.modelId]);
+    await expect(operations.markGenerationOperationRunning({
+      userId,
+      operationId: archivedClaim.operationId,
+      modelId: archived.modelId,
+      plannedCredits: 350,
+      requiredLockKey: archivedLock,
+    })).rejects.toThrow("model is no longer available");
+
+    const packageOwner = await modelDb.createModel({
+      userId,
+      name: "Package owner",
+      masterPrompt: "package owner identity",
+      technicalSchema: {},
+      preferences: {},
+      status: "draft",
+    });
+    const identityOwner = await modelDb.createModel({
+      userId,
+      name: "Identity owner",
+      masterPrompt: "identity owner document",
+      technicalSchema: {},
+      preferences: {},
+      status: "draft",
+    });
+    if (!packageOwner.modelId || !identityOwner.modelId) throw new Error("cross-model fixture insert failed");
+    const foreignAnchor = await modelDb.createModelAsset({
+      modelId: identityOwner.modelId,
+      viewType: "frontClose",
+      resolution: "1K",
+      storageUrl: `https://assets.example/cross-model-${randomUUID()}.png`,
+      pointsCost: 0,
+    });
+    if (!foreignAnchor.assetId) throw new Error("cross-model anchor insert failed");
+    const foreignIdentityId = randomUUID();
+    const packageId = randomUUID();
+    await connection.execute(
+      `INSERT INTO model_identity_snapshots
+        (id, modelId, sequence, reason, masterPrompt, technicalSchema, preferences,
+         identityText, identityTextHash, anchorAssetId, recipeVersion)
+       VALUES (?, ?, 1, 'bootstrap', 'foreign identity', JSON_OBJECT(), JSON_OBJECT(),
+         'foreign identity', ?, ?, 'r7-test')`,
+      [foreignIdentityId, identityOwner.modelId, "a".repeat(64), foreignAnchor.assetId],
+    );
+    await connection.execute(
+      `INSERT INTO model_package_snapshots (id, modelId, identitySnapshotId, sequence, reason)
+       VALUES (?, ?, ?, 1, 'bootstrap')`,
+      [packageId, packageOwner.modelId, foreignIdentityId],
+    );
+    await connection.execute(
+      "UPDATE models SET currentPackageSnapshotId = ?, stateVersion = 1 WHERE id = ?",
+      [packageId, packageOwner.modelId],
+    );
+    const malformedClaim = await operations.claimGenerationOperation({
+      userId,
+      clientRequestId: randomUUID(),
+      kind: "casting.iterate",
+      modelId: packageOwner.modelId,
+      payload: { modelId: packageOwner.modelId, feedback: "lighting only" },
+    });
+    if (malformedClaim.type !== "claimed") throw new Error("malformed-head claim failed");
+    const malformedLock = `model:${packageOwner.modelId}`;
+    await operations.acquireGenerationOperationLock({
+      userId,
+      operationId: malformedClaim.operationId,
+      kind: "casting.iterate",
+      lockKey: malformedLock,
+    });
+    await expect(operations.markGenerationOperationRunning({
+      userId,
+      operationId: malformedClaim.operationId,
+      modelId: packageOwner.modelId,
+      plannedCredits: 350,
+      requiredLockKey: malformedLock,
+    })).rejects.toThrow("snapshot head is invalid");
+
+    const [rows] = await connection.query<RowDataPacket[]>(
+      `SELECT id, status, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId
+       FROM generation_operations WHERE id IN (?, ?) ORDER BY id`,
+      [archivedClaim.operationId, malformedClaim.operationId],
+    );
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.status).toBe("failed");
+      expect(row.expectedStateVersion).toBeNull();
+      expect(row.expectedIdentitySnapshotId).toBeNull();
+      expect(row.expectedPackageSnapshotId).toBeNull();
+    }
+  }, 60_000);
 
   it("stores partial as a first-class terminal state and replays its exact result", async () => {
     const clientRequestId = randomUUID();

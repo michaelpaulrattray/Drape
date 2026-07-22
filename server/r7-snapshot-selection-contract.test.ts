@@ -82,7 +82,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
     expect(after).toEqual(expected);
   });
 
-  it("allows snapshot authority only inside the private A2 bootstrap service", async () => {
+  it("allows snapshot authority only inside the bounded A2/A3 foundation services", async () => {
     const files = (await Promise.all([
       runtimeSources("server"),
       runtimeSources("client/src"),
@@ -99,14 +99,42 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       "expectedIdentitySnapshotId",
       "expectedPackageSnapshotId",
     ];
+    const allowedAuthority = new Set([
+      "server/casting/snapshotBootstrap.ts",
+      "server/casting/finalCastDeletion.ts",
+      "server/db/accountDeletion.ts",
+      "server/db/generationOperations.ts",
+    ]);
     const hits: string[] = [];
     for (const file of files) {
-      if (file.replaceAll("\\", "/") === "server/casting/snapshotBootstrap.ts") continue;
+      if (allowedAuthority.has(file.replaceAll("\\", "/"))) continue;
       const content = await readFile(file, "utf8");
       for (const token of forbidden) {
         if (content.includes(token)) hits.push(`${file}: ${token}`);
       }
     }
     expect(hits).toEqual([]);
+  });
+
+  it("captures receipt expectations and removes snapshot rows at both erasure boundaries", async () => {
+    const operations = await readFile(new URL("./db/generationOperations.ts", import.meta.url), "utf8");
+    expect(operations).toContain("expectedStateVersion,");
+    expect(operations).toContain("expectedIdentitySnapshotId,");
+    expect(operations).toContain("expectedPackageSnapshotId,");
+    expect(operations).toContain("Generation operation model snapshot head is invalid");
+
+    const modelDeletion = await readFile(new URL("./casting/finalCastDeletion.ts", import.meta.url), "utf8");
+    const accountDeletion = await readFile(new URL("./db/accountDeletion.ts", import.meta.url), "utf8");
+    for (const source of [modelDeletion, accountDeletion]) {
+      expect(source).toContain("delete(modelPackageSnapshotSlots)");
+      expect(source).toContain("delete(modelPackageSnapshots)");
+      expect(source).toContain("delete(modelIdentitySnapshots)");
+    }
+    expect(modelDeletion.indexOf("delete(modelPackageSnapshotSlots)"))
+      .toBeLessThan(modelDeletion.indexOf("delete(modelPackageSnapshots)"));
+    expect(modelDeletion.indexOf("delete(modelPackageSnapshots)"))
+      .toBeLessThan(modelDeletion.indexOf("delete(modelIdentitySnapshots)"));
+    expect(modelDeletion.indexOf("delete(modelIdentitySnapshots)"))
+      .toBeLessThan(modelDeletion.indexOf("delete(modelAssets)"));
   });
 });

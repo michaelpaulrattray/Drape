@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, gte, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import {
   boardItems,
   boardItemVersions,
@@ -8,6 +8,8 @@ import {
   generationOperationLocks,
   generationOperations,
   modelAssets,
+  modelIdentitySnapshots,
+  modelPackageSnapshots,
   models,
   type Generation,
   type GenerationOperation,
@@ -893,12 +895,64 @@ export async function markGenerationOperationRunning(input: {
       if (lock?.operationId !== input.operationId) throw new Error("Generation operation does not own the required lock");
     }
 
+    const effectiveModelId = input.modelId ?? operation.modelId;
+    let expectedStateVersion: number | null = null;
+    let expectedPackageSnapshotId: string | null = null;
+    let expectedIdentitySnapshotId: string | null = null;
+    if (effectiveModelId != null) {
+      const [model] = await tx
+        .select({
+          id: models.id,
+          stateVersion: models.stateVersion,
+          currentPackageSnapshotId: models.currentPackageSnapshotId,
+        })
+        .from(models)
+        .where(and(
+          eq(models.id, effectiveModelId),
+          eq(models.userId, input.userId),
+          ne(models.status, "archived"),
+          isNull(models.deletedAt),
+        ))
+        .limit(1)
+        .for("update");
+      if (!model) throw new Error("Generation operation model is no longer available");
+      expectedStateVersion = model.stateVersion;
+      expectedPackageSnapshotId = model.currentPackageSnapshotId;
+      if (model.currentPackageSnapshotId) {
+        if (model.stateVersion <= 0) {
+          throw new Error("Generation operation model snapshot pointer and state version disagree");
+        }
+        const [snapshot] = await tx
+          .select({ identitySnapshotId: modelIdentitySnapshots.id })
+          .from(modelPackageSnapshots)
+          .innerJoin(
+            modelIdentitySnapshots,
+            and(
+              eq(modelIdentitySnapshots.id, modelPackageSnapshots.identitySnapshotId),
+              eq(modelIdentitySnapshots.modelId, effectiveModelId),
+            ),
+          )
+          .where(and(
+            eq(modelPackageSnapshots.id, model.currentPackageSnapshotId),
+            eq(modelPackageSnapshots.modelId, effectiveModelId),
+          ))
+          .limit(1);
+        if (!snapshot) throw new Error("Generation operation model snapshot head is invalid");
+        expectedIdentitySnapshotId = snapshot.identitySnapshotId;
+      } else if (model.stateVersion !== 0) {
+        throw new Error("Generation operation model snapshot pointer and state version disagree");
+      }
+    }
+
     const started = await tx
       .update(generationOperations)
       .set({
         status: "running",
-        modelId: input.modelId ?? operation.modelId,
+        modelId: effectiveModelId,
         expectedIdentityRevisionId: input.expectedIdentityRevisionId ?? null,
+        expectedStateVersion,
+        expectedIdentitySnapshotId,
+        expectedPackageSnapshotId,
         plannedCredits: input.plannedCredits,
         chargeReferenceId,
         phase,

@@ -213,6 +213,34 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
       [deletingUserId],
     );
     const modelId = insertedModel.insertId;
+    const [insertedAsset] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO model_assets (modelId, viewType, storageUrl, pointsCost) VALUES (?, 'frontClose', ?, 0)",
+      [modelId, "https://owned.example/models/account-anchor.png"],
+    );
+    const identitySnapshotId = randomUUID();
+    const packageSnapshotId = randomUUID();
+    await connection.execute(
+      `INSERT INTO model_identity_snapshots
+        (id, modelId, sequence, reason, masterPrompt, technicalSchema, preferences,
+         identityText, identityTextHash, anchorAssetId, recipeVersion)
+       VALUES (?, ?, 1, 'bootstrap', 'test', JSON_OBJECT(), JSON_OBJECT(), 'test', ?, ?, 'r7-test')`,
+      [identitySnapshotId, modelId, "b".repeat(64), insertedAsset.insertId],
+    );
+    await connection.execute(
+      `INSERT INTO model_package_snapshots (id, modelId, identitySnapshotId, sequence, reason)
+       VALUES (?, ?, ?, 1, 'bootstrap')`,
+      [packageSnapshotId, modelId, identitySnapshotId],
+    );
+    await connection.execute(
+      `INSERT INTO model_package_snapshot_slots
+        (id, packageSnapshotId, viewAngle, selectedAssetId, compatibility, selectionReason)
+       VALUES (?, ?, 'frontClose', ?, 'current', 'bootstrap')`,
+      [randomUUID(), packageSnapshotId, insertedAsset.insertId],
+    );
+    await connection.execute(
+      "UPDATE models SET currentPackageSnapshotId = ?, stateVersion = 1 WHERE id = ?",
+      [packageSnapshotId, modelId],
+    );
     const [insertedGarment] = await connection.execute<ResultSetHeader>(
       "INSERT INTO wardrobe_garments (userId, slotType, originalImageUrl, originalImageKey) VALUES (?, 'tops', ?, 'garments/original.png')",
       [deletingUserId, "https://owned.example/garments/original.png"],
@@ -263,7 +291,7 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
 
     expect(result).toMatchObject({
       success: true,
-      cleanupObjects: 7,
+      cleanupObjects: 8,
       deletedCounts: {
         boardEdges: 1,
         boardItemVersions: 1,
@@ -273,6 +301,9 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
         wardrobeSessions: 1,
         wardrobeOutfits: 1,
         wardrobeGarments: 1,
+        modelPackageSnapshotSlots: 1,
+        modelPackageSnapshots: 1,
+        modelIdentitySnapshots: 1,
         models: 1,
         user: 1,
       },
@@ -280,6 +311,9 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
     const expectedEmpty = [
       ["users", "id", deletingUserId],
       ["models", "userId", deletingUserId],
+      ["model_package_snapshot_slots", "packageSnapshotId", packageSnapshotId],
+      ["model_package_snapshots", "modelId", modelId],
+      ["model_identity_snapshots", "modelId", modelId],
       ["wardrobe_garments", "userId", deletingUserId],
       ["wardrobe_outfits", "userId", deletingUserId],
       ["wardrobe_sessions", "userId", deletingUserId],
@@ -302,6 +336,7 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
       "boards/thumb.png",
       "garments/original.png",
       "looks/saved.png",
+      "models/account-anchor.png",
       "outfits/result.png",
       "sessions/generated.png",
       "users/delete/avatar.png",

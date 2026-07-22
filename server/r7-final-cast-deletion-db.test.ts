@@ -38,7 +38,8 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
       "storage_cleanup_items", "storage_cleanup_batches", "generation_operation_locks",
       "generation_operations", "audit_logs", "bug_reports",
       "board_edges", "board_item_versions", "board_items", "boards", "wardrobe_looks",
-      "wardrobe_sessions", "model_assets", "generations", "models", "users",
+      "wardrobe_sessions", "model_package_snapshot_slots", "model_package_snapshots",
+      "model_identity_snapshots", "model_assets", "generations", "models", "users",
     ]) await connection.query(`TRUNCATE TABLE \`${table}\``);
     await connection.query("SET FOREIGN_KEY_CHECKS = 1");
   }, 60_000);
@@ -120,6 +121,43 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
        VALUES (?, 'frontClose', ?, ?, 350), (?, 'backFull', ?, NULL, 300)`,
       [modelId, headUrl, `models/${userId}/head.png`, modelId, backUrl],
     );
+    const headAsset = await row(
+      "SELECT id FROM model_assets WHERE modelId = ? AND viewType = 'frontClose'",
+      [modelId],
+    );
+    const backAsset = await row(
+      "SELECT id FROM model_assets WHERE modelId = ? AND viewType = 'backFull'",
+      [modelId],
+    );
+    const identitySnapshotId = randomUUID();
+    const packageSnapshotId = randomUUID();
+    await connection.execute(
+      `INSERT INTO model_identity_snapshots
+        (id, modelId, sequence, reason, masterPrompt, technicalSchema, preferences,
+         identityText, identityTextHash, anchorAssetId, recipeVersion)
+       VALUES (?, ?, 1, 'bootstrap', 'identity prose', JSON_OBJECT('face', 'evidence'),
+         JSON_OBJECT(), 'identity prose', ?, ?, 'r7-test')`,
+      [identitySnapshotId, modelId, "a".repeat(64), headAsset.id],
+    );
+    await connection.execute(
+      `INSERT INTO model_package_snapshots
+        (id, modelId, identitySnapshotId, sequence, reason)
+       VALUES (?, ?, ?, 1, 'bootstrap')`,
+      [packageSnapshotId, modelId, identitySnapshotId],
+    );
+    await connection.execute(
+      `INSERT INTO model_package_snapshot_slots
+        (id, packageSnapshotId, viewAngle, selectedAssetId, compatibility, selectionReason)
+       VALUES (?, ?, 'frontClose', ?, 'current', 'bootstrap'),
+              (?, ?, 'backFull', ?, 'current', 'bootstrap')`,
+      [randomUUID(), packageSnapshotId, headAsset.id, randomUUID(), packageSnapshotId, backAsset.id],
+    );
+    await connection.execute(
+      `UPDATE models
+       SET currentPackageSnapshotId = ?, stateVersion = 1
+       WHERE id = ?`,
+      [packageSnapshotId, modelId],
+    );
     await connection.execute(
       `INSERT INTO generations (userId, modelId, type, status, pointsCost, resultUrl, errorMessage, metadata)
        VALUES (?, ?, 'iteration', 'completed', 350, ?, ?, JSON_OBJECT('input', ?))`,
@@ -136,6 +174,12 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
         priorOperationId, userId, priorRequestId, modelId, "a".repeat(64),
         `op:${priorOperationId}:charge`, sharedMetadataUrl, `See ${sharedMetadataUrl}`,
       ],
+    );
+    await connection.execute(
+      `UPDATE generation_operations
+       SET expectedStateVersion = 1, expectedIdentitySnapshotId = ?, expectedPackageSnapshotId = ?
+       WHERE id = ?`,
+      [identitySnapshotId, packageSnapshotId, priorOperationId],
     );
     const unboundOperationId = randomUUID();
     await connection.execute(
@@ -237,15 +281,20 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
     const result = await deletion.executeFinalCastDeletion({ userId, modelId, operationId, currentPublicUrl: R2 });
     expect(result.deleted).toBe(true);
     expect(result.counts).toMatchObject({
-      assets: 2, canvasItems: 1, affectedBoards: 2, wardrobeSessions: 1,
+      assets: 2, identitySnapshots: 1, packageSnapshots: 1, snapshotSlots: 2,
+      canvasItems: 1, affectedBoards: 2, wardrobeSessions: 1,
       wardrobeLooks: 1, generationAttempts: 1, priorOperations: 1, bugReportsScrubbed: 1,
     });
 
-    expect(await row("SELECT status, deletedAt, agencyId, name, masterPrompt, technicalSchema, preferences, identityRevisionId, mintedAt FROM models WHERE id = ?", [modelId]))
+    expect(await row("SELECT status, deletedAt, agencyId, name, masterPrompt, technicalSchema, preferences, identityRevisionId, currentPackageSnapshotId, stateVersion, sealedIdentitySnapshotId, sealedPackageSnapshotId, mintedAt FROM models WHERE id = ?", [modelId]))
       .toMatchObject({
         status: "archived", agencyId: null, name: null, masterPrompt: "[deleted]",
-        identityRevisionId: null, mintedAt: null,
+        identityRevisionId: null, currentPackageSnapshotId: null, stateVersion: 0,
+        sealedIdentitySnapshotId: null, sealedPackageSnapshotId: null, mintedAt: null,
       });
+    expect(await count("model_package_snapshot_slots", "packageSnapshotId = ?", [packageSnapshotId])).toBe(0);
+    expect(await count("model_package_snapshots", "modelId = ?", [modelId])).toBe(0);
+    expect(await count("model_identity_snapshots", "modelId = ?", [modelId])).toBe(0);
     expect(await count("model_assets", "modelId = ?", [modelId])).toBe(0);
     expect(await count("wardrobe_sessions", "modelId = ?", [modelId])).toBe(0);
     expect(await count("wardrobe_looks", "modelId = ?", [modelId])).toBe(0);
@@ -262,11 +311,15 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
 
     expect(await row("SELECT modelId, operationId, stepKey, viewAngle, resultUrl, errorMessage, metadata FROM generations WHERE userId = ?", [userId]))
       .toEqual({ modelId: null, operationId: null, stepKey: null, viewAngle: null, resultUrl: null, errorMessage: null, metadata: null });
-    expect(await row("SELECT modelId, result, publicMessage, expectedIdentityRevisionId, subjectDeletedAt FROM generation_operations WHERE id = ?", [priorOperationId]))
-      .toMatchObject({ modelId: null, result: null, publicMessage: null, expectedIdentityRevisionId: null });
-    expect(await row("SELECT status, modelId, expectedIdentityRevisionId, chargeReferenceId, result, chargedCredits, refundedCredits, subjectDeletedAt FROM generation_operations WHERE id = ?", [operationId]))
+    expect(await row("SELECT modelId, result, publicMessage, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, subjectDeletedAt FROM generation_operations WHERE id = ?", [priorOperationId]))
+      .toMatchObject({
+        modelId: null, result: null, publicMessage: null, expectedIdentityRevisionId: null,
+        expectedStateVersion: null, expectedIdentitySnapshotId: null, expectedPackageSnapshotId: null,
+      });
+    expect(await row("SELECT status, modelId, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, chargeReferenceId, result, chargedCredits, refundedCredits, subjectDeletedAt FROM generation_operations WHERE id = ?", [operationId]))
       .toMatchObject({
         status: "succeeded", modelId: null, expectedIdentityRevisionId: null, chargeReferenceId: null,
+        expectedStateVersion: null, expectedIdentitySnapshotId: null, expectedPackageSnapshotId: null,
         chargedCredits: 0, refundedCredits: 0, subjectDeletedAt: null,
       });
     expect(await operationsDb.claimGenerationOperation({

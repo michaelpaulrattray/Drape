@@ -1,4 +1,4 @@
-/** Guarded disposable-MySQL gate for R7-1C migration 0007. */
+/** Guarded disposable-MySQL gate for the current durable operation contract. */
 import "dotenv/config";
 import { randomBytes } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
@@ -14,9 +14,9 @@ function run(command: string, args: string[], env: NodeJS.ProcessEnv) {
   if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed with exit ${result.status}`);
 }
 
-async function applyMigrationRange(connection: mysql.Connection, first: number, last: number) {
+async function applyAllMigrations(connection: mysql.Connection) {
   const files = (await readdir("drizzle"))
-    .filter((file) => /^\d{4}_.+\.sql$/.test(file) && Number(file.slice(0, 4)) >= first && Number(file.slice(0, 4)) <= last)
+    .filter((file) => /^\d{4}_.+\.sql$/.test(file))
     .sort();
   for (const file of files) {
     const sql = await readFile(`drizzle/${file}`, "utf8");
@@ -50,8 +50,7 @@ async function main() {
     console.log(`[disposable] created ${databaseName} on ${sourceUrl.host}`);
     const testConnection = await mysql.createConnection(testUrl.toString());
     try {
-      await applyMigrationRange(testConnection, 0, 6);
-      await applyMigrationRange(testConnection, 7, 7);
+      await applyAllMigrations(testConnection);
     } finally {
       await testConnection.end();
     }
@@ -60,7 +59,11 @@ async function main() {
       ...process.env,
       DATABASE_URL: testUrl.toString(),
     });
-    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", ["exec", "vitest", "run", "server/r7-generation-operations-db.test.ts"], {
+    run(process.platform === "win32" ? "pnpm.cmd" : "pnpm", [
+      "exec", "vitest", "run",
+      "--testTimeout=60000", "--hookTimeout=60000",
+      "server/r7-generation-operations-db.test.ts",
+    ], {
       ...process.env,
       DATABASE_URL: "",
       TEST_DATABASE_URL: testUrl.toString(),

@@ -12,6 +12,9 @@ import {
   generationOperations,
   generations,
   modelAssets,
+  modelIdentitySnapshots,
+  modelPackageSnapshots,
+  modelPackageSnapshotSlots,
   models,
   wardrobeLooks,
   wardrobeSessions,
@@ -30,6 +33,9 @@ const log = createModuleLogger("casting/finalCastDeletion");
 
 export interface FinalCastDeletionCounts {
   assets: number;
+  identitySnapshots: number;
+  packageSnapshots: number;
+  snapshotSlots: number;
   canvasItems: number;
   canvasVersions: number;
   affectedBoards: number;
@@ -593,6 +599,24 @@ export async function executeFinalCastDeletion(input: {
     if (ownedLock?.operationId !== input.operationId) throw new Error("Deletion no longer owns the model lock");
 
     const assets = await tx.select().from(modelAssets).where(eq(modelAssets.modelId, input.modelId)).for("update");
+    const identitySnapshots = await tx
+      .select({ id: modelIdentitySnapshots.id })
+      .from(modelIdentitySnapshots)
+      .where(eq(modelIdentitySnapshots.modelId, input.modelId))
+      .for("update");
+    const packageSnapshots = await tx
+      .select({ id: modelPackageSnapshots.id })
+      .from(modelPackageSnapshots)
+      .where(eq(modelPackageSnapshots.modelId, input.modelId))
+      .for("update");
+    const packageSnapshotIds = packageSnapshots.map((snapshot) => snapshot.id);
+    const snapshotSlots = packageSnapshotIds.length > 0
+      ? await tx
+        .select({ id: modelPackageSnapshotSlots.id })
+        .from(modelPackageSnapshotSlots)
+        .where(inArray(modelPackageSnapshotSlots.packageSnapshotId, packageSnapshotIds))
+        .for("update")
+      : [];
     const attempts = await tx.select().from(generations).where(eq(generations.modelId, input.modelId)).for("update");
     const priorOperations = await tx
       .select()
@@ -668,6 +692,12 @@ export async function executeFinalCastDeletion(input: {
 
     await tx.delete(wardrobeLooks).where(eq(wardrobeLooks.modelId, input.modelId));
     await tx.delete(wardrobeSessions).where(eq(wardrobeSessions.modelId, input.modelId));
+    if (packageSnapshotIds.length > 0) {
+      await tx.delete(modelPackageSnapshotSlots)
+        .where(inArray(modelPackageSnapshotSlots.packageSnapshotId, packageSnapshotIds));
+    }
+    await tx.delete(modelPackageSnapshots).where(eq(modelPackageSnapshots.modelId, input.modelId));
+    await tx.delete(modelIdentitySnapshots).where(eq(modelIdentitySnapshots.modelId, input.modelId));
     await tx.delete(modelAssets).where(eq(modelAssets.modelId, input.modelId));
     await tx.update(generations).set({
       modelId: null,
@@ -689,6 +719,9 @@ export async function executeFinalCastDeletion(input: {
         originBoardId: null,
         originItemId: null,
         expectedIdentityRevisionId: null,
+        expectedStateVersion: null,
+        expectedIdentitySnapshotId: null,
+        expectedPackageSnapshotId: null,
         chargeReferenceId: null,
         result: null,
         errorCode: null,
@@ -720,6 +753,10 @@ export async function executeFinalCastDeletion(input: {
       preferences: {},
       status: "archived",
       identityRevisionId: null,
+      currentPackageSnapshotId: null,
+      stateVersion: 0,
+      sealedIdentitySnapshotId: null,
+      sealedPackageSnapshotId: null,
       mintedAt: null,
       deletedAt: now,
     }).where(and(
@@ -732,6 +769,9 @@ export async function executeFinalCastDeletion(input: {
 
     const counts: FinalCastDeletionCounts = {
       assets: assets.length,
+      identitySnapshots: identitySnapshots.length,
+      packageSnapshots: packageSnapshots.length,
+      snapshotSlots: snapshotSlots.length,
       canvasItems: canvas.items,
       canvasVersions: canvas.versions,
       affectedBoards: canvas.boards,
@@ -759,6 +799,9 @@ export async function executeFinalCastDeletion(input: {
       status: "succeeded",
       modelId: null,
       expectedIdentityRevisionId: null,
+      expectedStateVersion: null,
+      expectedIdentitySnapshotId: null,
+      expectedPackageSnapshotId: null,
       chargeReferenceId: null,
       result,
       errorCode: null,
