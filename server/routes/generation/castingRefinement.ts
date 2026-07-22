@@ -1,6 +1,6 @@
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
-  getModelById, createModelAsset, getModelAssets,
+  getModelById, getModelAssets,
   createGeneration, updateGeneration, markGenerationOperationRunning,
 } from "../../db";
 import {
@@ -22,11 +22,9 @@ import {
   buildReinforcedPrompt,
 } from "../../casting/promptReinforcement";
 import { authorizeEditRequest } from "../../casting/identity/editAuthority";
-import { commitIdentityEdit } from "../../casting/identity/identityCommit";
 import {
   assetRevisionMembership,
   currentRevisionId,
-  identityStampFor,
   isRestoreCompatible,
   selectDisplayedHeadshot,
   selectIdentityAnchor,
@@ -56,7 +54,11 @@ import {
   failClaimedDirectOperation,
 } from "../../casting/directOperation";
 import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
-import { commitDocumentCompactionSnapshot } from "../../casting/snapshotTransitions";
+import {
+  commitDocumentCompactionSnapshot,
+  commitImageRefineSnapshot,
+  commitIteratedIdentitySnapshot,
+} from "../../casting/snapshotTransitions";
 const log = createModuleLogger("routes/generation");
 
 export const castingRefinementRouter = router({
@@ -270,6 +272,26 @@ export const castingRefinementRouter = router({
         ? dependentFieldsForPatch(identityPatch)
         : [];
 
+      // R7-7A3 dual-write ordering: converge the current R6 package while
+      // this operation owns model:<id>, then capture that exact head on the
+      // running receipt. The paid provider call starts only afterwards.
+      let snapshotHead: Awaited<ReturnType<typeof bootstrapModelSnapshot>>;
+      try {
+        snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
+      if (snapshotHead.status === "headless") {
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error: new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This Cast has no headshot package to refine.",
+          }),
+        });
+      }
+
       const generationMetadata = {
         feedback: input.feedback,
         assetId: input.assetId,
@@ -415,17 +437,19 @@ export const castingRefinementRouter = router({
           // identity state.
           let commit;
           try {
-            commit = await commitIdentityEdit({
-              model: lockedModel,
+            commit = (await commitIteratedIdentitySnapshot({
+              userId: ctx.user.id,
+              modelId: input.modelId,
+              operationId: gate.operationId,
               patch: identityPatch!,
-              newAnchor: {
+              candidate: {
+                targetAssetId: targetAsset.id,
                 storageUrl: result.imageUrl,
+                storageKey: typeof result.storageKey === "string" ? result.storageKey : undefined,
                 pointsCost: POINT_COSTS.iterate,
                 engine: result.engineUsed,
-                inputs: [{ viewAngle: targetAsset.viewType, imageUrl: targetAsset.storageUrl }],
               },
-              assets,
-            });
+            })).result;
           } catch (commitError) {
             // The commit rolled back — no partial identity state survives.
             const uploadedKey = typeof result.storageKey === "string" ? result.storageKey : undefined;
@@ -511,28 +535,33 @@ export const castingRefinementRouter = router({
         // result is DISPLAY-ONLY (role `display` + current revision), so the
         // §7 anchor selector ignores it and a refined photo can never
         // silently become the identity reference.
-        const assetResult = await createModelAsset({
-          modelId: input.modelId,
-          viewType: targetAsset.viewType,
-          resolution: "1K",
-          storageUrl: result.imageUrl,
-          pointsCost: POINT_COSTS.iterate,
-          provenance: {
-            inputs: [{ viewAngle: targetAsset.viewType, imageUrl: targetAsset.storageUrl }],
-            engine: result.engineUsed,
+        let assetResult: { assetId: number };
+        try {
+          assetResult = (await commitImageRefineSnapshot({
+            userId: ctx.user.id,
+            modelId: input.modelId,
+            operationId: gate.operationId,
+            candidate: {
+              targetAssetId: targetAsset.id,
+              storageUrl: result.imageUrl,
+              storageKey: typeof result.storageKey === "string" ? result.storageKey : undefined,
+              pointsCost: POINT_COSTS.iterate,
+              engine: result.engineUsed,
+            },
             imageOnlyCategories: authorization.imageOnlyCategories ?? [],
-            ...identityStampFor({
-              role: "display",
-              revisionId: currentRevisionId(lockedModel),
-              identityText: currentIdentityText,
-            }),
-          },
-        });
-        // Review finding 2: the asset ROW is the durable paid result of an
-        // image-only edit — if it didn't write, the user paid for nothing
-        // usable: refund once (checked) and fail honestly, never return
-        // success with a null asset id.
-        if (!assetResult.success || !assetResult.assetId) {
+          })).result;
+        } catch (commitError) {
+          const uploadedKey = typeof result.storageKey === "string" ? result.storageKey : undefined;
+          if (uploadedKey) {
+            try {
+              const deleted = await storageDelete(uploadedKey);
+              if (!deleted.success) {
+                log.error({ modelId: input.modelId }, "[iterate] image-only candidate cleanup failed after commit rollback");
+              }
+            } catch (cleanupError) {
+              log.error({ err: cleanupError, modelId: input.modelId }, "[iterate] image-only candidate cleanup threw after commit rollback");
+            }
+          }
           const outcome = await recordRefund(
             ctx.user.id,
             POINT_COSTS.iterate,
@@ -543,9 +572,13 @@ export const castingRefinementRouter = router({
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: `The edit generated but couldn't be saved. ${refundTruth(outcome)} Try again.`,
+            cause: commitError,
           });
         }
-
+        // Review finding 2: the asset ROW is the durable paid result of an
+        // image-only edit — if it didn't write, the user paid for nothing
+        // usable: refund once (checked) and fail honestly, never return
+        // success with a null asset id.
         const auditDone = await updateGeneration(genResult.generationId, {
           status: "completed",
           resultUrl: result.imageUrl,

@@ -106,6 +106,7 @@ vi.mock("./aiService", async (importOriginal) => {
     ...actual,
     iterateModel: vi.fn().mockResolvedValue({
       imageUrl: "https://pub-test.r2.dev/iterate/new.png",
+      storageKey: "iterate/new.png",
       engineUsed: "test",
     }),
     iterateModelRaw: vi.fn().mockResolvedValue({
@@ -155,12 +156,67 @@ vi.mock("./directOperation", async (importOriginal) => {
     failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
   };
 });
+vi.mock("./snapshotBootstrap", () => ({
+  bootstrapModelSnapshot: vi.fn().mockResolvedValue({
+    status: "bootstrapped",
+    modelId: 7,
+    identitySnapshotId: "11111111-1111-4111-8111-111111111114",
+    packageSnapshotId: "11111111-1111-4111-8111-111111111115",
+    stateVersion: 1,
+    selectedSlotCount: 6,
+  }),
+}));
+vi.mock("./snapshotTransitions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./snapshotTransitions")>();
+  return {
+    ...actual,
+    commitImageRefineSnapshot: vi.fn(async (input: any) => {
+      const db = await import("../db");
+      const rows = await db.getModelAssets(input.modelId);
+      const target = rows.find((row) => row.id === input.candidate.targetAssetId)!;
+      const created = await db.createModelAsset({
+        modelId: input.modelId,
+        viewType: target.viewType,
+        storageUrl: input.candidate.storageUrl,
+        storageKey: input.candidate.storageKey,
+        pointsCost: input.candidate.pointsCost,
+        provenance: {
+          identityRole: "display",
+          identityRevisionId: "genesis",
+          imageOnlyCategories: input.imageOnlyCategories,
+        },
+      });
+      if (!created.success || !created.assetId) throw new Error("insert failed");
+      return { result: { assetId: created.assetId } };
+    }),
+    commitIteratedIdentitySnapshot: vi.fn(async (input: any) => {
+      const db = await import("../db");
+      const identity = await import("./identity/identityCommit");
+      const model = await db.getModelById(input.modelId);
+      const assets = await db.getModelAssets(input.modelId);
+      const target = assets.find((row) => row.id === input.candidate.targetAssetId)!;
+      const result = await identity.commitIdentityEdit({
+        model: model!,
+        patch: input.patch,
+        newAnchor: {
+          storageUrl: input.candidate.storageUrl,
+          pointsCost: input.candidate.pointsCost,
+          engine: input.candidate.engine,
+          inputs: [{ viewAngle: target.viewType, imageUrl: target.storageUrl }],
+        },
+        assets,
+      });
+      return { result };
+    }),
+  };
+});
 
 import {
   getModelById,
   getModelAssets,
   createGeneration,
   createModelAsset,
+  markGenerationOperationRunning,
   markModelAssetsStale,
   updateModel,
   deductCredits,
@@ -171,6 +227,8 @@ import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { ITERATION_CROP_BY_VIEW } from "./iterationFraming";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
 import { beginDirectOperation, completeClaimedDirectOperationSuccess } from "./directOperation";
+import { bootstrapModelSnapshot } from "./snapshotBootstrap";
+import { commitImageRefineSnapshot, commitIteratedIdentitySnapshot } from "./snapshotTransitions";
 import { clarificationForCastingRefusal } from "../../shared/castingClarification";
 import { appRouter as productionRouter } from "../routers";
 
@@ -252,6 +310,20 @@ beforeEach(() => {
   vi.mocked(getModelById).mockReset().mockResolvedValue(model() as never);
   vi.mocked(getModelAssets).mockReset().mockResolvedValue(SIX_ASSETS as never);
   vi.mocked(createGeneration).mockClear().mockResolvedValue({ success: true, generationId: 11 } as never);
+  vi.mocked(markGenerationOperationRunning).mockClear().mockResolvedValue({
+    operationId: REQUEST_ID,
+    chargeReferenceId: `op:${REQUEST_ID}:charge`,
+  } as never);
+  vi.mocked(bootstrapModelSnapshot).mockClear().mockResolvedValue({
+    status: "bootstrapped",
+    modelId: 7,
+    identitySnapshotId: "11111111-1111-4111-8111-111111111114",
+    packageSnapshotId: "11111111-1111-4111-8111-111111111115",
+    stateVersion: 1,
+    selectedSlotCount: 6,
+  });
+  vi.mocked(commitImageRefineSnapshot).mockClear();
+  vi.mocked(commitIteratedIdentitySnapshot).mockClear();
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 501 } as never);
   vi.mocked(markModelAssetsStale).mockClear();
   vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true } as never);
@@ -259,6 +331,7 @@ beforeEach(() => {
   vi.mocked(addCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(iterateModel).mockClear().mockResolvedValue({
     imageUrl: "https://pub-test.r2.dev/iterate/new.png",
+    storageKey: "iterate/new.png",
     engineUsed: "test",
   } as never);
   vi.mocked(iterateModelRaw).mockClear().mockResolvedValue({
@@ -459,6 +532,47 @@ describe("shared-authority refusals: zero charge, no rows, no writes, no calls",
 // ─── Image-only: asset-only (M17) ───────────────────────────────────────────
 
 describe("image-only results are asset-only (M17)", () => {
+  it("bootstraps before receipt capture and the paid provider, then commits through the snapshot writer", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    await caller.generation.iterate({
+      modelId: 7,
+      feedback: "brighten the lighting",
+      assetId: assetIdFor("frontClose"),
+    });
+
+    expect(bootstrapModelSnapshot).toHaveBeenCalledTimes(1);
+    expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
+    expect(commitImageRefineSnapshot).toHaveBeenCalledTimes(1);
+    const bootstrapOrder = vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0];
+    const generationOrder = vi.mocked(createGeneration).mock.invocationCallOrder[0];
+    const receiptOrder = vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0];
+    const providerOrder = vi.mocked(iterateModel).mock.invocationCallOrder[0];
+    const commitOrder = vi.mocked(commitImageRefineSnapshot).mock.invocationCallOrder[0];
+    expect(bootstrapOrder).toBeLessThan(generationOrder);
+    expect(generationOrder).toBeLessThan(receiptOrder);
+    expect(receiptOrder).toBeLessThan(providerOrder);
+    expect(providerOrder).toBeLessThan(commitOrder);
+  });
+
+  it("refuses a headless package before a generation row, receipt, credits, provider, or snapshot write", async () => {
+    vi.mocked(bootstrapModelSnapshot).mockResolvedValueOnce({ status: "headless", modelId: 7 });
+    const caller = appRouter.createCaller(authCtx());
+
+    await expect(caller.generation.iterate({
+      modelId: 7,
+      feedback: "brighten the lighting",
+      assetId: assetIdFor("frontClose"),
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(createGeneration).not.toHaveBeenCalled();
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
+    expect(iterateModel).not.toHaveBeenCalled();
+    expect(iterateModelRaw).not.toHaveBeenCalled();
+    expect(commitImageRefineSnapshot).not.toHaveBeenCalled();
+    expect(commitIteratedIdentitySnapshot).not.toHaveBeenCalled();
+  });
+
   it("identity documents byte-unchanged; display role + current revision stamped; no stale flags; no compaction", async () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.generation.iterate({
@@ -478,6 +592,7 @@ describe("image-only results are asset-only (M17)", () => {
     const row = vi.mocked(createModelAsset).mock.calls[0][0] as Record<string, never> & { provenance: Record<string, unknown> };
     expect(row.provenance.identityRole).toBe("display");
     expect(row.provenance.identityRevisionId).toBe("genesis");
+    expect(row.storageKey).toBe("iterate/new.png");
     // The response carries no document payload — nothing changed
     expect((result as Record<string, unknown>).masterPrompt).toBeUndefined();
     expect((result as Record<string, unknown>).technicalSchema).toBeUndefined();

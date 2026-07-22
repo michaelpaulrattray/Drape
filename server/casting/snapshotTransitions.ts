@@ -32,6 +32,17 @@ import { withTransaction, type TransactionHandle } from "../db/connection";
 import { buildIdentityAnchor } from "./geminiClient";
 import { stableCanonicalJson, type GenerationOperationKind } from "./operationContract";
 import { prepareRestoreSlotTransition } from "./restoreSlotTransition";
+import {
+  currentRevisionId,
+  identityStampFor,
+  mintRevisionId,
+  selectStaleSiblingHeads,
+} from "./identity/anchorSelector";
+import {
+  computeIdentityCommit,
+  type IdentityCommitResult,
+} from "./identity/identityCommit";
+import type { AuthorizedIdentityPatch } from "./identity/identityTypes";
 
 type IdentitySnapshotReason = (typeof IDENTITY_SNAPSHOT_REASONS)[number];
 type PackageSnapshotReason = (typeof PACKAGE_SNAPSHOT_REASONS)[number];
@@ -723,6 +734,209 @@ export async function commitRestoredSlotSnapshot(input: {
             selectedAssetId: inserted.id,
             compatibility: "current",
             selectionReason: "restored",
+          }],
+        },
+      };
+    },
+  });
+}
+
+interface IterationCandidate {
+  storageUrl: string;
+  storageKey?: string;
+  engine?: string;
+  pointsCost: number;
+  targetAssetId: number;
+}
+
+async function selectedIterationTargetIn(
+  tx: TransactionHandle,
+  modelId: number,
+  targetAssetId: number,
+): Promise<ModelAsset & { viewType: CanonicalViewAngle }> {
+  const [target] = await tx
+    .select()
+    .from(modelAssets)
+    .where(and(eq(modelAssets.id, targetAssetId), eq(modelAssets.modelId, modelId)))
+    .limit(1);
+  if (
+    !target
+    || !CANONICAL_VIEW_ANGLES.includes(target.viewType as CanonicalViewAngle)
+    || !target.storageUrl?.trim()
+  ) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "The selected Cast view is no longer available" });
+  }
+  return target as ModelAsset & { viewType: CanonicalViewAngle };
+}
+
+function assertIterationCandidate(candidate: IterationCandidate): void {
+  if (!candidate.storageUrl.trim()) throw new Error("The generated iteration image is unavailable");
+  if (!Number.isInteger(candidate.pointsCost) || candidate.pointsCost < 0) {
+    throw new Error("The iteration cost is invalid");
+  }
+}
+
+/** Paid image-only iteration: one legacy display asset plus one complete
+ * package selection, atomically. Identity documents and anchor stay fixed. */
+export async function commitImageRefineSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  candidate: IterationCandidate;
+  imageOnlyCategories: string[];
+}): Promise<SnapshotTransitionResult<{ assetId: number }>> {
+  assertIterationCandidate(input.candidate);
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "casting.iterate",
+    mutate: async (tx, context) => {
+      if (!context.current) throw new Error("Image refinement requires a bootstrapped snapshot head");
+      const target = await selectedIterationTargetIn(
+        tx,
+        input.modelId,
+        input.candidate.targetAssetId,
+      );
+      const currentIdentityText = buildIdentityAnchor(
+        context.model.masterPrompt || "",
+        context.model.technicalSchema ?? undefined,
+      );
+      const [inserted] = await tx.insert(modelAssets).values({
+        modelId: input.modelId,
+        viewType: target.viewType,
+        resolution: "1K",
+        storageUrl: input.candidate.storageUrl,
+        storageKey: input.candidate.storageKey ?? null,
+        pointsCost: input.candidate.pointsCost,
+        pinned: false,
+        provenance: {
+          inputs: [{ viewAngle: target.viewType, imageUrl: target.storageUrl }],
+          ...(input.candidate.engine ? { engine: input.candidate.engine } : {}),
+          imageOnlyCategories: input.imageOnlyCategories,
+          ...identityStampFor({
+            role: "display",
+            revisionId: currentRevisionId(context.model),
+            identityText: currentIdentityText,
+          }),
+        },
+      }).$returningId();
+      if (!inserted?.id) throw new Error("The generated edit could not be saved");
+      return {
+        result: { assetId: inserted.id },
+        transition: {
+          packageReason: "image_refine",
+          slotChanges: [{
+            viewAngle: target.viewType,
+            selectedAssetId: inserted.id,
+            compatibility: "current",
+            selectionReason: "generated",
+          }],
+        },
+      };
+    },
+  });
+}
+
+const IDENTITY_EDIT_RECIPE_VERSION = "r7-identity-edit-v1";
+
+/** Paid typed identity iteration: document/revision/anchor/stale writes and
+ * the paired immutable identity/package snapshots commit or roll back as one. */
+export async function commitIteratedIdentitySnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  patch: AuthorizedIdentityPatch;
+  candidate: IterationCandidate;
+}): Promise<SnapshotTransitionResult<IdentityCommitResult>> {
+  assertIterationCandidate(input.candidate);
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "casting.iterate",
+    mutate: async (tx, context) => {
+      if (!context.current) throw new Error("Identity iteration requires a bootstrapped snapshot head");
+      if (context.model.status !== "draft") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Minted identity is immutable — fork it." });
+      }
+      const target = await selectedIterationTargetIn(
+        tx,
+        input.modelId,
+        input.candidate.targetAssetId,
+      );
+      if (target.viewType !== "frontClose") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Identity changes happen on the current headshot.",
+        });
+      }
+      const assets = await tx
+        .select()
+        .from(modelAssets)
+        .where(eq(modelAssets.modelId, input.modelId))
+        .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+      const computed = computeIdentityCommit(context.model, input.patch);
+      const revisionId = mintRevisionId();
+      const identityText = buildIdentityAnchor(computed.masterPrompt, computed.technicalSchema);
+      const staleIds = selectStaleSiblingHeads(assets, "frontClose");
+      const updated = await tx.update(models).set({
+        masterPrompt: computed.masterPrompt,
+        technicalSchema: computed.technicalSchema,
+        preferences: computed.preferences,
+        identityRevisionId: revisionId,
+      }).where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        eq(models.status, "draft"),
+        isNull(models.deletedAt),
+      ));
+      if (affectedRows(updated) !== 1) throw new Error("The draft identity is no longer available");
+      const [inserted] = await tx.insert(modelAssets).values({
+        modelId: input.modelId,
+        viewType: "frontClose",
+        resolution: "1K",
+        storageUrl: input.candidate.storageUrl,
+        storageKey: input.candidate.storageKey ?? null,
+        pointsCost: input.candidate.pointsCost,
+        pinned: false,
+        provenance: {
+          inputs: [{ viewAngle: target.viewType, imageUrl: target.storageUrl }],
+          ...(input.candidate.engine ? { engine: input.candidate.engine } : {}),
+          ...identityStampFor({ role: "anchor", revisionId, identityText }),
+          identityEdits: input.patch.edits,
+          identityEditSource: input.patch.source,
+          releasedIdentityDependents: computed.releasedDependents,
+        },
+      }).$returningId();
+      if (!inserted?.id) throw new Error("The identity edit could not be saved");
+      if (staleIds.length > 0) {
+        await tx.update(modelAssets)
+          .set({ status: { state: "stale", at: new Date().toISOString() } })
+          .where(inArray(modelAssets.id, staleIds));
+      }
+      return {
+        result: {
+          assetId: inserted.id,
+          identityRevisionId: revisionId,
+          masterPrompt: computed.masterPrompt,
+          technicalSchema: computed.technicalSchema,
+          preferences: computed.preferences,
+          staledAssetIds: staleIds,
+          releasedDependents: computed.releasedDependents,
+        },
+        transition: {
+          packageReason: "identity_change",
+          identity: {
+            reason: "identity_edit",
+            anchorAssetId: inserted.id,
+            recipeVersion: IDENTITY_EDIT_RECIPE_VERSION,
+          },
+          slotChanges: [{
+            viewAngle: "frontClose",
+            selectedAssetId: inserted.id,
+            compatibility: "current",
+            selectionReason: "generated",
           }],
         },
       };

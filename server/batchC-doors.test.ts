@@ -140,6 +140,18 @@ vi.mock("./casting/snapshotTransitions", () => ({
     stateVersion: 2,
     selectedSlotCount: 2,
   })),
+  commitImageRefineSnapshot: vi.fn(async () => ({ result: { assetId: 501 } })),
+  commitIteratedIdentitySnapshot: vi.fn(async () => ({
+    result: {
+      assetId: 501,
+      identityRevisionId: "rev-next",
+      masterPrompt: "updated",
+      technicalSchema: {},
+      preferences: {},
+      staledAssetIds: [],
+      releasedDependents: [],
+    },
+  })),
 }));
 
 import {

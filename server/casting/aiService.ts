@@ -370,14 +370,16 @@ export async function iterateModel(
   currentImageUrl: string,
   iterationRequest: string,
   options: IterationGenerationOptions = {},
-): Promise<GenerationResult> {
+): Promise<UploadedGenerationResult> {
   const result = await iterateModelRaw(masterPrompt, currentImageUrl, iterationRequest, options);
 
-  // Upload base64 to S3 for persistent storage
-  const s3Url = await uploadBase64ToS3(result.imageBase64, "iterate");
+  // Retain the exact object key. Snapshot adoption makes the database asset
+  // the durable owner of this output, and a later atomic-commit failure must
+  // be able to delete the candidate without reverse-parsing its public URL.
+  const uploaded = await uploadRawCandidate(result.imageBase64, "iterate");
 
   return {
-    imageUrl: s3Url,
+    ...uploaded,
     engineUsed: result.engineUsed,
   };
 }

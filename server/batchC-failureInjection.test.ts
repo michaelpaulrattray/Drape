@@ -184,7 +184,11 @@ vi.mock("./casting/aiService", async (importOriginal) => {
     uploadRawCandidate: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/gated.png", storageKey: "casting/gated.png" }),
     generateFullBody: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/b.png", engineUsed: "test" }),
     generateRemainingViews: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/v.png", engineUsed: "test" }),
-    iterateModel: vi.fn().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/i.png", engineUsed: "test" }),
+    iterateModel: vi.fn().mockResolvedValue({
+      imageUrl: "https://pub-test.r2.dev/i.png",
+      storageKey: "iterate/i.png",
+      engineUsed: "test",
+    }),
     iterateModelRaw: vi.fn().mockResolvedValue({ imageBase64: "data:image/png;base64,aQ==", engineUsed: "test" }),
     clearCastingSession: vi.fn(),
   };
@@ -224,6 +228,56 @@ vi.mock("./casting/directOperation", async (importOriginal) => {
     completeDirectOperationSuccess: vi.fn().mockResolvedValue(undefined),
     completeDirectOperationFailure: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
     failClaimedDirectOperation: vi.fn(async ({ error }: { error: unknown }) => { throw error; }),
+  };
+});
+vi.mock("./casting/snapshotBootstrap", () => ({
+  bootstrapModelSnapshot: vi.fn().mockResolvedValue({
+    status: "bootstrapped",
+    modelId: 7,
+    identitySnapshotId: "11111111-1111-4111-8111-111111111114",
+    packageSnapshotId: "11111111-1111-4111-8111-111111111115",
+    stateVersion: 1,
+    selectedSlotCount: 1,
+  }),
+}));
+vi.mock("./casting/snapshotTransitions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./casting/snapshotTransitions")>();
+  return {
+    ...actual,
+    commitImageRefineSnapshot: vi.fn(async (input: any) => {
+      const db = await import("./db");
+      const rows = await db.getModelAssets(input.modelId);
+      const target = rows.find((row) => row.id === input.candidate.targetAssetId)!;
+      const created = await db.createModelAsset({
+        modelId: input.modelId,
+        viewType: target.viewType,
+        storageUrl: input.candidate.storageUrl,
+        storageKey: input.candidate.storageKey,
+        pointsCost: input.candidate.pointsCost,
+        provenance: { identityRole: "display", identityRevisionId: "rev-a" },
+      });
+      if (!created.success || !created.assetId) throw new Error("insert failed");
+      return { result: { assetId: created.assetId } };
+    }),
+    commitIteratedIdentitySnapshot: vi.fn(async (input: any) => {
+      const db = await import("./db");
+      const identity = await import("./casting/identity/identityCommit");
+      const model = await db.getModelById(input.modelId);
+      const assets = await db.getModelAssets(input.modelId);
+      const target = assets.find((row) => row.id === input.candidate.targetAssetId)!;
+      const result = await identity.commitIdentityEdit({
+        model: model!,
+        patch: input.patch,
+        newAnchor: {
+          storageUrl: input.candidate.storageUrl,
+          pointsCost: input.candidate.pointsCost,
+          engine: input.candidate.engine,
+          inputs: [{ viewAngle: target.viewType, imageUrl: target.storageUrl }],
+        },
+        assets,
+      });
+      return { result };
+    }),
   };
 });
 
@@ -438,6 +492,7 @@ describe("generation.iterate boundaries", () => {
     expect(deductCredits).toHaveBeenCalledTimes(1);
     expect(addCredits).toHaveBeenCalledTimes(1);
     expect(vi.mocked(addCredits).mock.calls[0][4]).toBe(refundReferenceFor("op:11111111-1111-4111-8111-111111111111:charge"));
+    expect(storageDelete).toHaveBeenCalledWith("iterate/i.png");
     expect(verifyIdentityEdit).not.toHaveBeenCalled();
   });
 

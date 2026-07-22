@@ -171,6 +171,18 @@ describe("each angle's directive reaches the real image-generation prompt (itera
     return text;
   };
 
+  it("returns the exact persisted object key with the public image URL", async () => {
+    const result = await iterateModel("master casting spec", SOURCE_IMAGE, "brighten the lighting", {
+      frame: "HEADSHOT",
+      viewAngle: "frontClose",
+      userId: "storage-key-contract",
+    });
+    expect(result).toMatchObject({
+      imageUrl: "https://pub-test.r2.dev/iterate/test.png",
+      storageKey: "iterate/test.png",
+    });
+  });
+
   it.each([...CANONICAL_VIEW_ANGLES])(
     "%s: the actual prompt carries this angle's own directive and none of its excluded orientations",
     async (angle) => {

@@ -83,8 +83,11 @@ describe("image-only branches never write identity documents or stale flags (M17
   it("iterate's image-only path has no updateModel / stale / compaction call", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");
     const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("// Proxy endpoint"));
-    // The ONLY identity write in iterate is the atomic commit
-    expect(iterateBlock).toContain("commitIdentityEdit");
+    // Both successful branches cross the R7 atomic snapshot boundary; the
+    // route itself owns no direct model/asset/stale writer.
+    expect(iterateBlock).toContain("commitIteratedIdentitySnapshot");
+    expect(iterateBlock).toContain("commitImageRefineSnapshot");
+    expect(iterateBlock).not.toContain("commitIdentityEdit");
     expect(iterateBlock).not.toContain("updateModel(");
     expect(iterateBlock).not.toContain("markModelAssetsStale");
     expect(iterateBlock).not.toContain("compactMasterPrompt");

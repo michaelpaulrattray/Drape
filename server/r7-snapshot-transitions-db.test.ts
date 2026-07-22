@@ -14,6 +14,8 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let commitModelSnapshotTransition: typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
   let commitDocumentCompactionSnapshot: typeof import("./casting/snapshotTransitions").commitDocumentCompactionSnapshot;
   let commitRestoredSlotSnapshot: typeof import("./casting/snapshotTransitions").commitRestoredSlotSnapshot;
+  let commitImageRefineSnapshot: typeof import("./casting/snapshotTransitions").commitImageRefineSnapshot;
+  let commitIteratedIdentitySnapshot: typeof import("./casting/snapshotTransitions").commitIteratedIdentitySnapshot;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -28,6 +30,8 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       commitModelSnapshotTransition,
       commitDocumentCompactionSnapshot,
       commitRestoredSlotSnapshot,
+      commitImageRefineSnapshot,
+      commitIteratedIdentitySnapshot,
     } = await import("./casting/snapshotTransitions"));
   });
 
@@ -309,6 +313,137 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     expect(await count("model_identity_snapshots", "modelId = ?", [modelId])).toBe(1);
   }, 60_000);
 
+  it("commits an image-only refinement as one display asset and package selection", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const operationId = await startModelOperation(userId, base.modelId, "casting.iterate");
+
+    const committed = await commitImageRefineSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      candidate: {
+        targetAssetId: base.sideAssetId,
+        storageUrl: "https://example.invalid/side-refined.png",
+        storageKey: "models/side-refined.png",
+        engine: "test",
+        pointsCost: 350,
+      },
+      imageOnlyCategories: ["image.lighting"],
+    });
+
+    const asset = await one("SELECT * FROM model_assets WHERE id = ?", [committed.result.assetId]);
+    expect(asset).toMatchObject({
+      modelId: base.modelId,
+      viewType: "sideClose",
+      storageUrl: "https://example.invalid/side-refined.png",
+      storageKey: "models/side-refined.png",
+      pointsCost: 350,
+    });
+    const provenance = typeof asset.provenance === "string" ? JSON.parse(asset.provenance) : asset.provenance;
+    expect(provenance).toMatchObject({
+      identityRole: "display",
+      identityRevisionId: "genesis",
+      engine: "test",
+      imageOnlyCategories: ["image.lighting"],
+    });
+    const selected = await one(
+      `SELECT selectedAssetId, compatibility, selectionReason
+       FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [committed.packageSnapshotId],
+    );
+    expect(selected).toMatchObject({
+      selectedAssetId: committed.result.assetId,
+      compatibility: "current",
+      selectionReason: "generated",
+    });
+    expect(await one("SELECT reason, identitySnapshotId FROM model_package_snapshots WHERE id = ?", [committed.packageSnapshotId]))
+      .toEqual({ reason: "image_refine", identitySnapshotId: base.identitySnapshotId });
+    expect(await count("model_identity_snapshots", "modelId = ?", [base.modelId])).toBe(1);
+    expect(await one("SELECT masterPrompt, identityRevisionId FROM models WHERE id = ?", [base.modelId]))
+      .toEqual({ masterPrompt: "identity-v1", identityRevisionId: null });
+  }, 60_000);
+
+  it("commits a typed identity iteration with a paired head and stale carried siblings", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const operationId = await startModelOperation(userId, base.modelId, "casting.iterate");
+
+    const committed = await commitIteratedIdentitySnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      patch: {
+        source: "text",
+        edits: [{
+          kind: "leaf",
+          leaf: "person.hair.color",
+          operation: "modify",
+          value: { base: "Hot Pink", override: "" },
+        }],
+      },
+      candidate: {
+        targetAssetId: base.anchorAssetId,
+        storageUrl: "https://example.invalid/head-pink.png",
+        storageKey: "models/head-pink.png",
+        engine: "test",
+        pointsCost: 350,
+      },
+    });
+
+    const model = await one(
+      "SELECT masterPrompt, preferences, identityRevisionId, stateVersion, currentPackageSnapshotId FROM models WHERE id = ?",
+      [base.modelId],
+    );
+    expect(model.masterPrompt).toContain("Hot Pink");
+    const preferences = typeof model.preferences === "string" ? JSON.parse(model.preferences) : model.preferences;
+    expect(preferences.hairColor).toBe("Hot Pink");
+    expect(String(model.identityRevisionId)).toMatch(/^rev-/);
+    expect(model).toMatchObject({ stateVersion: 2, currentPackageSnapshotId: committed.packageSnapshotId });
+    expect(committed.result).toMatchObject({
+      assetId: expect.any(Number),
+      identityRevisionId: model.identityRevisionId,
+      releasedDependents: [],
+    });
+    const anchor = await one("SELECT viewType, storageKey, pointsCost, status, provenance FROM model_assets WHERE id = ?", [committed.result.assetId]);
+    expect(anchor).toMatchObject({ viewType: "frontClose", storageKey: "models/head-pink.png", pointsCost: 350 });
+    const anchorProvenance = typeof anchor.provenance === "string" ? JSON.parse(anchor.provenance) : anchor.provenance;
+    expect(anchorProvenance).toMatchObject({
+      identityRole: "anchor",
+      identityRevisionId: model.identityRevisionId,
+      identityEditSource: "text",
+    });
+    const sideAsset = await one("SELECT status FROM model_assets WHERE id = ?", [base.sideAssetId]);
+    const sideStatus = typeof sideAsset.status === "string" ? JSON.parse(sideAsset.status) : sideAsset.status;
+    expect(sideStatus).toMatchObject({ state: "stale" });
+    const selectedHead = await one(
+      `SELECT selectedAssetId, compatibility, selectionReason
+       FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'frontClose'`,
+      [committed.packageSnapshotId],
+    );
+    expect(selectedHead).toMatchObject({
+      selectedAssetId: committed.result.assetId,
+      compatibility: "current",
+      selectionReason: "generated",
+    });
+    const selectedSide = await one(
+      `SELECT selectedAssetId, compatibility, selectionReason
+       FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [committed.packageSnapshotId],
+    );
+    expect(selectedSide).toMatchObject({
+      selectedAssetId: base.sideAssetId,
+      compatibility: "stale",
+      selectionReason: "carried",
+    });
+    expect(await count("model_identity_snapshots", "modelId = ?", [base.modelId])).toBe(2);
+    expect(await one("SELECT reason, anchorAssetId, createdByOperationId FROM model_identity_snapshots WHERE id = ?", [committed.identitySnapshotId]))
+      .toMatchObject({ reason: "identity_edit", anchorAssetId: committed.result.assetId, createdByOperationId: operationId });
+  }, 60_000);
+
   it("pairs an identity append with a package append and stales every carried sibling", async () => {
     const userId = await createUser();
     const base = await createBootstrappedModel(userId);
@@ -456,6 +591,46 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       sealedIdentitySnapshotId: base.identitySnapshotId,
       sealedPackageSnapshotId: committed.packageSnapshotId,
     });
+    await operations.finalizeGenerationOperationSuccess({
+      userId,
+      operationId,
+      result: { minted: true },
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+
+    // Post-mint cosmetic/image-only refinement may advance the package, but
+    // it must keep pointing at the exact sealed identity snapshot. The mint
+    // package itself remains the immutable seal evidence.
+    const refineOperationId = await startModelOperation(userId, base.modelId, "casting.iterate");
+    const refined = await commitImageRefineSnapshot({
+      userId,
+      modelId: base.modelId,
+      operationId: refineOperationId,
+      candidate: {
+        targetAssetId: base.sideAssetId,
+        storageUrl: "https://example.invalid/minted-side-refined.png",
+        storageKey: "models/minted-side-refined.png",
+        pointsCost: 350,
+      },
+      imageOnlyCategories: ["image.lighting"],
+    });
+    expect(await one(
+      `SELECT stateVersion, currentPackageSnapshotId,
+        sealedIdentitySnapshotId, sealedPackageSnapshotId
+       FROM models WHERE id = ?`,
+      [base.modelId],
+    )).toEqual({
+      stateVersion: 3,
+      currentPackageSnapshotId: refined.packageSnapshotId,
+      sealedIdentitySnapshotId: base.identitySnapshotId,
+      sealedPackageSnapshotId: committed.packageSnapshotId,
+    });
+    expect(await one(
+      "SELECT identitySnapshotId, reason FROM model_package_snapshots WHERE id = ?",
+      [refined.packageSnapshotId],
+    )).toEqual({ identitySnapshotId: base.identitySnapshotId, reason: "image_refine" });
+    expect(await count("model_identity_snapshots", "modelId = ?", [base.modelId])).toBe(1);
   }, 60_000);
 
   it("rolls legacy writes back when a package-only transition changes identity documents", async () => {
