@@ -12,6 +12,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let operations: typeof import("./db/generationOperations");
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
   let commitModelSnapshotTransition: typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
+  let commitDocumentCompactionSnapshot: typeof import("./casting/snapshotTransitions").commitDocumentCompactionSnapshot;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -22,7 +23,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     connection = await mysql.createConnection(testDatabaseUrl!);
     operations = await import("./db/generationOperations");
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
-    ({ commitModelSnapshotTransition } = await import("./casting/snapshotTransitions"));
+    ({ commitModelSnapshotTransition, commitDocumentCompactionSnapshot } = await import("./casting/snapshotTransitions"));
   });
 
   beforeEach(async () => {
@@ -94,11 +95,15 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     return Number(row.count);
   }
 
-  async function startModelOperation(userId: number, modelId: number): Promise<string> {
+  async function startModelOperation(
+    userId: number,
+    modelId: number,
+    kind: "casting.iterate" | "casting.compact" | "casting.mint" = "casting.iterate",
+  ): Promise<string> {
     const claimed = await operations.claimGenerationOperation({
       userId,
       clientRequestId: randomUUID(),
-      kind: "casting.iterate",
+      kind,
       modelId,
       payload: { modelId, feedback: "snapshot transition test" },
     });
@@ -107,7 +112,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     const locked = await operations.acquireGenerationOperationLock({
       userId,
       operationId: claimed.operationId,
-      kind: "casting.iterate",
+      kind,
       lockKey,
     });
     if (locked.type !== "acquired") throw new Error("operation lock failed");
@@ -152,6 +157,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      expectedKind: "casting.iterate",
       mutate: async (tx) => {
         const [inserted] = await tx.insert(modelAssets).values({
           modelId: base.modelId,
@@ -201,6 +207,22 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       selectionReason: "generated",
     });
     expect(slots.every((slot) => typeof slot.sourceSelectionId === "string")).toBe(true);
+
+    let replayCallbackInvoked = false;
+    await expect(commitModelSnapshotTransition({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      expectedKind: "casting.iterate",
+      mutate: async () => {
+        replayCallbackInvoked = true;
+        return { result: null, transition: { packageReason: "image_refine" as const } };
+      },
+    })).rejects.toMatchObject({
+      name: "SnapshotTransitionAlreadyCommittedError",
+      packageSnapshotId: committed.packageSnapshotId,
+    });
+    expect(replayCallbackInvoked).toBe(false);
   }, 60_000);
 
   it("pairs an identity append with a package append and stales every carried sibling", async () => {
@@ -212,6 +234,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      expectedKind: "casting.iterate",
       mutate: async (tx) => {
         await tx.update(models).set({
           masterPrompt: "identity-v2 pink hair",
@@ -281,26 +304,13 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     const sideAssetId = await addAsset({ modelId, viewAngle: "sideClose" });
     const head = await bootstrapModelSnapshot({ userId, modelId });
     if (head.status === "headless") throw new Error("bootstrap unexpectedly headless");
-    const operationId = await startModelOperation(userId, modelId);
+    const operationId = await startModelOperation(userId, modelId, "casting.compact");
 
-    const committed = await commitModelSnapshotTransition({
+    const committed = await commitDocumentCompactionSnapshot({
       userId,
       modelId,
       operationId,
-      mutate: async (tx) => {
-        await tx.update(models).set({ masterPrompt: "identity-v1 compacted" }).where(eq(models.id, modelId));
-        return {
-          result: { compacted: true },
-          transition: {
-            packageReason: "identity_change" as const,
-            identity: {
-              reason: "document_compact" as const,
-              anchorAssetId,
-              recipeVersion: "r7-document-compact-v1",
-            },
-          },
-        };
-      },
+      compactedMasterPrompt: "identity-v1 compacted",
     });
 
     const identity = await one(
@@ -336,11 +346,12 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   it("seals the exact mint package after the existing lifecycle transition succeeds", async () => {
     const userId = await createUser();
     const base = await createBootstrappedModel(userId);
-    const operationId = await startModelOperation(userId, base.modelId);
+    const operationId = await startModelOperation(userId, base.modelId, "casting.mint");
     const committed = await commitModelSnapshotTransition({
       userId,
       modelId: base.modelId,
       operationId,
+      expectedKind: "casting.mint",
       mutate: async (tx) => {
         await tx.update(models).set({ status: "active", mintedAt: new Date() }).where(eq(models.id, base.modelId));
         return {
@@ -373,6 +384,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      expectedKind: "casting.iterate",
       mutate: async (tx) => {
         await tx.update(models).set({ masterPrompt: "silently changed" }).where(eq(models.id, base.modelId));
         await tx.insert(modelAssets).values({
@@ -402,6 +414,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      expectedKind: "casting.iterate",
       mutate: async () => {
         invoked = true;
         return { result: null, transition: { packageReason: "image_refine" as const } };
@@ -424,11 +437,31 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       userId,
       modelId: base.modelId,
       operationId,
+      expectedKind: "casting.iterate",
       mutate: async () => {
         invoked = true;
         return { result: null, transition: { packageReason: "image_refine" as const } };
       },
     })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(invoked).toBe(false);
+    expect(await count("model_package_snapshots", "modelId = ?", [base.modelId])).toBe(1);
+  }, 60_000);
+
+  it("refuses an operation-kind mismatch before invoking the writer callback", async () => {
+    const userId = await createUser();
+    const base = await createBootstrappedModel(userId);
+    const operationId = await startModelOperation(userId, base.modelId);
+    let invoked = false;
+    await expect(commitModelSnapshotTransition({
+      userId,
+      modelId: base.modelId,
+      operationId,
+      expectedKind: "casting.compact",
+      mutate: async () => {
+        invoked = true;
+        return { result: null, transition: { packageReason: "identity_change" as const } };
+      },
+    })).rejects.toThrow("running snapshot operation was not found");
     expect(invoked).toBe(false);
     expect(await count("model_package_snapshots", "modelId = ?", [base.modelId])).toBe(1);
   }, 60_000);

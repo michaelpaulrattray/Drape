@@ -107,6 +107,26 @@ vi.mock("./casting/directOperation", async (importOriginal) => {
     requireDirectOperationRecovery: vi.fn(async ({ cause }: { cause: unknown }) => { throw cause; }),
   };
 });
+vi.mock("./casting/snapshotBootstrap", () => ({
+  bootstrapModelSnapshot: vi.fn().mockResolvedValue({
+    status: "current",
+    modelId: 7,
+    identitySnapshotId: "11111111-1111-4111-8111-111111111112",
+    packageSnapshotId: "11111111-1111-4111-8111-111111111113",
+    stateVersion: 1,
+    selectedSlotCount: 1,
+  }),
+}));
+vi.mock("./casting/snapshotTransitions", () => ({
+  commitDocumentCompactionSnapshot: vi.fn(async (input: { compactedMasterPrompt: string }) => ({
+    result: { masterPrompt: input.compactedMasterPrompt },
+    modelId: 7,
+    identitySnapshotId: "11111111-1111-4111-8111-111111111114",
+    packageSnapshotId: "11111111-1111-4111-8111-111111111115",
+    stateVersion: 2,
+    selectedSlotCount: 1,
+  })),
+}));
 
 import {
   getModelById,
@@ -114,6 +134,7 @@ import {
   createModel,
   createModelAsset,
   updateModel,
+  markGenerationOperationRunning,
   mintModelAtomically,
   deductPoints,
   deductCredits,
@@ -130,6 +151,8 @@ import { buildIdentityAnchor } from "./casting/geminiClient";
 import { executeMintPackage, executeRestoreSlotVersion } from "./casting/mintPackage";
 import { executeRefreshSlots } from "./casting/refreshSlots";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
+import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
+import { commitDocumentCompactionSnapshot } from "./casting/snapshotTransitions";
 import { appRouter as productionRouter } from "./routers";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -181,6 +204,10 @@ beforeEach(() => {
   vi.mocked(createModel).mockClear().mockResolvedValue({ success: true, modelId: 77 } as never);
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 501 } as never);
   vi.mocked(updateModel).mockClear().mockResolvedValue({ success: true } as never);
+  vi.mocked(markGenerationOperationRunning).mockClear().mockResolvedValue({
+    operationId: REQUEST_ID,
+    chargeReferenceId: `op:${REQUEST_ID}:charge`,
+  });
   vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true } as never);
@@ -190,6 +217,8 @@ beforeEach(() => {
   vi.mocked(generateCastingImage).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/casting/new.png", engineUsed: "test" } as never);
   vi.mocked(generateRemainingViews).mockReset().mockResolvedValue({ imageUrl: "https://pub-test.r2.dev/view/new.png", engineUsed: "test" } as never);
   vi.mocked(compactMasterPrompt).mockReset();
+  vi.mocked(bootstrapModelSnapshot).mockClear();
+  vi.mocked(commitDocumentCompactionSnapshot).mockClear();
   tx.reset();
 });
 
@@ -308,6 +337,18 @@ describe("models.create intake (M22)", () => {
 // ─── M5: compactPrompt protected-language guard ──────────────────────────────
 
 describe("generation.compactPrompt guard (M5)", () => {
+  it("a headless draft refuses before the LLM call or running receipt", async () => {
+    vi.mocked(bootstrapModelSnapshot).mockResolvedValueOnce({ status: "headless", modelId: 7 });
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.generation.compactPrompt({ modelId: 7 })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("headshot"),
+    });
+    expect(compactMasterPrompt).not.toHaveBeenCalled();
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(commitDocumentCompactionSnapshot).not.toHaveBeenCalled();
+  });
+
   it("a rewrite that drops mark language is REJECTED — raw text kept, nothing written", async () => {
     vi.mocked(getModelById).mockResolvedValue(
       model({ masterPrompt: "She has a rose tattoo and light freckles." }) as never,
@@ -318,6 +359,7 @@ describe("generation.compactPrompt guard (M5)", () => {
     expect(result.masterPrompt).toBe("She has a rose tattoo and light freckles.");
     expect((result as Record<string, unknown>).protectedLanguageKept).toBe(true);
     expect(updateModel).not.toHaveBeenCalled();
+    expect(commitDocumentCompactionSnapshot).not.toHaveBeenCalled();
   });
 
   it("a rewrite that keeps every mark family is accepted and written", async () => {
@@ -328,7 +370,21 @@ describe("generation.compactPrompt guard (M5)", () => {
     const caller = appRouter.createCaller(authCtx());
     const result = await caller.generation.compactPrompt({ modelId: 7 });
     expect(result.masterPrompt).toBe("Editorial; rose tattoo; faint freckles.");
-    expect(updateModel).toHaveBeenCalledWith(7, { masterPrompt: "Editorial; rose tattoo; faint freckles." });
+    expect(commitDocumentCompactionSnapshot).toHaveBeenCalledWith({
+      userId: 1,
+      modelId: 7,
+      operationId: REQUEST_ID,
+      compactedMasterPrompt: "Editorial; rose tattoo; faint freckles.",
+    });
+    expect(updateModel).not.toHaveBeenCalled();
+  });
+
+  it("an unchanged rewrite completes without inventing a snapshot state", async () => {
+    vi.mocked(compactMasterPrompt).mockResolvedValue("prompt" as never);
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.generation.compactPrompt({ modelId: 7 });
+    expect(result).toEqual({ success: true, masterPrompt: "prompt" });
+    expect(commitDocumentCompactionSnapshot).not.toHaveBeenCalled();
   });
 });
 

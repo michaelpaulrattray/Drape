@@ -1,7 +1,7 @@
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, createModelAsset, getModelAssets,
-  createGeneration, updateGeneration, updateModel, markGenerationOperationRunning,
+  createGeneration, updateGeneration, markGenerationOperationRunning,
 } from "../../db";
 import {
   iterateModel, iterateModelRaw, uploadRawCandidate, enhanceUserPrompt,
@@ -55,6 +55,8 @@ import {
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
 } from "../../casting/directOperation";
+import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
+import { commitDocumentCompactionSnapshot } from "../../casting/snapshotTransitions";
 const log = createModuleLogger("routes/generation");
 
 export const castingRefinementRouter = router({
@@ -817,6 +819,25 @@ export const castingRefinementRouter = router({
           error: new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rateCheck.resetIn) }),
         });
       }
+      // R7-7A3 lazy bootstrap happens after the free draft/rate gates and
+      // while this operation owns model:<id>, but before the running receipt
+      // captures its expected snapshot head. It changes no R6 read behavior.
+      let snapshotHead: Awaited<ReturnType<typeof bootstrapModelSnapshot>>;
+      try {
+        snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
+      if (snapshotHead.status === "headless") {
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error: new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Generate a headshot before compacting this Cast's identity document.",
+          }),
+        });
+      }
       await markGenerationOperationRunning({
         userId: ctx.user.id,
         operationId: gate.operationId,
@@ -855,16 +876,29 @@ export const castingRefinementRouter = router({
           return result;
         }
 
-        const written = await updateModel(input.modelId, {
-          masterPrompt: compacted,
-        });
-        if (!written.success) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save compacted prompt" });
+        if (compacted === currentPrompt) {
+          const result = { success: true, masterPrompt: currentPrompt };
+          durableResult = true;
+          await completeDirectOperationSuccess({
+            userId: ctx.user.id,
+            operationId: gate.operationId,
+            result: { unchanged: true },
+            chargedCredits: 0,
+            refundedCredits: 0,
+          });
+          return result;
         }
+
+        const committed = await commitDocumentCompactionSnapshot({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          operationId: gate.operationId,
+          compactedMasterPrompt: compacted,
+        });
 
         const result = {
           success: true,
-          masterPrompt: compacted,
+          masterPrompt: committed.result.masterPrompt,
         };
         durableResult = true;
         await completeDirectOperationSuccess({ userId: ctx.user.id, operationId: gate.operationId, result: { unchanged: false }, chargedCredits: 0, refundedCredits: 0 });
@@ -877,10 +911,12 @@ export const castingRefinementRouter = router({
           operationId: gate.operationId,
           chargedCredits: 0,
           refundedCredits: 0,
-          error: new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to compact prompt",
-          }),
+          error: error instanceof TRPCError
+            ? error
+            : new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: "Failed to compact prompt",
+              }),
         });
       }
     }),

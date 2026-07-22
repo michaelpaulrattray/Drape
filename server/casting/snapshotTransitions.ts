@@ -30,7 +30,7 @@ import {
 import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boardTypes";
 import { withTransaction, type TransactionHandle } from "../db/connection";
 import { buildIdentityAnchor } from "./geminiClient";
-import { stableCanonicalJson } from "./operationContract";
+import { stableCanonicalJson, type GenerationOperationKind } from "./operationContract";
 
 type IdentitySnapshotReason = (typeof IDENTITY_SNAPSHOT_REASONS)[number];
 type PackageSnapshotReason = (typeof PACKAGE_SNAPSHOT_REASONS)[number];
@@ -78,6 +78,18 @@ export interface SnapshotTransitionResult<Result> {
   packageSnapshotId: string;
   stateVersion: number;
   selectedSlotCount: number;
+}
+
+/** Stable recovery signal for a lost response after the atomic transition
+ * committed. Adopting executors must never string-match a generic error. */
+export class SnapshotTransitionAlreadyCommittedError extends Error {
+  readonly packageSnapshotId: string;
+
+  constructor(packageSnapshotId: string) {
+    super("This operation already committed a package snapshot");
+    this.name = "SnapshotTransitionAlreadyCommittedError";
+    this.packageSnapshotId = packageSnapshotId;
+  }
 }
 
 function affectedRows(result: unknown): number {
@@ -267,6 +279,7 @@ export async function commitModelSnapshotTransition<Result>(input: {
   userId: number;
   modelId: number;
   operationId: string;
+  expectedKind: GenerationOperationKind;
   mutate: (
     tx: TransactionHandle,
     context: SnapshotTransitionContext,
@@ -283,6 +296,7 @@ export async function commitModelSnapshotTransition<Result>(input: {
         id: generationOperations.id,
         userId: generationOperations.userId,
         modelId: generationOperations.modelId,
+        kind: generationOperations.kind,
         status: generationOperations.status,
         expectedIdentityRevisionId: generationOperations.expectedIdentityRevisionId,
         expectedStateVersion: generationOperations.expectedStateVersion,
@@ -296,7 +310,12 @@ export async function commitModelSnapshotTransition<Result>(input: {
       ))
       .limit(1)
       .for("update");
-    if (!operation || operation.status !== "running" || operation.modelId !== input.modelId) {
+    if (
+      !operation
+      || operation.status !== "running"
+      || operation.modelId !== input.modelId
+      || operation.kind !== input.expectedKind
+    ) {
       throw new Error("The running snapshot operation was not found");
     }
     const [ownedLock] = await tx
@@ -307,6 +326,17 @@ export async function commitModelSnapshotTransition<Result>(input: {
       .for("update");
     if (ownedLock?.operationId !== input.operationId) {
       throw new Error("The operation no longer owns the model lock");
+    }
+    const [existingTransition] = await tx
+      .select({ id: modelPackageSnapshots.id })
+      .from(modelPackageSnapshots)
+      .where(and(
+        eq(modelPackageSnapshots.modelId, input.modelId),
+        eq(modelPackageSnapshots.createdByOperationId, input.operationId),
+      ))
+      .limit(1);
+    if (existingTransition) {
+      throw new SnapshotTransitionAlreadyCommittedError(existingTransition.id);
     }
     if (!expectedHeadMatches({
       expectedStateVersion: operation.expectedStateVersion,
@@ -331,16 +361,6 @@ export async function commitModelSnapshotTransition<Result>(input: {
         message: "This Cast identity changed while the operation was running. Nothing was saved.",
       });
     }
-
-    const [existingTransition] = await tx
-      .select({ id: modelPackageSnapshots.id })
-      .from(modelPackageSnapshots)
-      .where(and(
-        eq(modelPackageSnapshots.modelId, input.modelId),
-        eq(modelPackageSnapshots.createdByOperationId, input.operationId),
-      ))
-      .limit(1);
-    if (existingTransition) throw new Error("This operation already committed a package snapshot");
 
     const mutation = await input.mutate(tx, { model, current });
     const { transition } = mutation;
@@ -600,5 +620,51 @@ export async function commitModelSnapshotTransition<Result>(input: {
       stateVersion: nextStateVersion,
       selectedSlotCount: finalSlots.length,
     };
+  });
+}
+
+const DOCUMENT_COMPACTION_RECIPE_VERSION = "r7-document-compact-v1";
+
+/** First live R7-7A3 adopter. The free compact-prompt door keeps its existing
+ * protected-language decision outside this transaction; only an accepted,
+ * genuinely changed document reaches this paired identity/package commit. */
+export async function commitDocumentCompactionSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  compactedMasterPrompt: string;
+}): Promise<SnapshotTransitionResult<{ masterPrompt: string }>> {
+  if (!input.compactedMasterPrompt.trim()) {
+    throw new Error("A compacted identity document cannot be empty");
+  }
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "casting.compact",
+    mutate: async (tx, context) => {
+      if (!context.current) throw new Error("Prompt compaction requires a bootstrapped snapshot head");
+      const updated = await tx
+        .update(models)
+        .set({ masterPrompt: input.compactedMasterPrompt })
+        .where(and(
+          eq(models.id, input.modelId),
+          eq(models.userId, input.userId),
+          eq(models.status, "draft"),
+          isNull(models.deletedAt),
+        ));
+      if (affectedRows(updated) !== 1) throw new Error("The draft identity document is no longer available");
+      return {
+        result: { masterPrompt: input.compactedMasterPrompt },
+        transition: {
+          packageReason: "identity_change",
+          identity: {
+            reason: "document_compact",
+            anchorAssetId: context.current.identitySnapshot.anchorAssetId,
+            recipeVersion: DOCUMENT_COMPACTION_RECIPE_VERSION,
+          },
+        },
+      };
+    },
   });
 }

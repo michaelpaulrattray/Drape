@@ -139,14 +139,14 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       .toBeLessThan(modelDeletion.indexOf("delete(modelAssets)"));
   });
 
-  it("keeps the atomic transition service private until writer-adoption slices", async () => {
+  it("allows only the reviewed compact-prompt runtime adopter", async () => {
     const files = (await runtimeSources("server"))
       .filter((file) => !file.endsWith("snapshotTransitions.ts"));
     const callers: string[] = [];
     for (const file of files) {
       const content = await readFile(file, "utf8");
-      if (content.includes("snapshotTransitions")) callers.push(file);
+      if (content.includes("snapshotTransitions")) callers.push(file.replaceAll("\\", "/"));
     }
-    expect(callers).toEqual([]);
+    expect(callers).toEqual(["server/routes/generation/castingRefinement.ts"]);
   });
 });
