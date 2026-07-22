@@ -666,6 +666,16 @@ Consider making the environment's work area a spatial surface in the canvas imag
 
 **Deletion boundary:** database disappearance is atomic and immediate after the model operation lock is acquired. The lock covers Casting/Canvas paid work but is not the only fence: every Wardrobe/model writer that can persist a model id must re-prove an owned, available subject at its durable write, and ordinary model updates must include a live-row predicate so a racing rename or save cannot repopulate the tombstone. Owned-object deletion is durable, background, idempotent, and retryable so a transient R2 failure cannot resurrect database state or silently orphan content. Only storage keys proven to belong to Drape's configured bucket may be deleted. R7-5 requires a read-only dependency and writer-fence audit, disposable-data proof, Fable review, and separate production authorization before destructive runtime behavior is enabled.
 
+### D-65 — R7 evidence composer uses immutable snapshots and complete-image accumulation *(founder-ratified 2026-07-22 after Fable challenge)*
+
+**Authority:** `CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md` governs R7-7. Effective Cast truth is one immutable identity snapshot plus one immutable package snapshot with explicit per-slot selections. History is append-only; restore creates a new current state and destroys no evidence. True whole-Cast restore is draft-only in the first release; minted identity change routes to Fork.
+
+**First capability:** tattoo/ink add is the first calibrated evidence operation: draft `frontFull`, one front upper-torso feature and one evidence input per operation, explicit Accept / Retry / Cancel, and no automatic refresh or spending. A valid delivered candidate is charged; Accept is free; Cancel is not refunded; Retry is a new quoted generation; a system-invalid candidate receives one included retry and then a full refund. An undecided candidate expires after 30 days with disclosed expiry, no refund, and exact-key cleanup. At most one ready candidate exists per model per capability in the pilot.
+
+**Complete-image law:** typed tattoos remain separate identity-feature records, but every selected canonical view is one complete flattened generated image. A later tattoo starts from the latest complete selected view, preserves every earlier accepted feature predicted visible, and becomes a new complete selected image only after validation. Earlier features never become separate Photoshop layers or one mandatory Gemini input each. Multi-zone accumulation remains feature-flagged until it proves new-feature fidelity and preservation of all earlier visible features.
+
+**Ownership and downstream law:** evidence objects copy on Fork; candidate, plate, crop, accepted evidence, account deletion, and model deletion use the exact-key cleanup contract. Composer inputs are server-resolved and recipe-bounded; the pilot budget is anchor + target view + one relevant plate/crop. Minted late evidence ambiguity refuses and routes to Fork. Cohort failures block calibration release even when aggregate quality passes. R7-7 remains server-feature-flagged with R6 refusals as fallback.
+
 ## Group 7 — Factual corrections (no design content — verified against code, A2 for details)
 
 | Ref | Correction |

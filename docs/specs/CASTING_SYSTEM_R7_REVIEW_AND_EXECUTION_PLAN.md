@@ -290,7 +290,7 @@ Every click re-plans server-side at fire time. Nothing refreshes or charges auto
 
 ### R7-6 — Batch D design and calibration
 
-This remains **design before build**. Ratify:
+**Founder-ratified 2026-07-22.** `CASTING_SYSTEM_R7_6_EVIDENCE_COMPOSER_DESIGN.md` is the authoritative implementation contract after Fable challenge and correction. This remains **design before build**. It ratifies:
 
 - immutable identity snapshots and parentage;
 - explicit effective snapshot and per-slot selections;
