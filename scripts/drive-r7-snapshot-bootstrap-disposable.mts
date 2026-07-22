@@ -82,10 +82,19 @@ async function main() {
   } finally {
     if (created) {
       if (!safeName.test(databaseName)) throw new Error("Cleanup guard refused database name");
-      await admin.query(`DROP DATABASE IF EXISTS \`${databaseName}\``);
-      console.log(`[disposable] dropped ${databaseName}`);
+      // The Railway public proxy may close a connection while the multi-minute
+      // DB suite runs. Cleanup must not depend on that original socket.
+      await admin.end().catch(() => undefined);
+      const cleanup = await mysql.createConnection({ uri: serverUrl.toString(), connectTimeout: 15_000 });
+      try {
+        await cleanup.query(`DROP DATABASE IF EXISTS \`${databaseName}\``);
+        console.log(`[disposable] dropped ${databaseName}`);
+      } finally {
+        await cleanup.end();
+      }
+    } else {
+      await admin.end();
     }
-    await admin.end();
   }
 }
 

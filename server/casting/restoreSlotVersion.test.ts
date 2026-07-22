@@ -25,10 +25,11 @@ const db = vi.hoisted(() => ({
 }));
 vi.mock("../db", () => db);
 
-import { executeRestoreSlotVersion, getSlotVersions } from "./mintPackage";
+import { getSlotVersions } from "./mintPackage";
 import { buildIdentityAnchor } from "./geminiClient";
 import { selectIdentityAnchor } from "./identity/anchorSelector";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
+import { prepareRestoreSlotTransition } from "./restoreSlotTransition";
 
 const MODEL = {
   id: 7,
@@ -61,12 +62,19 @@ beforeEach(() => {
   db.createModelAsset.mockResolvedValue({ success: true, assetId: 99 });
 });
 
-describe("executeRestoreSlotVersion — copy-forward within the current revision (§7.4)", () => {
-  it("appends a new head from a same-revision row: free, unpinned, display role, current revision", async () => {
-    const result = await executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 20 });
+function prepare(
+  angle: "frontClose" | "sideClose" | "frontFull",
+  assetId: number,
+  assets = ASSETS,
+  model = MODEL,
+) {
+  return prepareRestoreSlotTransition({ userId: 42, model, assets, angle, assetId });
+}
 
-    expect(db.createModelAsset).toHaveBeenCalledTimes(1);
-    const row = db.createModelAsset.mock.calls[0][0];
+describe("prepareRestoreSlotTransition — copy-forward within the current revision (§7.4)", () => {
+  it("appends a new head from a same-revision row: free, unpinned, display role, current revision", async () => {
+    const result = prepare("sideClose", 20);
+    const row = result.assetInsert;
     expect(row.modelId).toBe(7);
     expect(row.viewType).toBe("sideClose");
     expect(row.storageUrl).toBe("https://r2/side-v2.png");
@@ -78,43 +86,40 @@ describe("executeRestoreSlotVersion — copy-forward within the current revision
       identityRole: "display",
       identityRevisionId: "rev-a",
     });
-    expect(result.assetId).toBe(99);
+    expect(result.url).toBe("https://r2/side-v2.png");
+    expect(result.version).toBe(6);
   });
 
   it("LEGACY FINGERPRINT PASS: a no-revision row whose identityText matches canon restores", async () => {
-    await executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 10 });
-    expect(db.createModelAsset).toHaveBeenCalledTimes(1);
+    expect(() => prepare("sideClose", 10)).not.toThrow();
   });
 
   it("LEGACY FINGERPRINT FAIL: a no-revision row whose identityText mismatches refuses", async () => {
-    db.getModelAssets.mockResolvedValue([
+    const assets = [
       ...ASSETS.filter((a) => a.id !== 10),
       { ...ASSETS.find((a) => a.id === 10)!, provenance: { identityText: "IDENTITY CONTEXT:\nsomeone else" } },
-    ]);
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 10 }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.crossRevisionRestore });
-    expect(db.createModelAsset).not.toHaveBeenCalled();
+    ];
+    expect(() => prepare("sideClose", 10, assets)).toThrowError(
+      expect.objectContaining({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.crossRevisionRestore }),
+    );
   });
 
   it("CROSS-REVISION sibling view refuses with the §7.4 copy", async () => {
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 8 }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.crossRevisionRestore });
-    expect(db.createModelAsset).not.toHaveBeenCalled();
+    expect(() => prepare("sideClose", 8)).toThrowError(
+      expect.objectContaining({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.crossRevisionRestore }),
+    );
   });
 
   it("UNCERTAIN provenance (no revision, no fingerprint) refuses — never guesses", async () => {
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 6 }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.uncertainRestoreProvenance });
-    expect(db.createModelAsset).not.toHaveBeenCalled();
+    expect(() => prepare("sideClose", 6)).toThrowError(
+      expect.objectContaining({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.uncertainRestoreProvenance }),
+    );
   });
 
   it("CROSS-REVISION headshot refuses — restore never resurrects an earlier identity's anchor", async () => {
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "frontClose", assetId: 4 }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.crossRevisionRestore });
+    expect(() => prepare("frontClose", 4)).toThrowError(
+      expect.objectContaining({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.crossRevisionRestore }),
+    );
   });
 
   it("a restored frontClose is DISPLAY-ONLY — the §7 anchor selector ignores it", async () => {
@@ -123,10 +128,9 @@ describe("executeRestoreSlotVersion — copy-forward within the current revision
       { id: 51, viewType: "frontClose", storageUrl: "https://r2/head-new.png", resolution: "1K", storageKey: "k51", pinned: false, provenance: { identityRevisionId: "rev-a", identityRole: "anchor" }, createdAt: new Date("2026-07-12T05:00:00Z") },
       { id: 50, viewType: "frontClose", storageUrl: "https://r2/head-prev.png", resolution: "1K", storageKey: "k50", pinned: false, provenance: { identityRevisionId: "rev-a", identityRole: "display" }, createdAt: new Date("2026-07-12T04:00:00Z") },
     ];
-    db.getModelAssets.mockResolvedValue(assets);
-    await executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "frontClose", assetId: 50 });
-    const row = db.createModelAsset.mock.calls[0][0];
-    expect(row.provenance.identityRole).toBe("display");
+    const prepared = prepare("frontClose", 50, assets);
+    const row = prepared.assetInsert;
+    expect((row.provenance as { identityRole?: string }).identityRole).toBe("display");
     // Simulate the ledger after the restore: the restored row is newest
     const after = [
       { id: 99, viewType: "frontClose", storageUrl: "https://r2/head-prev.png", pinned: false, provenance: row.provenance, createdAt: new Date("2026-07-12T06:00:00Z") },
@@ -136,42 +140,29 @@ describe("executeRestoreSlotVersion — copy-forward within the current revision
   });
 
   it("refuses the current head — nothing to restore", async () => {
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 30 }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(db.createModelAsset).not.toHaveBeenCalled();
+    expect(() => prepare("sideClose", 30)).toThrowError(
+      expect.objectContaining({ code: "PRECONDITION_FAILED" }),
+    );
   });
 
   it("refuses a no-op: restoring a row whose image equals the head (drive-2 ledger pollution)", async () => {
-    db.getModelAssets.mockResolvedValue([
+    const assets = [
       { id: 30, viewType: "sideClose", storageUrl: "https://r2/same.png", resolution: "1K", storageKey: "k3", pinned: false, provenance: { identityRevisionId: "rev-a" }, createdAt: new Date("2026-07-12T03:00:00Z") },
       { id: 10, viewType: "sideClose", storageUrl: "https://r2/same.png", resolution: "1K", storageKey: "k1", pinned: false, provenance: { identityRevisionId: "rev-a" }, createdAt: new Date("2026-07-12T01:00:00Z") },
-    ]);
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 10 }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(db.createModelAsset).not.toHaveBeenCalled();
+    ];
+    expect(() => prepare("sideClose", 10, assets)).toThrowError(
+      expect.objectContaining({ code: "PRECONDITION_FAILED" }),
+    );
   });
 
   it("refuses a row from a different angle", async () => {
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "frontFull", assetId: 10 }),
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    expect(db.createModelAsset).not.toHaveBeenCalled();
+    expect(() => prepare("frontFull", 10)).toThrowError(expect.objectContaining({ code: "NOT_FOUND" }));
   });
 
   it("refuses a foreign model", async () => {
-    db.getModelById.mockResolvedValue({ ...MODEL, userId: 1 });
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 10 }),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-  });
-
-  it("surfaces a failed insert without pretending anything changed", async () => {
-    db.createModelAsset.mockResolvedValue({ success: false });
-    await expect(
-      executeRestoreSlotVersion({ userId: 42, modelId: 7, angle: "sideClose", assetId: 20 }),
-    ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    expect(() => prepare("sideClose", 10, ASSETS, { ...MODEL, userId: 1 })).toThrowError(
+      expect.objectContaining({ code: "FORBIDDEN" }),
+    );
   });
 });
 

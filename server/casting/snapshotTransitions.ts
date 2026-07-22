@@ -31,6 +31,7 @@ import { CANONICAL_VIEW_ANGLES, type CanonicalViewAngle } from "../../shared/boa
 import { withTransaction, type TransactionHandle } from "../db/connection";
 import { buildIdentityAnchor } from "./geminiClient";
 import { stableCanonicalJson, type GenerationOperationKind } from "./operationContract";
+import { prepareRestoreSlotTransition } from "./restoreSlotTransition";
 
 type IdentitySnapshotReason = (typeof IDENTITY_SNAPSHOT_REASONS)[number];
 type PackageSnapshotReason = (typeof PACKAGE_SNAPSHOT_REASONS)[number];
@@ -663,6 +664,66 @@ export async function commitDocumentCompactionSnapshot(input: {
             anchorAssetId: context.current.identitySnapshot.anchorAssetId,
             recipeVersion: DOCUMENT_COMPACTION_RECIPE_VERSION,
           },
+        },
+      };
+    },
+  });
+}
+
+/** Free D-53 copy-forward restore, now committed as one legacy asset append
+ * plus one immutable package selection. R6 remains the read authority. */
+export async function commitRestoredSlotSnapshot(input: {
+  userId: number;
+  modelId: number;
+  operationId: string;
+  angle: CanonicalViewAngle;
+  assetId: number;
+}): Promise<SnapshotTransitionResult<{
+  modelId: number;
+  angle: CanonicalViewAngle;
+  assetId: number;
+  url: string;
+  version: number;
+}>> {
+  return commitModelSnapshotTransition({
+    userId: input.userId,
+    modelId: input.modelId,
+    operationId: input.operationId,
+    expectedKind: "casting.restore",
+    mutate: async (tx, context) => {
+      if (!context.current) throw new Error("Slot restore requires a bootstrapped snapshot head");
+      const assets = await tx
+        .select()
+        .from(modelAssets)
+        .where(eq(modelAssets.modelId, input.modelId))
+        .orderBy(desc(modelAssets.createdAt), desc(modelAssets.id));
+      const prepared = prepareRestoreSlotTransition({
+        userId: input.userId,
+        model: context.model,
+        assets,
+        angle: input.angle,
+        assetId: input.assetId,
+      });
+      const [inserted] = await tx.insert(modelAssets).values(prepared.assetInsert).$returningId();
+      if (!inserted?.id) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Restore failed — nothing was changed" });
+      }
+      return {
+        result: {
+          modelId: input.modelId,
+          angle: input.angle,
+          assetId: inserted.id,
+          url: prepared.url,
+          version: prepared.version,
+        },
+        transition: {
+          packageReason: "slot_restore",
+          slotChanges: [{
+            viewAngle: input.angle,
+            selectedAssetId: inserted.id,
+            compatibility: "current",
+            selectionReason: "restored",
+          }],
         },
       };
     },

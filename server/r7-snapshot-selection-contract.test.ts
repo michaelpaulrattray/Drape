@@ -139,7 +139,7 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       .toBeLessThan(modelDeletion.indexOf("delete(modelAssets)"));
   });
 
-  it("allows only the reviewed compact-prompt runtime adopter", async () => {
+  it("allows only the reviewed compact-prompt and slot-restore runtime adopters", async () => {
     const files = (await runtimeSources("server"))
       .filter((file) => !file.endsWith("snapshotTransitions.ts"));
     const callers: string[] = [];
@@ -147,6 +147,9 @@ describe("R7-7A1 snapshot-selection schema contract", () => {
       const content = await readFile(file, "utf8");
       if (content.includes("snapshotTransitions")) callers.push(file.replaceAll("\\", "/"));
     }
-    expect(callers).toEqual(["server/routes/generation/castingRefinement.ts"]);
+    expect(callers).toEqual([
+      "server/casting/mintPackage.ts",
+      "server/routes/generation/castingRefinement.ts",
+    ]);
   });
 });

@@ -13,6 +13,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   let bootstrapModelSnapshot: typeof import("./casting/snapshotBootstrap").bootstrapModelSnapshot;
   let commitModelSnapshotTransition: typeof import("./casting/snapshotTransitions").commitModelSnapshotTransition;
   let commitDocumentCompactionSnapshot: typeof import("./casting/snapshotTransitions").commitDocumentCompactionSnapshot;
+  let commitRestoredSlotSnapshot: typeof import("./casting/snapshotTransitions").commitRestoredSlotSnapshot;
 
   beforeAll(async () => {
     const parsed = new URL(testDatabaseUrl!);
@@ -23,7 +24,11 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     connection = await mysql.createConnection(testDatabaseUrl!);
     operations = await import("./db/generationOperations");
     ({ bootstrapModelSnapshot } = await import("./casting/snapshotBootstrap"));
-    ({ commitModelSnapshotTransition, commitDocumentCompactionSnapshot } = await import("./casting/snapshotTransitions"));
+    ({
+      commitModelSnapshotTransition,
+      commitDocumentCompactionSnapshot,
+      commitRestoredSlotSnapshot,
+    } = await import("./casting/snapshotTransitions"));
   });
 
   beforeEach(async () => {
@@ -69,6 +74,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
     modelId: number;
     viewAngle: "frontClose" | "sideClose" | "backFull";
     role?: "anchor" | "display";
+    revisionId?: string;
     url?: string;
   }): Promise<number> {
     const [inserted] = await connection.execute<ResultSetHeader>(
@@ -78,7 +84,10 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
         input.modelId,
         input.viewAngle,
         input.url ?? `https://example.invalid/${randomUUID()}.png`,
-        JSON.stringify(input.role ? { identityRole: input.role } : {}),
+        JSON.stringify({
+          ...(input.role ? { identityRole: input.role } : {}),
+          ...(input.revisionId ? { identityRevisionId: input.revisionId } : {}),
+        }),
       ],
     );
     return inserted.insertId;
@@ -98,7 +107,7 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
   async function startModelOperation(
     userId: number,
     modelId: number,
-    kind: "casting.iterate" | "casting.compact" | "casting.mint" = "casting.iterate",
+    kind: "casting.iterate" | "casting.compact" | "casting.mint" | "casting.restore" = "casting.iterate",
   ): Promise<string> {
     const claimed = await operations.claimGenerationOperation({
       userId,
@@ -223,6 +232,81 @@ describeWithDatabase("R7-7A3 atomic snapshot transitions (disposable DB)", () =>
       packageSnapshotId: committed.packageSnapshotId,
     });
     expect(replayCallbackInvoked).toBe(false);
+  }, 60_000);
+
+  it("copy-forwards a compatible historical slot and selects it atomically", async () => {
+    const userId = await createUser();
+    const modelId = await createModel(userId);
+    const anchorAssetId = await addAsset({
+      modelId,
+      viewAngle: "frontClose",
+      role: "anchor",
+      revisionId: "genesis",
+    });
+    const sourceAssetId = await addAsset({
+      modelId,
+      viewAngle: "sideClose",
+      revisionId: "genesis",
+      url: "https://example.invalid/side-old.png",
+    });
+    const currentSideAssetId = await addAsset({
+      modelId,
+      viewAngle: "sideClose",
+      revisionId: "genesis",
+      url: "https://example.invalid/side-current.png",
+    });
+    const head = await bootstrapModelSnapshot({ userId, modelId });
+    if (head.status === "headless") throw new Error("bootstrap unexpectedly headless");
+    const previousSideSlot = await one(
+      `SELECT id FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [head.packageSnapshotId],
+    );
+    const operationId = await startModelOperation(userId, modelId, "casting.restore");
+
+    const committed = await commitRestoredSlotSnapshot({
+      userId,
+      modelId,
+      operationId,
+      angle: "sideClose",
+      assetId: sourceAssetId,
+    });
+
+    expect(committed.result.url).toBe("https://example.invalid/side-old.png");
+    expect(committed.result.version).toBe(3);
+    expect(committed.result.assetId).not.toBe(sourceAssetId);
+    expect(committed.result.assetId).not.toBe(currentSideAssetId);
+    const restoredAsset = await one("SELECT * FROM model_assets WHERE id = ?", [committed.result.assetId]);
+    expect(restoredAsset.storageUrl).toBe("https://example.invalid/side-old.png");
+    expect(Number(restoredAsset.pointsCost)).toBe(0);
+    expect(Number(restoredAsset.pinned)).toBe(0);
+    const restoredProvenance = typeof restoredAsset.provenance === "string"
+      ? JSON.parse(restoredAsset.provenance)
+      : restoredAsset.provenance;
+    expect(restoredProvenance).toMatchObject({
+      restoredFromAssetId: sourceAssetId,
+      identityRole: "display",
+      identityRevisionId: "genesis",
+    });
+    const selectedSide = await one(
+      `SELECT selectedAssetId, compatibility, selectionReason, sourceSelectionId
+       FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'sideClose'`,
+      [committed.packageSnapshotId],
+    );
+    expect(Number(selectedSide.selectedAssetId)).toBe(committed.result.assetId);
+    expect(selectedSide.compatibility).toBe("current");
+    expect(selectedSide.selectionReason).toBe("restored");
+    expect(selectedSide.sourceSelectionId).toBe(previousSideSlot.id);
+    const selectedHead = await one(
+      `SELECT selectedAssetId, selectionReason
+       FROM model_package_snapshot_slots
+       WHERE packageSnapshotId = ? AND viewAngle = 'frontClose'`,
+      [committed.packageSnapshotId],
+    );
+    expect(Number(selectedHead.selectedAssetId)).toBe(anchorAssetId);
+    expect(selectedHead.selectionReason).toBe("carried");
+    expect(await count("model_identity_snapshots", "modelId = ?", [modelId])).toBe(1);
   }, 60_000);
 
   it("pairs an identity append with a package append and stales every carried sibling", async () => {

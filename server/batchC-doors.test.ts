@@ -126,6 +126,20 @@ vi.mock("./casting/snapshotTransitions", () => ({
     stateVersion: 2,
     selectedSlotCount: 1,
   })),
+  commitRestoredSlotSnapshot: vi.fn(async (input: { modelId: number; angle: string; assetId: number }) => ({
+    result: {
+      modelId: input.modelId,
+      angle: input.angle,
+      assetId: 99,
+      url: "https://r2/restored.png",
+      version: 3,
+    },
+    modelId: input.modelId,
+    identitySnapshotId: "11111111-1111-4111-8111-111111111114",
+    packageSnapshotId: "11111111-1111-4111-8111-111111111116",
+    stateVersion: 2,
+    selectedSlotCount: 2,
+  })),
 }));
 
 import {
@@ -152,7 +166,7 @@ import { executeMintPackage, executeRestoreSlotVersion } from "./casting/mintPac
 import { executeRefreshSlots } from "./casting/refreshSlots";
 import { REFUSAL_COPY } from "./casting/identity/refusalCopy";
 import { bootstrapModelSnapshot } from "./casting/snapshotBootstrap";
-import { commitDocumentCompactionSnapshot } from "./casting/snapshotTransitions";
+import { commitDocumentCompactionSnapshot, commitRestoredSlotSnapshot } from "./casting/snapshotTransitions";
 import { appRouter as productionRouter } from "./routers";
 
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
@@ -169,6 +183,7 @@ const appRouter = {
         ...caller.generation,
         castingImage: (input: any) => caller.generation.castingImage({ clientRequestId: REQUEST_ID, ...input }),
         compactPrompt: (input: any) => caller.generation.compactPrompt({ clientRequestId: REQUEST_ID, ...input }),
+        restoreSlotVersion: (input: any) => caller.generation.restoreSlotVersion({ clientRequestId: REQUEST_ID, ...input }),
       },
     };
   },
@@ -219,6 +234,7 @@ beforeEach(() => {
   vi.mocked(compactMasterPrompt).mockReset();
   vi.mocked(bootstrapModelSnapshot).mockClear();
   vi.mocked(commitDocumentCompactionSnapshot).mockClear();
+  vi.mocked(commitRestoredSlotSnapshot).mockClear();
   tx.reset();
 });
 
@@ -500,10 +516,56 @@ describe("executeRestoreSlotVersion stays free (M13/M20)", () => {
       asset({ id: 2, viewType: "threeQuarter", storageUrl: "https://r2/tq-2.png", provenance: { identityText: CANON } }),
       asset({ id: 1, viewType: "threeQuarter", storageUrl: "https://r2/tq-1.png", provenance: { identityText: CANON } }),
     ] as never);
-    await executeRestoreSlotVersion({ userId: 1, modelId: 7, angle: "threeQuarter", assetId: 1 });
+    await executeRestoreSlotVersion({
+      userId: 1,
+      modelId: 7,
+      operationId: REQUEST_ID,
+      angle: "threeQuarter",
+      assetId: 1,
+    });
     expect(deductPoints).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
-    const row = vi.mocked(createModelAsset).mock.calls[0][0] as { pointsCost: number };
-    expect(row.pointsCost).toBe(0);
+    expect(commitRestoredSlotSnapshot).toHaveBeenCalledWith({
+      userId: 1,
+      modelId: 7,
+      operationId: REQUEST_ID,
+      angle: "threeQuarter",
+      assetId: 1,
+    });
+  });
+});
+
+describe("generation.restoreSlotVersion snapshot adoption", () => {
+  it("bootstraps before the running receipt and commits one free package transition", async () => {
+    const caller = appRouter.createCaller(authCtx());
+    const result = await caller.generation.restoreSlotVersion({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angle: "threeQuarter",
+      assetId: 1,
+    });
+    expect(result).toMatchObject({ modelId: 7, angle: "threeQuarter", assetId: 99 });
+    expect(bootstrapModelSnapshot).toHaveBeenCalledWith({ userId: 1, modelId: 7 });
+    expect(markGenerationOperationRunning).toHaveBeenCalled();
+    expect(commitRestoredSlotSnapshot).toHaveBeenCalled();
+    expect(vi.mocked(bootstrapModelSnapshot).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0]);
+    expect(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(commitRestoredSlotSnapshot).mock.invocationCallOrder[0]);
+    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
+  });
+
+  it("a headless Cast refuses before a running receipt or restore transition", async () => {
+    vi.mocked(bootstrapModelSnapshot).mockResolvedValueOnce({ status: "headless", modelId: 7 });
+    const caller = appRouter.createCaller(authCtx());
+    await expect(caller.generation.restoreSlotVersion({
+      clientRequestId: REQUEST_ID,
+      modelId: 7,
+      angle: "threeQuarter",
+      assetId: 1,
+    })).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("headshot") });
+    expect(markGenerationOperationRunning).not.toHaveBeenCalled();
+    expect(commitRestoredSlotSnapshot).not.toHaveBeenCalled();
   });
 });

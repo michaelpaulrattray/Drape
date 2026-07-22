@@ -32,6 +32,7 @@ import {
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
 } from "../../casting/directOperation";
+import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
 const log = createModuleLogger("routes/generation");
 
 export const castingExportRouter = router({
@@ -399,6 +400,22 @@ export const castingExportRouter = router({
           version: assets.filter((candidate) => candidate.viewType === input.angle && candidate.storageUrl).length,
         };
       }
+      let snapshotHead: Awaited<ReturnType<typeof bootstrapModelSnapshot>>;
+      try {
+        snapshotHead = await bootstrapModelSnapshot({ userId: ctx.user.id, modelId: input.modelId });
+      } catch (error) {
+        return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
+      }
+      if (snapshotHead.status === "headless") {
+        return failClaimedDirectOperation({
+          userId: ctx.user.id,
+          operationId: gate.operationId,
+          error: new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "This Cast has no headshot package to restore.",
+          }),
+        });
+      }
       await markGenerationOperationRunning({
         userId: ctx.user.id,
         operationId: gate.operationId,
@@ -411,7 +428,13 @@ export const castingExportRouter = router({
       });
       let durableResult = false;
       try {
-        const result = await executeRestoreSlotVersion({ userId: ctx.user.id, modelId: input.modelId, angle: input.angle, assetId: input.assetId });
+        const result = await executeRestoreSlotVersion({
+          userId: ctx.user.id,
+          modelId: input.modelId,
+          operationId: gate.operationId,
+          angle: input.angle,
+          assetId: input.assetId,
+        });
         durableResult = true;
         await completeDirectOperationSuccess({
           userId: ctx.user.id,

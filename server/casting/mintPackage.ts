@@ -59,6 +59,7 @@ import {
 import { computeMintIntegrity, type MintIntegrity } from "./identity/mintIntegrity";
 import { REFUSAL_COPY } from "./identity/refusalCopy";
 import { createModuleLogger } from "../logging/logger";
+import { commitRestoredSlotSnapshot } from "./snapshotTransitions";
 
 const log = createModuleLogger("casting/mintPackage");
 
@@ -694,98 +695,9 @@ export async function getSlotVersions(input: {
 export async function executeRestoreSlotVersion(input: {
   userId: number;
   modelId: number;
+  operationId: string;
   angle: CanonicalViewAngle;
   assetId: number;
 }): Promise<{ modelId: number; angle: CanonicalViewAngle; assetId: number; url: string; version: number }> {
-  const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-  assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
-
-  const assets = await getModelAssets(input.modelId); // newest-first
-  const source = assets.find((a) => a.id === input.assetId);
-  if (!source || source.viewType !== input.angle || !source.storageUrl) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: `That version isn't a cast ${VIEW_ANGLE_LABELS[input.angle]} view of this model`,
-    });
-  }
-
-  // §7.4 (Batch C, supersedes rev 4's role-carrying rule): ordinary restore
-  // is FREE REUSE of images WITHIN the current identity revision — never an
-  // identity rollback. The source must PROVABLY belong to the current
-  // revision: its recorded revision matches, or its recorded D-12
-  // anchor/document fingerprint (verbatim identityText) matches the current
-  // canon. Missing or uncertain provenance refuses rather than guessing —
-  // headshots AND sibling views alike.
-  const currentIdentityText = buildIdentityAnchor(model.masterPrompt || "", model.technicalSchema ?? undefined);
-  const membership = assetRevisionMembership(source, model, currentIdentityText);
-  if (!isRestoreCompatible(membership)) {
-    log.warn(
-      { modelId: input.modelId, assetId: input.assetId, angle: input.angle, membership },
-      "[RestoreSlotVersion] refused — not provably within the current identity revision",
-    );
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message:
-        membership === "mismatch"
-          ? REFUSAL_COPY.crossRevisionRestore
-          : REFUSAL_COPY.uncertainRestoreProvenance,
-    });
-  }
-
-  const head = assets.find((a) => a.viewType === input.angle && a.storageUrl);
-  if (head && head.id === source.id) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: "That's already the current version",
-    });
-  }
-  // No-op guard (VC-R6b drive 2): restoring a row whose IMAGE already equals
-  // the head appends nothing but ledger noise — repeated restores were
-  // minting identical rows (v8 stacks of one image). Same-content = same
-  // version; refuse politely.
-  if (head && head.storageUrl === source.storageUrl) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: "That's already the current image",
-    });
-  }
-
-  const sourceProvenance = (source.provenance ?? null) as { inputs?: unknown } | null;
-  const created = await createModelAsset({
-    modelId: input.modelId,
-    viewType: input.angle,
-    resolution: source.resolution ?? "1K",
-    storageUrl: source.storageUrl,
-    storageKey: source.storageKey ?? null,
-    pointsCost: 0, // a pointer copy moves no money
-    pinned: false,
-    provenance: {
-      restoredFromAssetId: source.id,
-      inputs: sourceProvenance?.inputs ?? null,
-      engine: "restore",
-      // §7.4/§7.2: a restored row is stamped with the CURRENT revision and is
-      // ALWAYS `display` — generic restore never promotes an image to anchor
-      // authority (the §7 selector ignores restored frontClose rows).
-      ...identityStampFor({
-        role: "display",
-        revisionId: currentRevisionId(model),
-        identityText: currentIdentityText,
-      }),
-    },
-  });
-  if (!created.success || !created.assetId) {
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Restore failed — nothing was changed" });
-  }
-
-  const after = await getModelAssets(input.modelId);
-  const version = after.filter((a) => a.viewType === input.angle && a.storageUrl).length;
-  return {
-    modelId: input.modelId,
-    angle: input.angle,
-    assetId: created.assetId,
-    url: source.storageUrl,
-    version,
-  };
+  return (await commitRestoredSlotSnapshot(input)).result;
 }
