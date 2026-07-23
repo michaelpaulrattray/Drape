@@ -53,6 +53,17 @@ export interface MintIntegrityModel {
   identityRevisionId?: string | null;
 }
 
+export interface MintIntegritySelection {
+  anchor: AnchorAssetRow | null;
+  displayedHeadshot: AnchorAssetRow | null;
+  hasDisplayedHeadshotSelection: boolean;
+  /**
+   * Presence means the package explicitly selected the angle. A null value is
+   * a fail-closed invalid selection, not a missing view.
+   */
+  selectedByAngle: ReadonlyMap<CanonicalViewAngle, AnchorAssetRow | null>;
+}
+
 function isFailedMarkerRow(assets: AnchorAssetRow[], angle: CanonicalViewAngle): boolean {
   // Failed only when nothing is filled AND the newest attempt is a marker
   const forAngle = assets.filter((a) => a.viewType === angle);
@@ -63,16 +74,17 @@ function isFailedMarkerRow(assets: AnchorAssetRow[], angle: CanonicalViewAngle):
   return status?.state === "failed";
 }
 
-export function computeMintIntegrity(
+export function computeMintIntegrityForSelection(
   model: MintIntegrityModel,
   assets: AnchorAssetRow[],
   tierAngles: readonly CanonicalViewAngle[],
   currentIdentityText: string,
+  selection: MintIntegritySelection,
 ): MintIntegrity {
   const genesis = !model.identityRevisionId;
 
   // ── Check 1: identity-anchor validity ─────────────────────────────────────
-  const anchorRow = selectIdentityAnchor(assets);
+  const anchorRow = selection.anchor;
   let anchor: MintCheck = { ok: true };
   if (!anchorRow) {
     anchor = { ok: false, message: REFUSAL_COPY.mintAnchorInvalid };
@@ -90,9 +102,11 @@ export function computeMintIntegrity(
   }
 
   // ── Check 2: display-headshot validity ────────────────────────────────────
-  const displayed = selectDisplayedHeadshot(assets);
+  const displayed = selection.displayedHeadshot;
   let displayHeadshot: MintCheck = { ok: true };
-  if (displayed && anchorRow && displayed.id !== anchorRow.id) {
+  if (selection.hasDisplayedHeadshotSelection && !displayed) {
+    displayHeadshot = { ok: false, message: REFUSAL_COPY.mintDisplayHeadshotInvalid };
+  } else if (displayed && anchorRow && displayed.id !== anchorRow.id) {
     const membership = assetRevisionMembership(displayed, model, currentIdentityText);
     if (!(membership === "current" || membership === "legacy-match")) {
       displayHeadshot = { ok: false, message: REFUSAL_COPY.mintDisplayHeadshotInvalid };
@@ -106,8 +120,19 @@ export function computeMintIntegrity(
     .filter((angle) => angle !== "frontClose")
     .map((angle) => {
       const label = VIEW_ANGLE_LABELS[angle];
-      const filled = assets.find((a) => a.viewType === angle && a.storageUrl);
+      const explicitlySelected = selection.selectedByAngle.has(angle);
+      const filled = selection.selectedByAngle.get(angle) ?? null;
       if (!filled) {
+        if (explicitlySelected) {
+          return {
+            angle,
+            label,
+            present: true,
+            ok: false,
+            reason: "unknown_authority" as const,
+            message: REFUSAL_COPY.mintTierViewStale(label),
+          };
+        }
         if (isFailedMarkerRow(assets, angle)) {
           return { angle, label, present: true, ok: false, reason: "failed" as const, message: REFUSAL_COPY.mintTierViewFailed(label) };
         }
@@ -141,4 +166,30 @@ export function computeMintIntegrity(
     tierViews,
     ok: anchor.ok && displayHeadshot.ok && tierViews.every((v) => v.ok),
   };
+}
+
+export function computeMintIntegrity(
+  model: MintIntegrityModel,
+  assets: AnchorAssetRow[],
+  tierAngles: readonly CanonicalViewAngle[],
+  currentIdentityText: string,
+): MintIntegrity {
+  const selectedByAngle = new Map<CanonicalViewAngle, AnchorAssetRow | null>();
+  for (const angle of tierAngles) {
+    const selected = assets.find((asset) => asset.viewType === angle && !!asset.storageUrl);
+    if (selected) selectedByAngle.set(angle, selected);
+  }
+  const displayedHeadshot = selectDisplayedHeadshot(assets);
+  return computeMintIntegrityForSelection(
+    model,
+    assets,
+    tierAngles,
+    currentIdentityText,
+    {
+      anchor: selectIdentityAnchor(assets),
+      displayedHeadshot,
+      hasDisplayedHeadshotSelection: !!displayedHeadshot,
+      selectedByAngle,
+    },
+  );
 }

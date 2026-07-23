@@ -198,15 +198,15 @@ describe("R7-7A4 snapshot shadow comparator", () => {
     expect(JSON.stringify(report)).not.toContain("drifted identity");
   });
 
-  it("detects a mint-plan decision mismatch that structural selection parity alone cannot see", () => {
+  it("keeps provenance refusals in snapshot mint-plan parity", () => {
     const state = parityState();
     state.assets[0] = {
       ...state.assets[0],
       provenance: null,
     };
     const report = compareSnapshotShadowState(state);
-    expect(report.mismatchKinds).toEqual(["consumer_mint_plan"]);
-    expect(report.consumerParity.casting_mint_plan.parity).toBe(false);
+    expect(report.mismatchKinds).toEqual([]);
+    expect(report.consumerParity.casting_mint_plan.parity).toBe(true);
     expect(report.consumerParity.casting_package_state.parity).toBe(true);
     expect(report.consumerParity.casting_refresh_plan.parity).toBe(true);
   });

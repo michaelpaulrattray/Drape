@@ -3,7 +3,10 @@
  * pure matrix, cross-checked with M21's case-1/case-2 pair).
  */
 import { describe, it, expect } from "vitest";
-import { computeMintIntegrity } from "./mintIntegrity";
+import {
+  computeMintIntegrity,
+  computeMintIntegrityForSelection,
+} from "./mintIntegrity";
 import { REFUSAL_COPY } from "./refusalCopy";
 
 const CANON = "IDENTITY CONTEXT:\ncanon";
@@ -141,5 +144,54 @@ describe("check 3 — tier-view validity", () => {
     const legacyView = row({ id: 10, viewType: "threeQuarter", provenance: { identityText: CANON } });
     const integrity = computeMintIntegrity(genesisModel, [legacyAnchor, legacyView], TIER, CANON);
     expect(integrity.ok).toBe(true);
+  });
+
+  it("validates the explicitly selected view instead of a newer ledger row", () => {
+    const selectedUnknown = goodView("threeQuarter", { id: 10, provenance: null });
+    const newerCurrent = goodView("threeQuarter", { id: 11 });
+    const integrity = computeMintIntegrityForSelection(
+      revModel,
+      [newerCurrent, selectedUnknown, anchor],
+      TIER,
+      CANON,
+      {
+        anchor,
+        displayedHeadshot: anchor,
+        hasDisplayedHeadshotSelection: true,
+        selectedByAngle: new Map([
+          ["frontClose", anchor],
+          ["threeQuarter", selectedUnknown],
+        ]),
+      },
+    );
+    expect(integrity.tierViews.find((view) => view.angle === "threeQuarter")).toMatchObject({
+      present: true,
+      ok: false,
+      reason: "unknown_authority",
+    });
+  });
+
+  it("fails closed when an explicit selected asset is invalid", () => {
+    const integrity = computeMintIntegrityForSelection(
+      revModel,
+      [anchor],
+      TIER,
+      CANON,
+      {
+        anchor,
+        displayedHeadshot: null,
+        hasDisplayedHeadshotSelection: true,
+        selectedByAngle: new Map([
+          ["frontClose", null],
+          ["threeQuarter", null],
+        ]),
+      },
+    );
+    expect(integrity.displayHeadshot.ok).toBe(false);
+    expect(integrity.tierViews.find((view) => view.angle === "threeQuarter")).toMatchObject({
+      present: true,
+      ok: false,
+      reason: "unknown_authority",
+    });
   });
 });

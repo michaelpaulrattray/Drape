@@ -14,14 +14,16 @@ import {
 } from "../../shared/boardTypes";
 import type {
   ModelAsset,
-  ModelIdentitySnapshot,
   ModelPackageSnapshotSlot,
 } from "../../drizzle/schema";
 import { stableCanonicalJson } from "./operationContract";
 import { buildIdentityAnchor } from "./geminiClient";
 import { deriveBootstrapState } from "./snapshotBootstrap";
-import { computeMintIntegrity } from "./identity/mintIntegrity";
-import { computePackageSlots, tierCosts, type PackageSlot } from "./mintPackage";
+import {
+  computeMintIntegrity,
+  computeMintIntegrityForSelection,
+} from "./identity/mintIntegrity";
+import { tierCosts, type PackageSlot } from "./mintPackage";
 import { computeRefreshPlan } from "./refreshSlots";
 import type { SnapshotShadowState } from "./snapshotShadow";
 
@@ -190,60 +192,72 @@ function normalizeLegacyMintPlan(state: SnapshotShadowState) {
   };
 }
 
-function snapshotAnchorValid(
-  identity: ModelIdentitySnapshot,
-  assets: ModelAsset[],
-): boolean {
-  const anchor = assets.find((asset) => asset.id === identity.anchorAssetId);
-  return !!(
-    anchor
-    && anchor.modelId === identity.modelId
-    && anchor.viewType === "frontClose"
-    && anchor.storageUrl
-  );
-}
-
 function normalizeSnapshotMintPlan(state: SnapshotShadowState) {
   if (!state.currentPackage || !state.currentIdentity) return null;
   const byAngle = new Map(state.currentSlots.map((slot) => [slot.viewAngle, slot]));
   const existing = state.currentSlots.map((slot) => slot.viewAngle);
   const front = byAngle.get("frontClose");
-  const anchorOk = snapshotAnchorValid(state.currentIdentity, state.assets);
-  const selectedAssetIsValid = (
-    slot: Pick<ModelPackageSnapshotSlot, "selectedAssetId" | "viewAngle">,
-  ) => state.assets.some((asset) => (
-    asset.id === slot.selectedAssetId
-    && asset.modelId === state.model.id
-    && asset.viewType === slot.viewAngle
-    && !!asset.storageUrl
-  ));
-  const displayOk = !front || (
-    front.compatibility === "current"
-    && selectedAssetIsValid(front)
+  const selectedByAngle = new Map<CanonicalViewAngle, ModelAsset | null>();
+  for (const slot of state.currentSlots) {
+    const asset = state.assets.find((candidate) => (
+      candidate.id === slot.selectedAssetId
+      && candidate.modelId === state.model.id
+      && candidate.viewType === slot.viewAngle
+      && !!candidate.storageUrl
+    ));
+    selectedByAngle.set(
+      slot.viewAngle,
+      asset
+        ? {
+            ...asset,
+            // Package compatibility is immutable snapshot truth. Preserve
+            // provenance while projecting stale state through the shared
+            // mint-integrity law.
+            ...(slot.compatibility === "stale"
+              ? { status: { state: "stale" } }
+              : {}),
+          }
+        : null,
+    );
+  }
+  const selectedById = new Map(
+    Array.from(selectedByAngle.values())
+      .filter((asset): asset is ModelAsset => !!asset)
+      .map((asset) => [asset.id, asset]),
   );
+  const storedAnchor = state.assets.find((asset) => (
+    asset.id === state.currentIdentity!.anchorAssetId
+    && asset.modelId === state.currentIdentity!.modelId
+    && asset.viewType === "frontClose"
+    && !!asset.storageUrl
+  )) ?? null;
+  const anchor = storedAnchor
+    ? selectedById.get(storedAnchor.id) ?? storedAnchor
+    : null;
   const tiers = {} as Record<MintTier, unknown>;
   for (const tier of ["draft", "core", "production"] as const) {
-    const tierViews = MINT_TIER_SLOTS[tier]
-      .filter((angle) => angle !== "frontClose")
-      .map((angle) => {
-        const slot = byAngle.get(angle);
-        const failure = failedAttempt(state.assets, angle);
-        return {
-          angle,
-          present: !!slot || failure.failed,
-          ok: (!slot && !failure.failed) || (
-            !!slot
-            && slot.compatibility === "current"
-            && selectedAssetIsValid(slot)
-          ),
-        };
-      });
+    const integrity = computeMintIntegrityForSelection(
+      state.model,
+      state.assets,
+      MINT_TIER_SLOTS[tier],
+      state.currentIdentity.identityText,
+      {
+        anchor,
+        displayedHeadshot: front ? selectedByAngle.get("frontClose") ?? null : null,
+        hasDisplayedHeadshotSelection: !!front,
+        selectedByAngle,
+      },
+    );
     tiers[tier] = {
       price: tierCosts(existing)[tier],
-      anchor: anchorOk,
-      displayHeadshot: displayOk,
-      tierViews,
-      ok: anchorOk && displayOk && tierViews.every((view) => view.ok),
+      anchor: integrity.anchor.ok,
+      displayHeadshot: integrity.displayHeadshot.ok,
+      tierViews: integrity.tierViews.map((view) => ({
+        angle: view.angle,
+        present: view.present,
+        ok: view.ok,
+      })),
+      ok: integrity.ok,
     };
   }
   return {
